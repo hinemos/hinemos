@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+*~
+
+*.swp
+*.class
+*.jar
+*.zip
+bin/
+build/
+package/
+tmp/
