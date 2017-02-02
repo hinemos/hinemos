@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!-- 
+   Hinemos (http://www.hinemos.info/)
+   
+   Copyright (C) 2010 NTT DATA Corporation.
+ -->
+
+<!-- execute Ant (Run in the same JRE as the workspace -->
+
+<project name="JobAgent" default="all" basedir=".">
+	
+	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<import file="../HinemosCommon/ant_config/build_common.xml"/>
+	
+	<property name="project.name" value="HinemosWorkers" />
+	<property name="jar.file" value="${jar.ManagerCli}" />
+	<property name="src.dir" value="src_manager_cli" />
+	<property name="build.dir" value="build/manager_cli" />
+	<!-- <property name="jar.include.properties" value="true" /> -->
+	
+	<!-- Dependency -->
+	<target name="dependency" depends="check_dependency">
+		<fail unless="HinemosCommon.built" message="file not found. (HinemosCommon/${jar.dir}/${jar.HinemosCommon})" />
+	</target>
+	
+	
+	<!-- Classpath -->
+	<path id="id.compile.classpath.local">
+		<fileset dir="../">
+			<include name="HinemosCommon/${jar.dir}/${jar.HinemosCommon}" />
+		</fileset>
+		<fileset dir=".">
+			<include name="lib/*.jar"/>
+		</fileset>
+		<path refid="id.compile.classpath" />
+	</path>
+	
+	<path id="id.compile.sourcepath.local">
+		
+	</path>
+	
+	<!-- All -->
+	<target name="all" depends="dependency">
+		<antcall target="jar" />
+		
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
+	
+	<target name="refresh" if="eclipse_jar_available">
+		<eclipse.refreshLocal resource="${project.name}" depth="infinite" />
+		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
+	</target>
+	
+</project>

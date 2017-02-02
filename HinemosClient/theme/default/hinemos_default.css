@@ -1,0 +1,2448 @@
+/*******************************************************************************
+ * Copyright (c) 2008, 2013 Innoopract Informationssysteme GmbH and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Innoopract Informationssysteme GmbH - initial API and implementation
+ *    EclipseSource - ongoing development
+ ******************************************************************************/
+
+/* RAP 1.4 default theme for all widgets */
+
+* {
+	color: #4a4a4a;
+	background-color: #fff;
+	background-image: none;
+	font: 12px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+}
+
+*:disabled {
+	color: #708090;
+}
+
+Widget-ToolTip {
+	padding: 10px;
+	background-color: rgb(32, 31, 27);
+	background-image: none;
+	border: 1px solid #00589f;
+	border-radius: 2px 2px 2px 2px;
+	color: #e0e0e0;
+	opacity: 1;
+	animation: fadeIn 200ms linear, fadeOut 600ms ease-out;
+	box-shadow: none;
+}
+
+
+Display {
+	rwt-shadow-color: #a7a6aa;
+	rwt-highlight-color: #ffffff;
+	rwt-darkshadow-color: #85878c;
+	rwt-lightshadow-color: #dcdfe4;
+	rwt-thinborder-color: #aca899;
+	rwt-selectionmarker-color: #fec83c;
+	rwt-infobackground-color: #ffffff;
+
+	rwt-error-image: url( theme/resources/dialog/error.png );
+	rwt-information-image: url( theme/resources/dialog/information.png );
+	rwt-question-image: url( theme/resources/dialog/question.png );
+	rwt-warning-image: url( theme/resources/dialog/warning.png );
+	rwt-working-image: url( theme/resources/dialog/information.png );
+
+	rwt-fontlist: 11px 'Segoe UI', Corbel, Calibri, Tahoma, 'Lucida Sans Unicode';
+
+	background-image: url( theme/resources/display/browser_bg.png );
+}
+
+/* Default theme for all controls */
+
+* {
+	border: none;
+	padding: 0px;
+}
+
+*[BORDER] {
+	border: 1px solid #a4a4a4;
+}
+
+/* Default theme for all composites */
+
+Composite {
+	padding: 0px;
+	opacity: 1;
+	background-color: #ffffff;
+	background-image: none;
+	background-repeat: repeat;
+	background-position: left top;
+	border: none;
+	box-shadow: none;
+	animation: none;
+}
+
+Composite[BORDER] {
+	border: 1px solid #bdbdbd;
+	background-image: none;
+}
+
+/* Button default theme */
+
+Button {
+	background-image: none;
+	background-repeat: repeat;
+	background-position: left top;
+	border: none;
+	border-radius: 2px;
+	padding: 4px 5px;
+	spacing: 2px;
+	cursor: default;
+	animation: none;
+	color: #4a4a4a;
+	background-color: #ffffff;
+	opacity: 1;
+	text-shadow: none;
+	box-shadow: none;
+	text-decoration: none;
+	box-shadow: none;
+}
+
+Button[PUSH],
+Button[TOGGLE],
+Button[PUSH][BORDER],
+Button[TOGGLE][BORDER],
+Button[PUSH][FLAT],
+Button[TOGGLE][FLAT] {
+	border: 1px solid #bdbdbd;
+	border-radius: 3px;
+	padding: 2px 5px;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	animation: none;
+	cursor: pointer;
+	text-shadow: 0 1px 0 #ffffff;
+}
+
+Button[ARROW],
+Button[ARROW][BORDER],
+Button[ARROW][FLAT] {
+	border: 1px solid #bdbdbd;
+	border-radius: 3px;
+	padding: 4px;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	cursor: pointer;
+}
+
+Button[ARROW]:default,
+Button[PUSH]:default,
+Button[TOGGLE]:default {
+	background-color: #416693;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #e2eefc ),
+		to( #d4d4d4 )
+	);
+	border: 1px solid #a0b3ca;
+}
+
+Button[ARROW]:disabled,
+Button[PUSH]:disabled,
+Button[TOGGLE]:disabled,
+Button[TOGGLE]:selected:disabled {
+	cursor: default;
+	color: #d2d2d2;
+	background-image: none;
+	background-color: #fafafa;
+	border: 1px solid #d2d2d2;
+}
+
+Button[ARROW]:hover,
+Button[PUSH]:hover,
+Button[TOGGLE]:hover {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #eaeaea ),
+		to( #d5d5d5 )
+	);
+}
+
+Button[ARROW]:pressed,
+Button[PUSH]:pressed,
+Button[TOGGLE]:pressed {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #d5d5d5 ),
+		to( #eaeaea )
+	);
+}
+
+Button[TOGGLE]:selected {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #d5d5d5 ),
+		to( #eaeaea )
+	);
+}
+
+Button[TOGGLE]:selected:hover {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #d5d5d5 ),
+		to( #eaeaea )
+	);
+}
+
+Button[CHECK],
+Button[RADIO] {
+	spacing: 4px;
+}
+
+Button[CHECK][BORDER],
+Button[RADIO][BORDER] {
+	cursor: default;
+	background-image: none;
+	border: 1px solid #bdbdbd;
+	border-radius: 2px;
+}
+
+Button-CheckIcon {
+	background-image: url( theme/resources/button/check-unselected.png );
+}
+
+Button-CheckIcon:hover {
+	background-image: url( theme/resources/button/check-unselected-hover.png );
+}
+
+Button-CheckIcon:selected {
+	background-image: url( theme/resources/button/check-selected.png );
+}
+
+Button-CheckIcon:selected:hover {
+	background-image: url( theme/resources/button/check-selected-hover.png );
+}
+
+Button-CheckIcon:selected:grayed {
+	background-image: url( theme/resources/button/check-grayed.png );
+}
+
+Button-CheckIcon:selected:grayed:hover {
+	background-image: url( theme/resources/button/check-grayed-hover.png );
+}
+
+Button-RadioIcon {
+	background-image: url( theme/resources/button/radio-unselected.png );
+}
+
+Button-RadioIcon:hover {
+	background-image: url( theme/resources/button/radio-unselected-hover.png );
+}
+
+Button-RadioIcon:selected {
+	background-image: url( theme/resources/button/radio-selected.png );
+}
+
+Button-RadioIcon:selected:hover {
+	background-image: url( theme/resources/button/radio-selected-hover.png );
+}
+
+Button-ArrowIcon[UP] {
+	background-image: url( theme/resources/button/arrow-up.png );
+}
+
+Button-ArrowIcon[DOWN] {
+	background-image: url( theme/resources/button/arrow-down.png );
+}
+
+Button-ArrowIcon[LEFT] {
+	background-image: url( theme/resources/button/arrow-left.png );
+}
+
+Button-ArrowIcon[RIGHT] {
+	background-image: url( theme/resources/button/arrow-right.png );
+}
+
+Button-FocusIndicator[ARROW], Button-FocusIndicator[PUSH], Button-FocusIndicator[TOGGLE] {
+	background-color: transparent;
+	border: 1px dotted #b8b8b8;
+	margin: 2px;
+	padding: 0px;
+	opacity: 1;
+}
+
+Button-FocusIndicator[CHECK], Button-FocusIndicator[RADIO] {
+	background-color: transparent;
+	border: 1px dotted #b8b8b8;
+	padding: 2px 2px 2px 1px;
+	margin: 0px;
+	opacity: 1;
+}
+
+/* Combo default theme */
+
+Combo,
+Combo[BORDER] {
+	border: 1px solid #aaaaaa;
+	font: 11px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+	background-color: #ffffff;
+	color: #464a4e;
+	border-radius: 2px;
+	background-image: none;
+	text-shadow: none;
+	box-shadow: inset 0 0 3px #bdbdbd;
+}
+
+Combo:focused,
+Combo[BORDER]:focused {
+	border: 1px solid #4f7cb1;
+	box-shadow: 0 0 5px #4f7cb1;
+}
+
+Combo:disabled,
+Combo[BORDER]:disabled {
+	box-shadow: none;
+}
+
+Combo-Button {
+	cursor: default;
+	background-color: #efefef;
+	border: none;
+	border-left: 1px solid #bdbdbd;
+	border-radius: 0px 2px 2px 0px;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	width: 18px;
+}
+
+Combo-Button:disabled {
+	background-image: none;
+	background-color: transparent;
+}
+
+Combo-Button-Icon {
+	background-image: url( theme/resources/combo/down.png );
+}
+
+Combo-Button-Icon:hover {
+	background-image: url( theme/resources/combo/down-hover.png );
+}
+
+Combo-List {
+	border: 1px solid #4f7cb1;
+	border-radius: 0px 0px 2px 2px;
+	box-shadow: 0 0 5px #4f7cb1;
+}
+
+Combo-Field {
+	padding: 2px 3px;
+}
+
+Combo-FocusIndicator {
+	background-color: transparent;
+	border: none;
+	margin: 0;
+	opacity: 0;
+}
+
+
+/* CoolBar default theme */
+
+CoolBar {
+	background-image: none;
+}
+
+CoolItem-Handle {
+	border: 1px solid #bdbdbd;
+	width: 4px;
+}
+
+/* CTabFolder default theme */
+
+CTabFolder {
+	border-color: #bdbdbd;
+	border-radius: 2px;
+}
+
+CTabItem {
+	color: #4a4a4a;
+	background-color: transparent;
+	background-image: none;
+	padding: 2px 4px;
+	spacing: 4px;
+	text-shadow: none;
+	text-decoration: none;
+}
+
+CTabItem:selected {
+	color: #4a4a4a;
+	background-color: #d6d6d6;
+}
+
+/* Do not gray out disabled CTabItems, this is SWT behavior */
+CTabItem:disabled {
+	color: black;
+}
+
+CTabFolder-DropDownButton-Icon {
+	background-image: url( theme/resources/ctabfolder/ctabfolder-dropdown.png );
+}
+
+CTabFolder-DropDownButton-Icon:hover {
+	background-image: url( theme/resources/ctabfolder/ctabfolder-dropdown-hover.png );
+}
+
+/* Group default theme */
+
+Group {
+	color: #4a4a4a;
+	background-color: #ffffff;
+	border: none;
+}
+
+Group-Frame {
+	margin: 8px 0px 0px;
+	padding: 8px 2px 2px;
+	border: 1px solid #bdbdbd;
+	border-radius: 2px 2px 2px 2px;
+}
+
+Group-Label {
+	padding: 0px 3px 0px 4px;
+	background-color: transparent;
+	background-image: none;
+	background-repeat: repeat;
+	background-position: left top;
+	border: none;
+	border-radius: 0;
+	color: inherit;
+	margin: 1px 10px;
+	text-shadow: none;
+}
+
+/* Label default theme */
+
+Label {
+	color: #4a4a4a;
+	background-color: #ffffff;
+	background-image: none;
+	background-repeat: repeat;
+	background-position: left top;
+	border: none;
+	border-radius: 0;
+	text-decoration: none;
+	cursor: default;
+	opacity: 1;
+	text-shadow: none;
+}
+
+Label[BORDER] {
+	border: 1px solid #bdbdbd;
+	border-radius: 2px;
+}
+
+Label-SeparatorLine {
+	background-image: none;
+	background-color: #d2d2d2;
+	border: none;
+	border-radius: 0px;
+	width: 2px;
+}
+
+/* Link default theme */
+
+Link {
+	color: #4a4a4a;
+	background-color: #ffffff;
+	background-image: none;
+	background-repeat: repeat;
+	background-position: left top;
+	text-shadow: none;
+}
+
+Link[BORDER] {
+	border: 1px solid #bdbdbd;
+}
+
+Link-Hyperlink {
+	color: #416693;
+	text-shadow: none;
+	text-decoration: none;
+}
+
+Link-Hyperlink:disabled {
+	color: #959595;
+}
+
+Link-Hyperlink:hover {
+	text-decoration: underline;
+}
+
+Link-Hyperlink:hover:disabled {
+	color: #959595;
+	text-decoration: none;
+}
+
+/* List default theme */
+
+List {
+	background-color: #ffffff;
+	border: none;
+	color: #4a4a4a;
+}
+
+List[BORDER] {
+	border: 1px solid #bdbdbd;
+}
+
+List-Item {
+	background-color: #ffffff;
+	color: inherit;
+	background-image: none;
+	background-repeat: repeat;
+	background-position: left top;
+	text-shadow: none;
+	padding: 3px 5px;
+}
+
+List-Item:hover {
+	color: #4a4a4a;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #ebebeb ),
+		to( #d5d5d5 )
+	);
+}
+
+List-Item:selected {
+	color: #ffffff;
+	/* background-color property is used on the server to compute system color with id
+		 SWT.COLOR_LIST_SELECTION (see bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=434191) */
+	background-color: #00589f;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+
+List-Item:selected:unfocused {
+	color: #ffffff;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #b5b5b5 ),
+		to( #818181 )
+	);
+}
+
+List-Item:even {
+	background-color: #f0f0f0;
+}
+
+List-Item:even:hover {
+	color: #4a4a4a;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #ebebeb ),
+		to( #d5d5d5 )
+	);
+}
+
+List-Item:even:selected {
+	color: #ffffff;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+
+List-Item:even:selected:unfocused {
+	color: #ffffff;
+	color: white;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #b5b5b5 ),
+		to( #818181 )
+	);
+}
+
+List-GridLine {
+	color: transparent;
+}
+
+/* Menu default theme */
+
+Menu {
+	padding: 2px 0px;
+	color: #0059a5;
+	background-color: #f9f9f9;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f4f4f4 ),
+		to( #ffffff )
+	);
+	border: 1px solid #a0b3ca;
+	border-radius: 2px;
+	box-shadow: 0 0 4px #ababab;
+	opacity: 1;
+	animation: none;
+}
+
+MenuItem {
+	color: #4a4a4a;
+	background-color: transparent;
+	background-image: none;
+	opacity: 1;
+	text-shadow: none;
+	padding: 2px 4px;
+}
+
+MenuItem[SEPARATOR] {
+	padding: 0px 3px;
+}
+
+MenuItem:hover {
+	color: #ffffff;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+
+MenuItem:pressed {
+	color: #ffffff;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #416693 ),
+		to( #5882b5 )
+	);
+}
+MenuItem:disabled {
+	color: #bdbdbd;
+	text-shadow: none;
+}
+
+MenuItem:onMenuBar {
+	padding: 4px 6px;
+}
+
+MenuItem-CheckIcon {
+	background-image: url( theme/resources/menu/checkbox.gif );
+}
+
+MenuItem-RadioIcon {
+	background-image: url( theme/resources/menu/radiobutton.gif );
+}
+
+MenuItem-CascadeIcon {
+	background-image: url( theme/resources/menu/arrow.gif );
+}
+
+/* ProgressBar default theme */
+
+ProgressBar {
+	background-color: #ffffff;
+	background-image: url( theme/resources/progressbar/progressbar-background.png );
+	border: 1px solid #bdbdbd;
+	border-radius: 2px;
+}
+
+ProgressBar-Indicator {
+	background-color: #00589f;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+	opacity: 1;
+}
+
+ProgressBar-Indicator:paused {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #818181 ),
+		to( #b5b5b5 )
+	);
+}
+
+ProgressBar-Indicator:error {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #bb1d1d ),
+		to( #fc0000 )
+	);
+}
+
+/* Shell default theme */
+
+Shell {
+	animation: none;
+	border: none;
+	border-radius: 2px;
+	background-color: #ffffff;
+	background-image: none;
+	padding: 0px;
+	opacity: 1;
+	box-shadow: none;
+}
+
+Shell[TITLE], Shell[BORDER] {
+	background-color: #ffffff;
+	border: 1px solid #6e6e6e;
+	border-radius: 5px 5px 0px 0px;
+	box-shadow: 0 0 4px #ababab;
+}
+
+Shell[BORDER]:inactive, Shell[TITLE]:inactive {
+	border: 1px solid #bdbdbd;
+	box-shadow: none;
+}
+
+Shell:maximized, Shell:maximized:inactive {
+	border: none;
+	box-shadow: none;
+	border-radius: 0px 0px 0px 0px;
+}
+
+Shell-DisplayOverlay {
+	animation: fadeIn 200ms linear, fadeOut 400ms ease-out;
+	background-image: none;
+	background-color: #808080;
+	opacity: 0.2;
+}
+
+/* Shell titlebar */
+
+Shell-Titlebar {
+	background-color: #0080c0;
+	background-gradient-color: #0080c0;
+	color: #ffffff;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #416693 ), to( #5882b5 )
+	);
+	padding: 2px 5px 2px;
+	margin: 0px;
+	height: 22px;
+	border: none;
+	border-radius: 1px 1px 0px 0px;
+	text-shadow: none;
+}
+
+Shell-Titlebar:inactive {
+	background-color: #7996a5;
+	background-gradient-color: #7996a5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #818181 ), to( #b5b5b5 )
+	);
+}
+
+/* Shell buttons */
+
+/* Minimize button */
+
+Shell-MinButton {
+	background-image: url( theme/resources/window/shell-min.png );
+	margin: 0px 6px 0px 0px;
+}
+
+Shell-MinButton:hover {
+	background-image: url( theme/resources/window/shell-min-hover.png );
+}
+
+Shell-MinButton:inactive {
+	background-image: url( theme/resources/window/shell-min.png );
+	margin: 0px 6px 0px 0px;
+}
+
+Shell-MinButton:inactive:hover {
+	background-image: url( theme/resources/window/shell-min-hover.png );
+}
+
+/* Maximize button */
+
+Shell-MaxButton {
+	background-image: url( theme/resources/window/shell-max.png );
+	margin: 0px 6px 0px 0px;
+}
+
+Shell-MaxButton:hover {
+	background-image: url( theme/resources/window/shell-max-hover.png );
+}
+
+Shell-MaxButton:inactive {
+	background-image: url( theme/resources/window/shell-max.png );
+	margin: 0px 6px 0px 0px;
+}
+
+Shell-MaxButton:inactive:hover {
+	background-image: url( theme/resources/window/shell-max-hover.png );
+}
+
+/* Restore button */
+
+Shell-MaxButton:maximized {
+	background-image: url( theme/resources/window/shell-restore.png );
+}
+
+Shell-MaxButton:maximized:hover {
+	background-image: url( theme/resources/window/shell-restore-hover.png );
+}
+
+Shell-MaxButton:maximized:inactive {
+	background-image: url( theme/resources/window/shell-restore.png );
+}
+
+Shell-MaxButton:maximized:inactive:hover {
+	background-image: url( theme/resources/window/shell-restore-hover.png );
+}
+
+/* Close button */
+
+Shell-CloseButton {
+	background-image: url( theme/resources/window/shell-close.png );
+	margin: 0px 5px 0px 0px;
+}
+
+Shell-CloseButton:hover {
+	background-image: url( theme/resources/window/shell-close-hover.png );
+}
+
+Shell-CloseButton:inactive {
+	background-image: url( theme/resources/window/shell-close.png );
+	margin: 0px 5px 0px 0px;
+}
+
+Shell-CloseButton:inactive:hover {
+	background-image: url( theme/resources/window/shell-close-hover.png );
+}
+
+/* Spinner default theme */
+
+Spinner {
+	border: none;
+	border-radius: 0 2px 2px 0;
+	color: #4a4a4a;
+	background-color: #ffffff;
+	background-image: none;
+	text-shadow: none;
+	box-shadow: none;
+}
+
+Spinner[BORDER] {
+	border: 1px solid #aaaaaa;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: inset 0 0 3px #bdbdbd;
+}
+
+Spinner[BORDER]:focused {
+	border: 1px solid #4f7cb1;
+	box-shadow: 0 0 5px #4f7cb1;
+}
+
+Spinner:disabled,
+Spinner[BORDER]:disabled {
+	box-shadow: none;
+}
+
+Spinner-Field {
+	padding: 2px 3px;
+}
+
+Spinner-UpButton {
+	background-color: #efefef;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #efefef )
+	);
+	width: 18px;
+	border: none;
+	border-left: 1px solid #bdbdbd;
+	border-radius: 0px 2px 0px 0px;
+	cursor: default;
+}
+
+Spinner-UpButton:disabled {
+	background-image: none;
+	background-color: transparent;
+}
+
+Spinner-UpButton-Icon {
+	background-image: url( theme/resources/spinner/up.png );
+}
+
+Spinner-UpButton-Icon:hover {
+	background-image: url( theme/resources/spinner/up-hover.png );
+}
+
+Spinner-DownButton {
+	background-color: #efefef;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #efefef ),
+		to( #e4e4e4 )
+	);
+	width: 18px;
+	border: none;
+	border-left: 1px solid #bdbdbd;
+	border-radius: 0px 0px 2px 0px;
+	cursor: default;
+}
+
+Spinner-DownButton:disabled {
+	background-image: none;
+	background-color: transparent;
+}
+
+Spinner-DownButton-Icon {
+	background-image: url( theme/resources/spinner/down.png );
+}
+
+Spinner-DownButton-Icon:hover {
+	background-image: url( theme/resources/spinner/down-hover.png );
+}
+
+/* TabFolder default theme */
+
+TabFolder {
+	font: 12px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+	border: none;
+}
+
+TabFolder[BORDER] {
+	border: 1px solid #bdbdbd;
+}
+
+TabFolder-ContentContainer {
+	border: 1px solid #bdbdbd;
+}
+
+TabItem {
+	color: #4a4a4a;
+	background-color: #ffffff;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	background-repeat: repeat;
+	background-position: left top;
+	border-top-color: #5882b5;
+	border-bottom-color: #5882b5;
+	text-shadow: 0 1px 0 #ffffff;
+	padding : 2px 6px 2px 5px;
+	margin: 6px 1px 1px 0px;
+	border: 1px solid #bdbdbd;
+	border-bottom: none;
+}
+
+TabItem:bottom {
+	margin: 1px 1px 6px 0px;
+	border: 1px solid #bdbdbd;
+	border-top: none;
+}
+
+TabItem:selected {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #d5d5d5 ),
+		to( #eaeaea )
+	);
+	margin: 3px -1px 0px -2px;
+	border: 1px solid #bdbdbd;
+	border-top: 3px solid #5882b5;
+	border-bottom: none;
+}
+
+TabItem:bottom:selected {
+	margin: 0px -1px 3px -2px;
+	border: 1px solid #bdbdbd;
+	border-top: none;
+	border-bottom: 3px solid #5882b5;
+}
+
+TabItem:selected:first {
+	margin: 3px -1px 0px 0px;
+}
+
+TabItem:bottom:selected:first {
+	margin: 0px -1px 3px 0px;
+}
+
+/* Table default theme */
+
+Table {
+	background-color: #ffffff;
+	background-image: none;
+	color: #4a4a4a;
+	border: none;
+}
+
+Table[BORDER] {
+	border: 1px solid #bdbdbd;
+}
+
+TableColumn {
+	background-color: #f0f0f0;
+	padding: 1px 2px;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	color: inherit;
+	border-bottom: 1px solid #bdbdbd;
+	text-shadow: 0 1px 0 #ffffff;
+	text-overflow: ellipsis;
+}
+
+TableColumn:hover {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #e4e4e4 ),
+		to( #f9f9f9 )
+	);
+}
+
+TableItem,
+TableItem:linesvisible:even:rowtemplate {
+	background-color: transparent;
+	color: inherit;
+	text-decoration: none;
+	text-shadow: none;
+	background-image: none;
+	text-overflow: ellipsis;
+}
+
+TableItem:linesvisible:even {
+	background-color: #f0f0f0;
+	color: inherit;
+}
+
+Table-RowOverlay {
+	background-color: transparent;
+	color: inherit;
+	background-image: none;
+}
+
+Table-RowOverlay:hover {
+	color: #4a4a4a;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #ebebeb ),
+		to( #d5d5d5 )
+	);
+}
+
+Table-RowOverlay:selected {
+	color: #ffffff;
+	background-color: #5882b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+
+Table-RowOverlay:selected:unfocused {
+	color: #ffffff;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #b5b5b5 ),
+		to( #818181 )
+	);
+}
+
+Table-RowOverlay:linesvisible:even:hover {
+	color: #4a4a4a;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #ebebeb ),
+		to( #d5d5d5 )
+	);
+}
+
+Table-RowOverlay:linesvisible:even:selected {
+	color: #ffffff;
+	background-color: #5882b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+
+Table-RowOverlay:linesvisible:even:selected:unfocused {
+	background-color: #959595;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #b5b5b5 ),
+		to( #818181 )
+	);
+	color: #ffffff;
+}
+
+TableColumn-SortIndicator {
+	background-image: none;
+}
+
+TableColumn-SortIndicator:up {
+	background-image: url( theme/resources/column/sort-indicator-up.png );
+}
+
+TableColumn-SortIndicator:down {
+	background-image: url( theme/resources/column/sort-indicator-down.png );
+}
+
+Table-Cell {
+	spacing: 3px;
+	padding: 4px 3px 3px 3px;
+}
+
+Table-GridLine,
+Table-GridLine:vertical:rowtemplate {
+	color: transparent;
+}
+
+Table-GridLine:vertical,
+Table-GridLine:header,
+Table-GridLine:horizontal:rowtemplate {
+	color: #dedede;
+}
+
+
+Table-Checkbox {
+	/*
+	For backward compatibility we have to keep the width property.
+	Deprecated, use "margin" instead.
+	*/
+	width: 21px;
+	margin: 0px;
+	background-image: url( theme/resources/button/check-unselected.png );
+}
+
+Table-Checkbox:hover {
+	background-image: url( theme/resources/button/check-unselected-hover.png );
+}
+
+Table-Checkbox:checked {
+	background-image: url( theme/resources/button/check-selected.png );
+}
+
+Table-Checkbox:checked:hover {
+	background-image: url( theme/resources/button/check-selected-hover.png );
+}
+
+Table-Checkbox:checked:grayed {
+	background-image: url( theme/resources/button/check-grayed.png );
+}
+
+Table-Checkbox:checked:grayed:hover {
+	background-image: url( theme/resources/button/check-grayed-hover.png );
+}
+
+/* Text default theme */
+
+Text {
+	border: none;
+	border-radius: 0;
+	padding: 2px 3px;
+	color: #4a4a4a;
+	background-repeat: repeat;
+	background-position: left top;
+	background-color: #ffffff;
+	background-image: none;
+	text-shadow: none;
+	box-shadow: none;
+}
+
+
+
+Text[MULTI] {
+	/*
+	 * padding currently has no effect because of bug 253644
+ 	* [TODO] remove comment if bug fixed
+ 	*/
+	padding: 0px 0px 0px 3px;
+}
+
+Text[BORDER],
+Text[MULTI][BORDER] {
+	border: 1px solid #aaaaaa;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: inset 0 0 3px #bdbdbd;
+}
+
+Text[BORDER]:focused,
+Text[MULTI][BORDER]:focused {
+	border: 1px solid #4f7cb1;
+	box-shadow: 0 0 5px #4f7cb1;
+}
+
+Text[BORDER]:disabled,
+Text[MULTI][BORDER]:disabled,
+Text[BORDER]:read-only,
+Text[MULTI][BORDER]:read-only {
+	box-shadow: none;
+}
+
+Text-Message {
+	color: #a7a6aa;
+	text-shadow: none;
+}
+
+Text-Search-Icon {
+	background-image: url( theme/resources/text/find.png );
+	spacing: 3px;
+}
+
+Text-Cancel-Icon {
+	background-image: url( theme/resources/text/clear.gif );
+	spacing: 3px;
+}
+
+/* ToolBar default theme */
+
+ToolBar {
+	color: #4a4a4a;
+	padding: 0px;
+	spacing: 0px;
+	background-color: #fff;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	border: 1px solid #bdbdbd;
+	border-radius: 3px;
+	opacity: 1;
+}
+
+ToolBar[VERTICAL] {
+	background-image: gradient(
+		linear, left top, right top,
+		from( #e9e9e9 ),
+		color-stop( 45%, #f9f9f9 ),
+		color-stop( 55%, #f9f9f9 ),
+		to( #e9e9e9 )
+	);
+}
+
+ToolBar[FLAT] {
+	border: none;
+	background-image: none;
+	spacing: 4px;
+}
+
+ToolBar[FLAT][BORDER] {
+	border: 1px solid #bdbdbd;
+	border-radius: 2px;
+	padding: 3px 3px 6px 3px;
+}
+
+ToolItem {
+	color: inherit;
+	background-color: transparent;
+	background-image: none;
+	border-radius: 0px;
+	padding: 2px 3px;
+	spacing: 4px;
+	opacity: 1;
+	animation: none;
+	text-shadow: 1px 1px 1px #ccc;
+	border-left: 1px solid transparent;
+	border-right: 1px solid transparent;
+	border-top: none;
+	border-bottom: none;
+}
+
+ToolItem[FLAT] {
+	border: 1px solid transparent;
+}
+
+ToolItem[VERTICAL] {
+	border-left: none;
+	border-right: none;
+	border-top: 1px solid transparent;
+	border-bottom: 1px solid transparent;
+}
+
+ToolItem:first {
+	border-radius: 3px 0px 0px 3px;
+}
+
+ToolItem:last {
+	border-radius: 0px 3px 3px 0px;
+}
+
+ToolItem[VERTICAL]:first {
+	border-radius: 3px 3px 0px 0px;
+}
+
+ToolItem[VERTICAL]:last {
+	border-radius: 0px 0px 3px 3px;
+}
+
+ToolItem:first:last, ToolItem[VERTICAL]:first:last {
+	border-radius: 3px 3px 3px 3px;
+}
+
+ToolItem:hover,
+ToolItem:pressed,
+ToolItem:selected {
+	border-left: 1px solid #bdbdbd;
+	border-right: 1px solid #bdbdbd;
+}
+
+ToolItem[VERTICAL]:hover,
+ToolItem[VERTICAL]:pressed,
+ToolItem[VERTICAL]:selected {
+	border-left: none;
+	border-right: none;
+	border-top: 1px solid #bdbdbd;
+	border-bottom: 1px solid #bdbdbd;
+}
+
+ToolItem:hover {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #eaeaea ),
+		to( #d5d5d5 )
+	);
+}
+
+ToolItem:pressed {
+	padding: 9px 8px 7px 8px;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #d5d5d5 ),
+		to( #eaeaea )
+	);
+}
+
+ToolItem:selected {
+	padding: 9px 8px 7px 8px;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #e4e4e4 ),
+		to( #f9f9f9 )
+	);
+}
+
+ToolItem[VERTICAL]:hover {
+	background-image: gradient(
+		linear, left top, right top,
+		from( #d9d9d9 ),
+		color-stop( 45%, #e9e9e9 ),
+		color-stop( 55%, #e9e9e9 ),
+		to( #d9d9d9 )
+	);}
+
+ToolItem[VERTICAL]:pressed, ToolItem[VERTICAL]:selected {
+	background-image: gradient(
+		linear, left top, right top,
+		from( #e9e9e9 ),
+		color-stop( 45%, #dadada ),
+		color-stop( 55%, #dadada ),
+		to( #e9e9e9 )
+	);
+}
+
+ToolItem:first,
+ToolItem:first:hover,
+ToolItem:first:selected,
+ToolItem:first:pressed {
+	border-left: none;
+}
+
+ToolItem:last,
+ToolItem:last:hover,
+ToolItem:last:selected,
+ToolItem:last:pressed {
+	border-right: none;
+}
+
+ToolItem[VERTICAL]:first,
+ToolItem[VERTICAL]:first:hover,
+ToolItem[VERTICAL]:first:selected,
+ToolItem[VERTICAL]:first:pressed {
+	border-top: none;
+}
+
+ToolItem[VERTICAL]:last,
+ToolItem[VERTICAL]:last:hover,
+ToolItem[VERTICAL]:last:selected,
+ToolItem[VERTICAL]:last:pressed {
+	border-bottom: none;
+}
+
+ToolItem[FLAT],
+ToolItem[FLAT]:first,
+ToolItem[FLAT]:last {
+	border: 1px solid transparent;
+	border-radius: 3px 3px 3px 3px;
+}
+
+ToolItem[FLAT]:hover,
+ToolItem[FLAT]:pressed,
+ToolItem[FLAT]:selected,
+ToolItem[FLAT]:first:hover,
+ToolItem[FLAT]:first:pressed,
+ToolItem[FLAT]:first:selected,
+ToolItem[FLAT]:last:hover,
+ToolItem[FLAT]:last:pressed,
+ToolItem[FLAT]:last:selected {
+	border: 1px solid #bdbdbd;
+	border-radius: 3px 3px 3px 3px;
+}
+
+ToolItem[FLAT]:hover,
+ToolItem[FLAT]:first:hover,
+ToolItem[FLAT]:last:hover {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+}
+
+ToolItem[FLAT]:pressed, ToolItem[FLAT]:first:pressed, ToolItem[FLAT]:last:pressed {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #d5d5d5 ),
+		to( #eaeaea )
+	);
+}
+
+ToolItem[FLAT]:selected {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #e4e4e4 ),
+		to( #f9f9f9 )
+	);
+}
+
+ToolItem-DropDownIcon {
+	background-image: url( theme/resources/toolbar/down.png );
+	border: none;
+}
+
+ToolItem-Separator {
+	width: 4px;
+}
+
+/* Tree default theme */
+
+Tree {
+	background-color: #ffffff;
+	border: none;
+	color: #4a4a4a;
+}
+
+Tree[BORDER] {
+	border: 1px solid #bdbdbd;
+}
+
+TreeItem,
+TreeItem:linesvisible:even:rowtemplate {
+	background-color: transparent;
+	color: inherit;
+	text-decoration: none;
+	text-shadow: none;
+	background-image: none;
+	text-overflow: ellipsis;
+}
+
+TreeItem:linesvisible:even {
+	background-color: #f0f0f0;
+	color: inherit;
+	border: none;
+}
+
+Tree-RowOverlay {
+	background-color: transparent;
+	color: inherit;
+	background-image: none;
+}
+
+Tree-RowOverlay:hover {
+	color: #4a4a4a;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #ebebeb ),
+		to( #d5d5d5 )
+	);
+}
+
+Tree-RowOverlay:selected {
+	color: #ffffff;
+	background-color: #5882b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+
+Tree-RowOverlay:selected:unfocused {
+	color: #ffffff;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #b5b5b5 ),
+		to( #818181 )
+	);
+}
+
+Tree-RowOverlay:linesvisible:even:hover {
+	color: #4a4a4a;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #ebebeb ),
+		to( #d5d5d5 )
+	);
+}
+
+Tree-RowOverlay:linesvisible:even:selected {
+	color: #ffffff;
+	background-color: #5882b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+
+Tree-RowOverlay:linesvisible:even:selected:unfocused {
+	color: #ffffff;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #b5b5b5 ),
+		to( #818181 )
+	);
+}
+
+TreeColumn {
+
+	color: inherit;
+	background-color: #f0f0f0;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	padding: 1px 2px;
+	border-bottom: 1px solid #bdbdbd;
+	text-shadow: none;
+	text-overflow: ellipsis;
+}
+
+TreeColumn:hover {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #e4e4e4 ),
+		to( #f9f9f9 )
+	);
+}
+
+TreeColumn-SortIndicator {
+	background-image: none;
+}
+
+TreeColumn-SortIndicator:up {
+	background-image: url( theme/resources/column/sort-indicator-up.png );
+}
+
+TreeColumn-SortIndicator:down {
+	background-image: url( theme/resources/column/sort-indicator-down.png );
+}
+
+Tree-Cell {
+	spacing: 3px;
+	padding: 2px 3px 3px 3px;
+}
+
+Tree-GridLine,
+Tree-GridLine:vertical:rowtemplate {
+	color: transparent;
+}
+
+Tree-GridLine:vertical,
+Tree-GridLine:header,
+Tree-GridLine:horizontal:rowtemplate {
+	color: #d0d0d0;
+}
+
+Tree-Checkbox {
+	margin: 0px 2px 0px 0px;
+	background-image: url( theme/resources/button/check-unselected.png );
+}
+
+Tree-Checkbox:hover {
+	background-image: url( theme/resources/button/check-unselected-hover.png );
+}
+
+Tree-Checkbox:checked {
+	background-image: url( theme/resources/button/check-selected.png );
+}
+
+Tree-Checkbox:checked:hover {
+	background-image: url( theme/resources/button/check-selected-hover.png );
+}
+
+Tree-Checkbox:checked:grayed {
+	background-image: url( theme/resources/button/check-grayed.png );
+}
+
+Tree-Checkbox:checked:grayed:hover {
+	background-image: url( theme/resources/button/check-grayed-hover.png );
+}
+
+Tree-Indent {
+	width: 16px;
+	background-image: none;
+}
+
+Tree-Indent:collapsed {
+	background-image: url( theme/resources/tree/tree-collapsed.png );
+}
+
+Tree-Indent:collapsed:hover {
+	background-image: url( theme/resources/tree/tree-collapsed-hover.png );
+}
+
+Tree-Indent:expanded {
+	background-image: url( theme/resources/tree/tree-expanded.png );
+}
+
+Tree-Indent:expanded:hover {
+	background-image: url( theme/resources/tree/tree-expanded-hover.png );
+}
+
+Tree-Indent:line {
+	background-image: none;
+}
+
+Tree-Indent:first {
+	background-image: none;
+}
+
+Tree-Indent:first:collapsed {
+	background-image: url( theme/resources/tree/tree-collapsed.png );
+}
+
+Tree-Indent:first:collapsed:hover {
+	background-image: url( theme/resources/tree/tree-collapsed-hover.png );
+}
+
+Tree-Indent:first:expanded {
+	background-image: url( theme/resources/tree/tree-expanded.png );
+}
+
+Tree-Indent:first:expanded:hover {
+	background-image: url( theme/resources/tree/tree-expanded-hover.png );
+}
+
+Tree-Indent:last {
+	background-image: none;
+}
+
+Tree-Indent:last:collapsed {
+	background-image: url( theme/resources/tree/tree-collapsed.png );
+}
+
+Tree-Indent:last:collapsed:hover {
+	background-image: url( theme/resources/tree/tree-collapsed-hover.png );
+}
+
+Tree-Indent:last:expanded {
+	background-image: url( theme/resources/tree/tree-expanded.png );
+}
+
+Tree-Indent:last:expanded:hover {
+	background-image: url( theme/resources/tree/tree-expanded-hover.png );
+}
+
+Tree-Indent:first:last {
+	background-image: none;
+}
+
+Tree-Indent:first:last:collapsed {
+	background-image: url( theme/resources/tree/tree-collapsed.png );
+}
+
+Tree-Indent:first:last:collapsed:hover {
+	background-image: url( theme/resources/tree/tree-collapsed-hover.png );
+}
+
+Tree-Indent:first:last:expanded {
+	background-image: url( theme/resources/tree/tree-expanded.png );
+}
+
+Tree-Indent:first:last:expanded:hover {
+	background-image: url( theme/resources/tree/tree-expanded-hover.png );
+}
+
+/* Scale default theme */
+
+Scale {
+	background-color: white;
+	background-image: none;
+	border-radius: 0;
+}
+
+Scale-Thumb {
+	background-color: #e5e5e5;
+	background-image: none;
+	border: 1px solid #a4a4a4;
+	border-radius: 2px 2px 2px 2px;
+}
+
+Scale-Thumb:focused {
+	border: 1px solid #4f7cb1;
+}
+
+/* DateTime default theme */
+
+DateTime {
+	font: 11px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+	border: none;
+	border-radius: 0 2px 2px 0;
+	color: #464a4e;
+	background-color: #ffffff;
+	background-image: none;
+	text-shadow: none;
+	box-shadow: none;
+}
+
+DateTime-Field {
+	color: inherit;
+	background-color: transparent;
+	padding: 2px 3px;
+	text-shadow: none;
+}
+
+DateTime[BORDER] {
+	border: 1px solid #aaaaaa;
+	border-radius: 0 2px 2px 0;
+	box-shadow: inset 0 0 3px #bdbdbd;
+}
+
+DateTime[BORDER]:focused {
+	border: 1px solid #4f7cb1;
+	box-shadow: 0 0 5px #4f7cb1;
+}
+
+DateTime[BORDER]:disabled {
+	box-shadow: none;
+}
+
+DateTime-Calendar-Day {
+	border: none;
+	color: inherit;
+	background-color: transparent;
+	text-shadow: none;
+}
+
+DateTime-Calendar-Day:today {
+	border: 1px solid #ff0000;
+}
+
+DateTime-Field:selected,
+DateTime-Calendar-Day:selected {
+	background-color: #5882b5;
+	color: #ffffff;
+}
+
+DateTime-Calendar-Day:selected:hover {
+	background-color: #5882b5;
+	color: #ffffff;
+}
+
+DateTime-Calendar-Day:selected:unfocused {
+	background-color: #c0c0c0;
+}
+
+DateTime-Calendar-Day:otherMonth {
+	background-color: transparent;
+	color: #808080;
+}
+
+DateTime-Calendar-Day:hover {
+	background-color: #b5b5b5;
+}
+
+DateTime-Calendar-Navbar {
+	border: none;
+	border-radius: 0;
+	background-color: #00569c;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #416693 ), to( #5882b5 )
+	);
+	color: white;
+	font: 11px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+	text-shadow: none;
+}
+
+DateTime-Calendar-PreviousMonthButton {
+	background-image: url( theme/resources/calendar/lastMonth.png );
+	cursor: default;
+}
+
+DateTime-Calendar-PreviousMonthButton:hover {
+	background-image: url( theme/resources/calendar/lastMonth-hover.png );
+}
+
+DateTime-Calendar-NextMonthButton {
+	background-image: url( theme/resources/calendar/nextMonth.png );
+	cursor: default;
+}
+
+DateTime-Calendar-NextMonthButton:hover {
+	background-image: url( theme/resources/calendar/nextMonth-hover.png );
+}
+
+DateTime-Calendar-PreviousYearButton {
+	background-image: url( theme/resources/calendar/lastYear.png );
+	cursor: default;
+}
+
+DateTime-Calendar-PreviousYearButton:hover {
+	background-image: url( theme/resources/calendar/lastYear-hover.png );
+}
+
+DateTime-Calendar-NextYearButton {
+	background-image: url( theme/resources/calendar/nextYear.png );
+	cursor: default;
+}
+
+DateTime-Calendar-NextYearButton:hover {
+	background-image: url( theme/resources/calendar/nextYear-hover.png );
+}
+
+DateTime-UpButton {
+	background-color: #f0f0f0;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #efefef )
+	);
+	width: 18px;
+	border: none;
+	border-left: 1px solid #bdbdbd;
+	border-radius: 0px 2px 0px 0px;
+	cursor: default;
+}
+
+DateTime-UpButton-Icon {
+	background-image: url( theme/resources/datetime/up.png );
+}
+
+DateTime-UpButton-Icon:hover {
+	background-image: url( theme/resources/datetime/up-hover.png );
+}
+
+DateTime-DownButton {
+	background-color: #f0f0f0;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #efefef ),
+		to( #e4e4e4 )
+	);
+	width: 18px;
+	border: none;
+	border-left: 1px solid #bdbdbd;
+	border-radius: 0px 0px 2px 0px;
+	cursor: default;
+}
+
+DateTime-DownButton-Icon {
+	background-image: url( theme/resources/datetime/down.png );
+}
+
+DateTime-DownButton-Icon:hover {
+	background-image: url( theme/resources/datetime/down-hover.png );
+}
+
+DateTime-DropDownButton {
+	cursor: default;
+	background-color: #f0f0f0;
+	border: none;
+	border-left: 1px solid #bdbdbd;
+	border-radius: 0px 2px 2px 0px;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	width: 18px;
+}
+
+DateTime-DropDownButton:disabled,
+DateTime-UpButton:disabled,
+DateTime-DownButton:disabled {
+	background-image: none;
+	background-color: transparent;
+}
+
+DateTime-DropDownButton-Icon {
+	background-image: url( theme/resources/spinner/down.png );
+}
+
+DateTime-DropDownButton-Icon:hover {
+	background-image: url( theme/resources/spinner/down-hover.png );
+}
+
+DateTime-DropDownCalendar {
+	border: 1px #a7a6aa;
+}
+
+/* ExpandBar default theme */
+
+ExpandBar {
+	color: #4a4a4a;
+	background-color: white;
+}
+
+ExpandBar[BORDER] {
+	border: 1px solid #bdbdbd;
+	border-radius: 2px;
+}
+
+ExpandItem {
+	border: 1px solid #bdbdbd;
+	border-radius: 2px;
+}
+
+ExpandItem-Header {
+	border: none;
+	border-radius: 0;
+	cursor: pointer;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	text-shadow: none;
+}
+
+ExpandItem-Header:disabled {
+	cursor: default;
+}
+
+ExpandItem-Button {
+	background-image: url( theme/resources/expanditem/expanditem-expand.png );
+}
+
+ExpandItem-Button:hover {
+	background-image: url( theme/resources/expanditem/expanditem-expand-hover.png );
+}
+
+ExpandItem-Button:expanded {
+	background-image: url( theme/resources/expanditem/expanditem-collapse.png );
+}
+
+ExpandItem-Button:expanded:hover {
+	background-image: url( theme/resources/expanditem/expanditem-collapse-hover.png );
+}
+
+/* Sash default theme */
+
+Sash {
+	border: none;
+	background-image: none;
+	background-color: transparent;
+}
+
+Sash[BORDER] {
+	border: 1px solid #bdbdbd;
+}
+
+Sash:hover {
+	background-color: #e5e5e5;
+}
+
+Sash-Handle:horizontal {
+	background-image: url( theme/resources/sash/sash-handle-horizontal.png );
+}
+
+Sash-Handle:vertical {
+	background-image: url( theme/resources/sash/sash-handle-vertical.png );
+}
+
+/* Slider default theme */
+
+Slider {
+	border: none;
+	background-color: #f0f0f0;
+	border-radius: 0;
+}
+
+/* Thumb */
+
+Slider-Thumb[HORIZONTAL],
+Slider-Thumb[VERTICAL] {
+	background-color: #e4e4e4;
+	background-image: url( theme/resources/slider/slider-background.png );
+	border: 1px solid #bdbdbd;
+	border-radius: 2px;
+}
+
+/* Buttons */
+
+Slider-UpButton,
+Slider-DownButton {
+	background-color: #e4e4e4;
+	border: 1px solid #bdbdbd;
+	cursor: default;
+	padding: 0;
+}
+
+Slider-UpButton[HORIZONTAL],
+Slider-DownButton[HORIZONTAL] {
+	background-image: none;
+}
+
+Slider-UpButton[VERTICAL],
+Slider-DownButton[VERTICAL] {
+	background-image: none;
+}
+
+Slider-UpButton[HORIZONTAL]:pressed,
+Slider-DownButton[HORIZONTAL]:pressed {
+	background-image: none;
+}
+
+Slider-UpButton[VERTICAL]:pressed,
+Slider-DownButton[VERTICAL]:pressed {
+	background-image: none;
+}
+
+/* Rounded Borders */
+
+Slider-UpButton[HORIZONTAL] {
+	border-radius: 0px 2px 2px 0px;
+}
+
+Slider-UpButton[VERTICAL] {
+	border-radius: 0px 0px 2px 2px;
+}
+
+Slider-DownButton[HORIZONTAL] {
+	border-radius: 2px 0px 0px 2px;
+}
+
+Slider-DownButton[VERTICAL] {
+	border-radius: 2px 2px 0px 0px;
+}
+
+/* Button Icons */
+
+Slider-UpButton-Icon[HORIZONTAL] {
+	background-image: url( theme/resources/slider/right.png );
+}
+
+Slider-UpButton-Icon[VERTICAL] {
+	background-image: url( theme/resources/slider/down.png );
+}
+
+Slider-DownButton-Icon[HORIZONTAL] {
+	background-image: url( theme/resources/slider/left.png );
+}
+
+Slider-DownButton-Icon[VERTICAL] {
+	background-image: url( theme/resources/slider/up.png );
+}
+
+/* ToolTip default theme */
+
+ToolTip {
+	cursor: default;
+	border: 1px solid #a0b3ca;
+	border-radius: 5px 5px 5px 5px;
+	padding: 3px 3px 3px 3px;
+	opacity: 1;
+	color: #4a4a4a;
+	background-image : gradient(
+		linear, left top, left bottom,
+		from( #f8f9ff ),
+		to( #f4f4f4 )
+	);
+	background-color: #fcfcfc;
+	animation: fadeIn 200ms linear, fadeOut 600ms ease-out;
+	box-shadow: 0 0 4px #adadad;
+}
+
+ToolTip-Image[ICON_ERROR] {
+	background-image: url( theme/resources/tooltip/error.png );
+}
+
+ToolTip-Image[ICON_INFORMATION] {
+	background-image: url( theme/resources/tooltip/information.png );
+}
+
+ToolTip-Image[ICON_WARNING] {
+	background-image: url( theme/resources/tooltip/warning.png );
+}
+
+ToolTip-Text {
+	color: #4a4a4a;
+	font: bold 14px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+	text-shadow: none;
+}
+
+ToolTip-Message {
+	color: #4a4a4a;
+	text-shadow: none;
+}
+
+/* CCombo default theme */
+
+CCombo {
+	font: 11px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+	color: #464a4e;
+	background-color: #fcfcfc;
+	background-image: none;
+	border: none;
+	border-radius: 0;
+	text-shadow: none;
+	box-shadow: none;
+}
+
+CCombo[BORDER] {
+	border: 1px solid #aaaaaa;
+	border-radius: 2px;
+	box-shadow: inset 0 0 3px #bdbdbd;
+}
+
+CCombo[BORDER]:focused {
+	border: 1px solid #4f7cb1;
+	box-shadow: 0 0 5px #4f7cb1;
+}
+
+CCombo:disabled,
+CCombo[BORDER]:disabled {
+	box-shadow: none;
+}
+
+CCombo-Button {
+	cursor: default;
+	background-color: #efefef;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	border: none;
+	border-left: 1px solid #bdbdbd;
+	border-radius: 0px 2px 2px 0px;
+	width: 18px;
+}
+
+CCombo-Button:disabled {
+	background-image: none;
+	background-color: transparent;
+}
+
+CCombo-Button-Icon {
+	background-image: url( theme/resources/ccombo/down.png );
+}
+
+CCombo-Button-Icon:hover {
+	background-image: url( theme/resources/ccombo/down-hover.png );
+}
+
+CCombo-List {
+	border: 1px solid #4f7cb1;
+	border-radius: 0px 0px 2px 2px;
+	box-shadow: 0 0 5px #4f7cb1;
+}
+
+CCombo-List-Item {
+	color: inherit;
+	background-color: transparent;
+	background-image: none;
+	text-decoration: none;
+	text-shadow: none;
+	padding: 6px 10px 6px 10px;
+}
+
+CCombo-List-Item:hover, CCombo-List-Item:even:hover {
+	color: #4a4a4a;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #ebebeb ),
+		to( #d5d5d5 )
+	);
+}
+
+CCombo-List-Item:selected, CCombo-List-Item:even:selected {
+	color: #ffffff;
+	background-color: #5882b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+
+CCombo-Field {
+	padding: 2px 3px;
+}
+
+CCombo-FocusIndicator {
+	background-color: transparent;
+	border: none;
+	margin: 0;
+	opacity: 0;
+}
+
+/* CLabel default theme */
+
+CLabel {
+	color: #4a4a4a;
+	background-color: #ffffff;
+	background-image: none;
+	background-repeat: repeat;
+	background-position: left top;
+	border: none;
+	padding: 3px;
+	spacing: 5px;
+	cursor: default;
+	opacity: 1;
+	text-shadow: none;
+}
+
+CLabel[BORDER] {
+	border: 1px solid #bdbdbd;
+	border-radius: 2px;
+}
+
+/* Browser default theme */
+
+Browser {
+	border: none;
+}
+
+Browser[BORDER] {
+	border: 1px solid #a4a4a4;
+}
+
+/* ScrollBar default theme */
+
+ScrollBar {
+	background-color: transparent;
+	background-image: none;
+	border: none;
+	border-radius: 0;
+	width: 15px;
+	opacity: 0;
+}
+
+ScrollBar-Thumb {
+	background-color: #cccccc;
+	border: 1px solid #bdbdbd;
+	border-radius: 15px;
+	background-image: none;
+	min-height: 20px;
+}
+
+
+ScrollBar-UpButton,
+ScrollBar-DownButton {
+	background-color: transparent;
+	border: none;
+	border-radius: 0;
+	cursor: default;
+	background-image: none;
+}
+
+ScrollBar:active {
+	opacity: 0.8;
+}
+
+
+
+/* FileUpload */
+
+FileUpload {
+	border: 1px solid #bdbdbd;
+	border-radius: 3px;
+	padding: 2px 5px;
+	spacing: 2px;
+	color: #4a4a4a;
+	background-color: #ffffff;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #f9f9f9 ),
+		to( #e4e4e4 )
+	);
+	background-repeat: repeat;
+	background-position: left top;
+	cursor: pointer;
+	animation: none;
+	text-shadow: 0 1px 0 #ffffff;
+	opacity: 1;
+}
+
+FileUpload:disabled {
+	cursor: default;
+	color: #d2d2d2;
+	background-image: none;
+	background-color: #fafafa;
+	border: 1px solid #d2d2d2;
+}
+
+FileUpload:hover {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #eaeaea ),
+		to( #d5d5d5 )
+	);
+}
+
+FileUpload:pressed {
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #d5d5d5 ),
+		to( #eaeaea )
+	);
+}
+
+FileUpload-FocusIndicator {
+	background-color: transparent;
+	border: 1px dotted #b8b8b8;
+	margin: 2px;
+	padding: 0px;
+	opacity: 1;
+}
+
+SystemMessage-DisplayOverlay {
+	background-color: rgba( 128, 128, 128, 0.2 );
+	background-image: url( theme/resources/display/loading.gif );
+}
+
+/* JFace specific theming */
+
+Shell.jface_contentProposalPopup, Shell.jface_infoPopupDialog {
+	border: 1px solid #bdbdbd;
+	padding: 0;
+	box-shadow: 0 0 4px #ababab;
+}
+
+Widget-Badge {
+	background-color: #dd0000;
+	border: none;
+	border-radius: 10px;
+	font: 10px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+	color: #ffffff;
+}
+
+
+Widget-ToolTip-Pointer {
+	background-image: none;
+}
+
+Widget-ToolTip-Pointer:up {
+	background-image : url( theme/resources/arrows/tooltip-up.png );
+}
+
+Widget-ToolTip-Pointer:down {
+	background-image : url( theme/resources/arrows/tooltip-down.png );
+}
+
+Widget-ToolTip-Pointer:left {
+	background-image : url( theme/resources/arrows/tooltip-left.png );
+}
+
+Widget-ToolTip-Pointer:right {
+	background-image : url( theme/resources/arrows/tooltip-right.png );
+}
+
+Combo-List-Item {
+	color: inherit;
+	background-color: transparent;
+	background-image: none;
+	text-decoration: none;
+	text-shadow: none;
+	padding: 6px 10px 6px 10px;
+}
+
+Combo-List-Item:hover, Combo-List-Item:even:hover	{
+	color: #4a4a4a;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #ebebeb ),
+		to( #d5d5d5 )
+	);
+}
+
+Combo-List-Item:selected, Combo-List-Item:even:selected {
+	color: #ffffff;
+	background-color: #5882b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+
+
+/* DropDown default theme */
+
+DropDown {
+	border: 1px solid #4f7cb1;
+	border-radius: 0;
+	box-shadow: 0 0 5px #4f7cb1;
+}
+
+DropDown-Item {
+	color: inherit;
+	background-color: transparent;
+	background-image: none;
+	text-decoration: none;
+	text-shadow: none;
+	padding: 6px 10px 6px 10px;
+}
+
+DropDown-Item:hover {
+	color: #4a4a4a;
+	background-color: #b5b5b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #ebebeb ),
+		to( #d5d5d5 )
+	);
+}
+
+DropDown-Item:selected {
+	color: #ffffff;
+	background-color: #5882b5;
+	background-image: gradient(
+		linear, left top, left bottom,
+		from( #5882b5 ),
+		to( #416693 )
+	);
+}
+

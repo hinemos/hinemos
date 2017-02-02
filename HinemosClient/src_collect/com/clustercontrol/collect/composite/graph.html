@@ -1,0 +1,674 @@
+<!--
+Copyright (C) 2016 NTT DATA Corporation
+
+This program is free software; you can redistribute it and/or
+Modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation, version 2.
+
+This program is distributed in the hope that it will be
+useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.  See the GNU General Public License for more details.
+
+性能[グラフ]のグラフを描画するhtmlです。
+-->
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+	<title>Graph</title>
+	<meta http-equiv="X-UA-Compatible" content="chrome=1, IE=edge">
+	<script type="text/javascript" src="./d3.v3.5.js"></script>
+	<script type="text/javascript" src="./rgbcolor.js"></script>
+	<script type="text/javascript" src="./StackBlur.js"></script>
+	<script type="text/javascript" src="./canvg.js"></script>
+	<script type="text/javascript" src="./canvas-toBlob.js"></script>
+	<script type="text/javascript" src="./FileSaver.js"></script>
+	<script type="text/javascript" src="./jszip.js"></script>
+	<script type="text/javascript" src="./graph_constant.js"></script>
+	<script type="text/javascript" src="./common.js"></script>
+	<script type="text/javascript" src="./graph.js"></script>
+	<script type="text/javascript" src="./dragrect.js"></script>
+	<script type="text/javascript" src="./pie.js"></script>
+	<script type="text/javascript" src="./scatter.js"></script>
+	<script type="text/javascript" src="./stackbar.js"></script>
+	<link type="text/css" rel="stylesheet" href="./style.css"></link>
+	<script type="text/javascript">
+
+	// グラフのズームイン・アウトをします
+	function zoomGraph(type) {
+		var zoom_value = document.getElementById("zoom_span").innerHTML;
+		zoom_value = zoom_value.split("%")[0];
+
+		if (zoom_value % HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL != 0 || document.getElementById("autofix").checked == true) {
+			// 自動調整がされている場合
+			document.getElementById("autofix").checked = false;
+			
+			if (type == "plus") {
+				var value = Math.ceil(zoom_value / HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL); // 切り上げ
+				var nextvalue = value * HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL;
+				if (zoom_value == nextvalue 
+						&& (nextvalue + HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL) < HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_MAX) {
+					value++;
+				}
+			} else if (type == "minus") {
+				var value = Math.floor(zoom_value / HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL); // 切り捨て
+				var nextvalue = value * HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL;
+				if (zoom_value == nextvalue 
+						&& (nextvalue - HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL) > HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_MIN) {
+					// 自動調整された値がINTERVALで割り切れる値だった場合、かつ、さらにマイナスしてもZOOM_MIN内の場合は-1する
+					value--;
+				}
+			}
+			zoom_value = value * HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL;
+		} else {
+			if (type == "plus") {
+				zoom_value = Number(zoom_value) + HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL;
+				if (zoom_value > HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_MAX) {
+					// MAXなのでサイズ変更なし・通知しない
+					return;
+				}
+			} else if (type == "minus") {
+				zoom_value = Number(zoom_value) - HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_INTERVAL;
+				if (zoom_value < HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_MIN) {
+					// MINなのでサイズ変更なし・通知しない
+					return;
+				}
+			}
+		}
+		
+		// firefoxの場合はstyle.zoomが効かない、IEとchromeはstyle.zoomが効く
+		if (checkBrowserKind("firefox")) {
+			document.getElementById('chart_block').style.MozTransform = "scale(" + zoom_value / 100 + ")";
+			document.getElementById('chart_block').style.MozTransformOrigin = "0 0";
+		} else {
+			document.getElementById("chart_block").style.zoom = zoom_value + "%";
+		}
+		
+		// 拡大パーセントを画面に表示
+		document.getElementById("zoom_span").innerHTML = zoom_value + "%";
+		// java側に、グラフの拡大レベルを通知
+		var param = {};
+		param.method_name = "noticeGraphZoom";
+		param.graphZoomSize = zoom_value + "%";
+		callJavaMethod(param);
+	}
+	
+	// グラフズームボタンの初期処理を行います
+	function initZoom(zoom_level, returnflg, width) {
+		var targetgraph = getTargetGraph();
+		if (targetgraph == null) {
+			// グラフ表示が無い場合はすべてを非表示にする
+			document.getElementById("zoom_block").style.visibility = "hidden";
+			return;
+		}
+		document.getElementById("zoom_block").style.visibility = "visible";
+		var target = document.getElementById("autofix");
+		var zoom_value = zoom_level;
+		if (returnflg == true) {
+			// 画面サイズで折り返す場合は、「自動調整」は無効にする
+			target.checked = false;
+			var targetdiv = document.getElementById("zoom_screen_auto");
+			if (document.getElementById("zoom_screen_auto").style.visibility == "visible" || targetdiv.style.visibility == "") {
+				document.getElementById("zoom_screen_auto").style.visibility = "hidden";
+			}
+		} else {
+			// 自動調整ボタンを活性にする
+			document.getElementById("autofix").disabled = false;
+			if (document.getElementById("zoom_screen_auto").style.visibility == "hidden") {
+				document.getElementById("zoom_screen_auto").style.visibility = "visible";
+			}
+		}
+		if (target.checked == true) {
+			// 自動調整が有効ならズームをやり直す
+			autoZoomGraph(width);
+			return;
+		}
+		document.getElementById("zoom_span").innerHTML = zoom_value;
+		document.getElementById("chart_block").style.zoom = zoom_value;
+	}
+	// 自動調整用init
+	function callAutoZoomGraph() {
+		// 自動調整ボタンを押下不可にする
+		document.getElementById("autofix").disabled = true;
+		var param = {};
+		param.method_name = "autoZoomGraph";
+		var result = callJavaMethod(param);
+		autoZoomGraph(Number(result));
+	}
+	// 自動調整用
+	function autoZoomGraph(screenwidth) {
+		var zoomlevel = "100%";
+		if (document.getElementById("zoom_screen_auto").style.visibility == "hidden") {
+			// 自動調整ボタンを押下可にする
+			document.getElementById("autofix").disabled = false;
+			return;
+		}
+		if (document.getElementById("autofix").checked == true) {
+			screenwidth = screenwidth - 16;
+			var chart = document.getElementById("chart_block");
+			var chart_child = chart.children;
+			var chartwidth = chart_child[0].style.width;
+			chartwidth = chartwidth.split("px")[0];
+
+			zoomlevel = Math.floor((screenwidth / chartwidth) * 100);
+			if (zoomlevel < HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_MIN) {
+				zoomlevel = HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_MIN;
+			} else if (zoomlevel > HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_MAX) {
+				zoomlevel = HINEMOS_COLLECT_CONST.CONST_GRAPH_SCREEN_ZOOM_MAX;
+			}
+			zoomlevel = zoomlevel + "%";
+		}
+		
+		if (checkBrowserKind("firefox")) {
+			// firefoxの場合
+			var firezoom = zoomlevel.split("%")[0];
+			document.getElementById('chart_block').style.MozTransform = "scale(" + firezoom / 100 + ")";
+			document.getElementById('chart_block').style.MozTransformOrigin = "0 0";
+		} else {
+			// firefox以外
+			document.getElementById("chart_block").style.zoom = zoomlevel;
+		}
+		
+		document.getElementById("zoom_span").innerHTML = zoomlevel;
+		// java側に、グラフの拡大レベルを通知
+		var param = {};
+		param.method_name = "noticeGraphZoom";
+		param.graphZoomSize = zoomlevel;
+		callJavaMethod(param);
+		// 自動調整ボタンを押下可にする
+		document.getElementById("autofix").disabled = false;
+	}
+	
+	// 自動更新用
+	var interval_ret = null;
+	function callAutoDrawGraph() {
+		// 自動更新ボタンを非活性にする
+		document.getElementById("autodraw").disabled = true;
+		if (document.getElementById("autodraw").checked == true) {
+		// 押下と同時にとりに行く
+		setAutoDrawGraph();
+		
+		// HINEMOS_COLLECT_CONST.CONST_UPDATE_INTERVAL[msec]間隔で最新を取得
+			interval_ret = setInterval(setAutoDrawGraph, HINEMOS_COLLECT_CONST.CONST_UPDATE_INTERVAL);
+		} else {
+			if (interval_ret != null) {
+				clearInterval(interval_ret);
+				interval_ret = null;
+			}
+		}
+		// 自動更新ボタンを活性にする
+		setTimeout(function() {
+			document.getElementById("autodraw").disabled = false;
+		}, 1000); // 1s後に活性にする
+	}
+	// ズームボタンがあるエリアを非表示にし、自動更新をキャンセルします
+	// 適用押下してエラーが発生した場合にグラフを非表示にする際に使用します
+	function removeZoomArea() {
+		if (interval_ret != null) {
+			clearInterval(interval_ret);
+			interval_ret = null;
+		}
+		document.getElementById("autodraw").checked = false;
+		document.getElementById("zoom_block").style.visibility = "hidden";
+	}
+	
+	// 現在表示しているグラフの配列を返します
+	// 何も表示していない場合はnullを返します
+	function getTargetGraph() {
+		var targetgraph = null;
+		// 現在表示しているグラフを判別
+		// グラフの種別を変える場合は必ずdelDivしていること
+		if (typeof(graph) != "undefined" && Object.keys(graph).length != 0) {
+			targetgraph = graph;
+		} else if (typeof(piegraph) != "undefined" && Object.keys(piegraph).length != 0) {
+			targetgraph = piegraph;
+		} else if (typeof(scattergraph) != "undefined" && Object.keys(scattergraph).length != 0) {
+			targetgraph = scattergraph;
+		} else if (typeof(bargraph) != "undefined" && Object.keys(bargraph).length != 0) {
+			targetgraph = bargraph;
+		}
+		return targetgraph;
+	}
+	
+	// 自動更新用callback
+	function setAutoDrawGraph() {
+		var self;
+		var xaxis_min = "";
+		var xaxis_max = "";
+		var param = {};
+		// 現在表示しているグラフを判別
+		var targetgraph = getTargetGraph();
+		if (targetgraph == null) {
+			// グラフ表示なしのため処理終了
+			return;
+		}
+
+		for (var keyValue in targetgraph) {
+			self = targetgraph[keyValue];
+			break;
+		}
+
+		xaxis_min = self.startdate;
+		xaxis_max = self.enddate;
+		param.method_name = "autodraw";
+		param.xaxis_min = xaxis_min;
+		param.xaxis_max = xaxis_max;
+		callJavaMethod(param);
+	}
+
+	
+	// 写真取得用
+	function capture(self) {
+		try {
+			if (self.graphtype == HINEMOS_COLLECT_CONST.CONST_PIEGRAPH) {
+				// 円グラフ
+				if (!getGraphConfig("data-rap-flg")) {
+					// RCPで円グラフの場合はキャプチャ機能を無効にする(Hinemosが落ちてしまうため)
+					return;
+				}
+			}
+
+			var fileName  = getCaptureFileName(self);
+			// 画像からpngボタンを削除する
+			self.vis.selectAll(".download_rect")
+			.attr("fill", HINEMOS_COLLECT_CONST.CONST_COLOR_HINEMOS_BASE);
+			var target = document.getElementById(self.innerid).innerHTML;
+			target = target.replace(/xmlns=\"http:\/\/www\.w3\.org\/2000\/svg\"/, '');
+			var canvas_parent = document.getElementById('canvasArea');
+			// グラフ別にcanvasを作成する
+			var canvas_child = document.createElement('canvas');
+			canvas_child.id = "canvas_";
+			canvas_parent.appendChild(canvas_child);
+			var canvas = document.getElementById('canvas_');
+			canvg('canvas_', target);
+			// IEか他ブラウザかの判定
+			if(window.navigator.msSaveBlob) {
+				// IEの場合
+				window.navigator.msSaveBlob(canvas.msToBlob(), fileName + ".png");
+			} else {
+				// canvas-toBlob.js
+				canvas.toBlob(function(blob) {
+					saveAs(blob, fileName + ".png");
+				}, "image/png");
+			}
+		} catch (e) {
+			var param = {};
+			param.method_name = "javascript_error";
+			param.exception = e;
+			callJavaMethod(param);
+		} finally {
+			// pngボタンを復元する
+			self.vis.selectAll(".download_rect")
+			.attr("fill", HINEMOS_COLLECT_CONST.CONST_COLOR_WHITE);
+			var parentDiv = document.getElementById("canvasArea");
+			for (var i =parentDiv.childNodes.length-1; i>=0; i--) {
+				parentDiv.removeChild(parentDiv.childNodes[i]);
+			}
+
+		}
+		return;
+	}
+	// 一括写真取得用
+	function captureAll() {
+		try {
+			var zipName;
+			var blobarr = [];
+			var targetgraph = null;
+			// 現在表示しているグラフを判別
+			// グラフの種別を変える場合は必ずdelDivしていること
+			if (typeof(graph) != "undefined" && Object.keys(graph).length != 0) {
+				targetgraph = graph;
+				zipName = "Graph_";
+			} else if (typeof(piegraph) != "undefined" && Object.keys(piegraph).length != 0) {
+				if (!getGraphConfig("data-rap-flg")) {
+					// RCPで円グラフの場合はキャプチャ機能を無効にする(Hinemosが落ちてしまうため)
+					return;
+				}
+				targetgraph = piegraph;
+				zipName = "PieGraph_";
+			} else if (typeof(scattergraph) != "undefined" && Object.keys(scattergraph).length != 0) {
+				targetgraph = scattergraph;
+				zipName = "ScatterGraph_";
+			} else if (typeof(bargraph) != "undefined" && Object.keys(bargraph).length != 0) {
+				targetgraph = bargraph;
+				zipName = "BarGraph_";
+			}
+			
+			if (Object.keys(targetgraph).length > 100) {
+				var mess = getGraphMessages("mess-captureerror");
+				alert(mess);
+				return;
+			}
+
+			var parseDate = d3.time.format('%Y%m%d%H%M%S');
+			var fileName = "";
+			var canvaslist = [];
+			for (key in targetgraph) {
+				var self = targetgraph[key];
+				fileName = getCaptureFileName(self);
+				// 画像からpngボタンを削除する
+				self.vis.selectAll(".download_rect")
+				.attr("fill", HINEMOS_COLLECT_CONST.CONST_COLOR_HINEMOS_BASE);
+				var target = document.getElementById(self.innerid).innerHTML;
+				target = target.replace(/xmlns=\"http:\/\/www\.w3\.org\/2000\/svg\"/, '');
+				var canvas_parent = document.getElementById('canvasArea');
+				// グラフ別にcanvasを作成する
+				var canvas_child = document.createElement('canvas');
+				canvas_child.id = "canvas_" + key;
+				canvas_parent.appendChild(canvas_child);
+				var canvas = document.getElementById('canvas_' + key);
+				canvg('canvas_'+key, target);
+				canvaslist[key] = canvas;
+				// IEか他ブラウザかの判定
+				if(window.navigator.msSaveBlob) {
+					// IEの場合
+					blobarr[fileName] = canvaslist[key].msToBlob();
+				} else {
+					// canvas-toBlob.js
+					var param = {};
+					param.canvas = canvaslist[key];
+					param.filename = fileName;
+					setTimeout(function(param) {
+						param.canvas.toBlob(
+							function(bblob2) {
+								blobarr[param.filename] = bblob2;
+							}, "image/png");
+					
+					}, 0, param);
+				}
+			}// end of loop
+			
+			// ie以外の場合
+			if (!window.navigator.msSaveBlob) {
+				setTimeout(function() {
+					var zip = new JSZip();
+					var nowDate = new Date();
+					var year = nowDate.getFullYear();
+					var month = nowDate.getMonth() + 1;
+					var day = nowDate.getDate();
+					var hour = nowDate.getHours();
+					var minute = nowDate.getMinutes();
+					var second = nowDate.getSeconds();
+					var millsecond = nowDate.getMilliseconds();
+					var dateStr = year + "-" + month + "-" + day + "T" + hour + ":" + minute + ":" + second + "." + millsecond;
+						for (key in blobarr) {
+							zip.file( key + ".png", blobarr[key], {date : new Date(dateStr)}); // <-- JSZip v3 accepts blob
+						}
+
+					content = zip.generateAsync({type:"blob"}).then(
+					function (blob) {
+						saveAs(blob, zipName + parseDate(new Date()) + ".zip"); // <-- trigger the download
+					}, function (e) {
+						// callback関数なので、throwが出来ないためここからjavaに通知する
+						var param = {};
+						param.method_name = "javascript_error";
+						param.exception = e;
+						callJavaMethod(param);
+					});
+					
+					var parentDiv = document.getElementById("canvasArea");
+					for (var i =parentDiv.childNodes.length-1; i>=0; i--) {
+						parentDiv.removeChild(parentDiv.childNodes[i]);
+					}
+				}, 1000);
+				// ie以外の場合はここで終了
+				return;
+			}
+
+			// ieの場合はこっち
+			var zip = new JSZip();
+			var nowDate = new Date();
+			var year = nowDate.getFullYear();
+			var month = nowDate.getMonth() + 1;
+			var day = nowDate.getDate();
+			var hour = nowDate.getHours();
+			var minute = nowDate.getMinutes();
+			var second = nowDate.getSeconds();
+			var millsecond = nowDate.getMilliseconds();
+			var dateStr = year + "-" + month + "-" + day + "T" + hour + ":" + minute + ":" + second + "." + millsecond;
+			for (key in blobarr) {
+				zip.file( key + ".png", blobarr[key], {date : new Date(dateStr)}); // <-- JSZip v3 accepts blob
+			}
+
+			content = zip.generateAsync({type:"blob"}).then(
+			function (blob) {
+				saveAs(blob, zipName + parseDate(new Date()) + ".zip"); // <-- trigger the download
+			}, function (e) {
+				// callback関数なので、throwが出来ないためここからjavaに通知する
+				var param = {};
+				param.method_name = "javascript_error";
+				param.exception = e;
+				callJavaMethod(param);
+			});
+		} catch (e) {
+			var param = {};
+			param.method_name = "javascript_error";
+			param.exception = e;
+			callJavaMethod(param);
+		} finally {
+			// pngボタンを復元する
+			for (key in targetgraph) {
+				var self = targetgraph[key];
+				self.vis.selectAll(".download_rect")
+				.attr("fill", HINEMOS_COLLECT_CONST.CONST_COLOR_WHITE);
+			}
+		}
+		return;
+	}
+
+	// キャプチャの名前を返します
+	// 個別・一括共通使用関数です
+	//
+	// 以下の形式(散布図以外)
+	//   [左ラベル名]_[上ラベル名]_[グラフ表示開始時刻]_[グラフ表示終了時刻]
+	// 散布図の場合の形式
+	//   [左ラベル名]_[下ラベル名]_[上ラベル名]_[グラフ表示開始時刻]_[グラフ表示終了時刻]
+	function getCaptureFileName(self) {
+		var fileName = "";
+		try {
+			var graphKind = "";
+			var fileName = "";
+			var itemName = self.ylabel;
+			var itemName2 = "";
+			var xaxis_min = "";
+			var xaxis_max = "";
+			var parseDate = d3.time.format('%Y%m%d%H%M%S');
+			
+			if (self.graphtype == HINEMOS_COLLECT_CONST.CONST_PIEGRAPH) {
+				// 円グラフ
+				if (!getGraphConfig("data-rap-flg")) {
+					// RCPで円グラフの場合はキャプチャ機能を無効にする(Hinemosが落ちてしまうため)
+					return;
+				}
+				xaxis_min = parseDate(new Date(Number(self.startdate)));
+				xaxis_max = parseDate(new Date(Number(self.enddate)));
+				graphKind = "pie_";
+			} else if (self.graphtype == HINEMOS_COLLECT_CONST.CONST_LINESTACKGRAPH) {
+				// 線グラフと積み上げ
+				xaxis_min = parseDate(self.x.domain()[0]);
+				xaxis_max = parseDate(self.x.domain()[1]);
+				if (getGraphConfig("data-stack-flg")) {
+					graphKind = "stack_";
+				} else {
+					graphKind = "line_";
+				}
+			} else if (self.graphtype == HINEMOS_COLLECT_CONST.CONST_BARSTACKGRAPH) {
+				// 棒グラフ(線グラフと同じだと、正しい選択時間が取得できない)
+				xaxis_min = parseDate(new Date(Number(self.startdate)));
+				xaxis_max = parseDate(new Date(Number(self.enddate)));
+				graphKind = "bar_";
+			} else {
+				// 散布図
+				xaxis_min = parseDate(new Date(Number(self.startdate)));
+				xaxis_max = parseDate(new Date(Number(self.enddate)));
+				itemName2 = self.xlabel + "_";
+				graphKind = "scatter_";
+			}
+			
+			// 集約フラグをチェック
+			if (getGraphConfig("data-total-flg") && !getGraphConfig("data-stack-flg")) {
+				graphKind += "summarized_";
+			}
+
+			var title = self.title;
+			if (!getGraphConfig("data-total-flg")) {
+				// 単品表示の場合はグラフのタイトルを作り直す
+				title = self.facilityid + "(" + self.managername + ")";
+			}
+			fileName = graphKind + itemName + "_" + itemName2 + title + "_" + xaxis_min + "_" + xaxis_max;
+			// [/]があるとフォルダができてしまうため置換する
+			fileName = fileName.replace(/\u002f/g, "");
+		} catch (e) {
+			throw e;
+		}
+		return fileName;
+	}
+	</script>
+	
+	<style type="text/css">
+
+	.chart {
+		display: inline-block;
+	}
+	.tooltip{
+		position: absolute;
+		z-index: 10;
+		visibility: hidden;
+		padding: 0 10px;
+		border: 1px solid #000000;
+		border-radius: 3px;
+		background-color: #333333;
+		color: #ffffff;
+		opacity: 0.9;
+		text-align : center;
+	}
+	.chartblock {
+		margin: 0px;
+	}
+	.zoom_button {
+		width: 30px;
+		height: 30px;
+		background-color: #ffffff;
+		border-radius: 50%;
+		font-size:10pt;
+		font-weight: bold;
+		text-align: center;
+		line-height: 30px;
+		outline: none;
+
+		cursor: pointer;
+		color: #000000;
+		border: #cccccc solid 1px;
+	}
+	.zoom_button:hover {
+		background-color: #E2EDF9;
+	}
+	.zoom_button:active {
+		background: #000066;
+		color: #ffffff;
+	}
+
+	.zoom_text {
+		margin: 0 10px;
+		text-align: center;
+		border : 1px solid gray;
+		font-size : 12px;
+		padding : 8px;
+		width : 40px;
+		background-color: #ffffff;
+	}
+	.zoom_block {
+		display : inline-block;
+	}
+	.graph_background_block {
+	}
+	 #zoom_screen_auto, 
+	 #graph_interval_auto {
+		margin: 0 10px;
+	}
+	 #capture_all_save {
+		margin-left: 200px;
+	}
+	dl{
+		width : 100%;
+		text-align: left;
+		font-size: 8pt;
+	}
+
+	dt{
+		margin-bottom : 10px;
+		padding-left : 10px;
+
+		border-bottom-width : 1px;
+		border-bottom-style : solid;
+		border-bottom-color : #DDDED3;
+
+		border-left-width : 7px;
+		border-left-style : solid;
+		border-left-color : #DDDED3;
+
+	}
+
+	dd{
+		margin-bottom : 10px;
+		margin-left: 25px;
+
+		border-bottom-width : 1px;
+		border-bottom-style : solid;
+		border-bottom-color : #DDDED3;
+
+		border-left-width : 7px;
+		border-left-style : solid;
+		border-left-color : #DDDED3;
+
+		padding-left : 10px;
+		padding-right : 10px;
+	}
+	h3.piechart {
+		text-align: left;
+		font-size: 8pt;
+		margin-bottom : 10px;
+		padding-left : 10px;
+
+		border-bottom-width : 1px;
+		border-bottom-style : solid;
+
+		border-left-width : 7px;
+		border-left-style : solid;
+		font-weight:normal;
+	}
+	input#bulkpng {
+		-moz-border-radius: 15px;
+		-webkit-border-radius: 15px;
+		border-radius: 15px;
+		font-size: 10pt;
+		font-family: Meiryo, メイリオ;
+		color : #386fae;
+		border-color : #386fae;
+	}
+	</style>
+</head>
+<body>
+	<div id="zoom_block" style="visibility:hidden;">
+		<a class="zoom_button zoom_block" onclick="zoomGraph('minus')">-</a>
+		<div class="zoom_text zoom_block" id="zoom_span">100%</div>
+		<a class="zoom_button zoom_block" onclick="zoomGraph('plus')">+</a>
+		<div id="zoom_screen_auto" class="zoom_block">
+			<input type="checkbox" name="zoom_screen" class="zoom_screen" onclick="callAutoZoomGraph()" id="autofix"><label for="autofix" class="checklabel" id="autoadjust">自動調整</label>
+		</div>
+		<div id="graph_interval_auto" class="zoom_block">
+			<input type="checkbox" name="zoom_screen" class="zoom_screen" onclick="callAutoDrawGraph()" id="autodraw"><label for="autodraw" class="checklabel" id="autoupdate">自動更新</label>
+		</div>
+		<div id="capture_all_save" class="zoom_block">
+			<input type="button" class="all_save_button" onclick="captureAll()" id="bulkpng" value="PNG画像ファイルを一括で保存" />
+		</div>
+	</div>
+	<div id="chart_block" class="chartblock"></div>
+	<div id="tooltip" class="tooltip tooltip_mouse"></div>
+	<div id="canvasArea" style="display:none">
+	</div>
+	<div id="graph_config"></div>
+	<div id="graph_messages"></div>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	<named-query name="InfraManagementInfoEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraManagementInfo a
+				ORDER BY a.managementId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="InfraManagementInfoEntity.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraManagementInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.managementId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="InfraManagementInfoEntity.findByFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraManagementInfo a
+				WHERE a.facilityId = :facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="InfraCheckResultEntity.findByManagementId">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraCheckResult a
+				WHERE a.id.managementId = :managementId
+				ORDER BY a.id.nodeId, a.id.moduleId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="InfraCheckResultEntity.findByModuleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraCheckResult a
+				WHERE a.id.managementId = :managementId AND a.id.moduleId = :moduleId
+				ORDER BY a.id.nodeId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="InfraFileEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraFileInfo a
+				ORDER BY a.fileId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="FileTransferModuleInfoEntity.findByFileId">
+		<query>
+			<![CDATA[
+				SELECT a FROM FileTransferModuleInfo a
+				WHERE a.fileId = :fileId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="InfraModuleInfo.findByManagementId">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraModuleInfo a
+				WHERE a.id.managementId = :managementId
+				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

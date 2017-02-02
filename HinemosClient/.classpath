@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="src_accesscontrol"/>
+	<classpathentry kind="src" path="src_approval"/>
+	<classpathentry kind="src" path="src_calendar"/>
+	<classpathentry kind="src" path="src_collect"/>
+	<classpathentry kind="src" path="src_collectmaster"/>
+	<classpathentry kind="src" path="src_custom"/>
+	<classpathentry kind="src" path="src_customtrap"/>
+	<classpathentry kind="src" path="src_hinemosagent"/>
+	<classpathentry kind="src" path="src_http"/>
+	<classpathentry kind="src" path="src_hub"/>
+	<classpathentry kind="src" path="src_infra"/>
+	<classpathentry kind="src" path="src_jmx"/>
+	<classpathentry kind="src" path="src_jobmanagement"/>
+	<classpathentry kind="src" path="src_logfile"/>
+	<classpathentry kind="src" path="src_maintenance"/>
+	<classpathentry kind="src" path="src_monitor"/>
+	<classpathentry kind="src" path="src_notify"/>
+	<classpathentry kind="src" path="src_performance"/>
+	<classpathentry kind="src" path="src_ping"/>
+	<classpathentry kind="src" path="src_port"/>
+	<classpathentry kind="src" path="src_process"/>
+	<classpathentry kind="src" path="src_repository"/>
+	<classpathentry kind="src" path="src_snmp"/>
+	<classpathentry kind="src" path="src_snmptrap"/>
+	<classpathentry kind="src" path="src_sql"/>
+	<classpathentry kind="src" path="src_startup"/>
+	<classpathentry kind="src" path="src_systemlog"/>
+	<classpathentry kind="src" path="src_winevent"/>
+	<classpathentry kind="src" path="src_winservice"/>
+	<classpathentry kind="src" path="src_client"/>
+	<classpathentry exported="true" kind="lib" path="lib/"/>
+	<classpathentry exported="true" kind="lib" path="lib/HinemosCommon.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/ClientWS.jar"/>
+	<classpathentry kind="lib" path="lib/commons-codec-1.10.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang3-3.4.jar"/>
+	<classpathentry kind="lib" path="lib/commons-fileupload-1.3.2.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.17.jar"/>
+	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins">
+		<accessrules>
+			<accessrule kind="accessible" pattern="org/eclipse/rap/rwt/internal/**"/>
+			<accessrule kind="accessible" pattern="org/eclipse/ui/internal/*"/>
+			<accessrule kind="accessible" pattern="org/eclipse/core/internal/expressions/util/*"/>
+			<accessrule kind="accessible" pattern="org/eclipse/compare/internal/core/patch/*"/>
+		</accessrules>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.rap.draw2d_0.1.0.201512120638.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.rap.draw2d.compatibility_0.1.0.201512120638.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

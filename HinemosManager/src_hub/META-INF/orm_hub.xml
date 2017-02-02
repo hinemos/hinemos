@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	<named-query name="MonitorInfo.findBylogFormatId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a
+				WHERE a.logFormatId = :logFormatId
+			]]>
+		</query>
+	</named-query>
+	<!-- LogFormat -->
+	<named-query name="LogFormat.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM LogFormat a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.logFormatId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="LogFormat.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM LogFormat a ORDER BY a.logFormatId
+			]]>
+		</query>
+	</named-query>
+	<!-- TransferInfo -->
+	<named-query name="TransferInfo.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM TransferInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.transferId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="TransferInfo.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM TransferInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.transferId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="TransferInfo.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM TransferInfo a ORDER BY a.transferId
+			]]>
+		</query>
+	</named-query>
+	<!-- CollectStringKeyInfo -->
+	<named-query name="CollectStringKeyInfo.findMaxId">
+		<query>
+			<![CDATA[
+				SELECT MAX(a.collectId) FROM CollectStringKeyInfo a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectStringKeyInfo.findId">
+		<query>
+			<![CDATA[
+				SELECT a.collectId FROM CollectStringKeyInfo a WHERE a.collectId = :collectId
+			]]>
+		</query>
+	</named-query>
+	<!-- CollectStringData -->
+	<named-query name="CollectStringData.findMaxDataId">
+		<query>
+			<![CDATA[
+				SELECT MAX(a.id.dataId) FROM CollectStringData a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectStringData.findMaxDataId2">
+		<query>
+			<![CDATA[
+				SELECT MAX(a.id.dataId) FROM CollectStringData a 
+			]]>
+		</query>
+	</named-query>
+	<!-- CollectStringData -->
+	<named-query name="CollectStringData.transfer">
+		<query>
+			<![CDATA[
+				SELECT DISTINCT a FROM CollectStringData a LEFT JOIN FETCH a.tagList
+				WHERE a.id.dataId > :prevlast AND a.id.dataId <= :last AND a.id.collectId IN :collectIds
+				ORDER BY a.id.dataId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectStringData.transfer.delay">
+		<query>
+			<![CDATA[
+				SELECT DISTINCT a FROM CollectStringData a LEFT JOIN FETCH a.tagList
+				WHERE a.id.dataId > :prevlast AND a.id.dataId <= :last AND (a.time + :delay) < :current AND a.id.collectId IN :collectIds
+				ORDER BY a.id.dataId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectStringKeyInfo.transfer">
+		<query>
+			<![CDATA[
+				SELECT k FROM CollectStringKeyInfo k
+				WHERE k.id.monitorId IN :monitorIds
+			]]>
+		</query>
+	</named-query>
+	<!-- CollectData -->
+	<named-query name="CollectData.transfer">
+		<query>
+			<![CDATA[
+				SELECT a
+				FROM CollectData a
+				WHERE a.position > :prevlast AND a.position <= :last AND a.id.collectorid IN :collectIds
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectData.transfer.delay">
+		<query>
+			<![CDATA[
+				SELECT a
+				FROM CollectData a
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.id.time + :delay) < :current AND a.id.collectorid IN :collectIds
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectKeyInfo.transfer">
+		<query>
+			<![CDATA[
+				SELECT k FROM CollectKeyInfo k
+				WHERE k.id.monitorId IN :monitorIds
+			]]>
+		</query>
+	</named-query>
+	<!-- EventLogEntity -->
+	<named-query name="EventLogEntity.transfer">
+		<query>
+			<![CDATA[
+				SELECT a FROM EventLogEntity a 
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.id.monitorId IN :monitorIds OR (:admin IS NOT NULL OR a.ownerRoleId = :ownerRoleId))
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="EventLogEntity.transfer.only_ownerrole">
+		<query>
+			<![CDATA[
+				SELECT a FROM EventLogEntity a 
+				WHERE a.position > :prevlast AND a.position <= :last AND (:admin IS NOT NULL OR a.ownerRoleId = :ownerRoleId)
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="EventLogEntity.transfer.delay">
+		<query>
+			<![CDATA[
+				SELECT a FROM EventLogEntity a 
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.generationDate + :delay) < :current AND  (a.id.monitorId IN :monitorIds OR (:admin IS NOT NULL OR a.ownerRoleId = :ownerRoleId))
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="EventLogEntity.transfer.delay.only_ownerrole">
+		<query>
+			<![CDATA[
+				SELECT a FROM EventLogEntity a 
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.generationDate + :delay) < :current AND (:admin IS NOT NULL OR a.ownerRoleId = :ownerRoleId)
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<!-- JobHistory -->
+	<named-query name="JobSessionEntity.transfer">
+		<query>
+			<![CDATA[
+ 				SELECT DISTINCT a FROM JobSessionEntity a LEFT JOIN FETCH a.jobSessionJobEntities AS b LEFT JOIN FETCH b.jobSessionNodeEntities LEFT JOIN FETCH b.jobInfoEntity
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.jobunitId IN :jobunitIds OR (b.id.jobunitId = '_ROOT_' AND b.id.jobId = 'TOP' AND (:admin IS NOT NULL OR b.ownerRoleId = :ownerRoleId)))
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionEntity.transfer.only_ownerrole">
+		<query>
+			<![CDATA[
+ 				SELECT DISTINCT a FROM JobSessionEntity a LEFT JOIN FETCH a.jobSessionJobEntities AS b LEFT JOIN FETCH b.jobSessionNodeEntities LEFT JOIN FETCH b.jobInfoEntity
+				WHERE a.position > :prevlast AND a.position <= :last AND b.id.jobunitId = '_ROOT_' AND b.id.jobId = 'TOP' AND (:admin IS NOT NULL OR b.ownerRoleId = :ownerRoleId)
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionEntity.transfer.delay">
+		<query>
+			<![CDATA[
+ 				SELECT DISTINCT a FROM JobSessionEntity a LEFT JOIN FETCH a.jobSessionJobEntities AS b LEFT JOIN FETCH b.jobSessionNodeEntities LEFT JOIN FETCH b.jobInfoEntity
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.scheduleDate + :delay) < :current AND (a.jobunitId IN :jobunitIds OR (b.id.jobunitId = '_ROOT_' AND b.id.jobId = 'TOP' AND (:admin IS NOT NULL OR b.ownerRoleId = :ownerRoleId)))
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionEntity.transfer.delay.only_ownerrole">
+		<query>
+			<![CDATA[
+ 				SELECT DISTINCT a FROM JobSessionEntity a LEFT JOIN FETCH a.jobSessionJobEntities AS b LEFT JOIN FETCH b.jobSessionNodeEntities LEFT JOIN FETCH b.jobInfoEntity
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.scheduleDate + :delay) < :current AND b.id.jobunitId = '_ROOT_' AND b.id.jobId = 'TOP' AND (:admin IS NOT NULL OR b.ownerRoleId = :ownerRoleId)
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

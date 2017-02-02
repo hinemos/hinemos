@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	<!-- StatusInfoEntity -->
+	<named-query name="StatusInfoEntity.findExpirationStatus">
+		<query>
+			<![CDATA[
+				SELECT a FROM StatusInfoEntity a
+				WHERE a.expirationDate <= :expirationDate
+				ORDER BY a.id.facilityId, a.id.monitorId, a.id.monitorDetailId, a.id.pluginId
+			]]>
+		</query>
+	</named-query>
+	<!-- MailTemplateInfoEntity -->
+	<named-query name="MailTemplateInfoEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM MailTemplateInfo a
+				ORDER BY a.mailTemplateId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MailTemplateInfoEntity.findAllOrderByMailTemplateId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MailTemplateInfo a
+				ORDER BY a.mailTemplateId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MailTemplateInfoEntity.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MailTemplateInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.mailTemplateId
+			]]>
+		</query>
+	</named-query>
+	<!-- NotifyRelationInfoEntity -->
+	<named-query name="NotifyRelationInfoEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyRelationInfo a
+				ORDER BY a.id.notifyGroupId, a.id.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyRelationInfoEntity.findAllWithoutJob">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyRelationInfo a WHERE NOT(a.id.notifyGroupId LIKE 'JOB_SES_%') AND NOT(a.id.notifyGroupId LIKE 'JOB_MST_%')
+				ORDER BY a.id.notifyGroupId, a.id.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyRelationInfoEntity.findByNotifyGroupId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyRelationInfo a
+				WHERE a.id.notifyGroupId = :notifyGroupId
+				ORDER BY a.id.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyRelationInfoEntity.findByNotifyId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyRelationInfo a
+				WHERE a.id.notifyId = :notifyId
+				ORDER BY a.id.notifyGroupId
+			]]>
+		</query>
+	</named-query>
+		<named-query name="NotifyRelationInfoEntity.deleteByNotifyGroupId">
+		<query>
+			<![CDATA[
+				DELETE FROM NotifyRelationInfo a
+				WHERE a.id.notifyGroupId like :notifyGroupId
+			]]>
+		</query>
+	</named-query>
+	<!-- NotifyInfoEntity -->
+	<named-query name="NotifyInfoEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyInfoEntity.findAllOrderByNotifyId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyInfoEntity.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+		<named-query name="NotifyInfoEntity.findByCalendarId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+				WHERE a.calendarId = :calendarId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<!-- NotifyHistoryEntity -->
+	<named-query name="NotifyHistoryEntity.findByNotifyId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyHistoryEntity a
+				WHERE a.id.notifyId = :notifyId
+				ORDER BY a.id.facilityId, a.id.pluginId, a.id.monitorId, a.id.notifyId, a.id.subKey
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyHistoryEntity.findByPluginIdAndMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyHistoryEntity a
+				WHERE a.id.pluginId = :pluginId
+				AND a.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyHistoryEntity.findByPluginIdAndMonitorIdAndFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyHistoryEntity a
+				WHERE a.id.pluginId = :pluginId
+				AND a.id.monitorId = :monitorId
+				AND a.id.facilityId = :facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyHistoryEntity.deleteAll">
+		<query>
+			<![CDATA[
+				DELETE FROM NotifyHistoryEntity a
+			]]>
+		</query>
+	</named-query>
+	<!-- MonitorStatusEntity -->
+	<named-query name="MonitorStatusEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorStatusEntity a
+				ORDER BY a.id.facilityId, a.id.pluginId, a.id.monitorId, a.id.subKey
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorStatusEntity.findByPluginIdAndMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorStatusEntity a
+				WHERE a.id.pluginId = :pluginId
+				AND a.id.monitorId = :monitorId
+				ORDER BY a.id.facilityId, a.id.pluginId, a.id.monitorId, a.id.subKey
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorStatusEntity.deleteAll">
+		<query>
+			<![CDATA[
+				DELETE FROM MonitorStatusEntity a
+			]]>
+		</query>
+	</named-query>
+	<!-- NotifyJobInfoEntity -->
+	<named-query name="NotifyJobInfoEntity.findByJobExecFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyJobInfo a
+				WHERE a.jobExecFacility = :facilityId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<!-- NotifyLogEscalateInfoEntity -->
+	<named-query name="NotifyLogEscalateInfoEntity.findByEscalateFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyLogEscalateInfo a
+				WHERE a.escalateFacility = :facilityId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<!--  NotifyInfraInfoEntity -->
+		<named-query name="NotifyInfraInfoEntity.findByInfraExecFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfraInfo a
+				WHERE a.infraExecFacility = :facilityId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+
+		<!-- StatusInfoEntity -->
+	<named-query name="StatusInfoEntity.findByPluginIdAndMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM StatusInfoEntity a
+				WHERE a.id.pluginId = :pluginId
+				AND a.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	<!-- NodeHostnameEntity -->
+	<named-query name="NodeHostnameEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeHostnameInfo a
+				ORDER BY a.id.facilityId, a.id.hostname
+			]]>
+		</query>
+	</named-query>
+	<!-- FacilityEntity -->
+	<named-query name="NodeEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeInfo a
+			]]>
+		</query>
+	</named-query>
+	<!-- FacilityEntity -->
+	<named-query name="FacilityEntity.findByFacilityType">
+		<query>
+			<![CDATA[
+				SELECT a FROM FacilityInfo a
+				WHERE a.facilityType = :facilityType
+				ORDER BY a.facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="FacilityEntity.findByIpAddressV4">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeInfo a
+				WHERE a.ipAddressV4 = :ipAddressV4
+				ORDER BY a.facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="FacilityEntity.findByIpAddressV6">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeInfo a
+				WHERE LOWER(a.ipAddressV6) = LOWER(:ipAddressV6)
+				ORDER BY a.facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="FacilityEntity.findByNodename">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeInfo a
+				WHERE LOWER(a.nodeName) = :nodeName
+				ORDER BY a.facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="FacilityEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM FacilityInfo a
+				ORDER BY a.facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="FacilityEntity.findRootByFacilityType">
+		<query>
+			<![CDATA[
+				SELECT a FROM FacilityInfo a
+				WHERE NOT EXISTS (SELECT b FROM FacilityRelationEntity b WHERE b.childFacilityId = a.facilityId)
+				AND a.facilityType = :facilityType
+				ORDER BY a.facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="FacilityEntity.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM FacilityInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.facilityId
+			]]>
+		</query>
+	</named-query>
+	<!-- FacilityRelationEntity -->
+	<named-query name="FacilityRelationEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM FacilityRelationEntity a
+				ORDER BY a.parentFacilityId, a.childFacilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="FacilityRelationEntity.findParent">
+		<query>
+			<![CDATA[
+				SELECT a FROM FacilityRelationEntity a
+				WHERE a.childFacilityId = :childFacilityId
+				ORDER BY a.parentFacilityId, a.childFacilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="FacilityRelationEntity.findChild">
+		<query>
+			<![CDATA[
+				SELECT a FROM FacilityRelationEntity a
+				WHERE a.parentFacilityId = :parentFacilityId
+				ORDER BY a.parentFacilityId, a.childFacilityId
+			]]>
+		</query>
+	</named-query>
+	<!-- CollectorPlatformMstEntity -->
+	<named-query name="CollectorPlatformMstEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectorPlatformMstEntity a
+				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+	<!-- CollectorSubPlatformMstEntity -->
+	<named-query name="CollectorSubPlatformMstEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectorSubPlatformMstEntity a
+				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

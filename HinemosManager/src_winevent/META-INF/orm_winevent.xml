@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+
+	<!-- MonitorWinEventLogInfoEntity -->
+	<named-query name="MonitorWinEventLogInfoEntity.findByMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorWinEventLogInfoEntity a WHERE a.id.monitorId = :monitorId
+				ORDER BY a.id.monitorId, a.id.logName
+			]]>
+		</query>
+	</named-query>
+
+	<named-query name="MonitorWinEventLogInfoEntity.deleteByMonitorId">
+		<query>
+			<![CDATA[
+				DELETE FROM MonitorWinEventLogInfoEntity a WHERE a.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- MonitorWinEventSourceInfoEntity -->
+	<named-query name="MonitorWinEventSourceInfoEntity.findByMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorWinEventSourceInfoEntity a WHERE a.id.monitorId = :monitorId
+				ORDER BY a.id.monitorId, a.id.source
+			]]>
+		</query>
+	</named-query>
+
+	<named-query name="MonitorWinEventSourceInfoEntity.deleteByMonitorId">
+		<query>
+			<![CDATA[
+				DELETE FROM MonitorWinEventSourceInfoEntity a WHERE a.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- MonitorWinEventIdInfoEntity -->
+	<named-query name="MonitorWinEventIdInfoEntity.findByMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorWinEventIdInfoEntity a WHERE a.id.monitorId = :monitorId
+				ORDER BY a.id.monitorId, a.id.eventId
+			]]>
+		</query>
+	</named-query>
+
+	<named-query name="MonitorWinEventIdInfoEntity.deleteByMonitorId">
+		<query>
+			<![CDATA[
+				DELETE FROM MonitorWinEventIdInfoEntity a WHERE a.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- MonitorWinEventCategoryInfoEntity -->
+	<named-query name="MonitorWinEventCategoryInfoEntity.findByMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorWinEventCategoryInfoEntity a WHERE a.id.monitorId = :monitorId
+				ORDER BY a.id.monitorId, a.id.category
+			]]>
+		</query>
+	</named-query>
+
+	<named-query name="MonitorWinEventCategoryInfoEntity.deleteByMonitorId">
+		<query>
+			<![CDATA[
+				DELETE FROM MonitorWinEventCategoryInfoEntity a WHERE a.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- MonitorWinEventKeywordInfoEntity -->
+	<named-query name="MonitorWinEventKeywordInfoEntity.findByMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorWinEventKeywordInfoEntity a WHERE a.id.monitorId = :monitorId
+				ORDER BY a.id.monitorId, a.id.keyword
+			]]>
+		</query>
+	</named-query>
+
+	<named-query name="MonitorWinEventKeywordInfoEntity.deleteByMonitorId">
+		<query>
+			<![CDATA[
+				DELETE FROM MonitorWinEventKeywordInfoEntity a WHERE a.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
+
+</entity-mappings>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"
+	    xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+	   xmlns:w="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd">
+  <s:Header>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+    <w:ResourceURI s:mustUnderstand="true"></w:ResourceURI>
+    <a:ReplyTo>
+	     <a:Address s:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:Address>
+    </a:ReplyTo>
+    <a:Action s:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2004/09/transfer/Put</a:Action>
+    <w:MaxEnvelopeSize s:mustUnderstand="true">153600</w:MaxEnvelopeSize>
+   <a:MessageID>uuid:00000000-0000-0000-0000-000000000001</a:MessageID>
+   <w:Locale xml:lang="en-US" s:mustUnderstand="false" />
+   <w:OperationTimeout>PT60.000S</w:OperationTimeout>
+   <w:SelectorSet>
+   </w:SelectorSet>
+  </s:Header>
+ <s:Body>
+ </s:Body>
+</s:Envelope>

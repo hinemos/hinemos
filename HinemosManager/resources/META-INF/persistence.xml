@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence
+	http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
+	<persistence-unit name="hinemos">
+		<!-- Entity Class config -->
+		<!-- jar-file -->
+		<!-- add jar-file here -->
+
+		<exclude-unlisted-classes>false</exclude-unlisted-classes>
+
+		<!-- Orm File -->
+		<!-- add mapping-file here -->
+
+		<shared-cache-mode>ENABLE_SELECTIVE</shared-cache-mode>
+		<properties>
+			<property name="eclipselink.deploy-on-startup" value="true" />
+			
+			<!-- Database Connection config -->
+			<property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+			<property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:24001/hinemos?loginTimeout=30&amp;socketTimeout=3600&amp;tcpKeepAlive=true&amp;ApplicationName=hinemos"/>
+			<property name="javax.persistence.jdbc.user" value="hinemos"/>
+			<property name="javax.persistence.jdbc.password" value="hinemos"/>
+			<property name="eclipselink.connection-pool.initial" value="0"/>
+			<property name="eclipselink.connection-pool.min" value="0"/>
+			<property name="eclipselink.connection-pool.max" value="160"/>
+			<property name="eclipselink.connection-pool.wait" value="30000"/>
+			<property name="eclipselink.id-validation" value="NULL"/>
+
+			<property name="eclipselink.jdbc.batch-writing" value="jdbc"/>
+  			<property name="eclipselink.jdbc.batch-writing.size" value="1000"/>
+
+			<!-- Entity Locking config -->
+			<property name="javax.persistence.lock.timeout" value="15000"/>
+
+			<!-- EclipseLink Weaving config -->
+			<property name="eclipselink.weaving" value="true"/>
+
+			<!-- Shared Cache config -->
+			<property name="eclipselink.cache.shared.default" value="true"/>
+			<property name="eclipselink.cache.type.default" value="Soft"/>
+			<property name="eclipselink.cache.size.default" value="1000"/>
+
+			<property name="eclipselink.cache.shared.JobInfoEntity" value="true"/>
+			<property name="eclipselink.cache.type.JobInfoEntity" value="Soft"/>
+			<property name="eclipselink.cache.size.JobInfoEntity" value="1000"/>
+
+			<property name="eclipselink.cache.shared.JobEndInfoEntity" value="true"/>
+			<property name="eclipselink.cache.type.JobEndInfoEntity" value="Soft"/>
+			<property name="eclipselink.cache.size.JobEndInfoEntity" value="1000"/>
+
+			<property name="eclipselink.cache.shared.JobParamInfoEntity" value="true"/>
+			<property name="eclipselink.cache.type.JobParamInfoEntity" value="Soft"/>
+			<property name="eclipselink.cache.size.JobParamInfoEntity" value="1000"/>
+
+			<property name="eclipselink.cache.shared.JobStartJobInfoEntity" value="true"/>
+			<property name="eclipselink.cache.type.JobStartJobInfoEntity" value="Soft"/>
+			<property name="eclipselink.cache.size.JobStartJobInfoEntity" value="1000"/>
+
+			<property name="eclipselink.cache.shared.JobSessionNodeEntity" value="true"/>
+			<property name="eclipselink.cache.type.JobSessionNodeEntity" value="Soft"/>
+			<property name="eclipselink.cache.size.JobSessionNodeEntity" value="1000"/>
+
+			<property name="eclipselink.cache.shared.JobSessionJobEntity" value="true"/>
+			<property name="eclipselink.cache.type.JobSessionJobEntity" value="Soft"/>
+			<property name="eclipselink.cache.size.JobSessionJobEntity" value="1000"/>
+
+			<property name="eclipselink.cache.shared.JobSessionEntity" value="true"/>
+			<property name="eclipselink.cache.type.JobSessionEntity" value="Soft"/>
+			<property name="eclipselink.cache.size.JobSessionEntity" value="1000"/>
+
+			<!-- PreparedStatement Cache config -->
+			<property name="eclipselink.jdbc.cache-statements" value="true"/>
+			<property name="eclipselink.jdbc.cache-statements.size" value="256"/>
+
+			<!-- Logging config -->
+			<property name="eclipselink.logging.level" value="WARNING"/>
+			<property name="eclipselink.logging.timestamp" value="false"/>
+			<property name="eclipselink.logging.thread" value="false"/>
+			<property name="eclipselink.logging.session" value="false"/>
+			<property name="eclipselink.logging.exceptions" value="false"/>
+			<property name="eclipselink.logging.connection" value="true"/>
+			<property name="eclipselink.logging.level.ejb_or_metadata" value="WARNING"/>
+			
+			<!-- Session config -->
+			<property name="eclipselink.session-event-listener" value="com.clustercontrol.commons.util.JpaSessionEventListener"/>
+		</properties>
+
+	</persistence-unit>
+</persistence>

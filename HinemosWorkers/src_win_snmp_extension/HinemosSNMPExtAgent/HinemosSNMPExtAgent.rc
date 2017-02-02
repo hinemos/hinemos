@@ -1,0 +1,31 @@
+#include <winver.h>
+
+VS_VERSION_INFO    VERSIONINFO 
+FILEVERSION        5,1,0,0
+PRODUCTVERSION     5,1,0,0
+FILEFLAGSMASK      VS_FFI_FILEFLAGSMASK 
+FILEFLAGS          0x00000000L
+FILEOS             VOS__WINDOWS32
+FILETYPE           VFT_APP
+FILESUBTYPE        VFT2_UNKNOWN
+BEGIN
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1252
+    END
+
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName",      "NTT DATA Corporation"
+            VALUE "FileDescription",  "Hinemos SNMP Extension Agent DLL"
+            VALUE "FileVersion",      "5,1,0,0\0"
+            VALUE "LegalCopyright",   "Copyright (C) 2015 NTT DATA Corporation\0"
+            VALUE "OriginalFilename", "HinemosSNMPExtAgent.dll\0"
+            VALUE "ProductName",      "HinemosSNMPExtAgent\0"
+            VALUE "ProductVersion",   "5,1,0,0\0"
+        END 
+    END
+END
+

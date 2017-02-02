@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	<named-query name="MonitorTrapValueInfoEntity.findByReceivedTrap">
+		<query>
+			<![CDATA[
+				SELECT DISTINCT m, v FROM MonitorInfo m JOIN TrapValueInfo v ON m.monitorId = v.id.monitorId
+				WHERE m.monitorTypeId = 'MON_SNMP_TRP' AND m.monitorFlg = 1 AND v.validFlg = 1
+				AND ((v.version = 0 AND v.id.genericId = :genericId AND v.id.specificId = :specificId AND (v.id.trapOid = :enterpriseId OR (v.id.genericId < :enterpriseSpecific AND v.id.trapOid = :genericTrapOid)))
+				OR (v.version = 1 AND v.id.trapOid IN :v2TrapOids))
+				ORDER BY m.monitorId, v.id.mib, v.id.trapOid, v.id.genericId, v.id.specificId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorTrapValueInfoEntity.findByReceivedTrapForMonitorJob">
+		<query>
+			<![CDATA[
+				SELECT DISTINCT m, v FROM MonitorInfo m JOIN TrapValueInfo v ON m.monitorId = v.id.monitorId
+				WHERE m.monitorTypeId = 'MON_SNMP_TRP' AND v.validFlg = 1
+				AND ((v.version = 0 AND v.id.genericId = :genericId AND v.id.specificId = :specificId AND (v.id.trapOid = :enterpriseId OR (v.id.genericId < :enterpriseSpecific AND v.id.trapOid = :genericTrapOid)))
+				OR (v.version = 1 AND v.id.trapOid IN :v2TrapOids))
+				ORDER BY m.monitorId, v.id.mib, v.id.trapOid, v.id.genericId, v.id.specificId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorInfo.findByNotifyofReceivingUnspecifiedFlg">
+		<query>
+			<![CDATA[
+				SELECT DISTINCT m FROM MonitorInfo m WHERE m.monitorTypeId = 'MON_SNMP_TRP' AND m.monitorFlg = TRUE AND m.trapCheckInfo.notifyofReceivingUnspecifiedFlg = TRUE
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorInfo.findByNotifyofReceivingUnspecifiedFlgForMonitorJob">
+		<query>
+			<![CDATA[
+				SELECT DISTINCT m FROM MonitorInfo m WHERE m.monitorTypeId = 'MON_SNMP_TRP' AND m.trapCheckInfo.notifyofReceivingUnspecifiedFlg = TRUE
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorInfo.findByCollectorFlg">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a
+				WHERE a.monitorTypeId = 'MON_SNMP_TRP' AND a.collectorFlg = TRUE AND a.monitorFlg = FALSE
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

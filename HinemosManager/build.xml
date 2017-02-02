@@ -1,0 +1,616 @@
+<?xml version="1.0"?>
+<!--
+   Hinemos (http://www.hinemos.info/)
+
+   Copyright (C) 2012 NTT DATA Corporation.
+ -->
+<project name="HinemosManager" default="all" basedir=".">
+
+	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<import file="../HinemosCommon/ant_config/build_common.xml"/>
+
+	<property name="project.name" value="HinemosManager" />
+	<property name="jar.file" value="${jar.HinemosManager}" />
+	<property name="model_jar.file" value="HinemosModel.jar" />
+	<property name="build.dir" value="build/manager" />
+	<property name="build.mdb.dir" value="build/HinemosMDB.jar" />
+	<property name="agentws.dir" value="build/agentws" />
+	<property name="clientws.dir" value="build/clientws" />
+	<property name="managercliws.dir" value="build/managercliws" />
+	<property name="wsdl.dir" value="build/wsdl" />
+	<property name="wsdlsrc.dir" value="build/wsdlsrc"/>
+	<property name="jar.include.properties" value="true" />
+	<property name="jar.include.xml" value="true" />
+	<property name="jpa.comment.start" value="&lt;!-- " />
+	<property name="jpa.comment.end" value=" --&gt;" />
+	<!-- Dependency -->
+	<target name="dependency" depends="check_dependency">
+		<fail unless="HinemosCommon.built" message="file not found. (HinemosCommon/${jar.HinemosCommon})" />
+	</target>
+
+	<!-- Classpath -->
+	<path id="id.compile.classpath.local">
+		<fileset dir="../">
+			<include name="HinemosCommon/${jar.dir}/${jar.HinemosCommon}" />
+		</fileset>
+		<fileset dir="./lib">
+			<include name="**/*.jar" />
+			<exclude name="**/eclipselink-src.jar" />
+		</fileset>
+		<path refid="id.compile.classpath" />
+	</path>
+
+	<path id="id.compile.sourcepath.local">
+		<pathelement path="src_accesscontrol" />
+		<pathelement path="src_calendar" />
+		<pathelement path="src_collect" />
+		<pathelement path="src_collectmaster" />
+		<pathelement path="src_commons" />
+		<pathelement path="src_hinemosagent" />
+
+		<pathelement path="src_http" />
+		<pathelement path="src_jobmanagement" />
+		<pathelement path="src_logfile" />
+		<pathelement path="src_maintenance" />
+		<pathelement path="src_monitor" />
+
+		<pathelement path="src_nodemap" />
+
+		<pathelement path="src_notify" />
+		<pathelement path="src_performance" />
+		<pathelement path="src_ping" />
+		<pathelement path="src_poller" />
+		<pathelement path="src_port" />
+
+		<pathelement path="src_priority" />
+		<pathelement path="src_process" />
+		<pathelement path="src_repository" />
+
+		<pathelement path="src_snmptrap" />
+		<pathelement path="src_snmp" />
+		<pathelement path="src_sql" />
+		<pathelement path="src_systemlog" />
+		<pathelement path="src_vm" />
+
+		<pathelement path="src_selfcheck" />
+		<pathelement path="src_custom" />
+		<pathelement path="src_winservice" />
+		<pathelement path="src_winevent" />
+		<pathelement path="src_ws" />
+
+		<pathelement path="src_jmx" />
+		<pathelement path="src_infra" />
+
+		<pathelement path="src_hub" />
+		<pathelement path="src_customtrap" />
+
+		<pathelement path="src_bootstrap" />
+	</path>
+
+	<target name="compile" description="Compile Java sources">
+		<javac
+			destdir="${build.dir}/${class.dir}"
+			failonerror="true"
+			classpathref="id.compile.classpath.local"
+			source="${compile.version.manager}"
+			target="${compile.version.manager}"
+			encoding="${compile.encode}"
+			includeantruntime="false"
+			debug="on">
+			<src path="src_accesscontrol" />
+			<src path="src_calendar" />
+			<src path="src_collect" />
+			<src path="src_collectmaster" />
+			<src path="src_commons" />
+			<src path="src_hinemosagent" />
+
+			<src path="src_http" />
+			<src path="src_jobmanagement" />
+			<src path="src_logfile" />
+			<src path="src_maintenance" />
+			<src path="src_monitor" />
+
+			<src path="src_nodemap" />
+
+			<src path="src_notify" />
+			<src path="src_performance" />
+			<src path="src_ping" />
+			<src path="src_poller" />
+			<src path="src_port" />
+
+			<src path="src_priority" />
+			<src path="src_process" />
+			<src path="src_repository" />
+
+			<src path="src_snmptrap" />
+			<src path="src_snmp" />
+			<src path="src_sql" />
+			<src path="src_systemlog" />
+			<src path="src_vm" />
+
+			<src path="src_ws" />
+			<src path="src_selfcheck" />
+			<src path="src_custom" />
+			<src path="src_winservice" />
+			<src path="src_winevent" />
+			<src path="src_bootstrap" />
+
+			<src path="src_jmx" />
+			<src path="src_infra" />
+
+			<src path="src_hub" />
+			<src path="src_customtrap" />
+
+			<src path="resources" />
+		</javac>
+	</target>
+	<!-- overwrite -->
+	<target name="jar" description="Generate JAR file">
+		<jar jarfile="${jar.dir}/${jar.file}" manifest="${build.dir}/MANIFEST.MF">
+			<fileset dir="${build.dir}/${class.dir}">
+				<include name="**/*.*"/>
+				<exclude name="**/model/*.*"/>
+			</fileset>
+			<fileset dir="src_accesscontrol">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_calendar">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_collect">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_collectmaster">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_commons">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/*.properties" if="jar.include.properties"/>
+			</fileset>
+			<fileset dir="src_custom">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_hinemosagent">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_http">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_jobmanagement">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_logfile">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_maintenance">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_monitor">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_nodemap">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_notify">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_performance">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_ping">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_poller">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_port">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_priority">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_process">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_repository">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_snmptrap">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_snmp">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_sql">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_systemlog">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_vm">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_winservice">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_winevent">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_ws">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_selfcheck">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_jmx">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_infra">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_hub">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/services/*" />
+			</fileset>
+			<fileset dir="src_customtrap">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="src_bootstrap">
+				<include name="**/*.java" if="jar.include.src"/>
+				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/services/*" />
+			</fileset>
+		</jar>
+		<jar jarfile="${jar.dir}/${model_jar.file}" manifest="${build.dir}/MANIFEST.MF">
+			<fileset dir="${build.dir}/${class.dir}">
+				<include name="**/model/*.*"/>
+			</fileset>
+			<fileset dir="src_accesscontrol">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_calendar">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_collect">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_custom">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_http">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_jobmanagement">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_logfile">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_maintenance">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_monitor">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_nodemap">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_notify">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_performance">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_ping">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_port">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_priority">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_process">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_repository">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_snmptrap">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_snmp">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_sql">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_vm">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_winservice">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_winevent">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_jmx">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_infra">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_hub">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_customtrap">
+					<include name="**/model/*.java" if="jar.include.src"/>
+					<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_bootstrap">
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+		</jar>
+	</target>
+
+	<!-- jpa configuration (EclipseLink) -->
+	<target name="jpa_config" description="generate jpa configuration">
+		<property name="jpa.jar-file.package" value="&lt;jar-file&gt;%%HINEMOS_HOME%%/lib/HinemosModel.jar&lt;/jar-file&gt;" />
+		<copy todir="../HinemosManager/build/META-INF" overwrite="true">
+			<fileset dir="../HinemosManager/resources/META-INF">
+				<include name="**/*.xml" />
+			</fileset>
+		</copy>
+		<replace file="../HinemosManager/build/META-INF/persistence.xml"
+			token="${jpa.comment.start}add jar-file here${jpa.comment.end}"
+			value="${jpa.jar-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add jar-file here${jpa.comment.end}" />
+		<loadfile property="jpa.mapping-file" srcfile="../HinemosManager/resources/mapping-file" />
+		<replace file="../HinemosManager/build/META-INF/persistence.xml"
+			token="&#x09;&#x09;${jpa.comment.start}add mapping-file here${jpa.comment.end}"
+			value="${jpa.mapping-file}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add mapping-file here${jpa.comment.end}" />
+	</target>
+
+	<target name="install">
+		<copy file="${jar.dir}/${jar.ClientWS}" todir="../HinemosClient/lib" />
+	</target>
+
+	<target name="webclient">
+		<delete dir="${agentws.dir}" failonerror="true" />
+		<mkdir dir="${agentws.dir}" />
+		<delete dir="${clientws.dir}" failonerror="true" />
+		<mkdir dir="${clientws.dir}" />
+		<delete dir="${wsdl.dir}" failonerror="true" />
+		<mkdir dir="${wsdl.dir}" />
+		<delete dir="${wsdlsrc.dir}" failonerror="true" />
+		<mkdir dir="${wsdlsrc.dir}" />
+		<delete file="${jar.dir}/AgentWS.jar" failonerror="true"/>
+		<delete file="${jar.dir}/ClientWS.jar" failonerror="true"/>
+
+		<path id="ws.class.path">
+			<fileset dir="../HinemosCommon">
+				<include name="${jar.dir}/HinemosCommon.jar"/>
+				<include name="wslib/*.jar"/>
+				<include name="commonlib/commons-logging-1.2.jar"/>
+			</fileset>
+			<fileset dir=".">
+				<include name="${jar.dir}/HinemosManager.jar"/>
+				<include name="${jar.dir}/HinemosModel.jar"/>
+				<include name="lib/javax.persistence_2.1.1.v201509150925.jar"/>
+				<include name="lib/jsch-0.1.53.jar"/>
+			</fileset>
+		</path>
+
+		<taskdef name="wsgen" classname="com.sun.tools.ws.ant.WsGen">
+			<classpath refid="ws.class.path"/>
+		</taskdef>
+		<macrodef name="wsgen.mac">
+			<attribute name="sei.class" />
+			<sequential>
+				<wsgen
+					fork="false"
+					verbose="true"
+					destdir="${wsdlsrc.dir}"
+					resourcedestdir="${wsdl.dir}"
+					keep="false"
+					genwsdl="true"
+					sei="@{sei.class}">
+					<classpath refid="ws.class.path"/>
+				</wsgen>
+			</sequential>
+		</macrodef>
+
+		<wsgen.mac sei.class="com.clustercontrol.ws.access.AccessEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.agent.AgentEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.calendar.CalendarEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.cloud.CloudCommonEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.collect.CollectEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.jobmanagement.JobEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.jobmanagement.JobMapEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.mailtemplate.MailTemplateEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.maintenance.MaintenanceEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.maintenance.HinemosPropertyEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.monitor.MonitorEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.monitor.MonitorSettingEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.nodemap.NodeMapEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.notify.NotifyEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.collectmaster.PerformanceCollectMasterEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.repository.RepositoryEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.jmxmaster.JmxMasterEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.infra.InfraEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.utility.UtilityEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.hub.HubEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.agenthub.AgentHubEndpoint"/>
+		<taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
+			<classpath refid="ws.class.path"/>
+		</taskdef>
+		<macrodef name="wsimport.mac">
+			<attribute name="dir" />
+			<attribute name="service.wsdl" />
+			<sequential>
+				<wsimport
+
+					keep="true"
+					destdir="@{dir}"
+					wsdl="${basedir}/${wsdl.dir}/@{service.wsdl}"
+					wsdllocation="file:../../lib/@{service.wsdl}">
+					<produces dir="@{dir}" includes="@{dir}/**/*.java" />
+					<jvmarg value="-J-Djavax.xml.accessExternalDTD=all" />
+				</wsimport>
+			</sequential>
+		</macrodef>
+		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentEndpointService.wsdl" />
+		<wsimport.mac dir="${agentws.dir}" service.wsdl="CloudCommonEndpointService.wsdl" />
+		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentHubEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="AccessEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="CalendarEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="CollectEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="JobEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="JobMapEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="MailTemplateEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="MaintenanceEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="HinemosPropertyEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="MonitorEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="MonitorSettingEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="NodeMapEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="NotifyEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="PerformanceCollectMasterEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="RepositoryEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="JmxMasterEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="InfraEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="UtilityEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="HubEndpointService.wsdl" />
+		<!-- sourcedestdir="${agentws.dir}" -->
+		<delete>
+			<fileset dir="build/agentws" includes="**/*.class" />
+		</delete>
+		<javac
+			destdir="build/agentws"
+			failonerror="true"
+			classpathref="id.compile.classpath.local"
+			source="${compile.version}"
+			target="${compile.version}"
+			bootclasspath="${boot.classpath}"
+			encoding="${compile.encode}"
+			includeantruntime="false"
+			debug="on">
+			<src path="build/agentws" />
+		</javac>
+		<jar jarfile="${jar.dir}/AgentWS.jar" manifest="${build.dir}/MANIFEST.MF">
+			<fileset dir="./${agentws.dir}">
+				<include name="**/*.*"/>
+			</fileset>
+		</jar>
+		<jar jarfile="${jar.dir}/ClientWS.jar" manifest="${build.dir}/MANIFEST.MF">
+			<fileset dir="./${clientws.dir}">
+				<include name="**/*.*"/>
+			</fileset>
+		</jar>
+	</target>
+
+	<!-- All -->
+	<target name="all" depends="dependency">
+		<delete dir="build" failonerror="true" />
+
+		<antcall target="all_without_interface" />
+
+		<antcall target="jpa_config" />
+		<antcall target="webclient" />
+		<antcall target="install" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
+
+	<target name="all_without_interface" depends="dependency">
+		<antcall target="clean" />
+		<antcall target="all_quick" />
+	</target>
+
+	<target name="all_quick" depends="dependency">
+		<antcall target="compile" />
+		<antcall target="manifest" />
+		<antcall target="jar" />
+		<antcall target="copy_messages" />
+	</target>
+
+	<target name="refresh" if="eclipse_jar_available">
+		<eclipse.refreshLocal resource="${project.name}" depth="infinite"/>
+		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
+	</target>
+	
+	<target name="copy_messages">
+		<copy todir="../HinemosPackageBuilder/hinemos_manager/${manager.common.rhel.dir}/hinemos/etc.template/" overwrite="true">
+			<fileset dir="../HinemosManager/resources">
+				<include name="messages_common*.properties" />
+			</fileset>
+		</copy>
+		<copy todir="../HinemosClient/lib/" overwrite="true">
+			<fileset dir="../HinemosManager/resources">
+				<include name="messages_*.properties" />
+			</fileset>
+		</copy>
+	</target>
+	
+</project>

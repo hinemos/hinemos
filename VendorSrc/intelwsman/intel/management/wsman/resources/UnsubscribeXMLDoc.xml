@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"
+	    xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+	   xmlns:w="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd"
+       xmlns:wse="http://schemas.xmlsoap.org/ws/2004/08/eventing">
+  <s:Header>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+    <w:ResourceURI s:mustUnderstand="true"></w:ResourceURI>
+    <a:ReplyTo>
+	     <a:Address s:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:Address>
+    </a:ReplyTo>
+    <a:Action s:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2004/08/eventing/Unsubscribe</a:Action>
+   <a:MessageID>uuid:00000000-0000-0000-0000-000000000001</a:MessageID>
+   <w:SelectorSet>
+   </w:SelectorSet>
+  </s:Header>
+ <s:Body>
+     <wse:Unsubscribe/>
+ </s:Body>
+</s:Envelope>

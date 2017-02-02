@@ -1,0 +1,12 @@
+Button{
+	color: navy;
+}
+
+ToolItem {
+	font: 12px Verdana, 'Lucida Sans Unicode', 'MS PGothic', 'Segoe UI', Meiryo, Arial, Helvetica, sans-serif;
+	color: black;
+}
+
+CTabItem {
+	font: 12px Verdana, 'Lucida Sans Unicode', 'MS PGothic', 'Segoe UI', Meiryo, Arial, Helvetica, sans-serif;
+}

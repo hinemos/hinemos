@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	<!-- MapAssociationEntity -->
+	<named-query name="MapAssociationEntity.findByMapId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MapAssociationEntity a
+				WHERE a.id.mapId = :mapId
+				ORDER BY a.id.mapId, a.id.source, a.id.target
+ 			]]>
+		</query>
+	</named-query>
+	<!-- MapIconImageEntity -->
+	<named-query name="MapIconImageEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM MapIconImageEntity a
+				ORDER BY a.filename
+ 			]]>
+		</query>
+	</named-query>
+	<!-- MapPositionEntity -->
+	<named-query name="MapPositionEntity.findByMapId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MapPositionEntity a
+				WHERE a.id.mapId = :mapId
+				ORDER BY a.id.mapId, a.id.elementId
+ 			]]>
+		</query>
+	</named-query>
+	<!-- MapBgImageEntity -->
+	<named-query name="MapBgImageEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM MapBgImageEntity a
+				ORDER BY a.filename
+ 			]]>
+		</query>
+	</named-query>
+</entity-mappings>

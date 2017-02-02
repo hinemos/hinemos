@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!--
+   Hinemos (http://www.hinemos.info/)
+
+   Copyright (C) 2010 NTT DATA Corporation.
+ -->
+
+<!-- execute Ant (Run in the same JRE as the workspace -->
+
+<project name="ClientSwitch" default="switch_to_RCP" basedir="../">
+	<!-- Common properties -->
+	<property name="project.name">HinemosClient</property>
+	<property name="source.client">src_client</property>
+
+	<!-- RCP -->
+	<target name="switch_to_RCP">
+		<!-- RCP用ソースをリンク -->
+
+		<exec executable="CMD">
+			<arg line="/C rmdir src_client" />
+		</exec>
+		<exec executable="CMD">
+			<arg line="/C mklink /J src_client client_switch\src_client_rcp" />
+		</exec>
+
+		<!-- Refresh -->
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh_src_client" />
+		<antcall target="refresh_notice" />
+
+		<!-- Notice -->
+		<echo>RCP実行環境に切り替えました。&#x0a;(!) 実行前に、Target Platform (RCP.target)を合わせてください。</echo>
+	</target>
+
+	<!-- RAP -->
+	<target name="switch_to_RAP">
+		<!-- RAP用ソースをリンク -->
+		<exec executable="CMD">
+			<arg line="/C rmdir src_client" />
+		</exec>
+		<exec executable="CMD">
+			<arg line="/C mklink /J src_client client_switch\src_client_rap" />
+		</exec>
+
+		<!-- Refresh -->
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask" property="eclipse_jar_available"/>
+		<antcall target="refresh_src_client" />
+		<antcall target="refresh_notice" />
+
+		<!-- Notice -->
+		<echo>RAP実行環境に切り替えました。&#x0a;(!) 実行前に、必ずTarget Platform (RAP.target)を合わせてください。</echo>
+	</target>
+
+	<!-- Refresh source path -->
+	<target name="refresh_src_client" if="eclipse_jar_available">
+		<eclipse.refreshLocal resource="${project.name}/" depth="one" />
+		<eclipse.refreshLocal resource="${project.name}/${source.client}" depth="infinite" />
+		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
+	</target>
+
+	<!-- Notice for requiring manual refresh -->
+	<target name="refresh_notice" unless="eclipse_jar_available">
+		<echo>(!) RefreshLocalTaskが無効になっています。手動でRefreshしてください。</echo>
+	</target>
+
+</project>

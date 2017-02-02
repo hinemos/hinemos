@@ -1,0 +1,13 @@
+﻿LIBRARY HinemosSNMPExtAgent
+
+DESCRIPTION 'Hinemos SNMP Extension Agent.'
+
+SEGMENTS
+  _TEXT      PRELOAD
+  INIT_TEXT  PRELOAD
+
+HEAPSIZE  1024
+
+EXPORTS
+  SnmpExtensionInit
+  SnmpExtensionQuery

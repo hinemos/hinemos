@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HinemosSNMPExtAgent", "HinemosSNMPExtAgent\HinemosSNMPExtAgent.vcxproj", "{06500E15-B959-4C4F-8D9F-D27B4F236F11}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SNMPServiceDriver", "SNMPServiceDriver\SNMPServiceDriver.vcxproj", "{2308A8A4-4B5F-44C6-8088-3538ABC661CD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{06500E15-B959-4C4F-8D9F-D27B4F236F11}.Debug|Win32.ActiveCfg = Debug|Win32
+		{06500E15-B959-4C4F-8D9F-D27B4F236F11}.Debug|Win32.Build.0 = Debug|Win32
+		{06500E15-B959-4C4F-8D9F-D27B4F236F11}.Release|Win32.ActiveCfg = Release|Win32
+		{06500E15-B959-4C4F-8D9F-D27B4F236F11}.Release|Win32.Build.0 = Release|Win32
+		{2308A8A4-4B5F-44C6-8088-3538ABC661CD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2308A8A4-4B5F-44C6-8088-3538ABC661CD}.Debug|Win32.Build.0 = Debug|Win32
+		{2308A8A4-4B5F-44C6-8088-3538ABC661CD}.Release|Win32.ActiveCfg = Release|Win32
+		{2308A8A4-4B5F-44C6-8088-3538ABC661CD}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,62 @@
+<!--
+Copyright (c) 2009 - 2010, Intel Corporation
+All rights reserved.
+-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  </head>
+  <body>
+
+Represents a late-binding CIM API for accessing managed resources using the WS-Management protocol.
+
+<P>
+See <A HREF="http://www.dmtf.org/standards/cim/">
+http://www.dmtf.org/standards/cim/</A>
+for more details on the CIM specification.
+<P>
+See <A HREF="http://www.dmtf.org/standards/wsman/">
+http://www.dmtf.org/standards/wsman/</A>
+for more details on the WS-Management specification.
+
+<P>
+This package represents a late-binding CIM API for accessing managed resources using the WS-Management protocol.
+A simple use of the library would be as follows:
+<P><code>
+ <b>// Create a connection to an Intel(r) Active Management Technology (AMT) client</b><br>
+ WsmanConnection connection = WsmanConnection.createConnection(“http://myAmtClient:16992/wsman”)<br>
+<P>
+
+ <b>// Create a default authenticator (required for digest based authentication)</b><br>
+ DefaultAuthenticator defAuth = new DefaultAuthenticator();
+<P>
+ defAuth.addCredential(connection.getAddress(),
+           "digest", “admin”, “P@ssw0rd”)
+<P>
+
+<b>// Tell Java to use the authenticator </b><br>
+java.net.Authenticator.setDefault(defAuth);
+
+<P>
+<b>// Demonstrate a WS-Man Get() by retrieving the Intel AMT Version </b><br>
+ManagedReference ref = connection.newReference("CIM_SoftwareIdentity");
+<P>
+ref.addSelector("InstanceID", "AMT");
+<P>
+<b>// Get the instance and print the XML to stdout</b><br>
+try {<br>
+  &nbsp&nbsp&nbspManagedInstance inst = ref.get();<br>
+  &nbsp&nbsp&nbspSystem.out.println(WsmanUtils.getXML(inst));<br><br>
+
+} catch (WsmanException wsmanException) {<br><br>
+  &nbsp&nbsp&nbspSystem.out.println(WsmanUtils.getXML(wsmanException));<br>
+  &nbsp&nbsp&nbspthrow new RuntimeException(wsmanException.fillInStackTrace());<br>
+}<br>
+
+<P></code>
+<P>
+This package was designed to be used with JDK 1.6 or above.
+  </body>
+</html>

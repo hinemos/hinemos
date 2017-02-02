@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<w:EndpointReference xmlns:w="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing">
+<a:Address>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:Address>
+<a:ReferenceParameters>
+  <w:ResourceURI />
+  <w:SelectorSet />
+</a:ReferenceParameters>
+</w:EndpointReference>
