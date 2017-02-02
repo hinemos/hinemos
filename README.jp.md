@@ -8,11 +8,11 @@
 	</a>
 </p>
 
-![Hinemos-logo](http://www.hinemos.info/common/img/logo_hinemos.png)
+![Hinemos-logo](http://www.hinemos.info/files/images/HinemosLogo.png)
 
 Hinemosは大規模、複雑化するITシステムの「監視」や「ジョブ」といった「運用業務の自動化」を実現し、オープンソースソフトウェアが持つコストメリットを最大限に活用できる統合運用管理ソフトウェアです。
 
-[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/)
+[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v6.0.0#packages)
 
 ## インストール
 
