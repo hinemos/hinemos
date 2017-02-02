@@ -8,11 +8,11 @@
   </a>
 </p>
 
-![Hinemos-logo](http://www.hinemos.info/common/img/logo_hinemos.png)
+![Hinemos-logo](http://www.hinemos.info/files/images/HinemosLogo.png)
 
 Hinemos is an open source integrated system management software providing monitoring and job management automation.
 
-[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/)
+[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/) | [Latest Packages] (https://github.com/hinemos/hinemos/releases/tag/v6.0.0#packages)
 
 ## Installation
 
