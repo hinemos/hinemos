@@ -20,13 +20,13 @@ You can install hinemos by the following commands.
 
 - Manager Installation
 
-```$ rpm -ivh hinemos-6.0-manager-6.0.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.0/hinemos-6.0-manager-6.0.0-1.el7.x86_64.rpm```
 
 - Web Client Installation
 
-```$ rpm -ivh hinemos-6.0-web-6.0.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.0/hinemos-6.0-web-6.0.0-1.el7.x86_64.rpm```
 
-<!-- See the [install document](https://github.com/hinemos/hinemos/tree/master/docs/install.pdf) for details.-->
+See the [install document](https://github.com/hinemos/hinemos/releases/download/v6.0.0/doc_install_6.0_ja.pdf) for details.
 
 ## What's new in ver.6.0.0
 
@@ -37,7 +37,7 @@ You can install hinemos by the following commands.
 * New & Rich Graph Interface of Performance Result
   - with pie chart, bar chart, scatter chart and approximate line for analyzing
 
-<!-- See the [release notes](https://github.com/hinemos/hinemos/releases) for details. -->
+See the [release notes](https://github.com/hinemos/hinemos/releases) for details.
 
 ## License
 
