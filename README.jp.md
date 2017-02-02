@@ -1,10 +1,10 @@
 ## Hinemos
 
-<p align="left">
-	<img alt="download" src="https://img.shields.io/github/downloads/hinemos/hinemos/total.svg"></img>
-	<img alt="license" src="https://img.shields.io/badge/license-GPL-blue.svg"></img>
+<p align="center">
+	<img alt="download" src="https://img.shields.io/github/downloads/hinemos/hinemos/total.svg"/>
+	<img alt="license" src="https://img.shields.io/badge/license-GPL-blue.svg"/>
 	<a href=https://twitter.com/Hinemos_INFO>
-		<img alt="twitter" src="https://img.shields.io/twitter/follow/Hinemos_INFO.svg?style=social&label=Follow&maxAge=2592000"></img>
+		<img alt="twitter" src="https://img.shields.io/twitter/follow/Hinemos_INFO.svg?style=social&label=Follow&maxAge=2592000"/>
 	</a>
 </p>
 
@@ -21,16 +21,16 @@ Hinemosはコマンドひとつでインストールできます。
 - マネージャのインストール
 
 ```
-$ rpm -ivh hinemos-6.0-manager-6.0.0-1.el7.x86_64.rpm
+$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.0/hinemos-6.0-manager-6.0.0-1.el7.x86_64.rpm
 ```
 
 - Webクライアントのインストール
 
 ```
-$ rpm -ivh hinemos-6.0-web-6.0.0-1.el7.x86_64.rpm
+$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.0/hinemos-6.0-web-6.0.0-1.el7.x86_64.rpm
 ```
 
-<!--詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/tree/master/docs/install.pdf)をご覧下さい。-->
+詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/releases/download/v6.0.0/doc_install_6.0_ja.pdf)をご覧下さい。
 
 ## ver.6.0.0新機能
 
@@ -43,7 +43,7 @@ $ rpm -ivh hinemos-6.0-web-6.0.0-1.el7.x86_64.rpm
 - 性能グラフ機能の刷新
 	- 円グラフ、棒グラフ、散布図、近似曲線の表示
 
-<!--詳細は[リリースノート](https://github.com/hinemos/hinemos/releases)をご覧下さい。-->
+詳細は[リリースノート](https://github.com/hinemos/hinemos/releases)をご覧下さい。
 
 ## ライセンス
 
