@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+
+	<!-- CalInfoEntity -->
+	<named-query name="CalInfoEntity.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM CalendarInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.calendarId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CalInfoEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM CalendarInfo a
+				ORDER BY a.calendarId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- CalDetailInfoEntity -->
+	<named-query name="CalDetailInfoEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM CalendarDetailInfo a
+				ORDER BY a.id.calendarId, a.id.orderNo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CalDetailInfoEntity.findByCalendarId">
+		<query>
+			<![CDATA[
+				SELECT a FROM CalendarDetailInfo a
+				WHERE a.id.calendarId = :calendarId ORDER BY a.id.orderNo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CalDetailInfoEntity.findByCalPatternId">
+		<query>
+			<![CDATA[
+				SELECT a FROM CalendarDetailInfo a
+				WHERE a.calPatternId = :calPatternId
+				ORDER BY a.id.calendarId, a.id.orderNo
+			]]>
+		</query>
+	</named-query>
+
+	<!-- CalPatternInfoEntity -->
+	<named-query name="CalPatternInfoEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM CalendarPatternInfo a
+				ORDER BY a.objectId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CalPatternInfoEntity.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM CalendarPatternInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.objectId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- CalPatternDetailInfoEntity -->
+	<named-query name="CalPatternDetailInfoEntity.findByCalendarPatternId">
+		<query>
+			<![CDATA[
+				SELECT a FROM YMD a
+				WHERE a.id.calPatternId = :calPatternId
+				ORDER BY a.id.calPatternId, a.id.year, a.id.month, a.id.day
+			]]>
+		</query>
+	</named-query>
+
+</entity-mappings>

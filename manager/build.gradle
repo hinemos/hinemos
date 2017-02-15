@@ -1,0 +1,194 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+project.group = theGroup
+version = theVersion
+
+sourceCompatibility = theSourceCompatibility
+targetCompatibility = theSourceCompatibility
+
+repositories{
+	mavenCentral()
+}
+dependencies{
+	compile group: 'commons-logging', name: 'commons-logging', version: '1.2'
+	compile group: 'log4j', name: 'log4j', version: '1.2.17'
+	compile files('../common/build/libs/HinemosCommon.jar')
+	compile group: 'org.eclipse.persistence', name: 'javax.persistence', version: '2.1.1'
+	compile group: 'commons-codec', name: 'commons-codec', version: '1.10'
+	compile group: 'commons-net', name: 'commons-net', version: '3.5'
+	// Download from https://sourceforge.net/projects/jpasecurity/files/jpasecurity/jpasecurity-0.4.0/jpasecurity-core-0.4.0.jar
+	compile files('lib/jpasecurity-core-0.4.0.jar')
+	compile group: 'org.snmp4j', name: 'snmp4j', version: '2.5.4'
+	compile group: 'com.jcraft', name: 'jsch', version: '0.1.54'
+	// Download and build from
+	// https://software.intel.com/en-us/articles/download-the-latest-intel-ws-management-java-client-library
+	// Or you can extract the enhanced version from Hinemos's original package(intel-wsman-1.0.1-mod.jar)
+	compile files('lib/intel-wsman-1.0.1-mod.jar')
+	// Download from https://sourceforge.net/projects/sblim/files/sblim-cim-client/1.3.9.3/sblim-cim-client-1.3.9.3-bin.zip
+	compile files('lib/sblimCIMClient.jar')
+	compile group: 'javax.mail', name: 'javax.mail-api', version: '1.5.6'
+	compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2'
+	compile group: 'org.apache.httpcomponents', name: 'httpclient-cache', version: '4.5.2'
+	compile group: 'org.postgresql', name: 'postgresql', version: '9.4.1212'
+	compile group: 'org.eclipse.persistence', name: 'eclipselink', version: '2.5.2'
+	compile group: 'com.sun.mail', name: 'smtp', version: '1.5.6'
+	compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.6'
+	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.8.6'
+	compile group: 'joda-time', name: 'joda-time', version: '2.9.7'
+}
+
+eclipse{
+	project{
+		name = theJarName
+	}
+}
+
+tasks.withType(JavaCompile){
+	options.encoding = 'UTF-8'
+}
+def manifestDef = {
+	attributes(
+		'Hinemos-Version': version,
+		'Build-Date': new Date().format('yyyy-MM-dd HH:mm:ss', TimeZone.getTimeZone('UTC')))
+}
+
+jar{
+	manifest(manifestDef)
+}
+
+
+// Doc
+task sourcesJar(type: Jar, dependsOn: classes){
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+task javadocJar(type: Jar, dependsOn: javadoc){
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+artifacts{
+	archives sourcesJar
+	//archives javadocJar
+}
+
+// Source directories
+sourceSets{
+	main{
+		java{
+			srcDirs += [file('src/main/src_accesscontrol'),
+				file('src/main/src_bootstrap'),
+				file('src/main/src_calendar'),
+				file('src/main/src_collect'),
+				file('src/main/src_collectmaster'),
+				file('src/main/src_commons'),
+				file('src/main/src_custom'),
+				file('src/main/src_customtrap'),
+				file('src/main/src_hinemosagent'),
+				file('src/main/src_http'),
+				file('src/main/src_hub'),
+				file('src/main/src_infra'),
+				file('src/main/src_jmx'),
+				file('src/main/src_jobmanagement'),
+				file('src/main/src_logfile'),
+				file('src/main/src_maintenance'),
+				file('src/main/src_monitor'),
+				file('src/main/src_nodemap'),
+				file('src/main/src_notify'),
+				file('src/main/src_performance'),
+				file('src/main/src_ping'),
+				file('src/main/src_poller'),
+				file('src/main/src_port'),
+				file('src/main/src_priority'),
+				file('src/main/src_process'),
+				file('src/main/src_repository'),
+				file('src/main/src_selfcheck'),
+				file('src/main/src_sharedtable'),
+				file('src/main/src_snmp'),
+				file('src/main/src_snmptrap'),
+				file('src/main/src_sql'),
+				file('src/main/src_systemlog'),
+				file('src/main/src_vm'),
+				file('src/main/src_winevent'),
+				file('src/main/src_winservice'),
+				file('src/main/src_ws')]
+		}
+		resources{
+			srcDirs += [file('src/main/src_accesscontrol'),
+				file('src/main/src_bootstrap'),
+				file('src/main/src_calendar'),
+				file('src/main/src_collect'),
+				file('src/main/src_collectmaster'),
+				file('src/main/src_commons'),
+				file('src/main/src_custom'),
+				file('src/main/src_customtrap'),
+				file('src/main/src_hinemosagent'),
+				file('src/main/src_http'),
+				file('src/main/src_hub'),
+				file('src/main/src_infra'),
+				file('src/main/src_jmx'),
+				file('src/main/src_jobmanagement'),
+				file('src/main/src_logfile'),
+				file('src/main/src_maintenance'),
+				file('src/main/src_monitor'),
+				file('src/main/src_nodemap'),
+				file('src/main/src_notify'),
+				file('src/main/src_performance'),
+				file('src/main/src_ping'),
+				file('src/main/src_poller'),
+				file('src/main/src_port'),
+				file('src/main/src_priority'),
+				file('src/main/src_process'),
+				file('src/main/src_repository'),
+				file('src/main/src_selfcheck'),
+				file('src/main/src_sharedtable'),
+				file('src/main/src_snmp'),
+				file('src/main/src_snmptrap'),
+				file('src/main/src_sql'),
+				file('src/main/src_systemlog'),
+				file('src/main/src_vm'),
+				file('src/main/src_winevent'),
+				file('src/main/src_winservice'),
+				file('src/main/src_ws')]
+			include '**/*.properties'
+			include 'META-INF/orm_*.xml'
+			include 'META-INF/*/*'
+		}
+	}
+}
+
+// Seperate and rename jar for deploying to Hinemos
+task exportModel(type: Jar){
+	description 'Generate HinemosModel.jar that you can replace to the original one directly.'
+	archiveName = 'HinemosModel.jar'
+	dependsOn classes
+	includeEmptyDirs = false
+	// Include model/*.class and ORM XML
+	from sourceSets.main.output
+	//from sourceSets.main.allSource
+	//from sourceSets.main.resources
+	include '**/model/**.class'
+	include 'META-INF/orm_*.xml'
+
+	manifest(manifestDef)
+} 
+
+task exportManager(type: Jar){
+	description 'Generate HinemosManager.jar that you can replace to the original one directly.'
+	archiveName = 'HinemosManager.jar'
+	dependsOn classes
+	includeEmptyDirs = false
+	from sourceSets.main.output
+	//from sourceSets.main.resources
+	exclude '**/model/**.class'
+	exclude 'META-INF/orm_*.xml'
+
+	manifest(manifestDef)
+} 
+
+task export{
+	description 'Generate both HinemosManager.jar and HinemosModel.jar at once.'
+	dependsOn exportManager
+	dependsOn exportModel
+}
+
