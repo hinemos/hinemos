@@ -10,3 +10,12 @@ bin/
 build/
 package/
 tmp/
+
+# gradle
+.gradle/
+
+# eclipse
+.classpath
+.project
+.settings/
+

@@ -84,7 +84,7 @@ task importClientWS(dependsOn: genWS){
 			logger.info "${wsdlFileTree.files.size()} file(s) matched"
 			wsdlFileTree.each{
 				// Exclude AgentEndpointService.wsdl and CloudCommonEndpointService.wsdl (for agent only)
-				if(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /CloudCommonEndpointService\.wsdl/) return
+				if(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /CloudCommonEndpointService\.wsdl/ || it.name ==~ /AgentHubEndpointService\.wsdl/) return
 
 				logger.info "wsimport ${it}..."
 
@@ -122,7 +122,7 @@ task importAgentWS(dependsOn: genWS){
 			logger.info "${wsdlFileTree.files.size()} file(s) matched"
 			wsdlFileTree.each{
 				// Only need AgentEndpointService.wsdl and CloudCommonEndpointService.wsdl
-				if(!(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /CloudCommonEndpointService\.wsdl/)) return
+				if(!(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /CloudCommonEndpointService\.wsdl/ || it.name ==~ /AgentHubEndpointService\.wsdl/)) return
 
 				logger.info "wsimport ${it}..."
 
