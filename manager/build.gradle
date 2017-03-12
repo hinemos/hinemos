@@ -1,6 +1,8 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
+apply from: 'gradle/ws.gradle'
+
 project.group = theGroup
 version = theVersion
 
@@ -41,6 +43,16 @@ dependencies{
 eclipse{
 	project{
 		name = theJarName
+	}
+	classpath.file.withXml{
+		def node = it.asNode()
+		// Add some access rules to prevent error on eclipse
+		def container = node.classpathentry.find{it.@kind == 'con'}
+		if(container != null){
+			def xmlparser = new XmlParser()
+			def accessrules = xmlparser.createNode(container, 'accessrules', [:])
+			accessrules.appendNode('accessrule', ['kind':'discouraged', 'pattern':'com/sun/net/httpserver/*'])
+		}
 	}
 }
 
