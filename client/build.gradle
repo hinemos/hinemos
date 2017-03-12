@@ -45,14 +45,13 @@ dependencies{
 	compile fileTree(dir: "lib/eclipse-${eclipseVer}/eclipse/plugins", include: 'org.eclipse.swt_3*.jar')
 	compile fileTree(dir: "lib/eclipse-${eclipseVer}/eclipse/plugins", include: 'org.eclipse.swt.*.x86_64_3*.jar')
 	compile fileTree(dir: "lib/eclipse-${eclipseVer}/eclipse/plugins", include: 'org.eclipse.draw2d_3*.jar')
-	compile fileTree(dir: "lib/eclipse-${eclipseVer}/eclipse/plugins", include: 'javax.servlet_3*.jar')
+	compile fileTree(dir: "lib/eclipse-${eclipseVer}/eclipse/plugins", include: 'javax.servlet_3.1.*.jar')
 }
 
 eclipse{
 	project{
 		name = theJarName
 	}
-
 	classpath.file.withXml{
 		def node = it.asNode()
 		// Add some access rules
@@ -106,11 +105,15 @@ sourceSets{
 		java{
 			srcDirs += [file('src/main/src'),
 					file('src/main/src_accesscontrol'),
+					file('src/main/src_approval'),
 					file('src/main/src_calendar'),
+					file('src/main/src_collect'),
 					file('src/main/src_collectmaster'),
 					file('src/main/src_custom'),
+					file('src/main/src_customtrap'),
 					file('src/main/src_hinemosagent'),
 					file('src/main/src_http'),
+					file('src/main/src_hub'),
 					file('src/main/src_infra'),
 					file('src/main/src_jmx'),
 					file('src/main/src_jobmanagement'),
@@ -133,7 +136,7 @@ sourceSets{
 					file('src/main/src_client_rcp')]
 		}
 		resources{
-			srcDirs += [file('src/main/src_infra')]
+			srcDirs += [file('src/main/src_collect'), file('src/main/src_infra')]
 			include '*.html'
 			include '*.css'
 			include '*.js'
