@@ -169,4 +169,14 @@ public interface ManagerMXBean {
 	public void startHinemosSchedulerStressTest();
 	public void stopHinemosSchedulerTest();
 	*/
+	
+	/**
+	 * ノードのキャッシュ情報を初期化する
+	 */
+	public void initNodeCache();
+	
+	/**
+	 * ジョブのキャッシュ情報を初期化する
+	 */
+	public void initJobCache();
 }

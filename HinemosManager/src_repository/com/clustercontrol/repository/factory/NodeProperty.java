@@ -27,6 +27,7 @@ import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.repository.model.NodeInfo;
@@ -55,6 +56,8 @@ public class NodeProperty {
 			if (cache == null) {	// not null when clustered
 				init();
 			}
+		} catch (Throwable t) {
+			m_log.error("NodeProperty initialisation error. " + t.getMessage(), t);
 		} finally {
 			_lock.writeUnlock();
 		}
@@ -90,9 +93,36 @@ public class NodeProperty {
 		}
 	}
 
-	public static void init() {
+	public static void updateNode (String facilityId) {
+		m_log.info("update NodeCache : " + facilityId);
+		
 		try {
 			_lock.writeLock();
+			
+			ConcurrentHashMap<String, NodeInfo> cache = getCache();
+			try {
+				new JpaTransactionManager().getEntityManager().clear();
+				NodeInfo facilityEntity = QueryUtil.getNodePK(facilityId);
+				cache.put(facilityId, facilityEntity);
+			} catch (Exception e) {
+				m_log.warn("update NodeCache failed : " + e.getMessage());
+				//例外発生時は古い値がキャッシュに残らないように削除する
+				cache.remove(facilityId);
+			}
+			storeCache(cache);
+		} finally {
+			_lock.writeUnlock();
+		}
+	}
+
+	public static void init() {
+		JpaTransactionManager jtm = null;
+		try {
+			_lock.writeLock();
+			
+			long startTime = System.currentTimeMillis();
+			jtm = new JpaTransactionManager();
+			jtm.getEntityManager().clear();
 			
 			ConcurrentHashMap<String, NodeInfo> cache = new ConcurrentHashMap<String, NodeInfo>();
 			
@@ -101,21 +131,12 @@ public class NodeProperty {
 			}
 			
 			storeCache(cache);
-		} finally {
-			_lock.writeUnlock();
-		}
-	}
-
-	public static void clearCache () {
-		m_log.info("clear NodeCache");
-		
-		try {
-			_lock.writeLock();
 			
-			ConcurrentHashMap<String, NodeInfo> cache = getCache();
-			cache.clear();
-			storeCache(cache);
+			m_log.info("init cache " + (System.currentTimeMillis() - startTime) + "ms. size=" + cache.size());
 		} finally {
+			if(jtm != null) {
+				jtm.close();
+			}
 			_lock.writeUnlock();
 		}
 	}

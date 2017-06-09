@@ -499,7 +499,7 @@ public class AgentConnectUtil {
 			
 			AgentInfo agentInfo = agentMap.get(facilityId);
 			if (agentInfo != null) {
-				valid = true;
+				valid = agentInfo.isValid();
 			}
 		} finally {
 			_agentCacheLock.readUnlock();

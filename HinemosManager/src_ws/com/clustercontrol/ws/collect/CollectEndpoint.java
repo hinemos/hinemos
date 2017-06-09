@@ -49,6 +49,7 @@ import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.bean.EventDataInfo;
 import com.clustercontrol.performance.monitor.entity.CollectorItemCodeMstData;
 import com.clustercontrol.performance.session.PerformanceCollectMasterControllerBean;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.ws.util.ArrayListInfo;
 import com.clustercontrol.ws.util.HashMapInfo;
@@ -526,9 +527,8 @@ public class CollectEndpoint {
 		msg.append(", FileName=");
 		msg.append(fileName);
 
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
 		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr(
-				"performance.export.dir", homeDir + "/var/export/");
+				"performance.export.dir", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
 		File file = new File(exportDirectory + fileName);
 		if(!file.exists()) {
 			m_log.info("file is not found : " + exportDirectory + fileName);

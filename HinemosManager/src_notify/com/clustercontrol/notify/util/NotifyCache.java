@@ -12,6 +12,7 @@ import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.notify.model.NotifyInfo;
 import com.clustercontrol.notify.model.NotifyInfoDetail;
@@ -77,6 +78,7 @@ public class NotifyCache {
 			_lock.writeLock();
 			
 			long start = HinemosTime.currentTimeMillis();
+			new JpaTransactionManager().getEntityManager().clear();
 			HashMap<String, NotifyInfo> notifyMap = new HashMap<String, NotifyInfo>();
 			HashMap<String, NotifyInfoDetail> notifyDetailMap = new HashMap<String, NotifyInfoDetail>();
 			

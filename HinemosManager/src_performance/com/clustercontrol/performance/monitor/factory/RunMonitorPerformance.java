@@ -31,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.collect.bean.Sample;
 import com.clustercontrol.collect.util.CollectDataUtil;
+import com.clustercontrol.commons.util.ObjectSharingService;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -53,6 +54,7 @@ import com.clustercontrol.performance.operator.Operator.CollectedDataNotFoundExc
 import com.clustercontrol.performance.util.CalculationMethod;
 import com.clustercontrol.performance.util.PollingDataManager;
 import com.clustercontrol.performance.util.code.CollectorItemCodeTable;
+import com.clustercontrol.poller.IPoller;
 import com.clustercontrol.poller.bean.PollerProtocolConstant;
 import com.clustercontrol.poller.impl.Snmp4jPollerImpl;
 import com.clustercontrol.poller.impl.WbemPollerImpl;
@@ -174,8 +176,42 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 						break;
 					}
 					default: {
-						// FIXME nagatsumas オプションによるリソース情報収集の実装
-						throw new UnsupportedOperationException();
+						// *****************************
+						// オプションのpollerの設定
+						//	pollingTargetMapのKEYにより識別する
+						//	SNMP	SNMPポーラ(非オプション機能)
+						//	WBEM	WBEMポーラ(非オプション機能)
+						//	VM.		VM管理オプション(VmPollerImplInterface)	(ex. VM.XEN)
+						//	CLOUD.	クラウド管理オプション(ICloudPoller)		(ex. CLOUD.AWS)
+						// *****************************
+						
+						////
+						// 各種オプションでの監視用ポーラ取得箇所
+						// IPollerインターフェースを継承したポーラが、ポーラーのプロトコル名をキーにして事前にObjectSharingServiceに
+						// 登録されている場合、そのインスタンスを取り出して監視を実行する。
+						// 各種オプションのJARファイル内で、Plugin機構により登録されている前提。
+						// 2013年8月末時点で、VM・クラウドの2オプションで本機構を使用している
+						////
+						IPoller poller;
+						try {
+							poller = ObjectSharingService.objectRegistry().get(IPoller.class, collectMethod);
+						} catch (InstantiationException | IllegalAccessException e) {
+							m_log.warn(String.format("polling() : %s, %s", e.getClass().getSimpleName(), e.getMessage()), e);
+							continue;
+						}
+						
+						if (poller == null) {
+							m_log.warn("polling : unknown pollerProtocol. facilityId = " + node.getFacilityId() + ", protocol = " + collectMethod);
+							continue;
+						}
+						
+						// ポーラーの実体のメソッドを呼び出して、実際にポーリングを行う
+						// もし独自のオプション製品で、nodeinfoとpollingTarget以外のパラメタが必要な場合、
+						// 第3引数のObjectに突っ込むことで対応する。
+						// その場合は独自のオプション用にpollerProtocolの内容で分岐する必要がある。
+						// （できれば本体側に手を入れずにすむよう、第三引数は使わず、ポーラ内で情報を取ることが望ましいが・・・）
+						final DataTable pluginResponse = poller.polling(node, targetEntry.getValue(), null);
+						allResponse.put(collectMethod, pluginResponse);
 					}
 				}
 			}
@@ -192,7 +228,7 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 		} else {
 			// 監視情報で必要な全キー情報（SNMPならOID）を取り出す
 			final Map<String, Set<String>> target = getPollingTarget(null);
-			
+
 			// 収集方法ごとにポーリング処理を行なう
 			if (target.containsKey(PollerProtocolConstant.PROTOCOL_SNMP)) {
 				m_curData = Snmp4jPollerImpl.getInstance().polling(
@@ -223,8 +259,46 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 						node.getWbemTimeout(),
 						target.get(PollerProtocolConstant.PROTOCOL_WBEM));
 			} else {
-				// FIXME nagatsumas オプションによるリソース情報収集の実装
-				throw new UnsupportedOperationException();
+				// *****************************
+				// オプションのpollerの設定
+				//	pollingTargetMapのKEYにより識別する
+				//	SNMP	SNMPポーラ(非オプション機能)
+				//	WBEM	WBEMポーラ(非オプション機能)
+				//	VM.		VM管理オプション(VmPollerImplInterface)	(ex. VM.XEN)
+				//	CLOUD.	クラウド管理オプション(ICloudPoller)		(ex. CLOUD.AWS)
+				// *****************************
+				
+				////
+				// 各種オプションでの監視用ポーラ取得箇所
+				// IPollerインターフェースを継承したポーラが、ポーラーのプロトコル名をキーにして事前にObjectSharingServiceに
+				// 登録されている場合、そのインスタンスを取り出して監視を実行する。
+				// 各種オプションのJARファイル内で、Plugin機構により登録されている前提。
+				// 2013年8月末時点で、VM・クラウドの2オプションで本機構を使用している
+				////
+				IPoller poller = null;
+				Map.Entry<String, Set<String>> matchedEntry = null;
+				for (final Map.Entry<String, Set<String>> targetEntry : target.entrySet()) {
+					try {
+						poller = ObjectSharingService.objectRegistry().get(IPoller.class, targetEntry.getKey());
+						if (poller != null) {
+							matchedEntry = targetEntry;
+							break;
+						}
+					} catch (InstantiationException | IllegalAccessException e) {
+						m_log.warn(String.format("polling() : %s, %s", e.getClass().getSimpleName(), e.getMessage()), e);
+					}
+				}
+				
+				if (poller != null) {
+					// ポーラーの実体のメソッドを呼び出して、実際にポーリングを行う
+					// もし独自のオプション製品で、nodeinfoとpollingTarget以外のパラメタが必要な場合、
+					// 第3引数のObjectに突っ込むことで対応する。
+					// その場合は独自のオプション用にpollerProtocolの内容で分岐する必要がある。
+					// （できれば本体側に手を入れずにすむよう、第三引数は使わず、ポーラ内で情報を取ることが望ましいが・・・）
+					m_curData = poller.polling(node, matchedEntry.getValue(), null);
+				} else {
+					m_log.debug("polling() : not found plugin poller.");
+				}
 			}
 			return null;
 		}

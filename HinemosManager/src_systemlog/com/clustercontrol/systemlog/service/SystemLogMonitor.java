@@ -18,6 +18,7 @@ package com.clustercontrol.systemlog.service;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -247,9 +248,6 @@ public class SystemLogMonitor implements SyslogHandler{
 						if (!validFacilityIdList.isEmpty()) {
 							for (String facilityId: validFacilityIdList) {
 								StringSample sample = new StringSample(new Date(HinemosTime.currentTimeMillis()), monitor.getMonitorId());
-								//ログメッセージ
-								sample.set(facilityId, "syslog", syslog.rawSyslog);
-								
 								//抽出したタグ
 								StringSampleTag tagDate = new StringSampleTag(CollectStringDataParser.KEY_TIMESTAMP_IN_LOG, ValueType.number, Long.toString(syslog.date));
 								StringSampleTag tagFacility = new StringSampleTag("facility", ValueType.string, syslog.facility.name());
@@ -257,11 +255,8 @@ public class SystemLogMonitor implements SyslogHandler{
 								StringSampleTag tagHostname = new StringSampleTag("hostname", ValueType.string, syslog.hostname);
 								StringSampleTag tagMessage = new StringSampleTag("message", ValueType.string, syslog.message);
 								
-								sample.getTagList().add(tagDate);
-								sample.getTagList().add(tagFacility);
-								sample.getTagList().add(tagSeverity);
-								sample.getTagList().add(tagHostname);
-								sample.getTagList().add(tagMessage);
+								//ログメッセージ
+								sample.set(facilityId, "syslog", syslog.rawSyslog, Arrays.asList(tagDate, tagFacility, tagSeverity, tagHostname, tagMessage));
 								
 								collectedSamples.add(sample);
 							}

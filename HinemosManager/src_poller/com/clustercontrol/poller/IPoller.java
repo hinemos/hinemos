@@ -14,7 +14,7 @@ GNU General Public License for more details.
  */
 package com.clustercontrol.poller;
 
-import java.util.List;
+import java.util.Set;
 
 import com.clustercontrol.poller.util.DataTable;
 import com.clustercontrol.repository.model.NodeInfo;
@@ -31,5 +31,5 @@ public interface IPoller {
 	 * @param target ポーリングターゲットのリスト
 	 * @param option オプション用データ
 	 */
-	public DataTable polling(NodeInfo nodeInfo, List<String> targets, Object option);
+	public DataTable polling(NodeInfo nodeInfo, Set<String> targets, Object option);
 }

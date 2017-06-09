@@ -126,6 +126,7 @@ public class MonitorWinEventControllerBean {
 		try {
 			_lock.writeLock();
 			
+			new JpaTransactionManager().getEntityManager().clear();
 			ArrayList<MonitorInfo> winEventCache = new MonitorWinEventControllerBean().getWinEventList();
 			storeCache(winEventCache);
 			

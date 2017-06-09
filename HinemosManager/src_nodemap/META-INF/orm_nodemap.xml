@@ -41,4 +41,26 @@
  			]]>
 		</query>
 	</named-query>
+	<!-- MapAssociationEntity -->
+	<named-query name="MapAssociationEntity.findBySourceOrTarget">
+		<query>
+			<![CDATA[
+				SELECT a FROM MapAssociationEntity a
+				WHERE a.id.source in :source 
+				OR 
+				a.id.target in :target
+			]]>
+		</query>
+	</named-query>
+	<!-- MapPositionEntity -->
+	<named-query name="MapPositionEntity.findByMapIdOrElementId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MapPositionEntity a
+				WHERE a.id.mapId in :mapId
+				OR 
+				a.id.elementId in :elementId
+ 			]]>
+		</query>
+	</named-query>
 </entity-mappings>

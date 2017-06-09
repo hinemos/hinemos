@@ -52,6 +52,7 @@ import com.clustercontrol.monitor.run.util.EventCache;
 import com.clustercontrol.monitor.session.MonitorControllerBean;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.notify.monitor.util.QueryUtil;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.repository.bean.FacilityTargetConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosMessage;
@@ -493,8 +494,8 @@ public class SelectEvent {
 	}
 
 	public void deleteEventFile(String filename) {
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir", homeDir + "/var/export/");
+		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir", 
+				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
 		File file = new File(exportDirectory + "/" + filename);
 		if (!file.delete())
 			Logger.getLogger(this.getClass()).debug("Fail to delete " + file.getAbsolutePath());
@@ -546,8 +547,8 @@ public class SelectEvent {
 		Boolean collectGraphFlg = null;
 		String collectGraphStr = "";
 
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir", homeDir + "/var/export/");
+		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir",
+				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
 		String filepath = exportDirectory + "/" + filename;
 		File file = new File(filepath);
 		boolean UTF8_BOM = HinemosPropertyUtil.getHinemosPropertyBool("monitor.common.report.event.bom", true);
@@ -759,59 +760,30 @@ public class SelectEvent {
 				facilityIds[0] = facilityId;
 			}
 			
-			// 全範囲検索
-			boolean allSearch = false;
-			if (filter.getAllSearch() != null) {
-				allSearch = filter.getAllSearch();
-			}
+			// 全範囲検索はCSVファイル出力の場合は加味せずDBより全件取得する。
 
 			List<EventLogEntity> ct = null;
-			if (allSearch || HinemosPropertyUtil.getHinemosPropertyBool("notify.event.diff", false)) {
-				// イベントログ情報一覧を取得
-				ct = QueryUtil.getEventLogByFilter(
-						facilityIds,
-						priorityList,
-						outputFromDate,
-						outputToDate,
-						generationFromDate,
-						generationToDate,
-						monitorId,
-						monitorDetailId,
-						application,
-						message,
-						confirmFlg,
-						confirmUser,
-						comment,
-						commentUser,
-						collectGraphFlg,
-						ownerRoleId,
-						true,
-						HinemosPropertyUtil.getHinemosPropertyNum("monitor.common.report.event.count", Long.valueOf(2000)).intValue());
-			}
-			
-			// キャッシュから取得
-			if (!allSearch || HinemosPropertyUtil.getHinemosPropertyBool("notify.event.diff", false)) {
-				ct = EventCache.getEventListByCache(
-						facilityIdList,
-						priorityList == null ? null : Arrays.asList(priorityList),
-						outputFromDate,
-						outputToDate,
-						generationFromDate,
-						generationToDate,
-						monitorId,
-						monitorDetailId,
-						application,
-						message,
-						confirmFlg,
-						confirmUser,
-						comment,
-						commentUser,
-						collectGraphFlg,
-						ownerRoleId,
-						false,
-						HinemosPropertyUtil.getHinemosPropertyNum("monitor.common.report.event.count", Long.valueOf(2000)).intValue());
-			}
-			
+			// イベントログ情報一覧を取得
+			ct = QueryUtil.getEventLogByFilter(
+					facilityIds,
+					priorityList,
+					outputFromDate,
+					outputToDate,
+					generationFromDate,
+					generationToDate,
+					monitorId,
+					monitorDetailId,
+					application,
+					message,
+					confirmFlg,
+					confirmUser,
+					comment,
+					commentUser,
+					collectGraphFlg,
+					ownerRoleId,
+					true,
+					HinemosPropertyUtil.getHinemosPropertyNum("monitor.common.report.event.count", Long.valueOf(2000)).intValue());
+
 			// 帳票出力用に変換
 			collectionToFile(ct, filewriter, locale);
 

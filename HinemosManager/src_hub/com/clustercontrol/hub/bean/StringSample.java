@@ -17,6 +17,7 @@ package com.clustercontrol.hub.bean;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -34,10 +35,7 @@ public class StringSample implements Serializable {
 	private static final long serialVersionUID = -8964972103033830851L;
 	private Date dateTime = null;
 	private String monitorId = null;
-	private String facilityId = null;
-	private String targetName = null;
-	private String value = null;
-	private ArrayList<StringSampleTag> tagList = new ArrayList<>();
+	private List<StringSampleData> stringSampleList = null;
 
 	/**
 	 * コンストラクタ
@@ -51,15 +49,26 @@ public class StringSample implements Serializable {
 	}
 
 	/**
-	 * 性能値のセット
+	 * 文字列値 の追加
 	 * @param facilityId 
 	 * @param targetName 
 	 * @param value 収集対象の文字列
 	 */
 	public void set(String facilityId, String targetName, String value){
-		this.facilityId = facilityId;
-		this.targetName = targetName;
-		this.value = value;
+		set(facilityId, targetName, value, Collections.emptyList());
+	}
+
+	/**
+	 * 文字列値 の追加
+	 * @param facilityId 
+	 * @param targetName 
+	 * @param value 収集対象の文字列
+	 */
+	public void set(String facilityId, String targetName, String value, List<StringSampleTag> tags){
+		if(stringSampleList == null)
+			stringSampleList = new ArrayList<>();
+
+		stringSampleList.add(new StringSampleData(facilityId, targetName, value, tags));
 	}
 
 	/**
@@ -73,27 +82,15 @@ public class StringSample implements Serializable {
 	public String getMonitorId() {
 		return monitorId;
 	}
-
-	public String getFacilityId() {
-		return facilityId;
-	}
-
-	public String getTargetName() {
-		return targetName;
-	}
-
-	public String getValue(){
-		return value;
-	}
-
+	
 	/**
-	 * 文字情報に紐づくタグ
+	 * 文字列収集値のリストを取得
 	 * @return
 	 */
-	public List<StringSampleTag> getTagList() {
-		if(tagList == null)
-			tagList = new ArrayList<StringSampleTag>();
-		
-		return tagList;
+	public List<StringSampleData> getStringSampleList() {
+		if(stringSampleList == null)
+			stringSampleList = new ArrayList<>();
+
+		return stringSampleList;
 	}
 }

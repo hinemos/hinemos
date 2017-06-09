@@ -78,6 +78,7 @@ public class HttpCheckInfo extends MonitorCheckInfo implements Serializable {
 	}
 
 
+	@Column(name="timeout")
 	public Integer getTimeout() {
 		return this.timeout;
 	}

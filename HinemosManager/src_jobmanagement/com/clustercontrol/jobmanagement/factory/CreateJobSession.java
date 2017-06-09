@@ -685,7 +685,7 @@ public class CreateJobSession {
 					sessionId,
 					jobInfoEntity.getFacilityId(),
 					jobInfoEntity.getApprovalReqSentence());
-			reqSentence = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, reqSentence);
+			// ここでリターンコードを置き換える(#[RETURN:jobid:facilityId])とnullが入るので、置き換えない。
 			jobInfoEntity.setApprovalReqSentence(reqSentence);
 			
 			// 承認依頼メール件名
@@ -694,7 +694,7 @@ public class CreateJobSession {
 					sessionId,
 					jobInfoEntity.getFacilityId(),
 					jobInfoEntity.getApprovalReqMailTitle());
-			mailTitle = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, mailTitle);
+			// ここでリターンコードを置き換える(#[RETURN:jobid:facilityId])とnullが入るので、置き換えない。
 			jobInfoEntity.setApprovalReqMailTitle(mailTitle);
 			
 			// 承認依頼メール本文
@@ -703,7 +703,7 @@ public class CreateJobSession {
 					sessionId,
 					jobInfoEntity.getFacilityId(),
 					jobInfoEntity.getApprovalReqMailBody());
-			mailBody = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, mailBody);
+			// ここでリターンコードを置き換える(#[RETURN:jobid:facilityId])とnullが入るので、置き換えない。
 			jobInfoEntity.setApprovalReqMailBody(mailBody);
 		}
 

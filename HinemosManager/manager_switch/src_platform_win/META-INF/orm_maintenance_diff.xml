@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+
+	<!-- MaintenanceJob -->
+	<named-native-query name="JobCompletedSessionsEntity.createTable">
+		<query>
+			<![CDATA[
+				SELECT TOP 0 session_id INTO cc_job_completed_sessions FROM log.cc_job_session
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.dropTable">
+		<query>
+			<![CDATA[
+				DROP TABLE cc_job_completed_sessions
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobSessionJob">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions SELECT session_id FROM log.cc_job_session_job
+					WHERE start_date < ?1 AND EXISTS 
+						(SELECT 1 FROM log.cc_job_session AS s WHERE s.jobunit_id=jobunit_id AND s.job_id=job_id AND s.session_id=session_id);
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobSessionJobByStatus">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions SELECT session_id FROM log.cc_job_session_job
+					WHERE (status='300' OR status='301') AND start_date < ?1 AND EXISTS 
+						(SELECT 1 FROM log.cc_job_session AS s WHERE s.jobunit_id=jobunit_id AND s.job_id=job_id AND s.session_id=session_id);
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobSessionJobByOwnerRoleId">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions SELECT session_id FROM log.cc_job_session_job
+					WHERE start_date < ?1 AND owner_role_id = ?2 AND EXISTS 
+						(SELECT 1 FROM log.cc_job_session AS s WHERE s.jobunit_id=jobunit_id AND s.job_id=job_id AND s.session_id=session_id);
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobSessionJobByStatusAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions SELECT session_id FROM log.cc_job_session_job WHERE (status='300' OR status='301') AND
+					start_date < ?1 AND owner_role_id = ?2 AND EXISTS 
+						(SELECT 1 FROM log.cc_job_session AS s WHERE s.jobunit_id=jobunit_id AND s.job_id=job_id AND s.session_id=session_id);
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobSessionEntity.deleteByJobCompletedSessions">
+		<query>
+			<![CDATA[
+				DELETE FROM log.cc_job_session WHERE session_id IN (SELECT session_id FROM cc_job_completed_sessions)
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="NotifyRelationInfoEntity.deleteByJobCompletedSessions">
+		<query>
+			<![CDATA[
+				DELETE FROM setting.cc_notify_relation_info WHERE EXISTS (SELECT 1 FROM cc_job_completed_sessions AS s WHERE 'JOB_SES-' + s.session_id + '%'=notify_group_id);
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="MonitorStatusEntity.deleteByJobCompletedSessions">
+		<query>
+			<![CDATA[
+				DELETE FROM setting.cc_monitor_status WHERE plugin_id='JOB' AND monitor_id IN (SELECT session_id FROM cc_job_completed_sessions)
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="NotifyHistoryEntity.deleteByJobCompletedSessions">
+		<query>
+			<![CDATA[
+				DELETE FROM setting.cc_notify_history WHERE plugin_id='JOB' AND monitor_id IN (SELECT session_id FROM cc_job_completed_sessions)
+			]]>
+		</query>
+	</named-native-query>
+</entity-mappings>

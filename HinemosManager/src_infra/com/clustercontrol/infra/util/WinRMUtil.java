@@ -168,6 +168,10 @@ public class WinRMUtil {
 			shellId = winRs.openShell();
 
 			String srcFilePath = srcDir + File.separator + srcFilename;
+			/**
+			 * 環境構築機能の対象サーバが、Windowsの場合に、
+			 * Linux用のファイルセパレータの「/」が指定されてもWindow側で良しなに処理してくれる。
+			 */
 			String dstFilePath = dstDir + File.separator + dstFilename;
 
 			srcFis = new FileInputStream(new File(srcFilePath));

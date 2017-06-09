@@ -16,7 +16,6 @@ package com.clustercontrol.hub.session;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -35,7 +34,6 @@ import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
-import org.postgresql.util.PSQLException;
 
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.collect.model.CollectData;
@@ -79,6 +77,8 @@ import com.clustercontrol.hub.util.HubValidator;
 import com.clustercontrol.hub.util.QueryUtil;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
+import com.clustercontrol.platform.QueryPertial;
+import com.clustercontrol.platform.hub.HubControllerUtil;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -130,12 +130,6 @@ public class HubControllerBean {
 	 */
 	private static final char SEPARATE_CHAR = '=';
 
-	/*
-	 * PostgreSQL エラーコードキャンセル
-	 * statement_timeout発生時に通知されるエラーコード
-	 */
-	private static final String POSTGRESQL_CANCEL = "57014";
-	
 	/*
 	 * 転送用プラグインのプロパティを変数バインドするクラス
 	 * 
@@ -1159,12 +1153,7 @@ public class HubControllerBean {
 		Connection cn = null;
 		try {
 			// 検索タイムアウト設定
-			em.getTransaction().begin();
-			cn = em.unwrap(java.sql.Connection.class);
-			try (Statement s = cn.createStatement()) {
-				s.execute("SET SESSION statement_timeout TO " + logSearchTimeout);
-				em.getTransaction().commit();
-			}
+			cn = HubControllerUtil.setStatementTimeout(em, logSearchTimeout);
 			
 			// キーのクエリ
 			StringBuilder keyQueryStr = new StringBuilder("SELECT DISTINCT k FROM CollectStringKeyInfo k");
@@ -1213,7 +1202,7 @@ public class HubControllerBean {
 				}
 			}
 
-			TypedQuery<CollectStringKeyInfo> keyQuery = em.createQuery(keyQueryStr.toString(), CollectStringKeyInfo.class);
+			TypedQuery<CollectStringKeyInfo> keyQuery = HubControllerUtil.createQuery(em, keyQueryStr.toString(), CollectStringKeyInfo.class, logSearchTimeout);
 			if (!facilityIds.isEmpty()) {
 				keyQuery.setParameter("nodeIds", facilityIds);
 				logger.debug(String.format("queryCollectStringData() : target nodes. nodes=%s, query=%s", facilityIds, queryInfo));
@@ -1354,7 +1343,7 @@ public class HubControllerBean {
 			String queryStr = "SELECT DISTINCT d " + dataQueryStr.toString() + " ORDER BY d.time DESC";
 			logger.debug(String.format("queryCollectStringData() : query data. queryStr=%s, query=%s", queryStr, queryInfo));
 			
-			TypedQuery<CollectStringData> dataQuery = em.createQuery(queryStr, CollectStringData.class);
+			TypedQuery<CollectStringData> dataQuery = HubControllerUtil.createQuery(em, queryStr.toString(), CollectStringData.class, logSearchTimeout);
 			
 			dataQuery.setParameter("collectIds", keys.keySet());
 			
@@ -1404,11 +1393,8 @@ public class HubControllerBean {
 			throw new HinemosUnknown(e.getMessage(), e);
 		}catch(PersistenceException e){
 			// クエリタイムアウトか判定。
-			if (e.getCause().getCause() instanceof PSQLException){
-				PSQLException pSQLException = (PSQLException) e.getCause().getCause();
-				if (POSTGRESQL_CANCEL.equals(pSQLException.getSQLState())){
-					throw new InvalidSetting(MessageConstant.MESSAGE_HUB_SEARCH_TIMEOUT.getMessage());
-				}
+			if (QueryPertial.isQueryTimeout(e)){
+				throw new InvalidSetting(MessageConstant.MESSAGE_HUB_SEARCH_TIMEOUT.getMessage());
 			}
 			logger.warn(e.getMessage());
 			throw new HinemosUnknown(e.getMessage(), e);
@@ -1422,14 +1408,16 @@ public class HubControllerBean {
 			if (cn != null) {
 				try {
 					// クエリタイムアウト解除。
-					em.getTransaction().begin();
-					try (Statement s = cn.createStatement()) {
-						s.execute("RESET statement_timeout");
-					}
-					em.getTransaction().commit();
+					HubControllerUtil.resetStatementTimeout(cn, em, logSearchTimeout);
 				} catch (SQLException e) {
 					logger.warn(e.getMessage());
-				} 
+				} finally {
+					try {
+						cn.close();
+					} catch (SQLException e) {
+						logger.warn(e.getMessage());
+					}
+				}
 			}
 			em.close();
 			factory.close();

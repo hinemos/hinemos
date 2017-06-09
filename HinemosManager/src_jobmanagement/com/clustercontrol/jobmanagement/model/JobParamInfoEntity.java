@@ -64,6 +64,7 @@ public class JobParamInfoEntity implements Serializable {
 	}
 
 
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}
@@ -83,6 +84,7 @@ public class JobParamInfoEntity implements Serializable {
 	}
 
 
+	@Column(name="value")
 	public String getValue() {
 		return this.value;
 	}

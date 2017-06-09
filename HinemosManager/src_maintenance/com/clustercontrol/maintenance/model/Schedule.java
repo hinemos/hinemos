@@ -71,6 +71,7 @@ public class Schedule implements Serializable {
 		this.type = type;
 	}
 
+	@Column(name="month")
 	public Integer getMonth() {
 		return month;
 	}
@@ -79,6 +80,7 @@ public class Schedule implements Serializable {
 		this.month = month;
 	}
 
+	@Column(name="day")
 	public Integer getDay() {
 		return day;
 	}
@@ -87,6 +89,7 @@ public class Schedule implements Serializable {
 		this.day = day;
 	}
 
+	@Column(name="week")
 	public Integer getWeek() {
 		return week;
 	}
@@ -95,6 +98,7 @@ public class Schedule implements Serializable {
 		this.week = week;
 	}
 
+	@Column(name="hour")
 	public Integer getHour() {
 		return hour;
 	}
@@ -103,6 +107,7 @@ public class Schedule implements Serializable {
 		this.hour = hour;
 	}
 
+	@Column(name="minute")
 	public Integer getMinute() {
 		return minute;
 	}

@@ -184,6 +184,7 @@ public class JobTreeItemUtil {
 			jobInfo.setName(orgInfo.getName());
 			jobInfo.setPropertyFull(orgInfo.isPropertyFull());
 			jobInfo.setType(orgInfo.getType());
+			jobInfo.setIconId(orgInfo.getIconId());
 			if (orgInfo.getUpdateTime() != null) {
 				jobInfo.setUpdateTime(orgInfo.getUpdateTime());
 			}
@@ -209,6 +210,7 @@ public class JobTreeItemUtil {
 				jobCommandInfo.setScriptEncoding(orgInfo.getCommand().getScriptEncoding());
 				jobCommandInfo.setScriptContent(orgInfo.getCommand().getScriptContent());
 				jobCommandInfo.getEnvVariableInfo().addAll(orgInfo.getCommand().getEnvVariableInfo());
+				jobCommandInfo.getJobCommandParamList().addAll(orgInfo.getCommand().getJobCommandParamList());
 				jobInfo.setCommand(jobCommandInfo);
 			}
 

@@ -66,7 +66,7 @@ public class CollectGraphView extends CommonViewPart {
 	private Composite baseComposite = null;
 
 	/** スコープツリーのコンポジットと右側のコンポジットの割合。 */
-	private int sashPer = 20;
+	private int sashPer = 25;
 	/** 区切り文字(##@##) */
 	protected static final String SEPARATOR_HASH_HASH_AT_HASH_HASH = "##@##";
 
@@ -120,8 +120,12 @@ public class CollectGraphView extends CommonViewPart {
 		flayout.marginWidth = 0;
 		baseComposite.setLayout(flayout);
 		
+		SashForm baseCompositeSash = new SashForm(baseComposite, SWT.VERTICAL);
+		Composite treeBaseComposite = new Composite(baseCompositeSash, SWT.NONE);
+		treeBaseComposite.setLayout(new FillLayout(SWT.HORIZONTAL));
+
 		// ファシリティツリーコンポジット
-		scopeTreeComposite = new FacilityTreeComposite(baseComposite, SWT.NONE, null,
+		scopeTreeComposite = new FacilityTreeComposite(treeBaseComposite, SWT.NONE, null,
 				false, // scope only
 				false, // unregistered
 				false, // internal
@@ -130,7 +134,7 @@ public class CollectGraphView extends CommonViewPart {
 				);
 		
 		// 収集種別コンポジット
-		collectSettingComposite = new CollectSettingComposite(baseComposite, SWT.NONE, this);
+		collectSettingComposite = new CollectSettingComposite(baseCompositeSash, SWT.NONE, this);
 
 		//// サッシュの右側
 		// ビューに張るコンポジットの初期化
@@ -147,6 +151,7 @@ public class CollectGraphView extends CommonViewPart {
 		
 		// Sashの境界を調整 左部20% 右部80%
 		treeSash.setWeights(new int[] { sashPer, 100 - sashPer });
+		baseCompositeSash.setWeights(new int[] { 40, 60 });
 
 		// ツリーアイテム選択時のリスナー追加
 		this.scopeTreeComposite.getTreeViewer().addSelectionChangedListener(new ISelectionChangedListener() {
@@ -173,7 +178,7 @@ public class CollectGraphView extends CommonViewPart {
 		});
 
 		// チェック状態を復元する
-		setSelectTreeItem();
+		setSelectTreeItem(null);
 		
 	}
 
@@ -259,12 +264,15 @@ public class CollectGraphView extends CommonViewPart {
 	 * 
 	 * @param treeItem
 	 */
-	public void setSelectTreeItem() {
+	private void setSelectTreeItem(List<String> selectNodeMapList) {
 		
 		m_log.debug("setSelectTreeItem ファシリティツリーと収集値表示名をPreference情報を元に復元します");
 		
 		// Preferenceから情報取得
-		List<String> selectList = getSelectedInfoList();
+		List<String> selectList = selectNodeMapList;
+		if (selectList == null) {
+			selectList = getSelectedInfoList();
+		}
 
 		// ツリーの選択状態の復元
 		this.scopeTreeComposite.setSelectFacilityList(selectList);
@@ -297,6 +305,11 @@ public class CollectGraphView extends CommonViewPart {
 	 */
 	public FacilityTreeComposite getFacilityTreeComposite() {
 		return this.scopeTreeComposite;
+	}
+	
+	public void setSelectFacilityListFromNodemap(List<String> selectNodeMapList) {
+		setSelectTreeItem(selectNodeMapList);
+		this.scopeTreeComposite.update();
 	}
 
 }

@@ -72,7 +72,11 @@ public class CollectData implements Serializable {
 	
 	@Column(name="value")
 	public Float getValue() {
-		return value;
+		if (value == null) {
+			return Float.NaN;
+		} else {
+			return value;
+		}
 	}
 	public void setValue(Float value) {
 		this.value = value;

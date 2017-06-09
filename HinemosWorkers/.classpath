@@ -2,6 +2,8 @@
 <classpath>
 	<classpathentry kind="src" path="src_agent"/>
 	<classpathentry kind="src" path="src_manager_cli"/>
+	<classpathentry kind="src" path="src_win_tasktray"/>
+	<classpathentry kind="src" path="src_win_syslog"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/HinemosManager/build/jar/AgentWS.jar"/>
 	<classpathentry kind="lib" path="/HinemosCommon/build/jar/HinemosCommon.jar"/>

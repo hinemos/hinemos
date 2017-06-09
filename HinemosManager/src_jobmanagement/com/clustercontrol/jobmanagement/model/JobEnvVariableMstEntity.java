@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.persistence.Cacheable;
+import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -61,7 +62,7 @@ public class JobEnvVariableMstEntity implements Serializable {
 		this.id = id;
 	}
 
-
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}
@@ -70,7 +71,7 @@ public class JobEnvVariableMstEntity implements Serializable {
 		this.description = description;
 	}
 
-
+	@Column(name="value")
 	public String getValue() {
 		return this.value;
 	}

@@ -94,7 +94,7 @@ public class FacilityInfo extends ObjectPrivilegeTargetInfo implements Cloneable
 		this.createUserId = createUserId;
 	}
 
-
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}
@@ -161,7 +161,7 @@ public class FacilityInfo extends ObjectPrivilegeTargetInfo implements Cloneable
 		this.modifyUserId = modifyUserId;
 	}
 
-
+	@Column(name="valid")
 	public Boolean getValid() {
 		return this.valid;
 	}

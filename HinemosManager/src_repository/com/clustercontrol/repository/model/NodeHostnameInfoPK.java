@@ -32,6 +32,7 @@ public class NodeHostnameInfoPK implements Serializable {
 		this.facilityId = facilityId;
 	}
 
+	@Column(name="hostname")
 	public String getHostname() {
 		return this.hostname;
 	}

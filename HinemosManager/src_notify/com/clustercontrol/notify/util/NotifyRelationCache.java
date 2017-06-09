@@ -146,6 +146,7 @@ public class NotifyRelationCache {
 			_lock.writeLock();
 			
 			long start = HinemosTime.currentTimeMillis();
+			new JpaTransactionManager().getEntityManager().clear();
 			HashMap<String, List<NotifyRelationInfo>> notifyMap = new HashMap<String, List<NotifyRelationInfo>>();
 			List<NotifyRelationInfo> nriList = null;
 			try {

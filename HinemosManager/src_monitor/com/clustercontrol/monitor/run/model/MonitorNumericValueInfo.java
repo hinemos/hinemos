@@ -75,6 +75,7 @@ public class MonitorNumericValueInfo implements Serializable {
 		getId().setPriority(priority);
 	}
 
+	@Column(name="message")
 	public String getMessage() {
 		return this.message;
 	}

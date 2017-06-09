@@ -21,8 +21,10 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.jobmanagement.factory.FullJob;
 import com.clustercontrol.monitor.run.util.EventCache;
 import com.clustercontrol.plugin.api.HinemosPlugin;
+import com.clustercontrol.repository.factory.NodeProperty;
 
 public class CacheInitializerPlugin implements HinemosPlugin {
 	public static final Log log = LogFactory.getLog(CacheInitializerPlugin.class);
@@ -42,6 +44,8 @@ public class CacheInitializerPlugin implements HinemosPlugin {
 	@Override
 	public void activate() {
 		EventCache.initEventCache(); // TODO CacheInitializerPluginを用意すること！
+		new NodeProperty();
+		new FullJob();
 	}
 
 	@Override

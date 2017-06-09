@@ -251,4 +251,67 @@ public class JobMapEndpoint {
 
 		return new JobControllerBean().getJobmapIconIdJobnetDefault();
 	}
+
+	/**
+	 * ジョブマップ用アイコンイメージ（承認ジョブ用）のデフォルトアイコンIDを取得する。<BR>
+	 * 
+	 * @return デフォルトアイコンID
+	 * @throws HinemosUnknown
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 */
+	public String getJobmapIconIdApprovalDefault() throws HinemosUnknown, InvalidUserPass, InvalidRole {
+		m_log.debug("getJobmapIconIdApprovalDefault");
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getJobmapIconIdApprovalDefault, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx));
+
+		return new JobControllerBean().getJobmapIconIdApprovalDefault();
+	}
+
+	/**
+	 * ジョブマップ用アイコンイメージ（監視ジョブ用）のデフォルトアイコンIDを取得する。<BR>
+	 * 
+	 * @return デフォルトアイコンID
+	 * @throws HinemosUnknown
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 */
+	public String getJobmapIconIdMonitorDefault() throws HinemosUnknown, InvalidUserPass, InvalidRole {
+		m_log.debug("getJobmapIconIdMonitorDefault");
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getJobmapIconIdMonitorDefault, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx));
+
+		return new JobControllerBean().getJobmapIconIdMonitorDefault();
+	}
+
+	/**
+	 * ジョブマップ用アイコンイメージ（ファイル転送ジョブ用）のデフォルトアイコンIDを取得する。<BR>
+	 * 
+	 * @return デフォルトアイコンID
+	 * @throws HinemosUnknown
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 */
+	public String getJobmapIconIdFileDefault() throws HinemosUnknown, InvalidUserPass, InvalidRole {
+		m_log.debug("getJobmapIconIdFileDefault");
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getJobmapIconIdFileDefault, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx));
+
+		return new JobControllerBean().getJobmapIconIdFileDefault();
+	}
 }

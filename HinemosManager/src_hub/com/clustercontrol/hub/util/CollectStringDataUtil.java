@@ -35,6 +35,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.hub.bean.StringSample;
+import com.clustercontrol.hub.bean.StringSampleData;
 import com.clustercontrol.hub.bean.StringSampleTag;
 import com.clustercontrol.hub.bean.ValueType;
 import com.clustercontrol.hub.model.CollectDataTag;
@@ -117,85 +118,87 @@ public class CollectStringDataUtil {
 		Map<String, MonitorInfo> monitorInfoMap = new HashMap<>();
 		Map<String, CollectStringDataParser> parserMap = new HashMap<>();
 		for (StringSample sample : sampleList) {
-			// for debug
-			if (m_log.isDebugEnabled()) {
-				m_log.debug("store() facilityId = " + sample.getFacilityId() + ", dateTime = " + sample.getDateTime());
-				m_log.debug("store() value = " + sample.getValue());
-			}
-
-			m_log.debug("persist targetName = " + sample.getTargetName());
-
-			String monitorId = sample.getMonitorId();
-			String facilityId = sample.getFacilityId();
-			// スキーマの内容を考慮し、512 文字で制限する。
-			String targetName = sample.getTargetName().length() > 512 ? sample.getTargetName().substring(0, 512): sample.getTargetName();
-			
-			CollectStringData collectData = null;
-			Long collectId = getCollectStringKeyInfoPK(monitorId, facilityId, targetName, jtm);
-			
-			Long dataId = StringDataIdGenerator.getNext();
-			if (dataId == StringDataIdGenerator.getMax() / 2) {
-				AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.HUB_TRANSFER, MessageConstant.MESSAGE_HUB_COLLECT_NUMBERING_OVER_INTERMEDIATE, new String[]{},
-						String.format("current=%d, max=%d", dataId, StringDataIdGenerator.getMax()));
-			}
-			
-			CollectStringDataPK pk = new CollectStringDataPK(collectId, dataId);
-			
-			String value = sample.getValue() != null? sample.getValue() : "";
-			collectData = new CollectStringData(pk, HinemosTime.currentTimeMillis(), value);
-			
-			if (!sample.getTagList().isEmpty()) {
-				Map<String, CollectDataTag> tagMap = new HashMap<>();
-				for (StringSampleTag tag : sample.getTagList()) {
-					tagMap.put(tag.getKey(), new CollectDataTag(new CollectDataTagPK(collectId, dataId, tag.getKey()), tag.getType(), tag.getValue()));
+			for (StringSampleData data: sample.getStringSampleList()) {
+				// for debug
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("store() facilityId = " + data.getFacilityId() + ", dateTime = " + sample.getDateTime());
+					m_log.debug("store() value = " + data.getValue());
 				}
-				collectData.getTagList().addAll(tagMap.values());
-			}
-			
-			// タグ抽出
-			MonitorSettingControllerBean bean = new MonitorSettingControllerBean();
-			try {
-				MonitorInfo mi = monitorInfoMap.get(monitorId);
-				if (mi == null) {
-					mi = bean.getMonitor(monitorId);
-					monitorInfoMap.put(monitorId, mi);
-				}
-				if (mi.getLogFormatId() != null) {
-					CollectStringDataParser parser = parserMap.get(mi.getLogFormatId());
-					if (parser == null) {
-						parser = new CollectStringDataParser(
-								new HubControllerBean().getLogFormat(mi.getLogFormatId()));
-						parserMap.put(mi.getLogFormatId(), parser);
-					}
-					parser.parse(collectData);
-					
-					collectData.setLogformatId(mi.getLogFormatId());
+
+				m_log.debug("persist targetName = " + data.getTargetName());
+
+				String monitorId = sample.getMonitorId();
+				String facilityId = data.getFacilityId();
+				// スキーマの内容を考慮し、512 文字で制限する。
+				String targetName = data.getTargetName().length() > 512 ? data.getTargetName().substring(0, 512): data.getTargetName();
+				
+				CollectStringData collectData = null;
+				Long collectId = getCollectStringKeyInfoPK(monitorId, facilityId, targetName, jtm);
+				
+				Long dataId = StringDataIdGenerator.getNext();
+				if (dataId == StringDataIdGenerator.getMax() / 2) {
+					AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.HUB_TRANSFER, MessageConstant.MESSAGE_HUB_COLLECT_NUMBERING_OVER_INTERMEDIATE, new String[]{},
+							String.format("current=%d, max=%d", dataId, StringDataIdGenerator.getMax()));
 				}
 				
-				// KEY_TIMESTAMP_IN_LOG があれば、ログの時刻を受信日時から切り替えます。
-				CollectDataTag timestamp = null;
-				for (CollectDataTag tag: collectData.getTagList()) {
-					if (tag.getKey().equals(CollectStringDataParser.KEY_TIMESTAMP_IN_LOG)) {
-						timestamp = tag;
-						break;
+				CollectStringDataPK pk = new CollectStringDataPK(collectId, dataId);
+				
+				String value = data.getValue() != null? data.getValue() : "";
+				collectData = new CollectStringData(pk, HinemosTime.currentTimeMillis(), value);
+				
+				if (!data.getTagList().isEmpty()) {
+					Map<String, CollectDataTag> tagMap = new HashMap<>();
+					for (StringSampleTag tag : data.getTagList()) {
+						tagMap.put(tag.getKey(), new CollectDataTag(new CollectDataTagPK(collectId, dataId, tag.getKey()), tag.getType(), tag.getValue()));
 					}
+					collectData.getTagList().addAll(tagMap.values());
 				}
-				if (timestamp != null) {
-					try {
-						Long time = collectData.getTime();
-						collectData.setTime(Long.valueOf(timestamp.getValue()));
-						collectData.getTagList().add(new CollectDataTag(new CollectDataTagPK(collectData.getCollectId(), collectData.getDataId(), CollectStringDataParser.KEY_TIMESTAMP_RECIEVED), ValueType.number, time.toString()));
-					} catch(Exception e) {
-						m_log.warn("store() : fail to change to timestamp of log. time=" + timestamp.getValue(), e);
+				
+				// タグ抽出
+				MonitorSettingControllerBean bean = new MonitorSettingControllerBean();
+				try {
+					MonitorInfo mi = monitorInfoMap.get(monitorId);
+					if (mi == null) {
+						mi = bean.getMonitor(monitorId);
+						monitorInfoMap.put(monitorId, mi);
 					}
+					if (mi.getLogFormatId() != null) {
+						CollectStringDataParser parser = parserMap.get(mi.getLogFormatId());
+						if (parser == null) {
+							parser = new CollectStringDataParser(
+									new HubControllerBean().getLogFormat(mi.getLogFormatId()));
+							parserMap.put(mi.getLogFormatId(), parser);
+						}
+						parser.parse(collectData);
+						
+						collectData.setLogformatId(mi.getLogFormatId());
+					}
+					
+					// KEY_TIMESTAMP_IN_LOG があれば、ログの時刻を受信日時から切り替えます。
+					CollectDataTag timestamp = null;
+					for (CollectDataTag tag: collectData.getTagList()) {
+						if (tag.getKey().equals(CollectStringDataParser.KEY_TIMESTAMP_IN_LOG)) {
+							timestamp = tag;
+							break;
+						}
+					}
+					if (timestamp != null) {
+						try {
+							Long time = collectData.getTime();
+							collectData.setTime(Long.valueOf(timestamp.getValue()));
+							collectData.getTagList().add(new CollectDataTag(new CollectDataTagPK(collectData.getCollectId(), collectData.getDataId(), CollectStringDataParser.KEY_TIMESTAMP_RECIEVED), ValueType.number, time.toString()));
+						} catch(Exception e) {
+							m_log.warn("store() : fail to change to timestamp of log. time=" + timestamp.getValue(), e);
+						}
+					}
+				} catch (MonitorNotFound | HinemosUnknown | InvalidRole e) {
+					m_log.warn(String.format("failed to get a MonitorInfo : %s", sample.getMonitorId()));
 				}
-			} catch (MonitorNotFound | HinemosUnknown | InvalidRole e) {
-				m_log.warn(String.format("failed to get a MonitorInfo : %s", sample.getMonitorId()));
+				
+				collectdata_entities.add(collectData);
+				
+				m_log.debug("store() : " + collectData);
 			}
-			
-			collectdata_entities.add(collectData);
-			
-			m_log.debug("store() : " + collectData);
 		}
 		
 		jtm.commit();

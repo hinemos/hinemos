@@ -22,15 +22,13 @@ import java.util.List;
 import com.clustercontrol.collect.model.CollectDataPK;
 import com.clustercontrol.collect.model.SummaryHour;
 import com.clustercontrol.commons.util.JdbcBatchQuery;
+import com.clustercontrol.platform.collect.JdbcBatchUpsertUtil;
 
 /**
  *  SummaryHourにマッピングするテーブルにデータを登録するクラス
  */
 public class SummaryHourJdbcBatchUpsert extends JdbcBatchQuery {
-	private static final String SQL = "INSERT INTO log.cc_collect_summary_hour"
-			+ "(collector_id, time, avg, min, max, count) "
-			+ "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT ON CONSTRAINT p_key_cc_collect_summary_hour "
-			+ "DO UPDATE SET avg = ?, min=?, max=?, count=?";
+	private static final String SQL = JdbcBatchUpsertUtil.SUMMARY_HOUR_SQL;
 	
 	private List<SummaryHour> entities = null;
 
@@ -47,18 +45,7 @@ public class SummaryHourJdbcBatchUpsert extends JdbcBatchQuery {
 	public void addBatch(PreparedStatement pstmt) throws SQLException {
 		for (SummaryHour entity : entities) {
 			CollectDataPK pk = entity.getId();
-			Object[] params = new Object[] {
-				pk.getCollectorid(),
-				pk.getTime(),
-				entity.getAvg(),
-				entity.getMin(),
-				entity.getMax(),
-				entity.getCount(),
-				entity.getAvg(),
-				entity.getMin(),
-				entity.getMax(),
-				entity.getCount()
-			};
+			Object[] params = JdbcBatchUpsertUtil.getParameters(pk, entity);
 			setParameters(pstmt, params);
 			pstmt.addBatch();
 		}

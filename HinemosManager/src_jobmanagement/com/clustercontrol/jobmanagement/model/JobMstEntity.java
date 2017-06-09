@@ -209,6 +209,7 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}
@@ -289,6 +290,7 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 
 
 	// cc_job_command_mst
+	@Column(name="argument")
 	public String getArgument() {
 		return this.argument;
 	}
@@ -444,6 +446,7 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	// cc_job_start_mst
 
 
+	@Column(name="calendar")
 	public Boolean getCalendar() {
 		return this.calendar;
 	}
@@ -676,6 +679,7 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 		this.multiplicity_end_value = multiplicity_end_value;
 	}
 
+	@Column(name="skip")
 	public Boolean getSkip() {
 		return this.skip;
 	}
@@ -825,6 +829,7 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="suspend")
 	public Boolean getSuspend() {
 		return this.suspend;
 	}
@@ -1190,7 +1195,7 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 		this.approvalReqUserId = approvalReqUserId;
 	}
 
-	@Column(name="approval_req_Sentence")
+	@Column(name="approval_req_sentence")
 	public String getApprovalReqSentence() {
 		return approvalReqSentence;
 	}
@@ -1217,7 +1222,7 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 		this.approvalReqMailBody = approvalReqMailBody;
 	}
 
-	@Column(name="use_approval_req_Sentence")
+	@Column(name="use_approval_req_sentence")
 	public Boolean isUseApprovalReqSentence() {
 		return useApprovalReqSentence;
 	}

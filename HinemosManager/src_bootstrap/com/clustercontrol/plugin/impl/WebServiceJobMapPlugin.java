@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.plugin.api.HinemosPlugin;
+import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.jobmanagement.JobMapEndpoint;
 
 /**
@@ -54,7 +55,7 @@ public class WebServiceJobMapPlugin extends WebServiceOptionPlugin implements Hi
 	}
 
 	private boolean isJobMap() {
-		return isOption("jobmap.key", "787d5539825b8c1bbff05b28de1ea502");
+		return KeyCheck.checkEnterprise();
 	}
 
 }

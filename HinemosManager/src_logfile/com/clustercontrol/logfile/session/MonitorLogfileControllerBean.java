@@ -128,6 +128,7 @@ public class MonitorLogfileControllerBean {
 		try {
 			_lock.writeLock();
 			
+			new JpaTransactionManager().getEntityManager().clear();
 			ArrayList<MonitorInfo> logfileCache = new MonitorLogfileControllerBean().getLogfileList();
 			storeCache(logfileCache);
 			

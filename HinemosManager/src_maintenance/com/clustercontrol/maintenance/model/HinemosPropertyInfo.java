@@ -72,6 +72,7 @@ public class HinemosPropertyInfo {
 		this.createUserId = createUserId;
 	}
 
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}

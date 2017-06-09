@@ -33,6 +33,7 @@ import com.clustercontrol.commons.util.JpaSessionEventListener;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
+import com.clustercontrol.jobmanagement.factory.FullJob;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.notify.model.MonitorStatusEntity;
 import com.clustercontrol.notify.model.NotifyHistoryEntity;
@@ -43,6 +44,7 @@ import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.plugin.impl.SnmpTrapPlugin;
 import com.clustercontrol.plugin.impl.SystemLogPlugin;
 import com.clustercontrol.plugin.impl.WebServiceCorePlugin;
+import com.clustercontrol.repository.factory.NodeProperty;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.selfcheck.SelfCheckTaskSubmitter;
 import com.clustercontrol.selfcheck.monitor.AsyncTaskQueueMonitor;
@@ -410,4 +412,23 @@ public class Manager implements ManagerMXBean {
 		log.info("stopHinemosSchedulerTest end.");
 	}
 	*/
+	
+	@Override
+	public void initNodeCache() {
+		try {
+			NodeProperty.init();
+		} catch (Throwable t) {
+			log.error("NodeProperty initialisation error. " + t.getMessage(), t);
+		}
+	}
+	
+	@Override
+	public void initJobCache() {
+		try {
+			FullJob.initJobMstCache();
+			FullJob.initJobInfoCache();
+		} catch (Throwable t) {
+			log.error("FullJob initialisation error. " + t.getMessage(), t);
+		}
+	}
 }

@@ -167,7 +167,8 @@ public class CollectSettingComposite extends Composite {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalSpan = 1;
-		gridData.heightHint = m_listCollectorItem.getItemHeight() * 5;
+		gridData.heightHint = m_listCollectorItem.getItemHeight() * 100;
+		gridData.grabExcessVerticalSpace = true;
 		m_listCollectorItem.setLayoutData(gridData);
 		
 		// 収集値表示名を選択するたびのイベント

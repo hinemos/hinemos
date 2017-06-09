@@ -419,7 +419,7 @@ public class SendSyslog implements Notifier {
 				= new RepositoryControllerBean().getFacilityEntityByPK(facilityId);
 				if (FacilityUtil.isNode(facility)) {
 					hostname = isBuildinScope ? HOSTNAME_SERVER :
-						(facility instanceof NodeInfo ? null : ((NodeInfo)facility).getNodeName());
+						(facility instanceof NodeInfo ? ((NodeInfo)facility).getNodeName() : null);
 				} else {
 					if (m_log.isDebugEnabled()) m_log.debug("facility '" + facilityId + "' is not node.");
 					hostname = HOSTNAME_SERVER;

@@ -16,6 +16,7 @@ PURPOSE.  See the GNU General Public License for more details.
 package com.clustercontrol.snmptrap.factory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.persistence.EntityExistsException;
@@ -232,6 +233,8 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 	
 	@Override
 	protected boolean deleteCheckInfo() {
+		TrapCheckInfo trapInfoEntity = m_monitor.getTrapCheckInfo();
+		trapInfoEntity.deleteMonitorTrapValueInfoEntities(Collections.emptyList());
 		return true;
 	}
 	

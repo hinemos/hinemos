@@ -24,6 +24,7 @@ import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.selfcheck.SelfCheckPertial;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -42,9 +43,6 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 	private static final String PROP_DBTRAN = "selfcheck.monitoring.dbtran";
 	private static final String PROP_INTERVAL = "selfcheck.monitoring.dbtran.interval";
 	private static final Integer DEFAULT_INTERVAL = 86400; // 1day
-	private static final String VALIDATION_QUERY = "SELECT EXTRACT(EPOCH FROM (current_timestamp-xact_start)::interval(3)), 'query = [' || query || '], start_time = ' || TO_CHAR(xact_start,'yyyy/mm/dd hh24:mi:ss') || '"
-			+ ", duration = ' || EXTRACT(EPOCH FROM (current_timestamp-xact_start)::interval(3)) || ' sec' FROM pg_stat_activity"
-			+ " WHERE (current_timestamp-xact_start)::interval>'%d second'::interval";
 	
 	/**
 	 * コンストラクタ
@@ -90,7 +88,7 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 		// 時間間隔（秒）
 		Integer intervalSec = HinemosPropertyUtil.getHinemosPropertyNum(PROP_INTERVAL, Long.valueOf(DEFAULT_INTERVAL)).intValue();
 		// SQL
-		validationQuery = String.format(VALIDATION_QUERY, intervalSec);
+		validationQuery = String.format(SelfCheckPertial.getDbLongTranValidationQuery(), intervalSec);
 
 		/** メイン処理 */
 		m_log.debug("monitoring long running transaction query. (query = " + validationQuery + ")");
@@ -150,7 +148,7 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 		// 時間間隔（秒）
 		Integer intervalSec = HinemosPropertyUtil.getHinemosPropertyNum(PROP_INTERVAL, Long.valueOf(DEFAULT_INTERVAL)).intValue();
 		// SQL
-		String query = String.format(VALIDATION_QUERY, intervalSec);
+		String query = String.format(SelfCheckPertial.getDbLongTranValidationQuery(), intervalSec);
 		
 		double duration = 0.0;
 
@@ -165,7 +163,7 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 			if (rowList != null) {
 				for (Object row : rowList) {
 					Object[] resultList = (Object[])row;
-					double tempDuration = resultList[0] != null ? (Double)resultList[0] : 0.0;
+					double tempDuration = resultList[0] != null ? Double.parseDouble(String.valueOf(resultList[0])) : 0.0;
 					if (tempDuration > duration) {
 						duration = tempDuration;
 					}

@@ -68,6 +68,7 @@ public class NotifyHistoryEntity implements Serializable {
 	}
 
 
+	@Column(name="priority")
 	public Integer getPriority() {
 		return this.priority;
 	}

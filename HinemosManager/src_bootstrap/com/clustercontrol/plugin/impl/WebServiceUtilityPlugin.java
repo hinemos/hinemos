@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.plugin.api.HinemosPlugin;
+import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.utility.UtilityEndpoint;
 
 /**
@@ -54,7 +55,7 @@ public class WebServiceUtilityPlugin extends WebServiceOptionPlugin implements H
 	}
 
 	private boolean isUtility() {
-		return isOption("utility.key", "84fa51f1fb58c9ce3cf348cca9d80cda");
+		return KeyCheck.checkEnterprise();
 	}
 
 }

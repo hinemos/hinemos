@@ -116,7 +116,7 @@ public class LogSearchComposite extends Composite {
 				@Override
 				public String getText(Object element) {
 					StringData stringData = (StringData) element;
-					return stringData.getData();
+					return HinemosMessage.replace(stringData.getData());
 				}
 
 				@Override

@@ -33,6 +33,7 @@ import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.custom.bean.CommandExecuteDTO;
 import com.clustercontrol.custom.bean.CommandVariableDTO;
@@ -105,6 +106,7 @@ public class SelectCustom extends SelectMonitor {
 		try {
 			_lock.writeLock();
 			
+			new JpaTransactionManager().getEntityManager().clear();
 			ArrayList<MonitorInfo> customCache = new SelectCustom().getMonitorListObjectPrivilegeModeNONE(HinemosModuleConstant.MONITOR_CUSTOM_N);
 			customCache.addAll(new SelectCustom().getMonitorListObjectPrivilegeModeNONE(HinemosModuleConstant.MONITOR_CUSTOM_S));
 			storeCache(customCache);

@@ -3,6 +3,7 @@ package com.clustercontrol.nodemap.model;
 import java.io.Serializable;
 
 import javax.persistence.Cacheable;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -35,6 +36,7 @@ public class MapIconImageEntity implements Serializable {
 
 
 	@Id
+	@Column(name="filename")
 	public String getFilename() {
 		return this.filename;
 	}
@@ -44,6 +46,7 @@ public class MapIconImageEntity implements Serializable {
 	}
 
 
+	@Column(name="filedata")
 	public byte[] getFiledata() {
 		return this.filedata;
 	}
