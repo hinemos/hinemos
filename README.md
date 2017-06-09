@@ -12,7 +12,7 @@
 
 Hinemos is an open source integrated system management software providing monitoring and job management automation.
 
-[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/) | [Latest Packages] (https://github.com/hinemos/hinemos/releases/tag/v6.0.0#packages)
+[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/) | [Latest Packages] (https://github.com/hinemos/hinemos/releases/tag/v6.0.1#packages)
 
 ## Installation
 
@@ -20,15 +20,15 @@ You can install hinemos by the following commands.
 
 - Manager Installation
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.0/hinemos-6.0-manager-6.0.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.1/hinemos-6.0-manager-6.0.1-1.el7.x86_64.rpm```
 
 - Web Client Installation
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.0/hinemos-6.0-web-6.0.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.1/hinemos-6.0-web-6.0.1-1.el7.x86_64.rpm```
 
 See the [install document](https://github.com/hinemos/hinemos/releases/download/v6.0.0/doc_install_6.0_ja.pdf) for details.
 
-## What's new in ver.6.0.0
+## What's new in ver.6.0
 
 * New Data Collecting & Storing Feature
   - analyzing logs and resources
@@ -38,6 +38,15 @@ See the [install document](https://github.com/hinemos/hinemos/releases/download/
   - with pie chart, bar chart, scatter chart and approximate line for analyzing
 
 See the [release notes](https://github.com/hinemos/hinemos/releases) for details.
+
+## Documentation
+
+- Installation Manual (
+[doc_install_6.0_en.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.0/doc_install_6.0_en.pdf) )
+- User Manual (
+[doc_user_6.0_en.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.0/doc_user_6.0_en.pdf) )
+- Administrator's Guide (
+[doc_admin_6.0_en.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.0/doc_admin_6.0_en.pdf) )
 
 ## License
 
