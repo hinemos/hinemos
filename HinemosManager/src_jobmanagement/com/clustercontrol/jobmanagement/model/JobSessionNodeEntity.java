@@ -94,7 +94,7 @@ public class JobSessionNodeEntity implements Serializable {
 		this.endValue = endValue;
 	}
 
-
+	@Column(name="message")
 	public String getMessage() {
 		return this.message;
 	}
@@ -114,6 +114,7 @@ public class JobSessionNodeEntity implements Serializable {
 	}
 
 
+	@Column(name="result")
 	public String getResult() {
 		return this.result;
 	}
@@ -153,6 +154,7 @@ public class JobSessionNodeEntity implements Serializable {
 	}
 
 
+	@Column(name="status")
 	public Integer getStatus() {
 		return this.status;
 	}

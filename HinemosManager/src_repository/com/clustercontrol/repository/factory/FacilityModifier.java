@@ -33,6 +33,8 @@ import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.nodemap.session.NodeMapControllerBean;
+import com.clustercontrol.platform.repository.FacilityModifierUtil;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.entity.CollectorPlatformMstData;
@@ -337,6 +339,7 @@ public class FacilityModifier {
 
 		// 関連インスタンス、ファシリティインスタンスを削除する
 		deleteScopeRecursive(facility);
+		FacilityModifierUtil.deleteFacilityRelation(facilityId);
 
 		m_log.info("deleteScope() successful in deleting a scope with sub scopes. (facilityId = " + facilityId + ")");
 	}
@@ -382,6 +385,7 @@ public class FacilityModifier {
 			}
 		}
 		em.remove(scope);
+		new NodeMapControllerBean().deleteMapInfo(null, scope.getFacilityId());
 
 		m_log.info("deleteScopeRecursive() successful in deleting a scope. (facilityId = " + facilityId + ")");
 	}
@@ -522,7 +526,7 @@ public class FacilityModifier {
 		}
 
 		em.remove(facility);
-
+		FacilityModifierUtil.deleteFacilityRelation(facilityId);
 		m_log.info("deleteNode() successful in deleting a node. (facilityId = " + facilityId + ")");
 	}
 

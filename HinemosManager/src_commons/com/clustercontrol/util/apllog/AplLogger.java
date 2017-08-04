@@ -38,6 +38,9 @@ import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.notify.util.NotifyUtil;
 import com.clustercontrol.notify.util.SendSyslog;
+import com.clustercontrol.platform.HinemosPropertyDefault;
+import com.clustercontrol.platform.PlatformPertial;
+import com.clustercontrol.platform.util.apllog.EventLogger;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandCreator.PlatformType;
 import com.clustercontrol.util.CommandExecutor;
@@ -170,6 +173,12 @@ public class AplLogger {
 			if (isCommand && isOutput(commandLevel, priority)) {
 				putCommand(output);
 			}
+
+			/////
+			// Windowsイベントログ
+			////
+			EventLogger.internal(priority, output);
+			
 		}finally{
 			// INTERNALモードから出る
 			m_isInternalMode.put(Thread.currentThread().getId(), false);
@@ -274,10 +283,10 @@ public class AplLogger {
 	private static void putCommand(OutputBasicInfo notifyInfo) {
 		// コマンド通知
 		try {
-			String commandUser = HinemosPropertyUtil.getHinemosPropertyStr("internal.command.user", "root");
+			String commandUser = HinemosPropertyUtil.getHinemosPropertyStr("internal.command.user", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INTERNAL_COMMAND_USER));
 			String commandLine = HinemosPropertyUtil.getHinemosPropertyStr(
 					"internal.command.commandline",
-					"echo #[GENERATION_DATE] #[MESSAGE] >> /tmp/test.txt");
+					HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INTERNAL_COMMAND_COMMANDLINE));
 			int commandTimeout = 0;
 			try {
 				commandTimeout = HinemosPropertyUtil.getHinemosPropertyNum("internal.command.timeout", Long.valueOf(15000)).intValue();
@@ -287,8 +296,9 @@ public class AplLogger {
 			StringBinder binder = new StringBinder(param);
 			String command = binder.bindParam(commandLine);
 
-			log.info("excuting command. (effectiveUser = " + commandUser + ", command = " + command + ", mode = " + PlatformType.UNIX + ", timeout = " + commandTimeout + ")");
-			String[] cmd = CommandCreator.createCommand(commandUser, command, PlatformType.UNIX);
+			PlatformType platformType = PlatformPertial.getPlatformType();
+			log.info("excuting command. (effectiveUser = " + commandUser + ", command = " + command + ", mode = " + platformType + ", timeout = " + commandTimeout + ")");
+			String[] cmd = CommandCreator.createCommand(commandUser, command, platformType);
 			CommandExecutor cmdExec = new CommandExecutor(cmd, commandTimeout);
 			cmdExec.execute();
 			CommandResult ret = cmdExec.getResult();

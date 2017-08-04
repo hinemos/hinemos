@@ -59,6 +59,7 @@ public class PriorityJudgmentInfo implements Serializable {
 	}
 
 
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}

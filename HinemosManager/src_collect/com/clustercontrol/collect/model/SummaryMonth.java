@@ -80,21 +80,33 @@ public class SummaryMonth implements Serializable, Cloneable {
 	
 	@Column(name="avg")
 	public Float getAvg() {
-		return avg;
+		if (avg == null) {
+			return Float.NaN;
+		} else {
+			return avg;
+		}
 	}
 	public void setAvg(Float avg) {
 		this.avg = avg;
 	}
 	@Column(name="min")
 	public Float getMin() {
-		return min;
+		if (min == null) {
+			return Float.NaN;
+		} else {
+			return min;
+		}
 	}
 	public void setMin(Float min) {
 		this.min = min;
 	}
 	@Column(name="max")
 	public Float getMax() {
-		return max;
+		if (max == null) {
+			return Float.NaN;
+		} else {
+			return max;
+		}
 	}
 	public void setMax(Float max) {
 		this.max = max;

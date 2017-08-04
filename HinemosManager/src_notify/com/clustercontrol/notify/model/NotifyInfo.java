@@ -80,6 +80,7 @@ public class NotifyInfo extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}

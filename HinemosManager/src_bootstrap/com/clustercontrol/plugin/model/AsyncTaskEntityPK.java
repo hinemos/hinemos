@@ -37,6 +37,7 @@ public class AsyncTaskEntityPK implements Serializable {
 		this.setTaskId(taskId);
 	}
 
+	@Column(name="worker")
 	public String getWorker() {
 		return this.worker;
 	}

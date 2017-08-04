@@ -378,7 +378,8 @@ public class NodeInfoDeviceSearch implements Serializable
 				// サーバ基本情報->ハードウェア
 				if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_BASIC_HARDWARE, false)) {
 					this.newNodeInfo.setPlatformFamily(this.nodeInfo.getPlatformFamily());
-					this.newNodeInfo.setSubPlatformFamily(this.nodeInfo.getSubPlatformFamily());
+					//SNMPで取得される情報ではないためサブプラットフォームは置き換えない
+					//(置き換えてしまうとクラウド仮想化オプション利用時にリソース監視(メトリクス)が動作しなくなる)
 					this.newNodeInfo.setHardwareType(this.nodeInfo.getHardwareType());
 					this.newNodeInfo.setIconImage(this.nodeInfo.getIconImage());
 				}
@@ -451,23 +452,8 @@ public class NodeInfoDeviceSearch implements Serializable
 							nodeInfo.getPlatformFamily());
 				}
 			}
-
-			if( nodeInfo.getSubPlatformFamily() == null ) {
-				lEquals = lEquals && ( lastNode.getSubPlatformFamily() == null );
-				if (lastNode.getSubPlatformFamily() != null) {
-					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.HARDWARE.getMessage() + "." + MessageConstant.SUB_PLATFORM_FAMILY_NAME.getMessage(),
-							MessageConstant.EXISTENT.getMessage(),
-							MessageConstant.NONEXISTENT.getMessage());
-				}
-			} else {
-				lEquals = lEquals && nodeInfo.getSubPlatformFamily().equals( lastNode.getSubPlatformFamily() );
-				if (nodeInfo.getSubPlatformFamily().equals( lastNode.getSubPlatformFamily()) == false) {
-					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.HARDWARE.getMessage() + "." + MessageConstant.SUB_PLATFORM_FAMILY_NAME.getMessage(),
-							lastNode.getSubPlatformFamily(),
-							nodeInfo.getSubPlatformFamily());
-				}
-			}
-
+			//SNMPで取得される情報ではないためサブプラットフォームは置き換えない
+			//(置き換えてしまうとクラウド仮想化オプション利用時にリソース監視(メトリクス)が動作しなくなる)
 			if( nodeInfo.getHardwareType() == null ) {
 				lEquals = lEquals && ( lastNode.getHardwareType() == null );
 				if (lastNode.getHardwareType() != null) {

@@ -22,6 +22,7 @@ import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.QueryPertial;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -142,7 +143,7 @@ public class JobRunSessionMonitor extends SelfCheckMonitorBase {
 			tm.begin();
 			em = tm.getEntityManager();
 
-			Long row = (Long)em.createNativeQuery(query).getSingleResult();
+			Long row = QueryPertial.countResult(em.createNativeQuery(query).getSingleResult());
 			if (row != null) {
 				count = row;
 			}

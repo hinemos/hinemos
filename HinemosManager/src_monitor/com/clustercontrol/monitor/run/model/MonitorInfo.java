@@ -131,6 +131,7 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 		setObjectId(this.monitorId);
 	}
 
+	@Column(name="application")
 	public String getApplication() {
 		return this.application;
 	}
@@ -160,6 +161,7 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}
@@ -188,7 +190,7 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 		this.itemName = itemName;
 	}
 
-
+	@Column(name="measure")
 	public String getMeasure() {
 		return this.measure;
 	}

@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.persistence.Cacheable;
+import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -59,6 +60,7 @@ public class MapPositionEntity implements Serializable {
 	}
 
 
+	@Column(name="x")
 	public Integer getX() {
 		return this.x;
 	}
@@ -68,6 +70,7 @@ public class MapPositionEntity implements Serializable {
 	}
 
 
+	@Column(name="y")
 	public Integer getY() {
 		return this.y;
 	}

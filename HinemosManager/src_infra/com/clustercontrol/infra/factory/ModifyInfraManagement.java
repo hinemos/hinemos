@@ -82,6 +82,7 @@ public class ModifyInfraManagement {
 					for (FileTransferVariableInfo variableInfo 
 							: ((FileTransferModuleInfo)module).getFileTransferVariableList()) {
 						variableInfo.setManagementId(info.getManagementId());
+						variableInfo.setModuleId(module.getModuleId());
 					}
 				}
 			}

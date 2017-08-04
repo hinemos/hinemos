@@ -110,8 +110,9 @@ public class CalendarCache {
 			_lock.writeLock();
 			
 			ConcurrentHashMap<String, CalendarInfo> cache = getCache();
-			CalendarInfo calendar = getCalendarInfoDB(id);
 			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+			em.clear();
+			CalendarInfo calendar = getCalendarInfoDB(id);
 			em.detach(calendar);
 			cache.put(id, calendar);
 			storeCache(cache);

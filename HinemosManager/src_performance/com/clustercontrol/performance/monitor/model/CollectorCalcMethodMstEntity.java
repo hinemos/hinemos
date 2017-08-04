@@ -62,6 +62,7 @@ public class CollectorCalcMethodMstEntity implements Serializable {
 	}
 
 
+	@Column(name="expression")
 	public String getExpression() {
 		return this.expression;
 	}

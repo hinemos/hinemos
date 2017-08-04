@@ -5,6 +5,8 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.repository.bean.FacilityConstant;
+
 @XmlType(namespace = "http://repository.ws.clustercontrol.com")
 @Entity
 @Table(name="cc_cfg_scope", schema="setting")
@@ -17,9 +19,11 @@ public class ScopeInfo extends FacilityInfo {
 	
 	public ScopeInfo() {
 		super();
+		setFacilityType(FacilityConstant.TYPE_SCOPE);
 	}
 
 	public ScopeInfo(String facilityId) {
 		super(facilityId);
+		setFacilityType(FacilityConstant.TYPE_SCOPE);
 	}
 }

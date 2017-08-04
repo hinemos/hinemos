@@ -44,7 +44,7 @@ import com.jcraft.jsch.Session;
 /**
  * Jsch 関連のユーティリティクラス
  *
- * @version 5.0.0
+ * @version 6.0.1
  * @since 5.0.0
  */
 public class JschUtil {
@@ -208,8 +208,18 @@ public class JschUtil {
 			}
 			session.connect(timeout);
 		
+			/**
+			 * ここのsrcFilePathには、File.separatorを使用しないこと。
+			 * 
+			 * File.separatorは、javaが実行されるプラットフォームの情報から選別される。
+			 * 環境構築機能はマネージャのプラットフォームで実行されるため、
+			 * 宛先のパスにFileTransferModuleInfo.SEPARATOR(File.separator)を
+			 * 使用してしまうと不適正なセパレータが使用されてしまう場合がある。
+			 * 例えば、マネージャのプラットフォームがWindowsで、対象サーバがLinuxの場合、
+			 * Linux用のファイルセパレータを指定したいのに、Windowsのセパレータである「\」を指定してしまう。
+			 */
 			// exec 'scp -f rfile' remotely
-			String srcFilePath = srcDir + FileTransferModuleInfo.SEPARATOR + srcFilename;
+			String srcFilePath = srcDir + "/" + srcFilename;
 			String command = "scp -f " + srcFilePath;
 			channel = (ChannelExec)session.openChannel("exec");
 			channel.setCommand(command);
@@ -361,8 +371,17 @@ public class JschUtil {
 				session.setPassword(password);
 			}
 			session.connect(timeout);
-			
-			String dstFilePath = dstDir + FileTransferModuleInfo.SEPARATOR + dstFilename;
+			/**
+			 * ここのdstFilePathには、File.separatorを使用しないこと。
+			 * 
+			 * File.separatorは、javaが実行されるプラットフォームの情報から選別される。
+			 * 環境構築機能はマネージャのプラットフォームで実行されるため、
+			 * 宛先のパスにFileTransferModuleInfo.SEPARATOR(File.separator)を
+			 * 使用してしまうと不適正なセパレータが使用されてしまう場合がある。
+			 * 例えば、マネージャのプラットフォームがWindowsで、対象サーバがLinuxの場合、
+			 * Linux用のファイルセパレータを指定したいのに、Windowsのセパレータである「\」を指定してしまう。
+			 */
+			String dstFilePath = dstDir + "/" + dstFilename;
 
 			if (isBackupIfExistFlg) {
 				// ファイルが存在する場合は、
@@ -498,8 +517,17 @@ public class JschUtil {
 			srcFis = new FileInputStream(srcFile);
 			String srcMd5 = DigestUtils.md5Hex(srcFis);
 			m_log.debug("srcMd5: " + srcMd5);
-			
-			String dstFilePath = dstDir + FileTransferModuleInfo.SEPARATOR + dstFilename;
+			/**
+			 * ここのdstFilePathには、File.separatorを使用しないこと。
+			 * 
+			 * File.separatorは、javaが実行されるプラットフォームの情報から選別される。
+			 * 環境構築機能はマネージャのプラットフォームで実行されるため、
+			 * 宛先のパスにFileTransferModuleInfo.SEPARATOR(File.separator)を
+			 * 使用してしまうと不適正なセパレータが使用されてしまう場合がある。
+			 * 例えば、マネージャのプラットフォームがWindowsで、対象サーバがLinuxの場合、
+			 * Linux用のファイルセパレータを指定したいのに、Windowsのセパレータである「\」を指定してしまう。
+			 */
+			String dstFilePath = dstDir + "/" + dstFilename;
 			String md5command = HinemosPropertyUtil.getHinemosPropertyStr("infra.command.md5", "md5sum \"%s\" | awk '{print $1}'");
 			String dstMd5 = execCommandWithStdOut(session, String.format(md5command, dstFilePath), timeout);
 			m_log.debug("dstMd5: " + dstMd5);

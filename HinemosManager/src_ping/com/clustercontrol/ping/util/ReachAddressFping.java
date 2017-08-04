@@ -21,10 +21,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import com.clustercontrol.platform.ping.FpingCommand;
 
 /**
  * アドレスが到達可能かどうか確認するクラスです。
@@ -80,29 +81,13 @@ public class ReachAddressFping {
 		Process process = null ;//fpingプロセス
 		int	m_exitValue = 0; //fpingコマンドの戻り値
 
-
-		//コマンド実行する配列を初期化する。
-		int length = 6 + hosts.size();
-		String cmd[] = new String[length];
-
+		String fpingPath;
 		if(version== 6){
-			cmd[0] = PingProperties.getFping6Path();
+			fpingPath = PingProperties.getFping6Path();
 		}else{
-			cmd[0] = PingProperties.getFpingPath();
+			fpingPath = PingProperties.getFpingPath();
 		}
-		cmd[1] = "-C" + m_sentCount;
-		cmd[2] = "-p" + m_sentInterval;
-		cmd[3] = "-t" + m_timeout;
-		cmd[4] = "-b" + m_bytes;
-		cmd[5] = "-q" ;
-
-		//コマンドを実行するために値を詰め替えます。
-		Iterator<String> itr = hosts.iterator();
-		int i = 0;
-		while(itr.hasNext()) {
-			cmd[i + 6] = itr.next();
-			i++;
-		}
+		String cmd[] = FpingCommand.getCommand(fpingPath, hosts, m_sentCount, m_sentInterval, m_timeout, m_bytes);
 
 		try {
 			process = Runtime.getRuntime().exec(cmd);

@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %plugin.name
 Bundle-SymbolicName: com.clustercontrol; singleton:=true
-Bundle-Version: 6.0.0
+Bundle-Version: 6.0.1
 Bundle-Description: %product.about
 Bundle-ContactAddress: http://www.hinemos.info
 Bundle-Vendor: %provider.name
@@ -43,6 +43,7 @@ Export-Package: com.clustercontrol,
  com.clustercontrol.calendar.composite,
  com.clustercontrol.calendar.util,
  com.clustercontrol.client.ui.util,
+ com.clustercontrol.collect.view,
  com.clustercontrol.composite,
  com.clustercontrol.composite.action,
  com.clustercontrol.dialog,
@@ -50,6 +51,7 @@ Export-Package: com.clustercontrol,
  com.clustercontrol.hub.util,
  com.clustercontrol.infra.dialog,
  com.clustercontrol.infra.util,
+ com.clustercontrol.jobmanagement,
  com.clustercontrol.jobmanagement.action,
  com.clustercontrol.jobmanagement.bean,
  com.clustercontrol.jobmanagement.composite,
@@ -61,6 +63,7 @@ Export-Package: com.clustercontrol,
  com.clustercontrol.jobmanagement.viewer,
  com.clustercontrol.maintenance.util,
  com.clustercontrol.monitor.action,
+ com.clustercontrol.monitor.composite,
  com.clustercontrol.monitor.plugin,
  com.clustercontrol.monitor.run.composite,
  com.clustercontrol.monitor.run.dialog,

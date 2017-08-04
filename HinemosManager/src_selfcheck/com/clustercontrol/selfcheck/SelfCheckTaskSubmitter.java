@@ -31,6 +31,7 @@ import com.clustercontrol.HinemosManagerMain.StartupMode;
 import com.clustercontrol.commons.bean.ThreadInfo;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.selfcheck.SelfCheckPertial;
 import com.clustercontrol.plugin.impl.SchedulerInfo;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
@@ -43,6 +44,7 @@ import com.clustercontrol.selfcheck.monitor.JVMHeapMonitor;
 import com.clustercontrol.selfcheck.monitor.JobRunSessionMonitor;
 import com.clustercontrol.selfcheck.monitor.RAMSwapOutMonitor;
 import com.clustercontrol.selfcheck.monitor.SchedulerMonitor;
+import com.clustercontrol.selfcheck.monitor.SelfCheckMonitor;
 import com.clustercontrol.selfcheck.monitor.SnmpTrapQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.SyslogQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.TableSizeMonitor;
@@ -216,6 +218,12 @@ public class SelfCheckTaskSubmitter implements Runnable {
 		// job
 		if (HinemosManagerMain._startupMode == StartupMode.NORMAL) {
 			_executorService.submit(new SelfCheckTask(new JobRunSessionMonitor()));
+		}
+		
+		// platform
+		SelfCheckMonitor[] platformMonitors = SelfCheckPertial.getMonitors(HinemosManagerMain._startupMode);
+		for (SelfCheckMonitor monitor : platformMonitors) {
+			_executorService.submit(new SelfCheckTask(monitor));
 		}
 		
 		// set timestamp of last monitoring

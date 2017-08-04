@@ -292,14 +292,14 @@ public class RunMonitorPing extends RunMonitorNumericValueType {
 
 	/**
 	 * 	fpingの標準出力から、IPアドレス毎の結果に整形します<BR>
-	 * 
+	 *  nodeMapでも使用中のため、public。
 	 * 
 	 * @param hosts      fpingしたアドレスのリスト
 	 * @param message    出力メッセージ
 	 * @param count      ping回数
 	 * @return (IPアドレス 応答率、平均応答時間)のハッシュテーブル
 	 */
-	private Hashtable<String, PingResult> wrapUpFping(ArrayList<String> messages,  int count, int version){
+	public Hashtable<String, PingResult> wrapUpFping(ArrayList<String> messages,  int count, int version){
 
 		Hashtable<String, PingResult> ret = new Hashtable<String, PingResult>();
 		HashMap<String, String> normalMap = new HashMap<String, String>(); //IPアドレス, メッセージ

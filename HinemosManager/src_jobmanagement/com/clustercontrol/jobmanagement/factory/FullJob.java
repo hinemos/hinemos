@@ -23,15 +23,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.persistence.EntityManager;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -78,16 +83,20 @@ public class FullJob {
 		ILockManager lockManager = LockManagerFactory.instance().create();
 		_lock = lockManager.create(FullJob.class.getName());
 		
-		init();
+		try {
+			init();
+		} catch (Throwable t) {
+			m_log.error("FullJob initialisation error. " + t.getMessage(), t);
+		}
 	}
 	
 	public static void init() {
 		try {
 			_lock.writeLock();
 			
-			Map<String, Map<String, JobInfo>> jobInfoCache = getJobInfoCache();
-			if (jobInfoCache == null) {	// not null if clustered
-				storeJobInfoCache(new HashMap<String, Map<String, JobInfo>>());
+			Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCache();
+			if (jobMstCache == null) {	// not null if clustered
+				initJobMstCache();
 			}
 		} finally {
 			_lock.writeUnlock();
@@ -96,13 +105,81 @@ public class FullJob {
 		try {
 			_lock.writeLock();
 			
-			Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCache();
-			if (jobMstCache == null) {	// not null if clustered
-				storeJobMstCache(new HashMap<String, Map<String,JobMstEntity>>());
+			Map<String, Map<String, JobInfo>> jobInfoCache = getJobInfoCache();
+			if (jobInfoCache == null) {	// not null if clustered
+				initJobInfoCache();
 			}
 		} finally {
 			_lock.writeUnlock();
 		}
+	}
+	
+	public static void initJobMstCache() {
+		long startTime = System.currentTimeMillis();
+		HashMap<String, Map<String,JobMstEntity>> jobMstCache = new HashMap<String, Map<String,JobMstEntity>>();
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			EntityManager em = jtm.getEntityManager();
+			em.clear();
+			List<JobMstEntity> jobunits = ((HinemosEntityManager)em).createNamedQuery("JobMstEntity.findByParentJobunitIdAndJobId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
+					.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
+					.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID)
+					.getResultList();
+			
+			for(JobMstEntity jobunit : jobunits) {
+				String jobunitId = jobunit.getId().getJobunitId();
+				List<JobMstEntity> jobs =
+						((HinemosEntityManager)em).createNamedQuery("JobMstEntity.findByJobunitId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
+						.setParameter("jobunitId", jobunitId)
+						.getResultList();
+				Map<String, JobMstEntity> jobunitMap = new HashMap<String, JobMstEntity>();
+				for(JobMstEntity job : jobs) {
+					String jobId = job.getId().getJobId();
+					jobunitMap.put(jobId, job);
+				}
+				jobMstCache.put(jobunitId, jobunitMap);
+			}
+			m_log.info("init jobMstCache " + (System.currentTimeMillis() - startTime) + "ms. size=" + jobMstCache.size());
+			for(Map.Entry<String, Map<String, JobMstEntity>> entry : jobMstCache.entrySet()) {
+				m_log.info("jobMstCache key(jobunitId)=" + entry.getKey() + " size=" + entry.getValue().size());
+			}
+			
+			storeJobMstCache(jobMstCache);
+		} finally {
+			if(jtm != null) {
+				jtm.close();
+			}
+		}
+	}
+	
+	public static void initJobInfoCache() {
+		long startTime = System.currentTimeMillis();
+		HashMap<String, Map<String,JobInfo>> jobInfoCache = new HashMap<String, Map<String,JobInfo>>();
+		
+		Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCache();
+		
+		for(Map.Entry<String, Map<String, JobMstEntity>> jobunitEntry : jobMstCache.entrySet()) {
+			String jobunitId = jobunitEntry.getKey();
+			Map<String, JobInfo> jobunitMap = new HashMap<String, JobInfo>();
+			for(Map.Entry<String, JobMstEntity> jobEntry : jobunitEntry.getValue().entrySet()) {
+				String jobId = jobEntry.getKey();
+				try {
+					jobunitMap.put(jobId, createJobInfo(jobEntry.getValue()));
+				} catch (InvalidRole | JobMasterNotFound | HinemosUnknown e) {
+					m_log.warn("failed initCache jobunitId=" + jobunitId + " jobId=" + jobId + ". " 
+								+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				}
+			}
+			jobInfoCache.put(jobunitId, jobunitMap);
+		}
+		
+		m_log.info("init jobInfoCache " + (System.currentTimeMillis() - startTime) + "ms. size=" + jobInfoCache.size());
+		for(String jobunitId : jobMstCache.keySet()) {
+			m_log.info("jobInfoCache key(jobunitId)=" + jobunitId + " size=" + jobInfoCache.get(jobunitId).size());
+		}
+		
+		storeJobInfoCache(jobInfoCache);
 	}
 	
 	/**
@@ -158,28 +235,36 @@ public class FullJob {
 		}
 	}
 
-	// replaceJobunitから呼ばれる。
-	public static void removeCache(String jobunitId, String jobId) {
-		m_log.debug("removeCache " + jobunitId + ", " + jobId);
+	// registerJobunitから呼ばれる。
+	public static void updateCache(String jobunitId, List<JobInfo> infos) {
+		m_log.debug("updateCache " + jobunitId);
 		
 		try {
 			_lock.writeLock();
-			
-			HashMap<String, Map<String,JobInfo>> jobInfoCache = getJobInfoCache();
-			Map<String, JobInfo> jobInfoUnitCache = jobInfoCache.get(jobunitId);
-			if (jobInfoUnitCache != null) {
-				if (jobInfoUnitCache.remove(jobId) != null) {
-					storeJobInfoCache(jobInfoCache);
-				}
-			}
-			
+
 			HashMap<String, Map<String,JobMstEntity>> jobMstCache = getJobMstCache();
-			Map<String, JobMstEntity> jobMstUnitCache = jobMstCache.get(jobunitId);
-			if (jobMstUnitCache != null) {
-				if (jobMstUnitCache.remove(jobId) != null) {
-					storeJobMstCache(jobMstCache);
+			HashMap<String, Map<String,JobInfo>> jobInfoCache = getJobInfoCache();
+			
+			Map<String,JobMstEntity> jobunitMstMap = new HashMap<String,JobMstEntity>();
+			Map<String,JobInfo> jobunitInfoMap = new HashMap<String,JobInfo>();
+			
+			new JpaTransactionManager().getEntityManager().clear();
+			for(JobInfo info : infos) {
+				String jobId = info.getId();
+				try {
+					JobMstEntity job = QueryUtil.getJobMstPK(jobunitId, jobId);
+					jobunitMstMap.put(jobId, job);
+					jobunitInfoMap.put(jobId, createJobInfo(job));
+				} catch (InvalidRole | JobMasterNotFound | HinemosUnknown e) {
+					m_log.warn("failed initCache jobunitId=" + jobunitId + " jobId=" + jobId + ". " 
+							+ e.getClass().getSimpleName() + ", " + e.getMessage());
 				}
 			}
+			jobMstCache.put(jobunitId, jobunitMstMap);
+			jobInfoCache.put(jobunitId, jobunitInfoMap);
+			
+			storeJobMstCache(jobMstCache);
+			storeJobInfoCache(jobInfoCache);
 		} finally {
 			_lock.writeUnlock();
 		}
@@ -218,91 +303,26 @@ public class FullJob {
 					m_log.debug("cache hit " + jobunitId + "," + jobId + ", hit=" + jobInfoUnitCache.size());
 					return ret;
 				}
+			} else {
+				m_log.debug("cache didn't hit " + jobunitId + "," + jobId);
 			}
 		} finally {
 			_lock.readUnlock();
 		}
 		
+		m_log.debug("createJobData() : " + jobunitId + ", " + jobId);
+		JobMstEntity jobMstEntity = null;
 		try {
-			_lock.writeLock();
-			
-			HashMap<String, Map<String,JobInfo>> jobInfoCache = getJobInfoCache();
-			Map<String, JobInfo> jobInfoUnitCache = jobInfoCache.get(jobunitId);
-			if (jobInfoUnitCache == null) {
-				jobInfoUnitCache = new HashMap<String, JobInfo>();
-			}
-			jobInfoCache.put(jobunitId, jobInfoUnitCache);
-			
-			loadJobMstEntityFromDb(jobunitId);
-			
-			m_log.debug("createJobData() : " + jobunitId + ", " + jobId);
-			JobMstEntity jobMstEntity = getJobMstEntityFromLocal(jobunitId, jobId);
+			_lock.readLock();
+			jobMstEntity = getJobMstEntityFromLocal(jobunitId, jobId);
 			if (jobMstEntity == null) {
 				jobMstEntity = QueryUtil.getJobMstPK(jobunitId, jobId);
 			}
-
-			jobInfo.setDescription(jobMstEntity.getDescription());
-			jobInfo.setIconId(jobMstEntity.getIconId());
-			jobInfo.setOwnerRoleId(jobMstEntity.getOwnerRoleId());
-			jobInfo.setRegisteredModule(jobMstEntity.isRegisteredModule());
-
-			if (jobMstEntity.getRegDate() != null) {
-				jobInfo.setCreateTime(jobMstEntity.getRegDate());
-			}
-			if (jobMstEntity.getUpdateDate() != null) {
-				jobInfo.setUpdateTime(jobMstEntity.getUpdateDate());
-			}
-			jobInfo.setCreateUser(jobMstEntity.getRegUser());
-			jobInfo.setUpdateUser(jobMstEntity.getUpdateUser());
-
-			jobInfo.setIconId(jobMstEntity.getIconId());
-
-			setJobWaitRule(jobInfo, jobMstEntity);
-
-			switch (jobMstEntity.getJobType()) {
-			case JobConstant.TYPE_JOB:
-				setJobCommand(jobInfo, jobMstEntity);
-				break;
-			case JobConstant.TYPE_FILEJOB:
-				setJobFile(jobInfo, jobMstEntity);
-				break;
-			case JobConstant.TYPE_JOBUNIT:
-				setJobParam(jobInfo, jobMstEntity);
-				break;
-			case JobConstant.TYPE_REFERJOB:
-			case JobConstant.TYPE_REFERJOBNET:
-				jobInfo.setReferJobUnitId(jobMstEntity.getReferJobUnitId());
-				jobInfo.setReferJobId(jobMstEntity.getReferJobId());
-				jobInfo.setReferJobSelectType(jobMstEntity.getReferJobSelectType());
-				break;
-			case JobConstant.TYPE_APPROVALJOB:
-				jobInfo.setApprovalReqRoleId(jobMstEntity.getApprovalReqRoleId());
-				jobInfo.setApprovalReqUserId(jobMstEntity.getApprovalReqUserId());
-				jobInfo.setApprovalReqSentence(jobMstEntity.getApprovalReqSentence());
-				jobInfo.setApprovalReqMailTitle(jobMstEntity.getApprovalReqMailTitle());
-				jobInfo.setApprovalReqMailBody(jobMstEntity.getApprovalReqMailBody());
-				jobInfo.setUseApprovalReqSentence(jobMstEntity.isUseApprovalReqSentence());
-				break;
-			case JobConstant.TYPE_MONITORJOB:
-				setMonitorJob(jobInfo, jobMstEntity);
-				break;
-			default:
-				break;
-			}
-			if (jobInfo.getType() != JobConstant.TYPE_REFERJOB && jobInfo.getType() != JobConstant.TYPE_REFERJOBNET) {
-				setJobNotifications(jobInfo, jobMstEntity);
-				setJobEndStatus(jobInfo, jobMstEntity);
-			}
-
-			jobInfo.setPropertyFull(true);
-			
-			jobInfoUnitCache.put(jobId, jobInfo);
-			jobInfoCache.put(jobunitId, jobInfoUnitCache);
-			
-			storeJobInfoCache(jobInfoCache);
 		} finally {
-			_lock.writeUnlock();
+			_lock.readUnlock();
 		}
+		
+		jobInfo = createJobInfo(jobMstEntity);
 		
 		return jobInfo;
 	}
@@ -321,27 +341,6 @@ public class FullJob {
 			return null;
 		}
 		return jobMstUnitCache.get(jobId);
-	}
-
-	/**
-	 * JobUnitに属するJobのデータをDBから読み込む。
-	 * @param jobunitId
-	 */
-	private static void loadJobMstEntityFromDb(String jobunitId) {
-		HashMap<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCache();
-		Map<String, JobMstEntity> jobMstUnitCache = jobMstCache.get(jobunitId);
-		if (jobMstUnitCache != null) {
-			return;
-		}
-		
-		List<JobMstEntity> jobMstEntityList = QueryUtil.getJobMstEnityFindByJobunitId(jobunitId);
-		jobMstUnitCache = new HashMap<String, JobMstEntity>();
-		for (JobMstEntity jobMstEntity : jobMstEntityList) {
-			jobMstUnitCache.put(jobMstEntity.getId().getJobId(), jobMstEntity);
-		}
-		jobMstCache.put(jobunitId, jobMstUnitCache);
-		
-		storeJobMstCache(jobMstCache);
 	}
 
 	/**
@@ -709,5 +708,65 @@ public class FullJob {
 		for (JobTreeItem childJob : job.getChildren()) {
 			setJobTreeFull(childJob);
 		}
+	}
+	
+	private static JobInfo createJobInfo(JobMstEntity jobMstEntity) throws InvalidRole, JobMasterNotFound, HinemosUnknown {
+		JobInfo jobInfo = new JobInfo(jobMstEntity.getId().getJobunitId(), jobMstEntity.getId().getJobId(), jobMstEntity.getJobName(), jobMstEntity.getJobType());
+		
+		jobInfo.setDescription(jobMstEntity.getDescription());
+		jobInfo.setIconId(jobMstEntity.getIconId());
+		jobInfo.setOwnerRoleId(jobMstEntity.getOwnerRoleId());
+		jobInfo.setRegisteredModule(jobMstEntity.isRegisteredModule());
+
+		if (jobMstEntity.getRegDate() != null) {
+			jobInfo.setCreateTime(jobMstEntity.getRegDate());
+		}
+		if (jobMstEntity.getUpdateDate() != null) {
+			jobInfo.setUpdateTime(jobMstEntity.getUpdateDate());
+		}
+		jobInfo.setCreateUser(jobMstEntity.getRegUser());
+		jobInfo.setUpdateUser(jobMstEntity.getUpdateUser());
+
+		jobInfo.setIconId(jobMstEntity.getIconId());
+
+		setJobWaitRule(jobInfo, jobMstEntity);
+
+		switch (jobMstEntity.getJobType()) {
+		case JobConstant.TYPE_JOB:
+			setJobCommand(jobInfo, jobMstEntity);
+			break;
+		case JobConstant.TYPE_FILEJOB:
+			setJobFile(jobInfo, jobMstEntity);
+			break;
+		case JobConstant.TYPE_JOBUNIT:
+			setJobParam(jobInfo, jobMstEntity);
+			break;
+		case JobConstant.TYPE_REFERJOB:
+		case JobConstant.TYPE_REFERJOBNET:
+			jobInfo.setReferJobUnitId(jobMstEntity.getReferJobUnitId());
+			jobInfo.setReferJobId(jobMstEntity.getReferJobId());
+			jobInfo.setReferJobSelectType(jobMstEntity.getReferJobSelectType());
+			break;
+		case JobConstant.TYPE_APPROVALJOB:
+			jobInfo.setApprovalReqRoleId(jobMstEntity.getApprovalReqRoleId());
+			jobInfo.setApprovalReqUserId(jobMstEntity.getApprovalReqUserId());
+			jobInfo.setApprovalReqSentence(jobMstEntity.getApprovalReqSentence());
+			jobInfo.setApprovalReqMailTitle(jobMstEntity.getApprovalReqMailTitle());
+			jobInfo.setApprovalReqMailBody(jobMstEntity.getApprovalReqMailBody());
+			jobInfo.setUseApprovalReqSentence(jobMstEntity.isUseApprovalReqSentence());
+			break;
+		case JobConstant.TYPE_MONITORJOB:
+			setMonitorJob(jobInfo, jobMstEntity);
+			break;
+		default:
+			break;
+		}
+		if (jobInfo.getType() != JobConstant.TYPE_REFERJOB && jobInfo.getType() != JobConstant.TYPE_REFERJOBNET) {
+			setJobNotifications(jobInfo, jobMstEntity);
+			setJobEndStatus(jobInfo, jobMstEntity);
+		}
+
+		jobInfo.setPropertyFull(true);
+		return jobInfo;
 	}
 }

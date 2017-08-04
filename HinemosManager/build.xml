@@ -8,10 +8,10 @@
 
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
 	<import file="../HinemosCommon/ant_config/build_common.xml"/>
+	<import file="manager_switch/switch.xml"/>
 
 	<property name="project.name" value="HinemosManager" />
 	<property name="jar.file" value="${jar.HinemosManager}" />
-	<property name="model_jar.file" value="HinemosModel.jar" />
 	<property name="build.dir" value="build/manager" />
 	<property name="build.mdb.dir" value="build/HinemosMDB.jar" />
 	<property name="agentws.dir" value="build/agentws" />
@@ -23,6 +23,10 @@
 	<property name="jar.include.xml" value="true" />
 	<property name="jpa.comment.start" value="&lt;!-- " />
 	<property name="jpa.comment.end" value=" --&gt;" />
+	<property name="rhel.dir" value="rhel" />
+	<property name="win.dir" value="win" />
+	<property name="jar.rhel" value="HinemosManagerRhel.jar" />
+	<property name="jar.win" value="HinemosManagerWin.jar" />
 	<!-- Dependency -->
 	<target name="dependency" depends="check_dependency">
 		<fail unless="HinemosCommon.built" message="file not found. (HinemosCommon/${jar.HinemosCommon})" />
@@ -85,6 +89,8 @@
 		<pathelement path="src_customtrap" />
 
 		<pathelement path="src_bootstrap" />
+		
+		<pathelement path="src_platform" />
 	</path>
 
 	<target name="compile" description="Compile Java sources">
@@ -141,27 +147,33 @@
 			<src path="src_hub" />
 			<src path="src_customtrap" />
 
+			<src path="src_platform" />
+
 			<src path="resources" />
 		</javac>
 	</target>
-	<!-- overwrite -->
-	<target name="jar" description="Generate JAR file">
+	
+	<target name="jar_main" description="Generate JAR file">
 		<jar jarfile="${jar.dir}/${jar.file}" manifest="${build.dir}/MANIFEST.MF">
 			<fileset dir="${build.dir}/${class.dir}">
 				<include name="**/*.*"/>
-				<exclude name="**/model/*.*"/>
+				<include name="**/model/*.*"/>
+				<exclude name="**/platform/**"/>
 			</fileset>
 			<fileset dir="src_accesscontrol">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_calendar">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_collect">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_collectmaster">
 				<include name="**/*.java" if="jar.include.src"/>
@@ -174,7 +186,8 @@
 			</fileset>
 			<fileset dir="src_custom">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_hinemosagent">
 				<include name="**/*.java" if="jar.include.src"/>
@@ -182,39 +195,48 @@
 			</fileset>
 			<fileset dir="src_http">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_jobmanagement">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_logfile">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_maintenance">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_monitor">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_nodemap">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_notify">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_performance">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_ping">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_poller">
 				<include name="**/*.java" if="jar.include.src"/>
@@ -222,31 +244,38 @@
 			</fileset>
 			<fileset dir="src_port">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_priority">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_process">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_repository">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_snmptrap">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_snmp">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_sql">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_systemlog">
 				<include name="**/*.java" if="jar.include.src"/>
@@ -254,15 +283,18 @@
 			</fileset>
 			<fileset dir="src_vm">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_winservice">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_winevent">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_ws">
 				<include name="**/*.java" if="jar.include.src"/>
@@ -274,161 +306,85 @@
 			</fileset>
 			<fileset dir="src_jmx">
 				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
-			</fileset>
-			<fileset dir="src_infra">
-				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
-			</fileset>
-			<fileset dir="src_hub">
-				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/services/*" />
-			</fileset>
-			<fileset dir="src_customtrap">
-				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
-			</fileset>
-			<fileset dir="src_bootstrap">
-				<include name="**/*.java" if="jar.include.src"/>
-				<exclude name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/services/*" />
-			</fileset>
-		</jar>
-		<jar jarfile="${jar.dir}/${model_jar.file}" manifest="${build.dir}/MANIFEST.MF">
-			<fileset dir="${build.dir}/${class.dir}">
-				<include name="**/model/*.*"/>
-			</fileset>
-			<fileset dir="src_accesscontrol">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_calendar">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_collect">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_custom">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_http">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_jobmanagement">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_logfile">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_maintenance">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_monitor">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_nodemap">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_notify">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_performance">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_ping">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_port">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_priority">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_process">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_repository">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_snmptrap">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_snmp">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_sql">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_vm">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_winservice">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_winevent">
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_jmx">
 				<include name="**/model/*.java" if="jar.include.src"/>
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_infra">
+				<include name="**/*.java" if="jar.include.src"/>
 				<include name="**/model/*.java" if="jar.include.src"/>
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_hub">
+				<include name="**/*.java" if="jar.include.src"/>
 				<include name="**/model/*.java" if="jar.include.src"/>
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
+				<include name="META-INF/services/*" />
 			</fileset>
 			<fileset dir="src_customtrap">
-					<include name="**/model/*.java" if="jar.include.src"/>
-					<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-			<fileset dir="src_bootstrap">
+				<include name="**/*.java" if="jar.include.src"/>
 				<include name="**/model/*.java" if="jar.include.src"/>
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+
+			<fileset dir="src_bootstrap">
+				<include name="**/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+				<include name="META-INF/services/*" />
 			</fileset>
 		</jar>
 	</target>
+	
+	<macrodef name="jar_diff.mac" description="Generate JAR file">
+		<attribute name="jarname" />
+		<sequential>
+			<jar jarfile="${jar.dir}/@{jarname}" manifest="${build.dir}/MANIFEST.MF">
+				<fileset dir="${build.dir}/${class.dir}">
+					<include name="**/platform/**"/>
+				</fileset>
+				<fileset dir="src_platform">
+					<include name="**/*.java" if="jar.include.src"/>
+					<include name="**/model/*.java" if="jar.include.src"/>
+					<include name="META-INF/*.xml" if="jar.include.xml"/>
+				</fileset>
+			</jar>
+		</sequential>
+	</macrodef>
+	<target name="jar_diff_rhel">
+		<jar_diff.mac jarname="${jar.rhel}" />
+	</target>
+	<target name="jar_diff_win">
+		<jar_diff.mac jarname="${jar.win}" />
+	</target>
 
 	<!-- jpa configuration (EclipseLink) -->
-	<target name="jpa_config" description="generate jpa configuration">
-		<property name="jpa.jar-file.package" value="&lt;jar-file&gt;%%HINEMOS_HOME%%/lib/HinemosModel.jar&lt;/jar-file&gt;" />
-		<copy todir="../HinemosManager/build/META-INF" overwrite="true">
-			<fileset dir="../HinemosManager/resources/META-INF">
-				<include name="**/*.xml" />
-			</fileset>
-		</copy>
-		<replace file="../HinemosManager/build/META-INF/persistence.xml"
-			token="${jpa.comment.start}add jar-file here${jpa.comment.end}"
-			value="${jpa.jar-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add jar-file here${jpa.comment.end}" />
-		<loadfile property="jpa.mapping-file" srcfile="../HinemosManager/resources/mapping-file" />
-		<replace file="../HinemosManager/build/META-INF/persistence.xml"
-			token="&#x09;&#x09;${jpa.comment.start}add mapping-file here${jpa.comment.end}"
-			value="${jpa.mapping-file}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add mapping-file here${jpa.comment.end}" />
+	<macrodef name="jpa_config.mac" description="generate jpa configuration">
+		<attribute name="dir.lib" />
+		<attribute name="dir.from" />
+		<attribute name="dir.to" />
+		<attribute name="jar.diff" />
+		<sequential>
+			<property name="jpa.jar-file.package" value="&lt;jar-file&gt;@{dir.lib}/HinemosManager.jar&lt;/jar-file&gt;" />
+			<property name="jpa.jar-win-file.package" value="&lt;jar-file&gt;@{dir.lib}/@{jar.diff}&lt;/jar-file&gt;" />
+			<copy todir="../HinemosManager/build/META-INF_@{dir.to}" overwrite="true">
+				<fileset dir="../HinemosManager/resources/@{dir.from}/META-INF">
+					<include name="**/*.xml" />
+				</fileset>
+			</copy>
+			<replace file="../HinemosManager/build/META-INF_@{dir.to}/persistence.xml"
+				token="${jpa.comment.start}add jar-file here${jpa.comment.end}"
+				value="${jpa.jar-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.jar-win-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add jar-file here${jpa.comment.end}" />
+			<loadfile property="jpa.mapping-file" srcfile="../HinemosManager/resources/mapping-file" />
+			<replace file="../HinemosManager/build/META-INF_@{dir.to}/persistence.xml"
+				token="&#x09;&#x09;${jpa.comment.start}add mapping-file here${jpa.comment.end}"
+				value="${jpa.mapping-file}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add mapping-file here${jpa.comment.end}" />
+		</sequential>
+	</macrodef>
+	<target name="jpa_config_rhel" description="generate jpa configuration">
+		<jpa_config.mac dir.lib="%%HINEMOS_HOME%%/lib" dir.from="${rhel.dir}" dir.to="RHEL" jar.diff="${jar.rhel}" />
+	</target>
+	<target name="jpa_config_win" description="generate jpa configuration">
+		<jpa_config.mac dir.lib="../lib" dir.from="${win.dir}" dir.to="WIN" jar.diff="${jar.win}" />
 	</target>
 
 	<target name="install">
@@ -455,7 +411,6 @@
 			</fileset>
 			<fileset dir=".">
 				<include name="${jar.dir}/HinemosManager.jar"/>
-				<include name="${jar.dir}/HinemosModel.jar"/>
 				<include name="lib/javax.persistence_2.1.1.v201509150925.jar"/>
 				<include name="lib/jsch-0.1.53.jar"/>
 			</fileset>
@@ -571,10 +526,54 @@
 	<!-- All -->
 	<target name="all" depends="dependency">
 		<delete dir="build" failonerror="true" />
+		<antcall target="clean" />
+		
+		<!-- win -->
+		<antcall target="win_quick" />
+		<antcall target="jpa_config_win" />
 
-		<antcall target="all_without_interface" />
+		<!-- rhel -->
+		<antcall target="rhel_quick" />
+		<antcall target="jpa_config_rhel" />
 
-		<antcall target="jpa_config" />
+		<antcall target="jar_main" />
+		<antcall target="copy_messages" />
+		<antcall target="webclient" />
+		<antcall target="install" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
+	
+	<target name="win" depends="dependency">
+		<delete dir="build" failonerror="true" />
+		<antcall target="clean" />
+		
+		<!-- win -->
+		<antcall target="win_quick" />
+		<antcall target="jpa_config_win" />
+
+		<antcall target="jar_main" />
+		<antcall target="copy_messages" />
+		<antcall target="webclient" />
+		<antcall target="install" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
+	
+	<target name="rhel" depends="dependency">
+		<delete dir="build" failonerror="true" />
+		<antcall target="clean" />
+		
+		<!-- rhel -->
+		<antcall target="rhel_quick" />
+		<antcall target="jpa_config_rhel" />
+
+		<antcall target="jar_main" />
+		<antcall target="copy_messages" />
 		<antcall target="webclient" />
 		<antcall target="install" />
 
@@ -588,10 +587,34 @@
 		<antcall target="all_quick" />
 	</target>
 
-	<target name="all_quick" depends="dependency">
+	<target name="clean_classes" description="Clean Java's Class files">
+		<delete dir="${build.dir}/${class.dir}" failonerror="true" />
+		<mkdir dir="${build.dir}/${class.dir}" />
+	</target>
+	
+	<target name="win_quick" depends="dependency">
+		<antcall target="clean_classes" />
+		<antcall target="switch_to_win" />
 		<antcall target="compile" />
 		<antcall target="manifest" />
-		<antcall target="jar" />
+		<antcall target="jar_diff_win" />
+	</target>
+	
+	<target name="rhel_quick" depends="dependency">
+		<antcall target="clean_classes" />
+		<antcall target="switch_to_rhel" />
+		<antcall target="compile" />
+		<antcall target="manifest" />
+		<antcall target="jar_diff_rhel" />
+	</target>
+	
+	<target name="all_quick" depends="dependency">
+		<antcall target="clean" />
+		
+		<antcall target="win_quick" />
+		<antcall target="rhel_quick" />
+			
+		<antcall target="jar_main" />
 		<antcall target="copy_messages" />
 	</target>
 
@@ -602,6 +625,11 @@
 	
 	<target name="copy_messages">
 		<copy todir="../HinemosPackageBuilder/hinemos_manager/${manager.common.rhel.dir}/hinemos/etc.template/" overwrite="true">
+			<fileset dir="../HinemosManager/resources">
+				<include name="messages_common*.properties" />
+			</fileset>
+		</copy>
+		<copy todir="../HinemosPackageBuilder/hinemos_manager/${manager.common.win.dir}/hinemos/etc.template/" overwrite="true">
 			<fileset dir="../HinemosManager/resources">
 				<include name="messages_common*.properties" />
 			</fileset>

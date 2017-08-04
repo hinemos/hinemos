@@ -73,7 +73,7 @@ public class MonitorProtocolMstEntity implements Serializable {
 		this.defaultPortNumber = defaultPortNumber;
 	}
 
-
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}

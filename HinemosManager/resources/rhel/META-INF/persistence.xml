@@ -23,6 +23,7 @@
 			<property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:24001/hinemos?loginTimeout=30&amp;socketTimeout=3600&amp;tcpKeepAlive=true&amp;ApplicationName=hinemos"/>
 			<property name="javax.persistence.jdbc.user" value="hinemos"/>
 			<property name="javax.persistence.jdbc.password" value="hinemos"/>
+			
 			<property name="eclipselink.connection-pool.initial" value="0"/>
 			<property name="eclipselink.connection-pool.min" value="0"/>
 			<property name="eclipselink.connection-pool.max" value="160"/>

@@ -33,6 +33,7 @@ import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
@@ -329,9 +330,8 @@ public class ExportCollectDataFile {
 	public static void deleteFile(ArrayList<String> fileNameList) throws HinemosUnknown {
 		m_log.debug("deleteFile()");
 
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
 		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir",
-				homeDir + "/var/export/");
+				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
 
 		for (String fileName : fileNameList) {
 			String filePath = exportDirectory + fileName;
@@ -397,9 +397,8 @@ public class ExportCollectDataFile {
 	 * @return
 	 */
 	public static boolean isCreatedFile(String fileName) {
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
 		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir",
-				homeDir + "/var/export/");
+				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
 
 		String createFilePath = exportDirectory + fileName;
 		File file = new File(createFilePath);
@@ -492,9 +491,8 @@ public class ExportCollectDataFile {
 
 				CollectControllerBean controller = new CollectControllerBean();
 
-				String homeDir = System.getProperty("hinemos.manager.home.dir");
 				String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir",
-						homeDir + "/var/export/");
+						HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
 
 				Map<String, Map<Long, Float>> itemCodeTimeDataMap = new HashMap<String, Map<Long, Float>>();
 

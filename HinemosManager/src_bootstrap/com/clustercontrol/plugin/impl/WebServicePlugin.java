@@ -45,6 +45,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.util.StringBinder;
 import com.clustercontrol.util.XMLUtil;
@@ -123,7 +124,7 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 				if (httpsServer == null) {
 					// HTTPS Serverの作成（HTTPSサーバの開始は、後で一括して行うため、ここではインスタンスの生成のみに留める
 					String protocol = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.protocol", "TLS");
-					String keystorePath = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.path", "/root/keystore");
+					String keystorePath = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.path", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.WS_HTTPS_KEYSTORE_PATH));
 					String keystorePassword = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.password", "hinemos");
 					String keystoreType = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.type", "PKCS12");
 					log.info("Starting HTTPS Server...");

@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.plugin.api.HinemosPlugin;
+import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.nodemap.NodeMapEndpoint;
 
 /**
@@ -54,7 +55,7 @@ public class WebServiceNodeMapPlugin extends WebServiceOptionPlugin implements H
 	}
 
 	private boolean isNodeMap() {
-		return isOption("nodemap.key", "e78d72f931f7d4f544022a68957b6a3b");
+		return KeyCheck.checkEnterprise();
 	}
 
 }

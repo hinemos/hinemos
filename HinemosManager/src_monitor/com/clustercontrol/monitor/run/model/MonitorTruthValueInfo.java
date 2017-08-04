@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.persistence.Cacheable;
+import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -77,6 +78,7 @@ public class MonitorTruthValueInfo implements Serializable {
 		getId().setTruthValue(truthValue);
 	}
 
+	@Column(name="message")
 	public String getMessage() {
 		return this.message;
 	}

@@ -378,7 +378,7 @@
 		<query>
 			<![CDATA[
 				SELECT a.iconId FROM JobmapIconImageEntity a
-				WHERE a.iconId NOT IN (:jobnetIconId, :jobIconId)
+				WHERE a.iconId NOT IN :defaultIconId
 				ORDER BY a.iconId
 			]]>
 		</query>

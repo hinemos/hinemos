@@ -16,6 +16,7 @@ PURPOSE.  See the GNU General Public License for more details.
 package com.clustercontrol.ping.util;
 
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 
 /**
  * プロセス監視プロパティ情報取得クラス
@@ -69,14 +70,12 @@ public class PingProperties {
 
 	protected static String getFpingPath() {
 		/** fping のパス **/
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		return HinemosPropertyUtil.getHinemosPropertyStr("monitor.ping.fping.path", homeDir + "/sbin/fping");
+		return HinemosPropertyUtil.getHinemosPropertyStr("monitor.ping.fping.path", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.MONITOR_PING_FPING_PATH));
 	}
 
 	protected static String getFping6Path() {
-		/** fping のパス **/
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		return HinemosPropertyUtil.getHinemosPropertyStr("monitor.ping.fping6.path", homeDir + "/sbin/fping6");
+		/** fping6 のパス **/
+		return HinemosPropertyUtil.getHinemosPropertyStr("monitor.ping.fping6.path", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.MONITOR_PING_FPING6_PATH));
 	}
 
 }

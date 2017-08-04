@@ -22,15 +22,13 @@ import java.util.List;
 import com.clustercontrol.collect.model.CollectDataPK;
 import com.clustercontrol.collect.model.SummaryMonth;
 import com.clustercontrol.commons.util.JdbcBatchQuery;
+import com.clustercontrol.platform.collect.JdbcBatchUpsertUtil;
 
 /**
  *  SummaryMonthにマッピングするテーブルにデータを登録するクラス
  */
 public class SummaryMonthJdbcBatchUpsert extends JdbcBatchQuery {
-	private static final String SQL = "INSERT INTO log.cc_collect_summary_month"
-			+ "(collector_id, time, avg, min, max, count) "
-			+ "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT ON CONSTRAINT p_key_cc_collect_summary_month "
-			+ "DO UPDATE SET avg = ?, min=?, max=?, count=?";
+	private static final String SQL = JdbcBatchUpsertUtil.SUMMARY_MONTH_SQL;
 
 	private List<SummaryMonth> entities = null;
 
@@ -47,18 +45,7 @@ public class SummaryMonthJdbcBatchUpsert extends JdbcBatchQuery {
 	public void addBatch(PreparedStatement pstmt) throws SQLException {
 		for (SummaryMonth entity : entities) {
 			CollectDataPK pk = entity.getId();
-			Object[] params = new Object[] {
-					pk.getCollectorid(),
-					pk.getTime(),
-					entity.getAvg(),
-					entity.getMin(),
-					entity.getMax(),
-					entity.getCount(),
-					entity.getAvg(),
-					entity.getMin(),
-					entity.getMax(),
-					entity.getCount()
-			};
+			Object[] params = JdbcBatchUpsertUtil.getParameters(pk, entity);
 			setParameters(pstmt, params);
 			pstmt.addBatch();
 		}

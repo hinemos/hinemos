@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import javax.persistence.Cacheable;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
@@ -40,6 +41,7 @@ public class MapBgImageEntity implements Serializable {
 
 
 	@Id
+	@Column(name="filename")
 	public String getFilename() {
 		return this.filename;
 	}
@@ -49,6 +51,7 @@ public class MapBgImageEntity implements Serializable {
 	}
 
 
+	@Column(name="filedata")
 	public byte[] getFiledata() {
 		return this.filedata;
 	}

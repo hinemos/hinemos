@@ -31,6 +31,7 @@ import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.fault.HinemosUnknown;
 
@@ -206,6 +207,9 @@ public class UserRoleCache {
 		try {
 			_lock.writeLock();
 			
+			long startTime = System.currentTimeMillis();
+			new JpaTransactionManager().getEntityManager().clear();
+			
 			// ロールに所属するユーザを取得
 			HashMap<String, ArrayList<String>> roleUserMap = new HashMap<String, ArrayList<String>>();
 			List<RoleInfo> roleEntities = QueryUtil.getAllRole_NONE();
@@ -248,6 +252,11 @@ public class UserRoleCache {
 			storeRoleUserCache(roleUserMap);
 			storeRoleSystemPrivilegeCache(roleSystemPrivilegeMap);
 			storeUserRoleCache(userRoleMap);
+			
+			m_log.info("refresh UserRoleCache " + (System.currentTimeMillis() - startTime) +
+					"ms. roleUserMap size=" + roleUserMap.size() +
+					" roleSystemPrivilegeMap size=" + roleSystemPrivilegeMap.size() +
+					" userRoleMap size=" + userRoleMap.size());
 		} finally {
 			_lock.writeUnlock();
 		}

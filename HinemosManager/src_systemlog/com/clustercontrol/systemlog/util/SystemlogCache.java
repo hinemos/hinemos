@@ -13,6 +13,7 @@ import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -72,6 +73,7 @@ public class SystemlogCache {
 			
 			long startTime = HinemosTime.currentTimeMillis();
 			try {
+				new JpaTransactionManager().getEntityManager().clear();
 				systemLogMonitorCache = new SelectMonitor().getMonitorListObjectPrivilegeModeNONE(HinemosModuleConstant.MONITOR_SYSTEMLOG);
 			} catch (Exception e) {
 				m_log.error("getSystemlogList " + e.getMessage(), e);

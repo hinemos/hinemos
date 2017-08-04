@@ -233,33 +233,32 @@ public class CollectorMasterCache {
 				}
 				CollectorItemCalcMethodMstPK pk = new CollectorItemCalcMethodMstPK(collectMethod, platformId, subPlatformId, itemCode);
 				ArrayList<String> list = pollingTargetCache.get(pk);
-				try {
-					pollingTargetList.addAll(list);
-				} catch (NullPointerException e) {
-					m_log.error(new StringBuilder(
-							"getPollingTarget() : polling target not found in cc_collector_polling_mst.")
-									.append(" collectMethod = ").append(collectMethod)
-									.append(", platformId = ").append(platformId)
-									.append(", subPlatformId = ").append(subPlatformId)
-									.append(", itemCode = ").append(itemCode));
-					throw e;
+				if (list == null)
+					continue;
+				
+				pollingTargetList.addAll(list);
+			}
+			
+			if (!subPlatformId.isEmpty()) {
+				// VM管理やクラウド管理などではsubPlatformIdに「VMWARE」や「AWS」などが存在している収集項目に加え、
+				// subPlatformIdが空の場合の（つまり物理と同じ）収集項目が収集できる必要があるため、
+				// subPlatformIdが空でない場合にはsubPlatformIdを空にした収集項目も検索する
+				subPlatformId = "";
+				for(String itemCode : itemCodeList) {
+					CollectorItemCalcMethodMstPK pk = new CollectorItemCalcMethodMstPK(collectMethod, platformId, subPlatformId, itemCode);
+					ArrayList<String> list = pollingTargetCache.get(pk);
+					if (list != null) {
+						pollingTargetList.addAll(list);
+					}
 				}
 			}
 			
-			if (subPlatformId.isEmpty()) {
-				return pollingTargetList;
-			}
-
-			// VM管理やクラウド管理などではsubPlatformIdに「VMWARE」や「AWS」などが存在している収集項目に加え、
-			// subPlatformIdが空の場合の（つまり物理と同じ）収集項目が収集できる必要があるため、
-			// subPlatformIdが空でない場合にはsubPlatformIdを空にした収集項目も検索する
-			subPlatformId = "";
-			for(String itemCode : itemCodeList) {
-				CollectorItemCalcMethodMstPK pk = new CollectorItemCalcMethodMstPK(collectMethod, platformId, subPlatformId, itemCode);
-				ArrayList<String> list = pollingTargetCache.get(pk);
-				if (list != null) {
-					pollingTargetList.addAll(list);
-				}
+			if (pollingTargetList.isEmpty()) {
+				String errorMessag = String.format("getPollingTarget() : polling target not found in cc_collector_polling_mst.  collectMethod = %s, platformId = %s, subPlatformId = %s",
+						collectMethod, platformId, subPlatformId
+						);
+				m_log.error(errorMessag);
+				throw new IllegalStateException(errorMessag);
 			}
 			
 			return pollingTargetList;

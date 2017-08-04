@@ -13,6 +13,7 @@ import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.InvalidRole;
@@ -110,6 +111,7 @@ public class CalendarPatternCache {
 			_lock.writeLock();
 			
 			HashMap<String, CalendarPatternInfo> cache = getCache();
+			new JpaTransactionManager().getEntityManager().clear();
 			CalendarPatternInfo pattern = getCalendarPatternInfoDB(id);
 			cache.put(id, pattern);
 			storeCache(cache);

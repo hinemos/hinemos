@@ -33,6 +33,7 @@ public class VmProtocolMstEntityPK implements Serializable {
 		this.subPlatformId = subPlatformId;
 	}
 
+	@Column(name="protocol")
 	public String getProtocol() {
 		return this.protocol;
 	}

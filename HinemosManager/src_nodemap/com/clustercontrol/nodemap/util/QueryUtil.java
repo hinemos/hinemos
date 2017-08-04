@@ -135,4 +135,22 @@ public class QueryUtil {
 		.getResultList();
 		return list;
 	}
+	
+	public static List<MapAssociationEntity> getMapAssociationBySourceOrTarget(List<String> nodeList) throws NodeMapNotFound {
+		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		List<MapAssociationEntity> list = em.createNamedQuery("MapAssociationEntity.findBySourceOrTarget", MapAssociationEntity.class)
+				.setParameter("source", nodeList)
+				.setParameter("target", nodeList)
+				.getResultList();
+		return list;
+	}
+	
+	public static List<MapPositionEntity> getMapPositionByMapIdOrElementId(List<String> mapIdList, List<String> elementIdList) throws NodeMapNotFound {
+		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		List<MapPositionEntity> list = em.createNamedQuery("MapPositionEntity.findByMapIdOrElementId", MapPositionEntity.class)
+				.setParameter("mapId", mapIdList)
+				.setParameter("elementId", elementIdList)
+				.getResultList();
+		return list;
+	}
 }

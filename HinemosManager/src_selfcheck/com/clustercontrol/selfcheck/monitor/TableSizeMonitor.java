@@ -24,9 +24,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.selfcheck.TableSizeQueryExecuter;
 import com.clustercontrol.selfcheck.TableSizeConfig;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
@@ -197,35 +197,7 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 	 * @return 物理サイズ
 	 */
 	public static long getTableSize(String tableName) {
-		// ローカル変数
-		JpaTransactionManager tm = null;
-		HinemosEntityManager em = null;
-
-		String query = "SELECT pg_total_relation_size('" + tableName + "') as size";
-		long physicalSize = -1;
-
-		// メイン処理
-		try {
-			tm = new JpaTransactionManager();
-			tm.begin();
-
-			em = tm.getEntityManager();
-
-			Long row = (Long)em.createNativeQuery(query).getSingleResult();
-			if (row != null) {
-				physicalSize = row;
-			}
-
-			tm.commit();
-		} catch (Exception e) {
-			m_log.warn("database query execution failure. (" + query + ")", e);
-		} finally {
-			if (tm != null) {
-				tm.close();
-			}
-		}
-
-		return physicalSize;
+		return TableSizeQueryExecuter.getTableSize(tableName);
 	}
 
 	/**
@@ -234,42 +206,7 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 	 * @return レコード数
 	 */
 	public static long getTableCount(String tableName) {
-		JpaTransactionManager tm = null;
-		HinemosEntityManager em = null;
-		long count = -1;
-
-		// 統計情報からn_live_tup を現在の件数として取得する。
-		// (統計情報からの取得の際には条件式にスキーマとテーブル名が必要なので、schema.table 形式のテーブル名を分割する）
-		String[] tableNamePart = tableName.split("\\.");
-		if (tableNamePart.length != 2) {
-			m_log.warn("invalid table name. (" + tableName + ")");
-			return count;
-		}
-		String query = "SELECT n_live_tup FROM pg_stat_user_tables WHERE schemaname = '" +
-				tableNamePart[0] + "' AND relname = '" + tableNamePart[1] + "'";
-		
-		// メイン処理
-		try {
-			tm = new JpaTransactionManager();
-			tm.begin();
-
-			em = tm.getEntityManager();
-
-			Long row = (Long)em.createNativeQuery(query).getSingleResult();
-			if (row != null) {
-				count = row;
-			}
-
-			tm.commit();
-		} catch (Exception e) {
-			m_log.warn("database query execution failure. (" + query + ")", e);
-		} finally {
-			if (tm != null) {
-				tm.close();
-			}
-		}
-
-		return count;
+		return TableSizeQueryExecuter.getTableCount(tableName);
 	}
 
 	private static String getThresholdUnit(ThresholdType type) {
