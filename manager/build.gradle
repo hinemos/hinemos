@@ -123,7 +123,8 @@ sourceSets{
 				file('src/main/src_vm'),
 				file('src/main/src_winevent'),
 				file('src/main/src_winservice'),
-				file('src/main/src_ws')]
+				file('src/main/src_ws'),
+				file('manager_switch/src_platform_rhel')]
 		}
 		resources{
 			srcDirs += [file('src/main/src_accesscontrol'),
@@ -161,7 +162,8 @@ sourceSets{
 				file('src/main/src_vm'),
 				file('src/main/src_winevent'),
 				file('src/main/src_winservice'),
-				file('src/main/src_ws')]
+				file('src/main/src_ws'),
+				file('manager_switch/src_platform_rhel')]
 			include '**/*.properties'
 			include 'META-INF/orm_*.xml'
 			include 'META-INF/*/*'
