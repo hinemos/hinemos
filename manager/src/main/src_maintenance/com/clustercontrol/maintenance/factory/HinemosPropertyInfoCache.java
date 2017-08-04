@@ -27,6 +27,7 @@ import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.maintenance.model.HinemosPropertyInfo;
 import com.clustercontrol.maintenance.util.QueryUtil;
@@ -100,10 +101,11 @@ public class HinemosPropertyInfoCache {
 			
 			long startTime = HinemosTime.currentTimeMillis();
 			
+			new JpaTransactionManager().getEntityManager().clear();
 			HashMap<String, HinemosPropertyInfo> cache = createHinemosPropertyInfoMap();
 			storeCache(cache);
 			
-			log.info(String.format("refresh: %dms", HinemosTime.currentTimeMillis() - startTime));
+			log.info(String.format("refresh: %dms size=%d", HinemosTime.currentTimeMillis() - startTime, cache.size()));
 		} finally {
 			_lock.writeUnlock();
 		}

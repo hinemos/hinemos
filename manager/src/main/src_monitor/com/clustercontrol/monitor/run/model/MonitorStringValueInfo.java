@@ -79,6 +79,7 @@ public class MonitorStringValueInfo implements Serializable {
 		getId().setOrderNo(orderNo);
 	}
 
+	@Column(name="message")
 	public String getMessage() {
 		return this.message;
 	}
@@ -96,7 +97,7 @@ public class MonitorStringValueInfo implements Serializable {
 		this.caseSensitivityFlg = caseSensitivityFlg;
 	}
 
-
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}
@@ -105,6 +106,7 @@ public class MonitorStringValueInfo implements Serializable {
 		this.description = description;
 	}
 
+	@Column(name="pattern")
 	public String getPattern() {
 		return this.pattern;
 	}
@@ -114,6 +116,7 @@ public class MonitorStringValueInfo implements Serializable {
 	}
 
 
+	@Column(name="priority")
 	public Integer getPriority() {
 		return this.priority;
 	}

@@ -75,6 +75,7 @@ public class AsyncTaskEntity implements Serializable {
 	}
 
 
+	@Column(name="param")
 	public byte[] getParam() {
 		return this.param;
 	}

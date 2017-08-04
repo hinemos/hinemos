@@ -53,6 +53,7 @@ public class CustomCheckInfo extends MonitorCheckInfo implements Serializable {
 		this.monitorTypeId = monitorTypeId;
 	}
 	
+	@Column(name="command")
 	public String getCommand() {
 		return this.command;
 	}
@@ -100,6 +101,7 @@ public class CustomCheckInfo extends MonitorCheckInfo implements Serializable {
 	}
 
 
+	@Column(name="timeout")
 	public Integer getTimeout() {
 		return this.timeout;
 	}

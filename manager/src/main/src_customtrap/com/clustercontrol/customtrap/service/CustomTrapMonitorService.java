@@ -54,6 +54,7 @@ import com.clustercontrol.customtrap.bean.CustomTrap;
 import com.clustercontrol.customtrap.bean.CustomTraps;
 import com.clustercontrol.customtrap.util.CustomTrapNotifier;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.snmptrap.service.ReceivedTrapFilterTask;
 import com.clustercontrol.util.HinemosTime;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -119,7 +120,7 @@ public class CustomTrapMonitorService {
 					this.backlog);
 		} else if (customTrapUrl.getProtocol().equals("https")) {
 			String protocol = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.protocol", "TLS");
-			String keystorePath = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.path", "/root/keystore");
+			String keystorePath = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.path", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.WS_HTTPS_KEYSTORE_PATH));
 			String keystorePassword = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.password",
 					"hinemos");
 			String keystoreType = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.type", "PKCS12");

@@ -26,6 +26,7 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -279,6 +280,8 @@ public class RegisterJobAction extends AbstractHandler {
 			m_log.debug("registerJob end   " + new Date());
 
 			jobListView.getJobTreeComposite().refresh();
+			jobListView.getJobTreeComposite().getTreeViewer().setSelection(
+					new StructuredSelection(jobListView.getJobTreeComposite().getSelectItemList()), true);
 		}
 		return null;
 	}

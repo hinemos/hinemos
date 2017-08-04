@@ -65,6 +65,7 @@ import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.notify.bean.NotifyCheckIdResultInfo;
 import com.clustercontrol.notify.factory.SelectNotifyRelation;
 import com.clustercontrol.notify.util.NotifyRelationCache;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.util.MessageConstant;
 
 /**
@@ -634,8 +635,8 @@ public class InfraControllerBean implements CheckFacility {
 	}
 	
 	public void deleteDownloadedInfraFile(String fileName) {
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.export.dir", homeDir + "/var/export/");
+		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.export.dir",
+				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_EXPORT_DIR));
 		File file = new File(exportDirectory + "/" + fileName);
 		if (!file.delete())
 			m_log.debug("Fail to delete " + file.getAbsolutePath());
@@ -678,8 +679,9 @@ public class InfraControllerBean implements CheckFacility {
 
 	public DataHandler downloadTransferFile(String fileName) {
 		m_log.info("downloadTransferFile fileName="+fileName);
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir", homeDir + "/var/infra/") + File.separator + "send" + File.separator;
+		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir",
+					HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_TRANSFER_DIR))
+				+ File.separator + "send" + File.separator;
 		FileDataSource fileData = new FileDataSource(infraDirectory + fileName);
 		return new DataHandler(fileData);
 	}

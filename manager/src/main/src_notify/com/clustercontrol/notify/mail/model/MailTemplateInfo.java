@@ -63,6 +63,7 @@ public class MailTemplateInfo extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="body")
 	public String getBody() {
 		return this.body;
 	}
@@ -72,6 +73,7 @@ public class MailTemplateInfo extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}
@@ -101,6 +103,7 @@ public class MailTemplateInfo extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="subject")
 	public String getSubject() {
 		return this.subject;
 	}

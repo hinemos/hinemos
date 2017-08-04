@@ -1,6 +1,8 @@
 package com.clustercontrol.collect.util;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.NoResultException;
 
@@ -19,6 +21,7 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CollectKeyNotFound;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.collect.QueryExecutor;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
@@ -87,14 +90,12 @@ public class QueryUtil {
 	}
 	
 	public static List<CollectData> getCollectDataList(List<Integer> idList, Long fromTime, Long toTime) {
-		setStatementTimeout();
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<CollectData> list = em.createNamedQuery("CollectData.findByTime", CollectData.class)
-				.setParameter("collectoridList", idList)
-				.setParameter("fromTime", fromTime)
-				.setParameter("toTime", toTime)
-				.getResultList();
-		resetStatementTimeout();
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		parameters.put("collectoridList", idList);
+		parameters.put("fromTime", fromTime);
+		parameters.put("toTime", toTime);
+		
+		List<CollectData> list = QueryExecutor.getListWithTimeout("CollectData.findByTime", CollectData.class, parameters);
 		return list;
 	}
 	
@@ -108,14 +109,12 @@ public class QueryUtil {
 	}
 	
 	public static List<SummaryHour> getSummaryHourList(List<Integer> idList, Long fromTime, Long toTime) {
-		setStatementTimeout();
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<SummaryHour> list = em.createNamedQuery("SummaryHour.findByTime", SummaryHour.class)
-				.setParameter("collectoridList", idList)
-				.setParameter("fromTime", fromTime)
-				.setParameter("toTime", toTime)
-				.getResultList();
-		resetStatementTimeout();
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		parameters.put("collectoridList", idList);
+		parameters.put("fromTime", fromTime);
+		parameters.put("toTime", toTime);
+		
+		List<SummaryHour> list = QueryExecutor.getListWithTimeout("SummaryHour.findByTime", SummaryHour.class, parameters);
 		return list;
 	}
 	
@@ -129,14 +128,12 @@ public class QueryUtil {
 	}
 	
 	public static List<SummaryDay> getSummaryDayList(List<Integer> collectidList, Long fromTime, Long toTime) {
-		setStatementTimeout();
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<SummaryDay> list = em.createNamedQuery("SummaryDay.findByTime", SummaryDay.class)
-				.setParameter("collectoridList", collectidList)
-				.setParameter("fromTime", fromTime)
-				.setParameter("toTime", toTime)
-				.getResultList();
-		resetStatementTimeout();
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		parameters.put("collectoridList", collectidList);
+		parameters.put("fromTime", fromTime);
+		parameters.put("toTime", toTime);
+		
+		List<SummaryDay> list = QueryExecutor.getListWithTimeout("SummaryDay.findByTime", SummaryDay.class, parameters);
 		return list;
 	}
 	
@@ -150,14 +147,12 @@ public class QueryUtil {
 	}
 	
 	public static List<SummaryMonth> getSummaryMonthList(List<Integer> idList, Long fromTime, Long toTime) {
-		setStatementTimeout();
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<SummaryMonth> list = em.createNamedQuery("SummaryMonth.findByTime", SummaryMonth.class)
-				.setParameter("collectoridList", idList)
-				.setParameter("fromTime", fromTime)
-				.setParameter("toTime", toTime)
-				.getResultList();
-		resetStatementTimeout();
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		parameters.put("collectoridList", idList);
+		parameters.put("fromTime", fromTime);
+		parameters.put("toTime", toTime);
+		
+		List<SummaryMonth> list = QueryExecutor.getListWithTimeout("SummaryMonth.findByTime", SummaryMonth.class, parameters);
 		return list;
 	}
 	
@@ -195,28 +190,5 @@ public class QueryUtil {
 		}
 		return list;
 		
-	}
-	
-	private static void setStatementTimeout() {
-		long timeout = HinemosPropertyUtil.getHinemosPropertyNum("collect.graph.timeout", Long.valueOf(50000));
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		String sql = "SET local statement_timeout TO " + timeout + ";";
-		m_log.trace("setStatementTimeout : " + sql);
-		try {
-			em.createNativeQuery(sql).executeUpdate();
-		} catch(Exception e) {
-			m_log.error("setStatementTimeout ERROR statement:" + sql);
-		}
-	}
-	
-	private static void resetStatementTimeout() {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		String sql = "RESET statement_timeout;";
-		m_log.trace("resetStatementTimeout : " + sql);
-		try {
-			em.createNativeQuery(sql).executeUpdate();
-		} catch(Exception e) {
-			m_log.error("resetStatementTimeout ERROR statement:" + sql);
-		}
 	}
 }

@@ -35,6 +35,7 @@ import com.clustercontrol.nodemap.NodeMapException;
 import com.clustercontrol.nodemap.bean.Association;
 import com.clustercontrol.nodemap.bean.NodeMapModel;
 import com.clustercontrol.nodemap.session.NodeMapControllerBean;
+import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -455,5 +456,32 @@ public class NodeMapEndpoint {
 				+ msg.toString());
 
 		return new NodeMapControllerBean().getL3ConnectionMap(scopeId);
+	}
+	
+	/**
+	 * 指定されたfacilityIdにpingを実施し、結果を文字列で返します。
+	 * 
+	 * @param facilityId
+	 * @return
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws NodeMapException
+	 */
+	public List<String> ping(String facilityId) throws InvalidUserPass, InvalidRole, HinemosUnknown, NodeMapException {
+		m_log.debug("ping:" + facilityId);
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.MONITOR_RESULT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+		List<String> facilityList = new RepositoryControllerBean().getExecTargetFacilityIdList(facilityId, null);
+		
+		return new NodeMapControllerBean().pingToFacilityList(facilityList);
+	}
+
+	public String getVersion() throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		return "1.0";
 	}
 }

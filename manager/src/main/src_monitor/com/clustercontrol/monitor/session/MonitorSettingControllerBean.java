@@ -1282,4 +1282,75 @@ public class MonitorSettingControllerBean {
 		m_log.debug("getMonitorList(condition) : end");
 		return list;
 	}
+
+	/**
+	 * チェック設定を含まない監視設定一覧の取得
+	 *
+	 * @param condition フィルタ条件
+	 * @return チェック設定を含まない監視設定一覧
+	 * @throws HinemosUnknown
+	 */
+	public ArrayList<MonitorInfo> getMonitorListWithoutCheckInfo(MonitorFilterInfo condition) throws InvalidRole, HinemosUnknown {
+		m_log.debug("getMonitorListWithoutCheckInfo(condition) : start");
+		
+		JpaTransactionManager jtm = null;
+
+		ArrayList<MonitorInfo> list = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			if(condition != null) {
+				list = new SelectMonitor().getMonitorList(condition);
+			} else {
+				list = new SelectMonitor().getMonitorList();
+			}
+			
+			for(MonitorInfo info : list) {
+				jtm.getEntityManager().detach(info);
+				info.setCustomCheckInfo(null);
+				info.setCustomTrapCheckInfo(null);
+				info.setHttpCheckInfo(null);
+				info.setHttpScenarioCheckInfo(null);
+				info.setJmxCheckInfo(null);
+				info.setLogfileCheckInfo(null);
+				info.setPerfCheckInfo(null);
+				info.setPingCheckInfo(null);
+				info.setPluginCheckInfo(null);
+				info.setPortCheckInfo(null);
+				info.setProcessCheckInfo(null);
+				info.setSnmpCheckInfo(null);
+				info.setSqlCheckInfo(null);
+				info.setTrapCheckInfo(null);
+				info.setWinEventCheckInfo(null);
+				info.setWinServiceCheckInfo(null);
+			}
+			
+			jtm.commit();
+		} catch (HinemosUnknown | InvalidRole e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (MonitorNotFound e) {
+			m_log.info("getMonitorListWithoutCheckInfo(condition) " + e.getClass().getName() + ", " + e.getMessage());
+			jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(),e);
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("getMonitorListWithoutCheckInfo(condition) : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(),e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+
+		m_log.debug("getMonitorListWithoutCheckInfo(condition) : end");
+		return list;
+	}
 }

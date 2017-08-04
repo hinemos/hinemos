@@ -102,7 +102,7 @@ public class CreateHulftJob {
 
 	private String getScriptDirWin() {
 		/** HULFT用のスクリプト配置ディレクトリ */
-		String SCRIPT_DIR_WIN = "C:\\Program Files (x86)\\Hinemos\\Agent5.0.0\\hulft\\vbs\\";
+		String SCRIPT_DIR_WIN = "C:\\Program Files (x86)\\Hinemos\\Agent6.0.0\\hulft\\vbs\\";
 		String dir = HinemosPropertyUtil.getHinemosPropertyStr("job.hulft.script.dir.windows", SCRIPT_DIR_WIN);
 
 		if (dir != null && dir.length() >0) {

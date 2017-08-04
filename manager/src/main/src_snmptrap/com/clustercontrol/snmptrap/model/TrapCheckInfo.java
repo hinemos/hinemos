@@ -179,6 +179,11 @@ public class TrapCheckInfo extends MonitorCheckInfo implements Serializable {
 		while(iter.hasNext()) {
 			TrapValueInfo entity = iter.next();
 			if (!notDelPkList.contains(entity.getId())) {
+				for (VarBindPattern p: entity.getVarBindPatterns()) {
+					em.remove(p);
+				}
+				entity.getVarBindPatterns().clear();
+				
 				iter.remove();
 				em.remove(entity);
 			}

@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.persistence.Cacheable;
+import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -70,6 +71,7 @@ public class NodeNoteInfo implements Serializable, Cloneable {
 	}
 
 
+	@Column(name="note")
 	public String getNote() {
 		return this.note;
 	}

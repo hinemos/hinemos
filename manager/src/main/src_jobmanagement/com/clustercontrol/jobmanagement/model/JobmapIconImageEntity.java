@@ -57,6 +57,7 @@ public class JobmapIconImageEntity extends ObjectPrivilegeTargetInfo {
 		this.iconId = iconId;
 	}
 
+	@Column(name="filedata")
 	public byte[] getFiledata() {
 		return this.filedata;
 	}
@@ -64,6 +65,7 @@ public class JobmapIconImageEntity extends ObjectPrivilegeTargetInfo {
 		this.filedata = filedata;
 	}
 
+	@Column(name="description")
 	public String getDescription() {
 		return description;
 	}

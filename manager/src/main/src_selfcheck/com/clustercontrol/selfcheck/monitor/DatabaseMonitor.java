@@ -23,6 +23,7 @@ import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -80,7 +81,7 @@ public class DatabaseMonitor extends SelfCheckMonitorBase {
 		
 		validationQuery = HinemosPropertyUtil.getHinemosPropertyStr(
 				"selfcheck.monitoring.db.validationquery",
-				"SELECT 1 FOR UPDATE");
+				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.SELFCHECK_MONITORING_DB_VALIDATIONQUERY));
 
 		/** メイン処理 */
 		m_log.debug("monitoring datasource. (query = " + validationQuery + ")");

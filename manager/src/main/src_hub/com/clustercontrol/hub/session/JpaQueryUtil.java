@@ -45,6 +45,7 @@ import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
+import com.clustercontrol.platform.hub.HubQueryPertial;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -129,7 +130,7 @@ public abstract class JpaQueryUtil<T, R> {
 		Long cycled = (Long)cycledPosQuery.getSingleResult();
 		
 		// 位置情報の最新値と最大値を取得
-		Query posQuery = em.createNativeQuery(String.format("SELECT last_value, max_value FROM %s", getSequenceTableName()));
+		Query posQuery = em.createNativeQuery(String.format(HubQueryPertial.getSequenceSql(), getSequenceTableName()));
 		Object[] data = (Object[])posQuery.getSingleResult();
 		if (data == null || data.length <= 0) {
 			HubControllerBean.logger.warn("Fatal Error");

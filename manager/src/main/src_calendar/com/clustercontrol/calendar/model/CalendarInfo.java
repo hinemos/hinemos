@@ -73,6 +73,7 @@ public class CalendarInfo extends ObjectPrivilegeTargetInfo {
 		this.calendarName = calendarName;
 	}
 
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}

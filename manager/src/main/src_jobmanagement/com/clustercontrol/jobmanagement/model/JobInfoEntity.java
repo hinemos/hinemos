@@ -192,7 +192,7 @@ public class JobInfoEntity implements Serializable {
 		this.id = id;
 	}
 
-
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}
@@ -273,6 +273,7 @@ public class JobInfoEntity implements Serializable {
 
 
 	// cc_job_command_info
+	@Column(name="argument")
 	public String getArgument() {
 		return this.argument;
 	}
@@ -444,6 +445,7 @@ public class JobInfoEntity implements Serializable {
 	}
 	
 	// cc_job_start_info
+	@Column(name="calendar")
 	public Boolean getCalendar() {
 		return this.calendar;
 	}
@@ -673,6 +675,7 @@ public class JobInfoEntity implements Serializable {
 	}
 
 
+	@Column(name="skip")
 	public Boolean getSkip() {
 		return this.skip;
 	}
@@ -822,6 +825,7 @@ public class JobInfoEntity implements Serializable {
 	}
 
 
+	@Column(name="suspend")
 	public Boolean getSuspend() {
 		return this.suspend;
 	}
@@ -1132,7 +1136,7 @@ public class JobInfoEntity implements Serializable {
 		this.approvalReqUserId = approvalReqUserId;
 	}
 
-	@Column(name="approval_req_Sentence")
+	@Column(name="approval_req_sentence")
 	public String getApprovalReqSentence() {
 		return approvalReqSentence;
 	}
@@ -1159,7 +1163,7 @@ public class JobInfoEntity implements Serializable {
 		this.approvalReqMailBody = approvalReqMailBody;
 	}
 
-	@Column(name="use_approval_req_Sentence")
+	@Column(name="use_approval_req_sentence")
 	public Boolean isUseApprovalReqSentence() {
 		return useApprovalReqSentence;
 	}

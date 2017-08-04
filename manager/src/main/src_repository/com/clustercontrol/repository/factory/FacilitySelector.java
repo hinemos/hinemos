@@ -42,6 +42,7 @@ import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
 import com.clustercontrol.commons.util.Ipv6Util;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.commons.util.ObjectValidator;
 import com.clustercontrol.fault.FacilityNotFound;
@@ -642,6 +643,7 @@ public class FacilitySelector {
 		try {
 			_hostnameIpaddrFacilityIdCacheLock.writeLock();
 			
+			new JpaTransactionManager().getEntityManager().clear();
 			// hostname変数のNodeプロパティのnodename(必須項目)をLowerCaseで検索
 			List<NodeInfo> nodes = QueryUtil.getNodeByNodename(hostname);
 			if (nodes != null){
@@ -1493,6 +1495,7 @@ public class FacilitySelector {
 		try {
 			_nodenameFacilityIdCacheLock.writeLock();
 			
+			new JpaTransactionManager().getEntityManager().clear();
 			List<NodeInfo> allNodes = QueryUtil.getAllNode_NONE();
 
 			for(NodeInfo node : allNodes){
@@ -1550,6 +1553,7 @@ public class FacilitySelector {
 		try {
 			_ipaddrFacilityIdCacheLock.writeLock();
 			
+			new JpaTransactionManager().getEntityManager().clear();
 			List<NodeInfo> allNodes = QueryUtil.getAllNode();
 
 			for(NodeInfo node : allNodes){
@@ -1618,6 +1622,7 @@ public class FacilitySelector {
 		try {
 			_hostnameFacilityIdCacheLock.writeLock();
 			
+			new JpaTransactionManager().getEntityManager().clear();
 			List<NodeHostnameInfo> allNodes = QueryUtil.getAllNodeHostname();
 
 			for(NodeHostnameInfo node : allNodes){
@@ -1693,6 +1698,7 @@ public class FacilitySelector {
 			_scopeNodeFacilityIdCacheLock.writeLock();
 			
 			HashMap<String, Boolean> cache = getScopeNodeFacilityIdCache();
+			new JpaTransactionManager().getEntityManager().clear();
 			ret = getNodeFacilityIdList(scopeFacilityId, ownerRoleId, RepositoryControllerBean.ALL, false, true).contains(nodeFacilityId);
 			m_log.debug("containsFacilityId key=" + key + ", ret=" + ret);
 			cache.put(key, ret);

@@ -83,6 +83,7 @@ public class MaintenanceInfo extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="application")
 	public String getApplication() {
 		return this.application;
 	}
@@ -101,6 +102,7 @@ public class MaintenanceInfo extends ObjectPrivilegeTargetInfo {
 		this.dataRetentionPeriod = dataRetentionPeriod;
 	}
 
+	@Column(name="description")
 	public String getDescription() {
 		return this.description;
 	}

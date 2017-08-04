@@ -109,16 +109,14 @@ public class SelectJobmap {
 
 		m_log.debug("getJobmapIconImageIdList()");
 		
-		// デフォルトアイコンID（ジョブ用）を取得する。
-		String defaultJobIconId =  new JobControllerBean().getJobmapIconIdJobDefault();
-		// デフォルトアイコンID（ジョブネット用）を取得する。
-		String defaultJobnetIconId =  new JobControllerBean().getJobmapIconIdJobnetDefault();
+		// デフォルトアイコンIDリストを取得する。
+		List<String> defaultList =  new JobControllerBean().getJobmapIconIdDefaultList();
 
 		ArrayList<String> list = new ArrayList<String>();
 		// ジョブマップ用アイコン情報を取得する
 		
 		List<String> iconIds 
-			= QueryUtil.getJobmapIconImageIdExceptDefaultList_OR(defaultJobnetIconId, defaultJobIconId, ownerRoleId);
+			= QueryUtil.getJobmapIconImageIdExceptDefaultList_OR(defaultList, ownerRoleId);
 		if (iconIds == null) {
 			IconFileNotFound e = new IconFileNotFound("JobmapIconImageEntity.findAllIconIdExceptDefault");
 			m_log.info("getJobmapIconImageIconIdExceptDefaultList() : "

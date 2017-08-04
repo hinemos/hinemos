@@ -46,6 +46,7 @@ import com.clustercontrol.infra.util.JschUtil;
 import com.clustercontrol.infra.util.QueryUtil;
 import com.clustercontrol.infra.util.WinRMUtil;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.util.RepositoryUtil;
 import com.clustercontrol.util.HinemosTime;
@@ -85,7 +86,9 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 			this.value = value;
 		}
 	}
-	
+	/**
+	 * File.separatorは、javaが実行されるプラットフォームの情報から選別される。
+	 */
 	public static String SEPARATOR = File.separator;
 
 	/**
@@ -240,9 +243,8 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 	}
 	
 	private String createTempFilePath(String sessionId) {
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
 		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.export.dir",
-				homeDir + "/var/export/");
+				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_EXPORT_DIR));
 		String filepath = exportDirectory + "/" + sessionId + "-" + getModuleId();
 		return filepath;
 	}
@@ -255,8 +257,8 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 	@Override
 	public ModuleNodeResult run(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId) throws HinemosUnknown, InvalidUserPass {
 		String postfixStr = node.getFacilityId();
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir", homeDir + "/var/infra/");
+		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir", 
+				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_TRANSFER_DIR));
 		InfraFileInfo fileEntity = null;
 		try {
 			fileEntity = QueryUtil.getInfraFileInfoPK(getFileId(), ObjectPrivilegeMode.NONE);
@@ -304,8 +306,8 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 
 		//// sendフォルダにファイルを生成
 		String postfixStr = node.getFacilityId();
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir", homeDir + "/var/infra/");
+		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir",
+				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_TRANSFER_DIR));
 		InfraFileInfo fileEntity = null;
 		try {
 			fileEntity = QueryUtil.getInfraFileInfoPK(getFileId(), ObjectPrivilegeMode.NONE);

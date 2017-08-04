@@ -62,7 +62,6 @@ import com.clustercontrol.jobmanagement.bean.MonitorJobInfo;
 import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
 import com.clustercontrol.jobmanagement.factory.SelectJobmap;
-import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobKickEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
@@ -513,7 +512,12 @@ public class JobValidator {
 			// デフォルトのジョブマップアイコンイメージは削除対象外
 			String defaultJobIconId =  new JobControllerBean().getJobmapIconIdJobDefault();
 			String defaultJobnetIconId =  new JobControllerBean().getJobmapIconIdJobnetDefault();
-			if (iconId.equals(defaultJobIconId) || iconId.equals(defaultJobnetIconId)) {
+			String defaultApprovalIconId = new JobControllerBean().getJobmapIconIdApprovalDefault();
+			String defaultMonitorIconId = new JobControllerBean().getJobmapIconIdMonitorDefault();
+			String defaultFileIconId = new JobControllerBean().getJobmapIconIdFileDefault();
+			if (iconId.equals(defaultJobIconId) || iconId.equals(defaultJobnetIconId) 
+					|| iconId.equals(defaultApprovalIconId) || iconId.equals(defaultMonitorIconId) 
+					|| iconId.equals(defaultFileIconId)) {
 				String[] args = {iconId};
 				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_ICONID_DEFAULT.getMessage(args));
 				m_log.info("valideDeleteJobmapIconImage() : "
@@ -533,17 +537,9 @@ public class JobValidator {
 					}
 				}
 			}
-			List<JobInfoEntity> jobInfoList =
-					QueryUtil.getJobInfoEnityFindByIconId(iconId);
-			if (jobInfoList != null && jobInfoList.size() > 0) {
-				for(JobInfoEntity jobInfo : jobInfoList){
-					m_log.debug("valideDeleteJobmapIconImage() target JobInfo " + jobInfo.getId().getJobId() + ", iconId = " + iconId);
-					if(jobInfo.getIconId() != null){
-						String[] args = {jobInfo.getId().getJobId(), iconId};
-						throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_JOB_REFERENCE_TO_ICONFILE.getMessage(args));
-					}
-				}
-			}
+			
+			// log.cc_job_infoから対象アイコンを参照していても関係なく削除するのでチェック不要
+			// 指定されたlog.cc_job_infoのiconIdがアイコンリストに存在しない場合はデフォルトアイコンで表示する
 
 		} catch (InvalidSetting e) {
 			throw e;

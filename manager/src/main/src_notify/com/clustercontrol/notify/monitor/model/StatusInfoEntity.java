@@ -73,6 +73,7 @@ public class StatusInfoEntity extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="application")
 	public String getApplication() {
 		return this.application;
 	}
@@ -112,6 +113,7 @@ public class StatusInfoEntity extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="message")
 	public String getMessage() {
 		return this.message;
 	}
@@ -131,6 +133,7 @@ public class StatusInfoEntity extends ObjectPrivilegeTargetInfo {
 	}
 
 
+	@Column(name="priority")
 	public Integer getPriority() {
 		return this.priority;
 	}

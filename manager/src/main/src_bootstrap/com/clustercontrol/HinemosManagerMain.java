@@ -16,6 +16,7 @@ PURPOSE.  See the GNU General Public License for more details.
 package com.clustercontrol;
 
 import java.io.IOException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,6 +49,8 @@ import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.notify.util.NotifyCache;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.performance.util.CollectorMasterCache;
+import com.clustercontrol.platform.PlatformPertial;
+import com.clustercontrol.platform.util.apllog.EventLogger;
 import com.clustercontrol.plugin.HinemosPluginService;
 import com.clustercontrol.process.factory.ProcessMasterCache;
 import com.clustercontrol.repository.factory.FacilitySelector;
@@ -88,9 +91,18 @@ public class HinemosManagerMain {
 	public static final boolean _isClustered;
 	
 	static {
+		Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				EventLogger.error("uncaughtException." + t.getName(), e);
+			}
+		});
+		
 		// 最初にSNMP4jのAPIを叩くよりも前に、下記コマンドを実行する必要がある。
 		org.snmp4j.log.LogFactory.setLogFactory(new org.snmp4j.log.Log4jLogFactory());
 		log.info("setLogFactory(Log4jLogFactory)");
+		
+		PlatformPertial.setupHostname();
 		
 		_hostname = System.getProperty("hinemos.manager.hostname", "");
 		

@@ -643,6 +643,7 @@ public class SelectJob {
 		JobInfoEntity jobInfo = sessionJob.getJobInfoEntity();
 		JobInfo info = new JobInfo();
 		info.setId(sessionJob.getId().getJobId());
+		info.setIconId(jobInfo.getIconId());
 		info.setName(jobInfo.getJobName());
 		info.setJobunitId(jobInfo.getId().getJobunitId());
 		info.setType(jobInfo.getJobType());

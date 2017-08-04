@@ -87,6 +87,7 @@ public class SqlCheckInfo extends MonitorCheckInfo implements Serializable {
 	}
 
 
+	@Column(name="query")
 	public String getQuery() {
 		return this.query;
 	}

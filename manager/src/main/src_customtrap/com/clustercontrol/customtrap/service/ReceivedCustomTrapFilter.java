@@ -231,29 +231,31 @@ public class ReceivedCustomTrapFilter {
 						for (String facilityIdElement : validFacilityIdList) {
 							switch (receivedCustomTrap.getType()) {
 							case STRING: {
-								stringSample = new StringSample(new Date(HinemosTime.currentTimeMillis()),
-										monitor.getMonitorId());
-								// ログメッセージ
-								stringSample.set(facilityIdElement, "customtrap", receivedCustomTrap.getOrgMsg());
+								stringSample = new StringSample(new Date(HinemosTime.currentTimeMillis()), monitor.getMonitorId());
+
 								// 抽出したタグ
+								List<StringSampleTag> tags = new ArrayList<>();
 								if (receivedCustomTrap.getDate() != null) {
 									StringSampleTag tagDate = new StringSampleTag(
 											CollectStringDataParser.KEY_TIMESTAMP_IN_LOG, ValueType.number,
 											Long.toString(receivedCustomTrap.getSampledTime()));
-									stringSample.getTagList().add(tagDate);
+									tags.add(tagDate);
 								}
 								StringSampleTag tagType = new StringSampleTag("TYPE", ValueType.string,
 										receivedCustomTrap.getType().name());
-								stringSample.getTagList().add(tagType);
+								tags.add(tagType);
 								StringSampleTag tagKey = new StringSampleTag("KEY", ValueType.string,
 										receivedCustomTrap.getKey());
-								stringSample.getTagList().add(tagKey);
+								tags.add(tagKey);
 								StringSampleTag tagMsg = new StringSampleTag("MSG", ValueType.string,
 										receivedCustomTrap.getMsg());
-								stringSample.getTagList().add(tagMsg);
+								tags.add(tagMsg);
 								StringSampleTag tagFacility = new StringSampleTag("FacilityID", ValueType.string,
 										facilityIdElement);
-								stringSample.getTagList().add(tagFacility);
+								tags.add(tagFacility);
+
+								// ログメッセージ
+								stringSample.set(facilityIdElement, "customtrap", receivedCustomTrap.getOrgMsg(), tags);
 
 								collectedStringSamples.add(stringSample);
 								break;

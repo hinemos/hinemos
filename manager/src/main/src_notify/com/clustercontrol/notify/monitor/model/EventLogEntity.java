@@ -90,7 +90,7 @@ public class EventLogEntity extends ObjectPrivilegeTargetInfo implements Cloneab
 		this.id = id;
 	}
 
-
+	@Column(name="application")
 	public String getApplication() {
 		return this.application;
 	}
@@ -100,6 +100,7 @@ public class EventLogEntity extends ObjectPrivilegeTargetInfo implements Cloneab
 	}
 
 
+	@Column(name="comment")
 	public String getComment() {
 		return this.comment;
 	}
@@ -189,6 +190,7 @@ public class EventLogEntity extends ObjectPrivilegeTargetInfo implements Cloneab
 	}
 
 
+	@Column(name="message")
 	public String getMessage() {
 		return this.message;
 	}
@@ -207,6 +209,7 @@ public class EventLogEntity extends ObjectPrivilegeTargetInfo implements Cloneab
 	}
 
 
+	@Column(name="priority")
 	public Integer getPriority() {
 		return this.priority;
 	}

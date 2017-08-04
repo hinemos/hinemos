@@ -18,6 +18,7 @@ package com.clustercontrol.repository.session;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,6 +55,7 @@ import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.util.NodeMonitorPollerController;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCacheChangeCallback;
 import com.clustercontrol.monitor.session.MonitorControllerBean;
+import com.clustercontrol.nodemap.session.NodeMapControllerBean;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.IRepositoryListener;
 import com.clustercontrol.repository.bean.AgentStatusInfo;
@@ -79,6 +81,7 @@ import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityTreeCacheRefreshCallback;
 import com.clustercontrol.repository.util.JobMultiplicityCacheKickCallback;
 import com.clustercontrol.repository.util.NodeCacheRemoveCallback;
+import com.clustercontrol.repository.util.NodeCacheUpdateCallback;
 import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.repository.util.RepositoryChangedNotificationCallback;
 import com.clustercontrol.repository.util.RepositoryListenerCallback;
@@ -1021,7 +1024,7 @@ public class RepositoryControllerBean {
 					(String) HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
 					FacilitySortOrderConstant.DEFAULT_SORT_ORDER_NODE);
 
-			jtm.addCallback(new NodeCacheRemoveCallback(nodeInfo.getFacilityId()));
+			jtm.addCallback(new NodeCacheUpdateCallback(nodeInfo.getFacilityId()));
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
@@ -1090,7 +1093,7 @@ public class RepositoryControllerBean {
 			/** メイン処理 */
 			FacilityModifier.modifyNode(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), true);
 
-			jtm.addCallback(new NodeCacheRemoveCallback(info.getFacilityId()));
+			jtm.addCallback(new NodeCacheUpdateCallback(info.getFacilityId()));
 			jtm.addCallback(new JobMultiplicityCacheKickCallback(info.getFacilityId()));
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
@@ -1183,6 +1186,10 @@ public class RepositoryControllerBean {
 				ListenerReadWriteLock.readUnlock();
 			}
 
+			// ノードマップ
+			// ノードマップで対象スコープの対象ファシリティにつながっているパスを消す
+			new NodeMapControllerBean().deleteMapInfo(Arrays.asList(facilityIds), null);
+			
 			jtm.commit();
 		} catch (UsedFacility | InvalidRole e) {
 			if (jtm != null){
@@ -1522,6 +1529,10 @@ public class RepositoryControllerBean {
 				checkIsBuildInScope(facilityId);
 				checkIsUseFacility(facilityId);
 				FacilityModifier.deleteScope(facilityId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), true);
+
+				// ノードマップ
+				// ノードマップで対象スコープの対象ファシリティにつながっているパスを消す
+				new NodeMapControllerBean().deleteMapInfo(null, facilityId);
 			}
 
 			jtm.addCallback(new FacilityIdCacheInitCallback());
@@ -1539,7 +1550,7 @@ public class RepositoryControllerBean {
 			} finally {
 				ListenerReadWriteLock.readUnlock();
 			}
-
+			
 			jtm.commit();
 		} catch (UsedFacility | InvalidRole e) {
 			if (jtm != null){
@@ -1972,6 +1983,10 @@ public class RepositoryControllerBean {
 				ListenerReadWriteLock.readUnlock();
 			}
 
+			// ノードマップ
+			// ノードマップで対象スコープの対象ファシリティにつながっているパスを消す
+			new NodeMapControllerBean().deleteMapInfo(Arrays.asList(facilityIds), parentFacilityId);
+			
 			jtm.commit();
 		} catch (InvalidSetting | InvalidRole e) {
 			if (jtm != null){

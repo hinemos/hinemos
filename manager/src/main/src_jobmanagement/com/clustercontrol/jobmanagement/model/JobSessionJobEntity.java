@@ -142,6 +142,7 @@ public class JobSessionJobEntity  implements Serializable {
 	}
 
 
+	@Column(name="result")
 	public String getResult() {
 		return this.result;
 	}
@@ -171,6 +172,7 @@ public class JobSessionJobEntity  implements Serializable {
 	}
 
 
+	@Column(name="status")
 	public Integer getStatus() {
 		return this.status;
 	}

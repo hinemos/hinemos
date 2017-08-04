@@ -44,11 +44,7 @@ public class RunMonitorLogfileString {
 			StringSample sample = new StringSample(new Date(result.msgInfo.getGenerationDate()), result.monitorInfo.getMonitorId());
 			
 			String filePath = new File(new File(result.monitorInfo.getLogfileCheckInfo().getDirectory()), result.monitorInfo.getLogfileCheckInfo().getFileName()).getPath();
-			sample.set(facilityId, filePath, result.message.trim());
-			
-			StringSampleTag tag = new StringSampleTag("filename", ValueType.string, result.monitorInfo.getLogfileCheckInfo().getLogfile());
-			sample.getTagList().add(tag);
-			
+			sample.set(facilityId, filePath, result.message.trim(), Arrays.asList(new StringSampleTag("filename", ValueType.string, result.monitorInfo.getLogfileCheckInfo().getLogfile())));
 			CollectStringDataUtil.store(Arrays.asList(sample));
 		}
 		

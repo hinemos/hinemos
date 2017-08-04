@@ -47,6 +47,7 @@ public class MonitorStatusEntity implements Serializable, Cloneable {
 	}
 
 
+	@Column(name="counter")
 	public Long getCounter() {
 		return this.counter;
 	}
@@ -66,6 +67,7 @@ public class MonitorStatusEntity implements Serializable, Cloneable {
 	}
 
 
+	@Column(name="priority")
 	public Integer getPriority() {
 		return this.priority;
 	}

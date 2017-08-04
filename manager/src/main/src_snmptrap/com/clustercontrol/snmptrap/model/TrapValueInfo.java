@@ -147,7 +147,7 @@ public class TrapValueInfo implements Serializable {
 		this.description = description;
 	}
 
-	@Column(name="proc_varbind_Specified")
+	@Column(name="proc_varbind_specified")
 	public Boolean getProcessingVarbindSpecified() {
 		return procVarbindSpecified;
 	}

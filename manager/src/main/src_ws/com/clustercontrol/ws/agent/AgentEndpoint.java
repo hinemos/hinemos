@@ -325,24 +325,11 @@ public class AgentEndpoint {
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 		ArrayList<String> facilityIdList = new ArrayList<String>();
 
-		if (agentInfo.getFacilityId() != null && !agentInfo.getFacilityId().equals("")) {
-			facilityIdList.add(agentInfo.getFacilityId());
-		} else {
-			try {
-				RepositoryControllerBean bean = new RepositoryControllerBean();
-				for (String ipAddress : agentInfo.getIpAddress()) {
-					ArrayList<String> list = bean.getFacilityIdList(agentInfo.getHostname(), ipAddress);
-					if (list != null && list.size() != 0) {
-						for (String facilityId : list) {
-							m_log.debug("facilityId=" + facilityId + ", " + agentInfo.toString());
-						}
-						facilityIdList.addAll(list);
-					}
-				}
-			} catch (Exception e) {
-				m_log.warn(e,e);
-				return null;
-			}
+		try {
+			facilityIdList.addAll(getFacilityId(agentInfo));
+		} catch (Exception e) {
+			m_log.warn(e,e);
+			return null;
 		}
 
 		ArrayList<MonitorInfo> list = new ArrayList<MonitorInfo>();
@@ -373,24 +360,11 @@ public class AgentEndpoint {
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 		ArrayList<String> facilityIdList = new ArrayList<String>();
 
-		if (agentInfo.getFacilityId() != null && !agentInfo.getFacilityId().equals("")) {
-			facilityIdList.add(agentInfo.getFacilityId());
-		} else {
-			try {
-				RepositoryControllerBean bean = new RepositoryControllerBean();
-				for (String ipAddress : agentInfo.getIpAddress()) {
-					ArrayList<String> list = bean.getFacilityIdList(agentInfo.getHostname(), ipAddress);
-					if (list != null && list.size() != 0) {
-						for (String facilityId : list) {
-							m_log.debug("facilityId=" + facilityId + ", " + agentInfo.toString());
-						}
-						facilityIdList.addAll(list);
-					}
-				}
-			} catch (Exception e) {
-				m_log.warn(e,e);
-				return null;
-			}
+		try {
+			facilityIdList.addAll(getFacilityId(agentInfo));
+		} catch (Exception e) {
+			m_log.warn(e,e);
+			return null;
 		}
 
 		return new JobControllerBean().getJobFileCheck(facilityIdList);
@@ -473,24 +447,11 @@ public class AgentEndpoint {
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 		ArrayList<String> facilityIdList = new ArrayList<String>();
 
-		if (agentInfo.getFacilityId() != null && !agentInfo.getFacilityId().equals("")) {
-			facilityIdList.add(agentInfo.getFacilityId());
-		} else {
-			try {
-				RepositoryControllerBean bean = new RepositoryControllerBean();
-				for (String ipAddress : agentInfo.getIpAddress()) {
-					ArrayList<String> list = bean.getFacilityIdList(agentInfo.getHostname(), ipAddress);
-					if (list != null && list.size() != 0) {
-						for (String facilityId : list) {
-							m_log.debug("facilityId=" + facilityId + ", " + agentInfo.toString());
-						}
-						facilityIdList.addAll(list);
-					}
-				}
-			} catch (Exception e) {
-				m_log.warn(e,e);
-				return null;
-			}
+		try {
+			facilityIdList.addAll(getFacilityId(agentInfo));
+		} catch (Exception e) {
+			m_log.warn(e,e);
+			return null;
 		}
 
 		ArrayList<MonitorInfo> list = new ArrayList<MonitorInfo>();
@@ -667,24 +628,11 @@ public class AgentEndpoint {
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 		ArrayList<String> facilityIdList = new ArrayList<String>();
 
-		if (agentInfo.getFacilityId() != null && !agentInfo.getFacilityId().equals("")) {
-			facilityIdList.add(agentInfo.getFacilityId());
-		} else {
-			try {
-				RepositoryControllerBean bean = new RepositoryControllerBean();
-				for (String ipAddress : agentInfo.getIpAddress()) {
-					ArrayList<String> list = bean.getFacilityIdList(agentInfo.getHostname(), ipAddress);
-					if (list != null && list.size() != 0) {
-						for (String facilityId : list) {
-							m_log.debug("facilityId=" + facilityId + ", " + agentInfo.toString());
-						}
-						facilityIdList.addAll(list);
-					}
-				}
-			} catch (Exception e) {
-				m_log.warn(e,e);
-				return null;
-			}
+		try {
+			facilityIdList.addAll(getFacilityId(agentInfo));
+		} catch (Exception e) {
+			m_log.warn(e,e);
+			return null;
 		}
 		HashMapInfo info = new HashMapInfo();
 		JobRunManagementBean bean = new JobRunManagementBean();

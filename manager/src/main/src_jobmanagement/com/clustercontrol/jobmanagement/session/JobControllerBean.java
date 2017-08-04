@@ -382,6 +382,8 @@ public class JobControllerBean implements CheckFacility {
 			long beforeCommit = HinemosTime.currentTimeMillis();
 			jtm.commit();
 			m_log.debug(String.format("jtm.commit: %d ms", HinemosTime.currentTimeMillis() - beforeCommit));
+			
+			FullJob.updateCache(jobunitId, tree2List(jobunit));
 		} catch (HinemosUnknown | JobInvalid | InvalidRole | InvalidSetting e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -543,10 +545,6 @@ public class JobControllerBean implements CheckFacility {
 				new JobEditEntity(jobunitId);
 			}
 
-			// FullJobのキャッシュを削除する。
-			// 一応実施。
-			FullJob.removeCache(jobunitId);
-
 			jtm.commit();
 		} catch (HinemosUnknown | JobMasterNotFound | JobMasterDuplicate | InvalidRole | JobInvalid e) {
 			if (jtm != null){
@@ -618,13 +616,13 @@ public class JobControllerBean implements CheckFacility {
 				JobValidator.validateJobMaster();
 			}
 
-			// キャッシュの削除
-			FullJob.removeCache(jobunitId);
-			
 			//編集ロックの削除
 			releaseEditLockAfterJobEdit(jobunitId);
 
 			jtm.commit();
+
+			// キャッシュの削除
+			FullJob.removeCache(jobunitId);
 		} catch (HinemosUnknown | JobMasterNotFound | InvalidSetting | JobInvalid | InvalidRole e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -1876,8 +1874,13 @@ public class JobControllerBean implements CheckFacility {
 			try {
 				_lock.writeLock();
 				
+				long startTime = System.currentTimeMillis();
+				new JpaTransactionManager().getEntityManager().clear();
 				jobKickList = bean.getJobKickList();
 				storeJobKickCache(jobKickList);
+				
+				m_log.info("refresh jobKickCache " + (System.currentTimeMillis() - startTime) +
+						"ms. size=" + jobKickList.size());
 			} finally {
 				_lock.writeUnlock();
 			}
@@ -2816,7 +2819,7 @@ public class JobControllerBean implements CheckFacility {
 		try {
 			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.job", "JOB_DEFAULT");
 		} catch (Exception e) {
-			m_log.warn("getJobmapIconIdDefault() : "
+			m_log.warn("getJobmapIconIdJobDefault() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		}
@@ -2835,13 +2838,79 @@ public class JobControllerBean implements CheckFacility {
 		try {
 			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.jobnet", "JOBNET_DEFAULT");
 		} catch (Exception e) {
-			m_log.warn("getJobmapIconIdDefault() : "
+			m_log.warn("getJobmapIconIdJobnetDefault() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		}
 		return iconId;
 	}
 
+	/**
+	 * ジョブマップ用アイコンイメージ(承認ジョブ用)のデフォルトアイコンIDを取得する。<BR>
+	 *
+	 * @return デフォルトアイコンID
+	 * @throws HinemosUnknown
+	 */
+	public String getJobmapIconIdApprovalDefault() throws HinemosUnknown {
+
+		String iconId = "";
+		try {
+			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.approvaljob", "APPROVALJOB_DEFAULT");
+		} catch (Exception e) {
+			m_log.warn("getJobmapIconIdApprovalDefault() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
+		}
+		return iconId;
+	}
+
+	/**
+	 * ジョブマップ用アイコンイメージ(監視ジョブ用)のデフォルトアイコンIDを取得する。<BR>
+	 *
+	 * @return デフォルトアイコンID
+	 * @throws HinemosUnknown
+	 */
+	public String getJobmapIconIdMonitorDefault() throws HinemosUnknown {
+
+		String iconId = "";
+		try {
+			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.monitorjob", "MONITORJOB_DEFAULT");
+		} catch (Exception e) {
+			m_log.warn("getJobmapIconIdMonitorDefault() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
+		}
+		return iconId;
+	}
+
+	/**
+	 * ジョブマップ用アイコンイメージ(ファイル転送ジョブ用)のデフォルトアイコンIDを取得する。<BR>
+	 *
+	 * @return デフォルトアイコンID
+	 * @throws HinemosUnknown
+	 */
+	public String getJobmapIconIdFileDefault() throws HinemosUnknown {
+
+		String iconId = "";
+		try {
+			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.filejob", "FILEJOB_DEFAULT");
+		} catch (Exception e) {
+			m_log.warn("getJobmapIconIdFileDefault() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
+		}
+		return iconId;
+	}
+
+	public List<String> getJobmapIconIdDefaultList() throws HinemosUnknown {
+		List<String> defaultList = new ArrayList<>();
+		defaultList.add(getJobmapIconIdJobDefault());
+		defaultList.add(getJobmapIconIdJobnetDefault());
+		defaultList.add(getJobmapIconIdApprovalDefault());
+		defaultList.add(getJobmapIconIdMonitorDefault());
+		defaultList.add(getJobmapIconIdFileDefault());
+		return defaultList;
+	}
 	/**
 	 * 承認ジョブにおける承認画面へのリンク先アドレスを取得する。BR>
 	 *

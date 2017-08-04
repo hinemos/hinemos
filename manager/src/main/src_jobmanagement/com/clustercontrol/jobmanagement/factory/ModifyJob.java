@@ -96,10 +96,8 @@ public class ModifyJob {
 
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		for (JobInfo delJob : delJobs) {
-			String jobId = delJob.getId();
 			JobMstEntity entity = QueryUtil.getJobMstPK(delJob.getJobunitId(), delJob.getId());
 			deleteJob(entity);
-			FullJob.removeCache(jobunitId, jobId);
 		}
 
 		jtm.flush();

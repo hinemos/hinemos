@@ -564,11 +564,10 @@ public class QueryUtil {
 				.getResultList();
 	}
 
-	public static List<String> getJobmapIconImageIdExceptDefaultList_OR(String jobnetIconId, String jobIconId, String orderRoleId) {
+	public static List<String> getJobmapIconImageIdExceptDefaultList_OR(List<String> defaultIconList, String orderRoleId) {
 		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 		return em.createNamedQuery_OR("JobmapIconImageEntity.findAllIconIdExceptDefault", String.class, orderRoleId)
-				.setParameter("jobnetIconId", jobnetIconId)
-				.setParameter("jobIconId", jobIconId)
+				.setParameter("defaultIconId", defaultIconList)
 				.getResultList();
 	}
 	public static List<MonitorInfo> getMonitorInfoByMonitorTypeIds_OR(List<String> monitorTypeIds, String ownerRoleId) {

@@ -85,6 +85,7 @@ public class MonitorStatusCache {
 	}
 
 	public static void init() {
+		new JpaTransactionManager().getEntityManager().clear();
 		List<MonitorStatusEntity> entities = QueryUtil.getAllMonitorStatus();
 		long start = System.currentTimeMillis();
 		for (MonitorStatusEntity entity : entities) {

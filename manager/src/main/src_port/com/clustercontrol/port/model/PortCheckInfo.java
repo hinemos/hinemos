@@ -74,6 +74,7 @@ public class PortCheckInfo extends MonitorCheckInfo implements Serializable {
 	}
 
 
+	@Column(name="timeout")
 	public Integer getTimeout() {
 		return this.timeout;
 	}

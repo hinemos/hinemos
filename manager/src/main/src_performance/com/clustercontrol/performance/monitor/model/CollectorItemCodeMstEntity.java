@@ -103,6 +103,7 @@ public class CollectorItemCodeMstEntity implements Serializable {
 	}
 
 
+	@Column(name="measure")
 	public String getMeasure() {
 		return this.measure;
 	}

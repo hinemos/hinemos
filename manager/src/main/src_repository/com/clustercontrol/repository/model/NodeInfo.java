@@ -118,6 +118,7 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		super(facilityId);
 	}
 
+	@Column(name="administrator")
 	public String getAdministrator() {
 		return this.administrator;
 	}
@@ -205,6 +206,7 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	}
 
 
+	@Column(name="contact")
 	public String getContact() {
 		return this.contact;
 	}

@@ -431,7 +431,8 @@ public class FacilityTreeCache {
 			 * FacilityInfoMap のリフレッシュ
 			 */
 			long startTime = HinemosTime.currentTimeMillis();
-
+			new JpaTransactionManager().getEntityManager().clear();
+			
 			// FacilityInfoはFacilityTreeItem再構築時に参照されるため、先に反映させる
 			HashMap<String, FacilityInfo>facilityInfoMap = createFacilityInfoMap();
 			if (facilityInfoMap == null) {

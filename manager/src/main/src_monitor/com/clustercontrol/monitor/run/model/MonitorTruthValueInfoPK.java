@@ -34,6 +34,7 @@ public class MonitorTruthValueInfoPK implements Serializable {
 		this.monitorId = monitorId;
 	}
 
+	@Column(name="priority")
 	public Integer getPriority() {
 		return this.priority;
 	}

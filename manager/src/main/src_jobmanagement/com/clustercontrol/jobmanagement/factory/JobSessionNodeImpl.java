@@ -355,6 +355,35 @@ public class JobSessionNodeImpl {
 		}else if (job.getJobType() == JobConstant.TYPE_APPROVALJOB) {
 			// 承認ジョブの場合、Topic送信せずに承認待ち状態へ
 			sessionNode.setStartDate(HinemosTime.currentTimeMillis());
+			String jobFacilityId = job.getFacilityId();
+			// ジョブ変数のパラメータを置き換える
+			// 承認依頼文
+			String reqSentence = job.getApprovalReqSentence();
+			reqSentence = ParameterUtil.replaceSessionParameterValue(
+					sessionId,
+					jobFacilityId,
+					reqSentence);
+			reqSentence = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, reqSentence);
+			job.setApprovalReqSentence(reqSentence);
+			
+			// 承認依頼メール件名
+			String mailTitle = job.getApprovalReqMailTitle();
+			mailTitle = ParameterUtil.replaceSessionParameterValue(
+					sessionId,
+					jobFacilityId,
+					mailTitle);
+			mailTitle = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, mailTitle);
+			job.setApprovalReqMailTitle(mailTitle);
+			
+			// 承認依頼メール本文
+			String mailBody = job.getApprovalReqMailBody();
+			mailBody = ParameterUtil.replaceSessionParameterValue(
+					sessionId,
+					jobFacilityId,
+					mailBody);
+			mailBody = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, mailBody);
+			job.setApprovalReqMailBody(mailBody);
+
 			setMessage(sessionNode, MessageConstant.WAIT_APPROVAL.getMessage());
 			//メール送信
 			SendApprovalMail sendMail = new SendApprovalMail();

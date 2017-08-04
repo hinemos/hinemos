@@ -96,7 +96,7 @@ public class MonitorSettingEndpoint {
 				+ ", Method=getMonitorList, User="
 				+ HttpAuthenticator.getUserAccountString(wsctx));
 
-		return new MonitorSettingControllerBean().getMonitorList();
+		return new MonitorSettingControllerBean().getMonitorListWithoutCheckInfo(null);
 	}
 
 	/**
@@ -155,7 +155,7 @@ public class MonitorSettingEndpoint {
 					+ msg.toString());
 		}
 
-		return new MonitorSettingControllerBean().getMonitorList(condition);
+		return new MonitorSettingControllerBean().getMonitorListWithoutCheckInfo(condition);
 	}
 
 	/**
@@ -898,7 +898,7 @@ public class MonitorSettingEndpoint {
 	/**
 	 * 収集項目コードの一覧を取得します
 	 *
-	 * CollectRead権限が必要
+	 * MonitorSettingRead権限が必要
 	 *
 	 * @return 収集項目IDをキーとしCollectorItemTreeItemが格納されているHashMap
 	 * @throws HinemosUnknown
@@ -908,7 +908,7 @@ public class MonitorSettingEndpoint {
 	public HashMapInfo getItemCodeMap() throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("getItemCodeMap");
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
-		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.COLLECT, SystemPrivilegeMode.READ));
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.MONITOR_SETTING, SystemPrivilegeMode.READ));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 		HashMapInfo info = new HashMapInfo();
 		info.getMap2().putAll(new PerformanceControllerBean().getItemCodeMap());
@@ -920,7 +920,7 @@ public class MonitorSettingEndpoint {
 	 * デバイス別の収集項目があり、ノード毎に登録されているデバイス情報が異なるため、
 	 * 取得可能な収集項目はファシリティ毎に異なる。
 	 *
-	 * CollectRead権限が必要
+	 * MonitorSettingRead権限が必要
 	 *
 	 * @param facilityId ファシリティID
 	 * @return 指定のファシリティで収集可能な項目のリスト
@@ -931,7 +931,7 @@ public class MonitorSettingEndpoint {
 	public List<CollectorItemInfo> getAvailableCollectorItemList(String facilityId) throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("getAvailableCollectorItemList");
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
-		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.COLLECT, SystemPrivilegeMode.READ));
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.MONITOR_SETTING, SystemPrivilegeMode.READ));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 		return new PerformanceControllerBean().getAvailableCollectorItemList(facilityId);
 	}

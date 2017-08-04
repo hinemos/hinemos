@@ -27,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeUtil;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
@@ -65,6 +66,8 @@ public class EventCache {
 				return (int) (- o1.getId().getOutputDate() + o2.getId().getOutputDate());
 			}
 		});
+		
+		new JpaTransactionManager().getEntityManager().clear();
 		for (EventLogEntity e : QueryUtil.getEventLogByFilter(null, null, null, null,
 				null, null, null, null, null, null, null, null, null, null, null, null,
 				false, getEventCacheLimit())) {
