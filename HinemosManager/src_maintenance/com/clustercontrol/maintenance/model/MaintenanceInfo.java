@@ -80,6 +80,7 @@ public class MaintenanceInfo extends ObjectPrivilegeTargetInfo {
 
 	public void setMaintenanceId(String maintenanceId) {
 		this.maintenanceId = maintenanceId;
+		setObjectId(maintenanceId);
 	}
 
 

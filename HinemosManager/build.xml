@@ -624,16 +624,6 @@
 	</target>
 	
 	<target name="copy_messages">
-		<copy todir="../HinemosPackageBuilder/hinemos_manager/${manager.common.rhel.dir}/hinemos/etc.template/" overwrite="true">
-			<fileset dir="../HinemosManager/resources">
-				<include name="messages_common*.properties" />
-			</fileset>
-		</copy>
-		<copy todir="../HinemosPackageBuilder/hinemos_manager/${manager.common.win.dir}/hinemos/etc.template/" overwrite="true">
-			<fileset dir="../HinemosManager/resources">
-				<include name="messages_common*.properties" />
-			</fileset>
-		</copy>
 		<copy todir="../HinemosClient/lib/" overwrite="true">
 			<fileset dir="../HinemosManager/resources">
 				<include name="messages_*.properties" />

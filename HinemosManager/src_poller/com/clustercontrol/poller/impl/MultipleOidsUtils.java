@@ -71,7 +71,11 @@ public class MultipleOidsUtils extends AbstractSnmpUtility {
 			requestCounter ++;
 			if (response == null) {
 				log.info(target.getAddress() + " response is null : result.size=" + result.values().size());
-				throw new IOException(MessageConstant.MESSAGE_TIME_OUT.getMessage());
+				if (result.values().size() == 0) {
+					// 1件も取得できなかった場合は応答なしとする。
+					throw new IOException(MessageConstant.MESSAGE_RESPONSE_NOT_FOUND.getMessage());
+				}
+				return result.values();
 			}
 			
 			Vector<? extends VariableBinding> vbs = response.getVariableBindings();
@@ -123,7 +127,7 @@ public class MultipleOidsUtils extends AbstractSnmpUtility {
 		return result.values();
 	}
 
-	private PDU sendRequest(PDU request, Target target, ArrayList<OID> oidList) {
+	private PDU sendRequest(PDU request, Target target, ArrayList<OID> oidList) throws IOException {
 		request.clear();
 		for (OID oid : oidList) {
 			VariableBinding vb = new VariableBinding(oid);
@@ -142,6 +146,7 @@ public class MultipleOidsUtils extends AbstractSnmpUtility {
 			}
 		} catch (IOException e) {
 			log.warn(target.getAddress() + " sendRequest : " + e.getMessage());
+			throw new IOException(MessageConstant.MESSAGE_TIME_OUT.getMessage());
 		} catch (Exception e) {
 			log.warn(target.getAddress() + " sendRequest : " + e.getClass().getName() + ", " + e.getMessage());
 		}

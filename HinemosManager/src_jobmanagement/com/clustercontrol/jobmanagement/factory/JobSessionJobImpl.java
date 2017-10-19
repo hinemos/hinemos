@@ -569,6 +569,23 @@ public class JobSessionJobImpl {
 					+ ", value02 : "+ decisionValue02);
 		}
 
+		// 待ち条件に設定された変数が置換されていない場合は再実行日時を設定
+		if (!replaceCheck) {
+			boolean rerunflag = false;
+			// OR条件の場合
+			if (job.getConditionType() == ConditionTypeConstant.TYPE_OR) {
+				for (Boolean flag : jobResult) {
+					if(flag){
+						rerunflag = true;
+						break;
+					}
+				}
+			}
+			if (!rerunflag) {
+				addCheckDate(sessionId, HinemosTime.currentTimeMillis());
+			}
+		}
+		
 		// 待ち条件判定開始
 		if(statusCheck){
 			//ANDまたはOR条件に一致するかチェック

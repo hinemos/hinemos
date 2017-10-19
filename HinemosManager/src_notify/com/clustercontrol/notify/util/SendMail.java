@@ -21,6 +21,7 @@ import java.nio.charset.CharsetEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -84,6 +85,9 @@ public class SendMail implements Notifier {
 
 	/**`メール本文ロケール */
 	public static final String _charsetContentDefault = "UTF-8";
+
+	/** 置換文字列キー ファシリティID（先行実施用）  */
+	private static final String _KEY_FACILITY_ID = "FACILITY_ID";
 
 	/**
 	 * メールの送信を行います。
@@ -510,8 +514,13 @@ public class SendMail implements Notifier {
 				= new MailTemplateControllerBean().getMailTemplateInfo(
 						mailInfo.getMailTemplateInfoEntity().getMailTemplateId());
 				Map<String, String> param = NotifyUtil.createParameter(source, mailInfo.getNotifyInfoEntity());
+				//FACILITY_IDのみ他の変換キーの一部に利用のため先行変換してから文字列置換を行う。
+				String tmpSubject = preConvFacilityId(
+					param ,
+					templateData.getSubject()
+				);
 				StringBinder binder = new StringBinder(param);
-				subject = binder.bindParam(templateData.getSubject());
+				subject = binder.bindParam(tmpSubject);
 			} else {
 				Locale locale = NotifyUtil.getNotifyLocale();
 				subject = Messages.getString("MAIL_SUBJECT", locale) + "("
@@ -552,8 +561,13 @@ public class SendMail implements Notifier {
 						mailInfo.getMailTemplateInfoEntity().getMailTemplateId());
 				Map<String, String> param = NotifyUtil.createParameter(source,
 						mailInfo.getNotifyInfoEntity());
+				//FACILITY_IDのみ他の変換キーの一部に利用のため先行変換してから文字列置換を行う。
+				String tmpBody = preConvFacilityId(
+					param,
+					mailData.getBody()
+				);
 				StringBinder binder = new StringBinder(param);
-				buf.append(binder.bindParam(mailData.getBody() + "\n"));
+				buf.append(binder.bindParam(tmpBody + "\n"));
 			} else {
 				
 				Locale locale = NotifyUtil.getNotifyLocale();
@@ -621,4 +635,24 @@ public class SendMail implements Notifier {
 			break;
 		}
 	}
+	
+	/**
+	 * FACILITY_IDのみ文字列置換する
+	 */
+	private String preConvFacilityId(Map<String, String> refParam, String template) {
+		if (template == null) {
+			return null;
+		}
+		String result ="";
+		if(refParam.containsKey(_KEY_FACILITY_ID)){
+			Map<String, String> cnvParam = new HashMap<String, String>();
+			cnvParam.put(_KEY_FACILITY_ID, refParam.get(_KEY_FACILITY_ID));
+			StringBinder binder = new StringBinder(cnvParam);
+			result = binder.bindParam(template);
+		}else{
+			result = template;
+		}
+		return result;
+	}
+	
 }

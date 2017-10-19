@@ -163,7 +163,7 @@ public class RunMonitorPing extends RunMonitorNumericValueType {
 			if(result){
 				m_lost = m_reachability.getLost();
 				m_average = m_reachability.getAverage();
-				m_value = m_average;
+				m_value = (double) m_average;
 			}
 			return result;
 		}
@@ -828,7 +828,7 @@ public class RunMonitorPing extends RunMonitorNumericValueType {
 							m_average  = (long)nodeResult.getAverage();
 							m_message  = nodeResult.getMesseage();
 							m_messageOrg = nodeResult.getMesseageOrg();
-							m_value = m_average;
+							m_value = (double) nodeResult.getAverage();
 
 							if(m_log.isDebugEnabled()){
 								m_log.debug("runMonitorInfo() monitorId = " + m_monitorId + ", facilityId = " + targetFacility + ", average = " + nodeResult.getAverage() + ", value = " + m_value);

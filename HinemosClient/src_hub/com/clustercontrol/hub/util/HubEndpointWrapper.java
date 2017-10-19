@@ -56,7 +56,7 @@ public class HubEndpointWrapper {
 	}
 
 	public static HubEndpointWrapper getWrapper(String managerName) {
-		return new HubEndpointWrapper(EndpointManager.get(managerName));
+		return new HubEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 	
 	private static List<EndpointSetting<HubEndpoint>> getHubEndpoint(EndpointUnit endpointUnit) {

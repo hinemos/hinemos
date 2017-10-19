@@ -386,7 +386,11 @@ public class CommandExecutor {
 						}
 					
 						// 全読み込みサイズを加算
-						total += offset; 
+						if (Integer.MAX_VALUE - offset < total) {
+							total = Integer.MAX_VALUE;
+						} else {
+							total += offset;
+						}
 					}
 					log.debug("reached end of stream.");
 				} catch (IOException e) {

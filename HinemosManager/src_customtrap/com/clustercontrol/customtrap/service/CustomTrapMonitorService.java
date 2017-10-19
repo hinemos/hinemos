@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -237,39 +238,50 @@ public class CustomTrapMonitorService {
 		parsedCustomTraps.setFacilityId(receivedCustomTraps.getFacilityId());
 		parsedCustomTraps.setAgentAddr(exchange.getRemoteAddress().getHostName());
 		for (CustomTrap receivedCustomTrap : receivedCustomTraps.getCustomTraps()){
-			// Dataチェック
-			String strTime = receivedCustomTrap.getDate();
-			if ((null != strTime) && !strTime.isEmpty()) {
-				DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-				Date samplingDate = df.parse(receivedCustomTrap.getDate());
-				receivedCustomTrap.setSampledTime(samplingDate.getTime());
-			} else {
-				receivedCustomTrap.setSampledTime(HinemosTime.currentTimeMillis());
+			try {
+				// Dataチェック
+				String strTime = receivedCustomTrap.getDate();
+				if ((null != strTime) && !strTime.isEmpty()) {
+					DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					Date samplingDate = df.parse(receivedCustomTrap.getDate());
+					receivedCustomTrap.setSampledTime(samplingDate.getTime());
+				} else {
+					receivedCustomTrap.setSampledTime(HinemosTime.currentTimeMillis());
+				}
+				// Keyチェック
+				String key = receivedCustomTrap.getKey();
+				if ((null == key) || key.isEmpty()){
+					logger.warn("parseCustomTrap() : CustomTrap KEY==null");
+					throw new UnsupportedOperationException();
+				}
+				// Msgチェック
+				String msg = receivedCustomTrap.getMsg();
+				if ((null == msg) || msg.isEmpty()){
+					logger.warn("parseCustomTrap() : CustomTrap MSG==null");
+					throw new UnsupportedOperationException();
+				}
+				
+				receivedCustomTrap.setReceivedTime(HinemosTime.currentTimeMillis());
+				receivedCustomTrap.setOrgMsg(mapper.writeValueAsString(receivedCustomTrap));
+	
+				logger.debug(receivedCustomTrap.toString());
+				if (!receivedCustomTrap.isNumberType() && !receivedCustomTrap.isStringType()) {
+					logger.warn("parseCustomTrap() : CustomTrap Type==unknown");
+					throw new UnsupportedOperationException();
+				}
+	
+				if (receivedCustomTrap.isNumberType()) {
+					try {
+						new BigDecimal(receivedCustomTrap.getMsg());
+					} catch (NumberFormatException e) {
+						logger.warn("parseCustomTrap() : CustomTrap Numeric==Invalid");
+						throw new UnsupportedOperationException();
+					}
+				}
+				parsedTrapList.add(receivedCustomTrap);
+			} catch (UnsupportedOperationException e) {
+				// 処理なし
 			}
-			// Keyチェック
-			String key = receivedCustomTrap.getKey();
-			if ((null == key) || key.isEmpty()){
-				logger.warn("parseCustomTrap() : CustomTrap KEY==null");
-				throw new UnsupportedOperationException();
-			}
-			// Msgチェック
-			String msg = receivedCustomTrap.getMsg();
-			if ((null == msg) || msg.isEmpty()){
-				logger.warn("parseCustomTrap() : CustomTrap MSG==null");
-				throw new UnsupportedOperationException();
-			}
-			
-			receivedCustomTrap.setReceivedTime(HinemosTime.currentTimeMillis());
-			receivedCustomTrap.setOrgMsg(mapper.writeValueAsString(receivedCustomTrap));
-
-			logger.debug(receivedCustomTrap.toString());
-			if (!receivedCustomTrap.isNumberType() && !receivedCustomTrap.isStringType()) {
-				throw new UnsupportedOperationException();
-			}
-			if (receivedCustomTrap.isNumberType()) {
-				Integer.parseInt(receivedCustomTrap.getMsg());
-			}
-			parsedTrapList.add(receivedCustomTrap);
 		}
 		parsedCustomTraps.setCustomTraps(parsedTrapList);
 		return parsedCustomTraps;

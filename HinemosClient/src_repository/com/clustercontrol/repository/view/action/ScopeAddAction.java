@@ -121,7 +121,7 @@ public class ScopeAddAction extends AbstractHandler implements IElementUpdater {
 				IViewReference viewRef = page.findViewReference( ScopeListView.ID );
 				
 				if (viewRef == null)
-					throw new InternalError("viewRef is null.");
+					return;
 				
 				IViewPart part = viewRef.getView( false );
 

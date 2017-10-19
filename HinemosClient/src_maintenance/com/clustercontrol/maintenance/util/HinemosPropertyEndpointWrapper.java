@@ -41,7 +41,7 @@ public class HinemosPropertyEndpointWrapper {
 	}
 
 	public static HinemosPropertyEndpointWrapper getWrapper(String managerName) {
-		return new HinemosPropertyEndpointWrapper(EndpointManager.get(managerName));
+		return new HinemosPropertyEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	private static List<EndpointSetting<HinemosPropertyEndpoint>> getHinemosPropertyEndpoint(EndpointUnit endpointUnit) {

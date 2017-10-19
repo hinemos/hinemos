@@ -236,7 +236,6 @@ public class RunMonitorProcess extends RunMonitorNumericValueType {
 		if (m_now != null) {
 			m_nodeDate = m_now.getTime();
 		}
-		m_value = 0;
 
 		// メッセージを設定
 		m_messageOrg = MessageConstant.COMMAND.getMessage() + " : " + m_command + ", "
@@ -294,7 +293,7 @@ public class RunMonitorProcess extends RunMonitorNumericValueType {
 			}
 		}
 			// 正常終了
-		m_value = count;
+		m_value = (double) count;
 		m_message = MessageConstant.PROCESS_NUMBER.getMessage() + " : "
 				+ NumberFormat.getNumberInstance().format(m_value);
 		

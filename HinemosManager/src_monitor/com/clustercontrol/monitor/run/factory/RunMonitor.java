@@ -169,7 +169,7 @@ abstract public class RunMonitor {
 	protected TreeMap<Integer, MonitorJudgementInfo> m_judgementInfoList;
 
 	/** 監視取得値 */
-	protected double m_value;
+	protected Double m_value = null;
 
 	/**
 	 * 引数で指定された監視情報の監視を実行します。
@@ -1145,7 +1145,7 @@ abstract public class RunMonitor {
 	 * @return 監視値
 	 * @since 4.0.0
 	 */
-	public double getValue() {
+	public Double getValue() {
 		return m_value;
 	}
 

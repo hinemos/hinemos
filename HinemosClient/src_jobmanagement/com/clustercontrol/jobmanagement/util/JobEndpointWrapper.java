@@ -67,7 +67,7 @@ public class JobEndpointWrapper {
 	}
 
 	public static JobEndpointWrapper getWrapper(String managerName) {
-		return new JobEndpointWrapper(EndpointManager.get(managerName));
+		return new JobEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	public EndpointUnit getEndpointUnit() {

@@ -40,7 +40,7 @@ public class NotifyEndpointWrapper {
 	}
 
 	public static NotifyEndpointWrapper getWrapper(String managerName) {
-		return new NotifyEndpointWrapper(EndpointManager.get(managerName));
+		return new NotifyEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	private static List<EndpointSetting<NotifyEndpoint>> getNotifyEndpoint(EndpointUnit endpointUnit) {

@@ -96,7 +96,6 @@ public class RunMonitorSnmp extends RunMonitorNumericValueType {
 		if (m_now != null) {
 			m_nodeDate = m_now.getTime();
 		}
-		m_value = 0;
 
 		// メッセージを設定
 		m_message = "";

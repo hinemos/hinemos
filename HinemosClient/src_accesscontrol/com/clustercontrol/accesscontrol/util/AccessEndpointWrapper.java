@@ -57,6 +57,10 @@ public class AccessEndpointWrapper {
 	}
 
 	public static AccessEndpointWrapper getWrapper(String managerName) {
+		return new AccessEndpointWrapper(EndpointManager.getActive(managerName));
+	}
+
+	public static AccessEndpointWrapper getWrapperLoginCheck(String managerName) {
 		return new AccessEndpointWrapper(EndpointManager.get(managerName));
 	}
 

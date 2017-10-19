@@ -161,7 +161,7 @@ public class RunMonitorPort extends RunMonitorNumericValueType {
 		m_messageOrg = m_reachability.getMessageOrg();
 		if (result) {
 			m_response = m_reachability.getResponse();
-			m_value = m_response;
+			m_value = (double) m_response;
 		}
 
 		return result;

@@ -21,6 +21,7 @@ import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -53,6 +54,6 @@ public class UtilityEndpoint {
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
-		return "1.0";
+		return KeyCheck.getResultEnterprise();
 	}
 }

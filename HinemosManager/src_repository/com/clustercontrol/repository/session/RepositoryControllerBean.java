@@ -33,6 +33,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.SnmpSecurityLevelConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
@@ -1018,6 +1019,11 @@ public class RepositoryControllerBean {
 
 			// 入力チェック
 			RepositoryValidator.validateNodeInfo(nodeInfo);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(nodeInfo.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 
 			FacilityModifier.addNode(
 					nodeInfo,
@@ -1385,6 +1391,11 @@ public class RepositoryControllerBean {
 
 			//入力チェック
 			RepositoryValidator.validateScopeInfo(parentFacilityId, info, true);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 
 			FacilityModifier.addScope(
 					parentFacilityId,

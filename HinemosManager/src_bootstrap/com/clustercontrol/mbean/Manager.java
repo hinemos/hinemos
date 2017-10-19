@@ -43,6 +43,7 @@ import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.plugin.impl.SnmpTrapPlugin;
 import com.clustercontrol.plugin.impl.SystemLogPlugin;
+import com.clustercontrol.plugin.impl.WebServiceAgentPlugin;
 import com.clustercontrol.plugin.impl.WebServiceCorePlugin;
 import com.clustercontrol.repository.factory.NodeProperty;
 import com.clustercontrol.repository.util.FacilityTreeCache;
@@ -292,6 +293,16 @@ public class Manager implements ManagerMXBean {
 	@Override
 	public int getWebServiceQueueCount() {
 		return WebServiceCorePlugin.getQueueSize();
+	}
+	
+	@Override
+	public int getWebServiceForAgentQueueCount() {
+		return WebServiceAgentPlugin.getAgentQueueSize();
+	}
+	
+	@Override
+	public int getWebServiceForAgentHubQueueCount() {
+		return WebServiceAgentPlugin.getAgentHubQueueSize();
 	}
 
 	@Override

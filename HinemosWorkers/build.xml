@@ -16,6 +16,7 @@
 		<ant antfile="build_agent.xml" dir="." target="jar" inheritall="false" />
 		<ant antfile="build_manager_cli.xml" dir="." target="jar" inheritall="false" />
 		<ant antfile="build_win_tasktray.xml" dir="." target="all" inheritall="false" />
+		<ant antfile="build_win_ha_tasktray.xml" dir="." target="all" inheritall="false" />
 		<ant antfile="build_win_syslog.xml" dir="." target="all" inheritall="false" />
 		
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"

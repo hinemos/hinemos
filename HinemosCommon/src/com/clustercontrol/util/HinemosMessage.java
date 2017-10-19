@@ -99,12 +99,14 @@ public class HinemosMessage {
 				} else if (messageSetting.message.charAt(i) == '"') {
 					if (messageSetting.message.charAt(i - 1) == '\\') {
 						continue;
-					} else if (messageSetting.message.charAt(i + 1) == ':'
+					} else if ( messageSetting.message.length() >= (i + 3) 
+							&& messageSetting.message.charAt(i + 1) == ':'
 							&& messageSetting.message.charAt(i + 2) == '"') {
 						// 引数処理
 						args.add(messageSetting.message.substring(idx, i));
 						idx = i + 3;
-					} else if (messageSetting.message.charAt(i + 1) == ']') {
+					} else if ( messageSetting.message.length() >= (i + 2)
+							&& messageSetting.message.charAt(i + 1) == ']') {
 						// 最後の引数
 						args.add(messageSetting.message.substring(idx, i));
 						endIdx = i + 2;

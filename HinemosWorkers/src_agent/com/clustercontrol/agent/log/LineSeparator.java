@@ -45,18 +45,21 @@ public class LineSeparator {
 		}
 	}
 	
-	public int search(CharSequence cbuf) {
+	public int search(CharSequence cbuf, int maxBytes) {
 		if (startRegexPattern == null &&
 				endRegexPattern == null) {
-			return searchByLineSeparator(cbuf);
+			int pos = searchByLineSeparator(cbuf);
+			return smallerOfPosAndMaxBytes(pos, maxBytes, cbuf);
 		}
 		
 		if (startRegexPattern != null) {
-			return searchByStartRegex(cbuf);
+			int pos = searchByStartRegex(cbuf);
+			return smallerOfPosAndMaxBytes(pos, maxBytes, cbuf);
 		}
 		
 		if (endRegexPattern != null) {
-			return searchByEndRegex(cbuf);
+			int pos = searchByEndRegex(cbuf);
+			return smallerOfPosAndMaxBytes(pos, maxBytes, cbuf);
 		}
 		
 		log.debug(String.format("separator definition is illegal : %s", info));
@@ -111,5 +114,21 @@ public class LineSeparator {
 	
 	private boolean isNullOrZeroLength(CharSequence str) {
 		return str == null || str.length() == 0;
+	}
+	
+	private int smallerOfPosAndMaxBytes(int pos, int maxBytes, CharSequence cbuf) {
+		int ret = pos;
+		if(maxBytes != -1) {
+			if(pos == -1) {
+				if(maxBytes <= cbuf.length()) {
+					ret = maxBytes;
+				}
+			} else {
+				if (maxBytes < pos) {
+					ret = maxBytes;
+				}
+			}
+		}
+		return ret;
 	}
 }

@@ -32,6 +32,7 @@ import org.apache.log4j.Logger;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InfraManagementNotFound;
 import com.clustercontrol.fault.InvalidRole;
@@ -260,6 +261,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir", 
 				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_TRANSFER_DIR));
 		InfraFileInfo fileEntity = null;
+		JpaTransactionManager jtm = new JpaTransactionManager();
 		try {
 			fileEntity = QueryUtil.getInfraFileInfoPK(getFileId(), ObjectPrivilegeMode.NONE);
 		} catch (InvalidRole e) {
@@ -267,6 +269,8 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 			throw new HinemosUnknown(e.getMessage());
 		} catch (InfraManagementNotFound e) {
 			throw new HinemosUnknown(e.getMessage());
+		} finally {
+			jtm.close();
 		}
 		String fileName = fileEntity.getFileName();
 		String srcDir = infraDirectory + SEPARATOR;
@@ -309,6 +313,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir",
 				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_TRANSFER_DIR));
 		InfraFileInfo fileEntity = null;
+		JpaTransactionManager jtm = new JpaTransactionManager();
 		try {
 			fileEntity = QueryUtil.getInfraFileInfoPK(getFileId(), ObjectPrivilegeMode.NONE);
 		} catch (InvalidRole e) {
@@ -316,6 +321,8 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 			throw new HinemosUnknown(e.getMessage());
 		} catch (InfraManagementNotFound e) {
 			throw new HinemosUnknown(e.getMessage());
+		} finally {
+			jtm.close();
 		}
 		String fileName = fileEntity.getFileName();
 		String srcDir = infraDirectory + SEPARATOR;

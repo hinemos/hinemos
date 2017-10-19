@@ -2,6 +2,8 @@ package com.clustercontrol.snmptrap.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -185,6 +187,14 @@ public class TrapValueInfo implements Serializable {
 	}
 
 	public void setVarBindPatterns(List<VarBindPattern> monitorTrapVarbindPatternInfoEntities) {
+		if (monitorTrapVarbindPatternInfoEntities != null && monitorTrapVarbindPatternInfoEntities.size() > 0) {
+			Collections.sort(monitorTrapVarbindPatternInfoEntities, new Comparator<VarBindPattern>() {
+				@Override
+				public int compare(VarBindPattern o1, VarBindPattern o2) {
+					return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
+				}
+			});
+		}
 		this.monitorTrapVarbindPatternInfoEntities = monitorTrapVarbindPatternInfoEntities;
 	}
 

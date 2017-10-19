@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.session.CheckFacility;
 import com.clustercontrol.commons.util.AsyncTaskPersistentConfig;
@@ -52,7 +53,9 @@ import com.clustercontrol.notify.model.NotifyJobInfo;
 import com.clustercontrol.notify.model.NotifyLogEscalateInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.util.NotifyCache;
+import com.clustercontrol.notify.util.NotifyCacheRefreshCallback;
 import com.clustercontrol.notify.util.NotifyRelationCache;
+import com.clustercontrol.notify.util.NotifyRelationCacheRefreshCallback;
 import com.clustercontrol.notify.util.NotifyValidator;
 import com.clustercontrol.notify.util.OutputEvent;
 import com.clustercontrol.notify.util.OutputStatus;
@@ -95,6 +98,11 @@ public class NotifyControllerBean implements CheckFacility {
 
 			//入力チェック
 			NotifyValidator.validateNotifyInfo(info);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 
 			ModifyNotify notify = new ModifyNotify();
 			flag = notify.add(info,(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
@@ -155,11 +163,9 @@ public class NotifyControllerBean implements CheckFacility {
 			ModifyNotify notify = new ModifyNotify();
 			flag = notify.modify(info,(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
+			jtm.addCallback(new NotifyCacheRefreshCallback());
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 			jtm.commit();
-
-			// コミット後にキャッシュクリア
-			NotifyCache.refresh();
-			NotifyRelationCache.refresh();
 
 		} catch (NotifyDuplicate | InvalidSetting | HinemosUnknown | InvalidRole e) {
 			if (jtm != null){
@@ -616,11 +622,9 @@ public class NotifyControllerBean implements CheckFacility {
 				}
 			}
 
+			jtm.addCallback(new NotifyCacheRefreshCallback());
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 			jtm.commit();
-
-			// コミット後にキャッシュクリア
-			NotifyCache.refresh();
-			NotifyRelationCache.refresh();
 
 		} catch (NotifyNotFound | NotifyDuplicate | HinemosUnknown | InvalidRole e) {
 			if (jtm != null){
