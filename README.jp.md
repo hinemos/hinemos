@@ -12,7 +12,7 @@
 
 Hinemosは大規模、複雑化するITシステムの「監視」や「ジョブ」といった「運用業務の自動化」を実現し、オープンソースソフトウェアが持つコストメリットを最大限に活用できる統合運用管理ソフトウェアです。
 
-[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v6.0.1#packages)
+[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v6.0.2#packages)
 
 ## インストール
 
@@ -21,16 +21,16 @@ Hinemosはコマンドひとつでインストールできます。
 - マネージャのインストール
 
 ```
-$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.1/hinemos-6.0-manager-6.0.1-1.el7.x86_64.rpm
+$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.2/hinemos-6.0-manager-6.0.2-1.el7.x86_64.rpm
 ```
 
 - Webクライアントのインストール
 
 ```
-$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.1/hinemos-6.0-web-6.0.1-1.el7.x86_64.rpm
+$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.2/hinemos-6.0-web-6.0.2-1.el7.x86_64.rpm
 ```
 
-詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/releases/download/v6.0.1/doc_install_linux_6.0_ja.pdf)をご覧下さい。
+詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/releases/download/v6.0.2/doc_install_linux_6.0_ja.pdf)をご覧下さい。
 
 ## ver.6.0新機能
 
@@ -48,11 +48,11 @@ $ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.0.1/hinemos-6
 ## ドキュメント
 
 - インストールマニュアル (
-[doc_install_linux_6.0_ja.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.1/doc_install_linux_6.0_ja.pdf) )
+[doc_install_linux_6.0_ja.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.2/doc_install_linux_6.0_ja.pdf) )
 - ユーザマニュアル ( [doc_user_6.0_
-ja.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.1/doc_user_6.0_ja.pdf) )
+ja.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.2/doc_user_6.0_ja.pdf) )
 - 管理者ガイド ( [doc_admin_linux_6.0_
-ja.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.1/doc_admin_linux_6.0_ja.pdf) )
+ja.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.2/doc_admin_linux_6.0_ja.pdf) )
 
 ## ライセンス
 
