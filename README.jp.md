@@ -43,9 +43,9 @@ Hinemosはコマンドひとつでインストールできます。
 
 ## ドキュメント
 
-- インストールマニュアル ([ja_doc_install_linux_6.1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.0/ja_doc_install_linux_6.1.pdf) )
-- ユーザマニュアル ( [ja_doc_user_6.1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.0/ja_doc_user_6.1.pdf) )
-- 管理者ガイド ( [ja_doc_admin_linux_6.1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.0/ja_doc_admin_linux_6.1.pdf) )
+- インストールマニュアル ([ja_Install_Linux_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.0/ja_Install_Linux_6.1_rev1.pdf) )
+- ユーザマニュアル ( [ja_User_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.0/ja_User_6.1_rev1.pdf) )
+- 管理者ガイド ( [ja_Admin_Linux_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.0/ja_Admin_Linux_6.1_rev1.pdf) )
 
 ## ライセンス
 
