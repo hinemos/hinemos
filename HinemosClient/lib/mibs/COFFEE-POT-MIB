@@ -1,0 +1,114 @@
+   COFFEE-POT-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+       transmission ,
+       Counter32, Integer32
+           FROM SNMPv2-SMI
+    TimeInterval, DisplayString
+        FROM SNMPv2-TC
+   ;
+   coffee MODULE-IDENTITY
+        LAST-UPDATED "9803231700Z"
+        ORGANIZATION "Networked Appliance Management Working Group"
+
+       ::= { transmission 132 }
+
+   potName OBJECT-TYPE
+        SYNTAX     DisplayString (SIZE (0..255))
+        MAX-ACCESS read-only
+
+
+
+
+
+        STATUS current
+        ::= { coffee 1 }
+
+
+   potCapacity OBJECT-TYPE
+        SYNTAX Integer32
+        MAX-ACCESS read-only
+        STATUS current
+       ::= { coffee 2 }
+
+
+   potType OBJECT-TYPE
+        SYNTAX     INTEGER {
+           automatic-drip(1),
+           percolator(2),
+           french-press(3),
+           espresso(4)
+           }
+        MAX-ACCESS read-write
+        STATUS current
+        ::= { coffee 3 }
+   potLocation OBJECT-TYPE 
+        SYNTAX     DisplayString (SIZE (0..255))
+        MAX-ACCESS read-write
+        STATUS current
+        ::= { coffee 4 }
+
+
+   potMonitor            OBJECT IDENTIFIER ::= { coffee 6 }
+
+
+   potOperStatus OBJECT-TYPE
+        SYNTAX     INTEGER {
+                        off(1),
+                        brewing(2),
+                        holding(3),
+                        other(4),
+                        waiting(5)
+
+
+
+
+
+                        }
+        MAX-ACCESS read-only
+        STATUS current
+        ::= { potMonitor 1 }
+
+    potLevel OBJECT-TYPE
+        SYNTAX     Integer32
+        MAX-ACCESS read-only
+        STATUS current
+        ::= { potMonitor 2 }
+
+    potMetric  OBJECT-TYPE
+        SYNTAX     INTEGER {
+                    espresso(1),
+                    demi-tasse(2),
+                    cup(3),
+                    mug(4),
+                    bucket(5)
+                    }
+        MAX-ACCESS read-only
+        STATUS current
+        ::= { potMonitor 3 }
+
+
+   potStartTime OBJECT-TYPE
+       SYNTAX     Integer32
+       MAX-ACCESS read-write
+       STATUS     current
+       ::= { potMonitor 4 }
+
+
+    lastStartTime OBJECT-TYPE
+       SYNTAX     TimeInterval
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { potMonitor 5 }
+
+
+    potTemperature OBJECT-TYPE
+       SYNTAX     Integer32
+       UNITS      "degrees Centigrade"
+       MAX-ACCESS read-only
+       STATUS     current
+
+      ::= { potMonitor 6 }
+
+   END

@@ -20,7 +20,7 @@
 			
 			<!-- Database Connection config -->
 			<property name="javax.persistence.jdbc.driver" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"/>
-			<property name="javax.persistence.jdbc.url" value="jdbc:sqlserver://localhost:24001;instanceName=HINEMOS;loginTimeout=30;databaseName=hinemos;ApplicationName=hinemos"/>
+			<property name="javax.persistence.jdbc.url" value="jdbc:sqlserver://localhost:24001;instanceName=HINEMOS;loginTimeout=30;databaseName=hinemos;ApplicationName=hinemos;InsensitiveResultSetBufferSize=128;LongDataCacheSize=128"/>
 			<property name="javax.persistence.jdbc.user" value="hinemos"/>
 			<property name="javax.persistence.jdbc.password" value="HinemosWin!"/>
 			

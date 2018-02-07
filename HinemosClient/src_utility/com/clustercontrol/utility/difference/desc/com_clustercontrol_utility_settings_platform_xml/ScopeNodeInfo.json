@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"nodeFacilityId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"nodeFacilityName",
+	"annotations":[
+		{"type":"Column", "columnName":"ScopenodeInfo_nodeFacilityName"}
+	]}
+]
+}

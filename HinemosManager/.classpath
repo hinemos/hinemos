@@ -2,6 +2,8 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="src" path="src_accesscontrol"/>
+	<classpathentry kind="src" path="src_analytics"/>
+	<classpathentry kind="src" path="src_binary"/>
 	<classpathentry kind="src" path="src_bootstrap"/>
 	<classpathentry kind="src" path="src_calendar"/>
 	<classpathentry kind="src" path="src_collect"/>
@@ -13,6 +15,7 @@
 	<classpathentry kind="src" path="src_http"/>
 	<classpathentry kind="src" path="src_hub"/>
 	<classpathentry kind="src" path="src_infra"/>
+	<classpathentry kind="src" path="src_inquiry"/>
 	<classpathentry kind="src" path="src_jmx"/>
 	<classpathentry kind="src" path="src_jobmanagement"/>
 	<classpathentry kind="src" path="src_logfile"/>
@@ -22,21 +25,25 @@
 	<classpathentry kind="src" path="src_notify"/>
 	<classpathentry kind="src" path="src_performance"/>
 	<classpathentry kind="src" path="src_ping"/>
-	<classpathentry kind="src" path="src_platform"/>
 	<classpathentry kind="src" path="src_poller"/>
 	<classpathentry kind="src" path="src_port"/>
 	<classpathentry kind="src" path="src_priority"/>
 	<classpathentry kind="src" path="src_process"/>
+	<classpathentry kind="src" path="src_reporting"/>
 	<classpathentry kind="src" path="src_repository"/>
 	<classpathentry kind="src" path="src_selfcheck"/>
-	<classpathentry kind="src" path="src_snmptrap"/>
 	<classpathentry kind="src" path="src_snmp"/>
+	<classpathentry kind="src" path="src_snmptrap"/>
 	<classpathentry kind="src" path="src_sql"/>
 	<classpathentry kind="src" path="src_systemlog"/>
 	<classpathentry kind="src" path="src_vm"/>
 	<classpathentry kind="src" path="src_winevent"/>
 	<classpathentry kind="src" path="src_winservice"/>
 	<classpathentry kind="src" path="src_ws"/>
+	<classpathentry kind="src" path="src_xcloud"/>
+	<classpathentry kind="src" path="src_platform"/>
+	<classpathentry kind="src" path="src_publish_ent"/>
+	<classpathentry kind="src" path="src_publish_oss"/>
 	<classpathentry kind="lib" path="/HinemosCommon/build/jar/HinemosCommon.jar"/>
 	<classpathentry kind="lib" path="lib/sblim-cim-client-1.3.9.3.jar"/>
 	<classpathentry kind="lib" path="lib/intel-wsman-1.0.1-mod.jar"/>
@@ -49,7 +56,7 @@
 	<classpathentry kind="lib" path="lib/javax.persistence_2.1.1.v201509150925.jar" sourcepath="lib/javax.persistence.source_2.1.1.v201509150925.jar"/>
 	<classpathentry kind="lib" path="lib/postgresql-9.4.1209.jar"/>
 	<classpathentry kind="lib" path="lib/jsch-0.1.53.jar"/>
-	<classpathentry kind="lib" path="lib/commons-codec-1.10.jar"/>
+	<classpathentry kind="lib" path="/HinemosCommon/commonlib/commons-codec-1.10.jar"/>
 	<classpathentry kind="lib" path="/HinemosCommon/commonlib/commons-logging-1.2.jar"/>
 	<classpathentry kind="lib" path="/HinemosCommon/commonlib/log4j-1.2.17.jar"/>
 	<classpathentry kind="lib" path="lib/javax.mail-1.5.5.jar"/>
@@ -59,6 +66,7 @@
 	<classpathentry kind="lib" path="lib/jackson-annotations-2.8.0.jar"/>
 	<classpathentry kind="lib" path="lib/jackson-core-2.8.2.jar"/>
 	<classpathentry kind="lib" path="lib/jackson-databind-2.8.2.jar"/>
-	<classpathentry kind="lib" path="lib/sqljdbc42.jar"/>
+	<classpathentry kind="lib" path="lib/mssql-jdbc-6.2.2.jre8.jar"/>
+	<classpathentry kind="lib" path="lib/commons-math3-3.6.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

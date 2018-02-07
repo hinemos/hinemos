@@ -2,7 +2,7 @@
 <!-- 
    Hinemos (http://www.hinemos.info/)
    
-   Copyright (C) 2010 NTT DATA Corporation.
+   Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
  -->
 
 <!-- execute Ant (Run in the same JRE as the workspace -->
@@ -13,18 +13,18 @@
 	
 	<!-- All -->
 	<target name="all">
-		
 		<ant antfile="build.xml" dir="../HinemosCommon" target="all" inheritall="false" />
 		<ant antfile="build.xml" dir="../HinemosManager" target="all" inheritall="false" />
 		<ant antfile="build.xml" dir="../HinemosWorkers" target="all" inheritall="false" />
-		
+		<!-- Prerequisite for building Client (Utility XML schema) -->
+		<ant antfile="build_client.xml" dir="../HinemosClient" target="generate-schema" inheritall="false" />
+
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>
 		<antcall target="refresh" />
 	</target>
 	
 	<target name="all_without_interface">
-		
 		<ant antfile="build.xml" dir="../HinemosCommon" target="all" inheritall="false" />
 		<ant antfile="build.xml" dir="../HinemosManager" target="all_without_interface" inheritall="false" />
 		<ant antfile="build.xml" dir="../HinemosWorkers" target="all" inheritall="false" />

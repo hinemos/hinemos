@@ -1,6 +1,16 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.infra.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
@@ -14,9 +24,6 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
-
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 
 @XmlType(namespace = "http://infra.ws.clustercontrol.com")
 @Entity
@@ -37,10 +44,6 @@ public class FileTransferVariableInfo implements Serializable{
 	
 	public FileTransferVariableInfo(FileTransferModuleInfo parent, String name) {
 		this.setId(new FileTransferVariableInfoPK(parent.getId().getManagementId(), parent.getId().getModuleId(), name));
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		setFileTransferModuleInfoEntity(parent);
-		parent.getFileTransferVariableList().add(this);
 	}
 	
 	@EmbeddedId
@@ -103,6 +106,40 @@ public class FileTransferVariableInfo implements Serializable{
 		this.fileTransferModuleInfoEntity = fileTransferModuleInfoEntity;
 	}
 
+	/**
+	 * FileTransferModuleInfoオブジェクト参照設定<BR>
+	 * 
+	 * FileTransferModuleInfo設定時はSetterに代わりこちらを使用すること。
+	 * 
+	 * JPAの仕様(JSR 220)では、データ更新に伴うrelationshipの管理はユーザに委ねられており、
+	 * INSERTやDELETE時に、そのオブジェクトに対する参照をメンテナンスする処理を実装する。
+	 * 
+	 * JSR 220 3.2.3 Synchronization to the Database
+	 * 
+	 * Bidirectional relationships between managed entities will be persisted
+	 * based on references held by the owning side of the relationship.
+	 * It is the developer’s responsibility to keep the in-memory references
+	 * held on the owning side and those held on the inverse side consistent
+	 * with each other when they change.
+	 */
+	public void relateToFileTransferModuleInfo(FileTransferModuleInfo fileTransferModuleInfoEntity) {
+		this.setFileTransferModuleInfoEntity(fileTransferModuleInfoEntity);
+		if (fileTransferModuleInfoEntity != null) {
+			List<FileTransferVariableInfo> list = fileTransferModuleInfoEntity.getFileTransferVariableList();
+			if (list == null) {
+				list = new ArrayList<FileTransferVariableInfo>();
+			} else {
+				for (FileTransferVariableInfo entity : list) {
+					if (entity.getId().equals(this.getId())) {
+						return;
+					}
+				}
+			}
+			list.add(this);
+			fileTransferModuleInfoEntity.setFileTransferVariableList(list);
+		}
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -138,16 +175,4 @@ public class FileTransferVariableInfo implements Serializable{
 	public String toString() {
 		return "FileTransferVariableInfoEntity [id=" + id + ", value=" + value + "]";
 	}
-	
-//	@Override
-//	public FileTransferVariableInfo clone() {
-//		try {
-//			FileTransferVariableInfo info = (FileTransferVariableInfo)super.clone();
-//			info.name = this.name;
-//			info.value = this.value;
-//			return info;
-//		} catch (CloneNotSupportedException e) {
-//			throw new InternalError(e.toString());
-//		}
-//	}
 }

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2007 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.maintenance.dialog;
@@ -73,8 +66,8 @@ import com.clustercontrol.ws.notify.NotifyRelationInfo;
  */
 public class MaintenanceDialog extends CommonDialog {
 
-	public static final int WIDTH_TITLE = 4;
-	public static final int WIDTH_TEXT = 8;
+	public static final int WIDTH_TITLE = 5;
+	public static final int WIDTH_TEXT = 9;
 
 	/** メンテナンスID用テキスト */
 	private Text m_textMaintenanceId = null;
@@ -226,15 +219,6 @@ public class MaintenanceDialog extends CommonDialog {
 			}
 		});
 
-		// 空白
-		label = new Label(parent, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space2", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 2;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
-
 		/*
 		 * 説明
 		 */
@@ -261,15 +245,6 @@ public class MaintenanceDialog extends CommonDialog {
 				update();
 			}
 		});
-
-		// 空白
-		label = new Label(parent, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space3", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 2;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
 
 		/*
 		 * オーナーロールID
@@ -299,14 +274,6 @@ public class MaintenanceDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		m_ownerRoleId.setLayoutData(gridData);
-
-		// 空白
-		label = new Label(parent, SWT.NONE);
-		gridData = new GridData();
-		gridData.horizontalSpan = 2;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
 
 		/*
 		 * 種別
@@ -356,7 +323,8 @@ public class MaintenanceDialog extends CommonDialog {
 		/*
 		 * カレンダ
 		 */
-		this.m_calendarId = new CalendarIdListComposite(parent, SWT.NONE, true);
+		this.m_calendarId = new CalendarIdListComposite(parent, SWT.NONE, true, 
+				WIDTH_TITLE, WIDTH_TEXT);
 		WidgetTestUtil.setTestId(this, "calendaridlist", m_calendarId);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;

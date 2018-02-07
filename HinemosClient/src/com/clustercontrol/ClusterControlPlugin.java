@@ -1,36 +1,37 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.core.runtime.AssertionFailedException;
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.ILogListener;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
+import org.eclipse.rap.rwt.SingletonUtil;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -39,6 +40,11 @@ import org.osgi.framework.BundleContext;
 
 import com.clustercontrol.monitor.plugin.IMonitorPlugin;
 import com.clustercontrol.monitor.plugin.LoadMonitorPlugin;
+import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.EndpointUnit;
+import com.clustercontrol.xcloud.model.cloud.HinemosManager;
+import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
+import com.clustercontrol.xcloud.util.CollectionComparator;
 
 /**
  * 
@@ -145,6 +151,17 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	/** ロール設定のユーザアイコンの取得キー */
 	public static final String IMG_ROLESETTING_USER = "rootSettingsUser";
 
+	/*** JobMap用 ***/
+	/** 予定(未来)アイコンの取得キー */
+	public static final String IMG_WAIT = "wait";
+	public static final String IMG_WAIT_DOUBLE = "wait_double";
+	public static final String IMG_WAIT_CROSS_JOB = "wait_cross_job";
+	public static final String IMG_COLLAPSE = "collapse";
+	public static final String IMG_EXPAND = "expand";
+	/** 参照アイコンの取得キー */
+	public static final String IMG_REFER = "refer";
+
+
 	/** Initial window size and position */
 	public static final Rectangle WINDOW_INIT_SIZE = new Rectangle( -1, -1, 1024, 768 );
 
@@ -177,7 +194,7 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	 */
 	public ClusterControlPlugin() {
 		super();
-		m_log.debug("ClusterControlPlugin()");
+		m_log.info("Starting Hinemos Client...");
 
 		// log4jを使うための登録処理
 		listener = new Listener();
@@ -200,7 +217,6 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		}
 
 		// Systemプロパティ
-		m_log.info("starting Hinemos Client...");
 		m_log.info("java.vm.version = " + System.getProperty("java.vm.version"));
 		m_log.info("java.vm.vendor = " + System.getProperty("java.vm.vendor"));
 		m_log.info("java.home = " + System.getProperty("java.home"));
@@ -220,7 +236,7 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 
 		// 追加監視の情報をログへ出力　*ここでクラスを初期化しています。
 		for(IMonitorPlugin pluginMonitor: LoadMonitorPlugin.getExtensionMonitorList()){
-			m_log.info("Extended monitor " + pluginMonitor.getMonitorPluginId() + " pluged in.");
+			m_log.info("Extension monitorPlugin " + pluginMonitor.getMonitorPluginId() + " plugged in.");
 		}
 	}
 
@@ -349,12 +365,42 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		this.registerImage(registry, IMG_SCHEDULE_FUTURE, "schedule_w.gif");
 		this.registerImage(registry, IMG_JOB_EDIT_MODE, "job_edit_mode.gif");
 
-		/*
-		 * RoleSettingTree
-		 */
+		// RoleSettingTree
 		this.registerImage(registry, IMG_ROLESETTING_ROOT, "node.gif");
 		this.registerImage(registry, IMG_ROLESETTING_ROLE, "role.gif");
 		this.registerImage(registry, IMG_ROLESETTING_USER, "user.gif");
+
+		// For JobMap
+		this.registerImage(registry, IMG_WAIT, "waiting.gif");
+		this.registerImage(registry, IMG_WAIT_DOUBLE, "breakpoint_view.gif");
+		this.registerImage(registry, IMG_WAIT_CROSS_JOB, "smartmode_co.gif");
+		this.registerImage(registry, IMG_COLLAPSE, "collapse.gif");
+		this.registerImage(registry, IMG_EXPAND, "expand.gif");
+		this.registerImage(registry, IMG_REFER, "refer_mark.gif");
+
+		// For xCloud
+		registerImage(registry, "user", "user.png");
+		registerImage(registry, "account", "account.png");
+		registerImage(registry, "aws-box", "aws-box.png");
+		registerImage(registry, "checked", "enable.gif");
+		registerImage(registry, "unchecked", "disable.gif");
+		registerImage(registry, "radio-on", "radio_on.gif");
+		registerImage(registry, "radio-off", "radio_off.gif");
+		registerImage(registry, "running", "running.png");
+		registerImage(registry, "stopped", "stopped.png");
+		registerImage(registry, "suspended", "suspended.png");
+		registerImage(registry, "changing", "changing.png");
+		
+		registerImage(registry, "running2", "poweron.png");
+		registerImage(registry, "stopped2", "poweroff.png");
+		registerImage(registry, "suspended2", "suspend.png");
+		registerImage(registry, "terminated", "delete.png");
+		registerImage(registry, "processing", "processing.png");
+		
+		registerImage(registry, "cloudscope", "cloudscope.png");
+		registerImage(registry, "location", "location.png");
+		registerImage(registry, "instance", "instance.png");
+		registerImage(registry, "instance2", "instance2.png");
 	}
 
 	/**
@@ -430,4 +476,105 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		return true;
 	}
 
+	/******************************** Utility ********************************/
+	private static class ManagerManager {
+		private ManagerManager() {
+		}
+
+		public static ManagerManager getInstance() {
+			return SingletonUtil.getSessionInstance(ManagerManager.class);
+		}
+
+		private String currentManagerName;
+
+		public String getCurrentManagerName() {
+			if (currentManagerName == null && EndpointManager.getActiveManagerNameList() != null) {
+				for (String name : EndpointManager.getActiveManagerNameList()) {
+					currentManagerName = name;
+					break;
+				}
+			}
+			return currentManagerName;
+		}
+
+		public void setCurrentManagerName(String managerName) {
+			String oldManagerName = currentManagerName;
+
+			this.currentManagerName = managerName;
+
+			if (oldManagerName != null && !oldManagerName.equals(currentManagerName)) {
+				for (ManagerChangeListener listener : notifyList) {
+					listener.notifyManagerChanged();
+				}
+			}
+		}
+
+		List<ManagerChangeListener> notifyList = new ArrayList<>();
+
+		public void addManagerChangeListener(ManagerChangeListener listener) {
+			notifyList.add(listener);
+		}
+	}
+
+	public interface ManagerChangeListener{
+		void notifyManagerChanged();
+	}
+
+	public String getCurrentManagerName() {
+		return ManagerManager.getInstance().getCurrentManagerName();
+	}
+
+	public void setCurrentManagerName(String managerName) {
+		ManagerManager.getInstance().setCurrentManagerName(managerName);
+	}
+
+	public void addManagerChangeListener(ManagerChangeListener listener){
+		ManagerManager.getInstance().addManagerChangeListener(listener);
+	}
+
+	/******************************** xCloud ********************************/
+	// TODO Improve or better integrate the following
+	private static String pluginPath;
+	private Map<EndpointUnit, IHinemosManager> hinemosManagers = new HashMap<>();
+	public static String getPluginPath() {
+		if (pluginPath == null) {
+			// プラグインがインストールされているパスを取得。
+			URL entry = ClusterControlPlugin.getDefault().getBundle().getEntry("/");
+			try {
+				String url = FileLocator.resolve(entry).toString();
+				// URI クラスは、空白を拒否するので、"%20" へエンコード。
+				url = url.replaceAll(" ", "%20");
+				pluginPath = new File(new URI(url)).getAbsolutePath();
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+				throw new IllegalStateException(e);
+			}
+		}
+
+		return pluginPath;
+	}
+	
+	public List<IHinemosManager> getHinemosManagers(){
+		List<EndpointUnit> newEndpoints = EndpointManager.getActiveManagerList();
+		Set<EndpointUnit> oldEndpoints = hinemosManagers.keySet();
+		
+		CollectionComparator.compareCollection(newEndpoints, oldEndpoints, new CollectionComparator.Comparator<EndpointUnit, EndpointUnit>() {
+			public boolean match(EndpointUnit o1, EndpointUnit o2) {return o1 == o2;}
+			public void afterO1(EndpointUnit o1) {hinemosManagers.put(o1, new HinemosManager(o1.getManagerName(), o1.getUrlListStr()));}
+			public void afterO2(EndpointUnit o2) {hinemosManagers.remove(o2);}
+		});
+		
+		return new ArrayList<>(hinemosManagers.values());
+	}
+	
+	public IHinemosManager getHinemosManager(String managerName){
+		// マネージャ名を直接指定する場合、対象マネージャの存在のみ確認
+		for(IHinemosManager manager: getHinemosManagers()){
+			if(managerName.equals(manager.getManagerName())){
+				return manager;
+			}
+		}
+		return null;
+	}
 }

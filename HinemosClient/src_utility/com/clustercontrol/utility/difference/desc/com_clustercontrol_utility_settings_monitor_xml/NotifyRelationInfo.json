@@ -1,0 +1,29 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"notifyId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"notifyType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyRelationInfo_notifyType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_statusNotification"},
+				{"value":"1", "name":"name_eventNotification"},
+				{"value":"2", "name":"name_mailNotification"},
+				{"value":"3", "name":"name_jobNotification"},
+				{"value":"4", "name":"name_logNotification"},
+				{"value":"5", "name":"name_commandNotification"},
+				{"value":"6", "name":"name_infraNotification"}
+			]
+		}
+	]}
+]
+}

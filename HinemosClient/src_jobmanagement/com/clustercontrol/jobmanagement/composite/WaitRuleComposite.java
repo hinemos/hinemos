@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.composite;
@@ -408,12 +401,14 @@ public class WaitRuleComposite extends Composite {
 						tableLineData.add("");
 						tableLineData.add("");
 						tableLineData.add("");
+						tableLineData.add("");
 						tableLineData.add(info.getDescription());
 						tableData.add(tableLineData);
 					}
 					else if (info.getType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE) {
 						tableLineData.add(info.getJobId());
 						tableLineData.add(info.getValue());
+						tableLineData.add("");
 						tableLineData.add("");
 						tableLineData.add("");
 						tableLineData.add("");
@@ -424,6 +419,7 @@ public class WaitRuleComposite extends Composite {
 						if (info.getTime() != null) {
 							tableLineData.add("");
 							tableLineData.add(new Date(info.getTime()));
+							tableLineData.add("");
 							tableLineData.add("");
 							tableLineData.add("");
 							tableLineData.add("");
@@ -440,6 +436,7 @@ public class WaitRuleComposite extends Composite {
 							tableLineData.add("");
 							tableLineData.add("");
 							tableLineData.add("");
+							tableLineData.add("");
 							tableLineData.add(info.getDescription());
 							tableData.add(tableLineData);
 						} else {
@@ -452,10 +449,31 @@ public class WaitRuleComposite extends Composite {
 							tableLineData.add(info.getDecisionValue01());
 							tableLineData.add(info.getDecisionCondition());
 							tableLineData.add(info.getDecisionValue02());
+							tableLineData.add("");
 							tableLineData.add(info.getDescription());
 							tableData.add(tableLineData);
 						} else {
 						}
+					}
+					else if (info.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS) {
+						tableLineData.add(info.getJobId());
+						tableLineData.add(EndStatusMessage.typeToString(info.getValue()));
+						tableLineData.add("");
+						tableLineData.add("");
+						tableLineData.add("");
+						tableLineData.add(info.getCrossSessionRange());
+						tableLineData.add(info.getDescription());
+						tableData.add(tableLineData);
+					}
+					else if (info.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
+						tableLineData.add(info.getJobId());
+						tableLineData.add(info.getValue());
+						tableLineData.add("");
+						tableLineData.add("");
+						tableLineData.add("");
+						tableLineData.add(info.getCrossSessionRange());
+						tableLineData.add(info.getDescription());
+						tableData.add(tableLineData);
 					}
 				}
 				m_log.debug("reflectWaitRuleInfo_tableData.size() = " + tableData.size());
@@ -547,6 +565,22 @@ public class WaitRuleComposite extends Composite {
 			info.setDecisionValue02((String) tableLineData
 					.get(GetWaitRuleTableDefine.DECISION_VALUE_2));
 		}
+		else if (info.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS) {
+			info.setJobId((String) tableLineData
+					.get(GetWaitRuleTableDefine.JOB_ID));
+			String value = (String) tableLineData
+					.get(GetWaitRuleTableDefine.START_VALUE);
+			info.setValue(EndStatusMessage.stringToType(value));
+			info.setCrossSessionRange((Integer)tableLineData.get(GetWaitRuleTableDefine.CROSS_SESSION_RANGE));
+		}
+		else if (info.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
+			info.setJobId((String) tableLineData
+					.get(GetWaitRuleTableDefine.JOB_ID));
+			Integer value = (Integer) tableLineData
+					.get(GetWaitRuleTableDefine.START_VALUE);
+			info.setValue(value);
+			info.setCrossSessionRange((Integer)tableLineData.get(GetWaitRuleTableDefine.CROSS_SESSION_RANGE));
+		}
 		String description = (String) tableLineData
 				.get(GetWaitRuleTableDefine.DESCRIPTION);
 		info.setDescription(description);
@@ -573,7 +607,7 @@ public class WaitRuleComposite extends Composite {
 			ArrayList<?> tableLineData = (ArrayList<?>) tableData.get(i);
 			JobObjectInfo info = array2JobObjectInfo(tableLineData);
 			// 重複チェックをしてから、リストに追加する。
-			if (info.getType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS) {
+			if (info.getType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS || info.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS) {
 				Integer checkValue = map.get(info.getJobId() + info.getType() + info.getValue());
 				if (checkValue == null
 						|| !checkValue.equals(info.getValue())) {
@@ -581,7 +615,7 @@ public class WaitRuleComposite extends Composite {
 					map.put(info.getJobId() + info.getType() + info.getValue(), info.getValue());
 				}
 			}
-			else if (info.getType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE) {
+			else if (info.getType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE || info.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
 				Integer checkValue = map.get(info.getJobId() + info.getType() + info.getValue());
 				if (checkValue == null
 						|| !checkValue.equals(info.getValue())) {

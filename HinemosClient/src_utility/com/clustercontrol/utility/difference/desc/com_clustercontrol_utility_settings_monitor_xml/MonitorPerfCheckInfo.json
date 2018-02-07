@@ -1,0 +1,25 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"itemCode",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPerfCheckInfo_itemCode"}
+	]},
+
+	{
+	"propName":"deviceDisplayName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPerfCheckInfo_deviceDisplayName"}
+	]},
+
+	{
+	"propName":"breakdownFlg",
+	"annotations":[
+	 	{"type":"Column", "columnName":"MonitorPerfCheckInfo_breakdownFlg"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_circle"}, {"value":"false", "name":"name_hyphen"}]}
+	]}
+]
+}

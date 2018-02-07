@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- 
+  Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+  
+  Hinemos module-build.xml for Cloud package
+ -->
+
+<project name="version_props_xcloud" basedir=".">
+	<property name="major.version" value="6.0"/>
+	<property name="option.version" value="6.0.c"/>
+	<property name="msi.version" value="6.0.2"/>
+	<property name="hinemos.depends.version" value="6.0.1"/>
+</project>

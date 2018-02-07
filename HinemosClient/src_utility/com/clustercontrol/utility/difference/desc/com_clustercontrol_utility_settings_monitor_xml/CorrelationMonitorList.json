@@ -1,0 +1,39 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"CorrelationMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"CorrelationInfo.TargetMonitorId",
+			"CorrelationInfo.TargetItemName",
+			"CorrelationInfo.TargetDisplayName",
+			"CorrelationInfo.ReferMonitorId",
+			"CorrelationInfo.ReferItemName",
+			"CorrelationInfo.ReferDisplayName",
+			"CorrelationInfo.ReferFacilityId",
+			"CorrelationInfo.AnalysysRange",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"NumericValue",
+			"numericChangeAmount"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"CorrelationMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.bean;
@@ -27,6 +20,8 @@ public class ModuleTypeConstant {
 	public static final int TYPE_COMMAND = 0;
 	/** ファイル配布モジュール */
 	public static final int TYPE_FILETRANSFER = 1;
+	/** 参照環境構築モジュール */
+	public static final int TYPE_REFERMANAGEMENT = 2;
 	
 	public static int classToType(String className){
 		if(className.equals("")){

@@ -1,18 +1,10 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
-
 
 package com.clustercontrol.monitor.run.util;
 
@@ -21,8 +13,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Pattern;
-
-import javax.persistence.EntityManager;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,11 +23,12 @@ import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfoPK;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeUtil;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.monitor.bean.ViewListInfo;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
@@ -68,37 +59,40 @@ public class EventCache {
 
 	
 	public static void initEventCache() {
-		eventCache = new ConcurrentSkipListSet<EventLogEntity>(new Comparator<EventLogEntity>() {
-			@Override
-			public int compare(EventLogEntity o1, EventLogEntity o2) {
-				int result = 0;
-				Long compareValue = - o1.getId().getOutputDate() + o2.getId().getOutputDate();
-				
-				if (compareValue > 0) {
-					result = 1;
-				} else if (compareValue < 0){
-					result = -1;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			eventCache = new ConcurrentSkipListSet<EventLogEntity>(new Comparator<EventLogEntity>() {
+				@Override
+				public int compare(EventLogEntity o1, EventLogEntity o2) {
+					int result = 0;
+					Long compareValue = - o1.getId().getOutputDate() + o2.getId().getOutputDate();
+					
+					if (compareValue > 0) {
+						result = 1;
+					} else if (compareValue < 0){
+						result = -1;
+					}
+					return result;
 				}
-				return result;
+			});
+			
+			em.clear();
+			for (EventLogEntity e : QueryUtil.getEventLogByFilter(null, null, null, null,
+					null, null, null, null, null, null, null, null, null, null, null, null,
+					false, getEventCacheLimit())) {
+				addEventCache(e);
 			}
-		});
-		
-		new JpaTransactionManager().getEntityManager().clear();
-		for (EventLogEntity e : QueryUtil.getEventLogByFilter(null, null, null, null,
-				null, null, null, null, null, null, null, null, null, null, null, null,
-				false, getEventCacheLimit())) {
-			addEventCache(e);
+			if (eventCache.size() == getEventCacheLimit()) {
+				eventCacheFull = true;
+			} else {
+				eventCacheFull = false;
+			}
+			m_log.info("eventCacheFull=" + eventCacheFull);
 		}
-		if (eventCache.size() == getEventCacheLimit()) {
-			eventCacheFull = true;
-		} else {
-			eventCacheFull = false;
-		}
-		m_log.info("eventCacheFull=" + eventCacheFull);
 	}
 	
 	private static int getEventCacheLimit() {
-		return HinemosPropertyUtil.getHinemosPropertyNum("notify.event.cache.size", Long.valueOf(10000)).intValue();
+		return HinemosPropertyCommon.notify_event_cache_size.getIntegerValue();
 	}
 
 	public static EventLogEntity cloneWithoutOrg (EventLogEntity entity) {
@@ -120,11 +114,13 @@ public class EventCache {
 		}
 		if (m_log.isTraceEnabled()) {
 			long now = HinemosTime.currentTimeMillis();
-			String str = "";
+			StringBuilder sb = new StringBuilder();
 			for (EventLogEntity ee : eventCache) {
-				str += "outputDate=" + (now - ee.getId().getOutputDate()) + "\n";
+				sb.append("outputDate=");
+				sb.append(now - ee.getId().getOutputDate());
+				sb.append("\n");
 			}
-			m_log.trace(str);
+			m_log.trace(sb.toString());
 		}
 	}
 	
@@ -335,7 +331,8 @@ public class EventCache {
 		if (collectGraphFlg != null && !entity.getCollectGraphFlg().equals(collectGraphFlg)) {
 			return false;
 		}
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			
 			// ADMINISTRATOR 所属のユーザの場合、オーナーロール、オブジェクト権限のチェックは行わず表示する
 			Boolean isAdministrator = (Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);
@@ -353,12 +350,12 @@ public class EventCache {
 			// 通知元が監視設定の場合、オブジェクト権限のチェックまで実施する
 			String pluginId = entity.getId().getPluginId();
 			if(pluginId.startsWith(HinemosModuleConstant.MONITOR)) {
-				EntityManager em = new JpaTransactionManager().getEntityManager();
 				for (String roleId : roleIdList) {
 					ObjectPrivilegeInfoPK objectPrivilegeEntityPK = 
 							new ObjectPrivilegeInfoPK(HinemosModuleConstant.MONITOR, entity.getId().getMonitorId(), 
 									roleId, ObjectPrivilegeMode.READ.name());
-					ObjectPrivilegeInfo objectPrivilegeEntity = em.find(ObjectPrivilegeInfo.class, objectPrivilegeEntityPK);
+					ObjectPrivilegeInfo objectPrivilegeEntity = em.find(
+							ObjectPrivilegeInfo.class, objectPrivilegeEntityPK, ObjectPrivilegeMode.READ);
 					if (objectPrivilegeEntity != null) {
 						m_log.debug("filterCheck() ObjectPrivilegeInfo=" + objectPrivilegeEntity.getId().toString());
 						return true;

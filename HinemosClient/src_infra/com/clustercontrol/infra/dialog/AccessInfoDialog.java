@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.dialog;
@@ -60,6 +53,9 @@ public class AccessInfoDialog extends CommonDialog {
 
 	/** ファイシリティID */
 	private Text m_txtFacilityId = null;
+
+	/** モジュールID */
+	private Text m_txtModuleId = null;
 
 	private Text m_txtSshUser = null;
 	private Text m_txtSshPassword = null;
@@ -128,6 +124,32 @@ public class AccessInfoDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_txtFacilityId.setLayoutData(gridData);
 		this.m_txtFacilityId.addModifyListener(new ModifyListener(){
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+			}
+		});
+
+		/*
+		 * モジュールID
+		 */
+		// ラベル
+		label = new Label(parent, SWT.NONE);
+		gridData = new GridData();
+		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		label.setLayoutData(gridData);
+		label.setText(Messages.getString("infra.module.id") + " : ");
+		// テキスト
+		this.m_txtModuleId = new Text(parent, SWT.BORDER | SWT.LEFT);
+		WidgetTestUtil.setTestId(this, "moduleId", m_txtModuleId);
+		gridData = new GridData();
+		gridData.horizontalSpan = WIDTH_TEXT;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		this.m_txtModuleId.setLayoutData(gridData);
+		this.m_txtModuleId.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
@@ -332,6 +354,31 @@ public class AccessInfoDialog extends CommonDialog {
 		// ファシリティID
 		this.m_txtFacilityId.setText(info.getFacilityId());
 		this.m_txtFacilityId.setEnabled(false);
+		
+		// モジュールID
+		if (info.getModuleId() != null) {
+			this.m_txtModuleId.setText(info.getModuleId());
+		}
+		this.m_txtModuleId.setEnabled(false);
+
+		if (info.getSshUser() != null && !info.getSshUser().isEmpty()) {
+			this.m_txtSshUser.setText(info.getSshUser());
+		}
+		if (info.getSshPassword() != null && !info.getSshPassword().isEmpty()) {
+			this.m_txtSshPassword.setText(info.getSshPassword());
+		}
+		if (info.getSshPrivateKeyFilepath() != null && !info.getSshPrivateKeyFilepath().isEmpty()) {
+			this.m_txtSshPrivateKeyFilepath.setText(info.getSshPrivateKeyFilepath());
+		}
+		if (info.getSshPrivateKeyPassphrase() != null && !info.getSshPrivateKeyPassphrase().isEmpty()) {
+			this.m_txtSshPrivateKeyPassphrase.setText(info.getSshPrivateKeyPassphrase());
+		}
+		if (info.getWinRmUser() != null && !info.getWinRmUser().isEmpty()) {
+			this.m_txtWinRmUser.setText(info.getWinRmUser());
+		}
+		if (info.getWinRmPassword() != null && !info.getWinRmPassword().isEmpty()) {
+			this.m_txtWinRmPassword.setText(info.getWinRmPassword());
+		}
 
 		// 必須項目を可視化
 		this.update();

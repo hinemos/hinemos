@@ -1,20 +1,15 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.bean;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 文字列収集値の検索結果を格納
@@ -27,6 +22,8 @@ public class StringQueryResult {
 	private Long time;
 	
 	private List<StringData> dataList;
+
+	private Map<String, Integer> tagCountMap;
 
 	/**
 	 * 検索結果数取得。
@@ -116,6 +113,25 @@ public class StringQueryResult {
 	 */
 	public void setDataList(List<StringData> dataList) {
 		this.dataList = dataList;
+	}
+
+	/**
+	 * 検索結果取得。
+	 * タグごとの集計結果を返す。
+	 * 
+	 * @return the tagCountMap
+	 */
+	public Map<String, Integer> getTagCountMap() {
+		return tagCountMap;
+	}
+
+	/**
+	 * 検索結果設定。
+	 * 
+	 * @param tagCountMap the tagCountMap to set
+	 */
+	public void setTagCountMap(Map<String, Integer> tagCountMap) {
+		this.tagCountMap = tagCountMap;
 	}
 
 	/* (non-Javadoc)

@@ -1,14 +1,10 @@
-/**********************************************************************
- * Copyright (C) 2014 NTT DATA Corporation
- * This program is free software; you can redistribute it and/or
- * Modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation, version 2.
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
  *
- * This program is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- * PURPOSE.  See the GNU General Public License for more details.
- *********************************************************************/
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
 
 package com.clustercontrol.util;
 
@@ -35,6 +31,7 @@ import org.eclipse.rap.rwt.SingletonUtil;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
 import com.clustercontrol.ClusterControlPlugin;
@@ -43,6 +40,7 @@ import com.clustercontrol.accesscontrol.dialog.LoginDialog;
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.view.JobListView;
+import com.clustercontrol.ui.util.OptionUtil;
 import com.clustercontrol.ws.access.InvalidUserPass_Exception;
 import com.clustercontrol.fault.InvalidTimezone;
 
@@ -164,9 +162,15 @@ public class LoginManager {
 	*/
 	public static void disconnect( String managerName ) {
 		synchronized (getInstance()) {
+			try {
+				JobEditStateUtil.release(managerName);
+				FacilityTreeCache.removeCache(managerName);
+			} catch (Exception e) {
+				// ログアウト時の例外なのでログ出力だけにとどめる
+				m_log.info(e.getMessage(), e);
+			}
 			EndpointManager.logout(managerName);
-			JobEditStateUtil.release(managerName);
-			FacilityTreeCache.removeCache(managerName);
+
 			updateStatusBar();
 
 			// 接続マネージャ数が0になった場合は、クライアントが保持するタイムゾーンを開放する
@@ -299,9 +303,9 @@ public class LoginManager {
 		int stateNum = 0;
 		for( EndpointUnit endpointUnit : EndpointManager.getAllManagerList() ){
 			m_log.debug("saveLoginState() : " + stateNum + ", " + endpointUnit.getManagerName());
-			store.setValue(LoginManager.KEY_LOGIN_STATUS_UID + "_" + stateNum ,endpointUnit.getUserId());
-			store.setValue(LoginManager.KEY_LOGIN_STATUS_URL + "_" + stateNum ,endpointUnit.getUrlListStr());
-			store.setValue(LoginManager.KEY_LOGIN_STATUS_MANAGERNAME + "_" + stateNum ,endpointUnit.getManagerName());
+			store.setValue(LoginManager.KEY_LOGIN_STATUS_UID + "_" + stateNum, endpointUnit.getUserId());
+			store.setValue(LoginManager.KEY_LOGIN_STATUS_URL + "_" + stateNum, endpointUnit.getUrlListStr());
+			store.setValue(LoginManager.KEY_LOGIN_STATUS_MANAGERNAME + "_" + stateNum, endpointUnit.getManagerName());
 			stateNum++;
 		}
 		m_log.info("Save login state " + stateNum);
@@ -322,17 +326,17 @@ public class LoginManager {
 		}
 	}
 	
-	public static void login(Map<String, String> map) {
+	public static void login(Map<String, String> map, IWorkbenchWindow window) {
 		setup();
 
-		Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+		Shell shell = window.getShell();
 		int returnCode = IDialogConstants.RETRY_ID;
 
 		// Increase login attempt time
 		getInstance().loginAttempts ++;
 
 		//ログインダイアログ表示
-		LoginDialog dialog = new LoginDialog( shell , map);
+		LoginDialog dialog = new LoginDialog(shell , map);
 
 		if (map.containsKey(KEY_BASIC_AUTH) && map.get(KEY_BASIC_AUTH).equals("true")) {
 			// ログイン省略
@@ -342,13 +346,6 @@ public class LoginManager {
 		// Reopen if RETRY_ID returned
 		while ( returnCode == IDialogConstants.RETRY_ID ) {
 			returnCode = dialog.open();
-		}
-		
-		// Close all if no connection left
-		if( returnCode != IDialogConstants.OK_ID && ! LoginManager.isLogin() ){
-			m_log.info("login() : cancel, " + returnCode);
-			updateStatusBar();
-			return;
 		}
 
 		// Proceed connecting if not Close button pressed
@@ -366,11 +363,22 @@ public class LoginManager {
 				saveLoginState();
 			}
 		}
+
+		// ログイン状態を更新
 		updateStatusBar();
+
+		// Close all if no connection left
+		if( returnCode != IDialogConstants.OK_ID && !LoginManager.isLogin() ){
+			m_log.info("login() : cancel, " + returnCode);
+			return;
+		}
+
+		// ログインに成功した場合のみ、オプション用UI contributionsの有・無効化を行う
+		OptionUtil.enableActivities(window, EndpointManager.getAllOptions());
 	}
-	
-	public static void login() {
-		login(new HashMap<String, String>());
+
+	public static void login(IWorkbenchWindow window) {
+		login(new HashMap<String, String>(), window);
 	}
 
 	public static void setup() {

@@ -1,0 +1,2073 @@
+ RMON-MIB DEFINITIONS ::= BEGIN
+
+     IMPORTS
+         MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY,
+         NOTIFICATION-TYPE, mib-2, Counter32,
+         Integer32, TimeTicks                   FROM SNMPv2-SMI
+
+         TEXTUAL-CONVENTION, DisplayString      FROM SNMPv2-TC
+
+         MODULE-COMPLIANCE, OBJECT-GROUP,
+         NOTIFICATION-GROUP                     FROM SNMPv2-CONF;
+
+
+
+ rmonMibModule MODULE-IDENTITY
+     LAST-UPDATED "200005110000Z"  -- 11 May, 2000
+     ORGANIZATION "IETF RMON MIB Working Group"
+
+
+
+     ::= { rmonConformance 8 }
+
+     rmon    OBJECT IDENTIFIER ::= { mib-2 16 }
+
+
+
+ OwnerString ::= TEXTUAL-CONVENTION
+     STATUS current
+
+
+
+
+
+     SYNTAX OCTET STRING (SIZE (0..127))
+
+ EntryStatus ::= TEXTUAL-CONVENTION
+     STATUS current
+     SYNTAX INTEGER {
+                valid(1),
+                createRequest(2),
+                underCreation(3),
+                invalid(4)
+            }
+
+     statistics        OBJECT IDENTIFIER ::= { rmon 1 }
+     history           OBJECT IDENTIFIER ::= { rmon 2 }
+     alarm             OBJECT IDENTIFIER ::= { rmon 3 }
+     hosts             OBJECT IDENTIFIER ::= { rmon 4 }
+     hostTopN          OBJECT IDENTIFIER ::= { rmon 5 }
+     matrix            OBJECT IDENTIFIER ::= { rmon 6 }
+     filter            OBJECT IDENTIFIER ::= { rmon 7 }
+     capture           OBJECT IDENTIFIER ::= { rmon 8 }
+     event             OBJECT IDENTIFIER ::= { rmon 9 }
+     rmonConformance   OBJECT IDENTIFIER ::= { rmon 20 }
+
+
+ etherStatsTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF EtherStatsEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { statistics 1 }
+
+
+
+
+
+
+ etherStatsEntry OBJECT-TYPE
+     SYNTAX     EtherStatsEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { etherStatsIndex }
+     ::= { etherStatsTable 1 }
+
+ EtherStatsEntry ::= SEQUENCE {
+     etherStatsIndex                    Integer32,
+     etherStatsDataSource               OBJECT IDENTIFIER,
+     etherStatsDropEvents               Counter32,
+     etherStatsOctets                   Counter32,
+     etherStatsPkts                     Counter32,
+     etherStatsBroadcastPkts            Counter32,
+     etherStatsMulticastPkts            Counter32,
+     etherStatsCRCAlignErrors           Counter32,
+     etherStatsUndersizePkts            Counter32,
+     etherStatsOversizePkts             Counter32,
+     etherStatsFragments                Counter32,
+     etherStatsJabbers                  Counter32,
+     etherStatsCollisions               Counter32,
+     etherStatsPkts64Octets             Counter32,
+     etherStatsPkts65to127Octets        Counter32,
+     etherStatsPkts128to255Octets       Counter32,
+     etherStatsPkts256to511Octets       Counter32,
+     etherStatsPkts512to1023Octets      Counter32,
+     etherStatsPkts1024to1518Octets     Counter32,
+     etherStatsOwner                    OwnerString,
+     etherStatsStatus                   EntryStatus
+ }
+
+ etherStatsIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 1 }
+
+ etherStatsDataSource OBJECT-TYPE
+     SYNTAX     OBJECT IDENTIFIER
+     MAX-ACCESS read-create
+     STATUS     current
+
+
+
+
+
+     ::= { etherStatsEntry 2 }
+
+ etherStatsDropEvents OBJECT-TYPE
+     SYNTAX     Counter32
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 3 }
+
+ etherStatsOctets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 4 }
+
+ etherStatsPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 5 }
+
+ etherStatsBroadcastPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 6 }
+
+ etherStatsMulticastPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 7 }
+
+ etherStatsCRCAlignErrors OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 8 }
+
+ etherStatsUndersizePkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 9 }
+
+ etherStatsOversizePkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 10 }
+
+ etherStatsFragments OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 11 }
+
+ etherStatsJabbers OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 12 }
+
+ etherStatsCollisions OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Collisions"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 13 }
+
+ etherStatsPkts64Octets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 14 }
+
+ etherStatsPkts65to127Octets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 15 }
+
+ etherStatsPkts128to255Octets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+
+
+
+
+
+     STATUS     current
+     ::= { etherStatsEntry 16 }
+
+ etherStatsPkts256to511Octets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 17 }
+
+ etherStatsPkts512to1023Octets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 18 }
+
+ etherStatsPkts1024to1518Octets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherStatsEntry 19 }
+
+ etherStatsOwner OBJECT-TYPE
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+
+
+
+
+
+     ::= { etherStatsEntry 20 }
+
+ etherStatsStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { etherStatsEntry 21 }
+
+
+
+ historyControlTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF HistoryControlEntry
+     MAX-ACCESS not-accessible
+
+
+
+
+
+     STATUS     current
+     ::= { history 1 }
+
+ historyControlEntry OBJECT-TYPE
+     SYNTAX     HistoryControlEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { historyControlIndex }
+     ::= { historyControlTable 1 }
+
+ HistoryControlEntry ::= SEQUENCE {
+     historyControlIndex             Integer32,
+     historyControlDataSource        OBJECT IDENTIFIER,
+     historyControlBucketsRequested  Integer32,
+     historyControlBucketsGranted    Integer32,
+     historyControlInterval          Integer32,
+     historyControlOwner             OwnerString,
+     historyControlStatus            EntryStatus
+ }
+
+ historyControlIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { historyControlEntry 1 }
+
+ historyControlDataSource OBJECT-TYPE
+     SYNTAX     OBJECT IDENTIFIER
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { historyControlEntry 2 }
+
+ historyControlBucketsRequested OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { 50 }
+     ::= { historyControlEntry 3 }
+
+ historyControlBucketsGranted OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { historyControlEntry 4 }
+
+ historyControlInterval OBJECT-TYPE
+     SYNTAX     Integer32 (1..3600)
+     UNITS      "Seconds"
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { 1800 }
+     ::= { historyControlEntry 5 }
+
+ historyControlOwner OBJECT-TYPE
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { historyControlEntry 6 }
+
+ historyControlStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { historyControlEntry 7 }
+
+
+
+
+
+
+
+
+ etherHistoryTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF EtherHistoryEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { history 2 }
+
+ etherHistoryEntry OBJECT-TYPE
+     SYNTAX     EtherHistoryEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { etherHistoryIndex , etherHistorySampleIndex }
+     ::= { etherHistoryTable 1 }
+
+ EtherHistoryEntry ::= SEQUENCE {
+     etherHistoryIndex                 Integer32,
+     etherHistorySampleIndex           Integer32,
+     etherHistoryIntervalStart         TimeTicks,
+     etherHistoryDropEvents            Counter32,
+     etherHistoryOctets                Counter32,
+     etherHistoryPkts                  Counter32,
+     etherHistoryBroadcastPkts         Counter32,
+     etherHistoryMulticastPkts         Counter32,
+     etherHistoryCRCAlignErrors        Counter32,
+     etherHistoryUndersizePkts         Counter32,
+     etherHistoryOversizePkts          Counter32,
+     etherHistoryFragments             Counter32,
+     etherHistoryJabbers               Counter32,
+     etherHistoryCollisions            Counter32,
+     etherHistoryUtilization           Integer32
+ }
+
+ etherHistoryIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+
+
+
+
+
+     STATUS     current
+     ::= { etherHistoryEntry 1 }
+
+ etherHistorySampleIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..2147483647)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 2 }
+
+ etherHistoryIntervalStart OBJECT-TYPE
+     SYNTAX     TimeTicks
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 3 }
+
+ etherHistoryDropEvents OBJECT-TYPE
+     SYNTAX     Counter32
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 4 }
+
+ etherHistoryOctets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 5 }
+
+ etherHistoryPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 6 }
+
+ etherHistoryBroadcastPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 7 }
+
+ etherHistoryMulticastPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 8 }
+
+
+
+
+
+
+ etherHistoryCRCAlignErrors OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 9 }
+
+ etherHistoryUndersizePkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 10 }
+
+ etherHistoryOversizePkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 11 }
+
+ etherHistoryFragments OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 12 }
+
+ etherHistoryJabbers OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 13 }
+
+ etherHistoryCollisions OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Collisions"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 14 }
+
+ etherHistoryUtilization OBJECT-TYPE
+     SYNTAX     Integer32 (0..10000)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { etherHistoryEntry 15 }
+
+
+
+
+
+
+
+
+ alarmTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF AlarmEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { alarm 1 }
+
+ alarmEntry OBJECT-TYPE
+     SYNTAX     AlarmEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { alarmIndex }
+     ::= { alarmTable 1 }
+
+ AlarmEntry ::= SEQUENCE {
+     alarmIndex                    Integer32,
+     alarmInterval                 Integer32,
+     alarmVariable                 OBJECT IDENTIFIER,
+     alarmSampleType               INTEGER,
+     alarmValue                    Integer32,
+     alarmStartupAlarm             INTEGER,
+     alarmRisingThreshold          Integer32,
+     alarmFallingThreshold         Integer32,
+     alarmRisingEventIndex         Integer32,
+     alarmFallingEventIndex        Integer32,
+     alarmOwner                    OwnerString,
+     alarmStatus                   EntryStatus
+ }
+
+
+
+
+
+
+ alarmIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { alarmEntry 1 }
+
+ alarmInterval OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Seconds"
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 2 }
+
+ alarmVariable OBJECT-TYPE
+     SYNTAX     OBJECT IDENTIFIER
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 3 }
+
+ alarmSampleType OBJECT-TYPE
+     SYNTAX     INTEGER {
+                  absoluteValue(1),
+                  deltaValue(2)
+                }
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 4 }
+
+ alarmValue OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { alarmEntry 5 }
+
+ alarmStartupAlarm OBJECT-TYPE
+     SYNTAX     INTEGER {
+                  risingAlarm(1),
+                  fallingAlarm(2),
+                  risingOrFallingAlarm(3)
+                }
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 6 }
+
+ alarmRisingThreshold OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 7 }
+
+ alarmFallingThreshold OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 8 }
+
+ alarmRisingEventIndex OBJECT-TYPE
+     SYNTAX     Integer32 (0..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 9 }
+
+ alarmFallingEventIndex OBJECT-TYPE
+     SYNTAX     Integer32 (0..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 10 }
+
+ alarmOwner OBJECT-TYPE
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 11 }
+
+ alarmStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { alarmEntry 12 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ hostControlTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF HostControlEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { hosts 1 }
+
+ hostControlEntry OBJECT-TYPE
+     SYNTAX     HostControlEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { hostControlIndex }
+     ::= { hostControlTable 1 }
+
+ HostControlEntry ::= SEQUENCE {
+
+     hostControlIndex            Integer32,
+     hostControlDataSource       OBJECT IDENTIFIER,
+     hostControlTableSize        Integer32,
+     hostControlLastDeleteTime   TimeTicks,
+     hostControlOwner            OwnerString,
+     hostControlStatus           EntryStatus
+ }
+
+ hostControlIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostControlEntry 1 }
+
+ hostControlDataSource OBJECT-TYPE
+     SYNTAX     OBJECT IDENTIFIER
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { hostControlEntry 2 }
+
+ hostControlTableSize OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostControlEntry 3 }
+
+ hostControlLastDeleteTime OBJECT-TYPE
+     SYNTAX     TimeTicks
+     MAX-ACCESS read-only
+
+
+
+
+
+     STATUS     current
+     ::= { hostControlEntry 4 }
+
+ hostControlOwner OBJECT-TYPE
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { hostControlEntry 5 }
+
+ hostControlStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { hostControlEntry 6 }
+
+ hostTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF HostEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { hosts 2 }
+
+ hostEntry OBJECT-TYPE
+     SYNTAX     HostEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { hostIndex, hostAddress }
+     ::= { hostTable 1 }
+
+
+
+
+
+ HostEntry ::= SEQUENCE {
+     hostAddress             OCTET STRING,
+     hostCreationOrder       Integer32,
+     hostIndex               Integer32,
+     hostInPkts              Counter32,
+     hostOutPkts             Counter32,
+     hostInOctets            Counter32,
+     hostOutOctets           Counter32,
+     hostOutErrors           Counter32,
+     hostOutBroadcastPkts    Counter32,
+     hostOutMulticastPkts    Counter32
+ }
+
+ hostAddress OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostEntry 1 }
+
+ hostCreationOrder OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostEntry 2 }
+
+
+
+
+
+
+ hostIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostEntry 3 }
+
+ hostInPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostEntry 4 }
+
+ hostOutPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostEntry 5 }
+
+ hostInOctets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostEntry 6 }
+
+ hostOutOctets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+
+
+
+
+
+     STATUS     current
+     ::= { hostEntry 7 }
+
+ hostOutErrors OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostEntry 8 }
+
+ hostOutBroadcastPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostEntry 9 }
+
+ hostOutMulticastPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostEntry 10 }
+
+
+ hostTimeTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF HostTimeEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+
+
+
+
+
+     ::= { hosts 3 }
+
+ hostTimeEntry OBJECT-TYPE
+     SYNTAX     HostTimeEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { hostTimeIndex, hostTimeCreationOrder }
+     ::= { hostTimeTable 1 }
+
+ HostTimeEntry ::= SEQUENCE {
+     hostTimeAddress              OCTET STRING,
+     hostTimeCreationOrder        Integer32,
+     hostTimeIndex                Integer32,
+     hostTimeInPkts               Counter32,
+     hostTimeOutPkts              Counter32,
+     hostTimeInOctets             Counter32,
+     hostTimeOutOctets            Counter32,
+     hostTimeOutErrors            Counter32,
+     hostTimeOutBroadcastPkts     Counter32,
+     hostTimeOutMulticastPkts     Counter32
+ }
+
+ hostTimeAddress OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTimeEntry 1 }
+
+ hostTimeCreationOrder OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTimeEntry 2 }
+
+ hostTimeIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTimeEntry 3 }
+
+ hostTimeInPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTimeEntry 4 }
+
+ hostTimeOutPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+
+
+
+
+
+     STATUS     current
+     ::= { hostTimeEntry 5 }
+
+ hostTimeInOctets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTimeEntry 6 }
+
+ hostTimeOutOctets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTimeEntry 7 }
+
+ hostTimeOutErrors OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTimeEntry 8 }
+
+ hostTimeOutBroadcastPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTimeEntry 9 }
+
+ hostTimeOutMulticastPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTimeEntry 10 }
+
+
+
+
+ hostTopNControlTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF HostTopNControlEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { hostTopN 1 }
+
+ hostTopNControlEntry OBJECT-TYPE
+
+
+
+
+
+     SYNTAX     HostTopNControlEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { hostTopNControlIndex }
+     ::= { hostTopNControlTable 1 }
+
+ HostTopNControlEntry ::= SEQUENCE {
+     hostTopNControlIndex    Integer32,
+     hostTopNHostIndex       Integer32,
+     hostTopNRateBase        INTEGER,
+     hostTopNTimeRemaining   Integer32,
+     hostTopNDuration        Integer32,
+     hostTopNRequestedSize   Integer32,
+     hostTopNGrantedSize     Integer32,
+     hostTopNStartTime       TimeTicks,
+     hostTopNOwner           OwnerString,
+     hostTopNStatus          EntryStatus
+ }
+
+ hostTopNControlIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTopNControlEntry 1 }
+
+ hostTopNHostIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+
+
+
+
+
+     ::= { hostTopNControlEntry 2 }
+
+ hostTopNRateBase OBJECT-TYPE
+     SYNTAX     INTEGER {
+                  hostTopNInPkts(1),
+                  hostTopNOutPkts(2),
+                  hostTopNInOctets(3),
+                  hostTopNOutOctets(4),
+                  hostTopNOutErrors(5),
+                  hostTopNOutBroadcastPkts(6),
+                  hostTopNOutMulticastPkts(7)
+                }
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { hostTopNControlEntry 3 }
+
+ hostTopNTimeRemaining OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Seconds"
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { 0 }
+     ::= { hostTopNControlEntry 4 }
+
+
+
+
+
+
+ hostTopNDuration OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Seconds"
+     MAX-ACCESS read-only
+     STATUS     current
+     DEFVAL { 0 }
+     ::= { hostTopNControlEntry 5 }
+
+ hostTopNRequestedSize OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { 10 }
+     ::= { hostTopNControlEntry 6 }
+
+ hostTopNGrantedSize OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTopNControlEntry 7 }
+
+ hostTopNStartTime OBJECT-TYPE
+     SYNTAX     TimeTicks
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTopNControlEntry 8 }
+
+ hostTopNOwner OBJECT-TYPE
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { hostTopNControlEntry 9 }
+
+ hostTopNStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { hostTopNControlEntry 10 }
+
+ hostTopNTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF HostTopNEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { hostTopN 2 }
+
+
+
+
+
+ hostTopNEntry OBJECT-TYPE
+     SYNTAX     HostTopNEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { hostTopNReport, hostTopNIndex }
+     ::= { hostTopNTable 1 }
+
+ HostTopNEntry ::= SEQUENCE {
+     hostTopNReport                Integer32,
+     hostTopNIndex                 Integer32,
+     hostTopNAddress               OCTET STRING,
+     hostTopNRate                  Integer32
+ }
+
+ hostTopNReport OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTopNEntry 1 }
+
+ hostTopNIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTopNEntry 2 }
+
+ hostTopNAddress OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-only
+
+
+
+
+
+     STATUS     current
+     ::= { hostTopNEntry 3 }
+
+ hostTopNRate OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTopNEntry 4 }
+
+
+
+ matrixControlTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF MatrixControlEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { matrix 1 }
+
+ matrixControlEntry OBJECT-TYPE
+     SYNTAX     MatrixControlEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { matrixControlIndex }
+     ::= { matrixControlTable 1 }
+
+ MatrixControlEntry ::= SEQUENCE {
+     matrixControlIndex           Integer32,
+     matrixControlDataSource      OBJECT IDENTIFIER,
+     matrixControlTableSize       Integer32,
+     matrixControlLastDeleteTime  TimeTicks,
+     matrixControlOwner           OwnerString,
+     matrixControlStatus          EntryStatus
+ }
+
+ matrixControlIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixControlEntry 1 }
+
+ matrixControlDataSource OBJECT-TYPE
+     SYNTAX     OBJECT IDENTIFIER
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { matrixControlEntry 2 }
+
+ matrixControlTableSize OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixControlEntry 3 }
+
+ matrixControlLastDeleteTime OBJECT-TYPE
+     SYNTAX     TimeTicks
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixControlEntry 4 }
+
+ matrixControlOwner OBJECT-TYPE
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { matrixControlEntry 5 }
+
+ matrixControlStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { matrixControlEntry 6 }
+
+ matrixSDTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF MatrixSDEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { matrix 2 }
+
+ matrixSDEntry OBJECT-TYPE
+     SYNTAX     MatrixSDEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { matrixSDIndex,
+             matrixSDSourceAddress, matrixSDDestAddress }
+     ::= { matrixSDTable 1 }
+
+ MatrixSDEntry ::= SEQUENCE {
+     matrixSDSourceAddress       OCTET STRING,
+     matrixSDDestAddress         OCTET STRING,
+     matrixSDIndex               Integer32,
+     matrixSDPkts                Counter32,
+     matrixSDOctets              Counter32,
+     matrixSDErrors              Counter32
+ }
+
+ matrixSDSourceAddress OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixSDEntry 1 }
+
+ matrixSDDestAddress OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-only
+     STATUS     current
+
+
+
+
+
+     ::= { matrixSDEntry 2 }
+
+ matrixSDIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixSDEntry 3 }
+
+ matrixSDPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixSDEntry 4 }
+
+ matrixSDOctets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixSDEntry 5 }
+
+ matrixSDErrors OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixSDEntry 6 }
+
+
+
+
+
+
+ matrixDSTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF MatrixDSEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { matrix 3 }
+
+ matrixDSEntry OBJECT-TYPE
+     SYNTAX     MatrixDSEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { matrixDSIndex,
+             matrixDSDestAddress, matrixDSSourceAddress }
+     ::= { matrixDSTable 1 }
+
+ MatrixDSEntry ::= SEQUENCE {
+     matrixDSSourceAddress       OCTET STRING,
+     matrixDSDestAddress         OCTET STRING,
+     matrixDSIndex               Integer32,
+     matrixDSPkts                Counter32,
+     matrixDSOctets              Counter32,
+     matrixDSErrors              Counter32
+ }
+
+ matrixDSSourceAddress OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixDSEntry 1 }
+
+ matrixDSDestAddress OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixDSEntry 2 }
+
+
+
+
+
+ matrixDSIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixDSEntry 3 }
+
+ matrixDSPkts OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixDSEntry 4 }
+
+ matrixDSOctets OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixDSEntry 5 }
+
+ matrixDSErrors OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { matrixDSEntry 6 }
+
+
+
+
+
+
+
+
+ filterTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF FilterEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { filter 1 }
+
+ filterEntry OBJECT-TYPE
+     SYNTAX     FilterEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { filterIndex }
+     ::= { filterTable 1 }
+
+ FilterEntry ::= SEQUENCE {
+     filterIndex                 Integer32,
+     filterChannelIndex          Integer32,
+     filterPktDataOffset         Integer32,
+
+
+
+
+
+     filterPktData               OCTET STRING,
+     filterPktDataMask           OCTET STRING,
+     filterPktDataNotMask        OCTET STRING,
+     filterPktStatus             Integer32,
+     filterPktStatusMask         Integer32,
+     filterPktStatusNotMask      Integer32,
+     filterOwner                 OwnerString,
+     filterStatus                EntryStatus
+ }
+
+ filterIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { filterEntry 1 }
+
+ filterChannelIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { filterEntry 2 }
+
+ filterPktDataOffset OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Octets"
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { 0 }
+
+
+
+
+
+     ::= { filterEntry 3 }
+
+ filterPktData OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { filterEntry 4 }
+
+ filterPktDataMask OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { filterEntry 5 }
+
+ filterPktDataNotMask OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { filterEntry 6 }
+
+ filterPktStatus OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { filterEntry 7 }
+
+ filterPktStatusMask OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-create
+     STATUS     current
+
+
+
+
+
+     ::= { filterEntry 8 }
+
+ filterPktStatusNotMask OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { filterEntry 9 }
+
+ filterOwner OBJECT-TYPE
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+
+
+
+
+
+     ::= { filterEntry 10 }
+
+ filterStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { filterEntry 11 }
+
+ channelTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF ChannelEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { filter 2 }
+
+ channelEntry OBJECT-TYPE
+     SYNTAX     ChannelEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { channelIndex }
+     ::= { channelTable 1 }
+
+ ChannelEntry ::= SEQUENCE {
+     channelIndex                 Integer32,
+     channelIfIndex               Integer32,
+     channelAcceptType            INTEGER,
+     channelDataControl           INTEGER,
+     channelTurnOnEventIndex      Integer32,
+     channelTurnOffEventIndex     Integer32,
+     channelEventIndex            Integer32,
+     channelEventStatus           INTEGER,
+     channelMatches               Counter32,
+     channelDescription           DisplayString,
+     channelOwner                 OwnerString,
+     channelStatus                EntryStatus
+ }
+
+ channelIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+
+
+
+
+
+     ::= { channelEntry 1 }
+
+ channelIfIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { channelEntry 2 }
+
+ channelAcceptType OBJECT-TYPE
+     SYNTAX     INTEGER {
+                  acceptMatched(1),
+                  acceptFailed(2)
+                }
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { channelEntry 3 }
+
+ channelDataControl OBJECT-TYPE
+     SYNTAX     INTEGER {
+                  on(1),
+                  off(2)
+                }
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { off }
+     ::= { channelEntry 4 }
+
+ channelTurnOnEventIndex OBJECT-TYPE
+     SYNTAX     Integer32 (0..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { channelEntry 5 }
+
+ channelTurnOffEventIndex OBJECT-TYPE
+     SYNTAX     Integer32 (0..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { channelEntry 6 }
+
+ channelEventIndex OBJECT-TYPE
+     SYNTAX     Integer32 (0..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { channelEntry 7 }
+
+ channelEventStatus OBJECT-TYPE
+     SYNTAX     INTEGER {
+                  eventReady(1),
+                  eventFired(2),
+
+
+
+
+
+                  eventAlwaysReady(3)
+                }
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { eventReady }
+     ::= { channelEntry 8 }
+
+ channelMatches OBJECT-TYPE
+     SYNTAX     Counter32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { channelEntry 9 }
+
+ channelDescription OBJECT-TYPE
+     SYNTAX     DisplayString (SIZE (0..127))
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { channelEntry 10 }
+
+ channelOwner OBJECT-TYPE
+
+
+
+
+
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { channelEntry 11 }
+
+ channelStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { channelEntry 12 }
+
+
+
+ bufferControlTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF BufferControlEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { capture 1 }
+
+ bufferControlEntry OBJECT-TYPE
+     SYNTAX     BufferControlEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+
+
+
+
+
+     INDEX { bufferControlIndex }
+     ::= { bufferControlTable 1 }
+
+ BufferControlEntry ::= SEQUENCE {
+     bufferControlIndex                Integer32,
+     bufferControlChannelIndex         Integer32,
+     bufferControlFullStatus           INTEGER,
+     bufferControlFullAction           INTEGER,
+     bufferControlCaptureSliceSize     Integer32,
+     bufferControlDownloadSliceSize    Integer32,
+     bufferControlDownloadOffset       Integer32,
+     bufferControlMaxOctetsRequested   Integer32,
+     bufferControlMaxOctetsGranted     Integer32,
+     bufferControlCapturedPackets      Integer32,
+     bufferControlTurnOnTime           TimeTicks,
+     bufferControlOwner                OwnerString,
+     bufferControlStatus               EntryStatus
+ }
+
+ bufferControlIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { bufferControlEntry 1 }
+
+ bufferControlChannelIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { bufferControlEntry 2 }
+
+ bufferControlFullStatus OBJECT-TYPE
+     SYNTAX     INTEGER {
+
+
+
+
+
+                  spaceAvailable(1),
+                  full(2)
+                }
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { bufferControlEntry 3 }
+
+ bufferControlFullAction OBJECT-TYPE
+     SYNTAX     INTEGER {
+                  lockWhenFull(1),
+                  wrapWhenFull(2)    -- FIFO
+                }
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { bufferControlEntry 4 }
+
+ bufferControlCaptureSliceSize OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Octets"
+     MAX-ACCESS read-create
+
+
+
+
+
+     STATUS     current
+     DEFVAL { 100 }
+     ::= { bufferControlEntry 5 }
+
+ bufferControlDownloadSliceSize OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Octets"
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { 100 }
+     ::= { bufferControlEntry 6 }
+
+ bufferControlDownloadOffset OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Octets"
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { 0 }
+     ::= { bufferControlEntry 7 }
+
+ bufferControlMaxOctetsRequested OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Octets"
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { -1 }
+     ::= { bufferControlEntry 8 }
+
+ bufferControlMaxOctetsGranted OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { bufferControlEntry 9 }
+
+ bufferControlCapturedPackets OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Packets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { bufferControlEntry 10 }
+
+ bufferControlTurnOnTime OBJECT-TYPE
+     SYNTAX     TimeTicks
+     MAX-ACCESS read-only
+     STATUS     current
+
+
+
+
+
+     ::= { bufferControlEntry 11 }
+
+ bufferControlOwner OBJECT-TYPE
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { bufferControlEntry 12 }
+
+ bufferControlStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { bufferControlEntry 13 }
+
+ captureBufferTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF CaptureBufferEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { capture 2 }
+
+ captureBufferEntry OBJECT-TYPE
+     SYNTAX     CaptureBufferEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { captureBufferControlIndex, captureBufferIndex }
+     ::= { captureBufferTable 1 }
+
+ CaptureBufferEntry ::= SEQUENCE {
+     captureBufferControlIndex   Integer32,
+     captureBufferIndex          Integer32,
+     captureBufferPacketID       Integer32,
+     captureBufferPacketData     OCTET STRING,
+     captureBufferPacketLength   Integer32,
+     captureBufferPacketTime     Integer32,
+     captureBufferPacketStatus   Integer32
+ }
+
+
+
+
+
+
+ captureBufferControlIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { captureBufferEntry 1 }
+
+ captureBufferIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..2147483647)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { captureBufferEntry 2 }
+
+ captureBufferPacketID OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { captureBufferEntry 3 }
+
+ captureBufferPacketData OBJECT-TYPE
+     SYNTAX     OCTET STRING
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { captureBufferEntry 4 }
+
+ captureBufferPacketLength OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Octets"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { captureBufferEntry 5 }
+
+ captureBufferPacketTime OBJECT-TYPE
+     SYNTAX     Integer32
+     UNITS      "Milliseconds"
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { captureBufferEntry 6 }
+
+ captureBufferPacketStatus OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { captureBufferEntry 7 }
+
+
+
+ eventTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF EventEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { event 1 }
+
+ eventEntry OBJECT-TYPE
+     SYNTAX     EventEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { eventIndex }
+     ::= { eventTable 1 }
+
+ EventEntry ::= SEQUENCE {
+     eventIndex          Integer32,
+     eventDescription    DisplayString,
+     eventType           INTEGER,
+     eventCommunity      OCTET STRING,
+     eventLastTimeSent   TimeTicks,
+     eventOwner          OwnerString,
+     eventStatus         EntryStatus
+ }
+
+ eventIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { eventEntry 1 }
+
+ eventDescription OBJECT-TYPE
+     SYNTAX     DisplayString (SIZE (0..127))
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { eventEntry 2 }
+
+ eventType OBJECT-TYPE
+     SYNTAX     INTEGER {
+                  none(1),
+                  log(2),
+
+
+
+
+
+                  snmptrap(3),    -- send an SNMP trap
+                  logandtrap(4)
+                }
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { eventEntry 3 }
+
+ eventCommunity OBJECT-TYPE
+     SYNTAX     OCTET STRING (SIZE (0..127))
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { eventEntry 4 }
+
+ eventLastTimeSent OBJECT-TYPE
+     SYNTAX     TimeTicks
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { eventEntry 5 }
+
+ eventOwner OBJECT-TYPE
+     SYNTAX     OwnerString
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { eventEntry 6 }
+
+
+
+
+
+
+ eventStatus OBJECT-TYPE
+     SYNTAX     EntryStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     ::= { eventEntry 7 }
+
+ logTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF LogEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     ::= { event 2 }
+
+ logEntry OBJECT-TYPE
+     SYNTAX     LogEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     INDEX { logEventIndex, logIndex }
+     ::= { logTable 1 }
+
+ LogEntry ::= SEQUENCE {
+     logEventIndex           Integer32,
+     logIndex                Integer32,
+     logTime                 TimeTicks,
+     logDescription          DisplayString
+ }
+
+ logEventIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..65535)
+     MAX-ACCESS read-only
+     STATUS     current
+
+
+
+
+
+     ::= { logEntry 1 }
+
+ logIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..2147483647)
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { logEntry 2 }
+
+ logTime OBJECT-TYPE
+     SYNTAX     TimeTicks
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { logEntry 3 }
+
+ logDescription OBJECT-TYPE
+     SYNTAX     DisplayString (SIZE (0..255))
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { logEntry 4 }
+
+
+ rmonEventsV2 OBJECT-IDENTITY
+     STATUS      current
+     ::= { rmon 0 }
+
+ risingAlarm NOTIFICATION-TYPE
+     OBJECTS  { alarmIndex, alarmVariable, alarmSampleType,
+                alarmValue, alarmRisingThreshold }
+     STATUS   current
+
+
+
+
+
+     ::= { rmonEventsV2 1 }
+
+ fallingAlarm NOTIFICATION-TYPE
+     OBJECTS { alarmIndex, alarmVariable, alarmSampleType,
+               alarmValue, alarmFallingThreshold }
+     STATUS    current
+     ::= { rmonEventsV2 2 }
+
+
+ rmonCompliances OBJECT IDENTIFIER ::= { rmonConformance 9 }
+ rmonGroups      OBJECT IDENTIFIER ::= { rmonConformance 10 }
+
+ rmonCompliance MODULE-COMPLIANCE
+     STATUS current
+     MODULE -- this module
+
+       GROUP rmonEtherStatsGroup
+
+       GROUP rmonHistoryControlGroup
+
+       GROUP rmonEthernetHistoryGroup
+
+       GROUP rmonAlarmGroup
+
+       GROUP rmonHostGroup
+
+       GROUP rmonHostTopNGroup
+
+       GROUP rmonMatrixGroup
+
+       GROUP rmonFilterGroup
+
+       GROUP rmonPacketCaptureGroup
+
+       GROUP rmonEventGroup
+     ::= { rmonCompliances 1 }
+
+     rmonEtherStatsGroup OBJECT-GROUP
+         OBJECTS {
+             etherStatsIndex, etherStatsDataSource,
+             etherStatsDropEvents, etherStatsOctets, etherStatsPkts,
+             etherStatsBroadcastPkts, etherStatsMulticastPkts,
+             etherStatsCRCAlignErrors, etherStatsUndersizePkts,
+             etherStatsOversizePkts, etherStatsFragments,
+             etherStatsJabbers, etherStatsCollisions,
+             etherStatsPkts64Octets, etherStatsPkts65to127Octets,
+             etherStatsPkts128to255Octets,
+             etherStatsPkts256to511Octets,
+             etherStatsPkts512to1023Octets,
+             etherStatsPkts1024to1518Octets,
+             etherStatsOwner, etherStatsStatus
+         }
+         STATUS current
+
+
+
+
+
+         ::= { rmonGroups 1 }
+
+     rmonHistoryControlGroup OBJECT-GROUP
+         OBJECTS {
+             historyControlIndex, historyControlDataSource,
+             historyControlBucketsRequested,
+             historyControlBucketsGranted, historyControlInterval,
+             historyControlOwner, historyControlStatus
+         }
+         STATUS current
+         ::= { rmonGroups 2 }
+
+     rmonEthernetHistoryGroup OBJECT-GROUP
+         OBJECTS {
+             etherHistoryIndex, etherHistorySampleIndex,
+             etherHistoryIntervalStart, etherHistoryDropEvents,
+             etherHistoryOctets, etherHistoryPkts,
+             etherHistoryBroadcastPkts, etherHistoryMulticastPkts,
+             etherHistoryCRCAlignErrors, etherHistoryUndersizePkts,
+             etherHistoryOversizePkts, etherHistoryFragments,
+             etherHistoryJabbers, etherHistoryCollisions,
+             etherHistoryUtilization
+         }
+         STATUS current
+         ::= { rmonGroups 3 }
+
+     rmonAlarmGroup OBJECT-GROUP
+         OBJECTS {
+             alarmIndex, alarmInterval, alarmVariable,
+             alarmSampleType, alarmValue, alarmStartupAlarm,
+             alarmRisingThreshold, alarmFallingThreshold,
+             alarmRisingEventIndex, alarmFallingEventIndex,
+             alarmOwner, alarmStatus
+         }
+         STATUS current
+         ::= { rmonGroups 4 }
+
+     rmonHostGroup OBJECT-GROUP
+         OBJECTS {
+             hostControlIndex, hostControlDataSource,
+             hostControlTableSize, hostControlLastDeleteTime,
+             hostControlOwner, hostControlStatus,
+
+
+
+
+
+             hostAddress, hostCreationOrder, hostIndex,
+             hostInPkts, hostOutPkts, hostInOctets,
+             hostOutOctets, hostOutErrors, hostOutBroadcastPkts,
+             hostOutMulticastPkts, hostTimeAddress,
+             hostTimeCreationOrder, hostTimeIndex,
+             hostTimeInPkts, hostTimeOutPkts, hostTimeInOctets,
+             hostTimeOutOctets, hostTimeOutErrors,
+             hostTimeOutBroadcastPkts, hostTimeOutMulticastPkts
+         }
+         STATUS current
+         ::= { rmonGroups 5 }
+
+     rmonHostTopNGroup OBJECT-GROUP
+         OBJECTS {
+             hostTopNControlIndex, hostTopNHostIndex,
+             hostTopNRateBase, hostTopNTimeRemaining,
+             hostTopNDuration, hostTopNRequestedSize,
+             hostTopNGrantedSize, hostTopNStartTime,
+             hostTopNOwner, hostTopNStatus,
+             hostTopNReport, hostTopNIndex,
+             hostTopNAddress, hostTopNRate
+         }
+         STATUS current
+         ::= { rmonGroups 6 }
+
+     rmonMatrixGroup OBJECT-GROUP
+         OBJECTS {
+             matrixControlIndex, matrixControlDataSource,
+             matrixControlTableSize, matrixControlLastDeleteTime,
+             matrixControlOwner, matrixControlStatus,
+             matrixSDSourceAddress, matrixSDDestAddress,
+             matrixSDIndex, matrixSDPkts,
+             matrixSDOctets, matrixSDErrors,
+             matrixDSSourceAddress, matrixDSDestAddress,
+             matrixDSIndex, matrixDSPkts,
+             matrixDSOctets, matrixDSErrors
+         }
+         STATUS current
+         ::= { rmonGroups 7 }
+
+     rmonFilterGroup OBJECT-GROUP
+         OBJECTS {
+
+
+
+
+
+             filterIndex, filterChannelIndex, filterPktDataOffset,
+             filterPktData, filterPktDataMask,
+             filterPktDataNotMask, filterPktStatus,
+             filterPktStatusMask, filterPktStatusNotMask,
+             filterOwner, filterStatus,
+             channelIndex, channelIfIndex, channelAcceptType,
+             channelDataControl, channelTurnOnEventIndex,
+             channelTurnOffEventIndex, channelEventIndex,
+             channelEventStatus, channelMatches,
+             channelDescription, channelOwner, channelStatus
+         }
+         STATUS current
+         ::= { rmonGroups 8 }
+
+     rmonPacketCaptureGroup OBJECT-GROUP
+         OBJECTS {
+             bufferControlIndex, bufferControlChannelIndex,
+             bufferControlFullStatus, bufferControlFullAction,
+             bufferControlCaptureSliceSize,
+             bufferControlDownloadSliceSize,
+             bufferControlDownloadOffset,
+             bufferControlMaxOctetsRequested,
+             bufferControlMaxOctetsGranted,
+             bufferControlCapturedPackets,
+             bufferControlTurnOnTime,
+             bufferControlOwner, bufferControlStatus,
+             captureBufferControlIndex, captureBufferIndex,
+             captureBufferPacketID, captureBufferPacketData,
+             captureBufferPacketLength, captureBufferPacketTime,
+             captureBufferPacketStatus
+         }
+         STATUS current
+         ::= { rmonGroups 9 }
+
+     rmonEventGroup OBJECT-GROUP
+         OBJECTS {
+             eventIndex, eventDescription, eventType,
+             eventCommunity, eventLastTimeSent,
+             eventOwner, eventStatus,
+             logEventIndex, logIndex, logTime,
+             logDescription
+         }
+         STATUS current
+         ::= { rmonGroups 10 }
+
+     rmonNotificationGroup NOTIFICATION-GROUP
+         NOTIFICATIONS { risingAlarm, fallingAlarm }
+         STATUS        current
+         ::= { rmonGroups 11 }
+ END

@@ -1,0 +1,125 @@
+TOKENRING-STATION-SR-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE
+                                         FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION, RowStatus, MacAddress
+                                         FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP      FROM SNMPv2-CONF
+    mib-2, ifIndex                       FROM RFC1213-MIB;
+
+dot5SrMIB MODULE-IDENTITY
+    LAST-UPDATED "9412161000Z"
+    ORGANIZATION "IETF Interfaces MIB Working Group"
+    ::= { mib-2 42 }
+
+
+
+
+
+
+dot5SrMIBObjects OBJECT IDENTIFIER ::= { dot5SrMIB 1 }
+
+SourceRoute ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1x:"
+    STATUS       current
+    SYNTAX       OCTET STRING (SIZE(0..30))
+
+
+
+dot5SrRouteTable   OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot5SrRouteEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot5SrMIBObjects 1 }
+
+dot5SrRouteEntry  OBJECT-TYPE
+    SYNTAX      Dot5SrRouteEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX  { ifIndex, dot5SrRouteDestination }
+    ::= { dot5SrRouteTable 1 }
+
+Dot5SrRouteEntry ::= SEQUENCE {
+
+
+
+
+
+    dot5SrRouteDestination   MacAddress,
+    dot5SrRouteControl       OCTET STRING,
+    dot5SrRouteDescr         SourceRoute,
+    dot5SrRouteStatus        RowStatus
+}
+
+dot5SrRouteDestination  OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot5SrRouteEntry 2 }
+
+dot5SrRouteControl  OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE(2))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot5SrRouteEntry 3 }
+
+dot5SrRouteDescr  OBJECT-TYPE
+    SYNTAX      SourceRoute
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot5SrRouteEntry 4 }
+
+dot5SrRouteStatus  OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot5SrRouteEntry 5 }
+
+
+
+
+
+
+
+dot5SrConformance OBJECT IDENTIFIER ::= { dot5SrMIB 2 }
+
+dot5SrGroups      OBJECT IDENTIFIER ::= { dot5SrConformance 1 }
+dot5SrCompliances OBJECT IDENTIFIER ::= { dot5SrConformance 2 }
+
+
+
+dot5SrCompliance MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { dot5SrRouteGroup }
+
+        OBJECT      dot5SrRouteStatus
+        SYNTAX      INTEGER { active(1) }   -- subset of values
+        MIN-ACCESS  read-only
+
+        OBJECT      dot5SrRouteControl
+        MIN-ACCESS  read-only
+
+        OBJECT      dot5SrRouteDescr
+        MIN-ACCESS  read-only
+
+    ::= { dot5SrCompliances 1 }
+
+
+
+dot5SrRouteGroup  OBJECT-GROUP
+    OBJECTS   { dot5SrRouteControl,
+                dot5SrRouteDescr,
+                dot5SrRouteStatus
+              }
+    STATUS    current
+
+
+
+
+
+    ::= { dot5SrGroups 1 }
+
+END

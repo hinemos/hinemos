@@ -1,0 +1,51 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"statusInvalidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyStatusInfoType_statusInvalidFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"11", "name":"name_infoDel"},
+				{"value":"12", "name":"name_messageReplace"}
+			]
+		}
+	]},
+
+	{
+	"propName":"statusUpdatePriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyStatusInfoType_statusUpdatePriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"statusValidPeriod",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyStatusInfoType_statusValidPeriod"},
+		{"type":"Translate",
+			"values":[
+				{"value":"-1", "name":"name_unlimitited"},
+				{"value":"10", "name":"name_tenMinutes"},
+				{"value":"20", "name":"name_twenty"},
+				{"value":"30", "name":"name_halfHour"},
+				{"value":"60", "name":"name_Hour2"},
+				{"value":"180", "name":"name_threeTime"},
+				{"value":"360", "name":"name_sixTime"},
+				{"value":"720", "name":"name_twelveHours"},
+				{"value":"1440", "name":"name_oneDay"}
+			]
+		}
+	]}
+]
+}

@@ -1,0 +1,49 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"BinaryfileMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"BinaryfileInfo.Directory",
+			"BinaryfileInfo.FileName",
+			"BinaryfileInfo.collectType",
+			"BinaryfileInfo.cutType",
+			"BinaryfileInfo.FileHeadSize",
+			"BinaryfileInfo.lengthType",
+			"BinaryfileInfo.littleEndian",
+			"BinaryfileInfo.haveTs",
+			"BinaryfileInfo.TsType",
+			"BinaryfileInfo.TsPosition",
+			"BinaryfileInfo.RecordSize",
+			"BinaryfileInfo.RecordHeadSize",
+			"BinaryfileInfo.SizePosition",
+			"BinaryfileInfo.SizeLength",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"BinaryValue",
+			"BinaryValue.*.Pattern",
+			"BinaryValue.*.Description",
+			"BinaryValue.*.ProcessType",
+			"BinaryValue.*.TextEncoding",
+			"BinaryValue.*.Message",
+			"BinaryValue.*.ValidFlg",
+			"BinaryValue.*.Priority"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"BinaryfileMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

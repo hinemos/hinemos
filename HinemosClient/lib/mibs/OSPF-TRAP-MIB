@@ -1,0 +1,379 @@
+   OSPF-TRAP-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE, IpAddress
+                    FROM SNMPv2-SMI
+       MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                    FROM SNMPv2-CONF
+       ospfRouterId, ospfIfIpAddress, ospfAddressLessIf, ospfIfState,
+       ospfVirtIfAreaId, ospfVirtIfNeighbor, ospfVirtIfState,
+       ospfNbrIpAddr, ospfNbrAddressLessIndex, ospfNbrRtrId,
+       ospfNbrState, ospfVirtNbrArea, ospfVirtNbrRtrId,
+       ospfVirtNbrState, ospfLsdbType, ospfLsdbLsid, ospfLsdbRouterId,
+       ospfLsdbAreaId, ospfExtLsdbLimit, ospf, ospfAreaId,
+       ospfAreaNssaTranslatorState, ospfRestartStatus,
+       ospfRestartInterval, ospfRestartExitReason,
+       ospfNbrRestartHelperStatus, ospfNbrRestartHelperAge,
+       ospfNbrRestartHelperExitReason, ospfVirtNbrRestartHelperStatus,
+       ospfVirtNbrRestartHelperAge, ospfVirtNbrRestartHelperExitReason
+                    FROM OSPF-MIB;
+
+     ospfTrap MODULE-IDENTITY
+
+          LAST-UPDATED "200611100000Z" -- November 10, 2006 00:00:00 EST
+          ORGANIZATION "IETF OSPF Working Group"
+
+
+
+
+          ::= { ospf 16 }
+
+
+
+     ospfTrapControl OBJECT IDENTIFIER ::= { ospfTrap 1 }
+     ospfTraps OBJECT IDENTIFIER ::= { ospfTrap 2 }
+
+     ospfSetTrap OBJECT-TYPE
+          SYNTAX       OCTET STRING (SIZE(4))
+          MAX-ACCESS   read-write
+          STATUS       current
+           ::= { ospfTrapControl 1 }
+
+     ospfConfigErrorType OBJECT-TYPE
+          SYNTAX       INTEGER {
+                          badVersion (1),
+                          areaMismatch (2),
+                          unknownNbmaNbr (3), -- Router is DR eligible
+                          unknownVirtualNbr (4),
+                          authTypeMismatch(5),
+                          authFailure (6),
+                          netMaskMismatch (7),
+                          helloIntervalMismatch (8),
+                          deadIntervalMismatch (9),
+                          optionMismatch (10),
+                          mtuMismatch (11),
+                          duplicateRouterId (12),
+                          noError (13) }
+          MAX-ACCESS   read-only
+          STATUS   current
+          ::= { ospfTrapControl 2 }
+
+     ospfPacketType OBJECT-TYPE
+          SYNTAX       INTEGER {
+                          hello (1),
+                          dbDescript (2),
+                          lsReq (3),
+                          lsUpdate (4),
+                          lsAck (5),
+                          nullPacket (6) }
+          MAX-ACCESS   read-only
+          STATUS       current
+          ::= { ospfTrapControl 3 }
+
+
+
+
+
+
+     ospfPacketSrc OBJECT-TYPE
+          SYNTAX       IpAddress
+          MAX-ACCESS   read-only
+          STATUS       current
+          ::= { ospfTrapControl 4 }
+
+
+     ospfVirtIfStateChange NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfVirtIfAreaId,
+             ospfVirtIfNeighbor,
+             ospfVirtIfState  -- The new state
+             }
+          STATUS       current
+          ::= { ospfTraps 1 }
+
+     ospfNbrStateChange NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfNbrIpAddr,
+             ospfNbrAddressLessIndex,
+             ospfNbrRtrId,
+             ospfNbrState  -- The new state
+             }
+          STATUS       current
+          ::= { ospfTraps 2 }
+
+     ospfVirtNbrStateChange NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfVirtNbrArea,
+             ospfVirtNbrRtrId,
+             ospfVirtNbrState  -- The new state
+             }
+          STATUS       current
+          ::= { ospfTraps 3 }
+
+     ospfIfConfigError NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfIfIpAddress,
+             ospfAddressLessIf,
+             ospfPacketSrc,  -- The source IP address
+             ospfConfigErrorType, -- Type of error
+             ospfPacketType
+             }
+          STATUS       current
+          ::= { ospfTraps 4 }
+
+     ospfVirtIfConfigError NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfVirtIfAreaId,
+             ospfVirtIfNeighbor,
+             ospfConfigErrorType, -- Type of error
+
+
+
+
+
+             ospfPacketType
+             }
+          STATUS       current
+          ::= { ospfTraps 5 }
+
+     ospfIfAuthFailure NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfIfIpAddress,
+             ospfAddressLessIf,
+             ospfPacketSrc,  -- The source IP address
+             ospfConfigErrorType, -- authTypeMismatch or
+             ospfPacketType
+             }
+          STATUS       current
+          ::= { ospfTraps 6 }
+
+     ospfVirtIfAuthFailure NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfVirtIfAreaId,
+             ospfVirtIfNeighbor,
+             ospfConfigErrorType, -- authTypeMismatch or
+             ospfPacketType
+             }
+          STATUS       current
+
+
+
+
+
+
+          ::= { ospfTraps 7 }
+
+     ospfIfRxBadPacket NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfIfIpAddress,
+             ospfAddressLessIf,
+             ospfPacketSrc,  -- The source IP address
+             ospfPacketType
+             }
+          STATUS       current
+          ::= { ospfTraps 8 }
+
+     ospfVirtIfRxBadPacket NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+            ospfVirtIfAreaId,
+            ospfVirtIfNeighbor,
+            ospfPacketType
+            }
+          STATUS       current
+          ::= { ospfTraps 9 }
+
+     ospfTxRetransmit NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfIfIpAddress,
+             ospfAddressLessIf,
+             ospfNbrRtrId, -- Destination
+             ospfPacketType,
+             ospfLsdbType,
+             ospfLsdbLsid,
+             ospfLsdbRouterId
+             }
+           STATUS       current
+           ::= { ospfTraps 10 }
+
+
+
+
+
+     ospfVirtIfTxRetransmit NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfVirtIfAreaId,
+             ospfVirtIfNeighbor,
+             ospfPacketType,
+             ospfLsdbType,
+             ospfLsdbLsid,
+             ospfLsdbRouterId
+             }
+          STATUS       current
+          ::= { ospfTraps 11 }
+
+     ospfOriginateLsa NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfLsdbAreaId,  -- 0.0.0.0 for AS Externals
+             ospfLsdbType,
+             ospfLsdbLsid,
+             ospfLsdbRouterId
+             }
+          STATUS       current
+          ::= { ospfTraps 12 }
+
+     ospfMaxAgeLsa NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfLsdbAreaId,  -- 0.0.0.0 for AS Externals
+             ospfLsdbType,
+             ospfLsdbLsid,
+             ospfLsdbRouterId
+             }
+          STATUS       current
+          ::= { ospfTraps 13 }
+
+     ospfLsdbOverflow NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfExtLsdbLimit
+             }
+
+          STATUS       current
+          ::= { ospfTraps 14 }
+
+     ospfLsdbApproachingOverflow NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfExtLsdbLimit
+             }
+          STATUS       current
+          ::= { ospfTraps 15 }
+
+     ospfIfStateChange NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+             ospfIfIpAddress,
+             ospfAddressLessIf,
+             ospfIfState   -- The new state
+             }
+          STATUS       current
+          ::= { ospfTraps 16 }
+
+     ospfNssaTranslatorStatusChange NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+
+
+
+
+
+             ospfAreaId,
+             ospfAreaNssaTranslatorState -- The current translation
+             }
+          STATUS       current
+          ::= { ospfTraps 17 }
+
+     ospfRestartStatusChange NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+                    ospfRestartStatus,
+                    ospfRestartInterval,
+                    ospfRestartExitReason
+                  }
+          STATUS       current
+          ::= { ospfTraps 18 }
+
+     ospfNbrRestartHelperStatusChange NOTIFICATION-TYPE
+          OBJECTS { ospfRouterId, -- The originator of the trap
+                    ospfNbrIpAddr,
+                    ospfNbrAddressLessIndex,
+                    ospfNbrRtrId,
+                    ospfNbrRestartHelperStatus,
+                    ospfNbrRestartHelperAge,
+                    ospfNbrRestartHelperExitReason
+                  }
+          STATUS       current
+          ::= { ospfTraps 19 }
+
+     ospfVirtNbrRestartHelperStatusChange NOTIFICATION-TYPE
+
+
+
+
+
+          OBJECTS { ospfRouterId, -- The originator of the trap
+                    ospfVirtNbrArea,
+                    ospfVirtNbrRtrId,
+                    ospfVirtNbrRestartHelperStatus,
+                    ospfVirtNbrRestartHelperAge,
+                    ospfVirtNbrRestartHelperExitReason
+                  }
+          STATUS       current
+          ::= { ospfTraps 20 }
+
+
+   ospfTrapConformance OBJECT IDENTIFIER ::= { ospfTrap 3 }
+   ospfTrapGroups      OBJECT IDENTIFIER ::= { ospfTrapConformance 1 }
+   ospfTrapCompliances OBJECT IDENTIFIER ::= { ospfTrapConformance 2 }
+
+
+   ospfTrapCompliance MODULE-COMPLIANCE
+        STATUS       obsolete
+        MODULE       -- this module
+        MANDATORY-GROUPS { ospfTrapControlGroup }
+
+        GROUP       ospfTrapControlGroup
+        ::= { ospfTrapCompliances 1 }
+
+   ospfTrapCompliance2 MODULE-COMPLIANCE
+        STATUS       current
+        MODULE       -- this module
+        MANDATORY-GROUPS { ospfTrapControlGroup, ospfTrapEventGroup }
+        OBJECT       ospfConfigErrorType
+        MIN-ACCESS   accessible-for-notify
+
+
+
+
+
+        OBJECT       ospfPacketType
+        MIN-ACCESS   accessible-for-notify
+        OBJECT       ospfPacketSrc
+        MIN-ACCESS   accessible-for-notify
+        ::= { ospfTrapCompliances 2 }
+
+
+     ospfTrapControlGroup    OBJECT-GROUP
+          OBJECTS { ospfSetTrap,
+                    ospfConfigErrorType,
+                    ospfPacketType,
+                    ospfPacketSrc }
+          STATUS       current
+          ::= { ospfTrapGroups 1 }
+
+     ospfTrapEventGroup       NOTIFICATION-GROUP
+          NOTIFICATIONS {
+             ospfVirtIfStateChange,
+             ospfNbrStateChange,
+             ospfVirtNbrStateChange,
+             ospfIfConfigError,
+             ospfVirtIfConfigError,
+             ospfIfAuthFailure,
+             ospfVirtIfAuthFailure,
+             ospfIfRxBadPacket,
+             ospfVirtIfRxBadPacket,
+             ospfTxRetransmit,
+             ospfVirtIfTxRetransmit,
+             ospfOriginateLsa,
+             ospfMaxAgeLsa,
+             ospfLsdbOverflow,
+             ospfLsdbApproachingOverflow,
+             ospfIfStateChange,
+             ospfNssaTranslatorStatusChange,
+             ospfRestartStatusChange,
+             ospfNbrRestartHelperStatusChange,
+             ospfVirtNbrRestartHelperStatusChange
+             }
+
+
+
+
+
+          STATUS        current
+          ::= { ospfTrapGroups 2 }
+
+   END

@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2016 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.customtrap.util;
@@ -22,17 +15,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.customtrap.bean.CustomTrap;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.bean.ConvertValueConstant;
+import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.MessageConstant;
@@ -56,36 +49,76 @@ public class CustomTrapNotifier {
 	 * @param ruleList			ルールリスト
 	 * @param facilityIdList	ファシリティリスト
 	 * @param agentAddr			Agentアドレス
+	 * @return 通知情報リスト
 	 */
-	public void putString(List<CustomTrap> customtrapList, MonitorInfo monitorInfo, List<Integer> priorityBuffer,
-			List<MonitorStringValueInfo> ruleList, List<String> facilityIdList,String agentAddr,
+	public List<OutputBasicInfo> createStringOutputBasicInfoList(
+			List<CustomTrap> customtrapList, MonitorInfo monitorInfo, List<Integer> priorityBuffer,
+			List<MonitorStringValueInfo> monitorStringValueInfoList, List<String> facilityIdList,String agentAddr,
 			RunInstructionInfo runInstructionInfo) {
-		ArrayList<OutputBasicInfo> logOutputList = new ArrayList<OutputBasicInfo>();
+		List<OutputBasicInfo> rtn = new ArrayList<>();
 		for (int i = 0; i < customtrapList.size(); i++) {
 			CustomTrap customTrap = customtrapList.get(i);
-			MonitorStringValueInfo rule = ruleList.get(i);
-			String logFacilityId = facilityIdList.get(i);
+			MonitorStringValueInfo monitorStringValueInfo = monitorStringValueInfoList.get(i);
+			String facilityId = facilityIdList.get(i);
 			int priority = priorityBuffer.get(i);
 
-			OutputBasicInfo logOutput = makeStringMessage(customTrap, monitorInfo, rule, logFacilityId, agentAddr, priority);
-			logOutputList.add(logOutput);
+			OutputBasicInfo output = new OutputBasicInfo();
+			output.setNotifyGroupId(NotifyGroupIdGenerator.generate(monitorInfo));
+			output.setMonitorId(monitorStringValueInfo.getMonitorId());
+			output.setPluginId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S);
+			output.setFacilityId(facilityId);
+	
+	
+			// 通知抑制を監視項目の「パターンマッチ表現」単位にするため、通知抑制用サブキーを設定する。
+			output.setSubKey(monitorStringValueInfo.getPattern());
+	
+			if (FacilityTreeAttributeConstant.UNREGISTERED_SCOPE.equals(facilityId)) {
+				// 未登録ノードの場合には送信元IPを表示する。
+				output.setScopeText(agentAddr);
+			} else {
+				// ファシリティのパスを設定する]
+				try {
+					String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
+					output.setScopeText(facilityPath);
+				} catch (Exception e) {
+					m_log.warn("makeStringMessage() cannot get facility path.(facilityId = " + facilityId + ") : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
+			}
+	
+			output.setApplication(monitorInfo.getApplication());
+	
+			// メッセージに#[LOG_LINE]が入力されている場合は、 オリジナルメッセージに置換する。
+			if (monitorStringValueInfo.getMessage() != null) {
+				String str = monitorStringValueInfo.getMessage().replace("#[LOG_LINE]", customTrap.getMsg());
+				// DBよりオリジナルメッセージ出力文字数を取得
+				int maxLen = HinemosPropertyCommon.monitor_log_line_max_length.getIntegerValue();
+				m_log.info("monitor.log.line.max.length = " + maxLen);
+				if (str.length() > maxLen) {
+					str = str.substring(0, maxLen);
+				}
+				output.setMessage(str);
+			}
+	
+			output.setMessageOrg(customTrap.getOrgMsg());
+			output.setPriority(priority);
+			output.setGenerationDate(customTrap.getSampledTime());
 
 			if (runInstructionInfo != null) {
 				// 監視ジョブ
 				MonitorJobWorker.endMonitorJob(
 						runInstructionInfo,
 						HinemosModuleConstant.MONITOR_CUSTOMTRAP_S,
-						makeJobOrgMessageString(monitorInfo, logOutput.getMessageOrg(), logOutput.getMessage()),
+						makeJobOrgMessageString(monitorInfo, output.getMessageOrg(), output.getMessage()),
 						"",
 						RunStatusConstant.END,
 						MonitorJobWorker.getReturnValue(runInstructionInfo, priority));
+			} else {
+				// 監視ジョブ以外
+				rtn.add(output);
 			}
 		}
-
-		// メッセージ送信処理
-		if (runInstructionInfo == null) {
-			new NotifyControllerBean().notify(logOutputList, NotifyGroupIdGenerator.generate(monitorInfo));
-		}
+		return rtn;
 	}
 
 	/**
@@ -97,143 +130,111 @@ public class CustomTrapNotifier {
 	 * @param facilityIdList	ファシリティリスト
 	 * @param agentAddr			Agentアドレス
 	 * @param valueBuffer		Valueリスト
+	 * @return 通知情報リスト
 	 */
-	public void putNum(List<CustomTrap> customtrapList, MonitorInfo monitorInfo, List<Integer> priorityBuffer,
+	public List<OutputBasicInfo> createNumOutputBasicInfoList(List<CustomTrap> customtrapList, MonitorInfo monitorInfo, List<Integer> priorityBuffer,
 			List<String> facilityIdList, String agentAddr, List<Double> valueBuffer, RunInstructionInfo runInstructionInfo) {
-		ArrayList<OutputBasicInfo> logOutputList = new ArrayList<OutputBasicInfo>();
+		List<OutputBasicInfo> rtn = new ArrayList<>();
 		for (int i = 0; i < customtrapList.size(); i++) {
 			CustomTrap customTrap = customtrapList.get(i);
-			String logFacilityId = facilityIdList.get(i);
+			String facilityId = facilityIdList.get(i);
 			int priority = priorityBuffer.get(i);
 			Double value = valueBuffer.get(i);
 
-			OutputBasicInfo logOutput = makeNumMessage(customTrap, monitorInfo, logFacilityId, agentAddr, priority, value);
-			logOutputList.add(logOutput);
+			OutputBasicInfo output = new OutputBasicInfo();
+			output.setNotifyGroupId(NotifyGroupIdGenerator.generate(monitorInfo));
+			output.setMonitorId(monitorInfo.getMonitorId());
+			output.setPluginId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N);
+			output.setSubKey(customTrap.getKey());
+			output.setPriority(priority);
+			output.setApplication(monitorInfo.getApplication());
+			output.setFacilityId(facilityId);
+	
+			if (FacilityTreeAttributeConstant.UNREGISTERED_SCOPE.equals(facilityId)) {
+				// 未登録ノードの場合には送信元IPを表示する。
+				output.setScopeText(agentAddr);
+			} else {
+				// ファシリティのパスを設定する]
+				try {
+					String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
+					output.setScopeText(facilityPath);
+				} catch (Exception e) {
+					m_log.warn("makeNumMessage() cannot get facility path.(facilityId = " + facilityId + ") : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
+			}
+	
+			output.setGenerationDate(customTrap.getSampledTime());
+			String msg =null;
+			if (monitorInfo.getCustomTrapCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_DELTA) {
+				msg = "DIFF VALUE : " + customTrap.getKey() + "=" + value;
+			}else{
+				msg = "VALUE : " + customTrap.getKey() + "=" + value;
+			}
+	
+			output.setMessage(msg);
+			output.setMessageOrg(customTrap.getOrgMsg());
+
 			if (runInstructionInfo != null) {
 				// 監視ジョブ
 				MonitorJobWorker.endMonitorJob(
 					runInstructionInfo,
 					HinemosModuleConstant.MONITOR_CUSTOMTRAP_N,
-					makeJobOrgMessageNum(monitorInfo, logOutput.getMessageOrg(), logOutput.getMessage()),
+					makeJobOrgMessageNum(monitorInfo, output.getMessageOrg(), output.getMessage()),
 					"",
 					RunStatusConstant.END,
 					MonitorJobWorker.getReturnValue(runInstructionInfo, priority));
+			} else {
+				// 監視ジョブ以外
+				rtn.add(output);
 			}
 		}
-
-		// メッセージ送信処理
-		if (runInstructionInfo == null) {
-			new NotifyControllerBean().notify(logOutputList, NotifyGroupIdGenerator.generate(monitorInfo));
-		}
+		return rtn;
 	}
 
 	/**
-	 * 引数で指定された情報より、カスタムトラップ（文字列）メッセージを生成し返します。
+	 * カスタムトラップ監視（数値）の将来予測を通知します。
 	 * 
-	 * @param customTrap	受信したカスタムトラップ情報
-	 * @param monInfo		モニタ情報
-	 * @param monitorStringValueInfo	文字列監視情報
-	 * @param facilityId	ファシリティID
-	 * @param agentAddr		Agentアドレス
-	 * @param priority		プライオリティ
-	 * @return				成したメッセージ
+	 * @param customtrapList		受信データリスト
+	 * @param monitorInfo			監視情報
+	 * @param agentAddr				Agentアドレス
+	 * @param collectResultBuffer	監視結果リスト
+	 * @return 通知情報リスト
 	 */
-	private static OutputBasicInfo makeStringMessage(CustomTrap customTrap, MonitorInfo monInfo,
-			MonitorStringValueInfo monitorStringValueInfo, String facilityId, String agentAddr,int priority) {
-
-		OutputBasicInfo output = new OutputBasicInfo();
-		output.setMonitorId(monitorStringValueInfo.getMonitorId());
-		output.setPluginId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S);
-		output.setFacilityId(facilityId);
-
-
-		// 通知抑制を監視項目の「パターンマッチ表現」単位にするため、通知抑制用サブキーを設定する。
-		output.setSubKey(monitorStringValueInfo.getPattern());
-
-		if (FacilityTreeAttributeConstant.UNREGISTERED_SCOPE.equals(facilityId)) {
-			// 未登録ノードの場合には送信元IPを表示する。
-			output.setScopeText(agentAddr);
-		} else {
-			// ファシリティのパスを設定する]
-			try {
-				String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
-				output.setScopeText(facilityPath);
-			} catch (Exception e) {
-				m_log.warn("makeStringMessage() cannot get facility path.(facilityId = " + facilityId + ") : "
-						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+	public List<OutputBasicInfo> createPredictionOutputBasicInfoList(
+			List<CustomTrap> customtrapList, MonitorInfo monitorInfo, 
+			String agentAddr, List<MonitorRunResultInfo> collectResultBuffer) {
+		List<OutputBasicInfo> rtn = new ArrayList<>();
+		for (int i = 0; i < collectResultBuffer.size(); i++) {
+			MonitorRunResultInfo collectResult = collectResultBuffer.get(i);
+			OutputBasicInfo output = new OutputBasicInfo();
+			output.setNotifyGroupId(collectResult.getNotifyGroupId());
+			output.setMonitorId(monitorInfo.getMonitorId());
+			output.setPluginId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N);
+			output.setSubKey(collectResult.getDisplayName());
+			output.setPriority(collectResult.getPriority());
+			output.setApplication(collectResult.getApplication());
+			output.setFacilityId(collectResult.getFacilityId());
+	
+			if (FacilityTreeAttributeConstant.UNREGISTERED_SCOPE.equals(output.getFacilityId())) {
+				// 未登録ノードの場合には送信元IPを表示する。
+				output.setScopeText(agentAddr);
+			} else {
+				// ファシリティのパスを設定する]
+				try {
+					String facilityPath = new RepositoryControllerBean().getFacilityPath(output.getFacilityId(), null);
+					output.setScopeText(facilityPath);
+				} catch (Exception e) {
+					m_log.warn("makeNumMessage() cannot get facility path.(facilityId = " + output.getFacilityId() + ") : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
 			}
+			output.setGenerationDate(collectResult.getNodeDate());
+			output.setMessage(collectResult.getMessage());
+			output.setMessageOrg(collectResult.getMessageOrg());
+			rtn.add(output);
 		}
-
-		output.setApplication(monInfo.getApplication());
-
-		// メッセージに#[LOG_LINE]が入力されている場合は、 オリジナルメッセージに置換する。
-		if (monitorStringValueInfo.getMessage() != null) {
-			String str = monitorStringValueInfo.getMessage().replace("#[LOG_LINE]", customTrap.getMsg());
-			// DBよりオリジナルメッセージ出力文字数を取得
-			int maxLen = HinemosPropertyUtil.getHinemosPropertyNum("monitor.log.line.max.length", Long.valueOf(256)).intValue();
-			m_log.info("monitor.log.line.max.length = " + maxLen);
-			if (str.length() > maxLen) {
-				str = str.substring(0, maxLen);
-			}
-			output.setMessage(str);
-		}
-
-		output.setMessageOrg(customTrap.getOrgMsg());
-		output.setPriority(priority);
-		output.setGenerationDate(customTrap.getSampledTime());
-
-		return output;
-	}
-
-	/**
-	 * 引数で指定された情報より、カスタムトラップ（文字列）メッセージを生成し返します。
-	 * 
-	 * @param customTrap	受信したカスタムトラップ情報
-	 * @param monInfo		モニタ情報
-	 * @param facilityId	ファシリティID
-	 * @param priority		プライオリティ
-	 * @param agentAddr		Agentアドレス
-	 * @param value			受信した値
-	 * @return				作成したメッセージ
-	 */
-	private static OutputBasicInfo makeNumMessage(CustomTrap customTrap, MonitorInfo monInfo, String facilityId,String agentAddr,
-			int priority, Double value) {
-		// Local Variable
-		OutputBasicInfo notifyInfo = null;
-		
-		notifyInfo = new OutputBasicInfo();
-		notifyInfo.setMonitorId(monInfo.getMonitorId());
-		notifyInfo.setPluginId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N);
-		notifyInfo.setSubKey(customTrap.getKey());
-		notifyInfo.setPriority(priority);
-		notifyInfo.setApplication(monInfo.getApplication());
-		notifyInfo.setFacilityId(facilityId);
-
-		if (FacilityTreeAttributeConstant.UNREGISTERED_SCOPE.equals(facilityId)) {
-			// 未登録ノードの場合には送信元IPを表示する。
-			notifyInfo.setScopeText(agentAddr);
-		} else {
-			// ファシリティのパスを設定する]
-			try {
-				String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
-				notifyInfo.setScopeText(facilityPath);
-			} catch (Exception e) {
-				m_log.warn("makeNumMessage() cannot get facility path.(facilityId = " + facilityId + ") : "
-						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			}
-		}
-
-		notifyInfo.setGenerationDate(customTrap.getSampledTime());
-		String msg =null;
-		if (monInfo.getCustomTrapCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_DELTA) {
-			msg = "DIFF VALUE : " + customTrap.getKey() + "=" + value;
-		}else{
-			msg = "VALUE : " + customTrap.getKey() + "=" + value;
-		}
-
-		notifyInfo.setMessage(msg);
-		notifyInfo.setMessageOrg(customTrap.getOrgMsg());
-		return notifyInfo;
+		return rtn;
 	}
 
 	/**

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.factory;
@@ -35,11 +28,11 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.SnmpSecurityLevelConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityDuplicate;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.repository.NodeSearchTask;
 import com.clustercontrol.repository.bean.NodeInfoDeviceSearch;
 import com.clustercontrol.repository.model.NodeInfo;
@@ -63,8 +56,6 @@ public class NodeSearcher {
 	// 二重起動を防ぐためのセマフォ
 	private static final Semaphore duplicateExec = new Semaphore(1);
 
-	public static final String MaxSearchNodeKey = "repository.node.search.max.node"; 
-
 	private final ExecutorService _executorService = Executors.newCachedThreadPool(
 			new ThreadFactory() {
 		private volatile int _count = 0;
@@ -84,7 +75,7 @@ public class NodeSearcher {
 
 		long startTime = HinemosTime.currentTimeMillis();
 		// クライアントのタイムアウト(デフォルト60秒)よりも短くしておく。
-		int maxMsec = HinemosPropertyUtil.getHinemosPropertyNum("repository.node.search.timeout", Long.valueOf(50 * 1000)).intValue();
+		int maxMsec = HinemosPropertyCommon.repository_node_search_timeout.getIntegerValue();
 		List<NodeInfoDeviceSearch> nodeList = new ArrayList<NodeInfoDeviceSearch>();
 
 		if (duplicateExec.tryAcquire()) {
@@ -150,7 +141,7 @@ public class NodeSearcher {
 				try {
 					//ノード一覧を取得
 					//256ノードより多い場合はエラーとする。
-					if (ipAddressList.size() > HinemosPropertyUtil.getHinemosPropertyNum(MaxSearchNodeKey, Long.valueOf(256))) {
+					if (ipAddressList.size() > HinemosPropertyCommon.repository_node_search_max_node.getNumericValue()) {
 						m_log.info(MessageConstant.MESSAGE_EXCEED_LIMIT_NUMBER_256NODES.getMessage());
 						throw new HinemosUnknown(MessageConstant.MESSAGE_EXCEED_LIMIT_NUMBER_256NODES.getMessage());
 					}
@@ -160,7 +151,7 @@ public class NodeSearcher {
 					List<Future<NodeInfoDeviceSearch>> list = new ArrayList<>();
 					for (String ipAddress : ipAddressList) {
 						if (list.size() > 0) {
-							Thread.sleep(HinemosPropertyUtil.getHinemosPropertyNum("repository.node.search.delay", Long.valueOf(10)));
+							Thread.sleep(HinemosPropertyCommon.repository_node_search_delay.getNumericValue());
 						}
 						try {
 							InetAddress address = InetAddress.getByName(ipAddress);

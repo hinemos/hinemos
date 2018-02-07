@@ -1,0 +1,26 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"LogFormatType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Description",
+			"TimestampRegex",
+			"TimestampFormat",
+			"OwnerRoleId",
+			"LogFormatKey",
+			"LogFormatKey.*.Description",
+			"LogFormatKey.*.value_type",
+			"LogFormatKey.*.key_type",
+			"LogFormatKey.*.pattern",
+			"LogFormatKey.*.value"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"LogFormatInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

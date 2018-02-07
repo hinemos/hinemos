@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.systemlog.bean;
@@ -28,8 +21,8 @@ import java.util.Locale;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -40,7 +33,7 @@ public class SyslogMessage implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	// システムログ日付の有効範囲(デフォルト値)
-	private static final int SYSLOG_DEFAULT_PERIOD_HOUR = 24;
+	public static final int SYSLOG_DEFAULT_PERIOD_HOUR = 24;
 	// システムログフォーマットのインデックス：プライオリティ
 	private static final int SYSLOG_FORMAT_PRIORITY = 0;
 	// システムログフォーマットのインデックス：月
@@ -110,12 +103,23 @@ public class SyslogMessage implements Serializable {
 			MessageFormat syslogFormat = new MessageFormat("<{0,number,integer}>{1} {2} {3}:{4}:{5} {6} {7}", Locale.ENGLISH);
 
 			// 文字列をパースしてヘッダ情報およびメッセージを取得する
-			Object[] syslogArgs = syslogFormat.parse(syslog);
-			
-			// RFC3164を準拠し、月と日の間にスペースが付加され日が取得できない場合、再フォーマットを実施する
-			if ("".equals(syslogArgs[SYSLOG_FORMAT_DAY])) {
-				syslogFormat = new MessageFormat("<{0,number,integer}>{1}  {2} {3}:{4}:{5} {6} {7}", Locale.ENGLISH);
+			Object[] syslogArgs = null;
+			try {
 				syslogArgs = syslogFormat.parse(syslog);
+			} catch (ParseException e) {
+				log.info("ParseException1 : message=" + e.getMessage() + ", syslog=" + syslog);
+				throw e;
+			} 
+			
+			if ("".equals(syslogArgs[SYSLOG_FORMAT_DAY])) {
+				try {
+				// RFC3164を準拠し、月と日の間にスペースが付加され日が取得できない場合、再フォーマットを実施する
+					syslogFormat = new MessageFormat("<{0,number,integer}>{1}  {2} {3}:{4}:{5} {6} {7}", Locale.ENGLISH);
+					syslogArgs = syslogFormat.parse(syslog);
+				} catch (ParseException e) {
+					log.info("ParseException2 : message=" + e.getMessage() + ", syslog=" + syslog);
+					throw e;
+				}
 			}
 
 			if (syslogArgs == null)
@@ -129,7 +133,7 @@ public class SyslogMessage implements Serializable {
 			}
 
 			// システムログ時刻が現在時刻より未来の場合に許容する時間(H)
-			Integer syslogEffectiveTime = HinemosPropertyUtil.getHinemosPropertyNum("monitor.systemlog.period.hour", Long.valueOf(SYSLOG_DEFAULT_PERIOD_HOUR)).intValue();
+			Integer syslogEffectiveTime = HinemosPropertyCommon.monitor_systemlog_period_hour.getIntegerValue();
 
 			// 0以下が設定された場合は、デフォルト値に置き換え
 			if (syslogEffectiveTime <= 0) {

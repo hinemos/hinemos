@@ -1,0 +1,51 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitor",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Ignore", "propNames":[]}
+	]},
+
+	{
+	"propName":"numericValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"priority"},
+		{
+		"type":"ColumnOverrides",
+		"values":[
+			{"p":"thresholdLowerLimit", "c":{"type":"Column", "columnName":"MonitorSql_thresholdLowerLimit"}}, {"p":"thresholdUpperLimit", "c":{"type":"Column", "columnName":"MonitorSql_thresholdUpperLimit"}}
+		]},
+		{"type":"Ignore", "propNames":["priority"]}
+	]},
+	
+	{
+	"propName":"numericChangeAmount",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"priority"},
+		{
+		"type":"ColumnOverrides",
+		"values":[
+			{"p":"thresholdLowerLimit", "c":{"type":"Column", "columnName":"MonitorChangeValueInfo_thresholdLowerLimit"}}, {"p":"thresholdUpperLimit", "c":{"type":"Column", "columnName":"MonitorChangeValueInfo_thresholdUpperLimit"}}
+		]},
+		{"type":"Ignore", "propNames":["priority"]}
+	]},
+
+	{
+	"propName":"stringValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"orderNo"},
+		{"type":"Column", "columnName":"MonitorStringValueInfo_stringValue"},
+		{"type":"Ignore", "propNames":["orderNo"]}
+	]},
+
+	{
+	"propName":"sqlInfo",
+	"annotations":[
+		{"type":"Ignore", "propNames":["MonitorId", "MonitorTypeId"]}
+	]}
+]
+}

@@ -1,21 +1,11 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
-/**
- * ジョブの多重度をキャッシュするクラス
- */
 package com.clustercontrol.jobmanagement.util;
 
 import java.io.Serializable;
@@ -407,83 +397,82 @@ public class JobMultiplicityCache {
 	public static synchronized void refresh() {
 		List<JobSessionJobEntityPK> execJobList = new ArrayList<JobSessionJobEntityPK>();
 		
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		if (!jtm.isNestedEm()) {
-			m_log.warn("refresh() : transaction has not been begined.");
-			jtm.close();
-			return;
-		}
-		m_log.info("cache refresh start");
-		long start = System.currentTimeMillis();
-		long time1, time2, time3;
-		
-		HinemosEntityManager em = jtm.getEntityManager();
-		
-		try {
-			_lock.writeLock();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			if (!jtm.isNestedEm()) {
+				m_log.warn("refresh() : transaction has not been begined.");
+				return;
+			}
+			m_log.info("cache refresh start");
+			long start = System.currentTimeMillis();
+			long time1, time2, time3;
 			
-			HashMap<String, Queue<JobSessionNodeEntityPK>> runningCache = new HashMap<String, Queue<JobSessionNodeEntityPK>>();
-			storeWaitingCache(new HashMap<String, Queue<JobSessionNodeEntityPK>>());
-			
-			// runningQueueの再構築
+			try {
+				_lock.writeLock();
+				
+				HashMap<String, Queue<JobSessionNodeEntityPK>> runningCache = new HashMap<String, Queue<JobSessionNodeEntityPK>>();
+				storeWaitingCache(new HashMap<String, Queue<JobSessionNodeEntityPK>>());
+				
+				// runningQueueの再構築
+				{
+					// オブジェクト権限チェックなし
+					List<JobSessionNodeEntity> nodeList = em.createNamedQuery("JobSessionNodeEntity.findByStatus", JobSessionNodeEntity.class, ObjectPrivilegeMode.NONE)
+							.setParameter("status", StatusConstant.TYPE_RUNNING).getResultList();
+					for (JobSessionNodeEntity node : nodeList) {
+						String facilityId = node.getId().getFacilityId();
+						Queue<JobSessionNodeEntityPK> runningQueue = runningCache.get(facilityId);
+						if (runningQueue == null) {
+							runningQueue = new LinkedList<JobSessionNodeEntityPK>();
+							runningCache.put(facilityId, runningQueue);
+						}
+						m_log.debug("refresh add runningQueue : " + node.getId());
+						runningQueue.offer(node.getId());
+					}
+				}
+				
+				storeRunningCache(runningCache);
+			} finally {
+				_lock.writeUnlock();
+			}
+			time1 = System.currentTimeMillis() - start;
+			start = System.currentTimeMillis();
+
+			// 履歴削除により多重度が下がったノードを実行させるlistを作成
 			{
 				// オブジェクト権限チェックなし
-				List<JobSessionNodeEntity> nodeList = em.createNamedQuery("JobSessionNodeEntity.findByStatus", JobSessionNodeEntity.class, ObjectPrivilegeMode.NONE)
+				List<JobSessionJobEntity> jobList = em.createNamedQuery("JobSessionJobEntity.findByStatus", JobSessionJobEntity.class, ObjectPrivilegeMode.NONE)
 						.setParameter("status", StatusConstant.TYPE_RUNNING).getResultList();
-				for (JobSessionNodeEntity node : nodeList) {
-					String facilityId = node.getId().getFacilityId();
-					Queue<JobSessionNodeEntityPK> runningQueue = runningCache.get(facilityId);
-					if (runningQueue == null) {
-						runningQueue = new LinkedList<JobSessionNodeEntityPK>();
-						runningCache.put(facilityId, runningQueue);
+				for (JobSessionJobEntity job : jobList) {
+					if (job.getJobInfoEntity() == null || job.getJobInfoEntity().getJobType() == null) {
+						m_log.info("wait job is deleted"); // 待機中のジョブが履歴削除により消された場合にこのルートを通る。
+						continue;
 					}
-					m_log.debug("refresh add runningQueue : " + node.getId());
-					runningQueue.offer(node.getId());
+					if (job.getJobInfoEntity().getJobType() != JobConstant.TYPE_JOB
+							&& job.getJobInfoEntity().getJobType() != JobConstant.TYPE_APPROVALJOB
+							&& job.getJobInfoEntity().getJobType() != JobConstant.TYPE_MONITORJOB) {
+						continue;
+					}
+					execJobList.add(job.getId());
 				}
 			}
-			
-			storeRunningCache(runningCache);
-		} finally {
-			_lock.writeUnlock();
-		}
-		time1 = System.currentTimeMillis() - start;
-		start = System.currentTimeMillis();
+			time2 = System.currentTimeMillis() - start;
+			start = System.currentTimeMillis();
 
-		// 履歴削除により多重度が下がったノードを実行させるlistを作成
-		{
-			// オブジェクト権限チェックなし
-			List<JobSessionJobEntity> jobList = em.createNamedQuery("JobSessionJobEntity.findByStatus", JobSessionJobEntity.class, ObjectPrivilegeMode.NONE)
-					.setParameter("status", StatusConstant.TYPE_RUNNING).getResultList();
-			for (JobSessionJobEntity job : jobList) {
-				if (job.getJobInfoEntity() == null || job.getJobInfoEntity().getJobType() == null) {
-					m_log.info("wait job is deleted"); // 待機中のジョブが履歴削除により消された場合にこのルートを通る。
-					continue;
+			// execJobListで実行
+			for (JobSessionJobEntityPK id : execJobList) {
+				try {
+					m_log.info("refresh() startNode=" + id);
+					new JobSessionNodeImpl().startNode(id.getSessionId(), id.getJobunitId(), id.getJobId());
+				} catch (InvalidRole e) {
+					m_log.warn("refresh " + e.getMessage());
+				} catch (JobInfoNotFound e) {
+					m_log.warn("refresh " + e.getMessage());
 				}
-				if (job.getJobInfoEntity().getJobType() != JobConstant.TYPE_JOB
-						&& job.getJobInfoEntity().getJobType() != JobConstant.TYPE_APPROVALJOB
-						&& job.getJobInfoEntity().getJobType() != JobConstant.TYPE_MONITORJOB) {
-					continue;
-				}
-				execJobList.add(job.getId());
 			}
+			time3 = System.currentTimeMillis() - start;
+			m_log.info("cache refresh end " + time1 + "+" + time2 + "+" + time3 + "ms");
+			print();
 		}
-		time2 = System.currentTimeMillis() - start;
-		start = System.currentTimeMillis();
-
-		// execJobListで実行
-		for (JobSessionJobEntityPK id : execJobList) {
-			try {
-				m_log.info("refresh() startNode=" + id);
-				new JobSessionNodeImpl().startNode(id.getSessionId(), id.getJobunitId(), id.getJobId());
-			} catch (InvalidRole e) {
-				m_log.warn("refresh " + e.getMessage());
-			} catch (JobInfoNotFound e) {
-				m_log.warn("refresh " + e.getMessage());
-			}
-		}
-		time3 = System.currentTimeMillis() - start;
-		m_log.info("cache refresh end " + time1 + "+" + time2 + "+" + time3 + "ms");
-		print();
 	}
 
 	private static void print() {

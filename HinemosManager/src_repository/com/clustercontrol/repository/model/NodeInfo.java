@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.repository.model;
 
 import java.io.Serializable;
@@ -22,8 +30,8 @@ import com.clustercontrol.bean.SnmpSecurityLevelConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.util.CryptUtil;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 
 
 
@@ -885,14 +893,16 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	 *
 	 */
 	public void deleteNodeCpuEntities(List<NodeDeviceInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<NodeCpuInfo> list = this.getNodeCpuInfo();
-		Iterator<NodeCpuInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			NodeCpuInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NodeCpuInfo> list = this.getNodeCpuInfo();
+			Iterator<NodeCpuInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				NodeCpuInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -904,14 +914,16 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	 *
 	 */
 	public void deleteNodeDeviceEntities(List<NodeDeviceInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<NodeGeneralDeviceInfo> list = this.getNodeDeviceInfo();
-		Iterator<NodeGeneralDeviceInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			NodeGeneralDeviceInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NodeGeneralDeviceInfo> list = this.getNodeDeviceInfo();
+			Iterator<NodeGeneralDeviceInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				NodeGeneralDeviceInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -923,14 +935,16 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	 *
 	 */
 	public void deleteNodeDiskEntities(List<NodeDeviceInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<NodeDiskInfo> list = this.getNodeDiskInfo();
-		Iterator<NodeDiskInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			NodeDiskInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NodeDiskInfo> list = this.getNodeDiskInfo();
+			Iterator<NodeDiskInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				NodeDiskInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -942,14 +956,16 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	 *
 	 */
 	public void deleteNodeFilesystemEntities(List<NodeDeviceInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<NodeFilesystemInfo> list = this.getNodeFilesystemInfo();
-		Iterator<NodeFilesystemInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			NodeFilesystemInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NodeFilesystemInfo> list = this.getNodeFilesystemInfo();
+			Iterator<NodeFilesystemInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				NodeFilesystemInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -961,14 +977,16 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	 *
 	 */
 	public void deleteNodeHostnameEntities(List<NodeHostnameInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<NodeHostnameInfo> list = this.getNodeHostnameInfo();
-		Iterator<NodeHostnameInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			NodeHostnameInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NodeHostnameInfo> list = this.getNodeHostnameInfo();
+			Iterator<NodeHostnameInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				NodeHostnameInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -980,14 +998,16 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	 *
 	 */
 	public void deleteNodeMemoryEntities(List<NodeDeviceInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<NodeMemoryInfo> list = this.getNodeMemoryInfo();
-		Iterator<NodeMemoryInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			NodeMemoryInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NodeMemoryInfo> list = this.getNodeMemoryInfo();
+			Iterator<NodeMemoryInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				NodeMemoryInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -999,14 +1019,16 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	 *
 	 */
 	public void deleteNodeNetworkInterfaceEntities(List<NodeDeviceInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<NodeNetworkInterfaceInfo> list = this.getNodeNetworkInterfaceInfo();
-		Iterator<NodeNetworkInterfaceInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			NodeNetworkInterfaceInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NodeNetworkInterfaceInfo> list = this.getNodeNetworkInterfaceInfo();
+			Iterator<NodeNetworkInterfaceInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				NodeNetworkInterfaceInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -1018,14 +1040,16 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	 *
 	 */
 	public void deleteNodeNoteEntities(List<NodeNoteInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<NodeNoteInfo> list = this.getNodeNoteInfo();
-		Iterator<NodeNoteInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			NodeNoteInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NodeNoteInfo> list = this.getNodeNoteInfo();
+			Iterator<NodeNoteInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				NodeNoteInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -1037,14 +1061,16 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	 *
 	 */
 	public void deleteNodeVariableEntities(List<NodeVariableInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<NodeVariableInfo> list = this.getNodeVariableInfo();
-		Iterator<NodeVariableInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			NodeVariableInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NodeVariableInfo> list = this.getNodeVariableInfo();
+			Iterator<NodeVariableInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				NodeVariableInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -1361,7 +1387,7 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	@Transient
 	public int getNodeMonitorDelaySec() {
 		// Hinemosプロパティ[monitor.node.delay.fix]がtrueの場合は0固定とする
-		if (HinemosPropertyUtil.getHinemosPropertyBool("monitor.node.delay.fix", false)) {
+		if (HinemosPropertyCommon.monitor_node_delay_fix.getBooleanValue()) {
 			return 0;
 		}
 		

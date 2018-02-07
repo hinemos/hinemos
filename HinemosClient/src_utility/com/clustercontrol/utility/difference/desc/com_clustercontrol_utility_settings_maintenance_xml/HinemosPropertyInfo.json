@@ -1,0 +1,38 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"key",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"valueType",
+	"annotations":[
+		{"type":"Column", "columnName":"HinemosPropertyInfo_valueType"},
+		{"type":"Translate", "values":[{"value":"0", "name":"name_hyphen"}, {"value":"1", "name":"name_string"}, 
+										{"value":"2", "name":"name_num"}, {"value":"3", "name":"name_truth"}]}
+	]},
+		
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"HinemosPropertyInfo_value"}
+	]},
+	
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"HinemosPropertyInfo_description"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"HinemosPropertyInfo_ownerRoleId"}
+	]}
+]
+}

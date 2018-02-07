@@ -1,0 +1,24 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"ReporingTemplateInfoType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"TemplateSetName",
+			"Description",
+			"OwnerRoleId",
+			"TemplateDetailInfo",
+			"TemplateDetailInfo.*.OrderNo",
+			"TemplateDetailInfo.*.Description",
+			"TemplateDetailInfo.*.TemplateId",
+			"TemplateDetailInfo.*.TitleName"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"TemplateInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.factory;
@@ -58,13 +51,13 @@ public class ModifyNotifyRelation {
 	public boolean add(Collection<NotifyRelationInfo> info) throws HinemosUnknown {
 		NotifyRelationInfo relation = null;
 
-		try
-		{
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
 			if(info != null){
 				// システム通知イベント情報を挿入
 				Iterator<NotifyRelationInfo> it= info.iterator();
 
-				HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 				while(it.hasNext()){
 					relation = it.next();
 
@@ -106,8 +99,8 @@ public class ModifyNotifyRelation {
 	public boolean modify(Collection<NotifyRelationInfo> info, String notifyGroupId) throws HinemosUnknown, NotifyNotFound {
 		NotifyRelationInfo relation = null;
 		m_log.debug("ModifyNotifyRelation.modify() notifyGroupId = " + notifyGroupId);
-		try
-		{
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			/**
 			 * 通知グループと通知IDは更新のたびに内容が変わる可能性があるので、
 			 * findByPKでデータを読み出し更新するのでは、消え残る可能性がある。
@@ -128,6 +121,7 @@ public class ModifyNotifyRelation {
 						// 通知情報を検索
 						m_log.debug("NotifyRelation ADD before : notifyGroupId = " + relation.getNotifyGroupId() + ", notifyId = " + relation.getNotifyId());
 						NotifyRelationInfo entity = new NotifyRelationInfo(relation.getNotifyGroupId(), relation.getNotifyId());
+						em.persist(entity);
 						entity.setNotifyType(relation.getNotifyType());
 						m_log.debug("NotifyRelation ADD : notifyGroupId = " + entity.getId().getNotifyGroupId() + ", notifyId = " + entity.getId().getNotifyId());
 					}
@@ -156,11 +150,8 @@ public class ModifyNotifyRelation {
 	 * @throws HinemosUnknown
 	 */
 	public boolean delete(String notifyGroupId) throws HinemosUnknown {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		HinemosEntityManager em = jtm.getEntityManager();
-
-		try
-		{
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			List<NotifyRelationInfo> notifies = QueryUtil.getNotifyRelationInfoByNotifyGroupId(notifyGroupId);
 
 			Iterator<NotifyRelationInfo> it = notifies.iterator();

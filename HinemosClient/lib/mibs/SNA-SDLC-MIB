@@ -1,0 +1,1668 @@
+SNA-SDLC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+    Counter32, Integer32, TimeTicks
+        FROM SNMPv2-SMI
+    DisplayString, RowStatus, TimeInterval
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF
+    mib-2, ifIndex, ifAdminStatus, ifOperStatus
+        FROM RFC1213-MIB;
+
+
+snaDLC MODULE-IDENTITY
+        LAST-UPDATED  "9411150000Z"
+        ORGANIZATION  "IETF SNA DLC MIB Working Group"
+
+
+::= { mib-2 41 }
+
+
+sdlc        OBJECT IDENTIFIER ::= { snaDLC 1 }
+
+
+
+
+
+
+
+
+
+sdlcPortGroup OBJECT IDENTIFIER ::= { sdlc 1 } -- Physical Ports
+sdlcLSGroup   OBJECT IDENTIFIER ::= { sdlc 2 } -- Logical Link Stations
+
+
+
+
+
+
+
+
+
+
+
+sdlcPortAdminTable  OBJECT-TYPE
+                    SYNTAX      SEQUENCE OF SdlcPortAdminEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                     ::= { sdlcPortGroup 1 }
+
+sdlcPortAdminEntry  OBJECT-TYPE
+                    SYNTAX      SdlcPortAdminEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                    INDEX   { ifIndex }
+                    ::= { sdlcPortAdminTable 1 }
+
+SdlcPortAdminEntry  ::= SEQUENCE
+{
+        sdlcPortAdminName           DisplayString,
+        sdlcPortAdminRole           INTEGER,
+        sdlcPortAdminType           INTEGER,
+        sdlcPortAdminTopology       INTEGER,
+        sdlcPortAdminISTATUS        INTEGER,
+        sdlcPortAdminACTIVTO        TimeInterval,
+        sdlcPortAdminPAUSE          TimeInterval,
+        sdlcPortAdminSERVLIM        Integer32,
+
+
+
+
+
+        sdlcPortAdminSlowPollTimer  TimeInterval
+}
+
+sdlcPortAdminName   OBJECT-TYPE
+                    SYNTAX      DisplayString (SIZE (1..10))
+                    MAX-ACCESS  read-write
+                    STATUS      current
+                    ::= { sdlcPortAdminEntry 1 }
+
+sdlcPortAdminRole   OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                        primary(1),
+                        secondary(2),
+                        negotiable(3)
+                    }
+                    MAX-ACCESS  read-write
+                    STATUS      current
+                    ::= { sdlcPortAdminEntry 2 }
+
+sdlcPortAdminType   OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+
+
+
+
+
+                         leased(1),
+                         switched(2)
+                    }
+                    MAX-ACCESS  read-write
+                    STATUS      current
+                    DEFVAL { leased }
+                    ::= { sdlcPortAdminEntry 3 }
+
+sdlcPortAdminTopology  OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         pointToPoint(1),
+                         multipoint(2)
+                    }
+                    MAX-ACCESS  read-write
+                    STATUS      current
+                    DEFVAL { pointToPoint }
+                    ::= { sdlcPortAdminEntry 4 }
+
+sdlcPortAdminISTATUS  OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         inactive(1),
+                         active(2)
+                    }
+                    MAX-ACCESS  read-write
+                    STATUS      current
+                    DEFVAL { active }
+                    ::= { sdlcPortAdminEntry 5 }
+
+sdlcPortAdminACTIVTO    OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-write
+                    STATUS      current
+                    DEFVAL { 0 }
+                    ::= { sdlcPortAdminEntry 6 }
+
+sdlcPortAdminPAUSE  OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-write
+                    STATUS      current
+                    DEFVAL { 200 }
+                    ::= { sdlcPortAdminEntry 7 }
+
+sdlcPortAdminSERVLIM OBJECT-TYPE
+                    SYNTAX      Integer32
+                    MAX-ACCESS  read-write
+                    STATUS      current
+                    DEFVAL { 20 }
+                    ::= { sdlcPortAdminEntry 8 }
+
+sdlcPortAdminSlowPollTimer OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-write
+                    STATUS      current
+                    DEFVAL { 2000 }
+                    ::= { sdlcPortAdminEntry 9 }
+
+
+sdlcPortOperTable   OBJECT-TYPE
+                    SYNTAX      SEQUENCE OF SdlcPortOperEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                    ::= { sdlcPortGroup 2 }
+
+sdlcPortOperEntry   OBJECT-TYPE
+                    SYNTAX      SdlcPortOperEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                    INDEX   { ifIndex }
+                    ::= { sdlcPortOperTable 1 }
+
+SdlcPortOperEntry   ::= SEQUENCE
+{
+        sdlcPortOperName                DisplayString,
+        sdlcPortOperRole                INTEGER,
+        sdlcPortOperType                INTEGER,
+        sdlcPortOperTopology            INTEGER,
+        sdlcPortOperISTATUS             INTEGER,
+        sdlcPortOperACTIVTO             TimeInterval,
+        sdlcPortOperPAUSE               TimeInterval,
+        sdlcPortOperSlowPollMethod      INTEGER,
+        sdlcPortOperSERVLIM             Integer32,
+        sdlcPortOperSlowPollTimer       TimeInterval,
+        sdlcPortOperLastModifyTime      TimeTicks,
+        sdlcPortOperLastFailTime        TimeTicks,
+        sdlcPortOperLastFailCause       INTEGER
+}
+
+sdlcPortOperName    OBJECT-TYPE
+
+
+
+
+
+                    SYNTAX      DisplayString (SIZE (1..8))
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 1 }
+
+sdlcPortOperRole    OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                        primary(1),
+                        secondary(2),
+                        undefined(3)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 2 }
+
+sdlcPortOperType    OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         leased(1),
+                         switched(2)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+
+
+
+
+                    ::= { sdlcPortOperEntry 3 }
+
+sdlcPortOperTopology  OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         pointToPoint(1),
+                         multipoint(2)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 4 }
+
+sdlcPortOperISTATUS OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         inactive(1),
+                         active(2)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 5 }
+
+
+sdlcPortOperACTIVTO OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 6 }
+
+sdlcPortOperPAUSE   OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 7 }
+
+sdlcPortOperSlowPollMethod OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         servlim(1),
+                         pollpause(2),
+                         other(3)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 8 }
+
+sdlcPortOperSERVLIM OBJECT-TYPE
+                    SYNTAX      Integer32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 9 }
+
+sdlcPortOperSlowPollTimer OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 10 }
+
+sdlcPortOperLastModifyTime    OBJECT-TYPE
+                    SYNTAX      TimeTicks
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 11 }
+
+sdlcPortOperLastFailTime    OBJECT-TYPE
+                    SYNTAX      TimeTicks
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortOperEntry 12 }
+
+sdlcPortOperLastFailCause    OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                        undefined(1),
+                        physical(2)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    DEFVAL { undefined }
+                    ::= { sdlcPortOperEntry 13 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sdlcPortStatsTable  OBJECT-TYPE
+                    SYNTAX      SEQUENCE OF SdlcPortStatsEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                     ::= { sdlcPortGroup 3 }
+
+sdlcPortStatsEntry  OBJECT-TYPE
+                    SYNTAX      SdlcPortStatsEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                    INDEX   { ifIndex }
+                    ::= { sdlcPortStatsTable 1 }
+
+SdlcPortStatsEntry ::= SEQUENCE
+{
+        sdlcPortStatsPhysicalFailures Counter32,
+        sdlcPortStatsInvalidAddresses Counter32,
+        sdlcPortStatsDwarfFrames      Counter32,
+        sdlcPortStatsPollsIn          Counter32,
+        sdlcPortStatsPollsOut         Counter32,
+        sdlcPortStatsPollRspsIn       Counter32,
+        sdlcPortStatsPollRspsOut      Counter32,
+        sdlcPortStatsLocalBusies      Counter32,
+        sdlcPortStatsRemoteBusies     Counter32,
+        sdlcPortStatsIFramesIn        Counter32,
+        sdlcPortStatsIFramesOut       Counter32,
+        sdlcPortStatsOctetsIn         Counter32,
+        sdlcPortStatsOctetsOut        Counter32,
+        sdlcPortStatsProtocolErrs     Counter32,
+        sdlcPortStatsActivityTOs      Counter32,
+        sdlcPortStatsRNRLIMITs        Counter32,
+        sdlcPortStatsRetriesExps      Counter32,
+        sdlcPortStatsRetransmitsIn    Counter32,
+        sdlcPortStatsRetransmitsOut   Counter32
+}
+
+sdlcPortStatsPhysicalFailures OBJECT-TYPE
+
+
+
+
+
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 1 }
+
+sdlcPortStatsInvalidAddresses OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 2 }
+
+sdlcPortStatsDwarfFrames OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+                    ::= { sdlcPortStatsEntry 3 }
+
+sdlcPortStatsPollsIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+                    ::= { sdlcPortStatsEntry 4 }
+
+
+
+
+
+sdlcPortStatsPollsOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+                    ::= { sdlcPortStatsEntry 5 }
+
+sdlcPortStatsPollRspsIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+                    ::= { sdlcPortStatsEntry 6 }
+
+sdlcPortStatsPollRspsOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+                    ::= { sdlcPortStatsEntry 7 }
+
+sdlcPortStatsLocalBusies OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 8 }
+
+sdlcPortStatsRemoteBusies OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+
+
+
+
+                    ::= { sdlcPortStatsEntry 9 }
+
+sdlcPortStatsIFramesIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 10 }
+
+sdlcPortStatsIFramesOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 11 }
+
+sdlcPortStatsOctetsIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 12 }
+
+sdlcPortStatsOctetsOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 13 }
+
+sdlcPortStatsProtocolErrs OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 14 }
+
+sdlcPortStatsActivityTOs OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 15 }
+
+sdlcPortStatsRNRLIMITs OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 16 }
+
+sdlcPortStatsRetriesExps OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+
+
+
+
+
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 17 }
+
+sdlcPortStatsRetransmitsIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 18 }
+
+sdlcPortStatsRetransmitsOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcPortStatsEntry 19 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sdlcLSAdminTable  OBJECT-TYPE
+                    SYNTAX      SEQUENCE OF SdlcLSAdminEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                    ::= { sdlcLSGroup 1 }
+
+sdlcLSAdminEntry    OBJECT-TYPE
+
+
+
+
+
+                    SYNTAX      SdlcLSAdminEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                    INDEX   { ifIndex, sdlcLSAddress }
+                    ::= { sdlcLSAdminTable 1 }
+
+SdlcLSAdminEntry ::= SEQUENCE
+{
+        sdlcLSAddress           INTEGER,
+        sdlcLSAdminName         DisplayString,
+        sdlcLSAdminState        INTEGER,
+        sdlcLSAdminISTATUS      INTEGER,
+        sdlcLSAdminMAXDATASend  Integer32,
+        sdlcLSAdminMAXDATARcv   Integer32,
+        sdlcLSAdminREPLYTO      TimeInterval,
+        sdlcLSAdminMAXIN        INTEGER,
+        sdlcLSAdminMAXOUT       INTEGER,
+        sdlcLSAdminMODULO       INTEGER,
+        sdlcLSAdminRETRIESm     INTEGER,
+        sdlcLSAdminRETRIESt     TimeInterval,
+        sdlcLSAdminRETRIESn     Integer32,
+        sdlcLSAdminRNRLIMIT     TimeInterval,
+        sdlcLSAdminDATMODE      INTEGER,
+        sdlcLSAdminGPoll        INTEGER,
+        sdlcLSAdminSimRim       INTEGER,
+        sdlcLSAdminXmitRcvCap   INTEGER,
+        sdlcLSAdminRowStatus    RowStatus
+}
+
+sdlcLSAddress       OBJECT-TYPE
+                    SYNTAX      INTEGER (1..255)
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    ::= { sdlcLSAdminEntry 1 }
+
+sdlcLSAdminName     OBJECT-TYPE
+                    SYNTAX      DisplayString (SIZE (1..10))
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    ::= { sdlcLSAdminEntry 2 }
+
+sdlcLSAdminState    OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         inactive(1),
+                         active(2)
+                    }
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { active }
+                    ::= { sdlcLSAdminEntry 3 }
+
+sdlcLSAdminISTATUS  OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         inactive(1),
+                         active(2)
+                    }
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { active }
+                    ::= { sdlcLSAdminEntry 4 }
+
+sdlcLSAdminMAXDATASend  OBJECT-TYPE
+                    SYNTAX      Integer32
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    ::= { sdlcLSAdminEntry 5 }
+
+sdlcLSAdminMAXDATARcv  OBJECT-TYPE
+                    SYNTAX      Integer32
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    ::= { sdlcLSAdminEntry 6 }
+
+sdlcLSAdminREPLYTO  OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { 100 }
+                    ::= { sdlcLSAdminEntry 7 }
+
+
+
+
+
+
+sdlcLSAdminMAXIN    OBJECT-TYPE
+                    SYNTAX      INTEGER (1..127)
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { 7 }
+                    ::= { sdlcLSAdminEntry 8 }
+
+sdlcLSAdminMAXOUT   OBJECT-TYPE
+                    SYNTAX      INTEGER (1..127)
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { 1 }
+                    ::= { sdlcLSAdminEntry 9 }
+
+sdlcLSAdminMODULO   OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+
+
+
+
+
+                        eight(8),
+                        onetwentyeight(128)
+                    }
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { eight }
+                    ::= { sdlcLSAdminEntry 10 }
+
+sdlcLSAdminRETRIESm OBJECT-TYPE
+                    SYNTAX      INTEGER (0..128)
+                    MAX-ACCESS  read-create
+                    STATUS      current
+
+
+
+
+
+                    DEFVAL { 15 }
+                    ::= { sdlcLSAdminEntry 11 }
+
+sdlcLSAdminRETRIESt OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { 0 }
+                    ::= { sdlcLSAdminEntry 12 }
+
+sdlcLSAdminRETRIESn OBJECT-TYPE
+                    SYNTAX      Integer32
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { 0 }
+                    ::= { sdlcLSAdminEntry 13 }
+
+sdlcLSAdminRNRLIMIT OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { 18000 }
+                    ::= { sdlcLSAdminEntry 14 }
+
+sdlcLSAdminDATMODE  OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                        half(1),
+                        full(2)
+                    }
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { half }
+                    ::= { sdlcLSAdminEntry 15 }
+
+sdlcLSAdminGPoll    OBJECT-TYPE
+                    SYNTAX      INTEGER (0..254)
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    ::= { sdlcLSAdminEntry 16 }
+
+sdlcLSAdminSimRim   OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         no(1),
+                         yes(2)
+                    }
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { no }
+                    ::= { sdlcLSAdminEntry 17 }
+
+sdlcLSAdminXmitRcvCap OBJECT-TYPE
+
+
+
+
+
+                    SYNTAX      INTEGER
+                    {
+                         twa(1),
+                         tws(2)
+                    }
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    DEFVAL { twa }
+                    ::= { sdlcLSAdminEntry 18 }
+
+sdlcLSAdminRowStatus OBJECT-TYPE
+                    SYNTAX      RowStatus
+                    MAX-ACCESS  read-create
+                    STATUS      current
+                    ::= { sdlcLSAdminEntry 19 }
+
+
+sdlcLSOperTable     OBJECT-TYPE
+                    SYNTAX      SEQUENCE OF SdlcLSOperEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                    ::= { sdlcLSGroup 2 }
+
+
+
+
+
+sdlcLSOperEntry     OBJECT-TYPE
+                    SYNTAX      SdlcLSOperEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                    INDEX   { ifIndex, sdlcLSAddress }
+                    ::= { sdlcLSOperTable 1 }
+
+SdlcLSOperEntry     ::= SEQUENCE
+{
+        sdlcLSOperName                  DisplayString,
+        sdlcLSOperRole                  INTEGER,
+        sdlcLSOperState                 INTEGER,
+        sdlcLSOperMAXDATASend           Integer32,
+        sdlcLSOperREPLYTO               TimeInterval,
+        sdlcLSOperMAXIN                 INTEGER,
+        sdlcLSOperMAXOUT                INTEGER,
+        sdlcLSOperMODULO                INTEGER,
+        sdlcLSOperRETRIESm              INTEGER,
+        sdlcLSOperRETRIESt              TimeInterval,
+        sdlcLSOperRETRIESn              INTEGER,
+        sdlcLSOperRNRLIMIT              TimeInterval,
+        sdlcLSOperDATMODE               INTEGER,
+        sdlcLSOperLastModifyTime        TimeTicks,
+        sdlcLSOperLastFailTime          TimeTicks,
+        sdlcLSOperLastFailCause         INTEGER,
+        sdlcLSOperLastFailCtrlIn        OCTET STRING,
+        sdlcLSOperLastFailCtrlOut       OCTET STRING,
+        sdlcLSOperLastFailFRMRInfo      OCTET STRING,
+        sdlcLSOperLastFailREPLYTOs      Counter32,
+        sdlcLSOperEcho                  INTEGER,
+        sdlcLSOperGPoll                 INTEGER,
+        sdlcLSOperSimRim                INTEGER,
+        sdlcLSOperXmitRcvCap            INTEGER
+}
+
+sdlcLSOperName      OBJECT-TYPE
+                    SYNTAX      DisplayString (SIZE (1..10))
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 1 }
+
+
+
+
+
+sdlcLSOperRole      OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                        primary(1),
+                        secondary(2),
+                        undefined(3)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 2 }
+
+sdlcLSOperState     OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                        discontacted(1),
+                        contactPending(2),
+                        contacted(3),
+                        discontactPending(4)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 3 }
+
+sdlcLSOperMAXDATASend   OBJECT-TYPE
+                    SYNTAX      Integer32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 4 }
+
+sdlcLSOperREPLYTO   OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 5 }
+
+sdlcLSOperMAXIN    OBJECT-TYPE
+                    SYNTAX      INTEGER (1..127)
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 6 }
+
+sdlcLSOperMAXOUT    OBJECT-TYPE
+                    SYNTAX      INTEGER (1..127)
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 7 }
+
+sdlcLSOperMODULO   OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                        eight(8),
+                        onetwentyeight(128)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                     DEFVAL { eight }
+                    ::= { sdlcLSOperEntry 8 }
+
+sdlcLSOperRETRIESm  OBJECT-TYPE
+                    SYNTAX      INTEGER (0..128)
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 9 }
+
+sdlcLSOperRETRIESt  OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 10 }
+
+sdlcLSOperRETRIESn OBJECT-TYPE
+                    SYNTAX      INTEGER (0..127)
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 11 }
+
+sdlcLSOperRNRLIMIT  OBJECT-TYPE
+                    SYNTAX      TimeInterval
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 12 }
+
+sdlcLSOperDATMODE   OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                        half(1),
+                        full(2)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 13 }
+
+sdlcLSOperLastModifyTime    OBJECT-TYPE
+                    SYNTAX      TimeTicks
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 14 }
+
+sdlcLSOperLastFailTime    OBJECT-TYPE
+                    SYNTAX      TimeTicks
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 15 }
+
+sdlcLSOperLastFailCause    OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+
+
+
+
+
+                        undefined(1),
+                        rxFRMR(2),
+                        txFRMR(3),
+                        noResponse(4),
+                        protocolErr(5),
+                        noActivity(6),
+                        rnrLimit(7),
+                        retriesExpired(8)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    DEFVAL { undefined }
+                    ::= { sdlcLSOperEntry 16 }
+
+sdlcLSOperLastFailCtrlIn  OBJECT-TYPE
+                    SYNTAX      OCTET STRING (SIZE(1..2))
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 17 }
+
+sdlcLSOperLastFailCtrlOut  OBJECT-TYPE
+                    SYNTAX      OCTET STRING (SIZE(1..2))
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 18 }
+
+sdlcLSOperLastFailFRMRInfo  OBJECT-TYPE
+                    SYNTAX      OCTET STRING (SIZE(3))
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 19 }
+
+sdlcLSOperLastFailREPLYTOs  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSOperEntry 20 }
+
+sdlcLSOperEcho      OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         no(1),
+                         yes(2)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    DEFVAL { no }
+                    ::= { sdlcLSOperEntry 21 }
+
+sdlcLSOperGPoll     OBJECT-TYPE
+                    SYNTAX      INTEGER (0..254)
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    DEFVAL { 0 }
+                    ::= { sdlcLSOperEntry 22 }
+
+sdlcLSOperSimRim    OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         no(1),
+                         yes(2)
+                    }
+
+
+
+
+
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    DEFVAL { no }
+                    ::= { sdlcLSOperEntry 23 }
+
+sdlcLSOperXmitRcvCap OBJECT-TYPE
+                    SYNTAX      INTEGER
+                    {
+                         twa(1),
+                         tws(2)
+                    }
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    DEFVAL { twa }
+                    ::= { sdlcLSOperEntry 24 }
+
+
+
+sdlcLSStatsTable  OBJECT-TYPE
+                    SYNTAX      SEQUENCE OF SdlcLSStatsEntry
+                    MAX-ACCESS  not-accessible
+                    STATUS      current
+                     ::= { sdlcLSGroup 3 }
+
+sdlcLSStatsEntry  OBJECT-TYPE
+                    SYNTAX      SdlcLSStatsEntry
+                    MAX-ACCESS  not-accessible
+
+
+
+
+
+                    STATUS      current
+                    INDEX   { ifIndex, sdlcLSAddress }
+                    ::= { sdlcLSStatsTable 1 }
+
+SdlcLSStatsEntry ::= SEQUENCE
+{
+        sdlcLSStatsBLUsIn             Counter32,
+        sdlcLSStatsBLUsOut            Counter32,
+        sdlcLSStatsOctetsIn           Counter32,
+        sdlcLSStatsOctetsOut          Counter32,
+        sdlcLSStatsPollsIn            Counter32,
+        sdlcLSStatsPollsOut           Counter32,
+        sdlcLSStatsPollRspsIn         Counter32,
+        sdlcLSStatsPollRspsOut        Counter32,
+        sdlcLSStatsLocalBusies        Counter32,
+        sdlcLSStatsRemoteBusies       Counter32,
+        sdlcLSStatsIFramesIn          Counter32,
+        sdlcLSStatsIFramesOut         Counter32,
+        sdlcLSStatsUIFramesIn         Counter32,
+        sdlcLSStatsUIFramesOut        Counter32,
+        sdlcLSStatsXIDsIn             Counter32,
+        sdlcLSStatsXIDsOut            Counter32,
+        sdlcLSStatsTESTsIn            Counter32,
+        sdlcLSStatsTESTsOut           Counter32,
+        sdlcLSStatsREJsIn             Counter32,
+        sdlcLSStatsREJsOut            Counter32,
+        sdlcLSStatsFRMRsIn            Counter32,
+        sdlcLSStatsFRMRsOut           Counter32,
+        sdlcLSStatsSIMsIn             Counter32,
+        sdlcLSStatsSIMsOut            Counter32,
+        sdlcLSStatsRIMsIn             Counter32,
+        sdlcLSStatsRIMsOut            Counter32,
+        sdlcLSStatsDISCIn             Counter32,
+        sdlcLSStatsDISCOut            Counter32,
+        sdlcLSStatsUAIn               Counter32,
+        sdlcLSStatsUAOut              Counter32,
+        sdlcLSStatsDMIn               Counter32,
+        sdlcLSStatsDMOut              Counter32,
+        sdlcLSStatsSNRMIn             Counter32,
+        sdlcLSStatsSNRMOut            Counter32,
+        sdlcLSStatsProtocolErrs       Counter32,
+        sdlcLSStatsActivityTOs        Counter32,
+        sdlcLSStatsRNRLIMITs          Counter32,
+        sdlcLSStatsRetriesExps        Counter32,
+        sdlcLSStatsRetransmitsIn      Counter32,
+        sdlcLSStatsRetransmitsOut     Counter32
+
+
+
+
+
+}
+
+sdlcLSStatsBLUsIn   OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 1 }
+
+sdlcLSStatsBLUsOut   OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 2 }
+
+sdlcLSStatsOctetsIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 3 }
+
+sdlcLSStatsOctetsOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 4 }
+
+sdlcLSStatsPollsIn  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 5 }
+
+sdlcLSStatsPollsOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 6 }
+
+sdlcLSStatsPollRspsOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 7 }
+
+sdlcLSStatsPollRspsIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 8 }
+
+sdlcLSStatsLocalBusies OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 9 }
+
+sdlcLSStatsRemoteBusies OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 10 }
+
+sdlcLSStatsIFramesIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 11 }
+
+sdlcLSStatsIFramesOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+
+
+
+
+                    ::= { sdlcLSStatsEntry 12 }
+
+sdlcLSStatsUIFramesIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 13 }
+
+sdlcLSStatsUIFramesOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 14 }
+
+sdlcLSStatsXIDsIn   OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 15 }
+
+sdlcLSStatsXIDsOut  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 16 }
+
+
+
+
+
+
+sdlcLSStatsTESTsIn   OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 17 }
+
+sdlcLSStatsTESTsOut  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 18 }
+
+sdlcLSStatsREJsIn   OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 19 }
+
+sdlcLSStatsREJsOut  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 20 }
+
+sdlcLSStatsFRMRsIn  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 21 }
+
+sdlcLSStatsFRMRsOut  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 22 }
+
+sdlcLSStatsSIMsIn   OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 23 }
+
+sdlcLSStatsSIMsOut  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 24 }
+
+sdlcLSStatsRIMsIn   OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 25 }
+
+
+
+
+
+sdlcLSStatsRIMsOut  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 26 }
+
+sdlcLSStatsDISCIn   OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 27 }
+
+sdlcLSStatsDISCOut  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 28 }
+
+sdlcLSStatsUAIn     OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 29 }
+
+
+
+
+
+sdlcLSStatsUAOut    OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 30 }
+
+sdlcLSStatsDMIn     OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 31 }
+
+sdlcLSStatsDMOut    OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 32 }
+
+sdlcLSStatsSNRMIn   OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+
+
+
+
+                    ::= { sdlcLSStatsEntry 33 }
+
+sdlcLSStatsSNRMOut  OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 34 }
+
+sdlcLSStatsProtocolErrs OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 35 }
+
+sdlcLSStatsActivityTOs OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 36 }
+
+sdlcLSStatsRNRLIMITs OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 37 }
+
+sdlcLSStatsRetriesExps OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 38 }
+
+sdlcLSStatsRetransmitsIn OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+                    ::= { sdlcLSStatsEntry 39 }
+
+sdlcLSStatsRetransmitsOut OBJECT-TYPE
+                    SYNTAX      Counter32
+                    MAX-ACCESS  read-only
+                    STATUS      current
+
+
+
+
+
+                    ::= { sdlcLSStatsEntry 40 }
+
+
+
+sdlcTraps  OBJECT IDENTIFIER ::= { sdlc 3 }
+
+sdlcPortStatusChange NOTIFICATION-TYPE
+                     OBJECTS    { ifIndex,
+                                  ifAdminStatus,
+                                  ifOperStatus,
+                                  sdlcPortOperLastFailTime,
+                                  sdlcPortOperLastFailCause
+                                }
+                     STATUS  current
+                     ::= { sdlcTraps 1 }
+
+sdlcLSStatusChange   NOTIFICATION-TYPE
+                     OBJECTS    { ifIndex,
+                                  sdlcLSAddress,
+                                  sdlcLSOperState,
+                                  sdlcLSAdminState,
+
+
+
+
+
+                                  sdlcLSOperLastFailTime,
+                                  sdlcLSOperLastFailCause,
+                                  sdlcLSOperLastFailFRMRInfo,
+                                  sdlcLSOperLastFailCtrlIn,
+                                  sdlcLSOperLastFailCtrlOut,
+                                  sdlcLSOperLastFailREPLYTOs
+                                }
+                     STATUS  current
+                     ::= { sdlcTraps 2 }
+
+
+
+sdlcConformance OBJECT IDENTIFIER ::= { sdlc 4 }
+
+sdlcCompliances   OBJECT IDENTIFIER ::= { sdlcConformance 1 }
+sdlcGroups        OBJECT IDENTIFIER ::= { sdlcConformance 2 }
+
+
+sdlcCoreCompliance MODULE-COMPLIANCE
+                     STATUS current
+                     MODULE
+                         MANDATORY-GROUPS
+                         {
+                             sdlcCorePortAdminGroup,
+                             sdlcCorePortOperGroup,
+                             sdlcCorePortStatsGroup,
+                             sdlcCoreLSAdminGroup,
+                             sdlcCoreLSOperGroup,
+                             sdlcCoreLSStatsGroup
+                         }
+
+                     OBJECT      sdlcPortAdminName
+                     MIN-ACCESS  read-only
+
+
+
+
+
+                     OBJECT      sdlcPortAdminRole
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcPortAdminType
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcPortAdminTopology
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcPortAdminISTATUS
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAddress
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminName
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminState
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminISTATUS
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminMAXDATASend
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminMAXDATARcv
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminMAXIN
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminMAXOUT
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminMODULO
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminRETRIESm
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminRETRIESt
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminRETRIESn
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminRNRLIMIT
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminDATMODE
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminGPoll
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminSimRim
+
+
+
+
+
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminRowStatus
+                     MIN-ACCESS  read-only
+
+                     ::= { sdlcCompliances 1 }
+
+sdlcPrimaryCompliance  MODULE-COMPLIANCE
+                     STATUS current
+                     MODULE
+                         MANDATORY-GROUPS { sdlcPrimaryGroup }
+
+                     OBJECT      sdlcPortAdminPAUSE
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcLSAdminREPLYTO
+                     MIN-ACCESS  read-only
+
+                     ::= { sdlcCompliances 2 }
+
+sdlcPrimaryMultipointCompliance  MODULE-COMPLIANCE
+                     STATUS current
+                     MODULE
+                         MANDATORY-GROUPS { sdlcPrimaryMultipointGroup }
+
+                     OBJECT      sdlcPortAdminSERVLIM
+                     MIN-ACCESS  read-only
+
+                     OBJECT      sdlcPortAdminSlowPollTimer
+                     MIN-ACCESS  read-only
+
+
+
+
+
+
+                     ::= { sdlcCompliances 3 }
+
+
+
+sdlcCoreGroups OBJECT IDENTIFIER ::= { sdlcGroups 1 }
+
+sdlcCorePortAdminGroup OBJECT-GROUP
+                     OBJECTS
+                     {
+                         sdlcPortAdminName,      sdlcPortAdminRole,
+                         sdlcPortAdminType,      sdlcPortAdminTopology,
+                         sdlcPortAdminISTATUS
+                     }
+                     STATUS current
+                     ::= { sdlcCoreGroups 1 }
+
+sdlcCorePortOperGroup OBJECT-GROUP
+                     OBJECTS
+                     {
+                         sdlcPortOperName,
+                         sdlcPortOperRole,
+                         sdlcPortOperType,
+                         sdlcPortOperTopology,
+                         sdlcPortOperISTATUS,
+                         sdlcPortOperACTIVTO,
+                         sdlcPortOperLastFailTime,
+                         sdlcPortOperLastFailCause
+                     }
+                     STATUS current
+                     ::= { sdlcCoreGroups 2 }
+
+
+sdlcCorePortStatsGroup OBJECT-GROUP
+                     OBJECTS
+
+
+
+
+
+                     {
+                         sdlcPortStatsPhysicalFailures,
+                         sdlcPortStatsInvalidAddresses,
+                         sdlcPortStatsDwarfFrames
+                     }
+                     STATUS current
+                     ::= { sdlcCoreGroups 3 }
+
+
+sdlcCoreLSAdminGroup OBJECT-GROUP
+                     OBJECTS
+                     {
+                         sdlcLSAddress,
+                         sdlcLSAdminName,
+                         sdlcLSAdminState,
+                         sdlcLSAdminISTATUS,
+                         sdlcLSAdminMAXDATASend,
+                         sdlcLSAdminMAXDATARcv,
+                         sdlcLSAdminMAXIN,
+                         sdlcLSAdminMAXOUT,
+                         sdlcLSAdminMODULO,
+                         sdlcLSAdminRETRIESm,
+                         sdlcLSAdminRETRIESt,
+                         sdlcLSAdminRETRIESn,
+                         sdlcLSAdminRNRLIMIT,
+                         sdlcLSAdminDATMODE,
+                         sdlcLSAdminGPoll,
+                         sdlcLSAdminSimRim,
+                         sdlcLSAdminRowStatus
+                     }
+                     STATUS current
+                     ::= { sdlcCoreGroups 4 }
+
+sdlcCoreLSOperGroup  OBJECT-GROUP
+                     OBJECTS
+                     {
+                         sdlcLSOperRole,
+                         sdlcLSOperState,
+                         sdlcLSOperMAXDATASend,
+                         sdlcLSOperMAXIN,
+
+
+
+
+
+                         sdlcLSOperMAXOUT,
+                         sdlcLSOperMODULO,
+                         sdlcLSOperRETRIESm,
+                         sdlcLSOperRETRIESt,
+                         sdlcLSOperRETRIESn,
+                         sdlcLSOperRNRLIMIT,
+                         sdlcLSOperDATMODE,
+                         sdlcLSOperLastFailTime,
+                         sdlcLSOperLastFailCause,
+                         sdlcLSOperLastFailCtrlIn,
+                         sdlcLSOperLastFailCtrlOut,
+                         sdlcLSOperLastFailFRMRInfo,
+                         sdlcLSOperLastFailREPLYTOs,
+                         sdlcLSOperEcho,
+                         sdlcLSOperGPoll
+                     }
+                     STATUS current
+                     ::= { sdlcCoreGroups 5 }
+
+
+sdlcCoreLSStatsGroup OBJECT-GROUP
+                     OBJECTS
+                     {
+                         sdlcLSStatsBLUsIn,
+                         sdlcLSStatsBLUsOut,
+                         sdlcLSStatsOctetsIn,
+                         sdlcLSStatsOctetsOut,
+                         sdlcLSStatsPollsIn,
+                         sdlcLSStatsPollsOut,
+                         sdlcLSStatsPollRspsIn,
+                         sdlcLSStatsPollRspsOut,
+                         sdlcLSStatsLocalBusies,
+                         sdlcLSStatsRemoteBusies,
+                         sdlcLSStatsIFramesIn,
+                         sdlcLSStatsIFramesOut,
+                         sdlcLSStatsRetransmitsIn,
+                         sdlcLSStatsRetransmitsOut,
+                         sdlcLSStatsUIFramesIn,
+                         sdlcLSStatsUIFramesOut,
+                         sdlcLSStatsXIDsIn,
+                         sdlcLSStatsXIDsOut,
+                         sdlcLSStatsTESTsIn,
+                         sdlcLSStatsTESTsOut,
+                         sdlcLSStatsREJsIn,
+
+
+
+
+
+                         sdlcLSStatsREJsOut,
+                         sdlcLSStatsFRMRsIn,
+                         sdlcLSStatsFRMRsOut,
+                         sdlcLSStatsSIMsIn,
+                         sdlcLSStatsSIMsOut,
+                         sdlcLSStatsRIMsIn,
+                         sdlcLSStatsRIMsOut,
+                         sdlcLSStatsProtocolErrs,
+                         sdlcLSStatsRNRLIMITs,
+                         sdlcLSStatsRetriesExps
+                     }
+                     STATUS current
+                     ::= { sdlcCoreGroups 6 }
+
+
+
+sdlcPrimaryGroups OBJECT IDENTIFIER ::= { sdlcGroups 2 }
+
+sdlcPrimaryGroup OBJECT-GROUP
+                     OBJECTS
+                     {
+                         sdlcPortAdminPAUSE,
+                         sdlcPortOperPAUSE,
+                         sdlcLSAdminREPLYTO,
+                         sdlcLSOperREPLYTO
+                     }
+                     STATUS current
+                     ::= { sdlcPrimaryGroups 1 }
+
+sdlcPrimaryMultipointGroup OBJECT-GROUP
+                     OBJECTS
+                     {
+                         sdlcPortAdminSERVLIM,
+                         sdlcPortAdminSlowPollTimer,
+                         sdlcPortOperSlowPollMethod,
+                         sdlcPortOperSERVLIM,
+                         sdlcPortOperSlowPollTimer
+
+
+
+
+
+                     }
+                     STATUS current
+                     ::= { sdlcPrimaryGroups 2 }
+
+
+END

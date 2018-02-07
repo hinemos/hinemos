@@ -1,0 +1,1538 @@
+          TOKEN-RING-RMON-MIB DEFINITIONS ::= BEGIN
+
+          IMPORTS
+              Counter, TimeTicks          FROM RFC1155-SMI
+              OBJECT-TYPE                 FROM RFC-1212
+              OwnerString, EntryStatus,   -- Textual Conventions
+              rmon, statistics, history
+                                          FROM RFC1271-MIB;
+
+
+
+             MacAddress ::= OCTET STRING (SIZE (6)) -- a 6 octet
+
+              TimeInterval ::= INTEGER
+
+
+
+              tokenRing             OBJECT IDENTIFIER ::= { rmon 10 }
+
+
+
+          tokenRingMLStatsTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF TokenRingMLStatsEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { statistics 2 }
+
+          tokenRingMLStatsEntry OBJECT-TYPE
+              SYNTAX TokenRingMLStatsEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { tokenRingMLStatsIndex }
+              ::= { tokenRingMLStatsTable 1 }
+
+
+          TokenRingMLStatsEntry ::= SEQUENCE {
+              tokenRingMLStatsIndex                     INTEGER,
+              tokenRingMLStatsDataSource            OBJECT IDENTIFIER,
+              tokenRingMLStatsDropEvents                Counter,
+              tokenRingMLStatsMacOctets                 Counter,
+              tokenRingMLStatsMacPkts                   Counter,
+              tokenRingMLStatsRingPurgeEvents           Counter,
+              tokenRingMLStatsRingPurgePkts             Counter,
+              tokenRingMLStatsBeaconEvents              Counter,
+              tokenRingMLStatsBeaconTime                TimeInterval,
+              tokenRingMLStatsBeaconPkts                Counter,
+              tokenRingMLStatsClaimTokenEvents          Counter,
+              tokenRingMLStatsClaimTokenPkts            Counter,
+              tokenRingMLStatsNAUNChanges               Counter,
+              tokenRingMLStatsLineErrors                Counter,
+              tokenRingMLStatsInternalErrors            Counter,
+              tokenRingMLStatsBurstErrors               Counter,
+              tokenRingMLStatsACErrors                  Counter,
+              tokenRingMLStatsAbortErrors               Counter,
+              tokenRingMLStatsLostFrameErrors           Counter,
+              tokenRingMLStatsCongestionErrors          Counter,
+              tokenRingMLStatsFrameCopiedErrors         Counter,
+              tokenRingMLStatsFrequencyErrors           Counter,
+              tokenRingMLStatsTokenErrors               Counter,
+              tokenRingMLStatsSoftErrorReports          Counter,
+              tokenRingMLStatsRingPollEvents            Counter,
+              tokenRingMLStatsOwner                     OwnerString,
+              tokenRingMLStatsStatus                    EntryStatus
+          }
+
+
+
+
+
+
+
+          tokenRingMLStatsIndex OBJECT-TYPE
+              SYNTAX INTEGER (1..65535)
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 1 }
+
+          tokenRingMLStatsDataSource OBJECT-TYPE
+              SYNTAX OBJECT IDENTIFIER
+              ACCESS read-write
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 2 }
+
+          tokenRingMLStatsDropEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 3 }
+
+
+
+
+
+
+          tokenRingMLStatsMacOctets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 4 }
+
+          tokenRingMLStatsMacPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 5 }
+
+          tokenRingMLStatsRingPurgeEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 6 }
+
+          tokenRingMLStatsRingPurgePkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 7 }
+
+          tokenRingMLStatsBeaconEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 8 }
+
+          tokenRingMLStatsBeaconTime OBJECT-TYPE
+              SYNTAX TimeInterval
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 9 }
+
+          tokenRingMLStatsBeaconPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 10 }
+
+          tokenRingMLStatsClaimTokenEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 11 }
+
+          tokenRingMLStatsClaimTokenPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 12 }
+
+
+
+
+
+
+
+
+          tokenRingMLStatsNAUNChanges OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 13 }
+
+          tokenRingMLStatsLineErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 14 }
+
+          tokenRingMLStatsInternalErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 15 }
+
+          tokenRingMLStatsBurstErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 16 }
+
+          tokenRingMLStatsACErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 17 }
+
+
+
+
+
+
+
+          tokenRingMLStatsAbortErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 18 }
+
+          tokenRingMLStatsLostFrameErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 19 }
+
+          tokenRingMLStatsCongestionErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 20 }
+
+          tokenRingMLStatsFrameCopiedErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 21 }
+
+          tokenRingMLStatsFrequencyErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 22 }
+
+
+
+
+
+
+
+
+          tokenRingMLStatsTokenErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 23 }
+
+          tokenRingMLStatsSoftErrorReports OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 24 }
+
+          tokenRingMLStatsRingPollEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 25 }
+
+          tokenRingMLStatsOwner OBJECT-TYPE
+              SYNTAX OwnerString
+              ACCESS read-write
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 26 }
+
+          tokenRingMLStatsStatus OBJECT-TYPE
+              SYNTAX EntryStatus
+              ACCESS read-write
+              STATUS mandatory
+              ::= { tokenRingMLStatsEntry 27 }
+
+
+
+
+
+
+
+
+
+
+          tokenRingPStatsTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF TokenRingPStatsEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { statistics 3 }
+
+          tokenRingPStatsEntry OBJECT-TYPE
+              SYNTAX TokenRingPStatsEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { tokenRingPStatsIndex }
+              ::= { tokenRingPStatsTable 1 }
+
+
+          TokenRingPStatsEntry ::= SEQUENCE {
+              tokenRingPStatsIndex                          INTEGER,
+              tokenRingPStatsDataSource               OBJECT IDENTIFIER,
+              tokenRingPStatsDropEvents                     Counter,
+              tokenRingPStatsDataOctets                     Counter,
+              tokenRingPStatsDataPkts                       Counter,
+              tokenRingPStatsDataBroadcastPkts              Counter,
+              tokenRingPStatsDataMulticastPkts              Counter,
+              tokenRingPStatsDataPkts18to63Octets           Counter,
+              tokenRingPStatsDataPkts64to127Octets          Counter,
+              tokenRingPStatsDataPkts128to255Octets         Counter,
+              tokenRingPStatsDataPkts256to511Octets         Counter,
+              tokenRingPStatsDataPkts512to1023Octets        Counter,
+              tokenRingPStatsDataPkts1024to2047Octets       Counter,
+              tokenRingPStatsDataPkts2048to4095Octets       Counter,
+              tokenRingPStatsDataPkts4096to8191Octets       Counter,
+              tokenRingPStatsDataPkts8192to18000Octets      Counter,
+              tokenRingPStatsDataPktsGreaterThan18000Octets Counter,
+              tokenRingPStatsOwner                          OwnerString,
+              tokenRingPStatsStatus                         EntryStatus
+
+
+
+
+
+          }
+
+          tokenRingPStatsIndex OBJECT-TYPE
+              SYNTAX INTEGER (1..65535)
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 1 }
+
+          tokenRingPStatsDataSource OBJECT-TYPE
+              SYNTAX OBJECT IDENTIFIER
+              ACCESS read-write
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 2 }
+
+          tokenRingPStatsDropEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+
+
+
+
+
+              ::= { tokenRingPStatsEntry 3 }
+
+          tokenRingPStatsDataOctets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 4 }
+
+          tokenRingPStatsDataPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 5 }
+
+          tokenRingPStatsDataBroadcastPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 6 }
+
+          tokenRingPStatsDataMulticastPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 7 }
+
+          tokenRingPStatsDataPkts18to63Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 8 }
+
+          tokenRingPStatsDataPkts64to127Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 9 }
+
+          tokenRingPStatsDataPkts128to255Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 10 }
+
+          tokenRingPStatsDataPkts256to511Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 11 }
+
+          tokenRingPStatsDataPkts512to1023Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+
+
+
+
+
+              ::= { tokenRingPStatsEntry 12 }
+
+          tokenRingPStatsDataPkts1024to2047Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 13 }
+
+          tokenRingPStatsDataPkts2048to4095Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 14 }
+
+          tokenRingPStatsDataPkts4096to8191Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 15 }
+
+          tokenRingPStatsDataPkts8192to18000Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 16 }
+
+          tokenRingPStatsDataPktsGreaterThan18000Octets OBJECT-TYPE
+              SYNTAX Counter
+
+
+
+
+
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 17 }
+
+          tokenRingPStatsOwner OBJECT-TYPE
+              SYNTAX OwnerString
+              ACCESS read-write
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 18 }
+
+          tokenRingPStatsStatus OBJECT-TYPE
+              SYNTAX EntryStatus
+              ACCESS read-write
+              STATUS mandatory
+              ::= { tokenRingPStatsEntry 19 }
+
+
+
+
+
+
+          tokenRingMLHistoryTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF TokenRingMLHistoryEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { history 3 }
+
+          tokenRingMLHistoryEntry OBJECT-TYPE
+              SYNTAX TokenRingMLHistoryEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { tokenRingMLHistoryIndex,
+                      tokenRingMLHistorySampleIndex }
+              ::= { tokenRingMLHistoryTable 1 }
+
+
+          TokenRingMLHistoryEntry ::= SEQUENCE {
+              tokenRingMLHistoryIndex                     INTEGER,
+              tokenRingMLHistorySampleIndex               INTEGER,
+              tokenRingMLHistoryIntervalStart             TimeTicks,
+              tokenRingMLHistoryDropEvents                Counter,
+              tokenRingMLHistoryMacOctets                 Counter,
+              tokenRingMLHistoryMacPkts                   Counter,
+              tokenRingMLHistoryRingPurgeEvents           Counter,
+              tokenRingMLHistoryRingPurgePkts             Counter,
+              tokenRingMLHistoryBeaconEvents              Counter,
+              tokenRingMLHistoryBeaconTime                TimeInterval,
+              tokenRingMLHistoryBeaconPkts                Counter,
+              tokenRingMLHistoryClaimTokenEvents          Counter,
+              tokenRingMLHistoryClaimTokenPkts            Counter,
+              tokenRingMLHistoryNAUNChanges               Counter,
+              tokenRingMLHistoryLineErrors                Counter,
+              tokenRingMLHistoryInternalErrors            Counter,
+              tokenRingMLHistoryBurstErrors               Counter,
+              tokenRingMLHistoryACErrors                  Counter,
+              tokenRingMLHistoryAbortErrors               Counter,
+              tokenRingMLHistoryLostFrameErrors           Counter,
+              tokenRingMLHistoryCongestionErrors          Counter,
+              tokenRingMLHistoryFrameCopiedErrors         Counter,
+              tokenRingMLHistoryFrequencyErrors           Counter,
+              tokenRingMLHistoryTokenErrors               Counter,
+              tokenRingMLHistorySoftErrorReports          Counter,
+              tokenRingMLHistoryRingPollEvents            Counter,
+              tokenRingMLHistoryActiveStations            INTEGER
+          }
+
+
+
+
+
+
+          tokenRingMLHistoryIndex OBJECT-TYPE
+              SYNTAX INTEGER (1..65535)
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 1 }
+
+          tokenRingMLHistorySampleIndex OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 2 }
+
+          tokenRingMLHistoryIntervalStart OBJECT-TYPE
+              SYNTAX TimeTicks
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 3 }
+
+          tokenRingMLHistoryDropEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 4 }
+
+          tokenRingMLHistoryMacOctets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 5 }
+
+          tokenRingMLHistoryMacPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 6 }
+
+          tokenRingMLHistoryRingPurgeEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 7 }
+
+          tokenRingMLHistoryRingPurgePkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 8 }
+
+          tokenRingMLHistoryBeaconEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 9 }
+
+          tokenRingMLHistoryBeaconTime OBJECT-TYPE
+              SYNTAX TimeInterval
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 10 }
+
+          tokenRingMLHistoryBeaconPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 11 }
+
+          tokenRingMLHistoryClaimTokenEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 12 }
+
+
+
+
+
+
+          tokenRingMLHistoryClaimTokenPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 13 }
+
+          tokenRingMLHistoryNAUNChanges OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 14 }
+
+          tokenRingMLHistoryLineErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 15 }
+
+          tokenRingMLHistoryInternalErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 16 }
+
+          tokenRingMLHistoryBurstErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 17 }
+
+
+
+
+
+          tokenRingMLHistoryACErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 18 }
+
+          tokenRingMLHistoryAbortErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 19 }
+
+          tokenRingMLHistoryLostFrameErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 20 }
+
+          tokenRingMLHistoryCongestionErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 21 }
+
+          tokenRingMLHistoryFrameCopiedErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+
+
+
+
+
+              ::= { tokenRingMLHistoryEntry 22 }
+
+          tokenRingMLHistoryFrequencyErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 23 }
+
+          tokenRingMLHistoryTokenErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 24 }
+
+          tokenRingMLHistorySoftErrorReports OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 25 }
+
+          tokenRingMLHistoryRingPollEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 26 }
+
+          tokenRingMLHistoryActiveStations OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingMLHistoryEntry 27}
+
+
+
+          tokenRingPHistoryTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF TokenRingPHistoryEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { history 4 }
+
+          tokenRingPHistoryEntry OBJECT-TYPE
+              SYNTAX TokenRingPHistoryEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { tokenRingPHistoryIndex,
+                      tokenRingPHistorySampleIndex }
+              ::= { tokenRingPHistoryTable 1 }
+
+
+          TokenRingPHistoryEntry ::= SEQUENCE {
+              tokenRingPHistoryIndex                          INTEGER,
+              tokenRingPHistorySampleIndex                    INTEGER,
+              tokenRingPHistoryIntervalStart                  TimeTicks,
+              tokenRingPHistoryDropEvents                     Counter,
+              tokenRingPHistoryDataOctets                     Counter,
+              tokenRingPHistoryDataPkts                       Counter,
+              tokenRingPHistoryDataBroadcastPkts              Counter,
+              tokenRingPHistoryDataMulticastPkts              Counter,
+              tokenRingPHistoryDataPkts18to63Octets           Counter,
+              tokenRingPHistoryDataPkts64to127Octets          Counter,
+              tokenRingPHistoryDataPkts128to255Octets         Counter,
+              tokenRingPHistoryDataPkts256to511Octets         Counter,
+              tokenRingPHistoryDataPkts512to1023Octets        Counter,
+
+
+
+
+
+              tokenRingPHistoryDataPkts1024to2047Octets       Counter,
+              tokenRingPHistoryDataPkts2048to4095Octets       Counter,
+              tokenRingPHistoryDataPkts4096to8191Octets       Counter,
+              tokenRingPHistoryDataPkts8192to18000Octets      Counter,
+              tokenRingPHistoryDataPktsGreaterThan18000Octets Counter
+          }
+
+          tokenRingPHistoryIndex OBJECT-TYPE
+              SYNTAX INTEGER (1..65535)
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 1 }
+
+          tokenRingPHistorySampleIndex OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 2 }
+
+          tokenRingPHistoryIntervalStart OBJECT-TYPE
+              SYNTAX TimeTicks
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 3 }
+
+
+
+
+
+          tokenRingPHistoryDropEvents OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 4 }
+
+          tokenRingPHistoryDataOctets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 5 }
+
+          tokenRingPHistoryDataPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 6 }
+
+          tokenRingPHistoryDataBroadcastPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 7 }
+
+          tokenRingPHistoryDataMulticastPkts OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+
+
+
+
+
+              ::= { tokenRingPHistoryEntry 8 }
+
+          tokenRingPHistoryDataPkts18to63Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 9 }
+
+          tokenRingPHistoryDataPkts64to127Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 10 }
+
+          tokenRingPHistoryDataPkts128to255Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 11 }
+
+          tokenRingPHistoryDataPkts256to511Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 12 }
+
+          tokenRingPHistoryDataPkts512to1023Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 13 }
+
+          tokenRingPHistoryDataPkts1024to2047Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 14 }
+
+          tokenRingPHistoryDataPkts2048to4095Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 15 }
+
+          tokenRingPHistoryDataPkts4096to8191Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 16 }
+
+
+
+
+
+
+          tokenRingPHistoryDataPkts8192to18000Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 17 }
+
+          tokenRingPHistoryDataPktsGreaterThan18000Octets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { tokenRingPHistoryEntry 18 }
+
+
+
+          ringStationControlTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF RingStationControlEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { tokenRing 1 }
+
+          ringStationControlEntry OBJECT-TYPE
+              SYNTAX RingStationControlEntry
+              ACCESS not-accessible
+              STATUS mandatory
+
+
+
+
+
+              INDEX { ringStationControlIfIndex }
+              ::= { ringStationControlTable 1 }
+
+
+          RingStationControlEntry ::= SEQUENCE {
+              ringStationControlIfIndex          INTEGER,
+              ringStationControlTableSize        INTEGER,
+              ringStationControlActiveStations   INTEGER,
+              ringStationControlRingState        INTEGER,
+              ringStationControlBeaconSender     MacAddress,
+              ringStationControlBeaconNAUN       MacAddress,
+              ringStationControlActiveMonitor    MacAddress,
+              ringStationControlOrderChanges     Counter,
+              ringStationControlOwner            OwnerString,
+              ringStationControlStatus           EntryStatus
+          }
+
+          ringStationControlIfIndex OBJECT-TYPE
+              SYNTAX INTEGER (1..65535)
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationControlEntry 1 }
+
+          ringStationControlTableSize OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationControlEntry 2 }
+
+
+
+
+
+
+          ringStationControlActiveStations OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationControlEntry 3 }
+
+          ringStationControlRingState OBJECT-TYPE
+              SYNTAX INTEGER {
+                  normalOperation(1),
+                  ringPurgeState(2),
+                  claimTokenState(3),
+                  beaconFrameStreamingState(4),
+                  beaconBitStreamingState(5),
+                  beaconRingSignalLossState(6),
+                  beaconSetRecoveryModeState(7)
+              }
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationControlEntry 4 }
+
+          ringStationControlBeaconSender OBJECT-TYPE
+              SYNTAX MacAddress
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationControlEntry 5 }
+
+          ringStationControlBeaconNAUN OBJECT-TYPE
+              SYNTAX MacAddress
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationControlEntry 6 }
+
+
+
+
+
+
+          ringStationControlActiveMonitor OBJECT-TYPE
+              SYNTAX MacAddress
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationControlEntry 7 }
+
+          ringStationControlOrderChanges OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationControlEntry 8 }
+
+          ringStationControlOwner OBJECT-TYPE
+              SYNTAX OwnerString
+              ACCESS read-write
+              STATUS mandatory
+              ::= { ringStationControlEntry 9 }
+
+          ringStationControlStatus OBJECT-TYPE
+              SYNTAX EntryStatus
+              ACCESS read-write
+              STATUS mandatory
+              ::= { ringStationControlEntry 10 }
+
+          ringStationTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF RingStationEntry
+              ACCESS not-accessible
+              STATUS mandatory
+               ::= { tokenRing 2 }
+
+          ringStationEntry OBJECT-TYPE
+              SYNTAX RingStationEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { ringStationIfIndex, ringStationMacAddress }
+              ::= { ringStationTable 1 }
+
+
+          RingStationEntry ::= SEQUENCE {
+              ringStationIfIndex                INTEGER,
+              ringStationMacAddress             MacAddress,
+              ringStationLastNAUN               MacAddress,
+              ringStationStationStatus          INTEGER,
+              ringStationLastEnterTime          TimeTicks,
+              ringStationLastExitTime           TimeTicks,
+              ringStationDuplicateAddresses     Counter,
+              ringStationInLineErrors           Counter,
+              ringStationOutLineErrors          Counter,
+              ringStationInternalErrors         Counter,
+              ringStationInBurstErrors          Counter,
+              ringStationOutBurstErrors         Counter,
+              ringStationACErrors               Counter,
+              ringStationAbortErrors            Counter,
+              ringStationLostFrameErrors        Counter,
+              ringStationCongestionErrors       Counter,
+              ringStationFrameCopiedErrors      Counter,
+              ringStationFrequencyErrors        Counter,
+              ringStationTokenErrors            Counter,
+              ringStationInBeaconErrors         Counter,
+              ringStationOutBeaconErrors        Counter,
+              ringStationInsertions             Counter
+          }
+
+          ringStationIfIndex OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+
+
+
+
+
+              ::= { ringStationEntry 1 }
+
+          ringStationMacAddress OBJECT-TYPE
+              SYNTAX MacAddress
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 2 }
+
+          ringStationLastNAUN OBJECT-TYPE
+              SYNTAX MacAddress
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 3 }
+
+          ringStationStationStatus OBJECT-TYPE
+              SYNTAX INTEGER {
+                  active(1),    -- actively participating in ring poll.
+                  inactive(2),  -- Not participating in ring poll
+                  forcedRemoval(3) -- Forced off ring by network
+              }
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 4 }
+
+          ringStationLastEnterTime OBJECT-TYPE
+              SYNTAX TimeTicks
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 5 }
+
+
+
+
+
+          ringStationLastExitTime OBJECT-TYPE
+              SYNTAX TimeTicks
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 6 }
+
+          ringStationDuplicateAddresses OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 7 }
+
+          ringStationInLineErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 8 }
+
+          ringStationOutLineErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 9 }
+
+          ringStationInternalErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+
+
+
+
+
+              ::= { ringStationEntry 10 }
+
+          ringStationInBurstErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 11 }
+
+          ringStationOutBurstErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 12 }
+
+          ringStationACErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 13 }
+
+          ringStationAbortErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 14 }
+
+          ringStationLostFrameErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+
+
+
+
+
+              ::= { ringStationEntry 15 }
+
+          ringStationCongestionErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 16 }
+
+          ringStationFrameCopiedErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 17 }
+
+          ringStationFrequencyErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 18 }
+
+          ringStationTokenErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 19 }
+
+          ringStationInBeaconErrors OBJECT-TYPE
+              SYNTAX Counter
+
+
+
+
+
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 20 }
+
+          ringStationOutBeaconErrors OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 21 }
+
+          ringStationInsertions OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationEntry 22 }
+
+
+
+
+          ringStationOrderTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF RingStationOrderEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { tokenRing 3 }
+
+          ringStationOrderEntry OBJECT-TYPE
+              SYNTAX RingStationOrderEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { ringStationOrderIfIndex,
+                      ringStationOrderOrderIndex }
+              ::= { ringStationOrderTable 1 }
+
+
+          RingStationOrderEntry ::= SEQUENCE {
+              ringStationOrderIfIndex             INTEGER,
+              ringStationOrderOrderIndex          INTEGER,
+              ringStationOrderMacAddress          MacAddress
+          }
+
+          ringStationOrderIfIndex OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationOrderEntry 1 }
+
+          ringStationOrderOrderIndex OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationOrderEntry 2 }
+
+          ringStationOrderMacAddress OBJECT-TYPE
+              SYNTAX MacAddress
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationOrderEntry 3 }
+
+
+
+          ringStationConfigControlTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF RingStationConfigControlEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { tokenRing 4 }
+
+          ringStationConfigControlEntry OBJECT-TYPE
+              SYNTAX RingStationConfigControlEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { ringStationConfigControlIfIndex,
+                      ringStationConfigControlMacAddress }
+              ::= { ringStationConfigControlTable 1 }
+
+
+          RingStationConfigControlEntry ::= SEQUENCE {
+              ringStationConfigControlIfIndex         INTEGER,
+              ringStationConfigControlMacAddress      MacAddress,
+              ringStationConfigControlRemove          INTEGER,
+              ringStationConfigControlUpdateStats     INTEGER
+          }
+
+          ringStationConfigControlIfIndex OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationConfigControlEntry 1 }
+
+          ringStationConfigControlMacAddress OBJECT-TYPE
+              SYNTAX MacAddress
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationConfigControlEntry 2 }
+
+          ringStationConfigControlRemove OBJECT-TYPE
+              SYNTAX INTEGER {
+                  stable(1),
+                  removing(2)
+              }
+              ACCESS read-write
+              STATUS mandatory
+              ::= { ringStationConfigControlEntry 3 }
+
+          ringStationConfigControlUpdateStats OBJECT-TYPE
+              SYNTAX INTEGER {
+                  stable(1),
+                  updating(2)
+              }
+              ACCESS read-write
+              STATUS mandatory
+              ::= { ringStationConfigControlEntry 4 }
+
+
+
+
+
+
+
+
+
+
+
+          ringStationConfigTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF RingStationConfigEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { tokenRing 5 }
+
+          ringStationConfigEntry OBJECT-TYPE
+              SYNTAX RingStationConfigEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { ringStationConfigIfIndex,
+                      ringStationConfigMacAddress }
+              ::= { ringStationConfigTable 1 }
+
+
+          RingStationConfigEntry ::= SEQUENCE {
+              ringStationConfigIfIndex            INTEGER,
+              ringStationConfigMacAddress         MacAddress,
+              ringStationConfigUpdateTime         TimeTicks,
+              ringStationConfigLocation           OCTET STRING,
+              ringStationConfigMicrocode          OCTET STRING,
+              ringStationConfigGroupAddress       OCTET STRING,
+              ringStationConfigFunctionalAddress  OCTET STRING
+          }
+
+          ringStationConfigIfIndex OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationConfigEntry 1 }
+
+          ringStationConfigMacAddress OBJECT-TYPE
+              SYNTAX MacAddress
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationConfigEntry 2 }
+
+          ringStationConfigUpdateTime OBJECT-TYPE
+              SYNTAX TimeTicks
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationConfigEntry 3 }
+
+          ringStationConfigLocation OBJECT-TYPE
+              SYNTAX OCTET STRING (SIZE(4))
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationConfigEntry 4 }
+
+          ringStationConfigMicrocode OBJECT-TYPE
+              SYNTAX OCTET STRING (SIZE(10))
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationConfigEntry 5 }
+
+          ringStationConfigGroupAddress OBJECT-TYPE
+              SYNTAX OCTET STRING (SIZE(4))
+              ACCESS read-only
+              STATUS mandatory
+
+
+
+
+
+              ::= { ringStationConfigEntry 6 }
+
+          ringStationConfigFunctionalAddress OBJECT-TYPE
+              SYNTAX OCTET STRING (SIZE(4))
+              ACCESS read-only
+              STATUS mandatory
+              ::= { ringStationConfigEntry 7 }
+
+
+
+          sourceRoutingStatsTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF SourceRoutingStatsEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { tokenRing 6 }
+
+          sourceRoutingStatsEntry OBJECT-TYPE
+              SYNTAX SourceRoutingStatsEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { sourceRoutingStatsIfIndex }
+              ::= { sourceRoutingStatsTable 1 }
+
+
+          SourceRoutingStatsEntry ::= SEQUENCE {
+              sourceRoutingStatsIfIndex                     INTEGER,
+              sourceRoutingStatsRingNumber                  INTEGER,
+              sourceRoutingStatsInFrames                    Counter,
+
+
+
+
+
+
+              sourceRoutingStatsOutFrames                   Counter,
+
+              sourceRoutingStatsThroughFrames               Counter,
+
+              sourceRoutingStatsAllRoutesBroadcastFrames    Counter,
+              sourceRoutingStatsSingleRouteBroadcastFrames  Counter,
+              sourceRoutingStatsInOctets                    Counter,
+              sourceRoutingStatsOutOctets                   Counter,
+              sourceRoutingStatsThroughOctets               Counter,
+              sourceRoutingStatsAllRoutesBroadcastOctets    Counter,
+              sourceRoutingStatsSingleRoutesBroadcastOctets Counter,
+              sourceRoutingStatsLocalLLCFrames              Counter,
+              sourceRoutingStats1HopFrames                  Counter,
+              sourceRoutingStats2HopsFrames                 Counter,
+              sourceRoutingStats3HopsFrames                 Counter,
+              sourceRoutingStats4HopsFrames                 Counter,
+              sourceRoutingStats5HopsFrames                 Counter,
+              sourceRoutingStats6HopsFrames                 Counter,
+              sourceRoutingStats7HopsFrames                 Counter,
+              sourceRoutingStats8HopsFrames                 Counter,
+              sourceRoutingStatsMoreThan8HopsFrames         Counter,
+              sourceRoutingStatsOwner                       OwnerString,
+              sourceRoutingStatsStatus                      EntryStatus
+          }
+
+          sourceRoutingStatsIfIndex OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 1 }
+
+          sourceRoutingStatsRingNumber OBJECT-TYPE
+              SYNTAX INTEGER
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 2 }
+
+          sourceRoutingStatsInFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 3 }
+
+          sourceRoutingStatsOutFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 4 }
+
+          sourceRoutingStatsThroughFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 5 }
+
+          sourceRoutingStatsAllRoutesBroadcastFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 6 }
+
+
+
+
+
+
+          sourceRoutingStatsSingleRouteBroadcastFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 7 }
+
+          sourceRoutingStatsInOctets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 8 }
+
+          sourceRoutingStatsOutOctets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 9 }
+
+          sourceRoutingStatsThroughOctets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 10 }
+
+          sourceRoutingStatsAllRoutesBroadcastOctets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 11 }
+
+          sourceRoutingStatsSingleRoutesBroadcastOctets OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+
+
+
+
+
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 12 }
+
+          sourceRoutingStatsLocalLLCFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 13 }
+
+          sourceRoutingStats1HopFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 14 }
+
+          sourceRoutingStats2HopsFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 15 }
+
+          sourceRoutingStats3HopsFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 16 }
+
+          sourceRoutingStats4HopsFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 17 }
+
+          sourceRoutingStats5HopsFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 18 }
+
+          sourceRoutingStats6HopsFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 19 }
+
+          sourceRoutingStats7HopsFrames OBJECT-TYPE
+
+
+
+
+
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 20 }
+
+          sourceRoutingStats8HopsFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 21 }
+
+          sourceRoutingStatsMoreThan8HopsFrames OBJECT-TYPE
+              SYNTAX Counter
+              ACCESS read-only
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 22 }
+
+          sourceRoutingStatsOwner OBJECT-TYPE
+              SYNTAX OwnerString
+              ACCESS read-write
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 23 }
+
+          sourceRoutingStatsStatus OBJECT-TYPE
+
+
+
+
+
+              SYNTAX EntryStatus
+              ACCESS read-write
+              STATUS mandatory
+              ::= { sourceRoutingStatsEntry 24 }
+
+          END

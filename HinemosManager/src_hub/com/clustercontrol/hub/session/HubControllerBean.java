@@ -1,21 +1,13 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.session;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -28,10 +20,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.PersistenceException;
-import javax.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
 
@@ -40,10 +28,12 @@ import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.collect.model.CollectData;
 import com.clustercontrol.collect.model.CollectKeyInfo;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -54,7 +44,6 @@ import com.clustercontrol.fault.LogFormatUsed;
 import com.clustercontrol.fault.LogTransferDuplicate;
 import com.clustercontrol.fault.LogTransferNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
-import com.clustercontrol.hub.bean.PropertyConstants;
 import com.clustercontrol.hub.bean.StringData;
 import com.clustercontrol.hub.bean.StringQueryInfo;
 import com.clustercontrol.hub.bean.StringQueryResult;
@@ -77,11 +66,9 @@ import com.clustercontrol.hub.session.TransferFactory.Property;
 import com.clustercontrol.hub.util.HubValidator;
 import com.clustercontrol.hub.util.QueryUtil;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
-import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
-import com.clustercontrol.platform.QueryPertial;
-import com.clustercontrol.platform.hub.HubControllerUtil;
+import com.clustercontrol.platform.QueryExecutor;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -1115,59 +1102,60 @@ public class HubControllerBean {
 	}
 	
 	private void saveLastPosition(String transferId, long lastPosition) {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
-		// 位置情報更新
-		jtm.begin();
-		
-		// メモリの圧迫を防ぐため、EntityManager.clear を上記処理内で呼び出している。
-		// したがって、処理冒頭に取得した TransferInfo は、jpa のコンテキストから分離しているので、再度取得し直す。
-		TransferInfo forUpdate;
-		try {
-			forUpdate = QueryUtil.getTransferInfo(transferId);
-		} catch (LogTransferNotFound | InvalidRole e) {
-			logger.info(String.format("transfer() : %s", e.getMessage()));
-			return;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			
+			// 位置情報更新
+			jtm.begin();
+			
+			// メモリの圧迫を防ぐため、EntityManager.clear を上記処理内で呼び出している。
+			// したがって、処理冒頭に取得した TransferInfo は、jpa のコンテキストから分離しているので、再度取得し直す。
+			TransferInfo forUpdate;
+			try {
+				forUpdate = QueryUtil.getTransferInfo(transferId);
+			} catch (LogTransferNotFound | InvalidRole e) {
+				logger.info(String.format("transfer() : %s", e.getMessage()));
+				return;
+			}
+			
+			TransferInfoPosition position = forUpdate.getPosition();
+			if (position == null) {
+				position = new TransferInfoPosition(forUpdate.getTransferId());
+				em.persist(position);
+				forUpdate.setPosition(position);
+			}
+			
+			position.setLastPosition(lastPosition);
+			position.setLastDate(HinemosTime.currentTimeMillis());
+			
+			jtm.commit();
 		}
-		
-		TransferInfoPosition position = forUpdate.getPosition();
-		if (position == null) {
-			position = new TransferInfoPosition(forUpdate.getTransferId());
-			forUpdate.setPosition(position);
-		}
-		
-		position.setLastPosition(lastPosition);
-		position.setLastDate(HinemosTime.currentTimeMillis());
-		
-		jtm.commit();
 	}
 
 	/**
 	 * 文字列収集情報を検索する。
 	 * 
-	 * @param format
-	 * @return
+	 * @param queryInfo
+	 * @return 検索結果
+	 * @throws HinemosDbTimeout
+	 * @throws HinemosUnknown
+	 * @throws InvalidRole
 	 * @throws InvalidSetting
-	 * @throws HinemosUnknown 
-	 * @throws InvalidRole 
 	 */
-	public StringQueryResult queryCollectStringData(StringQueryInfo queryInfo) throws InvalidSetting, HinemosUnknown, InvalidRole  {
+	public StringQueryResult queryCollectStringData(StringQueryInfo queryInfo) throws HinemosDbTimeout, HinemosUnknown, InvalidRole, InvalidSetting  {
+		// 検索タイムアウト値を取得
+		int logSearchTimeout = HinemosPropertyCommon.hub_search_timeout.getIntegerValue();
+
 		long start = System.currentTimeMillis();
 		
 		logger.debug(String.format("queryCollectStringData() : start query. query=%s", queryInfo));
 		
-		// 検索タイムアウト値を取得
-		int logSearchTimeout = PropertyConstants.hub_search_timeout.number();
-		logger.info("queryCollectStringData() : query timeout=" + logSearchTimeout);
 		
-		EntityManagerFactory factory = Persistence.createEntityManagerFactory("hinemos");
-		EntityManager em = factory.createEntityManager();
-
-		Connection cn = null;
+		JpaTransactionManager jtm = null;
 		try {
-			// 検索タイムアウト設定
-			cn = HubControllerUtil.setStatementTimeout(em, logSearchTimeout);
-			
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
 			// キーのクエリ
 			StringBuilder keyQueryStr = new StringBuilder("SELECT DISTINCT k FROM CollectStringKeyInfo k");
 			List<String> facilityIds = new ArrayList<>();
@@ -1189,9 +1177,6 @@ public class HubControllerBean {
 									}
 								}
 							}
-						} catch (InvalidRole e ){
-							logger.warn("queryCollectStringData " + e.getMessage());
-							throw e;
 						} catch(FacilityNotFound e) {
 							logger.warn("queryCollectStringData " + e.getMessage());
 							throw new IllegalStateException("preCollect() : can't get NodeInfo. facilityId = " + queryInfo.getFacilityId());
@@ -1200,6 +1185,13 @@ public class HubControllerBean {
 						facilityIds.add(FacilityTreeAttributeConstant.UNREGISTERED_SCOPE);
 					}
 					whereStr.append("k.id.facilityId IN :nodeIds");
+				}
+				
+				if (facilityIds.isEmpty()) {
+					// 検索対象となるノードがないので終了。
+					logger.warn("queryCollectStringData() : " 
+							+ MessageConstant.MESSAGE_HUB_SEARCH_NO_NODE.getMessage());
+					throw new InvalidSetting(MessageConstant.MESSAGE_HUB_SEARCH_NO_NODE.getMessage());
 				}
 				
 				if (queryInfo.getMonitorId() != null) {
@@ -1216,11 +1208,7 @@ public class HubControllerBean {
 					}
 					whereStr.append("k.id.monitorId IN :monitorIds");
 					
-					MonitorSettingControllerBean bean = new MonitorSettingControllerBean();
-					List<MonitorInfo> infos = bean.getMonitorListWithoutCheckInfo(null);
-					for(MonitorInfo info : infos) {
-						monitorIds.add(info.getMonitorId());
-					}
+					monitorIds = new MonitorSettingControllerBean().getMonitorIdList(null);
 				}
 
 				if (whereStr.length() != 0) {
@@ -1228,22 +1216,18 @@ public class HubControllerBean {
 				}
 			}
 
-			TypedQuery<CollectStringKeyInfo> keyQuery = HubControllerUtil.createQuery(em, keyQueryStr.toString(), CollectStringKeyInfo.class, logSearchTimeout);
-			if (!facilityIds.isEmpty()) {
-				keyQuery.setParameter("nodeIds", facilityIds);
-				logger.debug(String.format("queryCollectStringData() : target nodes. nodes=%s, query=%s", facilityIds, queryInfo));
-			} else {
-				// 検索対象となるノードがないので終了。
-				throw new InvalidSetting(MessageConstant.MESSAGE_HUB_SEARCH_NO_NODE.getMessage());
-			}
-			
+			Map<String, Object> parameters = new HashMap<String, Object>();
+			parameters.put("nodeIds", facilityIds);
 			if(!monitorIds.isEmpty()) {
-				keyQuery.setParameter("monitorIds", monitorIds);
+				parameters.put("monitorIds", monitorIds);
 				logger.debug(String.format("queryCollectStringData() : target monitorIds. monitorIds=%s, query=%s", monitorIds, queryInfo));
 			}
-
+			List<CollectStringKeyInfo> ketResults = QueryExecutor.getListByJpqlWithTimeout(
+					keyQueryStr.toString(), 
+					CollectStringKeyInfo.class, 
+					parameters, 
+					logSearchTimeout);
 			Map<Long, CollectStringKeyInfo> keys = new HashMap<>();
-			List<CollectStringKeyInfo> ketResults = keyQuery.getResultList();
 			for (CollectStringKeyInfo r: ketResults) {
 				keys.put(r.getCollectId(), r);
 			}
@@ -1262,7 +1246,7 @@ public class HubControllerBean {
 
 			// データのクエリ
 			StringBuilder dataQueryStr;
-			if (PropertyConstants.hub_search_switch_join.bool()) {
+			if (HinemosPropertyCommon.hub_search_switch_join.getBooleanValue()) {
 				dataQueryStr = new StringBuilder("FROM CollectStringData d JOIN d.tagList t "); 
 			} else {
 				dataQueryStr = new StringBuilder("FROM CollectStringData d "); 
@@ -1273,6 +1257,8 @@ public class HubControllerBean {
 					) {
 
 				if (queryInfo.getFrom() != null && queryInfo.getTo() != null && queryInfo.getFrom() > queryInfo.getTo()){
+					logger.warn("queryCollectStringData() : " 
+							+ MessageConstant.MESSAGE_HUB_SEARCH_DATE_INVALID.getMessage());
 					throw new InvalidSetting(MessageConstant.MESSAGE_HUB_SEARCH_DATE_INVALID.getMessage());
 				}
 
@@ -1299,7 +1285,7 @@ public class HubControllerBean {
 					
 					String keywords = queryInfo.getKeywords();
 					
-					List<Token> tokens = parseKeywors(keywords);
+					List<Token> tokens = parseKeywords(keywords);
 					for (Token token: tokens) {
 						if (conditionValueBuffer.length() != 0){
 							conditionValueBuffer.append(operator);
@@ -1311,6 +1297,8 @@ public class HubControllerBean {
 							// タグ指定ではない場合
 							if (token.negate){
 								if (token.word.length() == 1){
+									logger.warn("queryCollectStringData() : " 
+											+ MessageConstant.MESSAGE_HUB_SEARCH_KEYWORD_INVALID.getMessage());
 									throw new InvalidSetting(MessageConstant.MESSAGE_HUB_SEARCH_KEYWORD_INVALID.getMessage());
 								}
 								conditionValueBuffer
@@ -1356,10 +1344,13 @@ public class HubControllerBean {
 				String queryStr = "SELECT COUNT(DISTINCT d) " + dataQueryStr.toString();
 				logger.debug(String.format("queryCollectStringData() : query count. queryStr=%s, query=%s", queryStr, queryInfo));
 				
-				TypedQuery<Long> dataQuery = em.createQuery(queryStr, Long.class);
-				dataQuery.setParameter("collectIds", keys.keySet());
-				
-				Long count = dataQuery.getSingleResult();
+				parameters = new HashMap<String, Object>();
+				parameters.put("collectIds", keys.keySet());
+				Long count = QueryExecutor.getDataByJpqlWithTimeout(
+						queryStr.toString(), 
+						Long.class,
+						parameters,
+						logSearchTimeout);
 				if (count == null || count == 0) {
 					result.setSize(0);
 					result.setCount(0);
@@ -1371,17 +1362,20 @@ public class HubControllerBean {
 				result.setCount(Integer.valueOf(count.toString()));
 			}
 			
-			String queryStr = "SELECT DISTINCT d " + dataQueryStr.toString() + " ORDER BY d.time DESC";
+			String queryStr = "SELECT DISTINCT d " + dataQueryStr.toString() + " ORDER BY d.time";
+			queryStr = queryStr + " DESC";
 			logger.debug(String.format("queryCollectStringData() : query data. queryStr=%s, query=%s", queryStr, queryInfo));
 			
-			TypedQuery<CollectStringData> dataQuery = HubControllerUtil.createQuery(em, queryStr.toString(), CollectStringData.class, logSearchTimeout);
-			
-			dataQuery.setParameter("collectIds", keys.keySet());
-			
-			dataQuery.setFirstResult(queryInfo.getOffset());
-			dataQuery.setMaxResults(queryInfo.getSize());
-			List<CollectStringData> dataResults = dataQuery.getResultList();
-			
+			parameters = new HashMap<String, Object>();
+			parameters.put("collectIds", keys.keySet());
+			List<CollectStringData> dataResults = QueryExecutor.getListByJpqlWithTimeout(
+					queryStr.toString(), 
+					CollectStringData.class, 
+					parameters,
+					logSearchTimeout,
+					queryInfo.getOffset(),
+					queryInfo.getSize());
+
 			if (dataResults == null || dataResults.isEmpty()) {
 				result.setSize(0);
 				result.setTime(System.currentTimeMillis() - start);
@@ -1398,7 +1392,6 @@ public class HubControllerBean {
 				StringData data = new StringData();
 				data.setFacilityId(key.getFacilityId());
 				data.setMonitorId(key.getMonitorId());
-				data.setTargetName(key.getTargetName());
 				data.setTime(r.getTime());
 				data.setData(r.getValue());
 				List<Tag> tagList = new ArrayList<Tag>();
@@ -1410,6 +1403,7 @@ public class HubControllerBean {
 					tagList.add(tag);
 				}
 				data.setTagList(tagList);
+				data.setPrimaryKey(r.getId());
 				stringDataList.add(data);
 			}
 			result.setDataList(stringDataList);
@@ -1419,42 +1413,30 @@ public class HubControllerBean {
 			logger.debug(String.format("queryCollectStringData() : end query. result=%s, query=%s", result.toResultString(), queryInfo));
 			
 			return result;
-		}catch(SQLException e){
-			logger.warn(e.getMessage());
-			throw new HinemosUnknown(e.getMessage(), e);
-		}catch(PersistenceException e){
-			// クエリタイムアウトか判定。
-			if (QueryPertial.isQueryTimeout(e)){
-				throw new InvalidSetting(MessageConstant.MESSAGE_HUB_SEARCH_TIMEOUT.getMessage());
+		} catch (HinemosDbTimeout e) {
+			if (jtm != null) {
+				jtm.rollback();
 			}
-			logger.warn(e.getMessage());
-			throw new HinemosUnknown(e.getMessage(), e);
-		} catch(InvalidSetting e) {
-			logger.warn(e.getMessage());
+			throw new HinemosDbTimeout(MessageConstant.MESSAGE_HUB_SEARCH_TIMEOUT.getMessage());
+		} catch (InvalidSetting | HinemosUnknown | InvalidRole | IllegalStateException e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
 			throw e;
-		}catch(Exception e){
-			logger.warn(e.getMessage());
-			throw new HinemosUnknown(e.getMessage(), e);
-		}finally{
-			if (cn != null) {
-				try {
-					// クエリタイムアウト解除。
-					HubControllerUtil.resetStatementTimeout(cn, em, logSearchTimeout);
-				} catch (SQLException e) {
-					logger.warn(e.getMessage());
-				} finally {
-					try {
-						cn.close();
-					} catch (SQLException e) {
-						logger.warn(e.getMessage());
-					}
-				}
+		} catch (RuntimeException e) {
+			logger.warn("queryCollectStringData() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
 			}
-			em.close();
-			factory.close();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
 		}
 	}
-	
+
 	/**
 	 * 解析したワードを格納。
 	 *
@@ -1528,7 +1510,7 @@ public class HubControllerBean {
 	 * @param keywords
 	 * @return
 	 */
-	public static List<Token> parseKeywors(String keywords) {
+	public static List<Token> parseKeywords(String keywords) {
 		boolean inQuote = false;
 		boolean inEscape = false;
 		boolean inNegate = false;

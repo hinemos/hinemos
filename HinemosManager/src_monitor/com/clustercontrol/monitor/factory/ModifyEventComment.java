@@ -1,18 +1,10 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
-
 
 package com.clustercontrol.monitor.factory;
 
@@ -49,19 +41,21 @@ public class ModifyEventComment {
 
 		// イベントログ情報を取得
 		EventLogEntity event = null;
-		try {
-			event = QueryUtil.getEventLogPK(monitorId, monitorDetailId, pluginId, outputDate, facilityId, ObjectPrivilegeMode.MODIFY);
-		} catch (EventLogNotFound e) {
-			throw e;
-		} catch (InvalidRole e) {
-			throw e;
-		}
-		commentDate = HinemosTime.getDateInstance().getTime();
-		event.setCommentDate(commentDate);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			try {
+				event = QueryUtil.getEventLogPK(monitorId, monitorDetailId, pluginId, outputDate, facilityId, ObjectPrivilegeMode.MODIFY);
+			} catch (EventLogNotFound e) {
+				throw e;
+			} catch (InvalidRole e) {
+				throw e;
+			}
+			commentDate = HinemosTime.getDateInstance().getTime();
+			event.setCommentDate(commentDate);
 
-		event.setCommentUser(commentUser);
-		event.setComment(comment);
-		
-		new JpaTransactionManager().addCallback(new EventCacheModifyCallback(false, event));
+			event.setCommentUser(commentUser);
+			event.setComment(comment);
+			
+			jtm.addCallback(new EventCacheModifyCallback(false, event));
+		}
 	}
 }

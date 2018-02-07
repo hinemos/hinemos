@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
-性能[グラフ]の散布図を描画するJavaScriptです。
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ *
+ * 性能[グラフ]の散布図を描画するJavaScriptです。
  */
 Scattergraph = function(elementid, options, graphsize) {
 var self = this;
@@ -561,7 +555,8 @@ Scattergraph.prototype.createPoints = function(data_arr, itemorder) {
 					self.createGtagDot(nodatacount);
 				}
 			}
-			if (getGraphConfig("data-total-flg")) {
+			// selfがundefinedの場合はスキップ
+			if (self && getGraphConfig("data-total-flg")) {
 				if (getGraphConfig("data-legend-flg")) {
 					// 凡例の描画
 					self.createScatterLegend();
@@ -896,6 +891,7 @@ Scattergraph.prototype.drawApprox = function() {
 		.attr("class", "line")
 	.attr("id", function(d, i) {return d;})
 	.style("stroke-width", HINEMOS_COLLECT_CONST.CONST_LINE_WIDTH_DEFAULT)
+	.style("stroke-dasharray", "5, 3")
 	.style("fill", "none")
 	.attr("clip-path", "url(#clip)")
 	.on("mouseover", function(d) { // 線のmouseoverイベント

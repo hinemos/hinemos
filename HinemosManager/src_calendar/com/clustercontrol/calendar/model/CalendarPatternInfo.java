@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.calendar.model;
 
 
@@ -57,9 +65,7 @@ public class CalendarPatternInfo extends ObjectPrivilegeTargetInfo {
 
 	public CalendarPatternInfo(String calPatternId) {
 		this.setCalPatternId(calPatternId);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.setObjectId(this.getCalPatternId());
+		this.setObjectId(calPatternId);
 	}
 
 	@Id
@@ -155,14 +161,16 @@ public class CalendarPatternInfo extends ObjectPrivilegeTargetInfo {
 	 * 
 	 */
 	public void deleteCalPatternDetailInfoEntities(List<YMDPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<YMD> list = this.getYmd();
-		Iterator<YMD> iter = list.iterator();
-		while(iter.hasNext()) {
-			YMD entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<YMD> list = this.getYmd();
+			Iterator<YMD> iter = list.iterator();
+			while(iter.hasNext()) {
+				YMD entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}

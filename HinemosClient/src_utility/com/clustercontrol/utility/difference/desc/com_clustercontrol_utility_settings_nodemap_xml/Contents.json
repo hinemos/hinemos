@@ -1,0 +1,31 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeMapType_facilityId"}
+	]},
+
+	{
+	"propName":"iconImage",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeMapType_iconImage"}
+	]},
+	
+	{
+	"propName":"x",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeMapType_x"}
+	]},
+	
+	{
+	"propName":"y",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeMapType_y"}
+	]}
+]
+}

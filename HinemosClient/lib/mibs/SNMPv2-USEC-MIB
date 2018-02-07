@@ -1,0 +1,161 @@
+SNMPv2-USEC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Counter32, Unsigned32,
+    snmpModules
+        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF;
+
+
+usecMIB MODULE-IDENTITY
+    LAST-UPDATED "9601120000Z"
+    ORGANIZATION "IETF SNMPv2 Working Group"
+    ::= { snmpModules 6 }
+
+
+usecMIBObjects OBJECT IDENTIFIER ::= { usecMIB 1 }
+
+
+
+AgentID ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX     OCTET STRING (SIZE (12))
+
+
+
+
+usecAgent       OBJECT IDENTIFIER ::= { usecMIBObjects 1 }
+
+agentID OBJECT-TYPE
+    SYNTAX     AgentID
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecAgent 1 }
+
+agentBoots OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecAgent 2 }
+
+
+
+
+
+agentTime OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..2147483647)
+    UNITS      "seconds"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecAgent 3 }
+
+agentSize OBJECT-TYPE
+    SYNTAX     INTEGER (484..65507)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecAgent 4 }
+
+
+
+usecStats      OBJECT IDENTIFIER ::= { usecMIBObjects 2 }
+
+
+usecStatsUnsupportedQoS OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecStats 1 }
+
+usecStatsNotInWindows OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecStats 2 }
+
+
+
+
+
+usecStatsUnknownUserNames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecStats 3 }
+
+usecStatsWrongDigestValues OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecStats 4 }
+
+usecStatsUnknownContexts OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecStats 5 }
+
+usecStatsBadParameters OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usecStats 6 }
+
+usecStatsUnauthorizedOperations OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { usecStats 7 }
+
+
+
+usecMIBConformance
+               OBJECT IDENTIFIER ::= { usecMIB 2 }
+
+usecMIBCompliances
+               OBJECT IDENTIFIER ::= { usecMIBConformance 1 }
+usecMIBGroups  OBJECT IDENTIFIER ::= { usecMIBConformance 2 }
+
+
+
+usecMIBCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS { usecBasicGroup,
+                          usecStatsGroup }
+    ::= { usecMIBCompliances 1 }
+
+
+
+usecBasicGroup OBJECT-GROUP
+    OBJECTS { agentID,
+              agentBoots,
+              agentTime,
+              agentSize }
+    STATUS  current
+    ::= { usecMIBGroups 1 }
+
+usecStatsGroup OBJECT-GROUP
+    OBJECTS { usecStatsUnsupportedQoS,
+              usecStatsNotInWindows,
+              usecStatsUnknownUserNames,
+              usecStatsWrongDigestValues,
+              usecStatsUnknownContexts,
+              usecStatsBadParameters,
+              usecStatsUnauthorizedOperations }
+
+
+
+
+
+    STATUS  current
+    ::= { usecMIBGroups 2 }
+
+END

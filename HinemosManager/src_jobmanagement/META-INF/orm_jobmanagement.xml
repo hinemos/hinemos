@@ -163,6 +163,17 @@
 			]]>
 		</query>
 	</named-query>
+	<!-- JobStartJobMstEntity -->
+	<named-query name="JobStartJobMstEntity.findByTargetJobId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobStartJobMstEntity a
+				WHERE a.id.targetJobunitId = :targetJobunitId
+				AND a.id.targetJobId = :targetJobId
+				ORDER BY a.id.jobunitId, a.id.jobId, a.id.targetJobunitId, a.id.targetJobId, a.id.targetJobType, a.id.targetJobEndValue
+			]]>
+		</query>
+	</named-query>
 	<!-- JobSessionEntity -->
 	<named-query name="JobSessionEntity.findUnendSessions">
 		<query>
@@ -250,7 +261,42 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="JobSessionJobEntity.findByJobunitIdJobIdEndDate">
+		<query>
+			<![CDATA[
+			SELECT a FROM JobSessionJobEntity a
+			WHERE a.id.jobunitId = :jobunitId
+			AND a.id.jobId = :jobId
+			AND a.endDate >= :endDate
+			ORDER BY a.endDate DESC
+			]]>
+		</query>
+	</named-query>
 	<!-- JobSessionNodeEntity -->
+	<named-query name="JobSessionJobEntity.findByIdsDesc">
+		<query>
+			<![CDATA[
+			SELECT a FROM JobSessionJobEntity a
+			WHERE a.id.jobunitId = :jobunitId
+			AND a.id.jobId = :jobId
+			AND　a.startDate != null 
+			AND a.endDate != null
+			AND a.status IN :statusList
+			ORDER BY a.startDate DESC
+			]]>
+		</query>
+	</named-query>
+		<named-query name="JobSessionJobEntity.findByIdsTime">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionJobEntity a
+				WHERE (a.id.jobunitId, a.id.jobId) IN :jobIds
+				AND a.endDate >= :fromTime 
+				AND a.startDate <= :toTime
+				ORDER BY a.startDate
+			]]>
+		</query>
+	</named-query>
 	<named-query name="JobSessionNodeEntity.findByStatusStartIsNull">
 		<query>
 			<![CDATA[
@@ -415,6 +461,24 @@
 		<query>
 			<![CDATA[
 				SELECT a FROM JobStartParamMstEntity a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobNextJobOrderMstEntity.findByJobunitIdJobId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobNextJobOrderMstEntity a
+				WHERE a.id.jobunitId = :jobunitId AND a.id.jobId = :jobId
+				ORDER BY a.order DESC, a.id.nextJobId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobNextJobOrderInfoEntity.findBySessionIdJobunitIdJobId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobNextJobOrderInfoEntity a
+				WHERE a.id.sessionId = :sessionId AND a.id.jobunitId = :jobunitId AND a.id.jobId = :jobId
+				ORDER BY a.order DESC, a.id.nextJobId
 			]]>
 		</query>
 	</named-query>

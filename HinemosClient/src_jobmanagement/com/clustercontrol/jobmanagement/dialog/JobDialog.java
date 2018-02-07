@@ -1,21 +1,13 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.dialog;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -450,7 +442,7 @@ public class JobDialog extends CommonDialog {
 			tabItem1.setControl(m_startComposite);
 
 			//制御
-			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE);
+			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE, info.getType());
 			WidgetTestUtil.setTestId(this, "m_controlComposite", m_controlComposite);
 			TabItem tabItem2 = new TabItem(m_tabFolder, SWT.NONE);
 			WidgetTestUtil.setTestId(this, "tabitem2", tabItem2);
@@ -483,7 +475,7 @@ public class JobDialog extends CommonDialog {
 			tabItem1.setControl(m_startComposite);
 
 			//制御(ジョブ)
-			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE);
+			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE, info.getType());
 			WidgetTestUtil.setTestId(this, "m_controlComposite", m_controlComposite);
 			TabItem tabItem2 = new TabItem(m_tabFolder, SWT.NONE);
 			WidgetTestUtil.setTestId(this, "tabItem2", tabItem2);
@@ -534,7 +526,7 @@ public class JobDialog extends CommonDialog {
 			tabItem1.setControl(m_startComposite);
 
 			//制御（ジョブ）
-			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE);
+			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE, info.getType());
 			WidgetTestUtil.setTestId(this, "m_controlComposite", m_controlComposite);
 			TabItem tabItem2 = new TabItem(m_tabFolder, SWT.NONE);
 			WidgetTestUtil.setTestId(this, "tabItem2", tabItem2);
@@ -601,7 +593,7 @@ public class JobDialog extends CommonDialog {
 			tabItem1.setControl(m_startComposite);
 
 			//制御(ジョブ)
-			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE);
+			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE, info.getType());
 			WidgetTestUtil.setTestId(this, "m_controlComposite", m_controlComposite);
 			TabItem tabItem2 = new TabItem(m_tabFolder, SWT.NONE);
 			WidgetTestUtil.setTestId(this, "tabItem2", tabItem2);
@@ -643,7 +635,7 @@ public class JobDialog extends CommonDialog {
 			tabItem1.setControl(m_startComposite);
 
 			//制御(ジョブ)
-			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE);
+			m_controlComposite = new ControlComposite(m_tabFolder, SWT.NONE, info.getType());
 			WidgetTestUtil.setTestId(this, "m_controlComposite", m_controlComposite);
 			TabItem tabItem2 = new TabItem(m_tabFolder, SWT.NONE);
 			tabItem2.setText(Messages.getString("control.job"));
@@ -852,17 +844,22 @@ public class JobDialog extends CommonDialog {
 			}
 
 			// オーナーロール取得
-			if (info.getOwnerRoleId() != null) {
-				this.m_ownerRoleId.setText(info.getOwnerRoleId());
-			} else {
-				if (info.getType() == JobConstant.TYPE_JOBUNIT) {
-					this.m_ownerRoleId.setText(RoleIdConstant.ALL_USERS);
+			if (info.getType() == JobConstant.TYPE_JOBUNIT) {
+				if (info.getOwnerRoleId() != null) {
+					this.m_ownerRoleId.setText(info.getOwnerRoleId());
 				} else {
-					JobTreeItem parentItem = m_jobTreeItem.getParent();
-					if (parentItem != null) {
-						JobInfo parentInfo = parentItem.getData();
-						this.m_ownerRoleId.setText(parentInfo.getOwnerRoleId());
+					this.m_ownerRoleId.setText(RoleIdConstant.ALL_USERS);
+				}
+			} else {
+				JobTreeItem parentItem = m_jobTreeItem.getParent();
+				if (parentItem != null) {
+					// ジョブツリーより、ジョブユニットのオーナーロールIDを取得する
+					//FullJob APIが呼ばれる前でも親JobTreeItemのJobInfoとOwnerRoleIdは取得できるためこの実装で問題ない
+					while(parentItem.getData().getType() != JobConstant.TYPE_JOBUNIT) {
+						parentItem = parentItem.getParent();
 					}
+					JobInfo parentInfo = parentItem.getData();
+					this.m_ownerRoleId.setText(parentInfo.getOwnerRoleId());
 				}
 			}
 
@@ -895,6 +892,7 @@ public class JobDialog extends CommonDialog {
 
 				//制御
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
+				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
@@ -914,6 +912,7 @@ public class JobDialog extends CommonDialog {
 
 				//制御
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
+				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
@@ -943,6 +942,7 @@ public class JobDialog extends CommonDialog {
 
 				//制御
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
+				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
@@ -989,6 +989,7 @@ public class JobDialog extends CommonDialog {
 
 				//制御
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
+				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
@@ -1018,6 +1019,7 @@ public class JobDialog extends CommonDialog {
 
 				//制御
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
+				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
@@ -1317,6 +1319,7 @@ public class JobDialog extends CommonDialog {
 					info.getCommand().setMessageRetry(m_controlNodeComposite.getCommandInfo().getMessageRetry());
 					info.getCommand().setCommandRetryFlg(m_controlNodeComposite.getCommandInfo().isCommandRetryFlg());
 					info.getCommand().setCommandRetry(m_controlNodeComposite.getCommandInfo().getCommandRetry());
+					info.getCommand().setCommandRetryEndStatus(m_controlNodeComposite.getCommandInfo().getCommandRetryEndStatus());
 				}
 				if (m_controlNodeComposite.getFileInfo() != null) {
 					info.getFile().setMessageRetryEndFlg(m_controlNodeComposite.getFileInfo().isMessageRetryEndFlg());
@@ -1577,20 +1580,28 @@ public class JobDialog extends CommonDialog {
 		}
 
 		//オーナーロールID取得
-		String newOwnerRoleId = m_ownerRoleId.getText();
-		if (newOwnerRoleId.length() > 0) {
-			if (!newOwnerRoleId.equals(info.getOwnerRoleId())) {
-				changeOwnerRoleId(m_jobTreeItem, newOwnerRoleId);
+		//ジョブユニットのみJobInfoにOwnerRoleIdを設定する
+		//配下のジョブにはマネージャ側の登録処理でOwnerRoleIdが設定される
+		if (info.getType() == JobConstant.TYPE_JOBUNIT) {
+			String newOwnerRoleId = m_ownerRoleId.getText();
+			if (newOwnerRoleId.length() > 0) {
+				if (!newOwnerRoleId.equals(info.getOwnerRoleId())) {
+					info.setOwnerRoleId(newOwnerRoleId);
+				}
+			} else {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("owner.role.id"));
+				return result;
 			}
 		} else {
-			result = new ValidateResult();
-			result.setValid(false);
-			result.setID(Messages.getString("message.hinemos.1"));
-			result.setMessage(Messages.getString("owner.role.id"));
-			return result;
+			info.setOwnerRoleId(null);
 		}
 
 		//このジョブを参照するほかのジョブの待ち条件を更新
+		//但しセッション横断待ち条件のジョブIDは更新しない(バリデーションで気づくのでユーザに更新してもらう)
+		//※同一ジョブユニット内のジョブ全ての待ち条件をチェックする必要が生じるため
 		if (!oldJobId.equals(info.getId()) && info.getType() != JobConstant.TYPE_JOBUNIT) {
 			List<JobTreeItem> siblings = m_jobTreeItem.getParent().getChildren();
 			for (JobTreeItem sibling : siblings) {
@@ -1637,32 +1648,6 @@ public class JobDialog extends CommonDialog {
 		for (JobTreeItem childTreeItem : treeItem.getChildren()) {
 			updateReferJob(childTreeItem, oldJobId, newJobId);
 		}
-	}
-
-	/**
-	 * オーナーロールIDを変更する。<BR>
-	 *
-	 * @param item 反映するJobTreeItem
-	 * @param ownerRoleId オーナーロールID
-	 */
-	private static void changeOwnerRoleId(JobTreeItem item, String ownerRoleId) {
-
-		// 直下のJobTreeItemのOwnerRoleIdを変更する
-		List<JobTreeItem> children = item.getChildren();
-		if (children != null && children.size() > 0) {
-			Iterator<JobTreeItem> iter = children.iterator();
-			while(iter.hasNext()) {
-				JobTreeItem child = iter.next();
-				changeOwnerRoleId(child, ownerRoleId);
-			}
-		}
-		JobInfo info = item.getData();
-		info.setOwnerRoleId(ownerRoleId);
-
-		m_log.debug("changeOwnerRoleId() "
-				+ " jobunitId = " + info.getJobunitId()
-				+ " jobId = " + info.getId()
-				+ " ownerRoleId = " + info.getOwnerRoleId());
 	}
 
 	/**

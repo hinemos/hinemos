@@ -1,14 +1,10 @@
-/**********************************************************************
- * Copyright (C) 2014 NTT DATA Corporation
- * This program is free software; you can redistribute it and/or
- * Modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation, version 2.
- * 
- * This program is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- * PURPOSE.  See the GNU General Public License for more details.
- *********************************************************************/
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
 
 package com.clustercontrol;
 
@@ -16,7 +12,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.rap.rwt.RWT;
@@ -132,7 +127,7 @@ public class ClusterControlWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor
 
 		// 起動時にログインダイアログを表示する。
 		// パースペクティブが何もない時に必ずこのルートを通る。
-		LoginManager.login(paramaters);
+		LoginManager.login(paramaters, getWindowConfigurer().getWindow());
 
 		// URLに情報が入力されている場合。
 		if (perspective != null) {

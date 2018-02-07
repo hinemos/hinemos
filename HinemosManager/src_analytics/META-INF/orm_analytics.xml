@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	<named-query name="MonitorInfo.findByCorrelation">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a JOIN a.correlationCheckInfo b
+				WHERE b.targetMonitorId = :targetMonitorId
+				OR b.referMonitorId = :referMonitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorInfo.findByIntegration">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a JOIN a.integrationCheckInfo b JOIN b.conditionList c
+				WHERE c.targetMonitorId = :targetMonitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorInfo.findByLogcount">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a JOIN a.logcountCheckInfo b
+				WHERE b.targetMonitorId = :targetMonitorId
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

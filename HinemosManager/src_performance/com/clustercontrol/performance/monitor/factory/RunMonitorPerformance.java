@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.performance.monitor.factory;
@@ -40,10 +33,10 @@ import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorNumericValueType;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil;
+import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil.CollectMonitorDataInfo;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCache;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.model.NotifyRelationInfo;
-import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.performance.bean.CollectorItemInfo;
 import com.clustercontrol.performance.monitor.model.PerfCheckInfo;
@@ -51,6 +44,7 @@ import com.clustercontrol.performance.monitor.util.PerfDataQueue;
 import com.clustercontrol.performance.monitor.util.QueryUtil;
 import com.clustercontrol.performance.operator.Operator;
 import com.clustercontrol.performance.operator.Operator.CollectedDataNotFoundException;
+import com.clustercontrol.performance.operator.Operator.CollectedDataNotFoundWithNoPollingException;
 import com.clustercontrol.performance.util.CalculationMethod;
 import com.clustercontrol.performance.util.PollingDataManager;
 import com.clustercontrol.performance.util.code.CollectorItemCodeTable;
@@ -109,7 +103,7 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 	/**
 	 * @see runMonitorAggregateByNode
 	 */
-	protected boolean runMonitorInfo() throws FacilityNotFound, MonitorNotFound, InvalidRole, HinemosUnknown {
+	protected List<OutputBasicInfo> runMonitorInfo() throws FacilityNotFound, MonitorNotFound, InvalidRole, HinemosUnknown {
 		// リソース監視は、通常の他の監視の「監視項目単位」の監視実行ではなく、「ノード単位」で実行するため、
 		// runMonitorInfo ではなく runMonitorInfoAggregatedByNode が監視の実態となる
 		throw new UnsupportedOperationException();
@@ -306,8 +300,10 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 
 
 	@Override
-	protected void checkMultiMonitorInfoData(final Object preCollectData, final List<RunMonitor> runMonitorList) {
+	protected List<OutputBasicInfo> checkMultiMonitorInfoData(final Object preCollectData, final List<RunMonitor> runMonitorList) 
+		throws HinemosUnknown {
 		
+		List<OutputBasicInfo> ret = new ArrayList<>();
 		List<Sample> sampleList= new ArrayList<Sample>();
 		
 		/**
@@ -316,63 +312,101 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 		 * （並行で実施するメリットはないため、無駄にスレッドを使用しない意味で直列実行する）
 		 */
 		for (final RunMonitor runMonitor : runMonitorList) {
-			final List<MonitorRunResultInfo> resultNotifyList = new ArrayList<>();
 			final RunMonitorPerformance runMonitorPerf = (RunMonitorPerformance) runMonitor;
 			List<MonitorRunResultInfo> resultList;
 			try {
 				resultList = runMonitorPerf.collectList();
 			} catch (FacilityNotFound e) {
 				// TODO nagatsumas ログ出力必須、INTERNAL通知も必要か？
-				return;
+				return ret;
 			}
 			
 			Sample sample = null;
-			if (runMonitorPerf.getMonitorInfo().getCollectorFlg().booleanValue()) {
-				sample = new Sample(HinemosTime.getDateInstance(), runMonitor.getMonitorInfo().getMonitorId());
-			}
+			Date sampleTime = HinemosTime.getDateInstance();
 			
 			// 1つの監視項目から複数の結果が上がる（デバイス等）ため、その処理を行なう
-			for(MonitorRunResultInfo result : resultList){
+			for(MonitorRunResultInfo result : resultList) {
 				m_nodeDate = result.getNodeDate();
 				
 				// 通知（実際の通知は監視項目単位で実施）
-				if(m_isMonitorJob || result.getMonitorFlg()){
-					resultNotifyList.add(result);
+				if (result.getMonitorFlg()) {
+					if(m_isMonitorJob) {
+						// 監視ジョブの場合は、最初に取得できた結果を設定して処理終了
+						m_monitorRunResultInfo = new MonitorRunResultInfo();
+						m_monitorRunResultInfo.setNodeDate(m_nodeDate);
+						m_monitorRunResultInfo.setCurData(m_curData);
+						m_monitorRunResultInfo.setPriority(result.getPriority());
+						m_monitorRunResultInfo.setMessageOrg(makeJobOrgMessage(result.getMessageOrg(), result.getMessage()));
+						return ret;
+					} else if (runMonitorPerf.getMonitorInfo().getMonitorFlg()){
+						// 監視ジョブ以外
+						ret.add(createOutputBasicInfo(true, m_facilityId, result.getCheckResult(), new Date(result.getNodeDate()), result, 
+							runMonitor.getMonitorInfo()));
+					}
 				}
-				
+
 				// 収集値（実際の収集値登録は監視項目単位で実施）
-				if (sample != null) {
-					if(result.getCollectorFlg()){
+				if (runMonitorPerf.getMonitorInfo().getCollectorFlg()
+						|| runMonitorPerf.getMonitorInfo().getPredictionFlg()
+						|| runMonitorPerf.getMonitorInfo().getChangeFlg()) {
+
+					// 将来予測監視、変化量監視の処理を行う
+					CollectMonitorDataInfo collectMonitorDataInfo
+						= CollectMonitorManagerUtil.calculateChangePredict(
+						runMonitorPerf, runMonitorPerf.getMonitorInfo(), m_facilityId, result.getDisplayName(), result.getItemName(),
+						sampleTime.getTime(), result.getValue());
+
+
+					// 将来予測もしくは変更点監視が有効な場合、通知を行う
+					Double average = null;
+					Double standardDeviation = null;
+					if (collectMonitorDataInfo != null) {
+						if (collectMonitorDataInfo.getChangeMonitorRunResultInfo() != null
+								&& result.getMonitorFlg()) {
+							// 変化量監視の通知
+							MonitorRunResultInfo collectResult = collectMonitorDataInfo.getChangeMonitorRunResultInfo();
+							ret.add(createOutputBasicInfo(true, m_facilityId, collectResult.getCheckResult(), 
+									new Date(collectResult.getNodeDate()), collectResult, runMonitor.getMonitorInfo()));
+						}
+						if (collectMonitorDataInfo.getPredictionMonitorRunResultInfo() != null
+								&& result.getMonitorFlg()) {
+							// 将来予測監視の通知
+							MonitorRunResultInfo collectResult = collectMonitorDataInfo.getPredictionMonitorRunResultInfo();
+							ret.add(createOutputBasicInfo(true, m_facilityId, collectResult.getCheckResult(), 
+									new Date(collectResult.getNodeDate()), collectResult, runMonitor.getMonitorInfo()));
+						}
+						average = collectMonitorDataInfo.getAverage();
+						standardDeviation = collectMonitorDataInfo.getStandardDeviation();
+					}
+					// 収集がONの場合には収集データを登録する。
+					if (runMonitorPerf.getMonitorInfo().getCollectorFlg().booleanValue()) {
 						int errorCode = 0;
 						if(result.isCollectorResult()){
 							errorCode = CollectedDataErrorTypeConstant.NOT_ERROR;
 						}else{
 							errorCode = CollectedDataErrorTypeConstant.UNKNOWN;
 						}
-						sample.set(m_facilityId, result.getItemName(), result.getValue(), errorCode, result.getDisplayName());
+						sample = new Sample(sampleTime, runMonitor.getMonitorInfo().getMonitorId());
+						sample.set(m_facilityId, result.getItemName(), result.getValue(), average, 
+								standardDeviation, errorCode, result.getDisplayName());
+						if (sample != null) {
+							sampleList.add(sample);
+						}
 					}
 				}
 			}
-			// 監視項目ごとに（監視項目内の詳細・内訳を）まとめて通知・収集値登録を行なう
-			if (!m_isMonitorJob) {
-				notify(runMonitor.getMonitorInfo(), m_facilityId, resultNotifyList);
-			} else {
-					m_monitorRunResultInfo = new MonitorRunResultInfo();
-					m_monitorRunResultInfo.setNodeDate(m_nodeDate);
-					m_monitorRunResultInfo.setCurData(m_curData);
-				if (resultNotifyList != null && resultNotifyList.size() > 0) {
-					m_monitorRunResultInfo.setPriority(resultNotifyList.get(0).getPriority());
-					m_monitorRunResultInfo.setMessageOrg(makeJobOrgMessage(resultNotifyList.get(0).getMessageOrg(), 
-							resultNotifyList.get(0).getMessage()));
-				}
-			}
-			if (sample != null) {
-				sampleList.add(sample);
+			if(m_isMonitorJob) {
+				// 監視ジョブの場合で、結果が1件も処理されない場合
+				m_monitorRunResultInfo = new MonitorRunResultInfo();
+				m_monitorRunResultInfo.setNodeDate(m_nodeDate);
+				m_monitorRunResultInfo.setCurData(m_curData);
+				return ret;
 			}
 		}
 		if(!sampleList.isEmpty()){
 			CollectDataUtil.put(sampleList);
 		}
+		return ret;
 	}
 
 	/**
@@ -476,6 +510,10 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 		try {
 			m_value = CalculationMethod.getPerformance(platform, subPlatform, itemInfo, deviceName, curTable, prvTable);
 			ret = true;
+		} catch (CollectedDataNotFoundWithNoPollingException e) {
+			// DataTalbeを2回分取得できなかった場合にはnullを返す（何も通知しない）
+			m_log.info("calcValue() : previous polling have not done." + facilityName + ", " + itemCode + ", " + deviceName);
+			return null;
 		} catch (CollectedDataNotFoundException | IllegalStateException | Operator.InvalidValueException e) {
 			m_value = Double.NaN;
 			m_errorMessage = e.getMessage();
@@ -557,126 +595,6 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 		}
 		return returnMap;
 	}
-
-	private static void notify(MonitorInfo monitorInfo, String facilityId, List<MonitorRunResultInfo> notifyResultList) {
-		if(monitorInfo.getMonitorFlg().booleanValue() == false){
-			return;
-		}
-		// 通知IDが指定されていない場合、通知しない
-		List<NotifyRelationInfo> notifyRelationList = monitorInfo.getNotifyRelationList();
-		if(notifyRelationList == null || notifyRelationList.size() == 0){
-			return;
-		}
-
-		ArrayList<OutputBasicInfo> outputBasicInfoList = new ArrayList<OutputBasicInfo>(notifyResultList.size());
-		for (MonitorRunResultInfo resultInfo : notifyResultList) {
-			// 通知情報を設定
-			OutputBasicInfo outputBasicInfo = new OutputBasicInfo();
-			outputBasicInfo.setPluginId(monitorInfo.getMonitorTypeId());
-			outputBasicInfo.setMonitorId(monitorInfo.getMonitorId());
-			outputBasicInfo.setApplication(monitorInfo.getApplication());
-
-			// 通知抑制用のサブキーを設定。
-			if(resultInfo.getDisplayName() != null && !"".equals(resultInfo.getDisplayName())){
-				// 監視結果にデバイス名を含むものは、デバイス名をサブキーとして設定。
-				outputBasicInfo.setSubKey(resultInfo.getDisplayName());
-			}
-
-			outputBasicInfo.setFacilityId(facilityId);
-			outputBasicInfo.setScopeText(monitorInfo.getScope());
-			outputBasicInfo.setPriority(resultInfo.getPriority());
-			outputBasicInfo.setMessage(resultInfo.getMessage());
-			outputBasicInfo.setMessageOrg(resultInfo.getMessageOrg());
-			outputBasicInfo.setGenerationDate(resultInfo.getNodeDate());
-
-			outputBasicInfoList.add(outputBasicInfo);
-		}
-		new NotifyControllerBean().notify(outputBasicInfoList, monitorInfo.getNotifyGroupId());
-	}
-
-	/**
-	 *
-	 */
-	@Override
-	protected void notify(
-			boolean isNode, String facilityId,
-			int result,
-			Date generationDate,
-			MonitorRunResultInfo resultInfo) throws HinemosUnknown {
-
-		// for debug
-		if (m_log.isDebugEnabled()) {
-			m_log.debug("notify() isNode = " + isNode + ", facilityId = " + facilityId
-					+ ", result = " + result + ", generationDate = " + generationDate.toString()
-					+ ", resultInfo = " + resultInfo.getMessage());
-		}
-
-		// 監視無効の場合、通知しない
-		if(!m_monitor.getMonitorFlg()){
-			m_log.debug("notify() isNode = " + isNode + ", facilityId = " + facilityId
-					+ ", result = " + result + ", generationDate = " + generationDate.toString()
-					+ ", resultInfo = " + resultInfo.getMessage()
-					+ ", monitorFlg is false");
-			return;
-		}
-
-		// 通知IDが指定されていない場合、通知しない
-		String notifyGroupId = resultInfo.getNotifyGroupId();
-		if(notifyGroupId == null || "".equals(notifyGroupId)){
-			return;
-		}
-
-		// 通知情報を設定
-		OutputBasicInfo notifyInfo = new OutputBasicInfo();
-		notifyInfo.setPluginId(m_monitorTypeId);
-		notifyInfo.setMonitorId(m_monitorId);
-		notifyInfo.setApplication(m_monitor.getApplication());
-
-		// 通知抑制用のサブキーを設定。
-		if(resultInfo.getDisplayName() != null && !"".equals(resultInfo.getDisplayName())){
-			// 監視結果にデバイス名を含むものは、デバイス名をサブキーとして設定。
-			notifyInfo.setSubKey(resultInfo.getDisplayName());
-		}
-
-		String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
-		notifyInfo.setFacilityId(facilityId);
-		notifyInfo.setScopeText(facilityPath);
-
-		int priority = resultInfo.getPriority();
-		String message = resultInfo.getMessage();
-		String messageOrg = resultInfo.getMessageOrg();
-
-		notifyInfo.setPriority(priority);
-		notifyInfo.setMessage(message);
-		notifyInfo.setMessageOrg(messageOrg);
-
-		if(generationDate == null){
-			notifyInfo.setGenerationDate(null);
-		}
-		else{
-			notifyInfo.setGenerationDate(generationDate.getTime());
-		}
-
-		// for debug
-		if (m_log.isDebugEnabled()) {
-			m_log.debug("notify() priority = " + priority
-					+ " , message = " + message
-					+ " , messageOrg = " + messageOrg
-					+ ", generationDate = " + generationDate);
-		}
-
-		// ログ出力情報を送信
-		if (m_log.isDebugEnabled()) {
-			m_log.debug("sending message"
-					+ " : priority=" + notifyInfo.getPriority()
-					+ " generationDate=" + notifyInfo.getGenerationDate() + " pluginId=" + notifyInfo.getPluginId()
-					+ " monitorId=" + notifyInfo.getMonitorId() + " facilityId=" + notifyInfo.getFacilityId()
-					+ " subKey=" + notifyInfo.getSubKey()
-					+ ")");
-		}
-		new NotifyControllerBean().notify(notifyInfo, notifyGroupId);
-	}
-
 
 	/**
 	 * リソース監視情報を設定します。

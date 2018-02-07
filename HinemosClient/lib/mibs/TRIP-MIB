@@ -1,0 +1,1315 @@
+TRIP-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        MODULE-IDENTITY,
+        OBJECT-TYPE,
+        NOTIFICATION-TYPE,
+        Unsigned32,
+        Integer32,
+        Counter32,
+        mib-2
+            FROM SNMPv2-SMI           -- [RFC2578]
+
+        DateAndTime,
+        TimeInterval,
+        TruthValue,
+        TimeStamp,
+        StorageType,
+        RowStatus
+            FROM SNMPv2-TC            -- [RFC2579]
+
+        OBJECT-GROUP,
+        MODULE-COMPLIANCE,
+        NOTIFICATION-GROUP
+            FROM SNMPv2-CONF          -- [RFC2580]
+
+        InetAddressType,
+        InetAddress,
+        InetPortNumber
+            FROM INET-ADDRESS-MIB     -- [RFC3291]
+
+        applIndex,
+        applRFC2788Group
+            FROM NETWORK-SERVICES-MIB -- [RFC2788]
+
+        TripItad,
+        TripId,
+        TripAppProtocol,
+        TripAddressFamily,
+        TripCommunityId,
+        TripProtocolVersion,
+        TripSendReceiveMode
+            FROM TRIP-TC-MIB;          -- [RFC3872]
+
+    tripMIB MODULE-IDENTITY
+       LAST-UPDATED "200409020000Z" -- Sep 02, 2004
+           ORGANIZATION "IETF IPTel Working Group.
+
+
+
+
+
+            Mailing list: iptel@lists.bell-labs.com"
+
+    ::= { mib-2 116 }
+
+        tripMIBNotifications OBJECT IDENTIFIER ::= { tripMIB 0 }
+        tripMIBObjects       OBJECT IDENTIFIER ::= { tripMIB 1 }
+        tripMIBConformance   OBJECT IDENTIFIER ::= { tripMIB 2 }
+        tripMIBNotifObjects  OBJECT IDENTIFIER ::= { tripMIB 3 }
+
+
+
+
+
+
+        tripMIBCompliances    OBJECT IDENTIFIER ::=
+                                        { tripMIBConformance 1 }
+        tripMIBGroups        OBJECT IDENTIFIER ::=
+                                        { tripMIBConformance 2 }
+
+    tripCfgTable OBJECT-TYPE
+        SYNTAX     SEQUENCE OF TripCfgEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        ::= { tripMIBObjects 1 }
+
+    tripCfgEntry OBJECT-TYPE
+        SYNTAX     TripCfgEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        INDEX { applIndex }
+        ::= { tripCfgTable 1 }
+
+    TripCfgEntry ::=
+        SEQUENCE {
+           tripCfgProtocolVersion               TripProtocolVersion,
+           tripCfgItad                          TripItad,
+           tripCfgIdentifier                    TripId,
+           tripCfgAdminStatus                   INTEGER,
+           tripCfgOperStatus                    INTEGER,
+           tripCfgAddrIAddrType                 InetAddressType,
+           tripCfgAddr                          InetAddress,
+           tripCfgPort                          InetPortNumber,
+           tripCfgMinItadOriginationInterval    Unsigned32,
+           tripCfgMinRouteAdvertisementInterval Unsigned32,
+           tripCfgMaxPurgeTime                  Unsigned32,
+           tripCfgDisableTime                   Unsigned32,
+           tripCfgSendReceiveMode               TripSendReceiveMode,
+           tripCfgStorage                       StorageType
+       }
+
+
+
+
+
+    tripCfgProtocolVersion    OBJECT-TYPE
+        SYNTAX     TripProtocolVersion
+        MAX-ACCESS read-only
+        STATUS     current
+        ::= { tripCfgEntry 1 }
+
+    tripCfgItad   OBJECT-TYPE
+        SYNTAX      TripItad
+        MAX-ACCESS  read-write
+        STATUS      current
+        ::= { tripCfgEntry 2 }
+
+    tripCfgIdentifier   OBJECT-TYPE
+        SYNTAX      TripId
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripCfgEntry 3 }
+
+    tripCfgAdminStatus OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        up(1),
+                        down(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+
+
+
+
+
+        ::= { tripCfgEntry 4 }
+
+    tripCfgOperStatus OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        unknown(0),
+                        up(1),
+                        down(2),
+                        faulty(3)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripCfgEntry 5 }
+
+    tripCfgAddrIAddrType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripCfgEntry 6 }
+
+    tripCfgAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+
+
+
+
+
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripCfgEntry 7 }
+
+    tripCfgPort OBJECT-TYPE
+        SYNTAX      InetPortNumber
+        MAX-ACCESS  read-write
+        STATUS      current
+        ::= { tripCfgEntry 8 }
+
+    tripCfgMinItadOriginationInterval OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-write
+        STATUS      current
+        DEFVAL { 30 }
+        ::= { tripCfgEntry 9 }
+
+    tripCfgMinRouteAdvertisementInterval OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-write
+        STATUS      current
+        DEFVAL { 30 }
+        ::= { tripCfgEntry 10 }
+
+    tripCfgMaxPurgeTime OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-write
+
+
+
+
+
+        STATUS      current
+        DEFVAL { 10 }
+        ::= { tripCfgEntry 11 }
+
+    tripCfgDisableTime OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-write
+        STATUS      current
+        DEFVAL { 180 }
+        ::= { tripCfgEntry 12 }
+
+    tripCfgSendReceiveMode OBJECT-TYPE
+        SYNTAX TripSendReceiveMode
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripCfgEntry 13 }
+
+    tripCfgStorage OBJECT-TYPE
+        SYNTAX       StorageType
+        MAX-ACCESS   read-write
+        STATUS       current
+        DEFVAL { nonVolatile }
+        ::= { tripCfgEntry 14 }
+
+
+    tripRouteTypeTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF TripRouteTypeEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripMIBObjects 2 }
+
+    tripRouteTypeEntry OBJECT-TYPE
+        SYNTAX      TripRouteTypeEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { applIndex,
+                tripRouteTypeAddrInetType,
+                tripRouteTypeAddr,
+                tripRouteTypePort,
+                tripRouteTypeProtocolId,
+                tripRouteTypeAddrFamilyId }
+          ::= { tripRouteTypeTable 1 }
+
+    TripRouteTypeEntry ::= SEQUENCE {
+        tripRouteTypeAddrInetType       InetAddressType,
+        tripRouteTypeAddr               InetAddress,
+        tripRouteTypePort               InetPortNumber,
+        tripRouteTypeProtocolId         TripAppProtocol,
+        tripRouteTypeAddrFamilyId       TripAddressFamily,
+        tripRouteTypePeer               INTEGER
+    }
+
+    tripRouteTypeAddrInetType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteTypeEntry 1 }
+
+    tripRouteTypeAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteTypeEntry 2 }
+
+    tripRouteTypePort OBJECT-TYPE
+        SYNTAX      InetPortNumber
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteTypeEntry 3 }
+
+    tripRouteTypeProtocolId OBJECT-TYPE
+        SYNTAX      TripAppProtocol
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteTypeEntry 4 }
+
+    tripRouteTypeAddrFamilyId OBJECT-TYPE
+        SYNTAX      TripAddressFamily
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteTypeEntry 5 }
+
+    tripRouteTypePeer OBJECT-TYPE
+        SYNTAX      INTEGER { local(1), remote(2) }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteTypeEntry 6 }
+
+
+    tripSupportedCommunityTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE OF TripSupportedCommunityEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripMIBObjects 3 }
+
+    tripSupportedCommunityEntry OBJECT-TYPE
+        SYNTAX      TripSupportedCommunityEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { applIndex, tripSupportedCommunityId }
+        ::= { tripSupportedCommunityTable 1 }
+
+    TripSupportedCommunityEntry ::= SEQUENCE {
+        tripSupportedCommunityId         TripCommunityId,
+        tripSupportedCommunityItad       TripItad,
+        tripSupportedCommunityStorage    StorageType,
+        tripSupportedCommunityRowStatus  RowStatus
+    }
+
+    tripSupportedCommunityId OBJECT-TYPE
+        SYNTAX      TripCommunityId
+        MAX-ACCESS  not-accessible
+        STATUS      current
+
+
+
+
+
+        ::= { tripSupportedCommunityEntry 1 }
+
+    tripSupportedCommunityItad OBJECT-TYPE
+        SYNTAX      TripItad
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { tripSupportedCommunityEntry 2 }
+
+   tripSupportedCommunityStorage OBJECT-TYPE
+       SYNTAX       StorageType
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL { nonVolatile }
+       ::= { tripSupportedCommunityEntry 3 }
+
+    tripSupportedCommunityRowStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { tripSupportedCommunityEntry 4 }
+
+    tripPeerTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE OF TripPeerEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripMIBObjects 4 }
+
+    tripPeerEntry OBJECT-TYPE
+        SYNTAX      TripPeerEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { applIndex,
+                tripPeerRemoteAddrInetType,
+                tripPeerRemoteAddr,
+                tripPeerRemotePort }
+          ::= {tripPeerTable 1}
+
+    TripPeerEntry ::= SEQUENCE {
+        tripPeerRemoteAddrInetType            InetAddressType,
+        tripPeerRemoteAddr                    InetAddress,
+        tripPeerRemotePort                    InetPortNumber,
+        tripPeerIdentifier                    TripId,
+        tripPeerState                         INTEGER,
+        tripPeerAdminStatus                   INTEGER,
+        tripPeerNegotiatedVersion             TripProtocolVersion,
+        tripPeerSendReceiveMode               TripSendReceiveMode,
+        tripPeerRemoteItad                    TripItad,
+        tripPeerConnectRetryInterval          Unsigned32,
+        tripPeerMaxRetryInterval              Unsigned32,
+        tripPeerHoldTime                      Unsigned32,
+        tripPeerKeepAlive                     Unsigned32,
+        tripPeerHoldTimeConfigured            Unsigned32,
+        tripPeerKeepAliveConfigured           Unsigned32,
+        tripPeerMaxPurgeTime                  Unsigned32,
+        tripPeerDisableTime                   Unsigned32,
+        tripPeerLearned                       TruthValue,
+        tripPeerStorage                       StorageType,
+        tripPeerRowStatus                     RowStatus
+    }
+
+    tripPeerRemoteAddrInetType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  not-accessible
+
+
+
+
+
+        STATUS      current
+        ::= { tripPeerEntry 1 }
+
+    tripPeerRemoteAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripPeerEntry 2 }
+
+    tripPeerRemotePort OBJECT-TYPE
+        SYNTAX      InetPortNumber
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripPeerEntry 3 }
+
+    tripPeerIdentifier OBJECT-TYPE
+        SYNTAX      TripId
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerEntry 4 }
+
+    tripPeerState OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        idle(1),
+                        connect(2),
+                        active(3),
+                        openSent(4),
+                        openConfirm(5),
+                        established(6)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerEntry 5 }
+
+    tripPeerAdminStatus OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        up(1),
+                        down(2)
+                    }
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL      { up }
+        ::= { tripPeerEntry 6 }
+
+    tripPeerNegotiatedVersion OBJECT-TYPE
+        SYNTAX      TripProtocolVersion
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerEntry 7 }
+
+    tripPeerSendReceiveMode OBJECT-TYPE
+        SYNTAX      TripSendReceiveMode
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerEntry 8 }
+
+    tripPeerRemoteItad OBJECT-TYPE
+        SYNTAX      TripItad
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerEntry 9 }
+
+    tripPeerConnectRetryInterval OBJECT-TYPE
+        SYNTAX      Unsigned32 (0..2147483647)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL      { 120 }
+        ::= { tripPeerEntry 10 }
+
+
+
+
+
+    tripPeerMaxRetryInterval OBJECT-TYPE
+        SYNTAX      Unsigned32 (0..2147483647)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL      { 360 }
+        ::= { tripPeerEntry 11 }
+
+    tripPeerHoldTime OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerEntry 12 }
+
+    tripPeerKeepAlive OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerEntry 13 }
+
+    tripPeerHoldTimeConfigured OBJECT-TYPE
+        SYNTAX      Unsigned32 (0 | 3..65535)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { 240 }
+        ::= { tripPeerEntry 14 }
+
+    tripPeerKeepAliveConfigured OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { 30 }
+        ::= { tripPeerEntry 15 }
+
+    tripPeerMaxPurgeTime OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..65535)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { 10 }
+        ::= { tripPeerEntry 16 }
+
+    tripPeerDisableTime OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..65535)
+        UNITS       "Seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { 180 }
+        ::= { tripPeerEntry 17 }
+
+    tripPeerLearned OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        DEFVAL { false }
+        ::= { tripPeerEntry 18 }
+
+
+
+
+
+
+    tripPeerStorage OBJECT-TYPE
+        SYNTAX       StorageType
+        MAX-ACCESS   read-create
+        STATUS       current
+        DEFVAL { nonVolatile }
+        ::= { tripPeerEntry 19 }
+
+    tripPeerRowStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { tripPeerEntry 20 }
+
+
+    tripPeerStatisticsTable   OBJECT-TYPE
+        SYNTAX      SEQUENCE OF TripPeerStatisticsEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripMIBObjects 5 }
+
+    tripPeerStatisticsEntry OBJECT-TYPE
+        SYNTAX      TripPeerStatisticsEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+
+
+
+
+
+        AUGMENTS { tripPeerEntry }
+          ::= { tripPeerStatisticsTable 1 }
+
+    TripPeerStatisticsEntry ::= SEQUENCE {
+        tripPeerInUpdates                   Counter32,
+        tripPeerOutUpdates                  Counter32,
+        tripPeerInTotalMessages             Counter32,
+        tripPeerOutTotalMessages            Counter32,
+        tripPeerFsmEstablishedTransitions   Counter32,
+        tripPeerFsmEstablishedTime          DateAndTime,
+        tripPeerInUpdateElapsedTime         TimeInterval,
+        tripPeerStateChangeTime             TimeStamp
+    }
+
+     tripPeerInUpdates OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerStatisticsEntry 1 }
+
+    tripPeerOutUpdates OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerStatisticsEntry 2 }
+
+    tripPeerInTotalMessages OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerStatisticsEntry 3 }
+
+    tripPeerOutTotalMessages OBJECT-TYPE
+        SYNTAX      Counter32
+
+
+
+
+
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerStatisticsEntry 4 }
+
+    tripPeerFsmEstablishedTransitions OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerStatisticsEntry 5 }
+
+    tripPeerFsmEstablishedTime OBJECT-TYPE
+        SYNTAX      DateAndTime
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerStatisticsEntry 6 }
+
+    tripPeerInUpdateElapsedTime OBJECT-TYPE
+        SYNTAX      TimeInterval
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripPeerStatisticsEntry 7 }
+
+    tripPeerStateChangeTime OBJECT-TYPE
+        SYNTAX       TimeStamp
+        MAX-ACCESS   read-only
+        STATUS       current
+        ::= { tripPeerStatisticsEntry 8 }
+
+
+
+
+
+
+
+    tripRouteTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF TripRouteEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripMIBObjects 6 }
+
+    tripRouteEntry OBJECT-TYPE
+        SYNTAX      TripRouteEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { applIndex,
+                tripRouteAppProtocol,
+                tripRouteAddressFamily,
+                tripRouteAddress,
+                tripRoutePeer
+                }
+        ::= { tripRouteTable 1 }
+
+    TripRouteEntry ::= SEQUENCE {
+        tripRouteAppProtocol                 TripAppProtocol,
+        tripRouteAddressFamily               TripAddressFamily,
+        tripRouteAddress                     OCTET STRING,
+        tripRoutePeer                        TripId,
+        tripRouteTRIBMask                    BITS,
+        tripRouteAddressSequenceNumber       Unsigned32,
+        tripRouteAddressOriginatorId         TripId,
+        tripRouteNextHopServerIAddrType      InetAddressType,
+        tripRouteNextHopServer               InetAddress,
+        tripRouteNextHopServerPort           InetPortNumber,
+        tripRouteNextHopServerItad           TripItad,
+        tripRouteMultiExitDisc               Unsigned32,
+        tripRouteLocalPref                   Unsigned32,
+        tripRouteAdvertisementPath           OCTET STRING,
+        tripRouteRoutedPath                  OCTET STRING,
+        tripRouteAtomicAggregate             TruthValue,
+        tripRouteUnknown                     OCTET STRING,
+        tripRouteWithdrawn                   TruthValue,
+        tripRouteConverted                   TruthValue,
+        tripRouteReceivedTime                TimeStamp
+        }
+
+
+
+
+
+    tripRouteAppProtocol OBJECT-TYPE
+        SYNTAX      TripAppProtocol
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteEntry 1 }
+
+    tripRouteAddressFamily OBJECT-TYPE
+        SYNTAX      TripAddressFamily
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteEntry 2 }
+
+    tripRouteAddress OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(1..105))
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteEntry 3 }
+
+    tripRoutePeer OBJECT-TYPE
+        SYNTAX      TripId
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteEntry 4 }
+
+     tripRouteTRIBMask OBJECT-TYPE
+        SYNTAX      BITS {
+                     adjTribIns(0),
+                     extTrib(1),
+                     locTrib(2),
+                     adjTribOut(3)
+
+
+
+
+
+                     }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 5 }
+
+    tripRouteAddressSequenceNumber OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 6 }
+
+    tripRouteAddressOriginatorId OBJECT-TYPE
+        SYNTAX      TripId
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 7 }
+
+
+
+
+
+
+    tripRouteNextHopServerIAddrType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 8 }
+
+    tripRouteNextHopServer OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 9 }
+
+    tripRouteNextHopServerPort OBJECT-TYPE
+        SYNTAX      InetPortNumber
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 10 }
+
+    tripRouteNextHopServerItad OBJECT-TYPE
+        SYNTAX      TripItad
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 11 }
+
+    tripRouteMultiExitDisc OBJECT-TYPE
+        SYNTAX      Unsigned32 (0..4294967295)
+        MAX-ACCESS  read-only
+        STATUS      current
+
+
+
+
+
+        ::= { tripRouteEntry 12 }
+
+    tripRouteLocalPref OBJECT-TYPE
+        SYNTAX      Unsigned32 (0..4294967295)
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 13 }
+
+    tripRouteAdvertisementPath OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(4..252))
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 14 }
+
+    tripRouteRoutedPath OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(4..252))
+        MAX-ACCESS  read-only
+        STATUS      current
+
+
+
+
+
+        ::= { tripRouteEntry 15 }
+
+    tripRouteAtomicAggregate OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 16 }
+
+    tripRouteUnknown OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(0..255))
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 17 }
+
+    tripRouteWithdrawn OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 18 }
+
+    tripRouteConverted OBJECT-TYPE
+        SYNTAX TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteEntry 19 }
+
+
+
+
+
+
+    tripRouteReceivedTime OBJECT-TYPE
+        SYNTAX       TimeStamp
+        MAX-ACCESS   read-only
+        STATUS       current
+        ::= { tripRouteEntry 20 }
+
+
+    tripRouteCommunityTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF TripRouteCommunityEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripMIBObjects 7 }
+
+    tripRouteCommunityEntry OBJECT-TYPE
+        SYNTAX      TripRouteCommunityEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { applIndex,
+                tripRouteAppProtocol,
+                tripRouteAddressFamily,
+                tripRouteAddress,
+                tripRoutePeer,
+                tripRouteCommunityId
+              }
+        ::= { tripRouteCommunityTable 1 }
+
+    TripRouteCommunityEntry ::= SEQUENCE {
+         tripRouteCommunityId    TripCommunityId,
+         tripRouteCommunityItad  TripItad
+         }
+
+
+
+
+
+    tripRouteCommunityId OBJECT-TYPE
+        SYNTAX      TripCommunityId
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripRouteCommunityEntry 1 }
+
+    tripRouteCommunityItad OBJECT-TYPE
+        SYNTAX      TripItad
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripRouteCommunityEntry 2 }
+
+
+    tripItadTopologyTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF TripItadTopologyEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripMIBObjects 8 }
+
+    tripItadTopologyEntry OBJECT-TYPE
+        SYNTAX      TripItadTopologyEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { applIndex, tripItadTopologyOrigId }
+        ::= { tripItadTopologyTable 1 }
+
+    TripItadTopologyEntry ::= SEQUENCE {
+                tripItadTopologyOrigId    TripId,
+                tripItadTopologySeqNum    Unsigned32
+            }
+
+    tripItadTopologyOrigId OBJECT-TYPE
+        SYNTAX      TripId
+        MAX-ACCESS  not-accessible
+
+
+
+
+
+        STATUS      current
+        ::= { tripItadTopologyEntry 1 }
+
+    tripItadTopologySeqNum OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripItadTopologyEntry 2 }
+
+
+    tripItadTopologyIdTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF TripItadTopologyIdEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { tripMIBObjects 9 }
+
+    tripItadTopologyIdEntry OBJECT-TYPE
+        SYNTAX      TripItadTopologyIdEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { applIndex,
+                tripItadTopologyOrigId,
+                tripItadTopologyId }
+        ::= { tripItadTopologyIdTable 1 }
+
+    TripItadTopologyIdEntry ::= SEQUENCE {
+                tripItadTopologyId            TripId
+            }
+
+
+
+
+
+
+    tripItadTopologyId OBJECT-TYPE
+        SYNTAX      TripId
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { tripItadTopologyIdEntry 1 }
+
+
+    tripNotifApplIndex    OBJECT-TYPE
+        SYNTAX     Integer32 (1..2147483647)
+        MAX-ACCESS accessible-for-notify
+        STATUS     current
+        ::= { tripMIBNotifObjects 1 }
+
+    tripNotifPeerAddrInetType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        ::= { tripMIBNotifObjects 2 }
+
+    tripNotifPeerAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        ::= { tripMIBNotifObjects 3 }
+
+
+
+
+
+    tripNotifPeerErrCode OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        messageHeader(1),
+                        openMessage(2),
+                        updateMessage(3),
+                        holdTimerExpired(4),
+                        finiteStateMachine(5),
+                        cease(6),
+                        tripNotification(7)
+                    }
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+       ::= { tripMIBNotifObjects 4 }
+
+    tripNotifPeerErrSubcode OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..2147483647)
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+       ::= { tripMIBNotifObjects 5 }
+
+    tripConnectionEstablished NOTIFICATION-TYPE
+        OBJECTS { tripNotifApplIndex,
+                  tripNotifPeerAddrInetType,
+                  tripNotifPeerAddr
+                }
+        STATUS  current
+        ::= { tripMIBNotifications 1 }
+
+    tripConnectionDropped NOTIFICATION-TYPE
+        OBJECTS { tripNotifApplIndex,
+                  tripNotifPeerAddrInetType,
+                  tripNotifPeerAddr
+                }
+        STATUS  current
+        ::= { tripMIBNotifications 2 }
+
+    tripFSM NOTIFICATION-TYPE
+        OBJECTS { tripNotifApplIndex,
+                  tripNotifPeerAddrInetType,
+                  tripNotifPeerAddr,
+                  tripNotifPeerErrCode,
+                  tripNotifPeerErrSubcode,
+                  tripPeerState
+                }
+        STATUS  current
+        ::= { tripMIBNotifications 3 }
+
+    tripOpenMessageError NOTIFICATION-TYPE
+        OBJECTS { tripNotifApplIndex,
+                  tripNotifPeerAddrInetType,
+                  tripNotifPeerAddr,
+                  tripNotifPeerErrCode,
+                  tripNotifPeerErrSubcode,
+                  tripPeerState
+                }
+        STATUS  current
+        ::= { tripMIBNotifications 4 }
+
+    tripUpdateMessageError NOTIFICATION-TYPE
+        OBJECTS { tripNotifApplIndex,
+                  tripNotifPeerAddrInetType,
+                  tripNotifPeerAddr,
+                  tripNotifPeerErrCode,
+                  tripNotifPeerErrSubcode,
+                  tripPeerState
+                }
+        STATUS  current
+        ::= { tripMIBNotifications 5 }
+
+    tripHoldTimerExpired NOTIFICATION-TYPE
+        OBJECTS { tripNotifApplIndex,
+                  tripNotifPeerAddrInetType,
+                  tripNotifPeerAddr,
+                  tripNotifPeerErrCode,
+
+
+
+
+
+                  tripNotifPeerErrSubcode,
+                  tripPeerState
+                }
+        STATUS  current
+        ::= { tripMIBNotifications 6 }
+
+    tripConnectionCollision NOTIFICATION-TYPE
+        OBJECTS { tripNotifApplIndex }
+        STATUS  current
+        ::= { tripMIBNotifications 7 }
+
+    tripCease NOTIFICATION-TYPE
+        OBJECTS { tripNotifApplIndex,
+                  tripNotifPeerAddrInetType,
+                  tripNotifPeerAddr,
+                  tripNotifPeerErrCode,
+                  tripNotifPeerErrSubcode,
+                  tripPeerState
+                }
+        STATUS  current
+
+        ::= { tripMIBNotifications 8 }
+
+    tripNotificationErr NOTIFICATION-TYPE
+        OBJECTS { tripNotifApplIndex }
+        STATUS  current
+        ::= { tripMIBNotifications 9 }
+
+
+
+
+
+
+
+    tripMIBFullCompliance MODULE-COMPLIANCE
+        STATUS     current
+
+        MODULE -- this module
+             MANDATORY-GROUPS { tripConfigGroup,
+                                tripPeerTableConfigGroup,
+                                tripRouteGroup,
+                                tripItadTopologyGroup,
+                                tripPeerTableStatsGroup }
+
+        GROUP tripNotificationGroup
+
+        GROUP tripNotifObjectGroup
+
+        OBJECT       tripSupportedCommunityRowStatus
+        SYNTAX       RowStatus { active(1) }
+        WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+        OBJECT       tripPeerRowStatus
+        SYNTAX       RowStatus { active(1) }
+        WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+        MODULE NETWORK-SERVICES-MIB
+             MANDATORY-GROUPS { applRFC2788Group }
+
+        ::= { tripMIBCompliances 1 }
+    tripMIBReadOnlyCompliance MODULE-COMPLIANCE
+        STATUS     current
+
+        MODULE -- this module
+             MANDATORY-GROUPS { tripConfigGroup,
+                                tripPeerTableConfigGroup,
+                                tripRouteGroup,
+                                tripItadTopologyGroup,
+                                tripPeerTableStatsGroup }
+
+        GROUP tripNotificationGroup
+
+        GROUP tripNotifObjectGroup
+        OBJECT       tripCfgItad
+        MIN-ACCESS   read-only
+
+        OBJECT       tripCfgAdminStatus
+        MIN-ACCESS   not-accessible
+
+        OBJECT       tripCfgPort
+        MIN-ACCESS   read-only
+
+        OBJECT       tripCfgMinItadOriginationInterval
+        MIN-ACCESS   read-only
+
+        OBJECT       tripCfgMinRouteAdvertisementInterval
+        MIN-ACCESS   read-only
+
+        OBJECT       tripCfgMaxPurgeTime
+
+
+
+
+
+        MIN-ACCESS   read-only
+
+        OBJECT       tripCfgDisableTime
+        MIN-ACCESS   read-only
+
+        OBJECT       tripCfgStorage
+        MIN-ACCESS   read-only
+
+        OBJECT       tripSupportedCommunityItad
+        MIN-ACCESS   read-only
+
+        OBJECT       tripSupportedCommunityStorage
+        MIN-ACCESS   read-only
+
+        OBJECT      tripSupportedCommunityRowStatus
+        SYNTAX      RowStatus { active(1) }
+        MIN-ACCESS  read-only
+
+        OBJECT       tripPeerAdminStatus
+        MIN-ACCESS   not-accessible
+
+        OBJECT       tripPeerConnectRetryInterval
+        MIN-ACCESS   read-only
+
+        OBJECT       tripPeerMaxRetryInterval
+        MIN-ACCESS   read-only
+
+        OBJECT       tripPeerHoldTimeConfigured
+        MIN-ACCESS   read-only
+
+
+
+
+
+
+        OBJECT       tripPeerKeepAliveConfigured
+        MIN-ACCESS   read-only
+
+        OBJECT       tripPeerMaxPurgeTime
+        MIN-ACCESS   read-only
+
+        OBJECT       tripPeerDisableTime
+        MIN-ACCESS   read-only
+
+        OBJECT       tripPeerStorage
+        MIN-ACCESS   read-only
+
+        OBJECT      tripPeerRowStatus
+        SYNTAX      RowStatus { active(1) }
+        MIN-ACCESS  read-only
+        MODULE NETWORK-SERVICES-MIB
+             MANDATORY-GROUPS { applRFC2788Group }
+
+        ::= { tripMIBCompliances 2 }
+
+
+    tripConfigGroup OBJECT-GROUP
+        OBJECTS {
+            tripCfgProtocolVersion,
+            tripCfgItad,
+            tripCfgIdentifier,
+            tripCfgOperStatus,
+            tripCfgAdminStatus,
+            tripCfgAddrIAddrType,
+            tripCfgAddr,
+            tripCfgPort,
+
+
+
+
+
+            tripCfgMinItadOriginationInterval,
+            tripCfgMinRouteAdvertisementInterval,
+            tripCfgMaxPurgeTime,
+            tripCfgDisableTime,
+            tripCfgSendReceiveMode,
+            tripCfgStorage,
+            tripSupportedCommunityItad,
+            tripSupportedCommunityStorage,
+            tripRouteTypePeer,
+            tripSupportedCommunityRowStatus
+        }
+        STATUS current
+        ::= { tripMIBGroups 1 }
+
+    tripPeerTableConfigGroup OBJECT-GROUP
+        OBJECTS {
+            tripPeerIdentifier,
+            tripPeerState,
+            tripPeerAdminStatus,
+            tripPeerNegotiatedVersion,
+            tripPeerSendReceiveMode,
+            tripPeerRemoteItad,
+            tripPeerConnectRetryInterval,
+            tripPeerMaxRetryInterval,
+            tripPeerHoldTime,
+            tripPeerKeepAlive,
+            tripPeerHoldTimeConfigured,
+            tripPeerKeepAliveConfigured,
+            tripPeerMaxPurgeTime,
+            tripPeerDisableTime,
+            tripPeerLearned,
+            tripPeerStorage,
+            tripPeerRowStatus
+            }
+
+        STATUS current
+        ::= { tripMIBGroups 2 }
+
+    tripPeerTableStatsGroup OBJECT-GROUP
+        OBJECTS {
+            tripPeerInUpdates,
+            tripPeerOutUpdates,
+            tripPeerInTotalMessages,
+
+
+
+
+
+            tripPeerOutTotalMessages,
+            tripPeerFsmEstablishedTransitions,
+            tripPeerFsmEstablishedTime,
+            tripPeerInUpdateElapsedTime,
+            tripPeerStateChangeTime
+            }
+        STATUS current
+        ::= { tripMIBGroups 3 }
+
+    tripRouteGroup OBJECT-GROUP
+        OBJECTS {
+            tripRouteTRIBMask,
+            tripRouteAddressSequenceNumber,
+            tripRouteAddressOriginatorId,
+            tripRouteNextHopServerIAddrType,
+            tripRouteNextHopServer,
+            tripRouteNextHopServerPort,
+            tripRouteNextHopServerItad,
+            tripRouteMultiExitDisc,
+            tripRouteLocalPref,
+            tripRouteAdvertisementPath,
+            tripRouteRoutedPath,
+            tripRouteAtomicAggregate,
+            tripRouteUnknown,
+            tripRouteWithdrawn,
+            tripRouteConverted,
+            tripRouteReceivedTime,
+            tripRouteCommunityItad
+            }
+
+        STATUS current
+        ::= { tripMIBGroups 4 }
+    tripItadTopologyGroup OBJECT-GROUP
+        OBJECTS {
+            tripItadTopologySeqNum,
+            tripItadTopologyId
+            }
+        STATUS current
+        ::= { tripMIBGroups 5 }
+
+    tripNotificationGroup NOTIFICATION-GROUP
+        NOTIFICATIONS {
+
+
+
+
+
+            tripConnectionEstablished,
+            tripConnectionDropped,
+            tripFSM,
+            tripOpenMessageError,
+            tripUpdateMessageError,
+            tripHoldTimerExpired,
+            tripConnectionCollision,
+            tripCease,
+            tripNotificationErr
+        }
+        STATUS  current
+        ::= { tripMIBGroups 6 }
+
+    tripNotifObjectGroup OBJECT-GROUP
+        OBJECTS {
+            tripNotifApplIndex,
+            tripNotifPeerAddrInetType,
+            tripNotifPeerAddr,
+            tripNotifPeerErrCode,
+            tripNotifPeerErrSubcode
+            }
+        STATUS current
+        ::= { tripMIBGroups 7 }
+
+END

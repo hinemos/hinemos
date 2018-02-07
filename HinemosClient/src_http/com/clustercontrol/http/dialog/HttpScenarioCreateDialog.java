@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.http.dialog;
@@ -277,7 +270,7 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		groupNotifyAttribute.setLayoutData(gridData);
 		groupNotifyAttribute.setText(Messages.getString("notify.attribute"));
-		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE);
+		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE, 60);
 		WidgetTestUtil.setTestId(this, "notifyinfo", m_notifyInfo);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;

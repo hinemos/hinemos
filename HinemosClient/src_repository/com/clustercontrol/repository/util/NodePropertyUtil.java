@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.repository.util;
 
 import java.util.ArrayList;
@@ -1589,7 +1597,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.FACILITY_ID, Messages.getString("facility.id", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_512);
 		//ファシリティ名
 		Property facilityName =
-				new Property(NodeConstant.FACILITY_NAME, Messages.getString("facility.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
+				new Property(NodeConstant.FACILITY_NAME, Messages.getString("facility.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_128);
 		//説明
 		Property description =
 				new Property(NodeConstant.DESCRIPTION, Messages.getString("description", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
@@ -1628,7 +1636,6 @@ public class NodePropertyUtil {
 		Property platformFamilyName =
 				new Property(NodeConstant.PLATFORM_FAMILY_NAME, Messages.getString("platform.family.name", locale), PropertyDefineConstant.EDITOR_SELECT);
 		//サブプラットフォーム
-		//TODO EDITOR_SELECTに修正
 		Property subPlatformFamilyName =
 				new Property(NodeConstant.SUB_PLATFORM_FAMILY_NAME, Messages.getString("sub.platform.family.name", locale), PropertyDefineConstant.EDITOR_SELECT);
 		//画面アイコンイメージ
@@ -1663,7 +1670,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.OS_NAME, Messages.getString("os.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
 		//ノード名
 		Property nodeName =
-				new Property(NodeConstant.NODE_NAME, Messages.getString("node.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_1024);
+				new Property(NodeConstant.NODE_NAME, Messages.getString("node.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_128);
 		//OSリリース
 		Property osRelease =
 				new Property(NodeConstant.OS_RELEASE, Messages.getString("os.release", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);

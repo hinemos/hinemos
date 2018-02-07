@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2007 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.maintenance.session;
@@ -39,6 +32,7 @@ import com.clustercontrol.maintenance.factory.MaintenanceJob;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryDay;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryHour;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryMonth;
+import com.clustercontrol.maintenance.factory.MaintenanceCollectBinaryData;
 import com.clustercontrol.maintenance.factory.MaintenanceCollectDataRaw;
 import com.clustercontrol.maintenance.factory.MaintenanceCollectStringData;
 import com.clustercontrol.maintenance.factory.ModifyMaintenance;
@@ -49,6 +43,8 @@ import com.clustercontrol.maintenance.factory.SelectMaintenanceTypeMst;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.model.MaintenanceTypeMst;
 import com.clustercontrol.maintenance.util.MaintenanceValidator;
+import com.clustercontrol.notify.bean.OutputBasicInfo;
+import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.util.HinemosTime;
 
@@ -56,6 +52,7 @@ import com.clustercontrol.util.HinemosTime;
  * 
  * メンテナンス機能を管理する Session Bean です。<BR>
  * 
+ * @version 6.1.0 バイナリ収集データ削除を追加.
  */
 public class MaintenanceControllerBean {
 
@@ -671,6 +668,7 @@ public class MaintenanceControllerBean {
 		m_log.debug("scheduleRunMaintenance() : maintenanceId=" + maintenanceId + ", calendarId=" + calendarId);
 
 		JpaTransactionManager jtm = null;
+		OutputBasicInfo notifyInfo = null;
 		try {
 			// トランザクションがすでに開始されている場合は処理終了
 			jtm = new JpaTransactionManager();
@@ -692,7 +690,10 @@ public class MaintenanceControllerBean {
 				return;
 
 			//メンテナンス実行
-			runMaintenance(maintenanceId);
+			notifyInfo = runMaintenance(maintenanceId);
+
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(notifyInfo));
 
 			jtm.commit();
 		} catch (CalendarNotFound e) {
@@ -722,20 +723,22 @@ public class MaintenanceControllerBean {
 	 * メンテナンス機能を実行するメソッドです。
 	 * 
 	 * @param maintenanceId
+	 * @return 通知情報
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public void runMaintenance(String maintenanceId) throws InvalidRole, HinemosUnknown {
+	public OutputBasicInfo runMaintenance(String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("runMaintenance() : maintenanceId=" + maintenanceId);
 
 		JpaTransactionManager jtm = null;
 		OperationMaintenance operation = new OperationMaintenance();
+		OutputBasicInfo rtn = null;
 
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			operation.runMaintenance(maintenanceId);
+			rtn = operation.runMaintenance(maintenanceId);
 
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
@@ -752,6 +755,7 @@ public class MaintenanceControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return rtn;
 	}
 	
 	
@@ -779,6 +783,50 @@ public class MaintenanceControllerBean {
 			jtm.begin();
 			
 			ret = stringData.delete(dataRetentionPeriod, status, ownerRoleId);
+			
+			jtm.commit();
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch(Exception e){
+			m_log.warn("deleteCollectStringData() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+
+		return ret;
+	}
+	
+	/**
+	 * 収集蓄積情報(バイナリ)を削除します。
+	 * 
+	 * @param dataRetentionPeriod 保存期間(日)
+	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
+	 * @param ownerRoleId オーナーロールID
+	 * @param monitorTypeId 監視種別ID
+	 * @return 削除件数
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * 
+	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
+	 * 
+	 */
+	public int deleteCollectBinaryData(int dataRetentionPeriod, boolean status, String ownerRoleId, String monitorTypeId) throws InvalidRole, HinemosUnknown {
+		m_log.debug("deleteCollectBinaryData() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
+		JpaTransactionManager jtm = null;
+		MaintenanceCollectBinaryData binData = new MaintenanceCollectBinaryData(monitorTypeId);
+		int ret = 0;
+		try{
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			
+			ret = binData.delete(dataRetentionPeriod, status, ownerRoleId);
 			
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {

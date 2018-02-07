@@ -1,0 +1,38 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"cloudPlatformId",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudUser_cloudPlatformId"}
+	]},
+
+	{
+	"propName":"cloudScopeId",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"CloudUser_cloudScopeId"}
+	]},
+
+	{
+	"propName":"cloudScopeName",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudUser_cloudScopeName"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudUser_ownerRoleId"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudUser_description"}
+	]}
+]
+}

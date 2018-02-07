@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.custom.dialog;
@@ -155,7 +148,7 @@ public class MonitorCustomDialog extends CommonMonitorNumericDialog {
 		this.checkSelected.setText(Messages.getString("monitor.custom.type.selected"));
 		this.checkSelected.setToolTipText(Messages.getString("monitor.custom.type.selected.tips"));
 		gridData = new GridData(GridData.FILL_HORIZONTAL | GridData.GRAB_HORIZONTAL);
-		gridData.horizontalSpan = 8;
+		gridData.horizontalSpan = 7;
 		checkSelected.setLayoutData(gridData);
 		checkSelected.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -178,7 +171,7 @@ public class MonitorCustomDialog extends CommonMonitorNumericDialog {
 		this.textNode.setText("");
 		this.textNode.setMessage(Messages.getString("monitor.custom.node.selected"));
 		gridData = new GridData(GridData.FILL_HORIZONTAL | GridData.GRAB_HORIZONTAL);
-		gridData.horizontalSpan = 5;
+		gridData.horizontalSpan = 6;
 		this.textNode.setLayoutData(gridData);
 		this.textNode.addModifyListener(new ModifyListener(){
 			@Override

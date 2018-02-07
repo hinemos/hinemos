@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.agent.log;
 
 import java.io.BufferedReader;
@@ -446,7 +454,7 @@ public class ReadingStatusRoot {
 	public ReadingStatusRoot(List<MonitorInfoWrapper> miList, String baseDirectory) {
 		// ファイルの読み込み状態を格納したディレクトリを確認
 		storePath = new File(baseDirectory);
-		update(miList);
+		update(miList, null);
 	}
 
 	/**
@@ -485,7 +493,7 @@ public class ReadingStatusRoot {
 	 * 
 	 * @param miList
 	 */
-	public void update(List<MonitorInfoWrapper> miList) {
+	public void update(List<MonitorInfoWrapper> miList, List<MonitorInfoWrapper> beforeList) {
 		clearCounter();
 
 		List<File> miDirList;
@@ -552,9 +560,28 @@ public class ReadingStatusRoot {
 		
 		statusMap = newStatusMap;
 		
+		// 前回監視時点の監視設定リストがない場合は、RSディレクトリ削除処理を実施しない.
+		if (beforeList == null || beforeList.isEmpty()) {
+			return;
+		}
+
+		// 前回監視時点の監視設定のRSディレクトリリストを取得する.
+		List<String> beforeRsDirList = new ArrayList<String>();
+		for (MonitorInfoWrapper beforeWrapper : beforeList) {
+			beforeRsDirList.add(dir_prefix + beforeWrapper.getId());
+		}
+		
 		// 不要なファイルを削除
 		for (File f : miDirList) {
-			if (f.getName().startsWith(dir_prefix)) {
+			// 前回監視時点で存在していたディレクトリのみを削除(ログファイル監視以外のRSディレクトリ削除防止).
+			if (beforeRsDirList.contains(f.getName())) {
+				if (!recursiveDeleteFile(f)) {
+					log.warn("faile to delete " + f.getPath());
+				}
+				continue;
+			}
+			// 先頭にプレフィックスついてないディレクトリはゴミなので削除.
+			if(!f.getName().contains(dir_prefix)){
 				if (!recursiveDeleteFile(f)) {
 					log.warn("faile to delete " + f.getPath());
 				}

@@ -1,17 +1,11 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.winservice.util;
 
 import java.net.Inet6Address;
@@ -28,8 +22,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -129,7 +123,7 @@ public class RequestWinRM {
 		m_con.setUserpassword(userPassword);
 		m_con.setTimeout(timeout);
 
-		boolean sslTrustall = HinemosPropertyUtil.getHinemosPropertyBool("monitor.winservice.ssl.trustall", true);
+		boolean sslTrustall = HinemosPropertyCommon.monitor_winservice_ssl_trustall.getBooleanValue();
 		if(sslTrustall) {
 			X509TrustManager tm = new X509TrustManager() {
 				@Override

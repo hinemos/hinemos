@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"accessKey",
+	"annotations":[
+		{"type":"Column", "columnName":"AmazonUserType_accessKey"}
+	]},
+	
+	{
+	"propName":"secretKey",
+	"annotations":[
+		{"type":"Column", "columnName":"AmazonUserType_secretKey"}
+	]}
+]
+}

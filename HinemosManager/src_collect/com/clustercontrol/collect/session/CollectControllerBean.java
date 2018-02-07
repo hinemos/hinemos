@@ -1,18 +1,30 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.collect.session;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.analytics.util.AnalyticsUtil;
 import com.clustercontrol.collect.factory.SelectCollectData;
 import com.clustercontrol.collect.factory.SelectCollectKeyInfo;
 import com.clustercontrol.collect.model.CollectData;
+import com.clustercontrol.collect.model.CollectKeyInfo;
 import com.clustercontrol.collect.model.CollectKeyInfoPK;
 import com.clustercontrol.collect.model.SummaryDay;
 import com.clustercontrol.collect.model.SummaryHour;
@@ -22,13 +34,16 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CollectKeyNotFound;
+import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.monitor.bean.EventDataInfo;
 import com.clustercontrol.monitor.factory.SelectEvent;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
+import com.clustercontrol.util.MessageConstant;
 
 
 /**
@@ -82,10 +97,11 @@ public class CollectControllerBean{
 	 *
 	 *
 	 * @return CollectDataのリスト
+	 * @throws HinemosDbTimeout 
 	 * @throws InvalidRole 
 	 * @throws HinemosUnknown 
 	 */
-	public List<CollectData> getCollectDataList(List<Integer> idList, Long fromTime, Long toTime) throws InvalidRole, HinemosUnknown{
+	public List<CollectData> getCollectDataList(List<Integer> idList, Long fromTime, Long toTime) throws HinemosDbTimeout, InvalidRole, HinemosUnknown{
 		JpaTransactionManager jtm = null;
 		List<CollectData> list = null;
 		try {
@@ -95,22 +111,35 @@ public class CollectControllerBean{
 			list = select.getCollectDataList(idList, fromTime, toTime);
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
-			m_log.warn("getCollectId() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
+		} catch (JobMasterNotFound | MonitorNotFound e){
+			if (jtm != null) {
 				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} catch (HinemosDbTimeout e){
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosDbTimeout(MessageConstant.MESSAGE_COLLECT_SEARCH_TIMEOUT.getMessage());
+		} catch (RuntimeException e){
+			m_log.warn("getCollectDataList() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
 		}
 		return list;
 	}
-	
+
 	/**
 	 * IDを指定し、IDに紐づく収集データのリストを取得します。<BR>
 	 *
@@ -144,16 +173,70 @@ public class CollectControllerBean{
 		}
 		return list;
 	}
-	
+
+	/**
+	 * 以下の条件に一致する収集値キーの一覧を取得します。
+	 *　　オーナーロールIDが参照可能
+	 *　　数値監視
+	 *　　指定されたファシリティIDもしくはその配下のノードに一致する
+	 *　※サイレント監視で使用する。
+	 *
+	 *
+	 * @param facilityId　ファシリティID
+	 * @param ownerRoleId　オーナーロールID
+	 * @return Map(名称, 収集値キーリスト)
+	 * @throws InvalidRole 
+	 * @throws HinemosUnknown 
+	 */
+	public Map<String, CollectKeyInfo> getCollectKeyMapForAnalytics(String facilityId, String ownerRoleId
+			) throws InvalidRole, HinemosUnknown {
+		JpaTransactionManager jtm = null;
+		Map<String, CollectKeyInfo> map = new ConcurrentHashMap<>();
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			List<CollectKeyInfo> list 
+				= new SelectCollectData().getCollectKeyListFindByNumFacility_OR(facilityId, ownerRoleId);
+			if (list != null) {
+				for (CollectKeyInfo collectKeyInfo : list) {
+					map.put(AnalyticsUtil.getMsgItemName( 
+							collectKeyInfo.getItemName(), collectKeyInfo.getDisplayName(), collectKeyInfo.getMonitorId())
+							,new CollectKeyInfo(collectKeyInfo.getItemName(), collectKeyInfo.getDisplayName(),
+									collectKeyInfo.getMonitorId(), collectKeyInfo.getFacilityid()));
+				}
+			}
+			jtm.commit();
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (HinemosUnknown e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw e;
+		} catch (Exception e){
+			m_log.warn("getCollectKeyMapForCorrelation() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+		return map;
+	}
+
 	/**
 	 * IDと時間を指定し、その時間内のサマリデータ(時)のリストを取得します。<BR>
 	 *
 	 *
 	 * @return SummaryHourのリスト
+	 * @throws HinemosDbTimeout 
 	 * @throws InvalidRole 
 	 * @throws HinemosUnknown 
 	 */
-	public List<SummaryHour> getSummaryHourList(List<Integer> idList, Long fromTime, Long toTime) throws InvalidRole, HinemosUnknown{
+	public List<SummaryHour> getSummaryHourList(List<Integer> idList, Long fromTime, Long toTime) throws HinemosDbTimeout, InvalidRole, HinemosUnknown{
 		JpaTransactionManager jtm = null;
 		List<SummaryHour> list = null;
 		try {
@@ -162,19 +245,32 @@ public class CollectControllerBean{
 			SelectCollectData select = new SelectCollectData();
 			list = select.getSummaryHourList(idList, fromTime, toTime);
 			jtm.commit();
+		} catch (JobMasterNotFound | MonitorNotFound e){
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} catch (HinemosDbTimeout e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosDbTimeout(MessageConstant.MESSAGE_COLLECT_SEARCH_TIMEOUT.getMessage());
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
-			m_log.warn("getCollectId() : "
+		} catch (RuntimeException e){
+			m_log.warn("getSummaryHourList() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
 		}
 		return list;
 	}
@@ -218,10 +314,11 @@ public class CollectControllerBean{
 	 *
 	 *
 	 * @return SummaryDayのリスト
+	 * @throws HinemosDbTimeout 
 	 * @throws InvalidRole 
 	 * @throws HinemosUnknown 
 	 */
-	public List<SummaryDay> getSummaryDayList(List<Integer> idList, Long fromTime, Long toTime) throws HinemosUnknown, InvalidRole{
+	public List<SummaryDay> getSummaryDayList(List<Integer> idList, Long fromTime, Long toTime) throws HinemosDbTimeout, HinemosUnknown, InvalidRole{
 		JpaTransactionManager jtm = null;
 		List<SummaryDay> list = null;
 		try {
@@ -230,19 +327,32 @@ public class CollectControllerBean{
 			SelectCollectData select = new SelectCollectData();
 			list = select.getSummaryDayList(idList, fromTime, toTime);
 			jtm.commit();
+		} catch (JobMasterNotFound | MonitorNotFound e){
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} catch (HinemosDbTimeout e){
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosDbTimeout(MessageConstant.MESSAGE_COLLECT_SEARCH_TIMEOUT.getMessage());
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
-			m_log.warn("getCollectId() : "
+		} catch (RuntimeException e){
+			m_log.warn("getSummaryDayList() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
 		}
 		return list;
 	}
@@ -286,10 +396,11 @@ public class CollectControllerBean{
 	 *
 	 *
 	 * @return SummaryMonthのリスト
+	 * @throws HinemosDbTimeout 
 	 * @throws InvalidRole 
 	 * @throws HinemosUnknown 
 	 */
-	public List<SummaryMonth> getSummaryMonthList(List<Integer> idList, Long fromTime, Long toTime) throws InvalidRole, HinemosUnknown{
+	public List<SummaryMonth> getSummaryMonthList(List<Integer> idList, Long fromTime, Long toTime) throws HinemosDbTimeout, InvalidRole, HinemosUnknown{
 		JpaTransactionManager jtm = null;
 		List<SummaryMonth> list = null;
 		try {
@@ -298,19 +409,32 @@ public class CollectControllerBean{
 			SelectCollectData select = new SelectCollectData();
 			list = select.getSummaryMonthList(idList, fromTime, toTime);
 			jtm.commit();
+		} catch (JobMasterNotFound | MonitorNotFound e){
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} catch (HinemosDbTimeout e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosDbTimeout(MessageConstant.MESSAGE_COLLECT_SEARCH_TIMEOUT.getMessage());
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
-			m_log.warn("getCollectId() : "
+		} catch (RuntimeException e){
+			m_log.warn("getSummaryMonthList() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
 		}
 		return list;
 	}
@@ -352,7 +476,7 @@ public class CollectControllerBean{
 	/**
 	 * 収集項目コードのリストを取得します。<BR>
 	 *
-	 *
+	 * @param facilityIdList　ファシリティIDのリスト
 	 * @return 収集項目コードのリスト
 	 * @throws InvalidRole 
 	 * @throws HinemosUnknown 
@@ -466,12 +590,12 @@ public class CollectControllerBean{
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		try {
 			jtm.begin();
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+			HinemosEntityManager em = jtm.getEntityManager();
 	
 			StringBuffer sbJpql = new StringBuffer();
 			sbJpql.append("SELECT a FROM EventLogEntity a WHERE a.collectGraphFlg = true AND");
 			// ファシリティID設定
-			sbJpql.append(" a.id.facilityId IN (" + HinemosEntityManager.getParamNameString("facilityId", facilityIdList) + ")");
+			sbJpql.append(" a.id.facilityId IN (" + HinemosEntityManager.getParamNameString("facilityId", facilityIdList.toArray(new String[0])) + ")");
 			sbJpql.append(" ORDER BY a.id.outputDate");
 			TypedQuery<EventLogEntity> typedQuery = em.createQuery(sbJpql.toString(), EventLogEntity.class);
 			// ファシリティID設定

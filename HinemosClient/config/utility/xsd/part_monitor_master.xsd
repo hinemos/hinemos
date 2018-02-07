@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: part_monitor_master.xsd 124 2013-05-13 16:00:00Z sekiyaman $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:annotation>
+    	<xs:documentation>監視共通設定用マスター情報です。</xs:documentation>
+    </xs:annotation>
+    <xs:include schemaLocation="part_monitor_judgement.xsd" />
+	<xs:include schemaLocation="part_notify_relation.xsd" />
+
+	<xs:complexType name="MonitorInfo">
+		<xs:annotation>
+			<xs:documentation>監視（共通情報）</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="monitorId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視項目IDです。 PINGやエージェントなどの各監視項目内で一意である必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視設定に対する説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="facilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定が対象とするノードやスコープのファシリティIDです。
+						リポジトリに登録されているものを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="scope" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファシリティIDに付けられたファシリティ名です。
+						通常はリポジトリに既に登録されている情報が格納されるため、本項目への入力はマネージャへの登録時には無視されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorType" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視タイプです。Hinemosの監視タイプは{真偽値(0)、数値(1)、文字列(2)、トラップ(3)、シナリオ(4)、バイナリ(5)}の6種類あります。
+						各タイプごとに括弧内のindex番号を入力する必要があります。
+						例えば、Ping監視は数値監視なので"1"が入ります。
+						SNMP監視では数値監視と文字列監視の2種類があるため、監視内容に合わせて"1"または"2"を入力する必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorTypeId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視項目ごとのタイプIDです。
+						監視項目ごとに
+						{
+							MON_AGT_B,
+							MON_HTP,
+							MON_PRF_N,
+							MON_PNG_N,
+							MON_PRT_N,
+							MON_PRC_N,
+							MON_SNMP,
+							MON_SNMP_TRP,
+							MON_SQL,
+							MON_LOG,
+							MON_CUSTOM,
+							MON_SYSLOG_S,
+							MON_LOGFILE_S,
+							MON_WINSERVICE_B,
+							MON_WINEVENT_S,
+							MON_CUSTOMTRAP,
+							MON_HTP_SCE,
+							MON_JMX_N,
+							MON_PCAP_BIN,
+							MON_BINARYFILE_BIN,
+							MON_LOGFILE_N							
+						}
+						のどれかが入力されている必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="runInterval" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視間隔です。
+						Hinemosクライアント上では{30秒、1分、5分、10分、30分、60分}の表示ですが、ここではそれぞれの秒表示{30,60,300,600,1800,3600}のどれかである必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="calendarId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視で用いるカレンダーIDです。
+						ここで指定するカレンダーIDはあらかじめマネージャに登録されている必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="judgementInfo" type="MonitorJudgementInfo" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定情報。 入力は不要です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyGroupId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						通知グループIDです。 入力は不要です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定で用いる通知IDです。 複数の通知を併用する場合は併記します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="application" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定におけるアプリケーションの文字列です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視フラグです。{有効(True)、無効(False)}の各index番号が入ります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectorFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						収集フラグです。{有効(True)、無効(False)}が入ります。
+						数値監視のみで使用します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="itemName" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						収集値表示名です。数値監視のみで使用します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="measure" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						収集値単位です。数値監視のみで使用します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="logFormatId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ログフォーマットIDです。文字列監視のみ使用します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="predictionFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						将来予測フラグです。{有効(True)、無効(False)}が入ります。
+						数値監視のみで使用し、それ以外の監視では無効(False)が入ります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="predictionMethod" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						将来予測方法です。{POLYNOMIAL_1(線形回帰)、POLYNOMIAL_2(線形回帰2次)、POLYNOMIAL_3(線形回帰3次)}が入ります。
+						数値監視のみで使用します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="predictionAnalysysRange" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						将来予測監視の対象収集期間(分)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="predictionTarget" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						将来予測監視の予測先(分)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="predictionApplication" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						将来予測監視におけるアプリケーションの文字列です。
+						数値監視のみで使用します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="predictionNotifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						将来予測監視で用いる通知IDです。 複数の通知を併用する場合は併記します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="changeFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						変化量フラグです。{有効(True)、無効(False)}が入ります。
+						数値監視のみで使用し、それ以外の監視では無効(False)が入ります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="changeAnalysysRange" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						変化量の対象収集期間(分)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="changeApplication" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						変化量におけるアプリケーションの文字列です。
+						数値監視のみで使用します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="changeNotifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						変化量で用いる通知IDです。 複数の通知を併用する場合は併記します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ownerRoleId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						オーナーロールIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="regDate" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定の作成日時です。 マネージャ登録時の日時が入力されます。
+						登録時には本項目は無視されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="regUser" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定の作成ユーザです。 マネージャ登録時のユーザが入力されます。
+						登録時には本項目は無視されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="updateDate" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定の更新日時です。 マネージャ登録時の日時が入力されます。
+						登録時には本項目は無視されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="updateUser" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定の更新ユーザです。 マネージャ登録時のユーザが入力されます。
+						登録時には本項目は無視されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+</xs:schema>

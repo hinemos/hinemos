@@ -1,0 +1,37 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"CalendarType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"CalendarName",
+			"Description",
+			"ValidTimeFrom",
+			"ValidTimeTo",
+			"OwnerRoleId",
+			"CalendarDetailInfo",
+			"CalendarDetailInfo.*.Description",
+			"CalendarDetailInfo.*.YearNo",
+			"CalendarDetailInfo.*.MonthNo",
+			"CalendarDetailInfo.*.DayType",
+			"CalendarDetailInfo.*.WeekXth",
+			"CalendarDetailInfo.*.WeekNo",
+			"CalendarDetailInfo.*.DayNo",
+			"CalendarDetailInfo.*.CalendarPatternId",
+			"CalendarDetailInfo.*.AfterDay",
+			"CalendarDetailInfo.*.StartTime",
+			"CalendarDetailInfo.*.EndTime",
+			"CalendarDetailInfo.*.SubstituteFlg",
+			"CalendarDetailInfo.*.SubstituteTime",
+			"CalendarDetailInfo.*.SubstituteLimit",
+			"CalendarDetailInfo.*.ExecuteFlg"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"CalendarInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

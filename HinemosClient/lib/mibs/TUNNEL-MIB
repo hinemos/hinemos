@@ -1,0 +1,390 @@
+   TUNNEL-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, transmission,
+       Integer32, IpAddress    FROM SNMPv2-SMI          -- [RFC2578]
+
+       RowStatus, StorageType  FROM SNMPv2-TC           -- [RFC2579]
+
+       MODULE-COMPLIANCE,
+       OBJECT-GROUP            FROM SNMPv2-CONF         -- [RFC2580]
+
+       InetAddressType,
+       InetAddress             FROM INET-ADDRESS-MIB    -- [RFC4001]
+
+       IPv6FlowLabelOrAny      FROM IPV6-FLOW-LABEL-MIB -- [RFC3595]
+
+       ifIndex,
+       InterfaceIndexOrZero    FROM IF-MIB              -- [RFC2863]
+
+       IANAtunnelType          FROM IANAifType-MIB;     -- [IFTYPE]
+
+   tunnelMIB MODULE-IDENTITY
+       LAST-UPDATED "200505160000Z" -- May 16, 2005
+       ORGANIZATION "IETF IP Version 6 (IPv6) Working Group"
+
+
+
+
+
+       ::= { transmission 131 }
+
+   tunnelMIBObjects OBJECT IDENTIFIER ::= { tunnelMIB 1 }
+
+   tunnel      OBJECT IDENTIFIER ::= { tunnelMIBObjects 1 }
+
+
+   tunnelIfTable OBJECT-TYPE
+       SYNTAX     SEQUENCE OF TunnelIfEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+
+
+
+
+
+       ::= { tunnel 1 }
+
+   tunnelIfEntry OBJECT-TYPE
+       SYNTAX     TunnelIfEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       INDEX      { ifIndex }
+       ::= { tunnelIfTable 1 }
+
+   TunnelIfEntry ::= SEQUENCE {
+       tunnelIfLocalAddress            IpAddress,   -- deprecated
+       tunnelIfRemoteAddress           IpAddress,   -- deprecated
+       tunnelIfEncapsMethod            IANAtunnelType,
+       tunnelIfHopLimit                Integer32,
+       tunnelIfSecurity                INTEGER,
+       tunnelIfTOS                     Integer32,
+       tunnelIfFlowLabel               IPv6FlowLabelOrAny,
+       tunnelIfAddressType             InetAddressType,
+       tunnelIfLocalInetAddress        InetAddress,
+       tunnelIfRemoteInetAddress       InetAddress,
+       tunnelIfEncapsLimit             Integer32
+   }
+
+   tunnelIfLocalAddress OBJECT-TYPE
+       SYNTAX     IpAddress
+       MAX-ACCESS read-only
+       STATUS     deprecated
+       ::= { tunnelIfEntry 1 }
+
+   tunnelIfRemoteAddress OBJECT-TYPE
+       SYNTAX     IpAddress
+       MAX-ACCESS read-only
+       STATUS     deprecated
+       ::= { tunnelIfEntry 2 }
+
+   tunnelIfEncapsMethod OBJECT-TYPE
+       SYNTAX     IANAtunnelType
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { tunnelIfEntry 3 }
+
+   tunnelIfHopLimit OBJECT-TYPE
+       SYNTAX     Integer32 (0 | 1..255)
+       MAX-ACCESS read-write
+       STATUS     current
+       ::= { tunnelIfEntry 4 }
+
+   tunnelIfSecurity OBJECT-TYPE
+       SYNTAX     INTEGER {
+                      none(1),   -- no security
+                      ipsec(2),  -- IPsec security
+                      other(3)
+                  }
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { tunnelIfEntry 5 }
+
+   tunnelIfTOS OBJECT-TYPE
+       SYNTAX     Integer32 (-2..63)
+       MAX-ACCESS read-write
+       STATUS     current
+       ::= { tunnelIfEntry 6 }
+
+   tunnelIfFlowLabel OBJECT-TYPE
+       SYNTAX     IPv6FlowLabelOrAny
+       MAX-ACCESS read-write
+       STATUS     current
+       ::= { tunnelIfEntry 7 }
+
+   tunnelIfAddressType OBJECT-TYPE
+       SYNTAX     InetAddressType
+       MAX-ACCESS read-write
+       STATUS     current
+       ::= { tunnelIfEntry 8 }
+
+   tunnelIfLocalInetAddress OBJECT-TYPE
+       SYNTAX     InetAddress
+       MAX-ACCESS read-write
+       STATUS     current
+       ::= { tunnelIfEntry 9 }
+
+   tunnelIfRemoteInetAddress OBJECT-TYPE
+       SYNTAX     InetAddress
+       MAX-ACCESS read-write
+       STATUS     current
+       ::= { tunnelIfEntry 10 }
+
+   tunnelIfEncapsLimit OBJECT-TYPE
+       SYNTAX     Integer32 (-1 | 0..255)
+       MAX-ACCESS read-write
+       STATUS     current
+       ::= { tunnelIfEntry 11 }
+
+   tunnelConfigTable OBJECT-TYPE
+       SYNTAX     SEQUENCE OF TunnelConfigEntry
+       MAX-ACCESS not-accessible
+       STATUS     deprecated
+       ::= { tunnel 2 }
+
+
+
+
+
+
+   tunnelConfigEntry OBJECT-TYPE
+       SYNTAX     TunnelConfigEntry
+       MAX-ACCESS not-accessible
+       STATUS     deprecated
+       INDEX      { tunnelConfigLocalAddress,
+                    tunnelConfigRemoteAddress,
+                    tunnelConfigEncapsMethod,
+                    tunnelConfigID }
+       ::= { tunnelConfigTable 1 }
+
+   TunnelConfigEntry ::= SEQUENCE {
+       tunnelConfigLocalAddress            IpAddress,
+       tunnelConfigRemoteAddress           IpAddress,
+       tunnelConfigEncapsMethod            IANAtunnelType,
+       tunnelConfigID                      Integer32,
+       tunnelConfigIfIndex                 InterfaceIndexOrZero,
+       tunnelConfigStatus                  RowStatus
+   }
+
+   tunnelConfigLocalAddress OBJECT-TYPE
+       SYNTAX     IpAddress
+       MAX-ACCESS not-accessible
+       STATUS     deprecated
+       ::= { tunnelConfigEntry 1 }
+
+   tunnelConfigRemoteAddress OBJECT-TYPE
+       SYNTAX     IpAddress
+       MAX-ACCESS not-accessible
+       STATUS     deprecated
+       ::= { tunnelConfigEntry 2 }
+
+
+
+
+
+   tunnelConfigEncapsMethod OBJECT-TYPE
+       SYNTAX     IANAtunnelType
+       MAX-ACCESS not-accessible
+       STATUS     deprecated
+       ::= { tunnelConfigEntry 3 }
+
+   tunnelConfigID OBJECT-TYPE
+       SYNTAX     Integer32 (1..2147483647)
+       MAX-ACCESS not-accessible
+       STATUS     deprecated
+       ::= { tunnelConfigEntry 4 }
+
+   tunnelConfigIfIndex OBJECT-TYPE
+       SYNTAX     InterfaceIndexOrZero
+       MAX-ACCESS read-only
+       STATUS     deprecated
+       ::= { tunnelConfigEntry 5 }
+
+   tunnelConfigStatus OBJECT-TYPE
+       SYNTAX     RowStatus
+
+
+
+
+
+       MAX-ACCESS read-create
+       STATUS     deprecated
+       ::= { tunnelConfigEntry 6 }
+
+   tunnelInetConfigTable OBJECT-TYPE
+       SYNTAX     SEQUENCE OF TunnelInetConfigEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { tunnel 3 }
+
+   tunnelInetConfigEntry OBJECT-TYPE
+       SYNTAX     TunnelInetConfigEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       INDEX      { tunnelInetConfigAddressType,
+                    tunnelInetConfigLocalAddress,
+                    tunnelInetConfigRemoteAddress,
+                    tunnelInetConfigEncapsMethod,
+                    tunnelInetConfigID }
+       ::= { tunnelInetConfigTable 1 }
+
+   TunnelInetConfigEntry ::= SEQUENCE {
+       tunnelInetConfigAddressType         InetAddressType,
+       tunnelInetConfigLocalAddress        InetAddress,
+       tunnelInetConfigRemoteAddress       InetAddress,
+       tunnelInetConfigEncapsMethod        IANAtunnelType,
+       tunnelInetConfigID                  Integer32,
+       tunnelInetConfigIfIndex             InterfaceIndexOrZero,
+       tunnelInetConfigStatus              RowStatus,
+       tunnelInetConfigStorageType         StorageType
+   }
+
+   tunnelInetConfigAddressType OBJECT-TYPE
+
+
+
+
+
+       SYNTAX     InetAddressType
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { tunnelInetConfigEntry 1 }
+
+   tunnelInetConfigLocalAddress OBJECT-TYPE
+       SYNTAX     InetAddress
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { tunnelInetConfigEntry 2 }
+
+   tunnelInetConfigRemoteAddress OBJECT-TYPE
+       SYNTAX     InetAddress
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { tunnelInetConfigEntry 3 }
+
+   tunnelInetConfigEncapsMethod OBJECT-TYPE
+       SYNTAX     IANAtunnelType
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { tunnelInetConfigEntry 4 }
+
+   tunnelInetConfigID OBJECT-TYPE
+       SYNTAX     Integer32 (1..2147483647)
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { tunnelInetConfigEntry 5 }
+
+   tunnelInetConfigIfIndex OBJECT-TYPE
+       SYNTAX     InterfaceIndexOrZero
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { tunnelInetConfigEntry 6 }
+
+   tunnelInetConfigStatus OBJECT-TYPE
+       SYNTAX     RowStatus
+       MAX-ACCESS read-create
+       STATUS     current
+       ::= { tunnelInetConfigEntry 7 }
+
+   tunnelInetConfigStorageType OBJECT-TYPE
+       SYNTAX     StorageType
+       MAX-ACCESS read-create
+       STATUS     current
+       ::= { tunnelInetConfigEntry 8 }
+
+
+   tunnelMIBConformance
+                     OBJECT IDENTIFIER ::= { tunnelMIB 2 }
+   tunnelMIBCompliances
+                     OBJECT IDENTIFIER ::= { tunnelMIBConformance 1 }
+   tunnelMIBGroups  OBJECT IDENTIFIER ::= { tunnelMIBConformance 2 }
+
+
+   tunnelMIBCompliance MODULE-COMPLIANCE
+       STATUS  deprecated
+       MODULE  -- this module
+       MANDATORY-GROUPS { tunnelMIBBasicGroup }
+
+           OBJECT      tunnelIfHopLimit
+           MIN-ACCESS  read-only
+
+           OBJECT      tunnelIfTOS
+           MIN-ACCESS  read-only
+
+
+
+
+
+
+           OBJECT      tunnelConfigStatus
+           MIN-ACCESS  read-only
+      ::= { tunnelMIBCompliances 1 }
+
+   tunnelMIBInetFullCompliance MODULE-COMPLIANCE
+       STATUS  current
+       MODULE  -- this module
+       MANDATORY-GROUPS { tunnelMIBInetGroup }
+
+           OBJECT      tunnelIfAddressType
+           SYNTAX      InetAddressType { ipv4(1), ipv6(2),
+                                         ipv4z(3), ipv6z(4) }
+      ::= { tunnelMIBCompliances 2 }
+
+   tunnelMIBInetReadOnlyCompliance MODULE-COMPLIANCE
+       STATUS  current
+       MODULE  -- this module
+       MANDATORY-GROUPS { tunnelMIBInetGroup }
+
+           OBJECT      tunnelIfHopLimit
+           MIN-ACCESS  read-only
+
+           OBJECT      tunnelIfTOS
+           MIN-ACCESS  read-only
+
+           OBJECT      tunnelIfFlowLabel
+           MIN-ACCESS  read-only
+
+
+
+
+
+           OBJECT      tunnelIfAddressType
+           SYNTAX      InetAddressType { ipv4(1), ipv6(2),
+                                         ipv4z(3), ipv6z(4) }
+           MIN-ACCESS  read-only
+
+           OBJECT      tunnelIfLocalInetAddress
+           MIN-ACCESS  read-only
+
+           OBJECT      tunnelIfRemoteInetAddress
+           MIN-ACCESS  read-only
+
+           OBJECT      tunnelIfEncapsLimit
+           MIN-ACCESS  read-only
+
+           OBJECT      tunnelInetConfigStatus
+           MIN-ACCESS  read-only
+
+           OBJECT      tunnelInetConfigStorageType
+           MIN-ACCESS  read-only
+      ::= { tunnelMIBCompliances 3 }
+
+
+   tunnelMIBBasicGroup OBJECT-GROUP
+       OBJECTS { tunnelIfLocalAddress, tunnelIfRemoteAddress,
+          tunnelIfEncapsMethod, tunnelIfHopLimit, tunnelIfTOS,
+          tunnelIfSecurity, tunnelConfigIfIndex, tunnelConfigStatus }
+       STATUS  deprecated
+       ::= { tunnelMIBGroups 1 }
+
+   tunnelMIBInetGroup OBJECT-GROUP
+       OBJECTS { tunnelIfAddressType, tunnelIfLocalInetAddress,
+          tunnelIfRemoteInetAddress, tunnelIfEncapsMethod,
+          tunnelIfEncapsLimit,
+          tunnelIfHopLimit, tunnelIfTOS, tunnelIfFlowLabel,
+          tunnelIfSecurity, tunnelInetConfigIfIndex,
+          tunnelInetConfigStatus, tunnelInetConfigStorageType }
+       STATUS  current
+       ::= { tunnelMIBGroups 2 }
+
+   END

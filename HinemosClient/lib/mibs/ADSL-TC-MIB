@@ -1,0 +1,44 @@
+   ADSL-TC-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       transmission,
+       MODULE-IDENTITY, Gauge32            FROM SNMPv2-SMI
+       TEXTUAL-CONVENTION                  FROM SNMPv2-TC;
+
+   adsltcmib MODULE-IDENTITY
+
+   LAST-UPDATED "9908190000Z"
+
+   ORGANIZATION "IETF ADSL MIB Working Group"
+
+
+
+       ::= { transmission 94 2 } -- adslMIB 2
+
+       AdslLineCodingType ::= TEXTUAL-CONVENTION
+           STATUS       current
+           SYNTAX  INTEGER {
+               other(1),-- none of the following
+               dmt (2), -- Discrete MultiTone
+               cap (3), -- Carrierless Amplitude & Phase modulation
+               qam (4)  -- Quadrature Amplitude Modulation
+           }
+
+       AdslPerfCurrDayCount ::= TEXTUAL-CONVENTION
+           STATUS  current
+
+
+
+
+
+            SYNTAX  Gauge32
+
+       AdslPerfPrevDayCount ::= TEXTUAL-CONVENTION
+           STATUS  current
+           SYNTAX  Gauge32
+
+       AdslPerfTimeElapsed ::= TEXTUAL-CONVENTION
+           STATUS current
+           SYNTAX  Gauge32
+
+   END

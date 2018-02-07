@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.notify.util;
 
 import java.io.Serializable;
@@ -9,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
@@ -74,11 +83,12 @@ public class NotifyCache {
 	 * 通知の登録、変更、削除時に呼ぶ。
 	 */
 	public static void refresh() {
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			_lock.writeLock();
 			
 			long start = HinemosTime.currentTimeMillis();
-			new JpaTransactionManager().getEntityManager().clear();
+			em.clear();
 			HashMap<String, NotifyInfo> notifyMap = new HashMap<String, NotifyInfo>();
 			HashMap<String, NotifyInfoDetail> notifyDetailMap = new HashMap<String, NotifyInfoDetail>();
 			

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.hub.util;
@@ -32,6 +25,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import com.clustercontrol.hub.bean.CollectStringTag;
 import com.clustercontrol.hub.bean.ValueType;
 import com.clustercontrol.hub.model.CollectDataTag;
 import com.clustercontrol.hub.model.CollectDataTagPK;
@@ -54,9 +48,6 @@ public class CollectStringDataParser {
 	public final Locale timestampLocale = Locale.US;
 	
 	public final Map<String, Pattern> keywordPatternMap;
-	
-	public final static String KEY_TIMESTAMP_IN_LOG = "TIMESTAMP_IN_LOG";
-	public final static String KEY_TIMESTAMP_RECIEVED = "TIMESTAMP_RECIEVED";
 	
 	public CollectStringDataParser(LogFormat format) {
 		this.format = format;
@@ -129,7 +120,8 @@ public class CollectStringDataParser {
 						}
 					}
 					
-					tagMap.put(KEY_TIMESTAMP_IN_LOG, new CollectDataTag(new CollectDataTagPK(data.getCollectId(), data.getDataId(), KEY_TIMESTAMP_IN_LOG), ValueType.number, Long.toString(datetime.getMillis())));
+					tagMap.put(CollectStringTag.TIMESTAMP_IN_LOG.name(), new CollectDataTag(new CollectDataTagPK(data.getCollectId(), data.getDataId(), CollectStringTag.TIMESTAMP_IN_LOG.name()), 
+							CollectStringTag.TIMESTAMP_IN_LOG.valueType(), Long.toString(datetime.getMillis())));
 				} catch (IllegalArgumentException e) {
 					log.warn(String.format("invalid timestamp string : format = %s, string = %s", format.getTimestampRegex(), timestampStr));
 				}

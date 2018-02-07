@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.view.action;
@@ -33,7 +26,12 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.analytics.dialog.CorrelationCreateDialog;
+import com.clustercontrol.analytics.dialog.IntegrationCreateDialog;
+import com.clustercontrol.analytics.dialog.LogcountCreateDialog;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.binary.dialog.MonitorBinaryDialog;
+import com.clustercontrol.binary.dialog.MonitorPacketCaptureDialog;
 import com.clustercontrol.custom.dialog.MonitorCustomDialog;
 import com.clustercontrol.custom.dialog.MonitorStringCustomDialog;
 import com.clustercontrol.customtrap.dialog.MonitorCustomTrapDialog;
@@ -118,6 +116,10 @@ public class MonitorCopyAction extends AbstractHandler implements IElementUpdate
 			dialog = new SystemlogStringCreateDialog(shell, managerName, monitorId, false);
 		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_LOGFILE)) {
 			dialog = new LogfileStringCreateDialog(shell, managerName, monitorId, false);
+		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)) {
+			dialog = new MonitorBinaryDialog(shell, managerName, monitorId, false);
+		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)) {
+			dialog = new MonitorPacketCaptureDialog(shell, managerName, monitorId, false);
 		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CUSTOM_N)) {
 			dialog = new MonitorCustomDialog(shell, managerName, monitorId, false);
 		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CUSTOM_S)) {
@@ -134,6 +136,12 @@ public class MonitorCopyAction extends AbstractHandler implements IElementUpdate
 			dialog = new MonitorCustomTrapDialog(shell, managerName, monitorId, false);
 		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)) {
 			dialog = new MonitorCustomTrapStringDialog(shell, managerName, monitorId, false);
+		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_LOGCOUNT)) {
+			dialog = new LogcountCreateDialog(shell, managerName, monitorId, false);
+		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CORRELATION)) {
+			dialog = new CorrelationCreateDialog(shell, managerName, monitorId, false);
+		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_INTEGRATION)) {
+			dialog = new IntegrationCreateDialog(shell, managerName, monitorId, false);
 		} else {
 			for(IMonitorPlugin extensionMonitor: LoadMonitorPlugin.getExtensionMonitorList()){
 				if(pluginId.equals(extensionMonitor.getMonitorPluginId())){

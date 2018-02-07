@@ -1,0 +1,231 @@
+   UDPLITE-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY,
+       OBJECT-TYPE,
+       mib-2, Unsigned32,
+       Counter32, Counter64   FROM SNMPv2-SMI           -- [RFC2578]
+
+       TimeStamp              FROM SNMPv2-TC            -- [RFC2579]
+
+       MODULE-COMPLIANCE,
+       OBJECT-GROUP           FROM SNMPv2-CONF          -- [RFC2580]
+
+       InetAddress,
+       InetAddressType,
+       InetPortNumber         FROM INET-ADDRESS-MIB;    -- [RFC4001]
+
+   udpliteMIB MODULE-IDENTITY
+       LAST-UPDATED "200712180000Z"       -- 18 December 2007
+       ORGANIZATION "IETF TSV Working Group (TSVWG)"
+
+       ::= { mib-2 170 }
+
+   udplite      OBJECT IDENTIFIER ::= { udpliteMIB 1 }
+
+   udpliteInDatagrams OBJECT-TYPE         -- as in UDP-MIB
+       SYNTAX     Counter64
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udplite 1 }
+
+   udpliteInPartialCov OBJECT-TYPE        -- new in UDP-Lite
+       SYNTAX     Counter64
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udplite 2 }
+
+
+
+
+
+
+
+
+   udpliteNoPorts OBJECT-TYPE             -- as in UDP-MIB
+       SYNTAX     Counter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udplite 3 }
+
+   udpliteInErrors OBJECT-TYPE            -- as in UDP-MIB
+       SYNTAX     Counter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udplite 4 }
+
+   udpliteInBadChecksum OBJECT-TYPE       -- new in UDP-Lite
+       SYNTAX     Counter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udplite 5 }
+
+   udpliteOutDatagrams OBJECT-TYPE        -- as in UDP-MIB
+       SYNTAX     Counter64
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udplite 6 }
+
+   udpliteOutPartialCov OBJECT-TYPE       -- new in UDP-Lite
+       SYNTAX     Counter64
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udplite 7 }
+
+   udpliteEndpointTable OBJECT-TYPE
+       SYNTAX     SEQUENCE OF UdpLiteEndpointEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udplite 8 }
+
+   udpliteEndpointEntry OBJECT-TYPE
+       SYNTAX     UdpLiteEndpointEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       INDEX   { udpliteEndpointLocalAddressType,
+                 udpliteEndpointLocalAddress,
+                 udpliteEndpointLocalPort,
+                 udpliteEndpointRemoteAddressType,
+                 udpliteEndpointRemoteAddress,
+                 udpliteEndpointRemotePort,
+                 udpliteEndpointInstance }
+       ::= { udpliteEndpointTable 1 }
+
+   UdpLiteEndpointEntry ::= SEQUENCE {
+
+
+
+
+
+           udpliteEndpointLocalAddressType   InetAddressType,
+           udpliteEndpointLocalAddress       InetAddress,
+           udpliteEndpointLocalPort          InetPortNumber,
+           udpliteEndpointRemoteAddressType  InetAddressType,
+           udpliteEndpointRemoteAddress      InetAddress,
+           udpliteEndpointRemotePort         InetPortNumber,
+           udpliteEndpointInstance           Unsigned32,
+           udpliteEndpointProcess            Unsigned32,
+           udpliteEndpointMinCoverage        Unsigned32,
+           udpliteEndpointViolCoverage       Counter32
+   }
+
+   udpliteEndpointLocalAddressType OBJECT-TYPE
+       SYNTAX     InetAddressType
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpliteEndpointEntry 1 }
+
+   udpliteEndpointLocalAddress OBJECT-TYPE
+       SYNTAX     InetAddress
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpliteEndpointEntry 2 }
+
+   udpliteEndpointLocalPort OBJECT-TYPE
+       SYNTAX     InetPortNumber
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpliteEndpointEntry 3 }
+
+   udpliteEndpointRemoteAddressType OBJECT-TYPE
+       SYNTAX     InetAddressType
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpliteEndpointEntry 4 }
+
+   udpliteEndpointRemoteAddress OBJECT-TYPE
+       SYNTAX     InetAddress
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpliteEndpointEntry 5 }
+
+   udpliteEndpointRemotePort OBJECT-TYPE
+       SYNTAX     InetPortNumber
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpliteEndpointEntry 6 }
+
+   udpliteEndpointInstance OBJECT-TYPE
+       SYNTAX     Unsigned32 (1..'ffffffff'h)
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpliteEndpointEntry 7 }
+
+   udpliteEndpointProcess OBJECT-TYPE
+       SYNTAX     Unsigned32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udpliteEndpointEntry 8 }
+
+   udpliteEndpointMinCoverage OBJECT-TYPE -- new in UDP-Lite
+       SYNTAX     Unsigned32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udpliteEndpointEntry 9 }
+
+   udpliteEndpointViolCoverage OBJECT-TYPE -- new / optional in UDP-Lite
+       SYNTAX     Counter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udpliteEndpointEntry 10 }
+
+
+
+
+
+
+
+
+
+
+   udpliteStatsDiscontinuityTime OBJECT-TYPE
+       SYNTAX     TimeStamp
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udplite 9 }
+
+
+   udpliteMIBConformance OBJECT IDENTIFIER ::= { udpliteMIB 2 }
+
+   udpliteMIBCompliance MODULE-COMPLIANCE
+          STATUS     current
+       MODULE  -- this module
+            MANDATORY-GROUPS { udpliteBaseGroup,
+                               udplitePartialCsumGroup,
+                               udpliteEndpointGroup    }
+        GROUP               udpliteAppGroup
+       ::= { udpliteMIBConformance 1 }
+
+   udpliteMIBGroups OBJECT IDENTIFIER ::= { udpliteMIBConformance 2 }
+
+   udpliteBaseGroup OBJECT-GROUP          -- as in UDP
+       OBJECTS   { udpliteInDatagrams, udpliteNoPorts, udpliteInErrors,
+                   udpliteOutDatagrams, udpliteStatsDiscontinuityTime }
+       STATUS     current
+       ::= { udpliteMIBGroups 1 }
+
+   udplitePartialCsumGroup OBJECT-GROUP  -- specific to UDP-Lite
+       OBJECTS   { udpliteInPartialCov,
+                   udpliteInBadChecksum,
+                   udpliteOutPartialCov  }
+       STATUS     current
+       ::= { udpliteMIBGroups 2 }
+
+   udpliteEndpointGroup OBJECT-GROUP
+       OBJECTS    { udpliteEndpointProcess, udpliteEndpointMinCoverage }
+       STATUS     current
+       ::= { udpliteMIBGroups 3 }
+
+
+
+
+
+
+
+
+   udpliteAppGroup OBJECT-GROUP
+       OBJECTS    { udpliteEndpointViolCoverage }
+       STATUS     current
+       ::= { udpliteMIBGroups 4 }
+
+   END

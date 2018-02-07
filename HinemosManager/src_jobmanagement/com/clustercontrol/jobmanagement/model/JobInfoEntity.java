@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.jobmanagement.model;
 
 import java.io.Serializable;
@@ -14,8 +22,6 @@ import javax.persistence.PrimaryKeyJoinColumn;
 import javax.persistence.PrimaryKeyJoinColumns;
 import javax.persistence.Table;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.jobmanagement.bean.ConditionTypeConstant;
 import com.clustercontrol.util.HinemosTime;
 
@@ -48,10 +54,14 @@ public class JobInfoEntity implements Serializable {
 	private Boolean messageRetryEndFlg			=	null;
 	private Integer messageRetryEndValue		=	null;
 	private Boolean commandRetryFlg				= true;
+	private Integer commandRetryEndStatus			= 0;
+	private Boolean jobRetryFlg					= false;
+	private Integer jobRetryEndStatus				= 0;
 	private String argumentJobId				=	null;
 	private String argument						=	null;
 	private Integer messageRetry 				= null;
 	private Integer commandRetry 				= 10;
+	private Integer jobRetry 				= 0;
 	private Boolean managerDistribution		= false;
 	private String scriptName					= null;
 	private String scriptEncoding				= null;
@@ -64,7 +74,10 @@ public class JobInfoEntity implements Serializable {
 	private Integer skipEndValue				=	0;
 	private Boolean unmatchEndFlg				=	false;
 	private Integer unmatchEndStatus			=	0;
-	private Integer unmatchEndValue				=	null;
+	private Integer unmatchEndValue			=	null;
+	private Boolean exclusiveBranchFlg			=	false;
+	private Integer exclusiveBranchEndStatus	=	0;
+	private Integer exclusiveBranchEndValue	=	null;
 	private Boolean calendar					=	false;
 	private String calendarId					=	"";
 	private Integer calendarEndStatus			=	0;
@@ -95,6 +108,8 @@ public class JobInfoEntity implements Serializable {
 	private Integer endDelayOperationType		=	null;
 	private Integer endDelayOperationEndStatus	=	0;
 	private Integer endDelayOperationEndValue	=	0;
+	private Boolean endDelayChangeMount			=	false;
+	private Double endDelayChangeMountValue		=	1D;
 
 	// multiplicity
 	private Boolean multiplicity_notify;
@@ -161,6 +176,7 @@ public class JobInfoEntity implements Serializable {
 	private List<JobCommandParamInfoEntity> jobCommandParamInfoEntities;
 	private List<JobEnvVariableInfoEntity> jobEnvVariableInfoEntities;
 	private List<JobStartParamInfoEntity> jobStartParamInfoEntities;
+	private List<JobNextJobOrderInfoEntity> jobNextJobOrderInfoEntities;
 
 	@Deprecated
 	public JobInfoEntity() {
@@ -169,9 +185,6 @@ public class JobInfoEntity implements Serializable {
 	public JobInfoEntity(JobInfoEntityPK pk,
 			JobSessionJobEntity jobSessionJobEntity) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToJobSessionJobEntity(jobSessionJobEntity);
 	}
 
 	public JobInfoEntity(JobSessionJobEntity jobSessionJobEntity) {
@@ -342,6 +355,32 @@ public class JobInfoEntity implements Serializable {
 		this.commandRetryFlg = commandRetryFlg;
 	}
 
+	@Column(name="command_retry_end_status")
+	public Integer getCommandRetryEndStatus() {
+		return commandRetryEndStatus;
+	}
+
+	public void setCommandRetryEndStatus(Integer commandRetryEndStatus) {
+		this.commandRetryEndStatus = commandRetryEndStatus;
+	}
+
+	@Column(name="job_retry_flg")
+	public Boolean getJobRetryFlg() {
+		return jobRetryFlg;
+	}
+
+	public void setJobRetryFlg(Boolean jobRetryFlg) {
+		this.jobRetryFlg = jobRetryFlg;
+	}
+
+	@Column(name="job_retry_end_status")
+	public Integer getJobRetryEndStatus() {
+		return jobRetryEndStatus;
+	}
+
+	public void setJobRetryEndStatus(Integer jobRetryEndStatus) {
+		this.jobRetryEndStatus = jobRetryEndStatus;
+	}
 
 	@Column(name="facility_id")
 	public String getFacilityId() {
@@ -406,6 +445,15 @@ public class JobInfoEntity implements Serializable {
 
 	public void setCommandRetry(Integer commandRetry) {
 		this.commandRetry = commandRetry;
+	}
+
+	@Column(name="job_retry")
+	public Integer getJobRetry() {
+		return jobRetry;
+	}
+
+	public void setJobRetry(Integer jobRetry) {
+		this.jobRetry = jobRetry;
 	}
 
 	@Column(name="manager_distribution")
@@ -582,6 +630,26 @@ public class JobInfoEntity implements Serializable {
 
 	public void setEndDelayOperationEndValue(Integer endDelayOperationEndValue) {
 		this.endDelayOperationEndValue = endDelayOperationEndValue;
+	}
+
+
+	@Column(name="end_delay_change_mount")
+	public Boolean getEndDelayChangeMount() {
+		return this.endDelayChangeMount;
+	}
+
+	public void setEndDelayChangeMount(Boolean endDelayChangeMount) {
+		this.endDelayChangeMount = endDelayChangeMount;
+	}
+
+
+	@Column(name="end_delay_change_mount_value")
+	public Double getEndDelayChangeMountValue() {
+		return this.endDelayChangeMountValue;
+	}
+
+	public void setEndDelayChangeMountValue(Double endDelayChangeMountValue) {
+		this.endDelayChangeMountValue = endDelayChangeMountValue;
 	}
 
 
@@ -864,6 +932,32 @@ public class JobInfoEntity implements Serializable {
 		this.unmatchEndValue = unmatchEndValue;
 	}
 
+	@Column(name="exclusive_branch_flg")
+	public Boolean getExclusiveBranchFlg() {
+		return this.exclusiveBranchFlg;
+	}
+
+	public void setExclusiveBranchFlg(Boolean exclusiveBranchFlg) {
+		this.exclusiveBranchFlg = exclusiveBranchFlg;
+	}
+
+	@Column(name="exclusive_branch_end_status")
+	public Integer getExclusiveBranchEndStatus() {
+		return this.exclusiveBranchEndStatus;
+	}
+
+	public void setExclusiveBranchEndStatus(Integer exclusiveBranchEndStatus) {
+		this.exclusiveBranchEndStatus = exclusiveBranchEndStatus;
+	}
+
+	@Column(name="exclusive_branch_end_value")
+	public Integer getExclusiveBranchEndValue() {
+		return this.exclusiveBranchEndValue;
+	}
+
+	public void setExclusiveBranchEndValue(Integer exclusiveBranchEndValue) {
+		this.exclusiveBranchEndValue = exclusiveBranchEndValue;
+	}
 
 	// cc_job_file_info
 	@Column(name="check_flg")
@@ -1324,6 +1418,15 @@ public class JobInfoEntity implements Serializable {
 
 	public void setJobStartParamInfoEntities(List<JobStartParamInfoEntity> jobStartParamInfoEntities) {
 		this.jobStartParamInfoEntities = jobStartParamInfoEntities;
+	}	
+	//bi-directional many-to-one association to JobStartParamInfoEntity
+	@OneToMany(mappedBy="jobInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobNextJobOrderInfoEntity> getJobNextJobOrderInfoEntities() {
+		return this.jobNextJobOrderInfoEntities;
+	}
+
+	public void setJobNextJobOrderInfoEntities(List<JobNextJobOrderInfoEntity> jobNextJobOrderInfoEntities) {
+		this.jobNextJobOrderInfoEntities = jobNextJobOrderInfoEntities;
 	}	
 	/**
 	 * 削除前処理<BR>

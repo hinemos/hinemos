@@ -1,0 +1,41 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"SnmpTrapMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"SnmpTrapInfo.CommunityCheck",
+			"SnmpTrapInfo.CommunityName",
+			"SnmpTrapInfo.CharsetConvert",
+			"SnmpTrapInfo.CharsetName",
+			"SnmpTrapInfo.NotifyofReceivingUnspecifiedFlg",
+			"SnmpTrapInfo.PriorityUnspecified",
+			"Monitor.Application",
+			"Monitor.MonitorFlg",
+			"SnmpTrapInfo.TrapValueInfo.*.Mib",
+			"SnmpTrapInfo.TrapValueInfo.*.TrapName",
+			"SnmpTrapInfo.TrapValueInfo.*.TrapOid",
+			"SnmpTrapInfo.TrapValueInfo.*.GenericId",
+			"SnmpTrapInfo.TrapValueInfo.*.SpecificId",
+			"SnmpTrapInfo.TrapValueInfo.*.ValidFlg",
+			"SnmpTrapInfo.TrapValueInfo.*.Logmsg",
+			"SnmpTrapInfo.TrapValueInfo.*.Descr",
+			"Monitor.NotifyId"
+		]
+	}
+],
+
+"props":[
+	{
+	"propName":"TrapMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

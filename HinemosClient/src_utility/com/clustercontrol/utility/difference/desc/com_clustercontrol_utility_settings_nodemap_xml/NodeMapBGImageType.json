@@ -1,0 +1,17 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"NodeMapGbImageType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"fileName"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"NodeMapBbImageInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -1,0 +1,385 @@
+   VDSL-LINE-EXT-MCM-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+   MODULE-IDENTITY,
+   OBJECT-TYPE,
+   transmission,
+   Unsigned32                      FROM SNMPv2-SMI         -- [RFC2578]
+   RowStatus                       FROM SNMPv2-TC          -- [RFC2579]
+   MODULE-COMPLIANCE,
+   OBJECT-GROUP                    FROM SNMPv2-CONF        -- [RFC2580]
+   vdslLineConfProfileName         FROM VDSL-LINE-MIB;     -- [RFC3728]
+
+   vdslExtMCMMIB MODULE-IDENTITY
+      LAST-UPDATED "200504280000Z" --    April 28, 2005
+      ORGANIZATION "ADSLMIB Working Group"
+
+       ::= { transmission 229 }
+
+   vdslLineExtMCMMib OBJECT IDENTIFIER ::= { vdslExtMCMMIB 1 }
+   vdslLineExtMCMMibObjects OBJECT IDENTIFIER ::= {vdslLineExtMCMMib 1}
+
+
+
+
+
+
+
+   vdslLineMCMConfProfileTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineMCMConfProfileEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+       ::= { vdslLineExtMCMMibObjects  1 }
+
+   vdslLineMCMConfProfileEntry OBJECT-TYPE
+       SYNTAX       VdslLineMCMConfProfileEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX { vdslLineConfProfileName }
+       ::= { vdslLineMCMConfProfileTable 1 }
+
+   VdslLineMCMConfProfileEntry ::=
+       SEQUENCE
+           {
+           vdslLineMCMConfProfileTxWindowLength       Unsigned32,
+           vdslLineMCMConfProfileRowStatus            RowStatus
+           }
+
+   vdslLineMCMConfProfileTxWindowLength OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..255)
+       UNITS        "samples"
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileEntry 1 }
+
+
+
+
+
+   vdslLineMCMConfProfileRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileEntry 2 }
+
+   vdslLineMCMConfProfileTxBandTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineMCMConfProfileTxBandEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineExtMCMMibObjects  2 }
+
+   vdslLineMCMConfProfileTxBandEntry OBJECT-TYPE
+       SYNTAX       VdslLineMCMConfProfileTxBandEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX { vdslLineConfProfileName,
+
+
+
+
+
+               vdslLineMCMConfProfileTxBandNumber }
+       ::= { vdslLineMCMConfProfileTxBandTable 1 }
+
+   VdslLineMCMConfProfileTxBandEntry ::=
+       SEQUENCE
+           {
+           vdslLineMCMConfProfileTxBandNumber           Unsigned32,
+           vdslLineMCMConfProfileTxBandStart            Unsigned32,
+           vdslLineMCMConfProfileTxBandStop             Unsigned32,
+           vdslLineMCMConfProfileTxBandRowStatus        RowStatus
+           }
+
+   vdslLineMCMConfProfileTxBandNumber OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineMCMConfProfileTxBandEntry 1 }
+
+   vdslLineMCMConfProfileTxBandStart OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileTxBandEntry 2 }
+
+   vdslLineMCMConfProfileTxBandStop OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileTxBandEntry 3 }
+
+   vdslLineMCMConfProfileTxBandRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileTxBandEntry 4 }
+
+   vdslLineMCMConfProfileRxBandTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineMCMConfProfileRxBandEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineExtMCMMibObjects 3 }
+
+   vdslLineMCMConfProfileRxBandEntry OBJECT-TYPE
+       SYNTAX       VdslLineMCMConfProfileRxBandEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+       INDEX { vdslLineConfProfileName,
+               vdslLineMCMConfProfileRxBandNumber }
+       ::= { vdslLineMCMConfProfileRxBandTable 1 }
+
+   VdslLineMCMConfProfileRxBandEntry ::=
+
+
+
+
+
+       SEQUENCE
+           {
+           vdslLineMCMConfProfileRxBandNumber           Unsigned32,
+           vdslLineMCMConfProfileRxBandStart            Unsigned32,
+           vdslLineMCMConfProfileRxBandStop             Unsigned32,
+           vdslLineMCMConfProfileRxBandRowStatus        RowStatus
+           }
+
+   vdslLineMCMConfProfileRxBandNumber OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineMCMConfProfileRxBandEntry 1 }
+
+   vdslLineMCMConfProfileRxBandStart OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileRxBandEntry 2 }
+
+
+   vdslLineMCMConfProfileRxBandStop OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileRxBandEntry 3 }
+
+   vdslLineMCMConfProfileRxBandRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileRxBandEntry 4 }
+
+   vdslLineMCMConfProfileTxPSDTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineMCMConfProfileTxPSDEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineExtMCMMibObjects 4 }
+
+   vdslLineMCMConfProfileTxPSDEntry OBJECT-TYPE
+       SYNTAX       VdslLineMCMConfProfileTxPSDEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+       INDEX { vdslLineConfProfileName,
+               vdslLineMCMConfProfileTxPSDNumber }
+       ::= { vdslLineMCMConfProfileTxPSDTable 1 }
+
+   VdslLineMCMConfProfileTxPSDEntry ::=
+       SEQUENCE
+           {
+           vdslLineMCMConfProfileTxPSDNumber            Unsigned32,
+
+
+
+
+
+           vdslLineMCMConfProfileTxPSDTone              Unsigned32,
+           vdslLineMCMConfProfileTxPSDPSD               Unsigned32,
+           vdslLineMCMConfProfileTxPSDRowStatus         RowStatus
+           }
+
+   vdslLineMCMConfProfileTxPSDNumber OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineMCMConfProfileTxPSDEntry 1 }
+
+   vdslLineMCMConfProfileTxPSDTone OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileTxPSDEntry 2 }
+
+   vdslLineMCMConfProfileTxPSDPSD OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "0.5dBm/Hz"
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileTxPSDEntry 3 }
+
+       vdslLineMCMConfProfileTxPSDRowStatus OBJECT-TYPE
+           SYNTAX       RowStatus
+           MAX-ACCESS   read-create
+           STATUS       current
+       ::= { vdslLineMCMConfProfileTxPSDEntry 4 }
+
+   vdslLineMCMConfProfileMaxTxPSDTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineMCMConfProfileMaxTxPSDEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineExtMCMMibObjects 5 }
+
+   vdslLineMCMConfProfileMaxTxPSDEntry OBJECT-TYPE
+       SYNTAX       VdslLineMCMConfProfileMaxTxPSDEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX { vdslLineConfProfileName,
+               vdslLineMCMConfProfileMaxTxPSDNumber }
+       ::= { vdslLineMCMConfProfileMaxTxPSDTable 1 }
+
+   VdslLineMCMConfProfileMaxTxPSDEntry ::=
+       SEQUENCE
+           {
+           vdslLineMCMConfProfileMaxTxPSDNumber            Unsigned32,
+           vdslLineMCMConfProfileMaxTxPSDTone              Unsigned32,
+           vdslLineMCMConfProfileMaxTxPSDPSD               Unsigned32,
+           vdslLineMCMConfProfileMaxTxPSDRowStatus         RowStatus
+           }
+
+   vdslLineMCMConfProfileMaxTxPSDNumber OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+
+
+
+
+
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineMCMConfProfileMaxTxPSDEntry 1 }
+
+   vdslLineMCMConfProfileMaxTxPSDTone OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileMaxTxPSDEntry 2 }
+
+   vdslLineMCMConfProfileMaxTxPSDPSD OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "0.5dBm/Hz"
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileMaxTxPSDEntry 3 }
+
+   vdslLineMCMConfProfileMaxTxPSDRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+
+
+
+
+
+       ::= { vdslLineMCMConfProfileMaxTxPSDEntry 4 }
+
+   vdslLineMCMConfProfileMaxRxPSDTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineMCMConfProfileMaxRxPSDEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineExtMCMMibObjects 6 }
+
+   vdslLineMCMConfProfileMaxRxPSDEntry OBJECT-TYPE
+       SYNTAX       VdslLineMCMConfProfileMaxRxPSDEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+       INDEX { vdslLineConfProfileName,
+               vdslLineMCMConfProfileMaxRxPSDNumber }
+       ::= { vdslLineMCMConfProfileMaxRxPSDTable 1 }
+
+   VdslLineMCMConfProfileMaxRxPSDEntry ::=
+       SEQUENCE
+           {
+           vdslLineMCMConfProfileMaxRxPSDNumber            Unsigned32,
+           vdslLineMCMConfProfileMaxRxPSDTone              Unsigned32,
+           vdslLineMCMConfProfileMaxRxPSDPSD               Unsigned32,
+           vdslLineMCMConfProfileMaxRxPSDRowStatus         RowStatus
+           }
+
+   vdslLineMCMConfProfileMaxRxPSDNumber OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+
+
+
+
+       ::= { vdslLineMCMConfProfileMaxRxPSDEntry 1 }
+
+   vdslLineMCMConfProfileMaxRxPSDTone OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4096)
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileMaxRxPSDEntry 2 }
+
+   vdslLineMCMConfProfileMaxRxPSDPSD OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "0.5dBm/Hz"
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileMaxRxPSDEntry 3 }
+
+   vdslLineMCMConfProfileMaxRxPSDRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineMCMConfProfileMaxRxPSDEntry 4 }
+
+
+
+
+
+
+   vdslLineExtMCMConformance OBJECT IDENTIFIER ::=
+                    { vdslLineExtMCMMib 2 }
+   vdslLineExtMCMGroups OBJECT IDENTIFIER ::=
+                    { vdslLineExtMCMConformance 1 }
+   vdslLineExtMCMCompliances OBJECT IDENTIFIER ::=
+                    { vdslLineExtMCMConformance 2 }
+
+   vdslLineExtMCMMibCompliance MODULE-COMPLIANCE
+       STATUS  current
+       MODULE  -- this module
+       MANDATORY-GROUPS
+       {
+           vdslLineExtMCMGroup
+       }
+
+       ::= { vdslLineExtMCMCompliances 1 }
+
+
+       vdslLineExtMCMGroup OBJECT-GROUP
+           OBJECTS
+               {
+               vdslLineMCMConfProfileTxWindowLength,
+               vdslLineMCMConfProfileRowStatus,
+               vdslLineMCMConfProfileTxBandStart,
+               vdslLineMCMConfProfileTxBandStop,
+               vdslLineMCMConfProfileTxBandRowStatus,
+               vdslLineMCMConfProfileRxBandStart,
+               vdslLineMCMConfProfileRxBandStop,
+               vdslLineMCMConfProfileRxBandRowStatus,
+               vdslLineMCMConfProfileTxPSDTone,
+               vdslLineMCMConfProfileTxPSDPSD,
+               vdslLineMCMConfProfileTxPSDRowStatus,
+               vdslLineMCMConfProfileMaxTxPSDTone,
+               vdslLineMCMConfProfileMaxTxPSDPSD,
+               vdslLineMCMConfProfileMaxTxPSDRowStatus,
+               vdslLineMCMConfProfileMaxRxPSDTone,
+               vdslLineMCMConfProfileMaxRxPSDPSD,
+               vdslLineMCMConfProfileMaxRxPSDRowStatus
+               }
+            STATUS     current
+        ::= { vdslLineExtMCMGroups 1 }
+
+   END

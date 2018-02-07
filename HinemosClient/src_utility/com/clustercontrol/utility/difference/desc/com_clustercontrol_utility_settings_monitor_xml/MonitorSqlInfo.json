@@ -1,0 +1,37 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"connectionUrl",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSqlInfo_connectionUrl"}
+	]},
+
+	{
+	"propName":"jdbcDriver",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSqlInfo_jdbcDriver"}
+	]},
+
+	{
+	"propName":"user",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSqlInfo_user"}
+	]},
+
+
+	{
+	"propName":"password",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSqlInfo_password"}
+	]},
+
+	{
+	"propName":"query",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSqlInfo_query"}
+	]}
+]
+}

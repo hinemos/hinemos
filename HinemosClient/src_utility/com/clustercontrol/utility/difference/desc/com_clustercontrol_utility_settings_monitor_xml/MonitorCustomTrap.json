@@ -1,0 +1,45 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitor",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Ignore", "propNames":[]}
+	]},
+	{
+	"propName":"customTrapInfo",
+	"annotations":[
+		{"type":"Ignore", "propNames":["monitorId", "monitorTypeId"]}
+	]},
+	{
+	"propName":"numericValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"priority"},
+		{"type":"Ignore", "propNames":["priority"]}
+	]},
+	
+	{
+	"propName":"numericChangeAmount",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"priority"},
+		{
+		"type":"ColumnOverrides",
+		"values":[
+			{"p":"thresholdLowerLimit", "c":{"type":"Column", "columnName":"MonitorChangeValueInfo_thresholdLowerLimit"}}, {"p":"thresholdUpperLimit", "c":{"type":"Column", "columnName":"MonitorChangeValueInfo_thresholdUpperLimit"}}
+		]},
+		{"type":"Ignore", "propNames":["priority"]}
+	]},
+
+	{
+	"propName":"stringValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"orderNo"},
+		{"type":"Column", "columnName":"MonitorStringValueInfo_stringValue"},
+		{"type":"Ignore", "propNames":["orderNo"]}
+	]}
+	
+]
+}

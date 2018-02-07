@@ -1,0 +1,28 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"CloudServiceMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"Monitor.MonitorFlg",
+			"TruthValue.*.Priority",
+			"Monitor.Application",
+			"CloudServiceMonitor.PluginStringValue"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"CloudServiceMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

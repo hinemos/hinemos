@@ -1,0 +1,53 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"paramId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"paramType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRuntimeInfo_paramType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_job_runtimeinfos_paramtype_input"}, 
+			{"value":"1", "name":"name_job_runtimeinfos_paramtype_radio"},
+			{"value":"2", "name":"name_job_runtimeinfos_paramtype_combo"},
+			{"value":"3", "name":"name_job_runtimeinfos_paramtype_fixed"}
+		]}
+	]},
+	
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRuntimeInfo_description"}
+	]},
+	
+	{
+	"propName":"defaultValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRuntimeInfo_defaultValue"}
+	]},
+
+	{
+	"propName":"requiredFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRuntimeInfo_requiredFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+
+	{
+	"propName":"jobRuntimeDetailInfos",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRuntimeInfo_jobRuntimeDetailInfo"},
+		{"type":"Array", "idType":"props", "props":["orderNo"]}
+	]}
+]
+}

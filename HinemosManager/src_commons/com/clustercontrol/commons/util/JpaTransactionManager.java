@@ -1,21 +1,15 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.commons.util;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.persistence.EntityExistsException;
@@ -30,7 +24,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 /*
  * JPA用のトランザクション制御機能
  */
-public class JpaTransactionManager {
+public class JpaTransactionManager implements AutoCloseable {
 
 	private static Log m_log = LogFactory.getLog(JpaTransactionManager.class);
 
@@ -76,48 +70,12 @@ public class JpaTransactionManager {
 		nestedTx = tx.isActive();
 
 		if (!nestedTx) {
+			//callbackがcommitの度に呼ばれないようにここでclearしておく
+			clearTransactionCallbacks(); 
 			addCallback(new ObjectPrivilegeCallback());
-			
-			if (! isCallbacked()) {
-				List<JpaTransactionCallback> callbacks = getCallbacks();
-				for (JpaTransactionCallback callback : callbacks) {
-					if (m_log.isDebugEnabled()) {
-						m_log.debug("executing callback preBegin : "
-								+ callback.getClass().getName());
-					}
-					try {
-						setCallbacked();
-						
-						callback.preBegin();
-						callback.getClass().getMethod("preBegin").invoke(callback);
-					} catch (Throwable t) {
-						m_log.warn("callback execution failure : "
-								+ callback.getClass().getName(), t);
-					} finally {
-						unsetCallbacked();
-					}
-				}
-			}
 			
 			tx.begin();
 			
-			if (! isCallbacked()) {
-				List<JpaTransactionCallback> callbacks = getCallbacks();
-				for (JpaTransactionCallback callback : callbacks) {
-					if (m_log.isDebugEnabled()) {
-						m_log.debug("executing callback postBegin : " + callback.getClass().getName());
-					}
-					try {
-						setCallbacked();
-						
-						callback.postBegin();
-					} catch (Throwable t) {
-						m_log.warn("callback execution failure : " + callback.getClass().getName(), t);
-					} finally {
-						unsetCallbacked();
-					}
-				}
-			}
 		} else {
 			if (abortIfTxBegined) {
 				HinemosUnknown e = new HinemosUnknown("transaction has already started.");
@@ -410,7 +368,7 @@ public class JpaTransactionManager {
 	 * @return callbackクラスのリスト
 	 */
 	@SuppressWarnings("unchecked")
-	private List<JpaTransactionCallback> getCallbacks() {
+	public List<JpaTransactionCallback> getCallbacks() {
 		if (em.getProperties().containsKey(CALLBACKS)) {
 			return new ArrayList<JpaTransactionCallback>((List<JpaTransactionCallback>)em.getProperties().get(CALLBACKS));
 		} else {
@@ -419,10 +377,28 @@ public class JpaTransactionManager {
 	}
 
 	/**
+	 * EntityManagerとトランザクション処理のcallbackクラスの関連を消去する。<br/>
+	 */
+	@SuppressWarnings("unchecked")
+	private void clearTransactionCallbacks() {
+		if (em.getProperties().containsKey(CALLBACKS)) {
+			List<JpaTransactionCallback> callbacks = (List<JpaTransactionCallback>)em.getProperties().get(CALLBACKS);
+			for (Iterator<JpaTransactionCallback> iter = callbacks.iterator(); iter.hasNext();) {
+				JpaTransactionCallback callback = iter.next();
+				if (callback.isTransaction()) {
+					iter.remove();
+				}
+			}
+		} else {
+			em.setProperty(CALLBACKS, new ArrayList<JpaTransactionCallback>());
+		}
+	}
+
+	/**
 	 * EntityManagerとcallbackクラスの関連を消去する。<br/>
 	 */
 	private void clearCallbacks() {
-		em.setProperty(IS_CALLBACKED, new ArrayList<JpaTransactionCallback>());
+		em.setProperty(CALLBACKS, new ArrayList<JpaTransactionCallback>());
 	}
 	
 	/**

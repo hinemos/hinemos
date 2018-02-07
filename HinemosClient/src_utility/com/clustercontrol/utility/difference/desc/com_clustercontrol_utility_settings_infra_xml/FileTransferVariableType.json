@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"name",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"FileTransferVariableType_value"}
+	]}
+]
+}

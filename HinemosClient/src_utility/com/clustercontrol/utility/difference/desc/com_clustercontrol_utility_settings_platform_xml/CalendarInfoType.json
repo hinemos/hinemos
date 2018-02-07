@@ -1,0 +1,50 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"calendarId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"calendarName",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarInfoType_calendarName"}
+	]},
+
+	{
+	"propName":"validTimeFrom",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarInfoType_validTimeFrom"}
+	]},
+
+	{
+	"propName":"validTimeTo",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarInfoType_validTimeTo"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarInfoType_description"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarInfoType_ownerRoleId"}
+	]},
+
+	{
+	"propName":"calendarDetailInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"calendarDetailInfo"},
+		{"type":"Array", "idType":"props", "props":["orderNo"]}
+	]}
+
+]
+}

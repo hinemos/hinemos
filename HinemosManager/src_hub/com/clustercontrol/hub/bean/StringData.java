@@ -1,35 +1,38 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.bean;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.clustercontrol.hub.model.CollectStringDataPK;
 
 /**
  * 文字列収集値の検索結果を格納
  *
  */
 public class StringData {
+
+	// クライアント表示項目.
 	private String facilityId;
 	private String monitorId;
-	private String targetName;
 	private Long time;
 	private String data;
-
 	private List<Tag> tagList = new ArrayList<>();
 
+	// ダウンロード処理向けの引継項目.
+	/** 主キー */
+	private CollectStringDataPK primaryKey;
+	/** レコードキー(バイナリのみ・ファイル統合時の整列用) */
+	private String recordKey;
+	
+	// 以下setter and getter.
 	public String getFacilityId() {
 		return facilityId;
 	}
@@ -42,13 +45,6 @@ public class StringData {
 	}
 	public void setMonitorId(String monitorId) {
 		this.monitorId = monitorId;
-	}
-	
-	public String getTargetName() {
-		return targetName;
-	}
-	public void setTargetName(String targetName) {
-		this.targetName = targetName;
 	}
 	
 	public Long getTime() {
@@ -70,6 +66,20 @@ public class StringData {
 	}
 	public void setTagList(List<Tag> tagList) {
 		this.tagList = tagList;
+	}
+	
+	public CollectStringDataPK getPrimaryKey() {
+		return primaryKey;
+	}
+	public void setPrimaryKey(CollectStringDataPK primaryKey) {
+		this.primaryKey = primaryKey;
+	}
+
+	public String getRecordKey() {
+		return recordKey;
+	}
+	public void setRecordKey(String recordKey) {
+		this.recordKey = recordKey;
 	}
 
 }

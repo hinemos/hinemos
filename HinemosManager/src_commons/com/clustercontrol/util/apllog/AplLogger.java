@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.util.apllog;
@@ -28,18 +21,18 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosException;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.bean.EventConfirmConstant;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.notify.util.NotifyUtil;
 import com.clustercontrol.notify.util.SendSyslog;
 import com.clustercontrol.platform.HinemosPropertyDefault;
-import com.clustercontrol.platform.PlatformPertial;
+import com.clustercontrol.platform.PlatformDivergence;
 import com.clustercontrol.platform.util.apllog.EventLogger;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandCreator.PlatformType;
@@ -128,8 +121,8 @@ public class AplLogger {
 			/////
 			// 設定値取得(internal.event)
 			////
-			boolean isEvent = HinemosPropertyUtil.getHinemosPropertyBool("internal.event", true);
-			int eventLevel = getPriority(HinemosPropertyUtil.getHinemosPropertyStr("internal.event.priority", PRIORITY_INFO));
+			boolean isEvent = HinemosPropertyCommon.internal_event.getBooleanValue();
+			int eventLevel = getPriority(HinemosPropertyCommon.internal_event_priority.getStringValue());
 
 			if(isEvent && isOutput(eventLevel, priority)){
 				putEvent(output);
@@ -138,8 +131,8 @@ public class AplLogger {
 			/////
 			// 設定値取得(internal.file)
 			////
-			boolean isFile = HinemosPropertyUtil.getHinemosPropertyBool("internal.file", true);
-			int fileLevel = getPriority(HinemosPropertyUtil.getHinemosPropertyStr("internal.file.priority", PRIORITY_INFO));
+			boolean isFile = HinemosPropertyCommon.internal_file.getBooleanValue();
+			int fileLevel = getPriority(HinemosPropertyCommon.internal_file_priority.getStringValue());
 
 			if(isFile && isOutput(fileLevel, priority)){
 				putFile(output);
@@ -148,8 +141,8 @@ public class AplLogger {
 			/////
 			// 設定値取得(internal.syslog)
 			////
-			boolean isSyslog = HinemosPropertyUtil.getHinemosPropertyBool("internal.syslog", false);
-			int syslogLevel = getPriority(HinemosPropertyUtil.getHinemosPropertyStr("internal.syslog.priority", PRIORITY_INFO));
+			boolean isSyslog = HinemosPropertyCommon.internal_syslog.getBooleanValue();
+			int syslogLevel = getPriority(HinemosPropertyCommon.internal_syslog_priority.getStringValue());
 			if (isSyslog && isOutput(syslogLevel, priority)){
 				putSyslog(output);
 			}
@@ -157,9 +150,8 @@ public class AplLogger {
 			/////
 			// 設定値取得(internal.mail)
 			////
-			boolean isMail = HinemosPropertyUtil.getHinemosPropertyBool("internal.mail", false);
-			int mailLevel = getPriority(HinemosPropertyUtil.getHinemosPropertyStr(
-					"internal.mail.priority", PRIORITY_INFO));
+			boolean isMail = HinemosPropertyCommon.internal_mail.getBooleanValue();
+			int mailLevel = getPriority(HinemosPropertyCommon.internal_mail_priority.getStringValue());
 			if (isMail && isOutput(mailLevel, priority)) {
 				putMail(output);
 			}
@@ -167,8 +159,8 @@ public class AplLogger {
 			/////
 			// 設定値取得(internal.command)
 			////
-			boolean isCommand = HinemosPropertyUtil.getHinemosPropertyBool("internal.command", false);
-			int commandLevel = getPriority(HinemosPropertyUtil.getHinemosPropertyStr("internal.command.priority", PRIORITY_INFO));
+			boolean isCommand = HinemosPropertyCommon.internal_command.getBooleanValue();
+			int commandLevel = getPriority(HinemosPropertyCommon.internal_command_priority.getStringValue());
 
 			if (isCommand && isOutput(commandLevel, priority)) {
 				putCommand(output);
@@ -221,11 +213,11 @@ public class AplLogger {
 		/////
 		// 設定値取得(internal.syslog)
 		////
-		String hosts = HinemosPropertyUtil.getHinemosPropertyStr("internal.syslog.host", "192.168.1.1,192.168.1.2");
+		String hosts = HinemosPropertyCommon.internal_syslog_host.getStringValue();
 		String[] syslogHostList = hosts.split(",");
-		int syslogPort = HinemosPropertyUtil.getHinemosPropertyNum("internal.syslog.port", Long.valueOf(514)).intValue();
-		String syslogFacility = HinemosPropertyUtil.getHinemosPropertyStr("internal.syslog.facility", "daemon");
-		String syslogSeverity = HinemosPropertyUtil.getHinemosPropertyStr("internal.syslog.severity", "alert");
+		int syslogPort = HinemosPropertyCommon.internal_syslog_port.getIntegerValue();
+		String syslogFacility = HinemosPropertyCommon.internal_syslog_facility.getStringValue();
+		String syslogSeverity = HinemosPropertyCommon.internal_syslog_severity.getStringValue();
 
 		for (String syslogHost : syslogHostList) {
 			log.debug("putSyslog() syslogHost = " + syslogHost + ", syslogPort = " + syslogPort +
@@ -272,7 +264,7 @@ public class AplLogger {
 	private static void putMail(OutputBasicInfo notifyInfo) {
 		// メール通知（デフォルトテンプレート）
 		try {
-			String addr = HinemosPropertyUtil.getHinemosPropertyStr("internal.mail.address", "user1@host.domain,user2@host.domain");
+			String addr = HinemosPropertyCommon.internal_mail_address.getStringValue();
 			String[] mailAddress = addr.split(",");
 			new NotifyControllerBean().sendMail(mailAddress, notifyInfo);
 		} catch (InvalidRole | HinemosUnknown | RuntimeException e) {
@@ -283,20 +275,18 @@ public class AplLogger {
 	private static void putCommand(OutputBasicInfo notifyInfo) {
 		// コマンド通知
 		try {
-			String commandUser = HinemosPropertyUtil.getHinemosPropertyStr("internal.command.user", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INTERNAL_COMMAND_USER));
-			String commandLine = HinemosPropertyUtil.getHinemosPropertyStr(
-					"internal.command.commandline",
-					HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INTERNAL_COMMAND_COMMANDLINE));
+			String commandUser = HinemosPropertyDefault.internal_command_user.getStringValue();
+			String commandLine = HinemosPropertyDefault.internal_command_commandline.getStringValue();
 			int commandTimeout = 0;
 			try {
-				commandTimeout = HinemosPropertyUtil.getHinemosPropertyNum("internal.command.timeout", Long.valueOf(15000)).intValue();
+				commandTimeout = HinemosPropertyCommon.internal_command_timeout.getIntegerValue();
 			} catch (Exception e) {}
 
 			Map<String, String> param = NotifyUtil.createParameter(notifyInfo, null);
 			StringBinder binder = new StringBinder(param);
 			String command = binder.bindParam(commandLine);
 
-			PlatformType platformType = PlatformPertial.getPlatformType();
+			PlatformType platformType = PlatformDivergence.getPlatformType();
 			log.info("excuting command. (effectiveUser = " + commandUser + ", command = " + command + ", mode = " + platformType + ", timeout = " + commandTimeout + ")");
 			String[] cmd = CommandCreator.createCommand(commandUser, command, platformType);
 			CommandExecutor cmdExec = new CommandExecutor(cmd, commandTimeout);

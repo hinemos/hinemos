@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"userName",
+	"annotations":[
+		{"type":"Column", "columnName":"HypervUserType_userName"}
+	]},
+			
+	{
+	"propName":"password",
+	"annotations":[
+		{"type":"Column", "columnName":"HypervUserType_password"}
+	]}
+]
+}

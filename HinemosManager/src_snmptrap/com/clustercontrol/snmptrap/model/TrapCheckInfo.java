@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.snmptrap.model;
 
 import java.io.Serializable;
@@ -30,7 +38,7 @@ import com.clustercontrol.monitor.run.model.MonitorInfo;
 @XmlType(namespace = "http://monitor.ws.clustercontrol.com")
 @Entity
 @Table(name="cc_monitor_trap_info", schema="setting")
-@Cacheable(true)
+@Cacheable(false)
 public class TrapCheckInfo extends MonitorCheckInfo implements Serializable {
 
 
@@ -173,19 +181,21 @@ public class TrapCheckInfo extends MonitorCheckInfo implements Serializable {
 	}
 
 	public void deleteMonitorTrapValueInfoEntities(List<TrapValueInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<TrapValueInfo> list = this.getTrapValueInfos();
-		Iterator<TrapValueInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			TrapValueInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				for (VarBindPattern p: entity.getVarBindPatterns()) {
-					em.remove(p);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<TrapValueInfo> list = this.getTrapValueInfos();
+			Iterator<TrapValueInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				TrapValueInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					for (VarBindPattern p: entity.getVarBindPatterns()) {
+						em.remove(p);
+					}
+					entity.getVarBindPatterns().clear();
+					
+					iter.remove();
+					em.remove(entity);
 				}
-				entity.getVarBindPatterns().clear();
-				
-				iter.remove();
-				em.remove(entity);
 			}
 		}
 	}

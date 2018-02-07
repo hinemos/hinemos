@@ -1,0 +1,2104 @@
+HC-RMON-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Counter32, Integer32,
+        Gauge32, Counter64             FROM SNMPv2-SMI
+    RowStatus, TimeStamp               FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP FROM SNMPv2-CONF
+    rmon, OwnerString, statistics, history, hosts, hostTopN, matrix,
+    etherStatsIndex, etherHistoryIndex, etherHistorySampleIndex,
+    hostIndex, hostAddress, hostTimeIndex, hostTimeCreationOrder,
+    hostTopNReport, hostTopNIndex,
+    matrixSDIndex, matrixSDSourceAddress, matrixSDDestAddress,
+    matrixDSIndex, matrixDSDestAddress, matrixDSSourceAddress,
+    capture, captureBufferControlIndex, captureBufferIndex
+                                    FROM RMON-MIB
+    protocolDirLocalIndex, protocolDistControlIndex,
+    protocolDist, hlHostControlIndex,
+    nlHost, nlHostTimeMark, nlHostAddress,
+    hlMatrixControlIndex, nlMatrix,
+    nlMatrixSDTimeMark, nlMatrixSDSourceAddress, nlMatrixSDDestAddress,
+    nlMatrixDSTimeMark, nlMatrixDSDestAddress, nlMatrixDSSourceAddress,
+    nlMatrixTopNControlIndex, nlMatrixTopNIndex,
+    alHost, alHostTimeMark,
+    alMatrix, alMatrixSDTimeMark, alMatrixDSTimeMark,
+    alMatrixTopNControlIndex, alMatrixTopNIndex,
+
+
+
+
+
+    usrHistory, usrHistoryControlIndex,
+    usrHistorySampleIndex, usrHistoryObjectIndex,
+    rmonConformance, ZeroBasedCounter32, probeConfig
+                                    FROM RMON2-MIB
+    ZeroBasedCounter64, CounterBasedGauge64
+                                    FROM HCNUM-TC;
+
+
+hcRMON MODULE-IDENTITY
+    LAST-UPDATED "200205080000Z"    -- May 08, 2002
+    ORGANIZATION "IETF RMON MIB Working Group"
+
+    ::= { rmonConformance 5 }
+
+
+mediaIndependentStats  OBJECT IDENTIFIER ::= { rmon 21 }
+
+mediaIndependentTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF MediaIndependentEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { mediaIndependentStats 1 }
+
+mediaIndependentEntry OBJECT-TYPE
+    SYNTAX     MediaIndependentEntry
+    MAX-ACCESS not-accessible
+    STATUS      current
+    INDEX { mediaIndependentIndex }
+    ::= { mediaIndependentTable 1 }
+
+MediaIndependentEntry ::= SEQUENCE {
+
+    mediaIndependentIndex                       Integer32,
+    mediaIndependentDataSource                  OBJECT IDENTIFIER,
+    mediaIndependentDropEvents                  Counter32,
+    mediaIndependentDroppedFrames               Counter32,
+    mediaIndependentInPkts                      Counter32,
+    mediaIndependentInOverflowPkts              Counter32,
+    mediaIndependentInHighCapacityPkts          Counter64,
+    mediaIndependentOutPkts                     Counter32,
+    mediaIndependentOutOverflowPkts             Counter32,
+    mediaIndependentOutHighCapacityPkts         Counter64,
+    mediaIndependentInOctets                    Counter32,
+    mediaIndependentInOverflowOctets            Counter32,
+    mediaIndependentInHighCapacityOctets        Counter64,
+    mediaIndependentOutOctets                   Counter32,
+    mediaIndependentOutOverflowOctets           Counter32,
+    mediaIndependentOutHighCapacityOctets       Counter64,
+    mediaIndependentInNUCastPkts                Counter32,
+    mediaIndependentInNUCastOverflowPkts        Counter32,
+
+
+
+
+
+    mediaIndependentInNUCastHighCapacityPkts    Counter64,
+    mediaIndependentOutNUCastPkts               Counter32,
+    mediaIndependentOutNUCastOverflowPkts       Counter32,
+    mediaIndependentOutNUCastHighCapacityPkts   Counter64,
+    mediaIndependentInErrors                    Counter32,
+    mediaIndependentOutErrors                   Counter32,
+    mediaIndependentInputSpeed                  Gauge32,
+    mediaIndependentOutputSpeed                 Gauge32,
+    mediaIndependentDuplexMode                  INTEGER,
+    mediaIndependentDuplexChanges               Counter32,
+    mediaIndependentDuplexLastChange            TimeStamp,
+    mediaIndependentOwner                       OwnerString,
+    mediaIndependentStatus                      RowStatus
+}
+
+mediaIndependentIndex OBJECT-TYPE
+    SYNTAX     Integer32 (1..65535)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { mediaIndependentEntry 1 }
+
+mediaIndependentDataSource OBJECT-TYPE
+    SYNTAX     OBJECT IDENTIFIER
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { mediaIndependentEntry 2 }
+
+mediaIndependentDropEvents OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Events"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { mediaIndependentEntry 3 }
+
+mediaIndependentDroppedFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { mediaIndependentEntry 4 }
+
+mediaIndependentInPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 5 }
+
+mediaIndependentInOverflowPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 6 }
+
+mediaIndependentInHighCapacityPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 7 }
+
+mediaIndependentOutPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 8 }
+
+mediaIndependentOutOverflowPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 9 }
+
+
+
+
+
+
+mediaIndependentOutHighCapacityPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 10 }
+
+mediaIndependentInOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 11 }
+
+mediaIndependentInOverflowOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 12 }
+
+mediaIndependentInHighCapacityOctets OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 13 }
+
+mediaIndependentOutOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Octets"
+
+
+
+
+
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 14 }
+
+mediaIndependentOutOverflowOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 15 }
+
+mediaIndependentOutHighCapacityOctets OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 16 }
+
+mediaIndependentInNUCastPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 17 }
+
+mediaIndependentInNUCastOverflowPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 18 }
+
+mediaIndependentInNUCastHighCapacityPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 19 }
+
+mediaIndependentOutNUCastPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 20 }
+
+mediaIndependentOutNUCastOverflowPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 21 }
+
+mediaIndependentOutNUCastHighCapacityPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "Packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { mediaIndependentEntry 22 }
+
+mediaIndependentInErrors OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     Counter32
+    UNITS       "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { mediaIndependentEntry 23 }
+
+mediaIndependentOutErrors OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS       "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { mediaIndependentEntry 24 }
+
+mediaIndependentInputSpeed OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Kilobits per Second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { mediaIndependentEntry 25 }
+
+mediaIndependentOutputSpeed OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Kilobits per Second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { mediaIndependentEntry 26 }
+
+mediaIndependentDuplexMode OBJECT-TYPE
+    SYNTAX     INTEGER {
+                    halfduplex(1),
+                    fullduplex(2)
+
+
+
+
+
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { mediaIndependentEntry 27 }
+
+mediaIndependentDuplexChanges OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Events"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { mediaIndependentEntry 28 }
+
+mediaIndependentDuplexLastChange OBJECT-TYPE
+    SYNTAX     TimeStamp
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { mediaIndependentEntry 29 }
+
+mediaIndependentOwner OBJECT-TYPE
+    SYNTAX     OwnerString
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { mediaIndependentEntry 30 }
+
+mediaIndependentStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { mediaIndependentEntry 31 }
+
+
+
+
+
+
+
+etherStatsHighCapacityTable  OBJECT-TYPE
+
+    SYNTAX     SEQUENCE OF EtherStatsHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { statistics 7 }
+
+etherStatsHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     EtherStatsHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { etherStatsIndex }
+    ::= { etherStatsHighCapacityTable 1 }
+
+EtherStatsHighCapacityEntry ::= SEQUENCE {
+    etherStatsHighCapacityOverflowPkts                 Counter32,
+    etherStatsHighCapacityPkts                         Counter64,
+    etherStatsHighCapacityOverflowOctets               Counter32,
+    etherStatsHighCapacityOctets                       Counter64,
+    etherStatsHighCapacityOverflowPkts64Octets         Counter32,
+    etherStatsHighCapacityPkts64Octets                 Counter64,
+    etherStatsHighCapacityOverflowPkts65to127Octets    Counter32,
+    etherStatsHighCapacityPkts65to127Octets            Counter64,
+    etherStatsHighCapacityOverflowPkts128to255Octets   Counter32,
+    etherStatsHighCapacityPkts128to255Octets           Counter64,
+    etherStatsHighCapacityOverflowPkts256to511Octets   Counter32,
+    etherStatsHighCapacityPkts256to511Octets           Counter64,
+    etherStatsHighCapacityOverflowPkts512to1023Octets  Counter32,
+    etherStatsHighCapacityPkts512to1023Octets          Counter64,
+    etherStatsHighCapacityOverflowPkts1024to1518Octets Counter32,
+    etherStatsHighCapacityPkts1024to1518Octets         Counter64
+}
+
+etherStatsHighCapacityOverflowPkts OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 1 }
+
+etherStatsHighCapacityPkts OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 2 }
+
+etherStatsHighCapacityOverflowOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 3 }
+
+etherStatsHighCapacityOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 4 }
+
+etherStatsHighCapacityOverflowPkts64Octets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 5 }
+
+etherStatsHighCapacityPkts64Octets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 6 }
+
+etherStatsHighCapacityOverflowPkts65to127Octets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 7 }
+
+etherStatsHighCapacityPkts65to127Octets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 8 }
+
+etherStatsHighCapacityOverflowPkts128to255Octets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 9 }
+
+etherStatsHighCapacityPkts128to255Octets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 10 }
+
+
+
+
+
+etherStatsHighCapacityOverflowPkts256to511Octets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 11 }
+
+etherStatsHighCapacityPkts256to511Octets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 12 }
+
+etherStatsHighCapacityOverflowPkts512to1023Octets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 13 }
+
+etherStatsHighCapacityPkts512to1023Octets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 14 }
+
+etherStatsHighCapacityOverflowPkts1024to1518Octets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 15 }
+
+etherStatsHighCapacityPkts1024to1518Octets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherStatsHighCapacityEntry 16 }
+
+
+etherHistoryHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF EtherHistoryHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { history 6 }
+
+etherHistoryHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     EtherHistoryHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { etherHistoryIndex, etherHistorySampleIndex }
+    ::= { etherHistoryHighCapacityTable 1 }
+
+EtherHistoryHighCapacityEntry ::= SEQUENCE {
+    etherHistoryHighCapacityOverflowPkts           Gauge32,
+    etherHistoryHighCapacityPkts                   CounterBasedGauge64,
+    etherHistoryHighCapacityOverflowOctets         Gauge32,
+
+
+
+
+
+    etherHistoryHighCapacityOctets                 CounterBasedGauge64
+}
+
+etherHistoryHighCapacityOverflowPkts OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherHistoryHighCapacityEntry 1 }
+
+etherHistoryHighCapacityPkts OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherHistoryHighCapacityEntry 2 }
+
+etherHistoryHighCapacityOverflowOctets OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherHistoryHighCapacityEntry 3 }
+
+etherHistoryHighCapacityOctets OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { etherHistoryHighCapacityEntry 4 }
+
+
+
+
+
+
+
+hostHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF HostHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { hosts 5 }
+
+hostHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     HostHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { hostIndex, hostAddress }
+    ::= { hostHighCapacityTable 1 }
+
+HostHighCapacityEntry ::= SEQUENCE {
+    hostHighCapacityInOverflowPkts    Counter32,
+    hostHighCapacityInPkts            Counter64,
+    hostHighCapacityOutOverflowPkts   Counter32,
+    hostHighCapacityOutPkts           Counter64,
+    hostHighCapacityInOverflowOctets  Counter32,
+    hostHighCapacityInOctets          Counter64,
+    hostHighCapacityOutOverflowOctets Counter32,
+    hostHighCapacityOutOctets         Counter64
+}
+
+hostHighCapacityInOverflowPkts OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostHighCapacityEntry 1 }
+
+hostHighCapacityInPkts OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+
+
+
+
+
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostHighCapacityEntry 2 }
+
+hostHighCapacityOutOverflowPkts OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostHighCapacityEntry 3 }
+
+hostHighCapacityOutPkts OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostHighCapacityEntry 4 }
+
+hostHighCapacityInOverflowOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostHighCapacityEntry 5 }
+
+hostHighCapacityInOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostHighCapacityEntry 6 }
+
+hostHighCapacityOutOverflowOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostHighCapacityEntry 7 }
+
+hostHighCapacityOutOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostHighCapacityEntry 8 }
+
+
+hostTimeHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF HostTimeHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { hosts 6 }
+
+hostTimeHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     HostTimeHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    INDEX { hostTimeIndex, hostTimeCreationOrder }
+    ::= { hostTimeHighCapacityTable 1 }
+
+HostTimeHighCapacityEntry ::= SEQUENCE {
+    hostTimeHighCapacityInOverflowPkts    Counter32,
+    hostTimeHighCapacityInPkts            Counter64,
+    hostTimeHighCapacityOutOverflowPkts   Counter32,
+    hostTimeHighCapacityOutPkts           Counter64,
+    hostTimeHighCapacityInOverflowOctets  Counter32,
+    hostTimeHighCapacityInOctets          Counter64,
+    hostTimeHighCapacityOutOverflowOctets Counter32,
+    hostTimeHighCapacityOutOctets         Counter64
+}
+
+hostTimeHighCapacityInOverflowPkts OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostTimeHighCapacityEntry 1 }
+
+hostTimeHighCapacityInPkts OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostTimeHighCapacityEntry 2 }
+
+hostTimeHighCapacityOutOverflowPkts OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostTimeHighCapacityEntry 3 }
+
+hostTimeHighCapacityOutPkts OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { hostTimeHighCapacityEntry 4 }
+
+hostTimeHighCapacityInOverflowOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostTimeHighCapacityEntry 5 }
+
+hostTimeHighCapacityInOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostTimeHighCapacityEntry 6 }
+
+hostTimeHighCapacityOutOverflowOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostTimeHighCapacityEntry 7 }
+
+hostTimeHighCapacityOutOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostTimeHighCapacityEntry 8 }
+
+
+hostTopNHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF HostTopNHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { hostTopN 3 }
+
+hostTopNHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     HostTopNHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { hostTopNReport, hostTopNIndex }
+    ::= { hostTopNHighCapacityTable 1 }
+
+HostTopNHighCapacityEntry ::= SEQUENCE {
+     hostTopNHighCapacityAddress        OCTET STRING,
+     hostTopNHighCapacityBaseRate       Gauge32,
+     hostTopNHighCapacityOverflowRate   Gauge32,
+     hostTopNHighCapacityRate           CounterBasedGauge64
+}
+
+hostTopNHighCapacityAddress OBJECT-TYPE
+    SYNTAX     OCTET STRING
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostTopNHighCapacityEntry 1 }
+
+hostTopNHighCapacityBaseRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { hostTopNHighCapacityEntry 2 }
+
+hostTopNHighCapacityOverflowRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hostTopNHighCapacityEntry 3 }
+
+hostTopNHighCapacityRate OBJECT-TYPE
+     SYNTAX     CounterBasedGauge64
+     MAX-ACCESS read-only
+     STATUS     current
+     ::= { hostTopNHighCapacityEntry 4 }
+
+
+matrixSDHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF MatrixSDHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { matrix 5 }
+
+matrixSDHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     MatrixSDHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { matrixSDIndex,
+            matrixSDSourceAddress, matrixSDDestAddress }
+    ::= { matrixSDHighCapacityTable 1 }
+
+MatrixSDHighCapacityEntry ::= SEQUENCE {
+    matrixSDHighCapacityOverflowPkts   Counter32,
+    matrixSDHighCapacityPkts           Counter64,
+    matrixSDHighCapacityOverflowOctets Counter32,
+    matrixSDHighCapacityOctets         Counter64
+}
+
+matrixSDHighCapacityOverflowPkts OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { matrixSDHighCapacityEntry 1 }
+
+matrixSDHighCapacityPkts OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { matrixSDHighCapacityEntry 2 }
+
+matrixSDHighCapacityOverflowOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { matrixSDHighCapacityEntry 3 }
+
+matrixSDHighCapacityOctets OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     Counter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { matrixSDHighCapacityEntry 4 }
+
+
+matrixDSHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF MatrixDSHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { matrix 6 }
+
+matrixDSHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     MatrixDSHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { matrixDSIndex,
+            matrixDSDestAddress, matrixDSSourceAddress }
+    ::= { matrixDSHighCapacityTable 1 }
+
+MatrixDSHighCapacityEntry ::= SEQUENCE {
+    matrixDSHighCapacityOverflowPkts   Counter32,
+    matrixDSHighCapacityPkts           Counter64,
+    matrixDSHighCapacityOverflowOctets Counter32,
+    matrixDSHighCapacityOctets         Counter64
+}
+
+matrixDSHighCapacityOverflowPkts OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Packets"
+
+
+
+
+
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { matrixDSHighCapacityEntry 1 }
+
+matrixDSHighCapacityPkts OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { matrixDSHighCapacityEntry 2 }
+
+matrixDSHighCapacityOverflowOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { matrixDSHighCapacityEntry 3 }
+
+matrixDSHighCapacityOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { matrixDSHighCapacityEntry 4 }
+
+
+captureBufferHighCapacityTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF CaptureBufferHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { capture 3 }
+
+captureBufferHighCapacityEntry OBJECT-TYPE
+    SYNTAX     CaptureBufferHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { captureBufferControlIndex, captureBufferIndex }
+    ::= { captureBufferHighCapacityTable 1 }
+
+CaptureBufferHighCapacityEntry ::= SEQUENCE {
+    captureBufferPacketHighCapacityTime     Integer32
+}
+
+captureBufferPacketHighCapacityTime  OBJECT-TYPE
+    SYNTAX      Integer32 (0..999999)
+    UNITS       "nanoseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+  ::= { captureBufferHighCapacityEntry 1 }
+
+
+protocolDistStatsHighCapacityTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF ProtocolDistStatsHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    ::= { protocolDist 3 }
+
+protocolDistStatsHighCapacityEntry OBJECT-TYPE
+    SYNTAX     ProtocolDistStatsHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { protocolDistControlIndex, protocolDirLocalIndex }
+    ::= { protocolDistStatsHighCapacityTable 1 }
+
+ProtocolDistStatsHighCapacityEntry ::= SEQUENCE {
+    protocolDistStatsHighCapacityOverflowPkts   ZeroBasedCounter32,
+    protocolDistStatsHighCapacityPkts           ZeroBasedCounter64,
+    protocolDistStatsHighCapacityOverflowOctets ZeroBasedCounter32,
+    protocolDistStatsHighCapacityOctets         ZeroBasedCounter64
+}
+
+protocolDistStatsHighCapacityOverflowPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { protocolDistStatsHighCapacityEntry 1 }
+
+protocolDistStatsHighCapacityPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { protocolDistStatsHighCapacityEntry 2 }
+
+protocolDistStatsHighCapacityOverflowOctets OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { protocolDistStatsHighCapacityEntry 3 }
+
+protocolDistStatsHighCapacityOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { protocolDistStatsHighCapacityEntry 4 }
+
+
+nlHostHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF NlHostHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { nlHost 3 }
+
+nlHostHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     NlHostHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    INDEX { hlHostControlIndex, nlHostTimeMark,
+            protocolDirLocalIndex, nlHostAddress }
+    ::= { nlHostHighCapacityTable 1 }
+
+NlHostHighCapacityEntry ::= SEQUENCE {
+    nlHostHighCapacityInOverflowPkts    ZeroBasedCounter32,
+    nlHostHighCapacityInPkts            ZeroBasedCounter64,
+    nlHostHighCapacityOutOverflowPkts   ZeroBasedCounter32,
+    nlHostHighCapacityOutPkts           ZeroBasedCounter64,
+    nlHostHighCapacityInOverflowOctets  ZeroBasedCounter32,
+    nlHostHighCapacityInOctets          ZeroBasedCounter64,
+    nlHostHighCapacityOutOverflowOctets ZeroBasedCounter32,
+    nlHostHighCapacityOutOctets         ZeroBasedCounter64
+}
+
+nlHostHighCapacityInOverflowPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlHostHighCapacityEntry 1 }
+
+nlHostHighCapacityInPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlHostHighCapacityEntry 2 }
+
+nlHostHighCapacityOutOverflowPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlHostHighCapacityEntry 3 }
+
+
+
+
+
+
+nlHostHighCapacityOutPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlHostHighCapacityEntry 4 }
+
+nlHostHighCapacityInOverflowOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlHostHighCapacityEntry 5 }
+
+nlHostHighCapacityInOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlHostHighCapacityEntry 6 }
+
+nlHostHighCapacityOutOverflowOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { nlHostHighCapacityEntry 7 }
+
+nlHostHighCapacityOutOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlHostHighCapacityEntry 8 }
+
+
+nlMatrixSDHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF NlMatrixSDHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { nlMatrix 6 }
+
+nlMatrixSDHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     NlMatrixSDHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { hlMatrixControlIndex, nlMatrixSDTimeMark,
+            protocolDirLocalIndex,
+            nlMatrixSDSourceAddress, nlMatrixSDDestAddress }
+    ::= { nlMatrixSDHighCapacityTable 1 }
+
+NlMatrixSDHighCapacityEntry ::= SEQUENCE {
+
+
+
+
+
+    nlMatrixSDHighCapacityOverflowPkts   ZeroBasedCounter32,
+    nlMatrixSDHighCapacityPkts           ZeroBasedCounter64,
+    nlMatrixSDHighCapacityOverflowOctets ZeroBasedCounter32,
+    nlMatrixSDHighCapacityOctets         ZeroBasedCounter64
+}
+
+nlMatrixSDHighCapacityOverflowPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixSDHighCapacityEntry 1 }
+
+nlMatrixSDHighCapacityPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixSDHighCapacityEntry 2 }
+
+nlMatrixSDHighCapacityOverflowOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixSDHighCapacityEntry 3 }
+
+nlMatrixSDHighCapacityOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixSDHighCapacityEntry 4 }
+
+
+nlMatrixDSHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF NlMatrixDSHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { nlMatrix 7 }
+
+nlMatrixDSHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     NlMatrixDSHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { hlMatrixControlIndex, nlMatrixDSTimeMark,
+            protocolDirLocalIndex,
+            nlMatrixDSDestAddress, nlMatrixDSSourceAddress }
+    ::= { nlMatrixDSHighCapacityTable 1 }
+
+NlMatrixDSHighCapacityEntry ::= SEQUENCE {
+    nlMatrixDSHighCapacityOverflowPkts   ZeroBasedCounter32,
+    nlMatrixDSHighCapacityPkts           ZeroBasedCounter64,
+    nlMatrixDSHighCapacityOverflowOctets ZeroBasedCounter32,
+    nlMatrixDSHighCapacityOctets         ZeroBasedCounter64
+}
+
+nlMatrixDSHighCapacityOverflowPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { nlMatrixDSHighCapacityEntry 1 }
+
+nlMatrixDSHighCapacityPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixDSHighCapacityEntry 2 }
+
+nlMatrixDSHighCapacityOverflowOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixDSHighCapacityEntry 3 }
+
+nlMatrixDSHighCapacityOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixDSHighCapacityEntry 4 }
+
+
+
+
+
+
+nlMatrixTopNHighCapacityTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF NlMatrixTopNHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { nlMatrix 8 }
+
+nlMatrixTopNHighCapacityEntry OBJECT-TYPE
+    SYNTAX     NlMatrixTopNHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { nlMatrixTopNControlIndex, nlMatrixTopNIndex }
+    ::= { nlMatrixTopNHighCapacityTable 1 }
+
+NlMatrixTopNHighCapacityEntry ::= SEQUENCE {
+  nlMatrixTopNHighCapacityProtocolDirLocalIndex    Integer32,
+  nlMatrixTopNHighCapacitySourceAddress            OCTET STRING,
+  nlMatrixTopNHighCapacityDestAddress              OCTET STRING,
+  nlMatrixTopNHighCapacityBasePktRate              Gauge32,
+  nlMatrixTopNHighCapacityOverflowPktRate          Gauge32,
+  nlMatrixTopNHighCapacityPktRate                  CounterBasedGauge64,
+  nlMatrixTopNHighCapacityReverseBasePktRate       Gauge32,
+  nlMatrixTopNHighCapacityReverseOverflowPktRate   Gauge32,
+  nlMatrixTopNHighCapacityReversePktRate           CounterBasedGauge64,
+  nlMatrixTopNHighCapacityBaseOctetRate            Gauge32,
+  nlMatrixTopNHighCapacityOverflowOctetRate        Gauge32,
+  nlMatrixTopNHighCapacityOctetRate                CounterBasedGauge64,
+  nlMatrixTopNHighCapacityReverseBaseOctetRate     Gauge32,
+  nlMatrixTopNHighCapacityReverseOverflowOctetRate Gauge32,
+  nlMatrixTopNHighCapacityReverseOctetRate         CounterBasedGauge64
+}
+
+nlMatrixTopNHighCapacityProtocolDirLocalIndex OBJECT-TYPE
+    SYNTAX     Integer32 (1..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 1 }
+
+nlMatrixTopNHighCapacitySourceAddress OBJECT-TYPE
+    SYNTAX     OCTET STRING
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 2 }
+
+nlMatrixTopNHighCapacityDestAddress OBJECT-TYPE
+    SYNTAX     OCTET STRING
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 3 }
+
+nlMatrixTopNHighCapacityBasePktRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 4 }
+
+nlMatrixTopNHighCapacityOverflowPktRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 5 }
+
+nlMatrixTopNHighCapacityPktRate OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 6 }
+
+nlMatrixTopNHighCapacityReverseBasePktRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { nlMatrixTopNHighCapacityEntry 7 }
+
+nlMatrixTopNHighCapacityReverseOverflowPktRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 8 }
+
+nlMatrixTopNHighCapacityReversePktRate OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 9 }
+
+nlMatrixTopNHighCapacityBaseOctetRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { nlMatrixTopNHighCapacityEntry 10 }
+
+nlMatrixTopNHighCapacityOverflowOctetRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 11 }
+
+nlMatrixTopNHighCapacityOctetRate OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 12 }
+
+nlMatrixTopNHighCapacityReverseBaseOctetRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 13 }
+
+nlMatrixTopNHighCapacityReverseOverflowOctetRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 14 }
+
+nlMatrixTopNHighCapacityReverseOctetRate OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlMatrixTopNHighCapacityEntry 15 }
+
+
+
+
+
+
+alHostHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF AlHostHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { alHost 2 }
+
+alHostHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     AlHostHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { hlHostControlIndex, alHostTimeMark,
+            protocolDirLocalIndex, nlHostAddress,
+            protocolDirLocalIndex }
+    ::= { alHostHighCapacityTable 1 }
+
+AlHostHighCapacityEntry ::= SEQUENCE {
+    alHostHighCapacityInOverflowPkts    ZeroBasedCounter32,
+    alHostHighCapacityInPkts            ZeroBasedCounter64,
+    alHostHighCapacityOutOverflowPkts   ZeroBasedCounter32,
+    alHostHighCapacityOutPkts           ZeroBasedCounter64,
+    alHostHighCapacityInOverflowOctets  ZeroBasedCounter32,
+    alHostHighCapacityInOctets          ZeroBasedCounter64,
+    alHostHighCapacityOutOverflowOctets ZeroBasedCounter32,
+    alHostHighCapacityOutOctets         ZeroBasedCounter64
+}
+
+alHostHighCapacityInOverflowPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+
+    ::= { alHostHighCapacityEntry 1 }
+
+
+
+
+
+
+alHostHighCapacityInPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alHostHighCapacityEntry 2 }
+
+alHostHighCapacityOutOverflowPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alHostHighCapacityEntry 3 }
+
+alHostHighCapacityOutPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alHostHighCapacityEntry 4 }
+
+alHostHighCapacityInOverflowOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alHostHighCapacityEntry 5 }
+
+
+
+
+
+
+alHostHighCapacityInOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alHostHighCapacityEntry 6 }
+
+alHostHighCapacityOutOverflowOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alHostHighCapacityEntry 7 }
+
+alHostHighCapacityOutOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alHostHighCapacityEntry 8 }
+
+
+alMatrixSDHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF AlMatrixSDHighCapacityEntry
+
+
+
+
+
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { alMatrix 5 }
+
+alMatrixSDHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     AlMatrixSDHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { hlMatrixControlIndex, alMatrixSDTimeMark,
+            protocolDirLocalIndex,
+            nlMatrixSDSourceAddress, nlMatrixSDDestAddress,
+            protocolDirLocalIndex }
+    ::= { alMatrixSDHighCapacityTable 1 }
+
+AlMatrixSDHighCapacityEntry ::= SEQUENCE {
+    alMatrixSDHighCapacityOverflowPkts   ZeroBasedCounter32,
+    alMatrixSDHighCapacityPkts           ZeroBasedCounter64,
+    alMatrixSDHighCapacityOverflowOctets ZeroBasedCounter32,
+    alMatrixSDHighCapacityOctets         ZeroBasedCounter64
+}
+
+alMatrixSDHighCapacityOverflowPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixSDHighCapacityEntry 1 }
+
+alMatrixSDHighCapacityPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixSDHighCapacityEntry 2 }
+
+alMatrixSDHighCapacityOverflowOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixSDHighCapacityEntry 3 }
+
+alMatrixSDHighCapacityOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixSDHighCapacityEntry 4 }
+
+
+alMatrixDSHighCapacityTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF AlMatrixDSHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { alMatrix 6 }
+
+alMatrixDSHighCapacityEntry  OBJECT-TYPE
+    SYNTAX     AlMatrixDSHighCapacityEntry
+    MAX-ACCESS not-accessible
+
+
+
+
+
+    STATUS     current
+    INDEX { hlMatrixControlIndex, alMatrixDSTimeMark,
+            protocolDirLocalIndex,
+            nlMatrixDSDestAddress, nlMatrixDSSourceAddress,
+            protocolDirLocalIndex }
+    ::= { alMatrixDSHighCapacityTable 1 }
+
+AlMatrixDSHighCapacityEntry ::= SEQUENCE {
+    alMatrixDSHighCapacityOverflowPkts   ZeroBasedCounter32,
+    alMatrixDSHighCapacityPkts           ZeroBasedCounter64,
+    alMatrixDSHighCapacityOverflowOctets ZeroBasedCounter32,
+    alMatrixDSHighCapacityOctets         ZeroBasedCounter64
+}
+
+alMatrixDSHighCapacityOverflowPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixDSHighCapacityEntry 1 }
+
+alMatrixDSHighCapacityPkts OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixDSHighCapacityEntry 2 }
+
+alMatrixDSHighCapacityOverflowOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter32
+
+
+
+
+
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixDSHighCapacityEntry 3 }
+
+alMatrixDSHighCapacityOctets OBJECT-TYPE
+    SYNTAX     ZeroBasedCounter64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixDSHighCapacityEntry 4 }
+
+alMatrixTopNHighCapacityTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF AlMatrixTopNHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { alMatrix 7 }
+
+alMatrixTopNHighCapacityEntry OBJECT-TYPE
+    SYNTAX     AlMatrixTopNHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+     INDEX { alMatrixTopNControlIndex, alMatrixTopNIndex }
+    ::= { alMatrixTopNHighCapacityTable 1 }
+
+
+
+
+
+
+AlMatrixTopNHighCapacityEntry ::= SEQUENCE {
+  alMatrixTopNHighCapacityProtocolDirLocalIndex    Integer32,
+  alMatrixTopNHighCapacitySourceAddress            OCTET STRING,
+  alMatrixTopNHighCapacityDestAddress              OCTET STRING,
+  alMatrixTopNHighCapacityAppProtocolDirLocalIndex Integer32,
+  alMatrixTopNHighCapacityBasePktRate              Gauge32,
+  alMatrixTopNHighCapacityOverflowPktRate          Gauge32,
+  alMatrixTopNHighCapacityPktRate                  CounterBasedGauge64,
+  alMatrixTopNHighCapacityReverseBasePktRate       Gauge32,
+  alMatrixTopNHighCapacityReverseOverflowPktRate   Gauge32,
+  alMatrixTopNHighCapacityReversePktRate           CounterBasedGauge64,
+  alMatrixTopNHighCapacityBaseOctetRate            Gauge32,
+  alMatrixTopNHighCapacityOverflowOctetRate        Gauge32,
+  alMatrixTopNHighCapacityOctetRate                CounterBasedGauge64,
+  alMatrixTopNHighCapacityReverseBaseOctetRate     Gauge32,
+  alMatrixTopNHighCapacityReverseOverflowOctetRate Gauge32,
+  alMatrixTopNHighCapacityReverseOctetRate         CounterBasedGauge64
+}
+
+alMatrixTopNHighCapacityProtocolDirLocalIndex OBJECT-TYPE
+    SYNTAX     Integer32 (1..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 1 }
+
+alMatrixTopNHighCapacitySourceAddress OBJECT-TYPE
+    SYNTAX     OCTET STRING
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 2 }
+
+alMatrixTopNHighCapacityDestAddress OBJECT-TYPE
+    SYNTAX     OCTET STRING
+
+
+
+
+
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 3 }
+
+alMatrixTopNHighCapacityAppProtocolDirLocalIndex OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 4 }
+
+alMatrixTopNHighCapacityBasePktRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 5 }
+
+alMatrixTopNHighCapacityOverflowPktRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 6 }
+
+
+
+
+
+alMatrixTopNHighCapacityPktRate OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 7 }
+
+alMatrixTopNHighCapacityReverseBasePktRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 8 }
+
+alMatrixTopNHighCapacityReverseOverflowPktRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 9 }
+
+
+
+
+
+alMatrixTopNHighCapacityReversePktRate OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Packets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 10 }
+
+alMatrixTopNHighCapacityBaseOctetRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 11 }
+
+alMatrixTopNHighCapacityOverflowOctetRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 12 }
+
+alMatrixTopNHighCapacityOctetRate OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 13 }
+
+alMatrixTopNHighCapacityReverseBaseOctetRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 14 }
+
+alMatrixTopNHighCapacityReverseOverflowOctetRate OBJECT-TYPE
+    SYNTAX     Gauge32
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 15 }
+
+alMatrixTopNHighCapacityReverseOctetRate OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "Octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { alMatrixTopNHighCapacityEntry 16 }
+
+usrHistoryHighCapacityTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF UsrHistoryHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+        ::= { usrHistory 4 }
+
+usrHistoryHighCapacityEntry OBJECT-TYPE
+    SYNTAX UsrHistoryHighCapacityEntry
+    MAX-ACCESS not-accessible
+    STATUS  current
+    INDEX { usrHistoryControlIndex, usrHistorySampleIndex,
+            usrHistoryObjectIndex }
+    ::= { usrHistoryHighCapacityTable 1 }
+
+UsrHistoryHighCapacityEntry ::= SEQUENCE {
+    usrHistoryHighCapacityOverflowAbsValue     Gauge32,
+    usrHistoryHighCapacityAbsValue             CounterBasedGauge64
+}
+
+usrHistoryHighCapacityOverflowAbsValue OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { usrHistoryHighCapacityEntry 1 }
+
+usrHistoryHighCapacityAbsValue OBJECT-TYPE
+    SYNTAX CounterBasedGauge64
+    MAX-ACCESS read-only
+    STATUS current
+    ::= { usrHistoryHighCapacityEntry 2 }
+
+hcRMONCapabilities OBJECT-TYPE
+    SYNTAX BITS {
+        mediaIndependentGroup(0),
+        etherStatsHighCapacityGroup(1),
+        etherHistoryHighCapacityGroup(2),
+        hostHighCapacityGroup(3),
+        hostTopNHighCapacityGroup(4),
+        matrixHighCapacityGroup(5),
+        captureBufferHighCapacityGroup(6),
+        protocolDistributionHighCapacityGroup(7),
+        nlHostHighCapacityGroup(8),
+        nlMatrixHighCapacityGroup(9),
+        nlMatrixTopNHighCapacityGroup(10),
+        alHostHighCapacityGroup(11),
+        alMatrixHighCapacityGroup(12),
+
+
+
+
+
+        alMatrixTopNHighCapacityGroup(13),
+        usrHistoryHighCapacityGroup(14)
+    }
+    MAX-ACCESS read-only
+    STATUS current
+    ::= { probeConfig 16 }
+
+
+hcRmonMIBCompliances OBJECT IDENTIFIER ::= { rmonConformance 6 }
+hcRmonMIBGroups      OBJECT IDENTIFIER ::= { rmonConformance 7 }
+
+hcMediaIndependentCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+    MANDATORY-GROUPS { mediaIndependentGroup, hcRMONInformationGroup }
+    ::= { hcRmonMIBCompliances 1 }
+
+hcRmon1MIBCompliance MODULE-COMPLIANCE
+    STATUS current
+    MODULE  -- this module
+        GROUP etherStatsHighCapacityGroup
+
+        GROUP etherHistoryHighCapacityGroup
+
+        GROUP hostHighCapacityGroup
+
+        GROUP hostTopNHighCapacityGroup
+
+
+
+
+
+
+        GROUP matrixHighCapacityGroup
+
+        GROUP captureBufferHighCapacityGroup
+
+    MODULE RMON-MIB
+        GROUP rmonEtherStatsGroup
+
+        GROUP rmonHistoryControlGroup
+
+        GROUP rmonEthernetHistoryGroup
+
+        GROUP rmonHostGroup
+
+        GROUP rmonHostTopNGroup
+
+        GROUP rmonMatrixGroup
+
+        GROUP rmonFilterGroup
+
+       GROUP rmonPacketCaptureGroup
+    ::= { hcRmonMIBCompliances 2 }
+
+hcRmon2MIBCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS { protocolDistributionHighCapacityGroup,
+                           nlHostHighCapacityGroup,
+                           nlMatrixHighCapacityGroup,
+                           nlMatrixTopNHighCapacityGroup,
+                           usrHistoryHighCapacityGroup,
+                           hcRMONInformationGroup }
+    MODULE RMON2-MIB
+        MANDATORY-GROUPS { protocolDirectoryGroup,
+                           protocolDistributionGroup,
+                           addressMapGroup,
+                           nlHostGroup,
+                           nlMatrixGroup,
+                           usrHistoryGroup,
+                           probeInformationGroup }
+
+        GROUP   rmon1EnhancementGroup
+    ::= { hcRmonMIBCompliances 3 }
+
+hcRmon2MIBApplicationLayerCompliance MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { protocolDistributionHighCapacityGroup,
+
+                           nlHostHighCapacityGroup,
+                           nlMatrixHighCapacityGroup,
+
+
+
+
+
+                           nlMatrixTopNHighCapacityGroup,
+                           alHostHighCapacityGroup,
+                           alMatrixHighCapacityGroup,
+                           alMatrixTopNHighCapacityGroup,
+                           usrHistoryHighCapacityGroup,
+                           hcRMONInformationGroup }
+    MODULE RMON2-MIB
+        MANDATORY-GROUPS { protocolDirectoryGroup,
+                           protocolDistributionGroup,
+                           addressMapGroup,
+                           nlHostGroup,
+                           nlMatrixGroup,
+                           alHostGroup,
+                           alMatrixGroup,
+                           usrHistoryGroup,
+                           probeInformationGroup }
+
+        GROUP   rmon1EnhancementGroup
+    ::= { hcRmonMIBCompliances 4 }
+
+mediaIndependentGroup OBJECT-GROUP
+    OBJECTS {mediaIndependentDataSource,
+        mediaIndependentDropEvents,
+        mediaIndependentDroppedFrames,
+        mediaIndependentInPkts,
+        mediaIndependentInOverflowPkts,
+        mediaIndependentInHighCapacityPkts,
+        mediaIndependentOutPkts,
+        mediaIndependentOutOverflowPkts,
+        mediaIndependentOutHighCapacityPkts,
+        mediaIndependentInOctets,
+        mediaIndependentInOverflowOctets,
+        mediaIndependentInHighCapacityOctets,
+        mediaIndependentOutOctets,
+        mediaIndependentOutOverflowOctets,
+        mediaIndependentOutHighCapacityOctets,
+        mediaIndependentInNUCastPkts,
+        mediaIndependentInNUCastOverflowPkts,
+        mediaIndependentInNUCastHighCapacityPkts,
+        mediaIndependentOutNUCastPkts,
+        mediaIndependentOutNUCastOverflowPkts,
+        mediaIndependentOutNUCastHighCapacityPkts,
+        mediaIndependentInErrors,
+        mediaIndependentOutErrors,
+        mediaIndependentInputSpeed,
+
+
+
+
+
+        mediaIndependentOutputSpeed,
+        mediaIndependentDuplexMode,
+        mediaIndependentDuplexChanges,
+        mediaIndependentDuplexLastChange,
+        mediaIndependentOwner,
+        mediaIndependentStatus }
+    STATUS current
+    ::= { hcRmonMIBGroups 1 }
+
+etherStatsHighCapacityGroup OBJECT-GROUP
+    OBJECTS { etherStatsHighCapacityOverflowPkts,
+              etherStatsHighCapacityPkts,
+              etherStatsHighCapacityOverflowOctets,
+              etherStatsHighCapacityOctets,
+              etherStatsHighCapacityOverflowPkts64Octets,
+              etherStatsHighCapacityPkts64Octets,
+              etherStatsHighCapacityOverflowPkts65to127Octets,
+              etherStatsHighCapacityPkts65to127Octets,
+              etherStatsHighCapacityOverflowPkts128to255Octets,
+              etherStatsHighCapacityPkts128to255Octets,
+              etherStatsHighCapacityOverflowPkts256to511Octets,
+              etherStatsHighCapacityPkts256to511Octets,
+              etherStatsHighCapacityOverflowPkts512to1023Octets,
+              etherStatsHighCapacityPkts512to1023Octets,
+              etherStatsHighCapacityOverflowPkts1024to1518Octets,
+              etherStatsHighCapacityPkts1024to1518Octets }
+    STATUS  current
+    ::= { hcRmonMIBGroups 2 }
+
+etherHistoryHighCapacityGroup OBJECT-GROUP
+    OBJECTS { etherHistoryHighCapacityOverflowPkts,
+              etherHistoryHighCapacityPkts,
+              etherHistoryHighCapacityOverflowOctets,
+              etherHistoryHighCapacityOctets }
+    STATUS  current
+    ::= { hcRmonMIBGroups 3 }
+
+hostHighCapacityGroup OBJECT-GROUP
+    OBJECTS { hostHighCapacityInOverflowPkts,
+              hostHighCapacityInPkts,
+              hostHighCapacityOutOverflowPkts,
+              hostHighCapacityOutPkts,
+
+
+
+
+
+              hostHighCapacityInOverflowOctets,
+              hostHighCapacityInOctets,
+              hostHighCapacityOutOverflowOctets,
+              hostHighCapacityOutOctets,
+              hostTimeHighCapacityInOverflowPkts,
+              hostTimeHighCapacityInPkts,
+              hostTimeHighCapacityOutOverflowPkts,
+              hostTimeHighCapacityOutPkts,
+              hostTimeHighCapacityInOverflowOctets,
+              hostTimeHighCapacityInOctets,
+              hostTimeHighCapacityOutOverflowOctets,
+              hostTimeHighCapacityOutOctets }
+    STATUS  current
+    ::= { hcRmonMIBGroups 4 }
+
+hostTopNHighCapacityGroup OBJECT-GROUP
+    OBJECTS { hostTopNHighCapacityAddress,
+        hostTopNHighCapacityBaseRate,
+        hostTopNHighCapacityOverflowRate,
+        hostTopNHighCapacityRate }
+    STATUS  current
+    ::= { hcRmonMIBGroups 5 }
+
+
+matrixHighCapacityGroup OBJECT-GROUP
+    OBJECTS { matrixSDHighCapacityOverflowPkts,
+              matrixSDHighCapacityPkts,
+              matrixSDHighCapacityOverflowOctets,
+              matrixSDHighCapacityOctets,
+              matrixDSHighCapacityOverflowPkts,
+              matrixDSHighCapacityPkts,
+              matrixDSHighCapacityOverflowOctets,
+              matrixDSHighCapacityOctets }
+    STATUS  current
+    ::= { hcRmonMIBGroups 6 }
+
+captureBufferHighCapacityGroup OBJECT-GROUP
+    OBJECTS { captureBufferPacketHighCapacityTime }
+    STATUS  current
+
+
+
+
+
+    ::= { hcRmonMIBGroups 7 }
+
+protocolDistributionHighCapacityGroup OBJECT-GROUP
+    OBJECTS { protocolDistStatsHighCapacityOverflowPkts,
+              protocolDistStatsHighCapacityPkts,
+              protocolDistStatsHighCapacityOverflowOctets,
+              protocolDistStatsHighCapacityOctets }
+    STATUS  current
+    ::= { hcRmonMIBGroups 8 }
+
+nlHostHighCapacityGroup OBJECT-GROUP
+    OBJECTS { nlHostHighCapacityInOverflowPkts,
+              nlHostHighCapacityInPkts,
+              nlHostHighCapacityOutOverflowPkts,
+              nlHostHighCapacityOutPkts,
+              nlHostHighCapacityInOverflowOctets,
+              nlHostHighCapacityInOctets,
+              nlHostHighCapacityOutOverflowOctets,
+              nlHostHighCapacityOutOctets }
+    STATUS  current
+    ::= { hcRmonMIBGroups 9 }
+
+nlMatrixHighCapacityGroup OBJECT-GROUP
+    OBJECTS { nlMatrixSDHighCapacityOverflowPkts,
+              nlMatrixSDHighCapacityPkts,
+              nlMatrixSDHighCapacityOverflowOctets,
+              nlMatrixSDHighCapacityOctets,
+              nlMatrixDSHighCapacityOverflowPkts,
+              nlMatrixDSHighCapacityPkts,
+              nlMatrixDSHighCapacityOverflowOctets,
+              nlMatrixDSHighCapacityOctets }
+    STATUS  current
+    ::= { hcRmonMIBGroups 10 }
+
+nlMatrixTopNHighCapacityGroup OBJECT-GROUP
+    OBJECTS { nlMatrixTopNHighCapacityProtocolDirLocalIndex,
+        nlMatrixTopNHighCapacitySourceAddress,
+        nlMatrixTopNHighCapacityDestAddress,
+        nlMatrixTopNHighCapacityBasePktRate,
+
+
+
+
+
+        nlMatrixTopNHighCapacityOverflowPktRate,
+        nlMatrixTopNHighCapacityPktRate,
+        nlMatrixTopNHighCapacityReverseBasePktRate,
+        nlMatrixTopNHighCapacityReverseOverflowPktRate,
+        nlMatrixTopNHighCapacityReversePktRate,
+        nlMatrixTopNHighCapacityBaseOctetRate,
+        nlMatrixTopNHighCapacityOverflowOctetRate,
+        nlMatrixTopNHighCapacityOctetRate,
+        nlMatrixTopNHighCapacityReverseBaseOctetRate,
+        nlMatrixTopNHighCapacityReverseOverflowOctetRate,
+        nlMatrixTopNHighCapacityReverseOctetRate }
+    STATUS  current
+    ::= { hcRmonMIBGroups 11 }
+
+alHostHighCapacityGroup OBJECT-GROUP
+    OBJECTS { alHostHighCapacityInOverflowPkts,
+              alHostHighCapacityInPkts,
+              alHostHighCapacityOutOverflowPkts,
+              alHostHighCapacityOutPkts,
+              alHostHighCapacityInOverflowOctets,
+              alHostHighCapacityInOctets,
+              alHostHighCapacityOutOverflowOctets,
+              alHostHighCapacityOutOctets }
+    STATUS  current
+    ::= { hcRmonMIBGroups 12 }
+
+alMatrixHighCapacityGroup OBJECT-GROUP
+    OBJECTS { alMatrixSDHighCapacityOverflowPkts,
+              alMatrixSDHighCapacityPkts,
+              alMatrixSDHighCapacityOverflowOctets,
+              alMatrixSDHighCapacityOctets,
+              alMatrixDSHighCapacityOverflowPkts,
+              alMatrixDSHighCapacityPkts,
+              alMatrixDSHighCapacityOverflowOctets,
+              alMatrixDSHighCapacityOctets }
+    STATUS  current
+    ::= { hcRmonMIBGroups 13 }
+
+
+
+
+
+
+alMatrixTopNHighCapacityGroup OBJECT-GROUP
+    OBJECTS { alMatrixTopNHighCapacityProtocolDirLocalIndex,
+        alMatrixTopNHighCapacitySourceAddress,
+        alMatrixTopNHighCapacityDestAddress,
+        alMatrixTopNHighCapacityAppProtocolDirLocalIndex,
+        alMatrixTopNHighCapacityBasePktRate,
+        alMatrixTopNHighCapacityOverflowPktRate,
+        alMatrixTopNHighCapacityPktRate,
+        alMatrixTopNHighCapacityReverseBasePktRate,
+        alMatrixTopNHighCapacityReverseOverflowPktRate,
+        alMatrixTopNHighCapacityReversePktRate,
+        alMatrixTopNHighCapacityBaseOctetRate,
+        alMatrixTopNHighCapacityOverflowOctetRate,
+        alMatrixTopNHighCapacityOctetRate,
+        alMatrixTopNHighCapacityReverseBaseOctetRate,
+        alMatrixTopNHighCapacityReverseOverflowOctetRate,
+        alMatrixTopNHighCapacityReverseOctetRate }
+    STATUS  current
+    ::= { hcRmonMIBGroups 14 }
+
+usrHistoryHighCapacityGroup OBJECT-GROUP
+    OBJECTS { usrHistoryHighCapacityOverflowAbsValue,
+        usrHistoryHighCapacityAbsValue }
+    STATUS  current
+    ::= { hcRmonMIBGroups 15 }
+
+hcRMONInformationGroup OBJECT-GROUP
+    OBJECTS { hcRMONCapabilities }
+    STATUS  current
+    ::= { hcRmonMIBGroups 16 }
+END

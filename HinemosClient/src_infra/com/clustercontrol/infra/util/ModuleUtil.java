@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.infra.util;
 
 import java.util.List;
@@ -31,10 +39,19 @@ public class ModuleUtil {
 		boolean ret = false; // trueになったら、以降実行しない。
 		List<ModuleNodeResult> resultList = moduleResult.getModuleNodeResultList();
 		StringBuilder str = new StringBuilder();
+
+		// 参照環境構築情報のモジュール情報
+		String strModuleInfo = "moduleId=" + moduleId;
+		if (moduleResult.getSubManagementId() != null && !moduleResult.getSubManagementId().isEmpty()) {
+			strModuleInfo = strModuleInfo + 
+					", referManagementId=" + moduleResult.getSubManagementId()
+					+ ", referModuleId=" + moduleResult.getSubModuleId();
+		}
+
 		if (resultList.size() > 0) {
 			if (moduleResult.getModuleType() == ModuleTypeConstant.TYPE_COMMAND) {
 				// コマンドモジュール
-				str.append("moduleId=" + moduleId + ", size=" + resultList.size() +
+				str.append(strModuleInfo + ", size=" + resultList.size() +
 						", type=" + ModuleTypeMessage.typeToString(moduleResult.getModuleType()) + "\n");
 				for (ModuleNodeResult result : resultList) {
 					str.append("\n#####" + result.getFacilityId() + " : " +
@@ -72,7 +89,7 @@ public class ModuleUtil {
 						}
 					}
 				}
-				str.append("moduleId=" + moduleId + ", size=" + resultList.size() +
+				str.append(strModuleInfo + ", size=" + resultList.size() +
 						", type=" + ModuleTypeMessage.typeToString(moduleResult.getModuleType()) + "\n");
 				for (ModuleNodeResult result : resultList) {
 					str.append("\n#####" + result.getFacilityId() + " : " +

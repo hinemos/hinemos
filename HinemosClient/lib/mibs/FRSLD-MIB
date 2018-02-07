@@ -1,0 +1,969 @@
+FRSLD-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    Counter32, Gauge32, Integer32,
+    Counter64, TimeTicks, mib-2             FROM SNMPv2-SMI
+    CounterBasedGauge64                     FROM HCNUM-TC
+    TEXTUAL-CONVENTION, RowStatus,
+    TimeStamp                               FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP         FROM SNMPv2-CONF
+    ifIndex                                 FROM IF-MIB
+    DLCI                                    FROM FRAME-RELAY-DTE-MIB;
+
+    frsldMIB MODULE-IDENTITY
+        LAST-UPDATED "200201030000Z" -- January 3, 2002
+        ORGANIZATION "IETF Frame Relay Service MIB Working Group"
+        ::= { mib-2 95 }
+
+    FrsldTxRP ::= TEXTUAL-CONVENTION
+        STATUS  current
+        SYNTAX      INTEGER {
+                      srcLocalRP(1),
+                      ingTxLocalRP(2),
+                      tpTxLocalRP(3),
+
+
+
+
+
+                      eqiTxLocalRP(4),
+                      eqoTxLocalRP(5),
+                      otherTxLocalRP(6),
+                      srcRemoteRP(7),
+                      ingTxRemoteRP(8),
+                      tpTxRemoteRP(9),
+                      eqiTxRemoteRP(10),
+                      eqoTxRemoteRP(11),
+                      otherTxRemoteRP(12)
+                    }
+
+    FrsldRxRP ::= TEXTUAL-CONVENTION
+        STATUS      current
+        SYNTAX      INTEGER {
+                      desLocalRP(1),
+                      ingRxLocalRP(2),
+                      tpRxLocalRP(3),
+                      eqiRxLocalRP(4),
+                      eqoRxLocalRP(5),
+                      otherRxLocalRP(6),
+                      desRemoteRP(7),
+                      ingRxRemoteRP(8),
+                      tpRxRemoteRP(9),
+                      eqiRxRemoteRP(10),
+                      eqoRxRemoteRP(11),
+                      otherRxRemoteRP(12)
+                    }
+
+
+
+
+
+
+
+    frsldObjects      OBJECT IDENTIFIER ::= { frsldMIB 1 }
+    frsldCapabilities OBJECT IDENTIFIER ::= { frsldMIB 2 }
+    frsldConformance  OBJECT IDENTIFIER ::= { frsldMIB 3 }
+
+
+    frsldPvcCtrlTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF FrsldPvcCtrlEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { frsldObjects 1 }
+
+    frsldPvcCtrlEntry OBJECT-TYPE
+        SYNTAX      FrsldPvcCtrlEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX    { ifIndex, frsldPvcCtrlDlci,
+                   frsldPvcCtrlTransmitRP, frsldPvcCtrlReceiveRP}
+        ::= { frsldPvcCtrlTable 1 }
+
+    FrsldPvcCtrlEntry ::=
+        SEQUENCE {
+            frsldPvcCtrlDlci                DLCI,
+            frsldPvcCtrlTransmitRP          FrsldTxRP,
+            frsldPvcCtrlReceiveRP           FrsldRxRP,
+            frsldPvcCtrlStatus              RowStatus,
+            frsldPvcCtrlPacketFreq          Integer32,
+
+
+
+
+
+            frsldPvcCtrlDelayFrSize         Integer32,
+            frsldPvcCtrlDelayType           INTEGER,
+            frsldPvcCtrlDelayTimeOut        Integer32,
+            frsldPvcCtrlPurge               Integer32,
+            frsldPvcCtrlDeleteOnPurge       INTEGER,
+            frsldPvcCtrlLastPurgeTime       TimeStamp
+        }
+
+    frsldPvcCtrlDlci OBJECT-TYPE
+        SYNTAX      DLCI
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { frsldPvcCtrlEntry 1 }
+
+    frsldPvcCtrlTransmitRP OBJECT-TYPE
+        SYNTAX      FrsldTxRP
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { frsldPvcCtrlEntry 2 }
+
+    frsldPvcCtrlReceiveRP OBJECT-TYPE
+        SYNTAX      FrsldRxRP
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { frsldPvcCtrlEntry 3 }
+
+    frsldPvcCtrlStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+
+
+
+
+
+        ::= { frsldPvcCtrlEntry 4 }
+
+    frsldPvcCtrlPacketFreq OBJECT-TYPE
+        SYNTAX      Integer32 (0..3600)
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { 60 }
+        ::= { frsldPvcCtrlEntry 5 }
+
+    frsldPvcCtrlDelayFrSize OBJECT-TYPE
+        SYNTAX      Integer32 (1..8188)
+        UNITS       "octets"
+
+
+
+
+
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { 128 }
+        ::= { frsldPvcCtrlEntry 6 }
+
+    frsldPvcCtrlDelayType OBJECT-TYPE
+        SYNTAX      INTEGER {
+                      oneWay(1),
+                      roundTrip(2)
+                    }
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { frsldPvcCtrlEntry 7 }
+
+    frsldPvcCtrlDelayTimeOut OBJECT-TYPE
+        SYNTAX      Integer32 (1..3600)
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { 60 }
+        ::= { frsldPvcCtrlEntry 8 }
+
+    frsldPvcCtrlPurge OBJECT-TYPE
+        SYNTAX      Integer32 (0..172800) -- up to 48 hours
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { 0 }
+
+
+
+
+
+        ::= { frsldPvcCtrlEntry 9 }
+
+    frsldPvcCtrlDeleteOnPurge OBJECT-TYPE
+        SYNTAX      INTEGER {
+                      none(1),
+                      sampleContols(2),
+                      all(3)
+                    }
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { all }
+        ::= { frsldPvcCtrlEntry 10 }
+
+    frsldPvcCtrlLastPurgeTime OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcCtrlEntry 11 }
+
+
+
+
+
+
+
+    frsldSmplCtrlTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF FrsldSmplCtrlEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { frsldObjects 2 }
+
+    frsldSmplCtrlEntry OBJECT-TYPE
+        SYNTAX      FrsldSmplCtrlEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX    { ifIndex, frsldPvcCtrlDlci,
+                   frsldPvcCtrlTransmitRP, frsldPvcCtrlReceiveRP,
+                   frsldSmplCtrlIdx }
+        ::= { frsldSmplCtrlTable 1 }
+
+    FrsldSmplCtrlEntry ::=
+        SEQUENCE {
+            frsldSmplCtrlIdx                Integer32,
+            frsldSmplCtrlStatus             RowStatus,
+            frsldSmplCtrlColPeriod          Integer32,
+            frsldSmplCtrlBuckets            Integer32,
+            frsldSmplCtrlBucketsGranted     Integer32
+        }
+
+    frsldSmplCtrlIdx OBJECT-TYPE
+        SYNTAX  Integer32 (1..256)
+        MAX-ACCESS not-accessible
+        STATUS  current
+        ::= { frsldSmplCtrlEntry 1 }
+
+
+
+
+
+    frsldSmplCtrlStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { frsldSmplCtrlEntry 2 }
+
+    frsldSmplCtrlColPeriod OBJECT-TYPE
+        SYNTAX      Integer32 (1..2147483647)
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { frsldSmplCtrlEntry 3 }
+
+    frsldSmplCtrlBuckets OBJECT-TYPE
+        SYNTAX      Integer32 (1..65535)
+        MAX-ACCESS  read-create
+        STATUS      current
+
+
+
+
+
+        DEFVAL { 60 }
+        ::= { frsldSmplCtrlEntry 4 }
+
+    frsldSmplCtrlBucketsGranted OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldSmplCtrlEntry 5 }
+
+
+     frsldPvcDataTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF FrsldPvcDataEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { frsldObjects 3 }
+
+    frsldPvcDataEntry OBJECT-TYPE
+        SYNTAX      FrsldPvcDataEntry
+        MAX-ACCESS  not-accessible
+
+
+
+
+
+        STATUS      current
+        INDEX    { ifIndex, frsldPvcCtrlDlci,
+                  frsldPvcCtrlTransmitRP, frsldPvcCtrlReceiveRP}
+        ::= { frsldPvcDataTable 1 }
+
+    FrsldPvcDataEntry ::=
+        SEQUENCE {
+            frsldPvcDataMissedPolls       Counter32,
+            frsldPvcDataFrDeliveredC      Counter32,
+            frsldPvcDataFrDeliveredE      Counter32,
+            frsldPvcDataFrOfferedC        Counter32,
+            frsldPvcDataFrOfferedE        Counter32,
+            frsldPvcDataDataDeliveredC    Counter32,
+            frsldPvcDataDataDeliveredE    Counter32,
+            frsldPvcDataDataOfferedC      Counter32,
+            frsldPvcDataDataOfferedE      Counter32,
+            frsldPvcDataHCFrDeliveredC    Counter64,
+            frsldPvcDataHCFrDeliveredE    Counter64,
+            frsldPvcDataHCFrOfferedC      Counter64,
+            frsldPvcDataHCFrOfferedE      Counter64,
+            frsldPvcDataHCDataDeliveredC  Counter64,
+            frsldPvcDataHCDataDeliveredE  Counter64,
+            frsldPvcDataHCDataOfferedC    Counter64,
+            frsldPvcDataHCDataOfferedE    Counter64,
+            frsldPvcDataUnavailableTime   TimeTicks,
+            frsldPvcDataUnavailables      Counter32
+        }
+
+    frsldPvcDataMissedPolls OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 1 }
+
+    frsldPvcDataFrDeliveredC OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 2 }
+
+    frsldPvcDataFrDeliveredE OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 3 }
+
+    frsldPvcDataFrOfferedC OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 4 }
+
+    frsldPvcDataFrOfferedE OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 5 }
+
+    frsldPvcDataDataDeliveredC OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 6 }
+
+    frsldPvcDataDataDeliveredE OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 7 }
+
+    frsldPvcDataDataOfferedC OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 8 }
+
+    frsldPvcDataDataOfferedE OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 9 }
+
+    frsldPvcDataHCFrDeliveredC OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 10 }
+
+    frsldPvcDataHCFrDeliveredE OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 11 }
+
+    frsldPvcDataHCFrOfferedC OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 12 }
+
+    frsldPvcDataHCFrOfferedE OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 13 }
+
+    frsldPvcDataHCDataDeliveredC OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 14 }
+
+    frsldPvcDataHCDataDeliveredE OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 15 }
+
+
+
+
+
+
+    frsldPvcDataHCDataOfferedC OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 16 }
+
+    frsldPvcDataHCDataOfferedE OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 17 }
+
+    frsldPvcDataUnavailableTime OBJECT-TYPE
+        SYNTAX      TimeTicks
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 18 }
+
+    frsldPvcDataUnavailables OBJECT-TYPE
+        SYNTAX      Counter32
+
+
+
+
+
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcDataEntry 19 }
+
+
+    frsldPvcSampleTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF FrsldPvcSampleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { frsldObjects 4 }
+
+    frsldPvcSampleEntry OBJECT-TYPE
+        SYNTAX      FrsldPvcSampleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX    { ifIndex, frsldPvcCtrlDlci,
+                   frsldPvcCtrlTransmitRP, frsldPvcCtrlReceiveRP,
+                   frsldSmplCtrlIdx, frsldPvcSmplIdx }
+        ::= { frsldPvcSampleTable 1 }
+
+    FrsldPvcSampleEntry ::=
+        SEQUENCE {
+            frsldPvcSmplIdx              Integer32,
+            frsldPvcSmplDelayMin         Gauge32,
+            frsldPvcSmplDelayMax         Gauge32,
+            frsldPvcSmplDelayAvg         Gauge32,
+            frsldPvcSmplMissedPolls      Gauge32,
+            frsldPvcSmplFrDeliveredC     Gauge32,
+
+
+
+
+
+            frsldPvcSmplFrDeliveredE     Gauge32,
+            frsldPvcSmplFrOfferedC       Gauge32,
+            frsldPvcSmplFrOfferedE       Gauge32,
+            frsldPvcSmplDataDeliveredC   Gauge32,
+            frsldPvcSmplDataDeliveredE   Gauge32,
+            frsldPvcSmplDataOfferedC     Gauge32,
+            frsldPvcSmplDataOfferedE     Gauge32,
+            frsldPvcSmplHCFrDeliveredC   CounterBasedGauge64,
+            frsldPvcSmplHCFrDeliveredE   CounterBasedGauge64,
+            frsldPvcSmplHCFrOfferedC     CounterBasedGauge64,
+            frsldPvcSmplHCFrOfferedE     CounterBasedGauge64,
+            frsldPvcSmplHCDataDeliveredC CounterBasedGauge64,
+            frsldPvcSmplHCDataDeliveredE CounterBasedGauge64,
+            frsldPvcSmplHCDataOfferedC   CounterBasedGauge64,
+            frsldPvcSmplHCDataOfferedE   CounterBasedGauge64,
+            frsldPvcSmplUnavailableTime  TimeTicks,
+            frsldPvcSmplUnavailables     Gauge32,
+            frsldPvcSmplStartTime        TimeStamp,
+            frsldPvcSmplEndTime          TimeStamp
+        }
+
+    frsldPvcSmplIdx OBJECT-TYPE
+        SYNTAX      Integer32 (1..2147483647)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { frsldPvcSampleEntry 1 }
+
+    frsldPvcSmplDelayMin OBJECT-TYPE
+        SYNTAX      Gauge32
+        UNITS       "microseconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 2 }
+
+    frsldPvcSmplDelayMax OBJECT-TYPE
+        SYNTAX      Gauge32
+
+
+
+
+
+        UNITS       "microseconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 3 }
+
+    frsldPvcSmplDelayAvg OBJECT-TYPE
+        SYNTAX      Gauge32
+        UNITS       "microseconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 4 }
+
+    frsldPvcSmplMissedPolls OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 5 }
+
+    frsldPvcSmplFrDeliveredC OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 6 }
+
+    frsldPvcSmplFrDeliveredE OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 7 }
+
+    frsldPvcSmplFrOfferedC OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 8 }
+
+    frsldPvcSmplFrOfferedE OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 9 }
+
+    frsldPvcSmplDataDeliveredC OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 10 }
+
+    frsldPvcSmplDataDeliveredE OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 11 }
+
+    frsldPvcSmplDataOfferedC OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 12 }
+
+    frsldPvcSmplDataOfferedE OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 13 }
+
+    frsldPvcSmplHCFrDeliveredC OBJECT-TYPE
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 14 }
+
+    frsldPvcSmplHCFrDeliveredE OBJECT-TYPE
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+       ::= { frsldPvcSampleEntry 15 }
+
+    frsldPvcSmplHCFrOfferedC OBJECT-TYPE
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 16 }
+
+    frsldPvcSmplHCFrOfferedE OBJECT-TYPE
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 17 }
+
+    frsldPvcSmplHCDataDeliveredC OBJECT-TYPE
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 18 }
+
+    frsldPvcSmplHCDataDeliveredE OBJECT-TYPE
+        SYNTAX      CounterBasedGauge64
+
+
+
+
+
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 19 }
+
+    frsldPvcSmplHCDataOfferedC OBJECT-TYPE
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 20 }
+
+    frsldPvcSmplHCDataOfferedE OBJECT-TYPE
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 21 }
+
+    frsldPvcSmplUnavailableTime OBJECT-TYPE
+        SYNTAX  TimeTicks
+        MAX-ACCESS  read-only
+        STATUS  current
+        ::= { frsldPvcSampleEntry 22 }
+
+
+
+
+
+    frsldPvcSmplUnavailables OBJECT-TYPE
+        SYNTAX  Gauge32
+        MAX-ACCESS  read-only
+        STATUS  current
+        ::= { frsldPvcSampleEntry 23 }
+
+    frsldPvcSmplStartTime OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 24 }
+
+    frsldPvcSmplEndTime OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldPvcSampleEntry 25 }
+
+
+    frsldPvcCtrlWriteCaps OBJECT-TYPE
+        SYNTAX  BITS {
+               frsldPvcCtrlStatus(0),
+               frsldPvcCtrlPacketFreq(1),
+               frsldPvcCtrlDelayFrSize(2),
+               frsldPvcCtrlDelayType(3),
+               frsldPvcCtrlDelayTimeOut(4),
+               frsldPvcCtrlPurge(5),
+               frsldPvcCtrlDeleteOnPurge(6)
+        }
+        MAX-ACCESS  read-only
+        STATUS  current
+        ::= { frsldCapabilities 1 }
+
+    frsldSmplCtrlWriteCaps OBJECT-TYPE
+        SYNTAX  BITS {
+               frsldSmplCtrlStatus(0),
+               frsldSmplCtrlBuckets(1)
+        }
+        MAX-ACCESS  read-only
+        STATUS  current
+        ::= { frsldCapabilities 2 }
+
+    frsldRPCaps OBJECT-TYPE
+        SYNTAX  BITS {
+               srcLocalRP(0),
+               ingTxLocalRP(1),
+               tpTxLocalRP(2),
+               eqiTxLocalRP(3),
+               eqoTxLocalRP(4),
+               otherTxLocalRP(5),
+               srcRemoteRP(6),
+               ingTxRemoteRP(7),
+               tpTxRemoteRP(8),
+               eqiTxRemoteRP(9),
+               eqoTxRemoteRP(10),
+               otherTxRemoteRP(11),
+               desLocalRP(12),
+               ingRxLocalRP(13),
+               tpRxLocalRP(14),
+               eqiRxLocalRP(15),
+               eqoRxLocalRP(16),
+               otherRxLocalRP(17),
+               desRemoteRP(18),
+               ingRxRemoteRP(19),
+               tpRxRemoteRP(20),
+               eqiRxRemoteRP(21),
+               eqoRxRemoteRP(22),
+               otherRxRemoteRP(23)
+        }
+        MAX-ACCESS  read-only
+
+
+
+
+
+        STATUS  current
+        ::= { frsldCapabilities 3 }
+
+    frsldMaxPvcCtrls   OBJECT-TYPE
+        SYNTAX      Integer32 (0..2147483647)
+        MAX-ACCESS  read-write
+        STATUS      current
+        ::= { frsldCapabilities 4 }
+
+    frsldNumPvcCtrls   OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldCapabilities 5 }
+
+
+    frsldMaxSmplCtrls   OBJECT-TYPE
+        SYNTAX      Integer32 (0..2147483647)
+        MAX-ACCESS  read-write
+        STATUS      current
+        ::= { frsldCapabilities 6 }
+
+    frsldNumSmplCtrls   OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { frsldCapabilities 7 }
+
+
+
+
+
+
+    frsldMIBGroups      OBJECT IDENTIFIER ::= { frsldConformance 1 }
+    frsldMIBCompliances OBJECT IDENTIFIER ::= { frsldConformance 2 }
+
+
+    frsldCompliance MODULE-COMPLIANCE
+        STATUS  current
+        MODULE -- this module
+            MANDATORY-GROUPS { frsldPvcReqCtrlGroup,
+                               frsldPvcReqDataGroup,
+                               frsldCapabilitiesGroup}
+
+            GROUP       frsldPvcHCFrameDataGroup
+
+            GROUP       frsldPvcHCOctetDataGroup
+
+            GROUP       frsldPvcPacketGroup
+
+            GROUP       frsldPvcDelayCtrlGroup
+
+
+            GROUP       frsldPvcSampleCtrlGroup
+
+            GROUP       frsldPvcDelayDataGroup
+
+            GROUP       frsldPvcSampleDelayGroup
+
+            GROUP       frsldPvcSampleDataGroup
+
+            GROUP       frsldPvcSampleHCFrameGroup
+
+            GROUP       frsldPvcSampleHCDataGroup
+
+            GROUP       frsldPvcSampleAvailGroup
+
+            GROUP       frsldPvcSampleGeneralGroup
+
+            OBJECT      frsldPvcCtrlStatus
+            SYNTAX      RowStatus { active(1) } -- subset of RowStatus
+            MIN-ACCESS  read-only
+
+            OBJECT      frsldPvcCtrlPurge
+            MIN-ACCESS  read-only
+
+            OBJECT      frsldPvcCtrlDeleteOnPurge
+            MIN-ACCESS  read-only
+
+            OBJECT      frsldMaxPvcCtrls
+            MIN-ACCESS  read-only
+            OBJECT      frsldMaxSmplCtrls
+            MIN-ACCESS  read-only
+
+    ::= { frsldMIBCompliances 1 }
+
+
+
+
+
+
+    frsldPvcReqCtrlGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcCtrlStatus,
+            frsldPvcCtrlPurge,
+            frsldPvcCtrlDeleteOnPurge,
+            frsldPvcCtrlLastPurgeTime
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 1 }
+
+    frsldPvcPacketGroup OBJECT-GROUP
+       OBJECTS {
+            frsldPvcCtrlPacketFreq
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 2 }
+
+    frsldPvcDelayCtrlGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcCtrlDelayFrSize,
+            frsldPvcCtrlDelayType,
+            frsldPvcCtrlDelayTimeOut
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 3 }
+
+    frsldPvcSampleCtrlGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldSmplCtrlStatus,
+            frsldSmplCtrlColPeriod,
+            frsldSmplCtrlBuckets,
+
+
+
+
+
+            frsldSmplCtrlBucketsGranted
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 4 }
+
+    frsldPvcReqDataGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcDataFrDeliveredC,
+            frsldPvcDataFrDeliveredE,
+            frsldPvcDataFrOfferedC,
+            frsldPvcDataFrOfferedE,
+            frsldPvcDataDataDeliveredC,
+            frsldPvcDataDataDeliveredE,
+            frsldPvcDataDataOfferedC,
+            frsldPvcDataDataOfferedE,
+            frsldPvcDataUnavailableTime,
+            frsldPvcDataUnavailables
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 5 }
+
+    frsldPvcDelayDataGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcDataMissedPolls
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 6 }
+
+    frsldPvcHCFrameDataGroup  OBJECT-GROUP
+
+
+
+
+
+       OBJECTS {
+            frsldPvcDataHCFrDeliveredC,
+            frsldPvcDataHCFrDeliveredE,
+            frsldPvcDataHCFrOfferedC,
+            frsldPvcDataHCFrOfferedE
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 7 }
+
+    frsldPvcHCOctetDataGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcDataHCDataDeliveredC,
+            frsldPvcDataHCDataDeliveredE,
+            frsldPvcDataHCDataOfferedC,
+            frsldPvcDataHCDataOfferedE
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 8 }
+
+    frsldPvcSampleDelayGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcSmplDelayMin,
+            frsldPvcSmplDelayMax,
+            frsldPvcSmplDelayAvg,
+            frsldPvcSmplMissedPolls
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 9 }
+
+    frsldPvcSampleDataGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcSmplFrDeliveredC,
+            frsldPvcSmplFrDeliveredE,
+
+
+
+
+
+            frsldPvcSmplFrOfferedC,
+            frsldPvcSmplFrOfferedE,
+            frsldPvcSmplDataDeliveredC,
+            frsldPvcSmplDataDeliveredE,
+            frsldPvcSmplDataOfferedC,
+            frsldPvcSmplDataOfferedE
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 10 }
+
+    frsldPvcSampleHCFrameGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcSmplHCFrDeliveredC,
+            frsldPvcSmplHCFrDeliveredE,
+            frsldPvcSmplHCFrOfferedC,
+            frsldPvcSmplHCFrOfferedE
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 11 }
+
+    frsldPvcSampleHCDataGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcSmplHCDataDeliveredC,
+            frsldPvcSmplHCDataDeliveredE,
+            frsldPvcSmplHCDataOfferedC,
+            frsldPvcSmplHCDataOfferedE
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 12 }
+
+    frsldPvcSampleAvailGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcSmplUnavailableTime,
+            frsldPvcSmplUnavailables
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 13 }
+
+    frsldPvcSampleGeneralGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcSmplStartTime,
+            frsldPvcSmplEndTime
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 14 }
+
+    frsldCapabilitiesGroup  OBJECT-GROUP
+       OBJECTS {
+            frsldPvcCtrlWriteCaps,
+            frsldSmplCtrlWriteCaps,
+            frsldRPCaps,
+            frsldMaxPvcCtrls,
+            frsldNumPvcCtrls,
+            frsldMaxSmplCtrls,
+            frsldNumSmplCtrls
+       }
+       STATUS  current
+       ::= { frsldMIBGroups 15 }
+END

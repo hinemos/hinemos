@@ -1,0 +1,536 @@
+  TN3270E-RT-MIB DEFINITIONS ::= BEGIN
+
+  IMPORTS
+      MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+      Counter32, Unsigned32, Gauge32
+                  FROM SNMPv2-SMI
+      RowStatus, DateAndTime, TimeStamp, TestAndIncr
+                  FROM SNMPv2-TC
+      MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                  FROM SNMPv2-CONF
+      tn3270eSrvrConfIndex, tn3270eClientGroupName,
+      tn3270eResMapElementType
+                  FROM TN3270E-MIB
+      IANATn3270eAddrType, IANATn3270eAddress
+                  FROM IANATn3270eTC-MIB
+      snanauMIB
+                  FROM SNA-NAU-MIB;
+
+    tn3270eRtMIB   MODULE-IDENTITY
+        LAST-UPDATED "9807270000Z" -- July 27, 1998
+        ORGANIZATION "TN3270E Working Group"
+  ::= { snanauMIB 9 }
+
+
+  tn3270eRtNotifications   OBJECT IDENTIFIER  ::= { tn3270eRtMIB 0 }
+  tn3270eRtObjects         OBJECT IDENTIFIER  ::= { tn3270eRtMIB 1 }
+  tn3270eRtConformance     OBJECT IDENTIFIER  ::= { tn3270eRtMIB 3 }
+
+
+
+  tn3270eRtCollCtlTable  OBJECT-TYPE
+      SYNTAX       SEQUENCE OF Tn3270eRtCollCtlEntry
+      MAX-ACCESS   not-accessible
+      STATUS       current
+
+
+
+
+
+      ::= { tn3270eRtObjects 1}
+
+  tn3270eRtCollCtlEntry    OBJECT-TYPE
+      SYNTAX        Tn3270eRtCollCtlEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      INDEX {
+        tn3270eSrvrConfIndex,    -- Server's index
+        tn3270eClientGroupName } -- What to collect on
+      ::= { tn3270eRtCollCtlTable 1 }
+
+  Tn3270eRtCollCtlEntry ::= SEQUENCE {
+      tn3270eRtCollCtlType              BITS,
+      tn3270eRtCollCtlSPeriod           Unsigned32,
+      tn3270eRtCollCtlSPMult            Unsigned32,
+      tn3270eRtCollCtlThreshHigh        Unsigned32,
+      tn3270eRtCollCtlThreshLow         Unsigned32,
+      tn3270eRtCollCtlIdleCount         Unsigned32,
+      tn3270eRtCollCtlBucketBndry1      Unsigned32,
+      tn3270eRtCollCtlBucketBndry2      Unsigned32,
+      tn3270eRtCollCtlBucketBndry3      Unsigned32,
+      tn3270eRtCollCtlBucketBndry4      Unsigned32,
+      tn3270eRtCollCtlRowStatus         RowStatus   }
+
+
+  tn3270eRtCollCtlType  OBJECT-TYPE
+      SYNTAX    BITS {
+                       aggregate(0),
+                       excludeIpComponent(1),
+                       ddr(2),
+                       average(3),
+                       buckets(4),
+                       traps(5)
+                     }
+      MAX-ACCESS   read-create
+      STATUS       current
+      ::= { tn3270eRtCollCtlEntry 2 }
+
+  tn3270eRtCollCtlSPeriod OBJECT-TYPE
+      SYNTAX  Unsigned32 (15..86400) -- 15 second min, 24 hour max
+      UNITS   "seconds"
+      MAX-ACCESS   read-create
+      STATUS       current
+      DEFVAL   {20}    -- 20 seconds
+      ::= { tn3270eRtCollCtlEntry 3 }
+
+  tn3270eRtCollCtlSPMult OBJECT-TYPE
+      SYNTAX  Unsigned32 (1..5760) -- 5760 x SPeriod of 15 is 24 hours
+      UNITS   "period"
+      MAX-ACCESS   read-create
+      STATUS       current
+      DEFVAL   { 30 }    -- yields an interval of 10 minutes when
+      ::= { tn3270eRtCollCtlEntry 4 }
+
+  tn3270eRtCollCtlThreshHigh  OBJECT-TYPE
+      SYNTAX            Unsigned32
+      UNITS             "seconds"
+      MAX-ACCESS        read-create
+      STATUS            current
+
+      DEFVAL   { 0 }   -- suppress notifications
+      ::= { tn3270eRtCollCtlEntry 5 }
+
+  tn3270eRtCollCtlThreshLow   OBJECT-TYPE
+      SYNTAX            Unsigned32
+      UNITS             "seconds"
+      MAX-ACCESS        read-create
+      STATUS            current
+      DEFVAL   { 0 }   -- suppress notifications
+      ::= { tn3270eRtCollCtlEntry 6 }
+
+  tn3270eRtCollCtlIdleCount   OBJECT-TYPE
+      SYNTAX            Unsigned32
+      UNITS             "transactions"
+      MAX-ACCESS        read-create
+      STATUS            current
+      DEFVAL { 1 }
+      ::= { tn3270eRtCollCtlEntry 7 }
+
+  tn3270eRtCollCtlBucketBndry1   OBJECT-TYPE
+      SYNTAX            Unsigned32
+      UNITS             "tenths of seconds"
+      MAX-ACCESS        read-create
+      STATUS            current
+      DEFVAL { 10 }
+      ::= { tn3270eRtCollCtlEntry 8 }
+
+  tn3270eRtCollCtlBucketBndry2   OBJECT-TYPE
+      SYNTAX            Unsigned32
+      UNITS             "tenths of seconds"
+      MAX-ACCESS        read-create
+      STATUS            current
+      DEFVAL { 20 }
+      ::= { tn3270eRtCollCtlEntry 9 }
+
+  tn3270eRtCollCtlBucketBndry3   OBJECT-TYPE
+      SYNTAX            Unsigned32
+      UNITS             "tenths of seconds"
+      MAX-ACCESS        read-create
+      STATUS            current
+      DEFVAL { 50 }
+      ::= { tn3270eRtCollCtlEntry 10 }
+
+  tn3270eRtCollCtlBucketBndry4   OBJECT-TYPE
+      SYNTAX            Unsigned32
+      UNITS             "tenths of seconds"
+      MAX-ACCESS        read-create
+      STATUS            current
+      DEFVAL { 100 }
+      ::= { tn3270eRtCollCtlEntry 11 }
+
+  tn3270eRtCollCtlRowStatus  OBJECT-TYPE
+      SYNTAX            RowStatus
+      MAX-ACCESS        read-create
+      STATUS            current
+      ::= { tn3270eRtCollCtlEntry 12 }
+
+
+
+  tn3270eRtDataTable  OBJECT-TYPE
+      SYNTAX       SEQUENCE OF Tn3270eRtDataEntry
+      MAX-ACCESS   not-accessible
+      STATUS       current
+      ::= { tn3270eRtObjects 2 }
+
+  tn3270eRtDataEntry  OBJECT-TYPE
+      SYNTAX        Tn3270eRtDataEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      INDEX {
+         tn3270eSrvrConfIndex,      -- Server's local index
+         tn3270eClientGroupName,    -- Collection target
+         tn3270eRtDataClientAddrType,
+         tn3270eRtDataClientAddress,
+
+
+
+
+
+         tn3270eRtDataClientPort }
+      ::= { tn3270eRtDataTable 1 }
+
+  Tn3270eRtDataEntry ::= SEQUENCE {
+         tn3270eRtDataClientAddrType        IANATn3270eAddrType,
+         tn3270eRtDataClientAddress         IANATn3270eAddress,
+         tn3270eRtDataClientPort            Unsigned32,
+         tn3270eRtDataAvgRt                 Gauge32,
+         tn3270eRtDataAvgIpRt               Gauge32,
+         tn3270eRtDataAvgCountTrans         Gauge32,
+         tn3270eRtDataIntTimeStamp          DateAndTime,
+         tn3270eRtDataTotalRts              Counter32,
+         tn3270eRtDataTotalIpRts            Counter32,
+         tn3270eRtDataCountTrans            Counter32,
+         tn3270eRtDataCountDrs              Counter32,
+         tn3270eRtDataElapsRndTrpSq         Unsigned32,
+         tn3270eRtDataElapsIpRtSq           Unsigned32,
+         tn3270eRtDataBucket1Rts            Counter32,
+         tn3270eRtDataBucket2Rts            Counter32,
+         tn3270eRtDataBucket3Rts            Counter32,
+         tn3270eRtDataBucket4Rts            Counter32,
+         tn3270eRtDataBucket5Rts            Counter32,
+         tn3270eRtDataRtMethod              INTEGER,
+         tn3270eRtDataDiscontinuityTime     TimeStamp
+     }
+
+  tn3270eRtDataClientAddrType   OBJECT-TYPE
+      SYNTAX    IANATn3270eAddrType
+      MAX-ACCESS   not-accessible
+      STATUS       current
+      ::= { tn3270eRtDataEntry 1 }
+
+  tn3270eRtDataClientAddress   OBJECT-TYPE
+      SYNTAX    IANATn3270eAddress
+      MAX-ACCESS   not-accessible
+      STATUS       current
+      ::= { tn3270eRtDataEntry 2 }
+
+  tn3270eRtDataClientPort   OBJECT-TYPE
+
+
+
+
+
+      SYNTAX       Unsigned32(0..65535)
+      MAX-ACCESS   not-accessible
+      STATUS       current
+      ::= { tn3270eRtDataEntry 3 }
+
+  tn3270eRtDataAvgRt OBJECT-TYPE
+      SYNTAX       Gauge32
+      UNITS        "tenths of seconds"
+      MAX-ACCESS   read-only
+      STATUS       current
+      DEFVAL { 0 }
+      ::= { tn3270eRtDataEntry 4 }
+
+  tn3270eRtDataAvgIpRt OBJECT-TYPE
+      SYNTAX       Gauge32
+      UNITS        "tenths of seconds"
+      MAX-ACCESS   read-only
+      STATUS       current
+      DEFVAL { 0 }
+      ::= { tn3270eRtDataEntry 5 }
+
+  tn3270eRtDataAvgCountTrans   OBJECT-TYPE
+      SYNTAX       Gauge32
+      UNITS        "transactions"
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 6 }
+
+
+
+
+
+
+  tn3270eRtDataIntTimeStamp   OBJECT-TYPE
+      SYNTAX       DateAndTime
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 7 }
+
+  tn3270eRtDataTotalRts   OBJECT-TYPE
+      SYNTAX       Counter32
+      UNITS        "tenths of seconds"
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 8 }
+
+  tn3270eRtDataTotalIpRts   OBJECT-TYPE
+      SYNTAX       Counter32
+      UNITS        "tenths of seconds"
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 9 }
+
+  tn3270eRtDataCountTrans   OBJECT-TYPE
+      SYNTAX       Counter32
+      UNITS        "transactions"
+      MAX-ACCESS   read-only
+      STATUS       current
+
+
+
+
+
+      ::= { tn3270eRtDataEntry 10 }
+
+  tn3270eRtDataCountDrs   OBJECT-TYPE
+      SYNTAX       Counter32
+      UNITS        "definite responses"
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 11 }
+
+  tn3270eRtDataElapsRndTrpSq   OBJECT-TYPE
+      SYNTAX       Unsigned32
+      UNITS        "tenths of seconds squared"
+      MAX-ACCESS   read-only
+      STATUS       current
+      DEFVAL { 0 }
+      ::= { tn3270eRtDataEntry 12 }
+
+  tn3270eRtDataElapsIpRtSq   OBJECT-TYPE
+      SYNTAX       Unsigned32
+      UNITS        "tenths of seconds squared"
+      MAX-ACCESS   read-only
+      STATUS       current
+      DEFVAL { 0 }
+      ::= { tn3270eRtDataEntry 13 }
+
+  tn3270eRtDataBucket1Rts   OBJECT-TYPE
+      SYNTAX       Counter32
+
+
+
+
+
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 14 }
+
+  tn3270eRtDataBucket2Rts   OBJECT-TYPE
+      SYNTAX       Counter32
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 15 }
+
+  tn3270eRtDataBucket3Rts   OBJECT-TYPE
+      SYNTAX       Counter32
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 16 }
+
+  tn3270eRtDataBucket4Rts  OBJECT-TYPE
+      SYNTAX       Counter32
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 17 }
+
+  tn3270eRtDataBucket5Rts  OBJECT-TYPE
+      SYNTAX       Counter32
+
+
+
+
+
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 18 }
+
+  tn3270eRtDataRtMethod OBJECT-TYPE
+      SYNTAX       INTEGER {
+                             none(0),
+                             responses(1),
+                             timingMark(2)
+                           }
+      MAX-ACCESS   read-only
+      STATUS       current
+      ::= { tn3270eRtDataEntry 19 }
+
+  tn3270eRtDataDiscontinuityTime OBJECT-TYPE
+      SYNTAX      TimeStamp
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { tn3270eRtDataEntry 20 }
+
+
+  tn3270eRtSpinLock OBJECT-TYPE
+      SYNTAX      TestAndIncr
+      MAX-ACCESS  read-write
+      STATUS      current
+      ::= { tn3270eRtObjects 3 }
+
+
+  tn3270eRtExceeded   NOTIFICATION-TYPE
+      OBJECTS {
+         tn3270eRtDataIntTimeStamp,
+         tn3270eRtDataAvgRt,
+         tn3270eRtDataAvgIpRt,
+         tn3270eRtDataAvgCountTrans,
+         tn3270eRtDataRtMethod
+      }
+      STATUS  current
+      ::= { tn3270eRtNotifications 1 }
+
+  tn3270eRtOkay   NOTIFICATION-TYPE
+      OBJECTS {
+         tn3270eRtDataIntTimeStamp,
+         tn3270eRtDataAvgRt,
+         tn3270eRtDataAvgIpRt,
+         tn3270eRtDataAvgCountTrans,
+         tn3270eRtDataRtMethod
+      }
+      STATUS  current
+      ::= { tn3270eRtNotifications 2 }
+
+  tn3270eRtCollStart NOTIFICATION-TYPE
+      OBJECTS {
+         tn3270eRtDataRtMethod,       -- type of collection
+         tn3270eResMapElementType     -- type of resource
+      }
+      STATUS  current
+      ::= { tn3270eRtNotifications 3 }
+
+  tn3270eRtCollEnd   NOTIFICATION-TYPE
+      OBJECTS {
+         tn3270eRtDataDiscontinuityTime,
+         tn3270eRtDataAvgRt,
+         tn3270eRtDataAvgIpRt,
+         tn3270eRtDataAvgCountTrans,
+         tn3270eRtDataIntTimeStamp,
+         tn3270eRtDataTotalRts,
+         tn3270eRtDataTotalIpRts,
+         tn3270eRtDataCountTrans,
+         tn3270eRtDataCountDrs,
+         tn3270eRtDataElapsRndTrpSq,
+         tn3270eRtDataElapsIpRtSq,
+         tn3270eRtDataBucket1Rts,
+         tn3270eRtDataBucket2Rts,
+         tn3270eRtDataBucket3Rts,
+         tn3270eRtDataBucket4Rts,
+         tn3270eRtDataBucket5Rts,
+         tn3270eRtDataRtMethod
+      }
+      STATUS  current
+      ::= { tn3270eRtNotifications 4 }
+
+
+  tn3270eRtGroups       OBJECT IDENTIFIER ::= { tn3270eRtConformance 1 }
+  tn3270eRtCompliances  OBJECT IDENTIFIER ::= { tn3270eRtConformance 2 }
+
+
+  tn3270eRtCompliance     MODULE-COMPLIANCE
+      STATUS current
+      MODULE   -- this module
+         MANDATORY-GROUPS { tn3270eRtGroup, tn3270eRtNotGroup }
+
+      OBJECT tn3270eRtCollCtlType
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlSPeriod
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlSPMult
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlThreshHigh
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlThreshLow
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlIdleCount
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlBucketBndry1
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlBucketBndry2
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlBucketBndry3
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlBucketBndry4
+         MIN-ACCESS  read-only
+
+      OBJECT tn3270eRtCollCtlRowStatus
+         SYNTAX   INTEGER {
+                           active(1) -- subset of RowStatus
+                          }
+         MIN-ACCESS read-only
+
+      ::= {tn3270eRtCompliances 1 }
+
+
+  tn3270eRtGroup         OBJECT-GROUP
+
+
+
+
+
+      OBJECTS {
+          tn3270eRtCollCtlType,
+          tn3270eRtCollCtlSPeriod,
+          tn3270eRtCollCtlSPMult,
+          tn3270eRtCollCtlThreshHigh,
+          tn3270eRtCollCtlThreshLow,
+          tn3270eRtCollCtlIdleCount,
+          tn3270eRtCollCtlBucketBndry1,
+          tn3270eRtCollCtlBucketBndry2,
+          tn3270eRtCollCtlBucketBndry3,
+          tn3270eRtCollCtlBucketBndry4,
+          tn3270eRtCollCtlRowStatus,
+          tn3270eRtDataDiscontinuityTime,
+          tn3270eRtDataAvgRt,
+          tn3270eRtDataAvgIpRt,
+          tn3270eRtDataAvgCountTrans,
+          tn3270eRtDataIntTimeStamp,
+          tn3270eRtDataTotalRts,
+          tn3270eRtDataTotalIpRts,
+          tn3270eRtDataCountTrans,
+          tn3270eRtDataCountDrs,
+          tn3270eRtDataElapsRndTrpSq,
+          tn3270eRtDataElapsIpRtSq,
+          tn3270eRtDataBucket1Rts,
+          tn3270eRtDataBucket2Rts,
+          tn3270eRtDataBucket3Rts,
+          tn3270eRtDataBucket4Rts,
+          tn3270eRtDataBucket5Rts,
+          tn3270eRtDataRtMethod,
+          tn3270eRtSpinLock }
+      STATUS  current
+      ::= { tn3270eRtGroups 1 }
+
+  tn3270eRtNotGroup         NOTIFICATION-GROUP
+      NOTIFICATIONS {
+          tn3270eRtExceeded,
+          tn3270eRtOkay,
+          tn3270eRtCollStart,
+          tn3270eRtCollEnd
+       }
+
+
+
+
+
+
+
+
+
+
+      STATUS  current
+      ::= { tn3270eRtGroups 2 }
+
+  END

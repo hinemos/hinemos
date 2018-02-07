@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2013 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.nodemap.util;
@@ -31,9 +24,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.nodemap.bean.Association;
 import com.clustercontrol.poller.impl.Snmp4jPollerImpl;
 import com.clustercontrol.poller.util.DataTable;
@@ -71,7 +64,7 @@ public class SearchConnectionExecutor {
 		this.isL3 = isL3;
 
 		// 同時にSNMPリクエストするスレッド数
-		int threadSize = HinemosPropertyUtil.getHinemosPropertyNum("nodemap.search.connection.thread" , Long.valueOf(4)).intValue();
+		int threadSize = HinemosPropertyCommon.nodemap_search_connection_thread.getIntegerValue();
 		m_log.info("static() : Thread Size = " + threadSize);
 		m_log.info("SearchConnectionExecutor() : scopeId="+scopeId+",L3="+isL3);
 
@@ -113,7 +106,7 @@ public class SearchConnectionExecutor {
 				String nicMacAddress = info.getNicMacAddress().toUpperCase();
 				if (!macFacilityMap.containsKey(nicMacAddress)) {
 					// まだマップに登録されていないMACアドレスの場合
-					macFacilityMap.put(nicMacAddress, new ArrayList<String>());
+					macFacilityMap.putIfAbsent(nicMacAddress, new ArrayList<String>());
 				}
 				macFacilityMap.get(nicMacAddress).add(id);
 			}

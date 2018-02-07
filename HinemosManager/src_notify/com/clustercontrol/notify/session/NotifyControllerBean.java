@@ -1,26 +1,16 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.session;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,7 +31,6 @@ import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.notify.bean.NotifyCheckIdResultInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.entity.MonitorStatusPK;
 import com.clustercontrol.notify.factory.ModifyNotify;
 import com.clustercontrol.notify.factory.ModifyNotifyRelation;
 import com.clustercontrol.notify.factory.NotifyDispatcher;
@@ -54,6 +43,7 @@ import com.clustercontrol.notify.model.NotifyLogEscalateInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.util.NotifyCache;
 import com.clustercontrol.notify.util.NotifyCacheRefreshCallback;
+import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.notify.util.NotifyRelationCacheRefreshCallback;
 import com.clustercontrol.notify.util.NotifyValidator;
@@ -74,6 +64,8 @@ public class NotifyControllerBean implements CheckFacility {
 	private static Log m_log = LogFactory.getLog( NotifyControllerBean.class );
 	
 	private static SendMail m_reportingSendMail = null;
+
+	private static Object notifyLock = new Object();
 
 	/**
 	 * 通知情報を作成します。
@@ -671,11 +663,12 @@ public class NotifyControllerBean implements CheckFacility {
 			if (notifyJobInfoEntityList != null
 					&& notifyJobInfoEntityList.size() > 0) {
 				// ID名を取得する
-				String listID = "";
+				StringBuilder sb = new StringBuilder();
 				for (NotifyJobInfo entity : notifyJobInfoEntityList) {
-					listID += (entity.getNotifyId() + ", ");
+					sb.append(entity.getNotifyId());
+					sb.append(", ");
 				}
-				message += listID;
+				message += sb.toString();
 			}
 			List<NotifyLogEscalateInfo> notifyLogEscalateInfoEntityList
 			= QueryUtil.getNotifyLogEscalateInfoByEscalateFacilityId(facilityId);
@@ -892,41 +885,6 @@ public class NotifyControllerBean implements CheckFacility {
 		}
 	}
 
-	// 排他制御用のキーセット
-	private static HashMap<MonitorStatusPK, MonitorStatusPK> m_keyMap = new HashMap<MonitorStatusPK, MonitorStatusPK>();
-
-	private static MonitorStatusPK getLock(MonitorStatusPK pk) {
-		MonitorStatusPK lockObject = null;
-		synchronized (m_keyMap) {
-			lockObject = m_keyMap.get(pk);
-			if(lockObject == null){
-				lockObject = pk;
-				// このキャッシュを削除する機構は実装していない。
-				// 問題にならない容量であり、削除する機構を実装すると複雑なので。
-				m_keyMap.put(pk, lockObject);
-			}
-		}
-		return lockObject;
-	}
-	
-	// ジョブはセッションごとにキャッシュが作られるため、それを削除する機構
-	public static void removeCache(String pluginId, Map<String, String> monitorMap) {
-		synchronized (m_keyMap) {
-			Set<MonitorStatusPK> keySet = m_keyMap.keySet();
-			List<MonitorStatusPK> removeList = new ArrayList<MonitorStatusPK>();
-			for (MonitorStatusPK key : keySet) {
-				if (key.getPluginId().equals(pluginId) && monitorMap.containsKey(key.getMonitorId())) {
-					removeList.add(key);
-				}
-			}
-			
-			for (MonitorStatusPK key : removeList) {
-				m_keyMap.remove(key);
-			}
-			m_log.info("removeCache() : remove count = " + removeList.size() +", remain count = " + m_keyMap.size());
-		}
-	}
-
 	/**
 	 * 外部から直接通知処理を実行します。
 	 *
@@ -1002,109 +960,110 @@ public class NotifyControllerBean implements CheckFacility {
 			subKey = "";
 		}
 
-		// 通知キューに入れる処理(抑制チェック処理)はpkで排他とする。
-		MonitorStatusPK pk = new MonitorStatusPK(facilityId, pluginId, monitorId, subKey);
-		MonitorStatusPK lockObject = getLock(pk);
-		synchronized (lockObject) {
+		// 通知情報
+		OutputBasicInfo output = new OutputBasicInfo();
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			// 指定のファシリティIDが存在するか確認
+			new RepositoryControllerBean().getFacilityEntityByPK(facilityId);
+
+			// 指定の通知設定が存在するか確認
+			ArrayList<String> confirmedNotifyIdList = new ArrayList<String>();
+			for(String notifyId : notifyIdList){
+				QueryUtil.getNotifyInfoPK(notifyId);
+				confirmedNotifyIdList.add(notifyId);
+			}
+
+			output.setApplication(application);
+			output.setFacilityId(facilityId);
 			try {
-				jtm = new JpaTransactionManager();
-				jtm.begin();
-
-				// 指定のファシリティIDが存在するか確認
-				new RepositoryControllerBean().getFacilityEntityByPK(facilityId);
-
-				// 指定の通知設定が存在するか確認
-				ArrayList<String> confirmedNotifyIdList = new ArrayList<String>();
-				for(String notifyId : notifyIdList){
-					QueryUtil.getNotifyInfoPK(notifyId);
-					confirmedNotifyIdList.add(notifyId);
-				}
-
-				OutputBasicInfo output = new OutputBasicInfo();
-				output.setApplication(application);
-				output.setFacilityId(facilityId);
-				try {
-					String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
-					output.setScopeText(facilityPath);
-				} catch (ObjectPrivilege_InvalidRole e) {
-					throw new InvalidRole(e.getMessage(), e);
-				} catch (HinemosUnknown e) {
-					// ファシリティIDをファシリティパスとする
-					output.setScopeText(facilityId);
-				} catch (Exception e) {
-					m_log.warn("notify() : "
-							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-					// ファシリティIDをファシリティパスとする
-					output.setScopeText(facilityId);
-				}
-				output.setGenerationDate(generationDate);
-				output.setMessage(message);
-				output.setMessageOrg(messageOrg);
-				output.setMonitorId(monitorId);
-				output.setMultiId(srcId);
-				output.setPluginId(pluginId);
-				output.setPriority(priority);
-				output.setSubKey(subKey);
-
-				notify(output, confirmedNotifyIdList);
-
-				jtm.commit();
-			} catch (NotifyNotFound | InvalidRole e) {
-				if (jtm != null){
-					jtm.rollback();
-				}
-				throw e;
+				String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
+				output.setScopeText(facilityPath);
+			} catch (ObjectPrivilege_InvalidRole e) {
+				throw new InvalidRole(e.getMessage(), e);
+			} catch (HinemosUnknown e) {
+				// ファシリティIDをファシリティパスとする
+				output.setScopeText(facilityId);
 			} catch (Exception e) {
 				m_log.warn("notify() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-				if (jtm != null)
-					jtm.rollback();
-				throw new HinemosUnknown(e.getMessage(), e);
-			} finally {
-				if (jtm != null)
-					jtm.close();
+				// ファシリティIDをファシリティパスとする
+				output.setScopeText(facilityId);
 			}
+			output.setGenerationDate(generationDate);
+			output.setMessage(message);
+			output.setMessageOrg(messageOrg);
+			output.setMonitorId(monitorId);
+			output.setMultiId(srcId);
+			output.setPluginId(pluginId);
+			output.setPriority(priority);
+			output.setSubKey(subKey);
+
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(output));
+
+			jtm.commit();
+		} catch (NotifyNotFound | InvalidRole e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("notify() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
 		}
 	}
 
 	/**
 	 * 外部から直接通知処理を実行します。
 	 *
-	 * @param notifyInfo 通知情報
+	 * @param notifyInfoList 通知情報リスト
 	 * @param notifyGroupId
 	 * @throws HinemosUnknown 
 	 */
-	public void notify(OutputBasicInfo notifyInfo, String notifyGroupId) throws HinemosUnknown {
+	public static void notify(List<OutputBasicInfo> notifyInfoList) {
 
 		JpaTransactionManager jtm = null;
 
-		// 通知キューに入れる処理(抑制チェック処理)はpkで排他とする。
-		MonitorStatusPK pk = new MonitorStatusPK(notifyInfo.getFacilityId(),
-				notifyInfo.getPluginId(), notifyInfo.getMonitorId(), notifyInfo.getSubKey());
-		MonitorStatusPK lockObject = getLock(pk);
-		synchronized (lockObject) {
+		if (notifyInfoList == null || notifyInfoList.isEmpty()) {
+			return;
+		}
+
+		synchronized (notifyLock) {
 			try {
 				jtm = new JpaTransactionManager();
-				jtm.begin();
+				jtm.begin(true);
 
-				// 監視設定から通知IDのリストを取得する
-				List<String> notifyIdList = NotifyRelationCache.getNotifyIdList(notifyGroupId);
-				m_log.trace("notifyIdList.size=" + notifyIdList.size() + ", notifyGroupId=" + notifyGroupId);
-				// 該当の通知IDのリストがない場合は終了する
-				if(notifyIdList == null || notifyIdList.size() <= 0){
-					return;
+				for (OutputBasicInfo notifyInfo : notifyInfoList) {
+					if (notifyInfo == null) {
+						continue;
+					}
+					// 監視設定から通知IDのリストを取得する
+					List<String> notifyIdList = NotifyRelationCache.getNotifyIdList(notifyInfo.getNotifyGroupId());
+					m_log.trace("notifyIdList.size=" + notifyIdList.size() + ", notifyGroupId=" + notifyInfo.getNotifyGroupId());
+					// 該当の通知IDのリストがない場合は終了する
+					if(notifyIdList == null || notifyIdList.size() <= 0){
+						continue;
+					}
+	
+					// 通知処理を行う
+					new NotifyControllerBean().notify(notifyInfo, notifyIdList);
 				}
-
-				// 通知処理を行う
-				notify(notifyInfo, notifyIdList);
-
 				jtm.commit();
 			} catch (Exception e) {
 				m_log.warn("notify() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-				if (jtm != null)
+				if (jtm != null) {
 					jtm.rollback();
-				
-				throw new HinemosUnknown("notify() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
 			} finally {
 				if (jtm != null)
 					jtm.close();
@@ -1118,56 +1077,5 @@ public class NotifyControllerBean implements CheckFacility {
 
 		// 通知キューへの登録処理を実行
 		NotifyDispatcher.notifyAction(notifyInfo, notifyIdList, persist);
-	}
-
-	/**
-	 * 一括通知
-	 * 前提条件：notifyInfoListの通知情報は同じ監視項目に属する。
-	 * 
-	 * @param notifyInfoList 通知情報配列
-	 * @param notifyGroupId 通知グループID
-	 */
-	public void notify(ArrayList<OutputBasicInfo> notifyInfoList,
-			String notifyGroupId) {
-
-		JpaTransactionManager jtm = null;
-		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			// 監視設定から通知IDのリストを取得する
-			List<String> notifyIdList = NotifyRelationCache.getNotifyIdList(notifyGroupId);
-
-			// 該当の通知IDのリストがない場合は終了する
-			if(notifyIdList == null || notifyIdList.size() <= 0){
-				return;
-			}
-
-			// 通知処理を行う
-			notify(notifyInfoList, notifyIdList);
-
-			jtm.commit();
-		} catch (Exception e) {
-			m_log.warn("notify() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
-			throw new RuntimeException("notify() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
-		}
-	}
-
-	private void notify(ArrayList<OutputBasicInfo> outputBasicInfoList,
-			List<String> notifyIdList) throws HinemosUnknown {
-		if (outputBasicInfoList.isEmpty()) {
-			return;
-		}
-
-		// 機能毎に設定されているJMSの永続化モードを取得
-		boolean persist = AsyncTaskPersistentConfig.isPersisted(outputBasicInfoList.get(0).getPluginId());
-
-		// 通知キューへの登録処理を実行
-		NotifyDispatcher.notifyAction(outputBasicInfoList, notifyIdList, persist);
 	}
 }

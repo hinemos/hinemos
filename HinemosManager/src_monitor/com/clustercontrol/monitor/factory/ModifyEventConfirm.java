@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.factory;
@@ -133,28 +126,31 @@ public class ModifyEventConfirm {
 
 		// イベントログ情報を取得
 		EventLogEntity event = null;
-		try {
-			event = QueryUtil.getEventLogPK(monitorId, monitorDetailId, pluginId, outputDate, facilityId, ObjectPrivilegeMode.MODIFY);
-		} catch (EventLogNotFound e) {
-			throw new MonitorNotFound(e.getMessage(), e);
-		} catch (InvalidRole e) {
-			throw e;
-		}
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
-		// 確認有無を変更
-		event.setConfirmFlg(confirmType);
-
-		if(confirmType == ConfirmConstant.TYPE_CONFIRMED){
-			if(confirmDate == null){
-				confirmDate = HinemosTime.currentTimeMillis();
+			try {
+				event = QueryUtil.getEventLogPK(monitorId, monitorDetailId, pluginId, outputDate, facilityId, ObjectPrivilegeMode.MODIFY);
+			} catch (EventLogNotFound e) {
+				throw new MonitorNotFound(e.getMessage(), e);
+			} catch (InvalidRole e) {
+				throw e;
 			}
-			event.setConfirmDate(confirmDate);
-		}
 
-		// 確認を実施したユーザを設定
-		event.setConfirmUser(confirmUser);
-		
-		new JpaTransactionManager().addCallback(new EventCacheModifyCallback(false, event));
+			// 確認有無を変更
+			event.setConfirmFlg(confirmType);
+
+			if(confirmType == ConfirmConstant.TYPE_CONFIRMED){
+				if(confirmDate == null){
+					confirmDate = HinemosTime.currentTimeMillis();
+				}
+				event.setConfirmDate(confirmDate);
+			}
+
+			// 確認を実施したユーザを設定
+			event.setConfirmUser(confirmUser);
+			
+			jtm.addCallback(new EventCacheModifyCallback(false, event));
+		}
 	}
 
 	/**
@@ -289,51 +285,54 @@ public class ModifyEventConfirm {
 		// アップデートする設定フラグ
 		Long confirmDate = HinemosTime.currentTimeMillis();
 		Integer confirmFlg = Integer.valueOf(confirmType);
-		int rtn = QueryUtil.updateEventLogFlgByFilter(
-				facilityIds,
-				priorityIds,
-				outputFromDate,
-				outputToDate,
-				generationFromDate,
-				generationToDate,
-				monitorId,
-				monitorDetailId,
-				application,
-				message,
-				confirmFlg,
-				confirmUser,
-				comment,
-				commentUser,
-				confirmType,
-				confirmDate,
-				collectGraphFlg);
-		m_log.debug("The result of updateEventLogFlgByFilter is: " + rtn);
-		
-		// イベントキャッシュの更新
-		ArrayList<Integer> priorityList = new ArrayList<>();
-		for (Integer i : priorityIds) {
-			priorityList.add(i);
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			int rtn = QueryUtil.updateEventLogFlgByFilter(
+					facilityIds,
+					priorityIds,
+					outputFromDate,
+					outputToDate,
+					generationFromDate,
+					generationToDate,
+					monitorId,
+					monitorDetailId,
+					application,
+					message,
+					confirmFlg,
+					confirmUser,
+					comment,
+					commentUser,
+					confirmType,
+					confirmDate,
+					collectGraphFlg);
+			m_log.debug("The result of updateEventLogFlgByFilter is: " + rtn);
+			
+			// イベントキャッシュの更新
+			ArrayList<Integer> priorityList = new ArrayList<>();
+			for (Integer i : priorityIds) {
+				priorityList.add(i);
+			}
+			String ownerRoleId = null;
+			jtm.addCallback(new EventCacheModifyCallback(
+					facilityIdList,
+					priorityList,
+					outputFromDate,
+					outputToDate,
+					generationFromDate,
+					generationToDate,
+					monitorId,
+					monitorDetailId,
+					application,
+					message,
+					confirmFlg,
+					confirmUser,
+					comment,
+					commentUser,
+					confirmType,
+					confirmDate,
+					collectGraphFlg,
+					ownerRoleId));
 		}
-		String ownerRoleId = null;
-		new JpaTransactionManager().addCallback(new EventCacheModifyCallback(
-				facilityIdList,
-				priorityList,
-				outputFromDate,
-				outputToDate,
-				generationFromDate,
-				generationToDate,
-				monitorId,
-				monitorDetailId,
-				application,
-				message,
-				confirmFlg,
-				confirmUser,
-				comment,
-				commentUser,
-				confirmType,
-				confirmDate,
-				collectGraphFlg,
-				ownerRoleId));
 	}
 }
 

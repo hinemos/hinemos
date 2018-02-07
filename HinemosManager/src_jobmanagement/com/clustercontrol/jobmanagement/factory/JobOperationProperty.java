@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -45,12 +38,11 @@ public class JobOperationProperty {
 	//FIXME javadoc修正、操作用プロパティにjobunitIDが必要か確認。
 	public ArrayList<Integer> getAvailableStartOperation (String sessionId, String jobunitId, String jobId, String facilityId, Locale locale) {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-
 		int status = 0;
 		int jobType = 0;
 
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			if(facilityId != null && facilityId.length() > 0){
 				//セッションIDとジョブIDから、セッションジョブを取得
 				JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
@@ -133,12 +125,12 @@ public class JobOperationProperty {
 	}
 
 	public ArrayList<Integer> getAvailableStopOperation(String sessionId, String jobunitId, String jobId, String facilityId, Locale locale) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 
 		int status = 0;
 		int jobType = 0;
 
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			if(facilityId != null && facilityId.length() > 0){
 				//セッションIDとジョブIDから、セッションジョブを取得
 				JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);

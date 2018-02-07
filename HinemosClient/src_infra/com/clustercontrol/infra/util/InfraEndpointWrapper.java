@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.util;
@@ -40,6 +33,7 @@ import com.clustercontrol.ws.infra.InfraFileNotFound_Exception;
 import com.clustercontrol.ws.infra.InfraFileTooLarge_Exception;
 import com.clustercontrol.ws.infra.InfraManagementDuplicate_Exception;
 import com.clustercontrol.ws.infra.InfraManagementInfo;
+import com.clustercontrol.ws.infra.InfraManagementInvalid_Exception;
 import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
 import com.clustercontrol.ws.infra.InfraModuleNotFound_Exception;
 import com.clustercontrol.ws.infra.InvalidRole_Exception;
@@ -123,7 +117,25 @@ public class InfraEndpointWrapper {
 		throw wse;
 	}
 
-	public void addInfraManagement(InfraManagementInfo info)	throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, InvalidSetting_Exception, NotifyDuplicate_Exception, InfraManagementDuplicate_Exception {
+	public List<String> getReferManagementIdList(String ownerRoleId) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<InfraEndpoint> endpointSetting : getInfraEndpoint(endpointUnit)) {
+			try {
+				InfraEndpoint endpoint = (InfraEndpoint) endpointSetting.getEndpoint();
+				List<String> list = endpoint.getReferManagementIdList(ownerRoleId);
+				return list;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getReferManagementIdList(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public void addInfraManagement(InfraManagementInfo info)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, InvalidSetting_Exception, 
+			NotifyDuplicate_Exception, InfraManagementDuplicate_Exception, InfraManagementNotFound_Exception {
 		WebServiceException wse = null;
 		for (EndpointSetting<InfraEndpoint> endpointSetting : getInfraEndpoint(endpointUnit)) {
 			try {
@@ -155,7 +167,7 @@ public class InfraEndpointWrapper {
 		throw wse;
 	}
 
-	public void deleteInfraManagement(List<String> managementIds) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, NotifyNotFound_Exception, InfraManagementNotFound_Exception {
+	public void deleteInfraManagement(List<String> managementIds) throws HinemosUnknown_Exception, InvalidSetting_Exception, InvalidRole_Exception, InvalidUserPass_Exception, NotifyNotFound_Exception, InfraManagementNotFound_Exception {
 		WebServiceException wse = null;
 		for (EndpointSetting<InfraEndpoint> endpointSetting : getInfraEndpoint(endpointUnit)) {
 			try {
@@ -186,13 +198,14 @@ public class InfraEndpointWrapper {
 		throw wse;
 	}
 
-	public String createSession(String managementId, List<String> moduleIdList, List<AccessInfo> accessList) throws HinemosUnknown_Exception, InfraManagementNotFound_Exception, InfraModuleNotFound_Exception, InvalidRole_Exception, InvalidUserPass_Exception, FacilityNotFound_Exception, InvalidSetting_Exception {
+	public String createSession(String managementId, List<String> moduleIdList, Integer nodeInputType, List<AccessInfo> accessList) 
+			throws HinemosUnknown_Exception, InfraManagementNotFound_Exception, InfraModuleNotFound_Exception, InfraManagementInvalid_Exception, InvalidRole_Exception, InvalidUserPass_Exception, FacilityNotFound_Exception, InvalidSetting_Exception {
 		WebServiceException wse = null;
 		String ret = null;
 		for (EndpointSetting<InfraEndpoint> endpointSetting : getInfraEndpoint(endpointUnit)) {
 			try {
 				InfraEndpoint endpoint = endpointSetting.getEndpoint();
-				ret = endpoint.createSession(managementId,  moduleIdList, accessList);
+				ret = endpoint.createSession(managementId,  moduleIdList, nodeInputType, accessList);
 				return ret;
 			} catch (WebServiceException e) {
 				wse = e;
@@ -220,6 +233,21 @@ public class InfraEndpointWrapper {
 		throw wse;
 	}
 	
+	public List<AccessInfo> createAccessInfoListForDialog(String managementId, List<String> moduleIdList)
+			throws InfraManagementNotFound_Exception, HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<InfraEndpoint> endpointSetting : getInfraEndpoint(endpointUnit)) {
+			try {
+				InfraEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.createAccessInfoListForDialog(managementId, moduleIdList);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("createAccessInfoList(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
 	public ModuleResult checkInfraModule(String sessionId, boolean verbose) throws HinemosUnknown_Exception, InfraManagementNotFound_Exception, InfraModuleNotFound_Exception, InvalidRole_Exception, InvalidUserPass_Exception, SessionNotFound_Exception {
 		WebServiceException wse = null;
 		ModuleResult ret = null;

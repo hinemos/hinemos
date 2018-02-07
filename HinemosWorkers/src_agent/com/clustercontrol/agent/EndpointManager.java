@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.agent;
 
 import java.net.MalformedURLException;
@@ -13,8 +21,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.ws.agent.AgentEndpointService;
+import com.clustercontrol.ws.agentbinary.AgentBinaryEndpointService;
 import com.clustercontrol.ws.agenthub.AgentHubEndpointService;
-import com.clustercontrol.ws.cloud.CloudCommonEndpointService;
 
 /**
  * Hinemosマネージャとの通信をするクラス。
@@ -31,7 +39,7 @@ public class EndpointManager {
 	private static EndpointList endpointList;
 	private final static String AGENT = AgentEndpointService.class.getSimpleName();
 	private final static String AGENTHUB = AgentHubEndpointService.class.getSimpleName();
-	private final static String CLOUD_COMMON = CloudCommonEndpointService.class.getSimpleName();
+	private final static String AGENTBINARY = AgentBinaryEndpointService.class.getSimpleName();
 
 	private static class EndpointList {
 		/*
@@ -163,17 +171,17 @@ public class EndpointManager {
 					m_log.warn("getEndpoint() : AgentHubEndpointService, " + e.getMessage(), e);
 				}
 			}
-			tmpKey = CLOUD_COMMON;
+			tmpKey = AGENTBINARY;
 			if (tmpKey.equals(key)) {
 				String urlStr = urlPrefix + tmpKey + wsdlSuffix;
-				CloudCommonEndpointService tmpEndpointService = null;
+				AgentBinaryEndpointService tmpEndpointService = null;
 				try {
-					tmpEndpointService = new CloudCommonEndpointService(
-							new URL(urlStr), new QName("http://cloud.ws.clustercontrol.com", tmpKey));
-					endpoint = tmpEndpointService.getCloudCommonEndpointPort();
+					tmpEndpointService = new AgentBinaryEndpointService(
+							new URL(urlStr), new QName("http://agentbinary.ws.clustercontrol.com", tmpKey));
+					endpoint = tmpEndpointService.getAgentBinaryEndpointPort();
 					setBindingProvider(endpoint, username, password, urlStr);
 				} catch (MalformedURLException e) {
-					m_log.warn("getEndpoint() : CloudCommonEndpointService, " + e.getMessage(), e);
+					m_log.warn("getEndpoint() : AgentBinaryEndpointService, " + e.getMessage(), e);
 				}
 			}
 			return endpoint;
@@ -201,7 +209,7 @@ public class EndpointManager {
 
 			map.put(AGENT, new EndpointSetting(AGENT, wsdlPrefix));
 			map.put(AGENTHUB, new EndpointSetting(AGENTHUB, wsdlPrefix));
-			map.put(CLOUD_COMMON, new EndpointSetting(CLOUD_COMMON, wsdlPrefix));
+			map.put(AGENTBINARY, new EndpointSetting(AGENTBINARY, wsdlPrefix));
 
 			endpointList.add(map);
 		}
@@ -237,13 +245,13 @@ public class EndpointManager {
 	public static ArrayList<EndpointSetting> getAgentHubEndpoint() {
 		return endpointList.getList(AGENTHUB);
 	}
-	
+
 	/**
-	 *  使用可能な順番でCloudCommonEndpointを返す。
+	 *  使用可能な順番でAgentEndpointを返す。
 	 * @return
 	 */
-	public static ArrayList<EndpointSetting> getCloudCommonEndpoint() {
-		return endpointList.getList(CLOUD_COMMON);
+	public static ArrayList<EndpointSetting> getAgenBinaryEndpoint() {
+		return endpointList.getList(AGENTBINARY);
 	}
 
 	/**

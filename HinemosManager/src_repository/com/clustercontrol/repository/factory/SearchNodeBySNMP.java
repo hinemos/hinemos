@@ -1,17 +1,9 @@
-
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.factory;
@@ -31,10 +23,10 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.SnmpResponseError;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.poller.bean.PollerProtocolConstant;
 import com.clustercontrol.poller.impl.Snmp4jPollerImpl;
 import com.clustercontrol.poller.util.DataTable;
@@ -168,7 +160,7 @@ public class SearchNodeBySNMP {
 		 * デフォルトはfalseであり、0のものはsearch対象から外れる。
 		 * since 3.2.0
 		 */
-		boolean verbose = HinemosPropertyUtil.getHinemosPropertyBool("repository.device.search.verbose", false);
+		boolean verbose = HinemosPropertyCommon.repository_device_search_verbose.getBooleanValue();
 
 		//ノード情報"説明"の生成
 		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())) != null
@@ -712,7 +704,7 @@ public class SearchNodeBySNMP {
 	
 	public static String getShortName (String fqdn) {
 		String hostname = fqdn;
-		if(!HinemosPropertyUtil.getHinemosPropertyBool("repository.nodename.fqdn", false) && hostname.indexOf(".") != -1){
+		if(!HinemosPropertyCommon.repository_nodename_fqdn.getBooleanValue() && hostname.indexOf(".") != -1){
 			hostname = hostname.substring(0,hostname.indexOf("."));
 		}
 		return hostname;

@@ -1,6 +1,15 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.infra.model;
 
 import java.io.Serializable;
+import java.util.Map;
 
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
@@ -18,6 +27,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.bean.PatternConstant;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -36,7 +46,7 @@ import com.clustercontrol.util.MessageConstant;
 @Inheritance
 @DiscriminatorColumn(name="module_type")
 @Cacheable(true)
-@XmlSeeAlso({FileTransferModuleInfo.class, CommandModuleInfo.class})
+@XmlSeeAlso({FileTransferModuleInfo.class, CommandModuleInfo.class, ReferManagementModuleInfo.class})
 public abstract class InfraModuleInfo<E extends InfraModuleInfo<?>> implements Serializable {
 	/**
 	 * 
@@ -48,6 +58,7 @@ public abstract class InfraModuleInfo<E extends InfraModuleInfo<?>> implements S
 	private Boolean validFlg;
 	private Boolean stopIfFailFlg;
 	private Boolean precheckFlg;
+	private String execReturnParamName;
 
 	private InfraManagementInfo infraManagementInfoEntity;
 	
@@ -136,12 +147,20 @@ public abstract class InfraModuleInfo<E extends InfraModuleInfo<?>> implements S
 	public void setPrecheckFlg(Boolean precheckFlg) {
 		this.precheckFlg = precheckFlg;
 	}
-	
+
+	@Column(name="exec_return_param_name")
+	public String getExecReturnParamName() {
+		return execReturnParamName;
+	}
+	public void setExecReturnParamName(String execReturnParamName) {
+		this.execReturnParamName = execReturnParamName;
+	}
+
 	public abstract String getModuleTypeName();
 	
 	public void addCounterEntity(InfraManagementInfo management) throws HinemosUnknown, EntityExistsException {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			E module = getEntityClass().newInstance();
 	
 			module.setId(new InfraModuleInfoPK(management.getManagementId(), getModuleId()));
@@ -151,12 +170,13 @@ public abstract class InfraModuleInfo<E extends InfraModuleInfo<?>> implements S
 			module.setValidFlg(getValidFlg());
 			module.setStopIfFailFlg(getStopIfFailFlg());
 			module.setPrecheckFlg(getPrecheckFlg());
+			module.setExecReturnParamName(getExecReturnParamName());
 			
 			management.getModuleList().add(module);
 	
-			overwriteCounterEntity(management, module, new JpaTransactionManager().getEntityManager());
+			overwriteCounterEntity(management, module, em);
 			
-			jtm.getEntityManager().persist(module);
+			em.persist(module);
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (EntityExistsException e) {
@@ -167,17 +187,18 @@ public abstract class InfraModuleInfo<E extends InfraModuleInfo<?>> implements S
 	protected abstract Class<E> getEntityClass();
 	
 	public void modifyCounterEntity(InfraManagementInfo management, InfraModuleInfo<?> module, Integer orderNo) throws HinemosUnknown {
-		if (!module.getId().getModuleId().equals(this.getModuleId()))
+		if (!module.getId().getModuleId().equals(this.getModuleId())) {
 			throw new HinemosUnknown("Not match moduleIds between web and db on modifying infra module.");
-		
+		}
 		module.setName(getName());
 		module.setOrderNo(orderNo);
 		module.setValidFlg(getValidFlg());
 		module.setStopIfFailFlg(getStopIfFailFlg());
 		module.setPrecheckFlg(getPrecheckFlg());
+		module.setExecReturnParamName(getExecReturnParamName());
 		
-		try {
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			overwriteCounterEntity(management, getEntityClass().cast(module), em);
 		} catch(ClassCastException e) {
 			throw new HinemosUnknown(e.getMessage(), e);
@@ -203,7 +224,20 @@ public abstract class InfraModuleInfo<E extends InfraModuleInfo<?>> implements S
 	public void validate(InfraManagementInfo infraManagementInfo) throws InvalidSetting, InvalidRole {
 		CommonValidator.validateId(MessageConstant.INFRA_MODULE_ID.getMessage(), getModuleId(), 64);
 		CommonValidator.validateString(MessageConstant.INFRA_MODULE_NAME.getMessage(), getName(), true, 1, 64);
-	
+
+		// execReturnParamName
+		if (this instanceof CommandModuleInfo || this instanceof FileTransferModuleInfo) {
+			CommonValidator.validateString(MessageConstant.INFRA_MODULE_EXEC_RETURN_PARAM_NAME.getMessage(), getExecReturnParamName(), false, 0, 64);
+			// IDのパターンは許容しない
+			if(getExecReturnParamName() != null 
+					&& !getExecReturnParamName().isEmpty()
+					&& !getExecReturnParamName().matches(PatternConstant.HINEMOS_ID_PATTERN)){
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_PARAMID_ILLEGAL_CHARACTERS.getMessage(
+						MessageConstant.INFRA_MODULE_EXEC_RETURN_PARAM_NAME.getMessage(), getExecReturnParamName()));
+				throw e;
+			}
+		}
+
 		// validFlg : not implemented
 		// proceedIfFailFlg : not implemented
 		
@@ -216,9 +250,32 @@ public abstract class InfraModuleInfo<E extends InfraModuleInfo<?>> implements S
 
 	public abstract boolean canPrecheck(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId) throws HinemosUnknown, InvalidUserPass;
 
-	public abstract ModuleNodeResult run(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId) throws HinemosUnknown, InvalidUserPass;
+	/**
+	 * 実行モジュール実行
+	 * @param management 環境構築設定
+	 * @param node 実行対象ノード
+	 * @param access ログイン情報
+	 * @param sessionId セッションID（サブセッションの場合は「セッションID:モジュールID:モジュールID...」）
+	 * @param paramMap 環境構築変数マップ
+	 * @return 実行結果
+	 * @throws HinemosUnknown
+	 * @throws InvalidUserPass
+	 */
+	public abstract ModuleNodeResult run(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId, Map<String, String> paramMap) throws HinemosUnknown, InvalidUserPass;
 
-	public abstract ModuleNodeResult check(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId, boolean verbose) throws HinemosUnknown, InvalidUserPass;
+	/**
+	 * チェックモジュール実行
+	 * @param management 環境構築設定
+	 * @param node 実行対象ノード
+	 * @param access ログイン情報
+	 * @param sessionId セッションID（サブセッションの場合は「セッションID:モジュールID:モジュールID...」）
+	 * @param paramMap 環境構築変数マップ
+	 * @param verbose
+	 * @return 実行結果
+	 * @throws HinemosUnknown
+	 * @throws InvalidUserPass
+	 */
+	public abstract ModuleNodeResult check(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId, Map<String, String> paramMap, boolean verbose) throws HinemosUnknown, InvalidUserPass;
 	
 	public abstract void beforeRun(String sessionId) throws HinemosUnknown;
 	

@@ -1,0 +1,62 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"id",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"name",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckInfo_scheduleName"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckInfo_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckInfo_validFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"jobunitId",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckInfo_jobunitId"}
+	]},
+
+	{
+	"propName":"jobId",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckInfo_jobId"}
+	]},
+	
+	{
+	"propName":"calId",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckInfo_calId"}
+	]},
+	
+	{
+	"propName":"fileCheckData",
+	"annotations":[
+		{"type":"Element"}
+	]},
+	
+	{
+	"propName":"jobRuntimeInfos",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleInfo_jobRuntimeInfos"},
+		{"type":"Array", "idType":"props", "props":["paramId"]}
+	]}
+]
+}

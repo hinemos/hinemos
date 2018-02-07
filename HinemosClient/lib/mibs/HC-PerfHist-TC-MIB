@@ -1,0 +1,50 @@
+   HC-PerfHist-TC-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY,
+       Counter64,
+       Unsigned32,
+       Integer32,
+       mib-2                FROM SNMPv2-SMI
+       TEXTUAL-CONVENTION   FROM SNMPv2-TC;
+
+
+
+
+
+
+   hcPerfHistTCMIB MODULE-IDENTITY
+      LAST-UPDATED "200402030000Z" -- February 3, 2004
+      ORGANIZATION "ADSLMIB Working Group"
+
+
+           ::= { mib-2 107 }
+
+   HCPerfValidIntervals ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX   Integer32 (0..96)
+
+   HCPerfInvalidIntervals ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX   Integer32 (0..96)
+
+   HCPerfTimeElapsed ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX   Integer32 (0..86399)
+
+   HCPerfIntervalThreshold ::= TEXTUAL-CONVENTION
+       STATUS   current
+       SYNTAX   Unsigned32 (0..900)
+
+   HCPerfCurrentCount ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX  Counter64
+
+   HCPerfIntervalCount ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX  Counter64
+
+   HCPerfTotalCount ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX  Counter64
+   END

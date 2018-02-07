@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.dialog;
@@ -564,10 +557,18 @@ public class NodeCreateDialog extends CommonDialog {
 
 						nodeInfo = nodeSnmp.getNodeInfo();
 
-						propertySNMP = NodePropertyUtil.node2property(m_managerComposite.getText(), nodeInfo, PropertyDefineConstant.MODE_MODIFY, Locale.getDefault());
 						/*
 						 * ノード変更時のDevice Searchはサーバ基本情報とデバイスのみ修正する。
 						 */
+						// ノードプロパティの即時反映用ポートを24005にリセットしない
+						Property awakeProperty = PropertyUtil.getProperty(propertyOld, NodeConstant.AGENT_AWAKE_PORT).get(0);
+						if (awakeProperty != null && awakeProperty.getValue() instanceof Integer) {
+							Integer awake = (Integer)awakeProperty.getValue();
+							nodeInfo.setAgentAwakePort(awake);
+						}
+						
+						propertySNMP = NodePropertyUtil.node2property(m_managerComposite.getText(), nodeInfo, PropertyDefineConstant.MODE_MODIFY, Locale.getDefault());
+						
 						// 古い値を消して(basicInformation)
 						for(Property propertyObj : PropertyUtil.getProperty(propertyOld, NodeConstant.BASIC_INFORMATION)){
 							Property p = propertyObj;

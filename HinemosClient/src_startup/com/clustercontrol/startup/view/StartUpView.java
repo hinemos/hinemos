@@ -1,14 +1,9 @@
 /*
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.startup.view;
@@ -21,8 +16,10 @@ import java.util.List;
 import org.eclipse.draw2d.ColorConstantsWrapper;
 import org.eclipse.draw2d.ImageFigure;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 
@@ -34,7 +31,10 @@ import com.clustercontrol.util.Messages;
 import com.clustercontrol.view.CommonViewPart;
 
 public class StartUpView extends CommonViewPart {
-
+	static {
+		JFaceResources.getColorRegistry().put("StartUpView_Background", new RGB(224, 226, 237));
+	}
+	
 	/** ビューID */
 	public static final String ID = StartUpView.class.getName();
 
@@ -52,15 +52,17 @@ public class StartUpView extends CommonViewPart {
 	public void createPartControl(Composite parent) {
 		super.createPartControl(parent);
 		setStartUpItem();
-		GridLayout layout = new GridLayout(1, true);
-		parent.setLayout(layout);
-		layout.marginHeight = 0;
-		layout.marginWidth = 0;
+		parent.setLayout(new GridLayout());
 
-		startUpComposite = new StartUpComposite(parent, SWT.NONE, m_startUpItem);
+		// 背景色を合わせておく
+		parent.setBackground(JFaceResources.getColorRegistry().get("StartUpView_Background"));
+		// SWT.INHERIT_DEFAULTにしないと、RAP版だけ白い枠が表示される
+		parent.setBackgroundMode(SWT.INHERIT_DEFAULT);
+
+		startUpComposite = new StartUpComposite(parent, SWT.NO_SCROLL, m_startUpItem);
 		WidgetTestUtil.setTestId(this, null, startUpComposite);
 
-		//ビューの更新
+		// ビューの更新
 		startUpComposite.update();
 		startUpComposite.setVisible(true);
 	}

@@ -1,0 +1,88 @@
+{
+"annotations":[
+	{"type":"Element"}
+
+],
+"props":[
+	{
+	"propName":"authType",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_authType"}
+	]},
+
+	{
+	"propName":"authUser",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_authUser"}
+	]},
+
+	{
+	"propName":"authPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_authPassword"}
+	]},
+
+	{
+	"propName":"proxyFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_proxyFlg"}
+	]},
+
+	{
+	"propName":"proxyUrl",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_proxyUrl"}
+	]},
+
+	{
+	"propName":"proxyPort",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_proxyPort"}
+	]},
+
+	{
+	"propName":"proxyUser",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_proxyUser"}
+	]},
+
+	{
+	"propName":"proxyPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_proxyPassword"}
+	]},
+
+	{
+	"propName":"monitoringPerPageFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_monitoringPerPageFlg"}
+	]},
+
+	{
+	"propName":"userAgent",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_userAgent"}
+	]},
+
+	{
+	"propName":"connectTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_connectTimeout"}
+	]},
+
+	{
+	"propName":"requestTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpScenarioInfo_requestTimeout"}
+	]},
+
+	{
+	"propName":"pageValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"pageOrderNo"},
+		{"type":"Column", "columnName":"PageInfo_pageValue"},
+		{"type":"Ignore", "propNames":["pageOrderNo"]}
+	]}
+	
+]
+}

@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"source",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeMapType_source"}
+	]},
+
+	{
+	"propName":"target",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeMapType_target"}
+	]}
+]
+}

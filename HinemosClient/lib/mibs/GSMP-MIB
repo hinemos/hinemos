@@ -1,0 +1,1001 @@
+GSMP-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        OBJECT-TYPE, MODULE-IDENTITY, NOTIFICATION-TYPE,
+        Unsigned32, Integer32, mib-2
+               FROM SNMPv2-SMI                             -- [RFC2578]
+        RowStatus, TruthValue, TimeStamp,
+        StorageType, TEXTUAL-CONVENTION
+               FROM SNMPv2-TC                              -- [RFC2579]
+        MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+               FROM SNMPv2-CONF                            -- [RFC2580]
+        ZeroBasedCounter32
+               FROM RMON2-MIB                              -- [RFC2021]
+        InterfaceIndex
+               FROM IF-MIB                                 -- [RFC2863]
+        AtmVcIdentifier, AtmVpIdentifier
+               FROM ATM-TC-MIB                             -- [RFC2514]
+        InetAddressType, InetAddress, InetPortNumber
+               FROM INET-ADDRESS-MIB ;                     -- [RFC3291]
+
+    gsmpMIB MODULE-IDENTITY
+        LAST-UPDATED "200205310000Z" -- May 31, 2002
+        ORGANIZATION "General Switch Management Protocol (gsmp)
+                      Working Group, IETF"
+
+
+    ::= { mib-2 98 }
+
+    gsmpNotifications              OBJECT IDENTIFIER ::= { gsmpMIB 0 }
+    gsmpObjects                    OBJECT IDENTIFIER ::= { gsmpMIB 1 }
+    gsmpNotificationsObjects       OBJECT IDENTIFIER ::= { gsmpMIB 2 }
+    gsmpConformance                OBJECT IDENTIFIER ::= { gsmpMIB 3 }
+
+
+    GsmpNameType ::= TEXTUAL-CONVENTION
+        STATUS         current
+        SYNTAX           OCTET STRING (SIZE(6))
+
+    GsmpPartitionType ::= TEXTUAL-CONVENTION
+       STATUS           current
+       SYNTAX           INTEGER {
+                                   noPartition(1),
+                                   fixedPartitionRequest(2),
+                                   fixedPartitionAssigned(3)
+                                   }
+
+    GsmpPartitionIdType ::= TEXTUAL-CONVENTION
+        STATUS         current
+          SYNTAX         OCTET STRING (SIZE(1))
+
+    GsmpVersion ::= TEXTUAL-CONVENTION
+          STATUS          current
+          SYNTAX          Unsigned32
+
+    GsmpLabelType ::= TEXTUAL-CONVENTION
+          STATUS         current
+          SYNTAX          OCTET STRING
+
+
+
+    gsmpControllerTable OBJECT-TYPE
+          SYNTAX          SEQUENCE OF GsmpControllerEntry
+          MAX-ACCESS      not-accessible
+          STATUS          current
+          ::= { gsmpObjects 1 }
+
+
+
+
+
+    gsmpControllerEntry OBJECT-TYPE
+          SYNTAX          GsmpControllerEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        INDEX { gsmpControllerEntityId }
+        ::= { gsmpControllerTable 1 }
+
+    GsmpControllerEntry ::= SEQUENCE {
+        gsmpControllerEntityId                    GsmpNameType,
+        gsmpControllerMaxVersion                  GsmpVersion,
+        gsmpControllerTimer                       Unsigned32,
+        gsmpControllerPort                        Unsigned32,
+        gsmpControllerInstance                    Unsigned32,
+        gsmpControllerPartitionType               GsmpPartitionType,
+        gsmpControllerPartitionId                 GsmpPartitionIdType,
+        gsmpControllerDoResync                    TruthValue,
+        gsmpControllerNotificationMap             BITS,
+        gsmpControllerSessionState                INTEGER,
+        gsmpControllerStorageType                 StorageType,
+        gsmpControllerRowStatus                   RowStatus
+        }
+
+    gsmpControllerEntityId OBJECT-TYPE
+        SYNTAX          GsmpNameType
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        ::= { gsmpControllerEntry 1 }
+
+   gsmpControllerMaxVersion OBJECT-TYPE
+       SYNTAX          GsmpVersion
+       MAX-ACCESS      read-create
+       STATUS          current
+       DEFVAL { 3 }
+
+
+
+
+
+       ::= { gsmpControllerEntry 2 }
+
+   gsmpControllerTimer OBJECT-TYPE
+       SYNTAX          Unsigned32(1..255)
+       UNITS           "100ms"
+       MAX-ACCESS      read-create
+       STATUS          current
+       DEFVAL { 10 }
+       ::= { gsmpControllerEntry 3 }
+
+   gsmpControllerPort OBJECT-TYPE
+       SYNTAX          Unsigned32
+       MAX-ACCESS      read-create
+       STATUS          current
+       ::= { gsmpControllerEntry 4 }
+
+   gsmpControllerInstance OBJECT-TYPE
+       SYNTAX          Unsigned32(1..16777215)
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { gsmpControllerEntry 5 }
+
+   gsmpControllerPartitionType OBJECT-TYPE
+       SYNTAX          GsmpPartitionType
+       MAX-ACCESS      read-create
+       STATUS          current
+       ::= { gsmpControllerEntry 6 }
+
+   gsmpControllerPartitionId OBJECT-TYPE
+       SYNTAX           GsmpPartitionIdType
+       MAX-ACCESS       read-create
+       STATUS           current
+       ::= { gsmpControllerEntry 7 }
+
+   gsmpControllerDoResync OBJECT-TYPE
+       SYNTAX           TruthValue
+       MAX-ACCESS       read-create
+       STATUS           current
+       DEFVAL { true }
+       ::= { gsmpControllerEntry 8 }
+
+   gsmpControllerNotificationMap OBJECT-TYPE
+       SYNTAX           BITS {
+                                   sessionDown(0),
+                                   sessionUp(1),
+                                   sendFailureIndication(2),
+                                   receivedFailureIndication(3),
+                                   portUpEvent(4),
+                                   portDownEvent(5),
+                                   invalidLabelEvent(6),
+                                   newPortEvent(7),
+                                   deadPortEvent(8),
+                                   adjacencyUpdateEvent(9)
+                             }
+       MAX-ACCESS       read-create
+       STATUS           current
+       DEFVAL {{ sessionDown, sessionUp,
+              sendFailureIndication, receivedFailureIndication }}
+       ::= { gsmpControllerEntry 9 }
+
+   gsmpControllerSessionState OBJECT-TYPE
+          SYNTAX          INTEGER {
+                                    null(1),
+                                    synsent(2),
+                                    synrcvd(3),
+                                    estab(4)
+                                   }
+          MAX-ACCESS      read-only
+          STATUS          current
+          ::= { gsmpControllerEntry 10}
+
+   gsmpControllerStorageType OBJECT-TYPE
+           SYNTAX         StorageType
+           MAX-ACCESS     read-create
+           STATUS         current
+          DEFVAL { nonVolatile }
+          ::= { gsmpControllerEntry 11 }
+
+   gsmpControllerRowStatus OBJECT-TYPE
+           SYNTAX         RowStatus
+           MAX-ACCESS     read-create
+           STATUS         current
+          ::= { gsmpControllerEntry 12 }
+
+
+
+
+
+
+
+    gsmpSwitchTable OBJECT-TYPE
+        SYNTAX         SEQUENCE OF GsmpSwitchEntry
+        MAX-ACCESS     not-accessible
+        STATUS         current
+        ::= { gsmpObjects 2 }
+
+    gsmpSwitchEntry OBJECT-TYPE
+        SYNTAX         GsmpSwitchEntry
+        MAX-ACCESS     not-accessible
+        STATUS         current
+        INDEX { gsmpSwitchEntityId }
+        ::= { gsmpSwitchTable 1 }
+
+    GsmpSwitchEntry ::= SEQUENCE {
+        gsmpSwitchEntityId                GsmpNameType,
+        gsmpSwitchMaxVersion              GsmpVersion,
+        gsmpSwitchTimer                   Unsigned32,
+        gsmpSwitchName                    GsmpNameType,
+        gsmpSwitchPort                    Unsigned32,
+        gsmpSwitchInstance                Unsigned32,
+        gsmpSwitchPartitionType           GsmpPartitionType,
+        gsmpSwitchPartitionId             GsmpPartitionIdType,
+        gsmpSwitchNotificationMap         BITS,
+        gsmpSwitchSwitchType              OCTET STRING,
+        gsmpSwitchWindowSize              Unsigned32,
+        gsmpSwitchSessionState            INTEGER,
+        gsmpSwitchStorageType             StorageType,
+        gsmpSwitchRowStatus               RowStatus
+        }
+
+    gsmpSwitchEntityId OBJECT-TYPE
+        SYNTAX         GsmpNameType
+
+
+
+
+
+        MAX-ACCESS     not-accessible
+        STATUS         current
+        ::= { gsmpSwitchEntry 1 }
+
+   gsmpSwitchMaxVersion OBJECT-TYPE
+       SYNTAX          GsmpVersion
+       MAX-ACCESS      read-create
+       STATUS          current
+       DEFVAL { 3 }
+       ::= { gsmpSwitchEntry 2 }
+
+   gsmpSwitchTimer OBJECT-TYPE
+       SYNTAX          Unsigned32(1..255)
+       UNITS           "100ms"
+       MAX-ACCESS      read-create
+       STATUS          current
+       DEFVAL { 10 }
+       ::= { gsmpSwitchEntry 3 }
+
+   gsmpSwitchName OBJECT-TYPE
+       SYNTAX          GsmpNameType
+       MAX-ACCESS      read-create
+       STATUS          current
+       ::= {gsmpSwitchEntry 4 }
+
+   gsmpSwitchPort OBJECT-TYPE
+       SYNTAX          Unsigned32
+       MAX-ACCESS      read-create
+       STATUS          current
+       ::= { gsmpSwitchEntry 5 }
+
+   gsmpSwitchInstance OBJECT-TYPE
+       SYNTAX          Unsigned32(1..16777215)
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSwitchEntry 6 }
+
+   gsmpSwitchPartitionType OBJECT-TYPE
+       SYNTAX         GsmpPartitionType
+       MAX-ACCESS     read-create
+       STATUS         current
+       ::= { gsmpSwitchEntry 7 }
+
+   gsmpSwitchPartitionId OBJECT-TYPE
+       SYNTAX         GsmpPartitionIdType
+       MAX-ACCESS     read-create
+       STATUS         current
+       ::= { gsmpSwitchEntry 8 }
+
+   gsmpSwitchNotificationMap OBJECT-TYPE
+       SYNTAX         BITS {
+                             sessionDown(0),
+                             sessionUp(1),
+                             sendFailureIndication(2),
+                             receivedFailureIndication(3),
+                             portUpEvent(4),
+
+
+
+
+
+                             portDownEvent(5),
+                             invalidLabelEvent(6),
+                             newPortEvent(7),
+                             deadPortEvent(8),
+                             adjacencyUpdateEvent(9)
+                          }
+       MAX-ACCESS     read-create
+       STATUS         current
+       DEFVAL {{ sessionDown, sessionUp,
+              sendFailureIndication, receivedFailureIndication }}
+       ::= { gsmpSwitchEntry 9 }
+
+   gsmpSwitchSwitchType OBJECT-TYPE
+       SYNTAX           OCTET STRING (SIZE(2))
+       MAX-ACCESS       read-create
+       STATUS           current
+       ::= { gsmpSwitchEntry 10 }
+
+   gsmpSwitchWindowSize OBJECT-TYPE
+       SYNTAX           Unsigned32(1..65535)
+       MAX-ACCESS       read-create
+       STATUS           current
+       ::= { gsmpSwitchEntry 11 }
+
+   gsmpSwitchSessionState OBJECT-TYPE
+       SYNTAX           INTEGER {
+                                   null(1),
+                                   synsent(2),
+
+
+
+
+
+                                   synrcvd(3),
+                                   estab(4)
+                                  }
+       MAX-ACCESS       read-only
+       STATUS           current
+          ::= { gsmpSwitchEntry 12}
+
+   gsmpSwitchStorageType OBJECT-TYPE
+           SYNTAX         StorageType
+           MAX-ACCESS     read-create
+           STATUS         current
+          DEFVAL { nonVolatile }
+          ::= { gsmpSwitchEntry 13 }
+
+   gsmpSwitchRowStatus OBJECT-TYPE
+           SYNTAX         RowStatus
+           MAX-ACCESS     read-create
+           STATUS         current
+          ::= { gsmpSwitchEntry 14 }
+
+
+
+    gsmpAtmEncapTable OBJECT-TYPE
+
+
+
+
+
+          SYNTAX           SEQUENCE OF GsmpAtmEncapEntry
+          MAX-ACCESS       not-accessible
+          STATUS           current
+          ::= { gsmpObjects 3 }
+
+    gsmpAtmEncapEntry OBJECT-TYPE
+        SYNTAX          GsmpAtmEncapEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        INDEX { gsmpAtmEncapEntityId }
+        ::= { gsmpAtmEncapTable 1 }
+
+    GsmpAtmEncapEntry ::= SEQUENCE {
+        gsmpAtmEncapEntityId              GsmpNameType,
+        gsmpAtmEncapIfIndex               InterfaceIndex,
+        gsmpAtmEncapVpi                   AtmVpIdentifier,
+        gsmpAtmEncapVci                   AtmVcIdentifier,
+        gsmpAtmEncapStorageType           StorageType,
+        gsmpAtmEncapRowStatus             RowStatus
+        }
+
+    gsmpAtmEncapEntityId OBJECT-TYPE
+        SYNTAX          GsmpNameType
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        ::= { gsmpAtmEncapEntry 1 }
+
+    gsmpAtmEncapIfIndex OBJECT-TYPE
+        SYNTAX         InterfaceIndex
+        MAX-ACCESS     read-create
+        STATUS         current
+        ::= { gsmpAtmEncapEntry 2 }
+
+
+
+
+
+    gsmpAtmEncapVpi OBJECT-TYPE
+        SYNTAX         AtmVpIdentifier
+        MAX-ACCESS     read-create
+        STATUS         current
+        DEFVAL { 0 }
+           ::= { gsmpAtmEncapEntry 3 }
+
+    gsmpAtmEncapVci OBJECT-TYPE
+           SYNTAX         AtmVcIdentifier
+           MAX-ACCESS     read-create
+           STATUS         current
+           DEFVAL { 15 }
+           ::= { gsmpAtmEncapEntry 4 }
+
+   gsmpAtmEncapStorageType OBJECT-TYPE
+           SYNTAX         StorageType
+           MAX-ACCESS     read-create
+           STATUS         current
+          DEFVAL { nonVolatile }
+          ::= { gsmpAtmEncapEntry 5 }
+
+   gsmpAtmEncapRowStatus OBJECT-TYPE
+           SYNTAX         RowStatus
+           MAX-ACCESS     read-create
+           STATUS         current
+          ::= { gsmpAtmEncapEntry 6 }
+
+
+
+
+
+
+
+    gsmpTcpIpEncapTable OBJECT-TYPE
+          SYNTAX           SEQUENCE OF GsmpTcpIpEncapEntry
+          MAX-ACCESS       not-accessible
+          STATUS           current
+        ::= { gsmpObjects 4 }
+
+    gsmpTcpIpEncapEntry OBJECT-TYPE
+        SYNTAX          GsmpTcpIpEncapEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        INDEX { gsmpTcpIpEncapEntityId }
+        ::= { gsmpTcpIpEncapTable 1 }
+
+    GsmpTcpIpEncapEntry ::= SEQUENCE {
+        gsmpTcpIpEncapEntityId              GsmpNameType,
+        gsmpTcpIpEncapAddressType           InetAddressType,
+        gsmpTcpIpEncapAddress               InetAddress,
+        gsmpTcpIpEncapPortNumber            InetPortNumber,
+        gsmpTcpIpEncapStorageType           StorageType,
+        gsmpTcpIpEncapRowStatus             RowStatus
+        }
+
+    gsmpTcpIpEncapEntityId OBJECT-TYPE
+        SYNTAX          GsmpNameType
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        ::= { gsmpTcpIpEncapEntry 1 }
+
+    gsmpTcpIpEncapAddressType OBJECT-TYPE
+        SYNTAX         InetAddressType
+        MAX-ACCESS     read-create
+        STATUS         current
+        ::= { gsmpTcpIpEncapEntry 2 }
+
+    gsmpTcpIpEncapAddress OBJECT-TYPE
+        SYNTAX         InetAddress
+        MAX-ACCESS     read-create
+        STATUS         current
+        ::= { gsmpTcpIpEncapEntry 3 }
+
+    gsmpTcpIpEncapPortNumber OBJECT-TYPE
+           SYNTAX         InetPortNumber
+           MAX-ACCESS     read-create
+           STATUS         current
+           DEFVAL { 6068 }
+           ::= { gsmpTcpIpEncapEntry 4 }
+
+   gsmpTcpIpEncapStorageType OBJECT-TYPE
+           SYNTAX         StorageType
+           MAX-ACCESS     read-create
+           STATUS         current
+          DEFVAL { nonVolatile }
+          ::= { gsmpTcpIpEncapEntry 5 }
+
+    gsmpTcpIpEncapRowStatus OBJECT-TYPE
+          SYNTAX          RowStatus
+          MAX-ACCESS      read-create
+          STATUS          current
+           ::= { gsmpTcpIpEncapEntry 6 }
+
+
+
+
+
+
+
+
+    gsmpSessionTable OBJECT-TYPE
+           SYNTAX          SEQUENCE OF GsmpSessionEntry
+           MAX-ACCESS      not-accessible
+           STATUS          current
+        ::= { gsmpObjects 5 }
+
+    gsmpSessionEntry OBJECT-TYPE
+        SYNTAX         GsmpSessionEntry
+        MAX-ACCESS     not-accessible
+        STATUS         current
+        INDEX { gsmpSessionThisSideId, gsmpSessionFarSideId }
+        ::= { gsmpSessionTable 1 }
+
+    GsmpSessionEntry ::= SEQUENCE {
+        gsmpSessionThisSideId                     GsmpNameType,
+        gsmpSessionFarSideId                      GsmpNameType,
+        gsmpSessionVersion                        GsmpVersion,
+        gsmpSessionTimer                          Integer32,
+        gsmpSessionPartitionId                    GsmpPartitionIdType,
+        gsmpSessionAdjacencyCount                 Unsigned32,
+        gsmpSessionFarSideName                    GsmpNameType,
+        gsmpSessionFarSidePort                    Unsigned32,
+        gsmpSessionFarSideInstance                Unsigned32,
+        gsmpSessionLastFailureCode                Unsigned32,
+        gsmpSessionDiscontinuityTime              TimeStamp,
+        gsmpSessionStartUptime                    TimeStamp,
+        gsmpSessionStatSentMessages               ZeroBasedCounter32,
+        gsmpSessionStatFailureInds                ZeroBasedCounter32,
+        gsmpSessionStatReceivedMessages           ZeroBasedCounter32,
+        gsmpSessionStatReceivedFailures           ZeroBasedCounter32,
+        gsmpSessionStatPortUpEvents               ZeroBasedCounter32,
+        gsmpSessionStatPortDownEvents             ZeroBasedCounter32,
+        gsmpSessionStatInvLabelEvents             ZeroBasedCounter32,
+        gsmpSessionStatNewPortEvents              ZeroBasedCounter32,
+
+
+
+
+
+        gsmpSessionStatDeadPortEvents             ZeroBasedCounter32,
+        gsmpSessionStatAdjUpdateEvents            ZeroBasedCounter32
+        }
+
+    gsmpSessionThisSideId OBJECT-TYPE
+        SYNTAX         GsmpNameType
+        MAX-ACCESS     not-accessible
+        STATUS         current
+        ::= { gsmpSessionEntry 1 }
+
+    gsmpSessionFarSideId OBJECT-TYPE
+        SYNTAX         GsmpNameType
+        MAX-ACCESS     not-accessible
+        STATUS         current
+        ::= { gsmpSessionEntry 2 }
+
+   gsmpSessionVersion OBJECT-TYPE
+       SYNTAX          GsmpVersion
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { gsmpSessionEntry 3 }
+
+   gsmpSessionTimer OBJECT-TYPE
+       SYNTAX          Integer32
+       UNITS           "100ms"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { gsmpSessionEntry 4 }
+
+
+
+
+
+
+   gsmpSessionPartitionId OBJECT-TYPE
+       SYNTAX          GsmpPartitionIdType
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { gsmpSessionEntry 5 }
+
+   gsmpSessionAdjacencyCount OBJECT-TYPE
+       SYNTAX          Unsigned32(1..255)
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { gsmpSessionEntry 6 }
+
+   gsmpSessionFarSideName OBJECT-TYPE
+       SYNTAX              GsmpNameType
+       MAX-ACCESS          read-only
+       STATUS              current
+       ::= {gsmpSessionEntry 7}
+
+   gsmpSessionFarSidePort OBJECT-TYPE
+       SYNTAX           Unsigned32
+       MAX-ACCESS       read-only
+       STATUS           current
+       ::= { gsmpSessionEntry 8 }
+
+   gsmpSessionFarSideInstance OBJECT-TYPE
+       SYNTAX           Unsigned32(1..16777215)
+       MAX-ACCESS       read-only
+       STATUS           current
+       ::= { gsmpSessionEntry 9 }
+
+   gsmpSessionLastFailureCode OBJECT-TYPE
+       SYNTAX           Unsigned32(0..255)
+       MAX-ACCESS       read-only
+       STATUS           current
+       ::= { gsmpSessionEntry 10 }
+
+   gsmpSessionDiscontinuityTime OBJECT-TYPE
+       SYNTAX         TimeStamp
+       MAX-ACCESS     read-only
+       STATUS         current
+        ::= { gsmpSessionEntry 11 }
+
+   gsmpSessionStartUptime OBJECT-TYPE
+       SYNTAX         TimeStamp
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSessionEntry 12 }
+
+   gsmpSessionStatSentMessages OBJECT-TYPE
+       SYNTAX         ZeroBasedCounter32
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSessionEntry 13 }
+
+   gsmpSessionStatFailureInds OBJECT-TYPE
+       SYNTAX         ZeroBasedCounter32
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSessionEntry 14 }
+
+   gsmpSessionStatReceivedMessages OBJECT-TYPE
+       SYNTAX         ZeroBasedCounter32
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSessionEntry 15 }
+
+   gsmpSessionStatReceivedFailures OBJECT-TYPE
+       SYNTAX         ZeroBasedCounter32
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSessionEntry 16 }
+
+
+
+
+
+
+   gsmpSessionStatPortUpEvents OBJECT-TYPE
+       SYNTAX         ZeroBasedCounter32
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSessionEntry 17 }
+
+   gsmpSessionStatPortDownEvents OBJECT-TYPE
+       SYNTAX         ZeroBasedCounter32
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSessionEntry 18 }
+
+   gsmpSessionStatInvLabelEvents OBJECT-TYPE
+       SYNTAX         ZeroBasedCounter32
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSessionEntry 19 }
+
+   gsmpSessionStatNewPortEvents OBJECT-TYPE
+       SYNTAX         ZeroBasedCounter32
+       MAX-ACCESS     read-only
+       STATUS         current
+       ::= { gsmpSessionEntry 20 }
+
+   gsmpSessionStatDeadPortEvents OBJECT-TYPE
+       SYNTAX         ZeroBasedCounter32
+       MAX-ACCESS     read-only
+       STATUS         current
+         ::= { gsmpSessionEntry 21 }
+
+   gsmpSessionStatAdjUpdateEvents OBJECT-TYPE
+         SYNTAX         ZeroBasedCounter32
+         MAX-ACCESS     read-only
+         STATUS         current
+         ::= { gsmpSessionEntry 22 }
+
+
+
+
+   gsmpEventPort OBJECT-TYPE
+         SYNTAX         Unsigned32
+         MAX-ACCESS     accessible-for-notify
+
+
+
+
+
+         STATUS         current
+         ::= { gsmpNotificationsObjects 1 }
+
+   gsmpEventPortSessionNumber OBJECT-TYPE
+         SYNTAX         Unsigned32
+         MAX-ACCESS     accessible-for-notify
+         STATUS         current
+         ::= { gsmpNotificationsObjects 2 }
+
+   gsmpEventSequenceNumber OBJECT-TYPE
+         SYNTAX         Unsigned32
+         MAX-ACCESS     accessible-for-notify
+         STATUS         current
+         ::= { gsmpNotificationsObjects 3 }
+
+   gsmpEventLabel OBJECT-TYPE
+         SYNTAX          GsmpLabelType
+         MAX-ACCESS      accessible-for-notify
+         STATUS          current
+         ::= { gsmpNotificationsObjects 4 }
+
+
+
+    gsmpSessionDown NOTIFICATION-TYPE
+         OBJECTS {
+                   gsmpSessionStartUptime,
+                   gsmpSessionStatSentMessages,
+                   gsmpSessionStatFailureInds,
+                   gsmpSessionStatReceivedMessages,
+                   gsmpSessionStatReceivedFailures,
+                   gsmpSessionStatPortUpEvents,
+                   gsmpSessionStatPortDownEvents,
+                   gsmpSessionStatInvLabelEvents,
+
+
+
+
+
+                   gsmpSessionStatNewPortEvents,
+                   gsmpSessionStatDeadPortEvents,
+                   gsmpSessionStatAdjUpdateEvents
+                   }
+          STATUS current
+    ::= { gsmpNotifications 1 }
+
+    gsmpSessionUp NOTIFICATION-TYPE
+        OBJECTS {
+                  gsmpSessionFarSideInstance
+                  }
+        STATUS current
+    ::= { gsmpNotifications 2 }
+
+    gsmpSentFailureInd NOTIFICATION-TYPE
+        OBJECTS {
+                  gsmpSessionLastFailureCode,
+                  gsmpSessionStatFailureInds
+                  }
+        STATUS current
+    ::= { gsmpNotifications 3 }
+
+    gsmpReceivedFailureInd NOTIFICATION-TYPE
+        OBJECTS {
+                  gsmpSessionLastFailureCode,
+                  gsmpSessionStatReceivedFailures
+                  }
+        STATUS current
+    ::= { gsmpNotifications 4 }
+
+
+
+
+
+    gsmpPortUpEvent NOTIFICATION-TYPE
+        OBJECTS {
+                  gsmpSessionStatPortUpEvents,
+                  gsmpEventPort,
+                  gsmpEventPortSessionNumber,
+                  gsmpEventSequenceNumber
+                  }
+        STATUS current
+    ::= { gsmpNotifications 5 }
+
+    gsmpPortDownEvent NOTIFICATION-TYPE
+        OBJECTS {
+                  gsmpSessionStatPortDownEvents,
+                  gsmpEventPort,
+                  gsmpEventPortSessionNumber,
+                  gsmpEventSequenceNumber
+                  }
+        STATUS current
+    ::= { gsmpNotifications 6 }
+
+    gsmpInvalidLabelEvent NOTIFICATION-TYPE
+        OBJECTS {
+                  gsmpSessionStatInvLabelEvents,
+                  gsmpEventPort,
+
+
+
+
+
+                  gsmpEventLabel,
+                  gsmpEventSequenceNumber
+                  }
+        STATUS current
+    ::= { gsmpNotifications 7 }
+
+    gsmpNewPortEvent NOTIFICATION-TYPE
+        OBJECTS {
+                  gsmpSessionStatNewPortEvents,
+                  gsmpEventPort,
+                  gsmpEventPortSessionNumber,
+                  gsmpEventSequenceNumber
+                  }
+        STATUS current
+    ::= { gsmpNotifications 8 }
+
+    gsmpDeadPortEvent NOTIFICATION-TYPE
+        OBJECTS {
+                  gsmpSessionStatDeadPortEvents,
+                  gsmpEventPort,
+                  gsmpEventPortSessionNumber,
+                  gsmpEventSequenceNumber
+                  }
+        STATUS current
+
+
+
+
+
+    ::= { gsmpNotifications 9 }
+
+    gsmpAdjacencyUpdateEvent NOTIFICATION-TYPE
+        OBJECTS {
+                  gsmpSessionAdjacencyCount,
+                  gsmpSessionStatAdjUpdateEvents,
+                  gsmpEventSequenceNumber
+                  }
+        STATUS current
+    ::= { gsmpNotifications 10 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    gsmpGroups            OBJECT IDENTIFIER ::= { gsmpConformance 1 }
+    gsmpCompliances       OBJECT IDENTIFIER ::= { gsmpConformance 2 }
+
+    gsmpModuleCompliance MODULE-COMPLIANCE
+        STATUS current
+        MODULE -- this module
+        MANDATORY-GROUPS { gsmpGeneralGroup
+                            }
+        GROUP gsmpControllerGroup
+
+        GROUP gsmpSwitchGroup
+
+        GROUP gsmpAtmEncapGroup
+
+        GROUP gsmpTcpIpEncapGroup
+
+        OBJECT gsmpTcpIpEncapAddressType
+        SYNTAX InetAddressType { unknown(0), ipv4(1), ipv6(2),
+                                 ipv4z(3), ipv6z(4) }
+
+        OBJECT gsmpTcpIpEncapAddress
+        SYNTAX InetAddress (SIZE(0|4|8|16|20))
+
+        GROUP gsmpNotificationObjectsGroup
+
+        GROUP gsmpNotificationsGroup
+
+        ::= { gsmpCompliances 1 }
+
+
+    gsmpGeneralGroup OBJECT-GROUP
+        OBJECTS {
+        gsmpSessionVersion,
+        gsmpSessionTimer,
+        gsmpSessionPartitionId,
+        gsmpSessionAdjacencyCount,
+        gsmpSessionFarSideName,
+        gsmpSessionFarSidePort,
+        gsmpSessionFarSideInstance,
+        gsmpSessionLastFailureCode,
+        gsmpSessionDiscontinuityTime,
+        gsmpSessionStartUptime,
+        gsmpSessionStatSentMessages,
+        gsmpSessionStatFailureInds,
+        gsmpSessionStatReceivedMessages,
+        gsmpSessionStatReceivedFailures,
+        gsmpSessionStatPortUpEvents,
+        gsmpSessionStatPortDownEvents,
+        gsmpSessionStatInvLabelEvents,
+        gsmpSessionStatNewPortEvents,
+        gsmpSessionStatDeadPortEvents,
+        gsmpSessionStatAdjUpdateEvents
+        }
+        STATUS current
+        ::= { gsmpGroups 1 }
+
+    gsmpControllerGroup OBJECT-GROUP
+        OBJECTS {
+        gsmpControllerMaxVersion,
+
+
+
+
+
+        gsmpControllerTimer,
+        gsmpControllerPort,
+        gsmpControllerInstance,
+        gsmpControllerPartitionType,
+        gsmpControllerPartitionId,
+        gsmpControllerDoResync,
+        gsmpControllerNotificationMap,
+        gsmpControllerSessionState,
+        gsmpControllerStorageType,
+        gsmpControllerRowStatus
+        }
+       STATUS       current
+       ::= { gsmpGroups 2 }
+
+    gsmpSwitchGroup OBJECT-GROUP
+        OBJECTS {
+        gsmpSwitchMaxVersion,
+        gsmpSwitchTimer,
+        gsmpSwitchName,
+        gsmpSwitchPort,
+        gsmpSwitchInstance,
+        gsmpSwitchPartitionType,
+        gsmpSwitchPartitionId,
+        gsmpSwitchNotificationMap,
+        gsmpSwitchSwitchType,
+        gsmpSwitchWindowSize,
+        gsmpSwitchSessionState,
+        gsmpSwitchStorageType,
+        gsmpSwitchRowStatus
+        }
+       STATUS       current
+       ::= { gsmpGroups 3 }
+
+    gsmpAtmEncapGroup OBJECT-GROUP
+        OBJECTS {
+        gsmpAtmEncapIfIndex,
+        gsmpAtmEncapVpi,
+        gsmpAtmEncapVci,
+        gsmpAtmEncapStorageType,
+        gsmpAtmEncapRowStatus
+        }
+       STATUS       current
+
+
+
+
+
+       ::= { gsmpGroups 4 }
+
+    gsmpTcpIpEncapGroup OBJECT-GROUP
+        OBJECTS {
+        gsmpTcpIpEncapAddressType,
+        gsmpTcpIpEncapAddress,
+        gsmpTcpIpEncapPortNumber,
+        gsmpTcpIpEncapStorageType,
+        gsmpTcpIpEncapRowStatus
+        }
+       STATUS       current
+       ::= { gsmpGroups 5 }
+
+     gsmpNotificationObjectsGroup OBJECT-GROUP
+        OBJECTS {
+        gsmpEventPort,
+        gsmpEventPortSessionNumber,
+        gsmpEventSequenceNumber,
+        gsmpEventLabel
+        }
+       STATUS       current
+       ::= { gsmpGroups 6 }
+
+    gsmpNotificationsGroup NOTIFICATION-GROUP
+        NOTIFICATIONS {
+        gsmpSessionDown,
+        gsmpSessionUp,
+        gsmpSentFailureInd,
+        gsmpReceivedFailureInd,
+        gsmpPortUpEvent,
+        gsmpPortDownEvent,
+        gsmpInvalidLabelEvent,
+        gsmpNewPortEvent,
+        gsmpDeadPortEvent,
+        gsmpAdjacencyUpdateEvent
+        }
+       STATUS current
+
+
+
+
+
+       ::= { gsmpGroups 7 }
+
+END

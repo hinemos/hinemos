@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.maintenance.factory;
@@ -21,10 +14,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.maintenance.util.QueryUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.monitor.run.util.MonitorCollectDataCache;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 
 /**
@@ -77,6 +71,10 @@ public class MaintenanceCollectDataRaw extends MaintenanceObject {
 					jtm.commit();
 				}
 			}
+
+			// 収集データキャッシュ上の不要なデータを削除する。
+			MonitorCollectDataCache.removeUnnecessaryData();
+
 		} catch(Exception e){
 			m_log.warn("deleteCollectData() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -96,7 +94,7 @@ public class MaintenanceCollectDataRaw extends MaintenanceObject {
 		//SQL文の実行
 		// for HA (縮退判定時間を延ばすため)、シングルには影響なし(0)：タイムアウト値設定
 		ret  = QueryUtil.deleteCollectDataByDateTimeAndMonitorId(
-				boundary, HinemosPropertyUtil.getHinemosPropertyNum(_QUERY_TIMEOUT_KEY, Long.valueOf(0)).intValue(), monitorId);
+				boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue(), monitorId);
 		
 		//終了
 		m_log.debug("_delete() count : " + ret);
@@ -111,7 +109,7 @@ public class MaintenanceCollectDataRaw extends MaintenanceObject {
 		//SQL文の実行
 		// for HA (縮退判定時間を延ばすため)、シングルには影響なし(0)：タイムアウト値設定
 		ret  = QueryUtil.deleteCollectDataByDateTime(
-				boundary, HinemosPropertyUtil.getHinemosPropertyNum(_QUERY_TIMEOUT_KEY, Long.valueOf(0)).intValue());
+				boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue());
 		
 		//終了
 		m_log.debug("_delete() count : " + ret);

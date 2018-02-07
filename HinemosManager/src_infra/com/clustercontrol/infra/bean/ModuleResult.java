@@ -1,17 +1,11 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.infra.bean;
 
 import java.util.ArrayList;
@@ -30,6 +24,8 @@ public class ModuleResult {
 	private int moduleType;
 	private String sessionId;
 	private String moduleId;
+	private String subModuleId;
+	private String subManagementId;
 	private boolean hasNext;
 	private List<ModuleNodeResult> nodeResultList = new ArrayList<>();
 	
@@ -41,6 +37,13 @@ public class ModuleResult {
 	public ModuleResult(String sessionid, String moduleId) {
 		this.sessionId = sessionid;
 		this.moduleId = moduleId;
+	}
+
+	public ModuleResult(String sessionid, String moduleId, String subModuleId, String subManagementId) {
+		this.sessionId = sessionid;
+		this.moduleId = moduleId;
+		this.subModuleId = subModuleId;
+		this.subManagementId = subManagementId;
 	}
 
 	public int getModuleType() {
@@ -63,6 +66,20 @@ public class ModuleResult {
 	}
 	public void setModuleId(String moduleId) {
 		this.moduleId = moduleId;
+	}
+	
+	public String getSubModuleId() {
+		return subModuleId;
+	}
+	public void setSubModuleId(String subModuleId) {
+		this.subModuleId = subModuleId;
+	}
+	
+	public String getSubManagementId() {
+		return subManagementId;
+	}
+	public void setSubManagementId(String subManagementId) {
+		this.subManagementId = subManagementId;
 	}
 	
 	public boolean isHasNext() {

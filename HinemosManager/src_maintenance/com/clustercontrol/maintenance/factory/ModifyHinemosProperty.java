@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2007 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.maintenance.factory;
@@ -55,13 +48,12 @@ public class ModifyHinemosProperty {
 	public boolean addHinemosProperty(HinemosPropertyInfo info, String loginUser)
 			throws EntityExistsException, InvalidRole, HinemosUnknown {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
 		// Entityクラスのインスタンス生成
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// 重複チェック
 			jtm.checkEntityExists(HinemosPropertyInfo.class, info.getKey());
-			jtm.getEntityManager().persist(info);
+			em.persist(info);
 
 			
 			long now = HinemosTime.currentTimeMillis();
@@ -121,14 +113,16 @@ public class ModifyHinemosProperty {
 	public boolean deleteHinemosProperty(String key)
 			throws HinemosPropertyNotFound, InvalidRole, HinemosUnknown {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// 削除対象を検索
-		HinemosPropertyInfo entity = QueryUtil.getHinemosPropertyInfoPK(key);
+			// 削除対象を検索
+			HinemosPropertyInfo entity = QueryUtil.getHinemosPropertyInfoPK(key);
 
-		//共通設定情報の削除
-		em.remove(entity);
+			//共通設定情報の削除
+			em.remove(entity);
 
-		return true;
+			return true;
+		}
 	}
 }

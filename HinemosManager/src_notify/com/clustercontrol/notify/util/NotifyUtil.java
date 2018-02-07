@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.util;
@@ -31,6 +24,7 @@ import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -41,7 +35,6 @@ import com.clustercontrol.jobmanagement.factory.CreateJobSession;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
@@ -55,10 +48,11 @@ import com.clustercontrol.notify.model.NotifyJobInfo;
 import com.clustercontrol.notify.model.NotifyLogEscalateInfo;
 import com.clustercontrol.notify.model.NotifyMailInfo;
 import com.clustercontrol.notify.model.NotifyStatusInfo;
-import com.clustercontrol.notify.monitor.util.OwnerDeterminDispatcher;
+import com.clustercontrol.notify.monitor.util.OwnerDispatcher;
 import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityUtil;
 import com.clustercontrol.repository.util.RepositoryUtil;
 import com.clustercontrol.util.HinemosMessage;
@@ -109,9 +103,6 @@ public class NotifyUtil {
 	
 	private static final String NOTIFY_LOCALE_KEY = "notify.locale";
 
-	/** 日時フォーマットデフォルト。 */
-	private static String SUBJECT_DATE_FORMAT_DEFAULT = "yyyy/MM/dd HH:mm:ss" ;
-
 	/**
 	 * 通知情報をハッシュとして返す。
 	 * @param outputInfo 通知情報
@@ -138,8 +129,7 @@ public class NotifyUtil {
 			Locale locale = getNotifyLocale();
 
 			/** 日時フォーマット。 */
-			String subjectDateFormat = HinemosPropertyUtil.getHinemosPropertyStr(
-					"notify.date.format", SUBJECT_DATE_FORMAT_DEFAULT);
+			String subjectDateFormat = HinemosPropertyCommon.notify_date_format.getStringValue();
 			if(log.isDebugEnabled()){
 				log.debug("TextReplacer.static SUBJECT_DATE_FORMAT = " + subjectDateFormat);
 			}
@@ -419,88 +409,99 @@ public class NotifyUtil {
 	}
 	
 	public static String getOwnerRoleId(String pluginId, String monitorId, String monitorDetailId, String facilityId, boolean isEvent) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		
-		// 通知元が監視の場合
-		if(pluginId.matches(HinemosModuleConstant.MONITOR+".*")){
-			// オブジェクト権限チェックのため、cc_monitor_infoのowner_role_idを設定する
-			MonitorInfo monitorInfo
-			= em.find(MonitorInfo.class, monitorId, ObjectPrivilegeMode.NONE);
-			if (monitorInfo != null && monitorInfo.getOwnerRoleId() != null) {
-				return monitorInfo.getOwnerRoleId();
-			} else {
-				return RoleIdConstant.INTERNAL;
-			}
-		}
-		// 通知元がジョブの場合
-		else if(pluginId.matches(HinemosModuleConstant.JOB+".*")) {
-			// オブジェクト権限チェックのため、cc_job_session_jobのowner_role_idを設定する
-			JobSessionEntity jobSessionEntity
-			= em.find(JobSessionEntity.class, monitorId, ObjectPrivilegeMode.NONE);
-			JobSessionJobEntity jobSessionJobEntity = null;
-			if (jobSessionEntity == null) {
-				log.warn("EventLogEntity(Job) is null : " + monitorId);
-			} else {
-				List<JobSessionJobEntity> jobSessionJobEntityList = jobSessionEntity.getJobSessionJobEntities();
-				Iterator<JobSessionJobEntity> it = jobSessionJobEntityList.iterator();
-				while(it.hasNext()) {
-					jobSessionJobEntity = it.next();
-					// ジョブユニット「_ROOT_」でない場合はwhileを抜ける
-					// ジョブユニットが「_ROOT_」であるものは、オーナーロールIDが「ALL_USERS」であるため
-					if(!jobSessionJobEntity.getId().getJobunitId().matches(CreateJobSession.TOP_JOBUNIT_ID)) {
-						break;
-					}
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			
+			// 通知元が監視の場合
+			if(pluginId.matches(HinemosModuleConstant.MONITOR+".*")){
+				// オブジェクト権限チェックのため、cc_monitor_infoのowner_role_idを設定する
+				MonitorInfo monitorInfo
+				= em.find(MonitorInfo.class, monitorId, ObjectPrivilegeMode.NONE);
+				if (monitorInfo != null && monitorInfo.getOwnerRoleId() != null) {
+					return monitorInfo.getOwnerRoleId();
+				} else {
+					return RoleIdConstant.INTERNAL;
 				}
 			}
+			// 通知元がジョブの場合
+			else if(pluginId.matches(HinemosModuleConstant.JOB+".*")) {
+				// オブジェクト権限チェックのため、cc_job_session_jobのowner_role_idを設定する
+				JobSessionEntity jobSessionEntity
+				= em.find(JobSessionEntity.class, monitorId, ObjectPrivilegeMode.NONE);
+				JobSessionJobEntity jobSessionJobEntity = null;
+				if (jobSessionEntity == null) {
+					log.warn("EventLogEntity(Job) is null : " + monitorId);
+				} else {
+					List<JobSessionJobEntity> jobSessionJobEntityList = jobSessionEntity.getJobSessionJobEntities();
+					Iterator<JobSessionJobEntity> it = jobSessionJobEntityList.iterator();
+					while(it.hasNext()) {
+						jobSessionJobEntity = it.next();
+						// ジョブユニット「_ROOT_」でない場合はwhileを抜ける
+						// ジョブユニットが「_ROOT_」であるものは、オーナーロールIDが「ALL_USERS」であるため
+						if(!jobSessionJobEntity.getId().getJobunitId().matches(CreateJobSession.TOP_JOBUNIT_ID)) {
+							break;
+						}
+					}
+				}
 
-			if (jobSessionJobEntity != null && jobSessionJobEntity.getOwnerRoleId() != null) {
-				return jobSessionJobEntity.getOwnerRoleId();
-			} else {
-				return RoleIdConstant.INTERNAL;
+				if (jobSessionJobEntity != null && jobSessionJobEntity.getOwnerRoleId() != null) {
+					return jobSessionJobEntity.getOwnerRoleId();
+				} else {
+					return RoleIdConstant.INTERNAL;
+				}
 			}
-		}
-		// 通知元がメンテナンスの場合
-		else if(pluginId.matches(HinemosModuleConstant.SYSYTEM_MAINTENANCE)){
-			// オブジェクト権限チェックのため、cc_maintenance_infoのowner_role_idを設定する
-			MaintenanceInfo maintenanceInfoEntity
-			= em.find(MaintenanceInfo.class, monitorId, ObjectPrivilegeMode.NONE);
-			if (maintenanceInfoEntity != null && maintenanceInfoEntity.getOwnerRoleId() != null) {
-				return maintenanceInfoEntity.getOwnerRoleId();
-			} else {
-				return RoleIdConstant.INTERNAL;
+			// 通知元がメンテナンスの場合
+			else if(pluginId.matches(HinemosModuleConstant.SYSYTEM_MAINTENANCE)){
+				// オブジェクト権限チェックのため、cc_maintenance_infoのowner_role_idを設定する
+				MaintenanceInfo maintenanceInfoEntity
+				= em.find(MaintenanceInfo.class, monitorId, ObjectPrivilegeMode.NONE);
+				if (maintenanceInfoEntity != null && maintenanceInfoEntity.getOwnerRoleId() != null) {
+					return maintenanceInfoEntity.getOwnerRoleId();
+				} else {
+					return RoleIdConstant.INTERNAL;
+				}
 			}
-		}
-		// 通知元が自動デバイスサーチの場合
-		else if(pluginId.matches(HinemosModuleConstant.REPOSITORY_DEVICE_SEARCH)){
-			return RoleIdConstant.ADMINISTRATORS;
-		}
-		// 通知元が環境構築の場合
-		else if(pluginId.matches(HinemosModuleConstant.INFRA)){
-			// オブジェクト権限チェックのため、cc_maintenance_infoのowner_role_idを設定する
-			InfraManagementInfo infraEntity
-			= em.find(InfraManagementInfo.class, monitorId, ObjectPrivilegeMode.NONE);
-			
-			if (infraEntity != null && infraEntity.getOwnerRoleId() != null) {
-				return infraEntity.getOwnerRoleId();
-			} else {
-				return RoleIdConstant.INTERNAL;
+			// 通知元が自動デバイスサーチの場合
+			else if(pluginId.matches(HinemosModuleConstant.REPOSITORY_DEVICE_SEARCH)){
+				// 6.1より仕様変更
+				// 当該ノードのオーナーロールIDをイベントのオーナーロールIDとして指定。
+				FacilityInfo facility = FacilityTreeCache.getFacilityInfo(facilityId);
+				if (facility != null && facility.getOwnerRoleId() != null) {
+					return facility.getOwnerRoleId();
+				} else {
+					// 通常はないはず
+					return RoleIdConstant.INTERNAL;
+				}
 			}
-		}
-		// 通知元が上記以外のプラグインIDの場合
-		// ここでオプション等の任意イベント（設定に紐付かないタイプのもの）についてオーナロールを決定することが可能。
-		// プラグインIDをキーにして、ObjectSharingServiceにIEventOwnerDeterminerの実装クラスを登録し、
-		// そこでオーナロールを決定する。
-		// 事前に当該プラグインIDに対応するIEventOwnerDeterminerの実装クラスが登録されていない場合には、
-		// オーナはINTERNALとなる。
-		// 但し、このルートではリフレクションを使うため、多くのイベントが発生するオプションなどでこの機構を使うと性能的に
-		// 問題になる可能性が高いため、そういう場合にはここに分岐を作って直接処理をするべき。
-		else {
-			return OwnerDeterminDispatcher.getOptionalOwner(monitorId, monitorDetailId, pluginId, facilityId, isEvent);
+			// 通知元が環境構築の場合
+			else if(pluginId.matches(HinemosModuleConstant.INFRA)){
+				// オブジェクト権限チェックのため、cc_maintenance_infoのowner_role_idを設定する
+				InfraManagementInfo infraEntity
+				= em.find(InfraManagementInfo.class, monitorId, ObjectPrivilegeMode.NONE);
+				
+				if (infraEntity != null && infraEntity.getOwnerRoleId() != null) {
+					return infraEntity.getOwnerRoleId();
+				} else {
+					return RoleIdConstant.INTERNAL;
+				}
+			}
+			// 通知元が上記以外のプラグインIDの場合
+			// ここでオプション等の任意イベント（設定に紐付かないタイプのもの）についてオーナロールを決定することが可能。
+			// プラグインIDをキーにして、ObjectSharingServiceにIEventOwnerDeterminerの実装クラスを登録し、
+			// そこでオーナロールを決定する。
+			// 事前に当該プラグインIDに対応するIEventOwnerDeterminerの実装クラスが登録されていない場合には、
+			// オーナはINTERNALとなる。
+			// 但し、このルートではリフレクションを使うため、多くのイベントが発生するオプションなどでこの機構を使うと性能的に
+			// 問題になる可能性が高いため、そういう場合にはここに分岐を作って直接処理をするべき。
+			else {
+				return OwnerDispatcher.getOptionalOwner(monitorId, monitorDetailId, pluginId, facilityId, isEvent);
+			}
 		}
 	}
 	
 	public static Locale getNotifyLocale() {
-		String localeStr = HinemosPropertyUtil.getHinemosPropertyStr(NOTIFY_LOCALE_KEY, null);
+		String localeStr = HinemosPropertyCommon.notify_locale.getStringValue();
 		Locale locale = Locale.getDefault();
 		if (localeStr != null) {
 			try {

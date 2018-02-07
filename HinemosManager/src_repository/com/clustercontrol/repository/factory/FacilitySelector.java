@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) since 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.factory;
@@ -37,6 +30,7 @@ import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMo
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
@@ -618,74 +612,77 @@ public class FacilitySelector {
 		m_log.debug("getFacilityIdList() start : hostname = " + hostname +
 				", ipAddress = " + ipAddress);
 
-		/** ローカル変数 */
-		String key = hostname + "-," + ipAddress;
-		
-		try {
-			_hostnameIpaddrFacilityIdCacheLock.readLock();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			/** ローカル変数 */
+			String key = hostname + "-," + ipAddress;
 			
-			HashMap<String, ArrayList<String>> cache = getHostnameIpaddrFacilityIdCache();
-			ArrayList<String> facilityIds = cache.get(key);
-			if (facilityIds != null) {
+			try {
+				_hostnameIpaddrFacilityIdCacheLock.readLock();
+				
+				HashMap<String, ArrayList<String>> cache = getHostnameIpaddrFacilityIdCache();
+				ArrayList<String> facilityIds = cache.get(key);
+				if (facilityIds != null) {
+					return facilityIds;
+				}
+			} finally {
+				_hostnameIpaddrFacilityIdCacheLock.readUnlock();
+			}
+			
+			ArrayList<String> facilityIds = new ArrayList<String>();
+
+			if (ipAddress == null || "".equals(ipAddress) ||
+					hostname == null || "".equals(hostname)) {
 				return facilityIds;
 			}
-		} finally {
-			_hostnameIpaddrFacilityIdCacheLock.readUnlock();
-		}
-		
-		ArrayList<String> facilityIds = new ArrayList<String>();
+			/** メイン処理 */
+			try {
+				_hostnameIpaddrFacilityIdCacheLock.writeLock();
+				
+				em.clear();
+				// hostname変数のNodeプロパティのnodename(必須項目)をLowerCaseで検索
+				List<NodeInfo> nodes = QueryUtil.getNodeByNodename(hostname);
+				if (nodes != null){
+					for (NodeInfo node : nodes){
+						m_log.debug("getFacilityIdList() List " +
+								" FacilityId = " + node.getFacilityId() +
+								" NodeName = " + node.getNodeName() +
+								" IpAddressV4 = " + node.getIpAddressV4() +
+								" IpAddressV6 = " + node.getIpAddressV6());
 
-		if (ipAddress == null || "".equals(ipAddress) ||
-				hostname == null || "".equals(hostname)) {
-			return facilityIds;
-		}
-		/** メイン処理 */
-		try {
-			_hostnameIpaddrFacilityIdCacheLock.writeLock();
-			
-			new JpaTransactionManager().getEntityManager().clear();
-			// hostname変数のNodeプロパティのnodename(必須項目)をLowerCaseで検索
-			List<NodeInfo> nodes = QueryUtil.getNodeByNodename(hostname);
-			if (nodes != null){
-				for (NodeInfo node : nodes){
-					m_log.debug("getFacilityIdList() List " +
-							" FacilityId = " + node.getFacilityId() +
-							" NodeName = " + node.getNodeName() +
-							" IpAddressV4 = " + node.getIpAddressV4() +
-							" IpAddressV6 = " + node.getIpAddressV6());
-
-					// IPv6とマッチ
-					if(node.getIpAddressVersion() == 6) {
-						if(Ipv6Util.expand(ipAddress).equals(
-								Ipv6Util.expand(node.getIpAddressV6()))){
-							m_log.debug("getFacilityIdList() hit facilityId = " + node.getFacilityId());
-							facilityIds.add(node.getFacilityId());
-						}
-					} else {
-						if(ipAddress.equals(node.getIpAddressV4())){
-							m_log.debug("getFacilityIdList() hit facilityId = " + node.getFacilityId());
-							facilityIds.add(node.getFacilityId());
+						// IPv6とマッチ
+						if(node.getIpAddressVersion() == 6) {
+							if(Ipv6Util.expand(ipAddress).equals(
+									Ipv6Util.expand(node.getIpAddressV6()))){
+								m_log.debug("getFacilityIdList() hit facilityId = " + node.getFacilityId());
+								facilityIds.add(node.getFacilityId());
+							}
+						} else {
+							if(ipAddress.equals(node.getIpAddressV4())){
+								m_log.debug("getFacilityIdList() hit facilityId = " + node.getFacilityId());
+								facilityIds.add(node.getFacilityId());
+							}
 						}
 					}
 				}
-			}
 
-			// Debugが有効の場合のみ取得したIPアドレスを表示させる
-			if(m_log.isDebugEnabled()){
-				for (Iterator<String> iter = facilityIds.iterator(); iter.hasNext();) {
-					String facilityId = iter.next();
-					m_log.debug("getFacilityIdList() hostname = " + hostname
-							+ ", ipAddress = " + ipAddress + " has " + facilityId);
+				// Debugが有効の場合のみ取得したIPアドレスを表示させる
+				if(m_log.isDebugEnabled()){
+					for (Iterator<String> iter = facilityIds.iterator(); iter.hasNext();) {
+						String facilityId = iter.next();
+						m_log.debug("getFacilityIdList() hostname = " + hostname
+								+ ", ipAddress = " + ipAddress + " has " + facilityId);
+					}
 				}
+				
+				HashMap<String, ArrayList<String>> cache = getHostnameIpaddrFacilityIdCache();
+				cache.put(key, facilityIds);
+				storeHostnameIpaddrFacilityIdCache(cache);
+			} finally {
+				_hostnameIpaddrFacilityIdCacheLock.writeUnlock();
 			}
-			
-			HashMap<String, ArrayList<String>> cache = getHostnameIpaddrFacilityIdCache();
-			cache.put(key, facilityIds);
-			storeHostnameIpaddrFacilityIdCache(cache);
-		} finally {
-			_hostnameIpaddrFacilityIdCacheLock.writeUnlock();
+			return facilityIds;
 		}
-		return facilityIds;
 	}
 
 
@@ -1456,9 +1453,8 @@ public class FacilitySelector {
 	 * @param facilityId ファシリティID
 	 * @return ノードの場合はtrue, それ以外の場合はfalse
 	 * @throws FacilityNotFound
-	 * @throws InvalidRole
 	 */
-	public static boolean isNode(String facilityId) throws FacilityNotFound, InvalidRole {
+	public static boolean isNode(String facilityId) throws FacilityNotFound {
 
 		/** メイン処理 */
 		m_log.debug("checking whether a facility is node...");
@@ -1492,10 +1488,11 @@ public class FacilitySelector {
 		long start = HinemosTime.currentTimeMillis();
 		
 		HashMap<String, HashSet<String>> nodenameFacilityIdMap = new HashMap<String, HashSet<String>>();
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			_nodenameFacilityIdCacheLock.writeLock();
 			
-			new JpaTransactionManager().getEntityManager().clear();
+			em.clear();
 			List<NodeInfo> allNodes = QueryUtil.getAllNode_NONE();
 
 			for(NodeInfo node : allNodes){
@@ -1550,10 +1547,11 @@ public class FacilitySelector {
 		long start = HinemosTime.currentTimeMillis();
 		
 		HashMap<InetAddress, HashSet<String>> inetAddressFacilityIdMap = new HashMap<InetAddress, HashSet<String>>();
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			_ipaddrFacilityIdCacheLock.writeLock();
 			
-			new JpaTransactionManager().getEntityManager().clear();
+			em.clear();
 			List<NodeInfo> allNodes = QueryUtil.getAllNode();
 
 			for(NodeInfo node : allNodes){
@@ -1619,10 +1617,11 @@ public class FacilitySelector {
 		long start = HinemosTime.currentTimeMillis();
 		
 		HashMap<String, HashSet<String>> hostnameFacilityIdMap = new HashMap<String, HashSet<String>>();
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			_hostnameFacilityIdCacheLock.writeLock();
 			
-			new JpaTransactionManager().getEntityManager().clear();
+			em.clear();
 			List<NodeHostnameInfo> allNodes = QueryUtil.getAllNodeHostname();
 
 			for(NodeHostnameInfo node : allNodes){
@@ -1681,33 +1680,36 @@ public class FacilitySelector {
 	public static boolean containsFaciliyId(String scopeFacilityId, String nodeFacilityId, String ownerRoleId){
 		Boolean ret = null;
 		String key = scopeFacilityId + "," + nodeFacilityId;
-		
-		try {
-			_scopeNodeFacilityIdCacheLock.readLock();
-			
-			HashMap<String, Boolean> cache = getScopeNodeFacilityIdCache();
-			ret = cache.get(key);
-			if (ret != null) {
-				return ret;
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			try {
+				_scopeNodeFacilityIdCacheLock.readLock();
+				
+				HashMap<String, Boolean> cache = getScopeNodeFacilityIdCache();
+				ret = cache.get(key);
+				if (ret != null) {
+					return ret;
+				}
+			} finally {
+				_scopeNodeFacilityIdCacheLock.readUnlock();
 			}
-		} finally {
-			_scopeNodeFacilityIdCacheLock.readUnlock();
-		}
-		
-		try {
-			_scopeNodeFacilityIdCacheLock.writeLock();
 			
-			HashMap<String, Boolean> cache = getScopeNodeFacilityIdCache();
-			new JpaTransactionManager().getEntityManager().clear();
-			ret = getNodeFacilityIdList(scopeFacilityId, ownerRoleId, RepositoryControllerBean.ALL, false, true).contains(nodeFacilityId);
-			m_log.debug("containsFacilityId key=" + key + ", ret=" + ret);
-			cache.put(key, ret);
-			
-			storeScopeNodeFacilityIdCache(cache);
-			
-			return ret;
-		} finally {
-			_scopeNodeFacilityIdCacheLock.writeUnlock();
+			try {
+				_scopeNodeFacilityIdCacheLock.writeLock();
+				
+				HashMap<String, Boolean> cache = getScopeNodeFacilityIdCache();
+				em.clear();
+				ret = getNodeFacilityIdList(scopeFacilityId, ownerRoleId, RepositoryControllerBean.ALL, false, true).contains(nodeFacilityId);
+				m_log.debug("containsFacilityId key=" + key + ", ret=" + ret);
+				cache.put(key, ret);
+				
+				storeScopeNodeFacilityIdCache(cache);
+				
+				return ret;
+			} finally {
+				_scopeNodeFacilityIdCacheLock.writeUnlock();
+			}
 		}
 	}
 }

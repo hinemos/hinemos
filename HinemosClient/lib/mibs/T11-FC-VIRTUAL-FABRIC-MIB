@@ -1,0 +1,320 @@
+   T11-FC-VIRTUAL-FABRIC-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE,
+       Unsigned32, mib-2
+                               FROM SNMPv2-SMI         -- [RFC2578]
+       MODULE-COMPLIANCE, OBJECT-GROUP
+                               FROM SNMPv2-CONF        -- [RFC2580]
+       RowStatus, StorageType  FROM SNMPv2-TC          -- [RFC2579]
+       InterfaceIndex          FROM IF-MIB             -- [RFC2863]
+       fcmInstanceIndex, FcNameIdOrZero,
+       fcmPortEntry, fcmSwitchEntry
+                               FROM FC-MGMT-MIB        -- [RFC4044]
+       T11FabricIndex          FROM T11-TC-MIB;        -- [RFC4439]
+
+   t11FcVirtualFabricMIB  MODULE-IDENTITY
+       LAST-UPDATED    "200611100000Z"
+       ORGANIZATION    "IETF IMSS (Internet and Management Support
+                        for Storage) Working Group"
+
+       ::= { mib-2 147 }
+
+   t11vfObjects       OBJECT IDENTIFIER ::= { t11FcVirtualFabricMIB 1 }
+   t11vfConformance   OBJECT IDENTIFIER ::= { t11FcVirtualFabricMIB 2 }
+
+
+   t11vfCoreSwitchTable  OBJECT-TYPE
+       SYNTAX      SEQUENCE OF T11vfCoreSwitchEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { t11vfObjects 1 }
+
+   t11vfCoreSwitchEntry OBJECT-TYPE
+       SYNTAX      T11vfCoreSwitchEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX   { fcmInstanceIndex, t11vfCoreSwitchSwitchName }
+       ::= { t11vfCoreSwitchTable 1}
+
+   T11vfCoreSwitchEntry ::=
+       SEQUENCE {
+          t11vfCoreSwitchSwitchName   FcNameIdOrZero,
+          t11vfCoreSwitchMaxSupported Unsigned32,
+         t11vfCoreSwitchStorageType  StorageType
+       }
+
+   t11vfCoreSwitchSwitchName OBJECT-TYPE
+       SYNTAX      FcNameIdOrZero (SIZE(8 | 16))
+       MAX-ACCESS  not-accessible
+       STATUS      current
+
+
+
+
+
+       ::= { t11vfCoreSwitchEntry 1 }
+
+   t11vfCoreSwitchMaxSupported OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..4095)
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { t11vfCoreSwitchEntry 2 }
+
+   t11vfCoreSwitchStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-write
+       STATUS      current
+       DEFVAL { nonVolatile }
+       ::= { t11vfCoreSwitchEntry 3 }
+
+
+   t11vfVirtualSwitchTable  OBJECT-TYPE
+       SYNTAX      SEQUENCE OF T11vfVirtualSwitchEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { t11vfObjects 2 }
+
+   t11vfVirtualSwitchEntry OBJECT-TYPE
+       SYNTAX      T11vfVirtualSwitchEntry
+
+
+
+
+
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       AUGMENTS   { fcmSwitchEntry }
+       ::= { t11vfVirtualSwitchTable 1}
+
+   T11vfVirtualSwitchEntry ::=
+       SEQUENCE {
+           t11vfVirtualSwitchVfId               T11FabricIndex,
+           t11vfVirtualSwitchCoreSwitchName     FcNameIdOrZero,
+           t11vfVirtualSwitchRowStatus          RowStatus,
+           t11vfVirtualSwitchStorageType       StorageType
+       }
+
+   t11vfVirtualSwitchVfId OBJECT-TYPE
+       SYNTAX      T11FabricIndex
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { t11vfVirtualSwitchEntry 1 }
+
+
+
+
+
+
+   t11vfVirtualSwitchCoreSwitchName OBJECT-TYPE
+       SYNTAX      FcNameIdOrZero (SIZE(8 | 16))
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { t11vfVirtualSwitchEntry 2 }
+
+   t11vfVirtualSwitchRowStatus OBJECT-TYPE
+           SYNTAX      RowStatus
+           MAX-ACCESS  read-create
+           STATUS      current
+           ::= { t11vfVirtualSwitchEntry 3 }
+
+   t11vfVirtualSwitchStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { nonVolatile }
+       ::= { t11vfVirtualSwitchEntry 4 }
+
+
+   t11vfPortTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF T11vfPortEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { t11vfObjects 3 }
+
+   t11vfPortEntry OBJECT-TYPE
+       SYNTAX      T11vfPortEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       AUGMENTS   { fcmPortEntry }
+       ::= { t11vfPortTable 1}
+
+   T11vfPortEntry ::=
+       SEQUENCE {
+           t11vfPortVfId                T11FabricIndex,
+           t11vfPortTaggingAdminStatus   INTEGER,
+           t11vfPortTaggingOperStatus    INTEGER,
+           t11vfPortStorageType        StorageType
+       }
+
+   t11vfPortVfId OBJECT-TYPE
+       SYNTAX      T11FabricIndex
+       MAX-ACCESS  read-write
+       STATUS      current
+       DEFVAL    {1}
+       ::= { t11vfPortEntry 1 }
+
+   t11vfPortTaggingAdminStatus OBJECT-TYPE
+       SYNTAX INTEGER {
+           off(1),
+           on(2),
+           auto(3)
+       }
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { t11vfPortEntry 2 }
+
+    t11vfPortTaggingOperStatus OBJECT-TYPE
+       SYNTAX INTEGER {
+           off(1),
+           on(2)
+               }
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { t11vfPortEntry 3 }
+
+   t11vfPortStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-write
+       STATUS      current
+       DEFVAL { nonVolatile }
+       ::= { t11vfPortEntry 4 }
+
+
+
+   t11vfLocallyEnabledTable OBJECT-TYPE
+
+
+
+
+
+       SYNTAX      SEQUENCE OF T11vfLocallyEnabledEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { t11vfObjects 4 }
+
+   t11vfLocallyEnabledEntry OBJECT-TYPE
+       SYNTAX      T11vfLocallyEnabledEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { t11vfLocallyEnabledPortIfIndex, t11vfLocallyEnabledVfId }
+
+       ::= { t11vfLocallyEnabledTable 1}
+
+   T11vfLocallyEnabledEntry ::=
+       SEQUENCE {
+           t11vfLocallyEnabledPortIfIndex    InterfaceIndex,
+           t11vfLocallyEnabledVfId           T11FabricIndex,
+           t11vfLocallyEnabledOperStatus     INTEGER,
+           t11vfLocallyEnabledRowStatus      RowStatus,
+           t11vfLocallyEnabledStorageType    StorageType
+       }
+
+   t11vfLocallyEnabledPortIfIndex OBJECT-TYPE
+       SYNTAX      InterfaceIndex
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { t11vfLocallyEnabledEntry 1 }
+
+   t11vfLocallyEnabledVfId OBJECT-TYPE
+       SYNTAX      T11FabricIndex
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { t11vfLocallyEnabledEntry 2 }
+
+
+
+
+
+
+   t11vfLocallyEnabledOperStatus OBJECT-TYPE
+       SYNTAX INTEGER {
+           off(1),
+           on(2)
+               }
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { t11vfLocallyEnabledEntry 3 }
+
+   t11vfLocallyEnabledRowStatus OBJECT-TYPE
+           SYNTAX      RowStatus
+           MAX-ACCESS  read-create
+           STATUS      current
+           ::= { t11vfLocallyEnabledEntry 4 }
+
+   t11vfLocallyEnabledStorageType OBJECT-TYPE
+           SYNTAX      StorageType
+           MAX-ACCESS  read-create
+           STATUS      current
+           DEFVAL { nonVolatile }
+           ::= { t11vfLocallyEnabledEntry 5 }
+
+
+
+
+
+
+
+   t11vfMIBCompliances OBJECT IDENTIFIER ::= { t11vfConformance 1 }
+   t11vfMIBGroups      OBJECT IDENTIFIER ::= { t11vfConformance 2 }
+
+   t11vfMIBCompliance MODULE-COMPLIANCE
+       STATUS  current
+       MODULE  -- this module
+           MANDATORY-GROUPS { t11vfGeneralGroup }
+
+           OBJECT t11vfCoreSwitchMaxSupported
+           MIN-ACCESS read-only
+
+           OBJECT t11vfCoreSwitchStorageType
+           MIN-ACCESS read-only
+
+           OBJECT t11vfVirtualSwitchVfId
+           MIN-ACCESS read-only
+
+           OBJECT t11vfVirtualSwitchRowStatus
+           SYNTAX RowStatus { active(1) }
+           MIN-ACCESS read-only
+
+           OBJECT t11vfVirtualSwitchStorageType
+           MIN-ACCESS read-only
+
+           OBJECT t11vfPortVfId
+           MIN-ACCESS read-only
+
+           OBJECT t11vfPortTaggingAdminStatus
+           MIN-ACCESS read-only
+
+           OBJECT t11vfPortStorageType
+           MIN-ACCESS read-only
+
+           OBJECT t11vfLocallyEnabledRowStatus
+           SYNTAX       RowStatus { active(1) }
+           MIN-ACCESS read-only
+
+           OBJECT t11vfLocallyEnabledStorageType
+           MIN-ACCESS read-only
+
+       ::= { t11vfMIBCompliances 1 }
+
+
+       t11vfGeneralGroup  OBJECT-GROUP
+           OBJECTS { t11vfCoreSwitchMaxSupported,
+                     t11vfVirtualSwitchVfId,
+                     t11vfVirtualSwitchCoreSwitchName,
+                     t11vfVirtualSwitchRowStatus,
+                     t11vfPortVfId,
+                     t11vfPortTaggingAdminStatus,
+                     t11vfLocallyEnabledOperStatus,
+                     t11vfPortTaggingOperStatus,
+                     t11vfLocallyEnabledRowStatus,
+                  t11vfCoreSwitchStorageType,
+                      t11vfVirtualSwitchStorageType,
+                     t11vfPortStorageType,
+                     t11vfLocallyEnabledStorageType
+
+           }
+           STATUS current
+           ::= { t11vfMIBGroups 1 }
+
+   END

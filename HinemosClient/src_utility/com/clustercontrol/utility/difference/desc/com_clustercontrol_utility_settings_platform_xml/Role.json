@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"Role_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"RoleName",
+			"Description"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"RoleInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -1,0 +1,51 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"validCollect",
+	"annotations":[
+		{"type":"Column", "columnName":"AmazonType_validCollect"}
+	]},
+	
+	{
+	"propName":"term",
+	"annotations":[
+		{"type":"Column", "columnName":"AmazonType_term"}
+	]},
+
+	{
+	"propName":"beginDate",
+	"annotations":[
+		{"type":"Column", "columnName":"AzureType_beginDate"}
+	]},
+	
+	{
+	"propName":"planId",
+	"annotations":[
+		{"type":"Column", "columnName":"AzureType_planId"}
+	]},
+	
+	{
+	"propName":"billingRegion",
+	"annotations":[
+		{"type":"Column", "columnName":"AzureType_billingRegion"}
+	]},
+	
+	{
+	"propName":"currency",
+	"annotations":[
+		{"type":"Column", "columnName":"AzureType_currency"}
+	]},
+	
+	{
+	"propName":"azureUser",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudScopeBaseInfoType_accountId"},
+		{"type":"Array", "idType":"props", "props":["accountId"]},
+		{"type":"Ignore", "propNames":["accountId"]}
+	]}
+]
+}

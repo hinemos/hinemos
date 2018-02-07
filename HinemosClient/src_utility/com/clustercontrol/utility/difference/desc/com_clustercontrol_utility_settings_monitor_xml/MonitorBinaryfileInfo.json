@@ -1,0 +1,113 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"directory",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryfileInfo_directory"}
+	]},
+
+	{
+	"propName":"fileName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryfileInfo_fileName"}
+	]},
+
+	{
+	"propName":"collectType",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_collectType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"binary.collect.type.individual","name":"name_individual"},
+				{"value":"binary.collect.type.continuous", "name":"name_continuous"}
+		]}
+	]},
+
+	{
+	"propName":"cutType",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_cutType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"binary.cut.type.interval", "name":"name_cut_time"},
+				{"value":"binary.cut.type.length", "name":"name_cut_record"},
+				{"value":"binary.tag.type.none", "name":"name_cut_none"}
+		]}
+	]},
+	
+	{
+	"propName":"fileHeadSize",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_fileHeadSize"}
+	]},
+	
+	{
+	"propName":"lengthType",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryValueInfo_lengthType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"binary.length.type.fixed", "name":"name_record_fixed"},
+				{"value":"binary.length.type.variable", "name":"name_record_variable"}
+		]}
+	]},
+	
+	{
+	"propName":"littleEndian",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryValueInfo_littleEndian"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_circle"}, {"value":"false", "name":"name_hyphen"}]}
+	]},
+	
+	{
+	"propName":"haveTs",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryValueInfo_haveTs"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_circle"}, {"value":"false", "name":"name_hyphen"}]}
+	]},
+	
+	{
+	"propName":"tsPosition",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_tsPosition"}
+	]},
+	
+	{
+	"propName":"tsType",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_tsType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"timestamp.seconds.useconds", "name":"name_ts_useconds"},
+				{"value":"timestamp.only.seconds", "name":"name_ts_seconds"}
+		]}
+	]},
+	
+	{
+	"propName":"recordSize",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_recordSize"}
+	]},
+	
+	{
+	"propName":"recordHeadSize",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_recordHeadSize"}
+	]},
+	
+	{
+	"propName":"sizePosition",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_sizePosition"}
+	]},
+	
+	{
+	"propName":"sizeLength",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_sizeLength"}
+	]}
+]
+}

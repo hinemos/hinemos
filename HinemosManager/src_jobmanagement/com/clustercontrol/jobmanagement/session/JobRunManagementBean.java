@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.session;
@@ -26,9 +19,11 @@ import javax.persistence.EntityExistsException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.analytics.factory.RunMonitorLogcount;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.StatusConstant;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -72,6 +67,7 @@ import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntityPK;
+import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.monitor.bean.ConvertValueConstant;
@@ -174,9 +170,10 @@ public class JobRunManagementBean {
 		long from = HinemosTime.currentTimeMillis();
 		for (String sessionId : unendSessionIdList) {
 			m_log.trace("run() unendSessionId=" + sessionId);
+			Boolean doRunningCheck = true;
 			if (!JobSessionJobImpl.checkRemoveForceCheck(sessionId)) {
 				if (JobSessionJobImpl.isSkipCheck(sessionId)) {
-					continue;
+					doRunningCheck = false;
 				}
 			}
 
@@ -187,7 +184,14 @@ public class JobRunManagementBean {
 				try{
 					jtm = new JpaTransactionManager();
 					jtm.begin();
-					new JobSessionImpl().runningCheck(sessionId);
+					if (doRunningCheck) {
+						//待機中、実行中のジョブをチェック
+						new JobSessionImpl().runningCheck(sessionId);
+					} else {
+						//待機中のジョブをチェック
+						//ジョブ変数、セッション横断待ち条件が設定されているジョブのみ待ち条件をチェックする
+						new JobSessionImpl().waitingCheck(sessionId);
+					}
 					jtm.commit();
 				} catch (JobInfoNotFound | HinemosUnknown | InvalidRole e){
 					jtm.rollback();
@@ -269,6 +273,8 @@ public class JobRunManagementBean {
 					if (!monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_SYSTEMLOG)
 							&& !monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_SNMPTRAP)
 							&& !monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_LOGFILE)
+							&& !monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
+							&& !monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 							&& !monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_WINEVENT)
 							&& !monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
 							&& !monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)) {
@@ -324,6 +330,7 @@ public class JobRunManagementBean {
 			lock.writeLock();
 			try {
 				jtm = new JpaTransactionManager();
+				HinemosEntityManager em = jtm.getEntityManager();
 				jtm.begin();
 	
 				JobMstEntity job = QueryUtil.getJobMstPK(jobunitId, jobId);
@@ -337,6 +344,8 @@ public class JobRunManagementBean {
 				jobSessionEntity.setOperationFlg(0);
 				jobSessionEntity.setTriggerType(triggerInfo.getTrigger_type());
 				jobSessionEntity.setTriggerInfo(triggerInfo.getTrigger_info());
+				// 登録
+				jtm.getEntityManager().persist(jobSessionEntity);
 	
 				m_log.trace("jobSessionEntity SessionId : " + jobSessionEntity.getSessionId());
 				m_log.trace("jobSessionEntity JobUnitId : " + jobSessionEntity.getJobunitId());
@@ -349,6 +358,11 @@ public class JobRunManagementBean {
 				// 重複チェック
 				jtm.checkEntityExists(JobSessionJobEntity.class, jobSessionJobEntity.getId());
 				jobSessionJobEntity.setStatus(StatusConstant.TYPE_WAIT);
+				jobSessionJobEntity.setOwnerRoleId(JobUtil.createSessioniOwnerRoleId(CreateJobSession.TOP_JOBUNIT_ID));
+				// 登録
+				em.persist(jobSessionJobEntity);
+				jobSessionJobEntity.relateToJobSessionEntity(jobSessionEntity);
+
 				// ジョブセッション作成(このジョブは待ち条件は無視する。)
 				CreateJobSession.createJobSessionJob(job, sessionId, info, true, triggerInfo, null, null);
 	
@@ -906,7 +920,15 @@ public class JobRunManagementBean {
 				runMonitor = new RunMonitorProcess();
 				break;
 
+			case HinemosModuleConstant.MONITOR_LOGCOUNT:
+				runMonitor = new RunMonitorLogcount();
+				break;
+
+			case HinemosModuleConstant.MONITOR_INTEGRATION:
+			case HinemosModuleConstant.MONITOR_CORRELATION:
 			case HinemosModuleConstant.MONITOR_LOGFILE:
+			case HinemosModuleConstant.MONITOR_BINARYFILE_BIN:
+			case HinemosModuleConstant.MONITOR_PCAP_BIN:
 			case HinemosModuleConstant.MONITOR_SNMPTRAP:
 			case HinemosModuleConstant.MONITOR_SYSTEMLOG:
 			case HinemosModuleConstant.MONITOR_CUSTOM_N:

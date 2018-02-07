@@ -1,17 +1,12 @@
+@charset "UTF-8";
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
-性能[グラフ]のスタイルを定義しているcssです。
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ *
+ *諤ｧ閭ｽ[繧ｰ繝ｩ繝評縺ｮ繧ｹ繧ｿ繧､繝ｫ繧貞ｮ夂ｾｩ縺励※縺�繧議ss縺ｧ縺吶�
  */
 
 body {
@@ -49,6 +44,17 @@ body {
 .dot:hover {
 	stroke: rgba(68, 127, 255, 0.3);
 }
+ 
+.predictiontarget {
+	/* consider the stroke-with the mouse detect radius? */
+	stroke: transparent;
+	stroke-width: 8px;  
+	cursor: pointer;
+}
+ 
+.predictiontarget:hover {
+	stroke: rgba(68, 127, 255, 0.3);
+}
 
 input[type="checkbox"] {
 	display : none;
@@ -78,6 +84,5 @@ input[type="checkbox"]:checked + .checklabel {
 	padding : 2px 10px;
 }
 .all_save_button:hover {
-	background-color: #E2EDF9; 
+	background-color: #E2EDF9;
 }
-

@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.composite;
@@ -43,6 +36,7 @@ import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.composite.action.NumberVerifyListener;
 import com.clustercontrol.composite.action.PositiveNumberVerifyListener;
+import com.clustercontrol.composite.action.PositiveRealNumberVerifyListener;
 import com.clustercontrol.composite.action.TimeVerifyListener;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.OperationMessage;
@@ -74,6 +68,10 @@ public class EndDelayComposite extends Composite {
 	private Button m_timeCondition = null;
 	/** 終了遅延時刻の値用テキスト */
 	private Text m_timeValue = null;
+	/** 終了遅延実行履歴からの変化量用チェックボタン */
+	private Button m_changeMountCondition = null;
+	/** 終了遅延実行履歴からの変化量の値用テキスト */
+	private Text m_changeMountValue = null;
 	/** 終了遅延判定対象の条件関係 AND用ラジオボタン */
 	private Button m_andCondition = null;
 	/** 終了遅延判定対象の条件関係 OR用ラジオボタン */
@@ -154,7 +152,7 @@ public class EndDelayComposite extends Composite {
 		this.m_sessionCondition = new Button(endDelayGroup, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_sessionCondition", this.m_sessionCondition);
 		this.m_sessionCondition.setText(Messages.getString("time.after.session.start") + " : ");
-		this.m_sessionCondition.setLayoutData(new GridData(230,
+		this.m_sessionCondition.setLayoutData(new GridData(270,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_sessionCondition.addSelectionListener(new SelectionListener() {
 			@Override
@@ -195,7 +193,7 @@ public class EndDelayComposite extends Composite {
 		this.m_jobCondition = new Button(endDelayGroup, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_jobCondition", this.m_jobCondition);
 		this.m_jobCondition.setText(Messages.getString("time.after.job.start") + " : ");
-		this.m_jobCondition.setLayoutData(new GridData(230,
+		this.m_jobCondition.setLayoutData(new GridData(270,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_jobCondition.addSelectionListener(new SelectionListener() {
 			@Override
@@ -236,7 +234,7 @@ public class EndDelayComposite extends Composite {
 		this.m_timeCondition = new Button(endDelayGroup, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_timeCondition", this.m_timeCondition);
 		this.m_timeCondition.setText(Messages.getString("wait.rule.time.example") + " : ");
-		this.m_timeCondition.setLayoutData(new GridData(230,
+		this.m_timeCondition.setLayoutData(new GridData(270,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_timeCondition.addSelectionListener(new SelectionListener() {
 			@Override
@@ -264,6 +262,44 @@ public class EndDelayComposite extends Composite {
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_timeValue.addVerifyListener(new TimeVerifyListener());
 		this.m_timeValue.addModifyListener(	new ModifyListener(){
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+			}
+		});
+
+		// 終了遅延：判定対象一覧：実行履歴からの変化量（チェック）
+		this.m_changeMountCondition = new Button(endDelayGroup, SWT.CHECK | SWT.WRAP |  SWT.MULTI);
+		WidgetTestUtil.setTestId(this, "m_changeMountCondition", this.m_changeMountCondition);
+		this.m_changeMountCondition.setText(Messages.getString("wait.rule.change.mount") + " : ");
+		this.m_changeMountCondition.setLayoutData(new GridData(270,
+				SizeConstant.SIZE_BUTTON_HEIGHT * 2));
+		this.m_changeMountCondition.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Button check = (Button) e.getSource();
+				WidgetTestUtil.setTestId(this, null, check);
+				if (check.getSelection()) {
+					m_changeMountValue.setEditable(true);
+				} else {
+					m_changeMountValue.setEditable(false);
+				}
+				update();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+
+			}
+		});
+
+		// 終了遅延：判定対象一覧：実行履歴からの変化量（テキスト）
+		this.m_changeMountValue = new Text(endDelayGroup, SWT.BORDER);
+		WidgetTestUtil.setTestId(this, "m_changeMountValue", this.m_changeMountValue);
+		this.m_changeMountValue.setLayoutData(new GridData(100,
+				SizeConstant.SIZE_TEXT_HEIGHT));
+		this.m_changeMountValue.addVerifyListener(new PositiveRealNumberVerifyListener(0D, DataRangeConstant.DOUBLE_HIGH));
+		this.m_changeMountValue.addModifyListener(	new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
@@ -470,6 +506,12 @@ public class EndDelayComposite extends Composite {
 		}else{
 			this.m_timeValue.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
+		if(m_endDelayCondition.getSelection() && m_changeMountCondition.getSelection() &&
+				"".equals(this.m_changeMountValue.getText())){
+			this.m_changeMountValue.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		}else{
+			this.m_changeMountValue.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		}
 		if(m_endDelayCondition.getSelection() && m_operationCondition.getSelection() &&
 				getSelectOperationName(m_operationType) == OperationConstant.TYPE_STOP_SET_END_VALUE &&
 				"".equals(this.m_operationValue.getText())){
@@ -512,6 +554,12 @@ public class EndDelayComposite extends Composite {
 			else{
 				m_timeValue.setText("");
 			}
+
+			//実行履歴からの変化量
+			m_changeMountCondition.setSelection(m_waitRule.isEndDelayChangeMount());
+
+			//実行履歴からの変化量の値
+			m_changeMountValue.setText(String.valueOf(m_waitRule.getEndDelayChangeMountValue()));
 
 			//条件関係設定
 			if (m_waitRule.getEndDelayConditionType() == ConditionTypeConstant.TYPE_AND) {
@@ -648,6 +696,23 @@ public class EndDelayComposite extends Composite {
 			}
 		}
 
+		//実行履歴からの変化量
+		m_waitRule.setEndDelayChangeMount(m_changeMountCondition.getSelection());
+
+		//実行履歴からの変化量の値
+		try {
+			m_waitRule.setEndDelayChangeMountValue(
+					Double.parseDouble(m_changeMountValue.getText()));
+		} catch (NumberFormatException e) {
+			if (m_waitRule.isEndDelayChangeMount().booleanValue()) {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.job.166"));
+				return result;
+			}
+		}
+
 		//条件関係取得
 		if (m_andCondition.getSelection()) {
 			m_waitRule.setEndDelayConditionType(ConditionTypeConstant.TYPE_AND);
@@ -714,6 +779,13 @@ public class EndDelayComposite extends Composite {
 			else
 				m_timeValue.setEditable(false);
 
+			//実行履歴からの変化量
+			m_changeMountCondition.setEnabled(true);
+			if(m_changeMountCondition.getSelection())
+				m_changeMountValue.setEditable(true);
+			else
+				m_changeMountValue.setEditable(false);
+
 			//判定条件
 			m_andCondition.setEnabled(true);
 			m_orCondition.setEnabled(true);
@@ -762,6 +834,10 @@ public class EndDelayComposite extends Composite {
 			//時刻
 			m_timeCondition.setEnabled(false);
 			m_timeValue.setEditable(false);
+
+			//実行履歴からの変化量
+			m_changeMountCondition.setEnabled(false);
+			m_changeMountValue.setEditable(false);
 
 			//判定条件
 			m_andCondition.setEnabled(false);
@@ -929,10 +1005,12 @@ public class EndDelayComposite extends Composite {
 		m_jobValue.setEditable(m_jobCondition.getSelection() && enabled);
 		m_timeCondition.setEnabled(enabled);
 		m_timeValue.setEditable(m_timeCondition.getSelection() && enabled);
+		m_changeMountCondition.setEnabled(enabled);
+		m_changeMountValue.setEditable(m_changeMountCondition.getSelection() && enabled);
 		m_andCondition.setEnabled(enabled);
 		m_orCondition.setEnabled(enabled);
-		m_notifyCondition.setEnabled(m_notifyCondition.getSelection() && enabled);
-		m_notifyPriority.setEnabled(enabled);
+		m_notifyCondition.setEnabled(enabled);
+		m_notifyPriority.setEnabled(m_notifyCondition.getSelection() && enabled);
 		m_operationCondition.setEnabled(enabled);
 		m_operationType.setEnabled(m_operationCondition.getSelection() && enabled);
 		m_operationStatus.setEnabled(m_operationCondition.getSelection() && enabled);

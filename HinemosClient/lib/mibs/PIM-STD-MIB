@@ -1,0 +1,2411 @@
+PIM-STD-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, mib-2,
+    NOTIFICATION-TYPE, Unsigned32,
+    Counter32, Counter64, Gauge32,
+    TimeTicks                        FROM SNMPv2-SMI        -- [RFC2578]
+    TEXTUAL-CONVENTION,
+    RowStatus, TruthValue,
+    StorageType                      FROM SNMPv2-TC         -- [RFC2579]
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP               FROM SNMPv2-CONF       -- [RFC2580]
+    InterfaceIndexOrZero,
+    InterfaceIndex                   FROM IF-MIB            -- [RFC2863]
+    InetAddressType,
+    InetAddressPrefixLength,
+    InetAddress, InetVersion         FROM INET-ADDRESS-MIB  -- [RFC4001]
+    IANAipRouteProtocol              FROM IANA-RTPROTO-MIB; -- [RTPROTO]
+
+pimStdMIB MODULE-IDENTITY
+    LAST-UPDATED "200711020000Z" -- 2 November 2007
+    ORGANIZATION
+            "IETF Protocol Independent Multicast (PIM) Working Group"
+    ::= { mib-2 157 }
+
+
+PimMode ::= TEXTUAL-CONVENTION
+    STATUS     current
+
+    SYNTAX     INTEGER {
+                  none(1),
+                  ssm(2),
+                  asm(3),
+                  bidir(4),
+                  dm(5),
+                  other(6)
+               }
+
+PimGroupMappingOriginType ::= TEXTUAL-CONVENTION
+    STATUS     current
+
+    SYNTAX     INTEGER {
+                  fixed(1),
+                  configRp(2),
+                  configSsm(3),
+                  bsr(4),
+                  autoRP(5),
+                  embedded(6),
+                  other(7)
+               }
+
+
+pimNotifications OBJECT IDENTIFIER ::= { pimStdMIB 0 }
+pim              OBJECT IDENTIFIER ::= { pimStdMIB 1 }
+
+pimKeepalivePeriod OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 210 }
+    ::= { pim 14 }
+
+pimRegisterSuppressionTime OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 60 }
+    ::= { pim 15 }
+
+pimStarGEntries OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 16 }
+
+pimStarGIEntries OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 17 }
+
+pimSGEntries OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { pim 18 }
+
+pimSGIEntries OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 19 }
+
+pimSGRptEntries OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 20 }
+
+pimSGRptIEntries OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 21 }
+
+pimOutAsserts OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 22 }
+
+pimInAsserts OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 23 }
+
+pimLastAssertInterface OBJECT-TYPE
+    SYNTAX     InterfaceIndexOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 24 }
+
+pimLastAssertGroupAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 25 }
+
+pimLastAssertGroupAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 26 }
+
+pimLastAssertSourceAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 27 }
+
+
+
+
+
+pimLastAssertSourceAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 28 }
+
+pimNeighborLossNotificationPeriod OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 0 }
+    ::= { pim 29 }
+
+pimNeighborLossCount OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 30 }
+
+pimInvalidRegisterNotificationPeriod OBJECT-TYPE
+    SYNTAX     Unsigned32 (10..65535)
+
+
+
+
+
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 65535 }
+    ::= { pim 31 }
+
+pimInvalidRegisterMsgsRcvd OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 32 }
+
+pimInvalidRegisterAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 33 }
+
+pimInvalidRegisterOrigin OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 34 }
+
+pimInvalidRegisterGroup OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 35 }
+
+pimInvalidRegisterRp OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 36 }
+
+
+
+
+
+pimInvalidJoinPruneNotificationPeriod OBJECT-TYPE
+    SYNTAX     Unsigned32 (10..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 65535 }
+    ::= { pim 37 }
+
+pimInvalidJoinPruneMsgsRcvd OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 38 }
+
+pimInvalidJoinPruneAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 39 }
+
+pimInvalidJoinPruneOrigin OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 40 }
+
+pimInvalidJoinPruneGroup OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 41 }
+
+pimInvalidJoinPruneRp OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 42 }
+
+pimRPMappingNotificationPeriod OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 65535 }
+    ::= { pim 43 }
+
+pimRPMappingChangeCount OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 44 }
+
+pimInterfaceElectionNotificationPeriod OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+
+
+
+
+
+    DEFVAL { 65535 }
+    ::= { pim 45 }
+
+pimInterfaceElectionWinCount OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pim 46 }
+
+pimRefreshInterval OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+
+
+
+
+
+    DEFVAL { 60 }
+    ::= { pim 47 }
+
+pimDeviceConfigStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { pim 48 }
+
+
+pimInterfaceTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimInterfaceEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 1 }
+
+pimInterfaceEntry OBJECT-TYPE
+    SYNTAX     PimInterfaceEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimInterfaceIfIndex,
+                 pimInterfaceIPVersion }
+    ::= { pimInterfaceTable 1 }
+
+
+
+
+
+
+PimInterfaceEntry ::= SEQUENCE {
+    pimInterfaceIfIndex              InterfaceIndex,
+    pimInterfaceIPVersion            InetVersion,
+    pimInterfaceAddressType          InetAddressType,
+    pimInterfaceAddress              InetAddress,
+    pimInterfaceGenerationIDValue    Unsigned32,
+    pimInterfaceDR                   InetAddress,
+    pimInterfaceDRPriority           Unsigned32,
+    pimInterfaceDRPriorityEnabled    TruthValue,
+    pimInterfaceHelloInterval        Unsigned32,
+    pimInterfaceTrigHelloInterval    Unsigned32,
+    pimInterfaceHelloHoldtime        Unsigned32,
+    pimInterfaceJoinPruneInterval    Unsigned32,
+    pimInterfaceJoinPruneHoldtime    Unsigned32,
+    pimInterfaceDFElectionRobustness Unsigned32,
+    pimInterfaceLanDelayEnabled      TruthValue,
+    pimInterfacePropagationDelay     Unsigned32,
+    pimInterfaceOverrideInterval     Unsigned32,
+    pimInterfaceEffectPropagDelay    Unsigned32,
+    pimInterfaceEffectOverrideIvl    Unsigned32,
+    pimInterfaceSuppressionEnabled   TruthValue,
+    pimInterfaceBidirCapable         TruthValue,
+    pimInterfaceDomainBorder         TruthValue,
+    pimInterfaceStubInterface        TruthValue,
+    pimInterfacePruneLimitInterval   Unsigned32,
+    pimInterfaceGraftRetryInterval   Unsigned32,
+    pimInterfaceSRPriorityEnabled    TruthValue,
+    pimInterfaceStatus               RowStatus,
+    pimInterfaceStorageType          StorageType
+}
+
+pimInterfaceIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimInterfaceEntry 1 }
+
+pimInterfaceIPVersion OBJECT-TYPE
+    SYNTAX     InetVersion
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    ::= { pimInterfaceEntry 2 }
+
+pimInterfaceAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 3 }
+
+pimInterfaceAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 4 }
+
+pimInterfaceGenerationIDValue OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 5 }
+
+pimInterfaceDR OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 6 }
+
+pimInterfaceDRPriority OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 1 }
+    ::= { pimInterfaceEntry 7 }
+
+pimInterfaceDRPriorityEnabled OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 8 }
+
+pimInterfaceHelloInterval OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..18000)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 30 }
+    ::= { pimInterfaceEntry 9 }
+
+pimInterfaceTrigHelloInterval OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..60)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 5 }
+    ::= { pimInterfaceEntry 10 }
+
+
+
+
+
+pimInterfaceHelloHoldtime OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 105 }
+    ::= { pimInterfaceEntry 11 }
+
+pimInterfaceJoinPruneInterval OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..18000)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 60 }
+    ::= { pimInterfaceEntry 12 }
+
+pimInterfaceJoinPruneHoldtime OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 210 }
+
+
+
+
+
+    ::= { pimInterfaceEntry 13 }
+
+pimInterfaceDFElectionRobustness OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 3 }
+    ::= { pimInterfaceEntry 14 }
+
+pimInterfaceLanDelayEnabled OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 15 }
+
+pimInterfacePropagationDelay OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..32767)
+    UNITS      "milliseconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 500 }
+    ::= { pimInterfaceEntry 16 }
+
+pimInterfaceOverrideInterval OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "milliseconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 2500 }
+    ::= { pimInterfaceEntry 17 }
+
+pimInterfaceEffectPropagDelay OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..32767)
+    UNITS      "milliseconds"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 18 }
+
+pimInterfaceEffectOverrideIvl OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "milliseconds"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 19 }
+
+pimInterfaceSuppressionEnabled OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { pimInterfaceEntry 20 }
+
+pimInterfaceBidirCapable OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 21 }
+
+pimInterfaceDomainBorder OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { false }
+    ::= { pimInterfaceEntry 22 }
+
+pimInterfaceStubInterface OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { false }
+    ::= { pimInterfaceEntry 23 }
+
+
+
+
+
+pimInterfacePruneLimitInterval OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 60 }
+    ::= { pimInterfaceEntry 24 }
+
+pimInterfaceGraftRetryInterval OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 3 }
+    ::= { pimInterfaceEntry 25 }
+
+pimInterfaceSRPriorityEnabled OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimInterfaceEntry 26 }
+
+pimInterfaceStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { pimInterfaceEntry 27 }
+
+pimInterfaceStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { pimInterfaceEntry 28 }
+
+
+pimNeighborTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimNeighborEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 2 }
+
+pimNeighborEntry OBJECT-TYPE
+    SYNTAX     PimNeighborEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimNeighborIfIndex,
+                 pimNeighborAddressType,
+                 pimNeighborAddress }
+    ::= { pimNeighborTable 1 }
+
+PimNeighborEntry ::= SEQUENCE {
+    pimNeighborIfIndex              InterfaceIndex,
+    pimNeighborAddressType          InetAddressType,
+    pimNeighborAddress              InetAddress,
+    pimNeighborGenerationIDPresent  TruthValue,
+    pimNeighborGenerationIDValue    Unsigned32,
+    pimNeighborUpTime               TimeTicks,
+    pimNeighborExpiryTime           TimeTicks,
+
+
+
+
+
+    pimNeighborDRPriorityPresent    TruthValue,
+    pimNeighborDRPriority           Unsigned32,
+    pimNeighborLanPruneDelayPresent TruthValue,
+    pimNeighborTBit                 TruthValue,
+    pimNeighborPropagationDelay     Unsigned32,
+    pimNeighborOverrideInterval     Unsigned32,
+    pimNeighborBidirCapable         TruthValue,
+    pimNeighborSRCapable            TruthValue
+}
+
+pimNeighborIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimNeighborEntry 1 }
+
+pimNeighborAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimNeighborEntry 2 }
+
+pimNeighborAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimNeighborEntry 3 }
+
+pimNeighborGenerationIDPresent OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 4 }
+
+pimNeighborGenerationIDValue OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 5 }
+
+pimNeighborUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 6 }
+
+pimNeighborExpiryTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 7 }
+
+pimNeighborDRPriorityPresent OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 8 }
+
+pimNeighborDRPriority OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { pimNeighborEntry 9 }
+
+pimNeighborLanPruneDelayPresent OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 10 }
+
+pimNeighborTBit OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 11 }
+
+pimNeighborPropagationDelay OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..32767)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 12 }
+
+pimNeighborOverrideInterval OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 13 }
+
+pimNeighborBidirCapable OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 14 }
+
+pimNeighborSRCapable OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNeighborEntry 15 }
+
+
+pimNbrSecAddressTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimNbrSecAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 3 }
+
+pimNbrSecAddressEntry OBJECT-TYPE
+    SYNTAX     PimNbrSecAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimNbrSecAddressIfIndex,
+                 pimNbrSecAddressType,
+                 pimNbrSecAddressPrimary,
+                 pimNbrSecAddress }
+    ::= { pimNbrSecAddressTable 1 }
+
+PimNbrSecAddressEntry ::= SEQUENCE {
+
+
+
+
+
+    pimNbrSecAddressIfIndex InterfaceIndex,
+    pimNbrSecAddressType    InetAddressType,
+    pimNbrSecAddressPrimary InetAddress,
+    pimNbrSecAddress        InetAddress
+}
+
+pimNbrSecAddressIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimNbrSecAddressEntry 1 }
+
+pimNbrSecAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimNbrSecAddressEntry 2 }
+
+pimNbrSecAddressPrimary OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimNbrSecAddressEntry 3 }
+
+pimNbrSecAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimNbrSecAddressEntry 4 }
+
+
+pimStarGTable OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     SEQUENCE OF PimStarGEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 4 }
+
+pimStarGEntry OBJECT-TYPE
+    SYNTAX     PimStarGEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimStarGAddressType,
+                 pimStarGGrpAddress }
+    ::= { pimStarGTable 1 }
+
+PimStarGEntry ::= SEQUENCE {
+    pimStarGAddressType             InetAddressType,
+    pimStarGGrpAddress              InetAddress,
+    pimStarGUpTime                  TimeTicks,
+    pimStarGPimMode                 PimMode,
+    pimStarGRPAddressType           InetAddressType,
+    pimStarGRPAddress               InetAddress,
+    pimStarGPimModeOrigin           PimGroupMappingOriginType,
+    pimStarGRPIsLocal               TruthValue,
+    pimStarGUpstreamJoinState       INTEGER,
+    pimStarGUpstreamJoinTimer       TimeTicks,
+    pimStarGUpstreamNeighborType    InetAddressType,
+    pimStarGUpstreamNeighbor        InetAddress,
+    pimStarGRPFIfIndex              InterfaceIndexOrZero,
+    pimStarGRPFNextHopType          InetAddressType,
+    pimStarGRPFNextHop              InetAddress,
+    pimStarGRPFRouteProtocol        IANAipRouteProtocol,
+    pimStarGRPFRouteAddress         InetAddress,
+    pimStarGRPFRoutePrefixLength    InetAddressPrefixLength,
+    pimStarGRPFRouteMetricPref      Unsigned32,
+    pimStarGRPFRouteMetric          Unsigned32
+}
+
+pimStarGAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    ::= { pimStarGEntry 1 }
+
+pimStarGGrpAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimStarGEntry 2 }
+
+pimStarGUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 3 }
+
+pimStarGPimMode OBJECT-TYPE
+    SYNTAX     PimMode { asm(3), bidir(4) }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 4 }
+
+pimStarGRPAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 5 }
+
+pimStarGRPAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 6 }
+
+pimStarGPimModeOrigin OBJECT-TYPE
+    SYNTAX     PimGroupMappingOriginType
+
+
+
+
+
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 7 }
+
+pimStarGRPIsLocal OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 8 }
+
+pimStarGUpstreamJoinState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  notJoined (1),
+                  joined (2)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 9 }
+
+pimStarGUpstreamJoinTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 10 }
+
+pimStarGUpstreamNeighborType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 11 }
+
+pimStarGUpstreamNeighbor OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 12 }
+
+pimStarGRPFIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndexOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 13 }
+
+pimStarGRPFNextHopType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 14 }
+
+pimStarGRPFNextHop OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 15 }
+
+
+
+
+
+
+pimStarGRPFRouteProtocol OBJECT-TYPE
+    SYNTAX     IANAipRouteProtocol
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 16 }
+
+pimStarGRPFRouteAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 17 }
+
+pimStarGRPFRoutePrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 18 }
+
+pimStarGRPFRouteMetricPref OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 19 }
+
+pimStarGRPFRouteMetric OBJECT-TYPE
+    SYNTAX     Unsigned32
+
+
+
+
+
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGEntry 20 }
+
+
+pimStarGITable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimStarGIEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 5 }
+
+pimStarGIEntry OBJECT-TYPE
+    SYNTAX     PimStarGIEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimStarGAddressType,
+                 pimStarGGrpAddress,
+                 pimStarGIIfIndex }
+    ::= { pimStarGITable 1 }
+
+PimStarGIEntry ::= SEQUENCE {
+    pimStarGIIfIndex                 InterfaceIndex,
+    pimStarGIUpTime                  TimeTicks,
+    pimStarGILocalMembership         TruthValue,
+    pimStarGIJoinPruneState          INTEGER,
+    pimStarGIPrunePendingTimer       TimeTicks,
+    pimStarGIJoinExpiryTimer         TimeTicks,
+    pimStarGIAssertState             INTEGER,
+    pimStarGIAssertTimer             TimeTicks,
+    pimStarGIAssertWinnerAddressType InetAddressType,
+    pimStarGIAssertWinnerAddress     InetAddress,
+    pimStarGIAssertWinnerMetricPref  Unsigned32,
+    pimStarGIAssertWinnerMetric      Unsigned32
+}
+
+pimStarGIIfIndex OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimStarGIEntry 1 }
+
+pimStarGIUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 2 }
+
+pimStarGILocalMembership OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 3 }
+
+pimStarGIJoinPruneState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  noInfo (1),
+                  join (2),
+                  prunePending (3)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 4 }
+
+pimStarGIPrunePendingTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { pimStarGIEntry 5 }
+
+pimStarGIJoinExpiryTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 6 }
+
+pimStarGIAssertState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  noInfo (1),
+                  iAmAssertWinner (2),
+                  iAmAssertLoser (3)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 7 }
+
+pimStarGIAssertTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 8 }
+
+pimStarGIAssertWinnerAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 9 }
+
+pimStarGIAssertWinnerAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 10 }
+
+pimStarGIAssertWinnerMetricPref OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 11 }
+
+pimStarGIAssertWinnerMetric OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimStarGIEntry 12 }
+
+
+
+
+
+
+
+pimSGTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimSGEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 6 }
+
+pimSGEntry OBJECT-TYPE
+    SYNTAX     PimSGEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimSGAddressType,
+                 pimSGGrpAddress,
+                 pimSGSrcAddress }
+    ::= { pimSGTable 1 }
+
+PimSGEntry ::= SEQUENCE {
+    pimSGAddressType               InetAddressType,
+    pimSGGrpAddress                InetAddress,
+    pimSGSrcAddress                InetAddress,
+    pimSGUpTime                    TimeTicks,
+    pimSGPimMode                   PimMode,
+    pimSGUpstreamJoinState         INTEGER,
+    pimSGUpstreamJoinTimer         TimeTicks,
+    pimSGUpstreamNeighbor          InetAddress,
+    pimSGRPFIfIndex                InterfaceIndexOrZero,
+    pimSGRPFNextHopType            InetAddressType,
+    pimSGRPFNextHop                InetAddress,
+    pimSGRPFRouteProtocol          IANAipRouteProtocol,
+    pimSGRPFRouteAddress           InetAddress,
+    pimSGRPFRoutePrefixLength      InetAddressPrefixLength,
+    pimSGRPFRouteMetricPref        Unsigned32,
+    pimSGRPFRouteMetric            Unsigned32,
+    pimSGSPTBit                    TruthValue,
+    pimSGKeepaliveTimer            TimeTicks,
+    pimSGDRRegisterState           INTEGER,
+    pimSGDRRegisterStopTimer       TimeTicks,
+    pimSGRPRegisterPMBRAddressType InetAddressType,
+    pimSGRPRegisterPMBRAddress     InetAddress,
+    pimSGUpstreamPruneState        INTEGER,
+    pimSGUpstreamPruneLimitTimer   TimeTicks,
+
+
+
+
+
+    pimSGOriginatorState           INTEGER,
+    pimSGSourceActiveTimer         TimeTicks,
+    pimSGStateRefreshTimer         TimeTicks
+}
+
+pimSGAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimSGEntry 1 }
+
+pimSGGrpAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimSGEntry 2 }
+
+pimSGSrcAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimSGEntry 3 }
+
+pimSGUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 4 }
+
+pimSGPimMode OBJECT-TYPE
+    SYNTAX     PimMode { ssm(2), asm(3) }
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { pimSGEntry 5 }
+
+pimSGUpstreamJoinState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  notJoined (1),
+                  joined (2)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 6 }
+
+pimSGUpstreamJoinTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 7 }
+
+pimSGUpstreamNeighbor OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 8 }
+
+pimSGRPFIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndexOrZero
+
+
+
+
+
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 9 }
+
+pimSGRPFNextHopType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 10 }
+
+pimSGRPFNextHop OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 11 }
+
+pimSGRPFRouteProtocol OBJECT-TYPE
+    SYNTAX     IANAipRouteProtocol
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 12 }
+
+pimSGRPFRouteAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 13 }
+
+pimSGRPFRoutePrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 14 }
+
+pimSGRPFRouteMetricPref OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 15 }
+
+pimSGRPFRouteMetric OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 16 }
+
+pimSGSPTBit OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 17 }
+
+pimSGKeepaliveTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 18 }
+
+pimSGDRRegisterState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  noInfo (1),
+                  join (2),
+                  joinPending (3),
+                  prune (4)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 19 }
+
+pimSGDRRegisterStopTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 20 }
+
+pimSGRPRegisterPMBRAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 21 }
+
+pimSGRPRegisterPMBRAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 22 }
+
+pimSGUpstreamPruneState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  forwarding (1),
+                  ackpending (2),
+                  pruned (3)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 23 }
+
+pimSGUpstreamPruneLimitTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 24 }
+
+pimSGOriginatorState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  notOriginator (1),
+                  originator (2)
+
+
+
+
+
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 25 }
+
+pimSGSourceActiveTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 26 }
+
+pimSGStateRefreshTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGEntry 27 }
+
+
+pimSGITable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimSGIEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    ::= { pim 7 }
+
+pimSGIEntry OBJECT-TYPE
+    SYNTAX     PimSGIEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimSGAddressType,
+                 pimSGGrpAddress,
+                 pimSGSrcAddress,
+                 pimSGIIfIndex }
+    ::= { pimSGITable 1 }
+
+PimSGIEntry ::= SEQUENCE {
+    pimSGIIfIndex                 InterfaceIndex,
+    pimSGIUpTime                  TimeTicks,
+    pimSGILocalMembership         TruthValue,
+    pimSGIJoinPruneState          INTEGER,
+    pimSGIPrunePendingTimer       TimeTicks,
+    pimSGIJoinExpiryTimer         TimeTicks,
+    pimSGIAssertState             INTEGER,
+    pimSGIAssertTimer             TimeTicks,
+    pimSGIAssertWinnerAddressType InetAddressType,
+    pimSGIAssertWinnerAddress     InetAddress,
+    pimSGIAssertWinnerMetricPref  Unsigned32,
+    pimSGIAssertWinnerMetric      Unsigned32
+}
+
+pimSGIIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimSGIEntry 1 }
+
+pimSGIUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 2 }
+
+pimSGILocalMembership OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 3 }
+
+pimSGIJoinPruneState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  noInfo (1),
+                  join (2),
+                  prunePending (3)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 4 }
+
+pimSGIPrunePendingTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 5 }
+
+pimSGIJoinExpiryTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 6 }
+
+pimSGIAssertState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  noInfo (1),
+                  iAmAssertWinner (2),
+                  iAmAssertLoser (3)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 7 }
+
+pimSGIAssertTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 8 }
+
+pimSGIAssertWinnerAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 9 }
+
+
+
+
+
+
+pimSGIAssertWinnerAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 10 }
+
+pimSGIAssertWinnerMetricPref OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 11 }
+
+pimSGIAssertWinnerMetric OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGIEntry 12 }
+
+
+pimSGRptTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimSGRptEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 8 }
+
+pimSGRptEntry OBJECT-TYPE
+    SYNTAX     PimSGRptEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    INDEX      { pimStarGAddressType,
+                 pimStarGGrpAddress,
+                 pimSGRptSrcAddress }
+    ::= { pimSGRptTable 1 }
+
+PimSGRptEntry ::= SEQUENCE {
+    pimSGRptSrcAddress             InetAddress,
+    pimSGRptUpTime                 TimeTicks,
+    pimSGRptUpstreamPruneState     INTEGER,
+    pimSGRptUpstreamOverrideTimer  TimeTicks
+}
+
+pimSGRptSrcAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimSGRptEntry 1 }
+
+pimSGRptUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGRptEntry 2 }
+
+pimSGRptUpstreamPruneState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  rptNotJoined (1),
+                  pruned (2),
+                  notPruned (3)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGRptEntry 3 }
+
+pimSGRptUpstreamOverrideTimer OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGRptEntry 4 }
+
+
+pimSGRptITable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimSGRptIEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 9 }
+
+pimSGRptIEntry OBJECT-TYPE
+    SYNTAX     PimSGRptIEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimStarGAddressType,
+                 pimStarGGrpAddress,
+                 pimSGRptSrcAddress,
+                 pimSGRptIIfIndex }
+    ::= { pimSGRptITable 1 }
+
+PimSGRptIEntry ::= SEQUENCE {
+    pimSGRptIIfIndex            InterfaceIndex,
+    pimSGRptIUpTime             TimeTicks,
+    pimSGRptILocalMembership    TruthValue,
+    pimSGRptIJoinPruneState     INTEGER,
+    pimSGRptIPrunePendingTimer  TimeTicks,
+    pimSGRptIPruneExpiryTimer   TimeTicks
+}
+
+pimSGRptIIfIndex OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimSGRptIEntry 1 }
+
+pimSGRptIUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGRptIEntry 2 }
+
+pimSGRptILocalMembership OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGRptIEntry 3 }
+
+pimSGRptIJoinPruneState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  noInfo (1),
+                  prune (2),
+                  prunePending (3)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGRptIEntry 4 }
+
+pimSGRptIPrunePendingTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { pimSGRptIEntry 5 }
+
+pimSGRptIPruneExpiryTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimSGRptIEntry 6 }
+
+
+pimBidirDFElectionTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimBidirDFElectionEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 10 }
+
+pimBidirDFElectionEntry OBJECT-TYPE
+    SYNTAX     PimBidirDFElectionEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimBidirDFElectionAddressType,
+                 pimBidirDFElectionRPAddress,
+                 pimBidirDFElectionIfIndex }
+    ::= { pimBidirDFElectionTable 1 }
+
+
+
+
+
+
+PimBidirDFElectionEntry ::= SEQUENCE {
+    pimBidirDFElectionAddressType       InetAddressType,
+    pimBidirDFElectionRPAddress         InetAddress,
+    pimBidirDFElectionIfIndex           InterfaceIndex,
+    pimBidirDFElectionWinnerAddressType InetAddressType,
+    pimBidirDFElectionWinnerAddress     InetAddress,
+    pimBidirDFElectionWinnerUpTime      TimeTicks,
+    pimBidirDFElectionWinnerMetricPref  Unsigned32,
+    pimBidirDFElectionWinnerMetric      Unsigned32,
+    pimBidirDFElectionState             INTEGER,
+    pimBidirDFElectionStateTimer        TimeTicks
+}
+
+pimBidirDFElectionAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 1 }
+
+pimBidirDFElectionRPAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 2 }
+
+pimBidirDFElectionIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 3 }
+
+pimBidirDFElectionWinnerAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 4 }
+
+pimBidirDFElectionWinnerAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 5 }
+
+pimBidirDFElectionWinnerUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 6 }
+
+pimBidirDFElectionWinnerMetricPref OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 7 }
+
+pimBidirDFElectionWinnerMetric OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 8 }
+
+pimBidirDFElectionState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  dfOffer(1),
+                  dfLose(2),
+                  dfWinner(3),
+                  dfBackoff(4)
+               }
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 9 }
+
+pimBidirDFElectionStateTimer OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimBidirDFElectionEntry 10 }
+
+
+pimStaticRPTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimStaticRPEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 11 }
+
+pimStaticRPEntry OBJECT-TYPE
+    SYNTAX     PimStaticRPEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimStaticRPAddressType,
+                 pimStaticRPGrpAddress,
+                 pimStaticRPGrpPrefixLength }
+    ::= { pimStaticRPTable 1 }
+
+
+
+
+
+
+PimStaticRPEntry ::= SEQUENCE {
+    pimStaticRPAddressType      InetAddressType,
+    pimStaticRPGrpAddress       InetAddress,
+    pimStaticRPGrpPrefixLength  InetAddressPrefixLength,
+    pimStaticRPRPAddress        InetAddress,
+    pimStaticRPPimMode          PimMode,
+    pimStaticRPOverrideDynamic  TruthValue,
+    pimStaticRPPrecedence       Unsigned32,
+    pimStaticRPRowStatus        RowStatus,
+    pimStaticRPStorageType      StorageType
+}
+
+pimStaticRPAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimStaticRPEntry 1 }
+
+pimStaticRPGrpAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimStaticRPEntry 2 }
+
+pimStaticRPGrpPrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength (4..128)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimStaticRPEntry 3 }
+
+pimStaticRPRPAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { pimStaticRPEntry 4 }
+
+pimStaticRPPimMode OBJECT-TYPE
+    SYNTAX     PimMode { ssm(2), asm(3), bidir(4) }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { asm }
+    ::= { pimStaticRPEntry 5 }
+
+pimStaticRPOverrideDynamic OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { false }
+    ::= { pimStaticRPEntry 6 }
+
+
+
+
+
+
+pimStaticRPPrecedence OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { pimStaticRPEntry 7 }
+
+pimStaticRPRowStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { pimStaticRPEntry 8 }
+
+pimStaticRPStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { pimStaticRPEntry 9 }
+
+
+
+
+
+
+pimAnycastRPSetTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimAnycastRPSetEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 12 }
+
+pimAnycastRPSetEntry OBJECT-TYPE
+    SYNTAX     PimAnycastRPSetEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimAnycastRPSetAddressType,
+                 pimAnycastRPSetAnycastAddress,
+                 pimAnycastRPSetRouterAddress }
+    ::= { pimAnycastRPSetTable 1 }
+
+PimAnycastRPSetEntry ::= SEQUENCE {
+
+
+
+
+
+    pimAnycastRPSetAddressType     InetAddressType,
+    pimAnycastRPSetAnycastAddress  InetAddress,
+    pimAnycastRPSetRouterAddress   InetAddress,
+    pimAnycastRPSetLocalRouter     TruthValue,
+    pimAnycastRPSetRowStatus       RowStatus,
+    pimAnycastRPSetStorageType     StorageType
+}
+
+pimAnycastRPSetAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimAnycastRPSetEntry 1 }
+
+pimAnycastRPSetAnycastAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimAnycastRPSetEntry 2 }
+
+pimAnycastRPSetRouterAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimAnycastRPSetEntry 3 }
+
+pimAnycastRPSetLocalRouter OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimAnycastRPSetEntry 4 }
+
+
+
+
+
+
+pimAnycastRPSetRowStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { pimAnycastRPSetEntry 5 }
+
+pimAnycastRPSetStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { pimAnycastRPSetEntry 6 }
+
+
+pimGroupMappingTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PimGroupMappingEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pim 13 }
+
+pimGroupMappingEntry OBJECT-TYPE
+    SYNTAX     PimGroupMappingEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { pimGroupMappingOrigin,
+                 pimGroupMappingAddressType,
+                 pimGroupMappingGrpAddress,
+                 pimGroupMappingGrpPrefixLength,
+                 pimGroupMappingRPAddressType,
+                 pimGroupMappingRPAddress }
+    ::= { pimGroupMappingTable 1 }
+
+PimGroupMappingEntry ::= SEQUENCE {
+    pimGroupMappingOrigin           PimGroupMappingOriginType,
+    pimGroupMappingAddressType      InetAddressType,
+    pimGroupMappingGrpAddress       InetAddress,
+    pimGroupMappingGrpPrefixLength  InetAddressPrefixLength,
+    pimGroupMappingRPAddressType    InetAddressType,
+    pimGroupMappingRPAddress        InetAddress,
+    pimGroupMappingPimMode          PimMode,
+    pimGroupMappingPrecedence       Unsigned32
+}
+
+pimGroupMappingOrigin OBJECT-TYPE
+    SYNTAX     PimGroupMappingOriginType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimGroupMappingEntry 1 }
+
+
+
+
+
+pimGroupMappingAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimGroupMappingEntry 2 }
+
+pimGroupMappingGrpAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimGroupMappingEntry 3 }
+
+pimGroupMappingGrpPrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength (4..128)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimGroupMappingEntry 4 }
+
+pimGroupMappingRPAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimGroupMappingEntry 5 }
+
+pimGroupMappingRPAddress OBJECT-TYPE
+    SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pimGroupMappingEntry 6 }
+
+pimGroupMappingPimMode OBJECT-TYPE
+    SYNTAX     PimMode
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimGroupMappingEntry 7 }
+
+pimGroupMappingPrecedence OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pimGroupMappingEntry 8 }
+
+
+pimNeighborLoss NOTIFICATION-TYPE
+    OBJECTS { pimNeighborUpTime }
+    STATUS     current
+    ::= { pimNotifications 1 }
+
+pimInvalidRegister NOTIFICATION-TYPE
+    OBJECTS { pimGroupMappingPimMode,
+              pimInvalidRegisterAddressType,
+              pimInvalidRegisterOrigin,
+              pimInvalidRegisterGroup,
+              pimInvalidRegisterRp
+            }
+    STATUS      current
+    ::= { pimNotifications 2 }
+
+pimInvalidJoinPrune NOTIFICATION-TYPE
+    OBJECTS { pimGroupMappingPimMode,
+              pimInvalidJoinPruneAddressType,
+              pimInvalidJoinPruneOrigin,
+              pimInvalidJoinPruneGroup,
+              pimInvalidJoinPruneRp,
+              pimNeighborUpTime
+            }
+    STATUS      current
+
+
+
+
+
+    ::= { pimNotifications 3 }
+
+pimRPMappingChange NOTIFICATION-TYPE
+    OBJECTS { pimGroupMappingPimMode,
+              pimGroupMappingPrecedence
+            }
+    STATUS      current
+    ::= { pimNotifications 4 }
+
+pimInterfaceElection NOTIFICATION-TYPE
+    OBJECTS { pimInterfaceAddressType,
+              pimInterfaceAddress }
+    STATUS      current
+    ::= { pimNotifications 5 }
+
+
+pimMIBConformance OBJECT IDENTIFIER ::= { pimStdMIB 2 }
+pimMIBCompliances OBJECT IDENTIFIER ::= { pimMIBConformance 1 }
+pimMIBGroups      OBJECT IDENTIFIER ::= { pimMIBConformance 2 }
+
+
+pimMIBComplianceAsm MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+    MANDATORY-GROUPS { pimTopologyGroup,
+                       pimSsmGroup,
+                       pimRPConfigGroup,
+                       pimSmGroup }
+
+      GROUP   pimNotificationGroup
+
+      GROUP   pimTuningParametersGroup
+
+      GROUP   pimRouterStatisticsGroup
+
+      GROUP   pimAnycastRpGroup
+
+      GROUP   pimStaticRPPrecedenceGroup
+
+      GROUP   pimNetMgmtNotificationObjects
+
+      GROUP   pimNetMgmtNotificationGroup
+
+      GROUP   pimDiagnosticsGroup
+
+      GROUP   pimDeviceStorageGroup
+
+    ::= { pimMIBCompliances 1 }
+
+pimMIBComplianceBidir MODULE-COMPLIANCE
+    STATUS  current
+
+
+
+
+
+    MODULE  -- this module
+    MANDATORY-GROUPS { pimTopologyGroup,
+                       pimRPConfigGroup,
+                       pimSmGroup,
+                       pimBidirGroup }
+
+      GROUP   pimNotificationGroup
+
+      GROUP   pimTuningParametersGroup
+
+      GROUP   pimRouterStatisticsGroup
+
+      GROUP   pimAnycastRpGroup
+
+      GROUP   pimStaticRPPrecedenceGroup
+
+      GROUP   pimNetMgmtNotificationObjects
+
+      GROUP   pimNetMgmtNotificationGroup
+
+      GROUP   pimDiagnosticsGroup
+
+      GROUP   pimDeviceStorageGroup
+
+    ::= { pimMIBCompliances 2 }
+
+pimMIBComplianceSsm MODULE-COMPLIANCE
+
+
+
+
+
+    STATUS  current
+    MODULE  -- this module
+    MANDATORY-GROUPS { pimTopologyGroup,
+                       pimSsmGroup }
+
+      GROUP   pimNotificationGroup
+
+      GROUP   pimTuningParametersGroup
+
+      GROUP   pimRouterStatisticsGroup
+
+      GROUP   pimNetMgmtNotificationObjects
+
+      GROUP   pimNetMgmtNotificationGroup
+
+      GROUP   pimDiagnosticsGroup
+
+      GROUP   pimDeviceStorageGroup
+
+    ::= { pimMIBCompliances 3 }
+
+pimMIBComplianceDm MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+    MANDATORY-GROUPS { pimTopologyGroup,
+                       pimSsmGroup,
+                       pimRPConfigGroup,
+                       pimSmGroup,
+
+
+
+
+
+                       pimDmGroup }
+
+      GROUP   pimNotificationGroup
+
+      GROUP   pimTuningParametersGroup
+
+      GROUP   pimRouterStatisticsGroup
+
+      GROUP   pimAnycastRpGroup
+
+      GROUP   pimStaticRPPrecedenceGroup
+
+      GROUP   pimNetMgmtNotificationObjects
+
+      GROUP   pimNetMgmtNotificationGroup
+
+      GROUP   pimDiagnosticsGroup
+
+      GROUP   pimDeviceStorageGroup
+
+    ::= { pimMIBCompliances 4 }
+
+
+pimTopologyGroup OBJECT-GROUP
+    OBJECTS { pimInterfaceAddressType,
+              pimInterfaceAddress,
+              pimInterfaceGenerationIDValue,
+
+
+
+
+
+              pimInterfaceDR,
+              pimInterfaceDRPriorityEnabled,
+              pimInterfaceHelloHoldtime,
+              pimInterfaceJoinPruneHoldtime,
+              pimInterfaceLanDelayEnabled,
+              pimInterfaceEffectPropagDelay,
+              pimInterfaceEffectOverrideIvl,
+              pimInterfaceSuppressionEnabled,
+              pimInterfaceBidirCapable,
+              pimNeighborGenerationIDPresent,
+              pimNeighborGenerationIDValue,
+              pimNeighborUpTime,
+              pimNeighborExpiryTime,
+              pimNeighborDRPriorityPresent,
+              pimNeighborDRPriority,
+              pimNeighborLanPruneDelayPresent,
+              pimNeighborTBit,
+              pimNeighborPropagationDelay,
+              pimNeighborOverrideInterval,
+              pimNeighborBidirCapable,
+              pimNbrSecAddress
+            }
+    STATUS  current
+    ::= { pimMIBGroups 1 }
+
+pimNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { pimNeighborLoss }
+    STATUS  current
+    ::= { pimMIBGroups 2 }
+
+pimTuningParametersGroup OBJECT-GROUP
+    OBJECTS { pimKeepalivePeriod,
+              pimRegisterSuppressionTime,
+              pimInterfaceDRPriority,
+              pimInterfaceHelloInterval,
+              pimInterfaceTrigHelloInterval,
+              pimInterfaceJoinPruneInterval,
+              pimInterfacePropagationDelay,
+              pimInterfaceOverrideInterval,
+              pimInterfaceDomainBorder,
+              pimInterfaceStubInterface,
+              pimInterfaceStatus,
+
+
+
+
+
+              pimInterfaceStorageType
+            }
+    STATUS  current
+    ::= { pimMIBGroups 3 }
+
+pimRouterStatisticsGroup OBJECT-GROUP
+    OBJECTS { pimStarGEntries,
+              pimStarGIEntries,
+              pimSGEntries,
+              pimSGIEntries,
+              pimSGRptEntries,
+              pimSGRptIEntries
+            }
+    STATUS  current
+    ::= { pimMIBGroups 4 }
+
+pimSsmGroup OBJECT-GROUP
+    OBJECTS { pimSGUpTime,
+              pimSGPimMode,
+              pimSGUpstreamJoinState,
+              pimSGUpstreamJoinTimer,
+              pimSGUpstreamNeighbor,
+              pimSGRPFIfIndex,
+              pimSGRPFNextHopType,
+              pimSGRPFNextHop,
+              pimSGRPFRouteProtocol,
+              pimSGRPFRouteAddress,
+              pimSGRPFRoutePrefixLength,
+              pimSGRPFRouteMetricPref,
+              pimSGRPFRouteMetric,
+              pimSGSPTBit,
+              pimSGKeepaliveTimer,
+              pimSGDRRegisterState,
+              pimSGDRRegisterStopTimer,
+              pimSGRPRegisterPMBRAddressType,
+              pimSGRPRegisterPMBRAddress,
+              pimSGIUpTime,
+              pimSGILocalMembership,
+              pimSGIJoinPruneState,
+              pimSGIPrunePendingTimer,
+              pimSGIJoinExpiryTimer,
+              pimSGIAssertState,
+              pimSGIAssertTimer,
+
+
+
+
+
+              pimSGIAssertWinnerAddressType,
+              pimSGIAssertWinnerAddress,
+              pimSGIAssertWinnerMetricPref,
+              pimSGIAssertWinnerMetric
+            }
+    STATUS  current
+    ::= { pimMIBGroups 5 }
+
+pimRPConfigGroup OBJECT-GROUP
+    OBJECTS { pimStaticRPRPAddress,
+              pimStaticRPPimMode,
+              pimStaticRPOverrideDynamic,
+              pimStaticRPRowStatus,
+              pimStaticRPStorageType,
+              pimGroupMappingPimMode,
+              pimGroupMappingPrecedence
+            }
+    STATUS  current
+    ::= { pimMIBGroups 6 }
+
+pimSmGroup OBJECT-GROUP
+    OBJECTS { pimStarGUpTime,
+              pimStarGPimMode,
+              pimStarGRPAddressType,
+              pimStarGRPAddress,
+              pimStarGPimModeOrigin,
+              pimStarGRPIsLocal,
+              pimStarGUpstreamJoinState,
+              pimStarGUpstreamJoinTimer,
+              pimStarGUpstreamNeighborType,
+              pimStarGUpstreamNeighbor,
+              pimStarGRPFIfIndex,
+              pimStarGRPFNextHopType,
+              pimStarGRPFNextHop,
+              pimStarGRPFRouteProtocol,
+              pimStarGRPFRouteAddress,
+              pimStarGRPFRoutePrefixLength,
+              pimStarGRPFRouteMetricPref,
+              pimStarGRPFRouteMetric,
+              pimStarGIUpTime,
+              pimStarGILocalMembership,
+
+
+
+
+
+              pimStarGIJoinPruneState,
+              pimStarGIPrunePendingTimer,
+              pimStarGIJoinExpiryTimer,
+              pimStarGIAssertState,
+              pimStarGIAssertTimer,
+              pimStarGIAssertWinnerAddressType,
+              pimStarGIAssertWinnerAddress,
+              pimStarGIAssertWinnerMetricPref,
+              pimStarGIAssertWinnerMetric,
+              pimSGRptUpTime,
+              pimSGRptUpstreamPruneState,
+              pimSGRptUpstreamOverrideTimer,
+              pimSGRptIUpTime,
+              pimSGRptILocalMembership,
+              pimSGRptIJoinPruneState,
+              pimSGRptIPrunePendingTimer,
+              pimSGRptIPruneExpiryTimer
+            }
+    STATUS  current
+    ::= { pimMIBGroups 7 }
+
+pimBidirGroup OBJECT-GROUP
+    OBJECTS { pimInterfaceDFElectionRobustness,
+              pimBidirDFElectionWinnerAddressType,
+              pimBidirDFElectionWinnerAddress,
+              pimBidirDFElectionWinnerUpTime,
+              pimBidirDFElectionWinnerMetricPref,
+              pimBidirDFElectionWinnerMetric,
+              pimBidirDFElectionState,
+              pimBidirDFElectionStateTimer
+            }
+    STATUS  current
+    ::= { pimMIBGroups 8 }
+
+pimAnycastRpGroup OBJECT-GROUP
+    OBJECTS { pimAnycastRPSetLocalRouter,
+              pimAnycastRPSetRowStatus,
+              pimAnycastRPSetStorageType
+            }
+    STATUS  current
+
+
+
+
+
+    ::= { pimMIBGroups 9 }
+
+pimStaticRPPrecedenceGroup OBJECT-GROUP
+    OBJECTS { pimStaticRPPrecedence }
+    STATUS  current
+    ::= { pimMIBGroups 10 }
+
+pimNetMgmtNotificationObjects OBJECT-GROUP
+    OBJECTS { pimInvalidRegisterNotificationPeriod,
+              pimInvalidRegisterMsgsRcvd,
+              pimInvalidRegisterAddressType,
+              pimInvalidRegisterOrigin,
+              pimInvalidRegisterGroup,
+              pimInvalidRegisterRp,
+              pimInvalidJoinPruneNotificationPeriod,
+              pimInvalidJoinPruneMsgsRcvd,
+              pimInvalidJoinPruneAddressType,
+              pimInvalidJoinPruneOrigin,
+              pimInvalidJoinPruneGroup,
+              pimInvalidJoinPruneRp,
+              pimRPMappingNotificationPeriod,
+              pimRPMappingChangeCount,
+              pimInterfaceElectionNotificationPeriod,
+              pimInterfaceElectionWinCount
+            }
+    STATUS  current
+    ::= { pimMIBGroups 11 }
+
+pimNetMgmtNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { pimInvalidRegister,
+                    pimInvalidJoinPrune,
+                    pimRPMappingChange,
+                    pimInterfaceElection
+                  }
+    STATUS  current
+
+
+
+
+
+    ::= { pimMIBGroups 12 }
+
+pimDiagnosticsGroup OBJECT-GROUP
+    OBJECTS { pimInAsserts,
+              pimOutAsserts,
+              pimLastAssertInterface,
+              pimLastAssertGroupAddressType,
+              pimLastAssertGroupAddress,
+              pimLastAssertSourceAddressType,
+              pimLastAssertSourceAddress,
+              pimNeighborLossNotificationPeriod,
+              pimNeighborLossCount
+            }
+    STATUS  current
+    ::= { pimMIBGroups 13 }
+
+pimDmGroup OBJECT-GROUP
+    OBJECTS {
+              pimRefreshInterval,
+              pimInterfacePruneLimitInterval,
+              pimInterfaceGraftRetryInterval,
+              pimInterfaceSRPriorityEnabled,
+              pimNeighborSRCapable,
+              pimSGUpstreamPruneState,
+              pimSGUpstreamPruneLimitTimer,
+              pimSGOriginatorState,
+              pimSGSourceActiveTimer,
+              pimSGStateRefreshTimer
+            }
+    STATUS  current
+    ::= { pimMIBGroups 14 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+pimDeviceStorageGroup OBJECT-GROUP
+    OBJECTS { pimDeviceConfigStorageType
+            }
+    STATUS  current
+    ::= { pimMIBGroups 15 }
+
+END

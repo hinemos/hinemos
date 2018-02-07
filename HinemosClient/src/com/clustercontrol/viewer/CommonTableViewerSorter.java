@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.viewer;
@@ -137,7 +130,9 @@ public class CommonTableViewerSorter extends ViewerSorter {
 			} else if (schedule1.getMonth() == null && schedule2.getMonth() != null){
 				return -1;
 			} else if (schedule1.getMonth() != null && schedule2.getMonth() != null) {
-				return schedule1.getMonth() - schedule2.getMonth();
+				if (!schedule1.getMonth().equals(schedule2.getMinute())) {
+					return schedule1.getMonth() - schedule2.getMonth();
+				}
 			}
 			// day
 			if (schedule1.getDay() != null && schedule2.getDay() == null) {
@@ -145,7 +140,9 @@ public class CommonTableViewerSorter extends ViewerSorter {
 			} else if (schedule1.getDay() == null && schedule2.getDay() != null){
 				return -1;
 			} else if (schedule1.getDay() != null && schedule2.getDay() != null) {
-				return schedule1.getDay() - schedule2.getDay();
+				if (!schedule1.getDay().equals(schedule2.getDay())) {
+					return schedule1.getDay() - schedule2.getDay();
+				}
 			}
 			// week
 			if (schedule1.getWeek() != null && schedule2.getWeek() == null) {
@@ -153,7 +150,9 @@ public class CommonTableViewerSorter extends ViewerSorter {
 			} else if (schedule1.getWeek() == null && schedule2.getWeek() != null){
 				return -1;
 			} else if (schedule1.getWeek() != null && schedule2.getWeek() != null) {
-				return schedule1.getWeek() - schedule2.getWeek();
+				if (!schedule1.getWeek().equals(schedule2.getWeek())) {
+					return schedule1.getWeek() - schedule2.getWeek();
+				}
 			}
 			// hour
 			if (schedule1.getHour() != null && schedule2.getHour() == null) {
@@ -161,7 +160,9 @@ public class CommonTableViewerSorter extends ViewerSorter {
 			} else if (schedule1.getHour() == null && schedule2.getHour() != null){
 				return -1;
 			} else if (schedule1.getHour() != null && schedule2.getHour() != null) {
-				return schedule1.getHour() - schedule2.getHour();
+				if (!schedule1.getHour().equals(schedule2.getHour())) {
+					return schedule1.getHour() - schedule2.getHour();
+				}
 			}
 			// minute
 			if (schedule1.getMinute() != null && schedule2.getMinute() == null) {
@@ -169,7 +170,9 @@ public class CommonTableViewerSorter extends ViewerSorter {
 			} else if (schedule1.getMinute() == null && schedule2.getMinute() != null){
 				return -1;
 			} else if (schedule1.getMinute() != null && schedule2.getMinute() != null) {
-				return schedule1.getMinute() - schedule2.getMinute();
+				if (!schedule1.getMinute().equals(schedule2.getMinute())) {
+					return schedule1.getMinute() - schedule2.getMinute();
+				}
 			}
 			return 0;
 		}else {

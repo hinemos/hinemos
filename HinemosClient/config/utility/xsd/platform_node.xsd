@@ -1,0 +1,1375 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0"
+				maxOccurs="1" default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string"
+				minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string"
+				minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="RepositoryNode">
+		<xs:annotation>
+			<xs:documentation>ノード定義</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="NodeInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>ノード定義の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="CPUList">
+		<xs:annotation>
+			<xs:documentation>CPU情報一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>CPU情報一覧のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="CPUInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>CPU情報の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="DeviceList">
+		<xs:annotation>
+			<xs:documentation>デバイス定義一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>デバイス定義一覧のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="DeviceInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>デバイス定義の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="DiskList">
+		<xs:annotation>
+			<xs:documentation>Disk情報一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>Disk情報一覧のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="DiskInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>Disk情報の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="FSList">
+		<xs:annotation>
+			<xs:documentation>
+				ファイルシステム定義一覧のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>
+					ファイルシステム定義一覧のデータ型です。
+				</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="FSInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>
+							ファイルシステム定義の配列
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="HostnameList">
+		<xs:annotation>
+			<xs:documentation>ホスト名一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ホスト名一覧のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="HostnameInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>ホスト名の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="MemoryList">
+		<xs:annotation>
+			<xs:documentation>メモリ情報一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>メモリ情報一覧のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="MemoryInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>メモリ情報の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="NetworkInterfaceList">
+		<xs:annotation>
+			<xs:documentation>
+				ネットワークインタフェース情報一覧のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>
+					ネットワークインタフェース情報一覧のデータ型です。
+				</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="NetworkInterfaceInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>
+							ネットワークインタフェース情報の配列
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="NoteList">
+		<xs:annotation>
+			<xs:documentation>備考情報一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>備考情報一覧のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="NoteInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>備考情報の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="NodeVariableList">
+		<xs:annotation>
+			<xs:documentation>ノード変数一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ノード変数一覧のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="NodeVariableInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>ノード変数の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="NodeInfo">
+		<xs:annotation>
+			<xs:documentation>ノード情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>
+					ノード情報のルートエレメントのデータ型です。
+				</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>ノードのファシリティIDです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="facilityName" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>ファシリティ名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="description" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>このノードの説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="validFlg" type="xs:boolean"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						管理対象フラグです。 {True、False}のどちらかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ownerRoleId" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						オーナーロールIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="platformFamily" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						プラットフォームファミリ名です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="subPlatformFamily" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						サブプラットフォームファミリ名です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="hardwareType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>H/Wタイプです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="iconImage" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>画面アイコンイメージです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipAddressVersion" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>IPアドレスのバージョンです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipAddressV4" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>IPv4のアドレスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipAddressV6" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>IPv6のアドレスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="nodeName" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>ノード名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="osName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>OS名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="osRelease" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>OSリリースです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="osVersion" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>OSバージョンです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="characterSet" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>文字セットです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			
+			<xs:attribute name="agentAwakePort" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						Hinemosエージェント即時反映用ポートです。
+						0から65535の間の値をセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			
+			<xs:attribute name="jobMultiplicity" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>ジョブ多重度(任意の数値)です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="jobPriority" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>ジョブ優先度(任意の数値)です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			
+			<!-- SNMP関連情報 -->
+			<xs:attribute name="snmpUser" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>SNMPユーザ名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpAuthPassword" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>SNMP認証パスワードです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpPrivPassword" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>SNMP暗号化パスワードです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpPort" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						SNMPポート番号です。
+						0から65535の間の値をセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpCommunity" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>SNMPコミュニティ名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpVersion" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						SNMPバージョンです。
+						{1(0)、2c(1)、3(3)}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpSecurityLevel" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>SNMPセキュリティレベルです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpAuthProtocol" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						SNMP認証プロトコルです。
+						{MD5("MD5")、SHA("SHA")}のいずれかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpPrivProtocol" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						SNMP暗号化プロトコルです。
+						{DES("DES")、AES("AES")}のいずれかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpTimeout" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						SNMPポーリングタイムアウトです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="snmpRetryCount" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						SNMPポーリングリトライ回数です。
+						0から10の間の値をセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+
+			<!-- WBEM関連情報 -->
+			<xs:attribute name="wbemUser" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>WBEM接続ユーザです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="wbemUserPassword" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						WBEM接続ユーザパスワードです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="wbemPort" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						WBEM接続ポート番号です。
+						0から65535の間の値をセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="wbemProtocol" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						WBEM接続プロトコルです。
+						{http("http")、https("https")}のいずれかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="wbemTimeout" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>WBEM接続タイムアウトです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="wbemRetryCount" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						WBEM接続リトライ回数です。
+						0から10の間の値をセットします。	
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+
+			<!-- IPMI関連情報 -->
+			<xs:attribute name="ipmiIpAddress" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>IPMI接続アドレスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipmiPort" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						IPMI接続ポート番号です。
+						0から65535の間の値をセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipmiUser" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>IPMI接続ユーザです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipmiUserPassword" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						IPMI接続ユーザパスワードです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipmiTimeout" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>IPMI接続タイムアウトです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipmiRetryCount" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						IPMI接続リトライ回数です。
+						0から10の間の値をセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipmiProtocol" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>IPMI接続プロトコルです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ipmiLevel" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>IPMI特権レベルです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			
+			<!-- WinRM関連情報 -->
+			<xs:attribute name="winrmUser" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>WinRM接続ユーザです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="winrmUserPassword" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						WinRM接続ユーザパスワードです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="winrmVersion" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>WinRMバージョンです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="winrmPort" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						WinRM接続ポート番号です。
+						0から65535の間の値をセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="winrmProtocol" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						WinRM接続プロトコルです。
+						{http("http")、https("https")}のいずれかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="winrmTimeout" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						WinRM接続タイムアウトです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="winrmRetryCount" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						WinRM接続リトライ回数です。
+						0から10の間の値をセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			
+			<!-- SSH関連情報 -->
+			<xs:attribute name="sshUser" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>SSH接続ユーザ名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sshUserPassword" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						SSH接続ユーザパスワードです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sshPrivateKeyFilename" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>SSH秘密鍵ファイル名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sshPrivateKeyPassphrase" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>SSH秘密鍵パスフレーズです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sshPort" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						SSH接続ポート番号です。
+						0から65535の間の値をセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sshTimeout" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						SSH接続タイムアウトです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+
+			<!-- クラウド・仮想化関連情報 -->
+			<xs:attribute name="cloudService" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						クラウドサービス(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="cloudScope" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						クラウドスコープ(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="cloudResourceType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						クラウドリソースタイプ(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="cloudResourceId" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						クラウドリソースID	(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="cloudResourceName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						クラウドリソース名(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="cloudLocation" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						クラウドロケーション(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			
+			<xs:attribute name="administrator" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>このノードの管理者です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			
+			<xs:attribute name="autoDeviceSearch" type="xs:boolean"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						自動デバイスサーチの有効・無効フラグです。{○(True)、-(False)}のいずれかの文字列が入ります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			
+			<xs:attribute name="contact" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>このノードに関する連絡先です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="CPUInfo">
+		<xs:annotation>
+			<xs:documentation>CPU情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>CPU情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						対象ノードのファシリティIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceIndex" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスインデックスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス種別です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDisplayName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス表示名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSize" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSizeUnit" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズ単位です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDescription" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスの説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+
+	<xs:element name="DeviceInfo">
+		<xs:annotation>
+			<xs:documentation>デバイス情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>デバイス情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						対象ノードのファシリティIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceIndex" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスインデックスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス種別です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDisplayName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス表示名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSize" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSizeUnit" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズ単位です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDescription" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスの説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="DiskInfo">
+		<xs:annotation>
+			<xs:documentation>ディスク情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ディスク情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						対象ノードのファシリティIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceIndex" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスインデックスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス種別です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDisplayName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス表示名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSize" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSizeUnit" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズ単位です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDescription" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスの説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDiskRpm" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>Disk回転数です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="FSInfo">
+		<xs:annotation>
+			<xs:documentation>ファイルシステム情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ファイルシステム情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						対象ノードのファシリティIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceIndex" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスインデックスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス種別です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDisplayName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス表示名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSize" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSizeUnit" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズ単位です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDescription" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスの説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceFSType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>ファイルシステム種別です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="HostnameInfo">
+		<xs:annotation>
+			<xs:documentation>ホスト名のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ホスト名情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						対象ノードのファシリティIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="hostname" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>ホスト名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="MemoryInfo">
+		<xs:annotation>
+			<xs:documentation>メモリ情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>メモリ情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						対象ノードのファシリティIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceIndex" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスインデックスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス種別です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDisplayName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス表示名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSize" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSizeUnit" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズ単位です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDescription" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスの説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="NetworkInterfaceInfo">
+		<xs:annotation>
+			<xs:documentation>
+				ネットワークインタフェース情報のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ネットワークインタフェース情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						対象ノードのファシリティIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceIndex" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスインデックスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス種別です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDisplayName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイス表示名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSize" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceSizeUnit" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスサイズ単位です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceDescription" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスの説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceNicIpAddress" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>NICのIPアドレスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="deviceNicMacAddress" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>NICのMACアドレスです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="NodeVariableInfo">
+		<xs:annotation>
+			<xs:documentation>ノード変数情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ノード変数情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string"
+				use="required">
+				<xs:annotation>
+					<xs:documentation>
+						対象ノードのファシリティIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="nodeVariableName" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>ノード変数名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="nodeVariableValue" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>ノード変数値です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="NoteInfo">
+		<xs:annotation>
+			<xs:documentation>備考情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>備考情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="note" type="xs:string" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>備考内容です。</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="facilityId" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						対象ノードのファシリティIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="noteId" type="xs:integer" use="optional">
+				<xs:annotation>
+					<xs:documentation>備考IDです。マネージャにより、0から始まる連番として採番されます。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

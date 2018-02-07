@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.util;
@@ -32,19 +25,21 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.ObjectValidator;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
+import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.jobmanagement.bean.JobTriggerInfo;
 import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
 import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
 import com.clustercontrol.jobmanagement.model.JobParamInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobParamMstEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyUtil;
 import com.clustercontrol.repository.factory.FacilitySelector;
@@ -65,9 +60,6 @@ public class ParameterUtil {
 	/** ログ出力のインスタンス */
 	private static Log m_log = LogFactory.getLog( ParameterUtil.class );
 	
-	/** 無効なジョブ変数のリスト */
-	private static final String PARAM_JOB_PARAM_DISABLE = "job.param.disable";
-
 	/**
 	 * 監視管理の情報をログ出力情報から取得します。
 	 * ジョブセッション作成時に、ジョブ変数に対応する値を取得するために使用します。
@@ -176,36 +168,38 @@ public class ParameterUtil {
 		String ret = null;
 
 		m_log.debug("getting parameters of job session... (session_id = " + sessionId + ")" );
-		if (jobSessionParams == null) {
-			jobSessionParams = new HashMap<String, String>();
-			
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-			Collection<JobParamInfoEntity> collection 
-				= em.createNamedQuery("JobParamInfoEntity.findBySessionId", JobParamInfoEntity.class)
-					.setParameter("sessionId", sessionId)
-					.getResultList();
-			if (collection == null) {
-				JobInfoNotFound je = new JobInfoNotFound("JobParamInfoEntity.findBySessionId"
-						+ ", sessionId = " + sessionId);
-				m_log.info("getJobSessionParamValue() : " + je.getClass().getSimpleName() + ", " + je.getMessage());
-				throw je;
-			}
-			if(collection.size() > 0){
-				Iterator<JobParamInfoEntity> itr = collection.iterator();
-				while(itr.hasNext()){
-					JobParamInfoEntity param = itr.next();
-					jobSessionParams.put(param.getId().getParamId(), param.getValue());
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			if (jobSessionParams == null) {
+				jobSessionParams = new HashMap<String, String>();
+				
+				Collection<JobParamInfoEntity> collection 
+					= em.createNamedQuery("JobParamInfoEntity.findBySessionId", JobParamInfoEntity.class)
+						.setParameter("sessionId", sessionId)
+						.getResultList();
+				if (collection == null) {
+					JobInfoNotFound je = new JobInfoNotFound("JobParamInfoEntity.findBySessionId"
+							+ ", sessionId = " + sessionId);
+					m_log.info("getJobSessionParamValue() : " + je.getClass().getSimpleName() + ", " + je.getMessage());
+					throw je;
+				}
+				if(collection.size() > 0){
+					Iterator<JobParamInfoEntity> itr = collection.iterator();
+					while(itr.hasNext()){
+						JobParamInfoEntity param = itr.next();
+						jobSessionParams.put(param.getId().getParamId(), param.getValue());
+					}
 				}
 			}
-		}
 
-		// 変換する。
-		if (jobSessionParams.containsKey(paramId)) { 
-			ret = jobSessionParams.get(paramId) == null ? "" : jobSessionParams.get(paramId) ;
+			// 変換する。
+			if (jobSessionParams.containsKey(paramId)) { 
+				ret = jobSessionParams.get(paramId) == null ? "" : jobSessionParams.get(paramId) ;
+			}
+	
+			m_log.debug("getJobSessionParamValue() end paramId=" + paramId + ",sessionId=" + sessionId + ",value=" + ret);
+			return ret;
 		}
-
-		m_log.debug("getJobSessionParamValue() end paramId=" + paramId + ",sessionId=" + sessionId + ",value=" + ret);
-		return ret;
 	}
 
 	/**
@@ -229,17 +223,19 @@ public class ParameterUtil {
 			ret = sessionId;
 		} else {
 			if (jobSessionEntity == null) {
-				HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+				try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+					HinemosEntityManager em = jtm.getEntityManager();
 
-				// ジョブセッションより値を取得する
-				jobSessionEntity = em.find(JobSessionEntity.class, sessionId, ObjectPrivilegeMode.READ);
-				if (jobSessionEntity == null) {
-					JobInfoNotFound je = new JobInfoNotFound("JobSessionEntity.findByPrimaryKey"
-							+ ", sessionId = " + sessionId);
-					m_log.info("getJobParameterValue() : "
-							+ je.getClass().getSimpleName() + ", " + je.getMessage());
-					je.setSessionId(sessionId);
-					throw je;
+					// ジョブセッションより値を取得する
+					jobSessionEntity = em.find(JobSessionEntity.class, sessionId, ObjectPrivilegeMode.READ);
+					if (jobSessionEntity == null) {
+						JobInfoNotFound je = new JobInfoNotFound("JobSessionEntity.findByPrimaryKey"
+								+ ", sessionId = " + sessionId);
+						m_log.info("getJobParameterValue() : "
+								+ je.getClass().getSimpleName() + ", " + je.getMessage());
+						je.setSessionId(sessionId);
+						throw je;
+					}
 				}
 			}
 
@@ -261,6 +257,56 @@ public class ParameterUtil {
 			}
 		}
 		m_log.debug("getJobSessionValue() end paramId=" + paramId + ",sessionId=" + sessionId + ",value=" + ret);
+		return ret;
+	}
+
+	/**
+	 * ジョブパラメータ情報からパラメータ値を取得します。
+	 *
+	 * @param paramId パラメータID
+	 * @param jobunitId ジョブユニットID
+	 * @param jobSessionParams ジョブパラメータ情報
+	 * @return パラメータ値
+	 * @throws JobMasterNotFound 
+	 */
+	public static String getJobunitParamValue(String paramId, String jobunitId, Map<String, String> jobJobunitParams) throws JobMasterNotFound {
+
+		m_log.debug("getJobJobunitParamValue() start paramId=" + paramId + ",jobunitId=" + jobunitId);
+		String ret = null;
+
+		m_log.debug("getting parameters of job session... (session_id = " + jobunitId + ")" );
+		if (jobJobunitParams == null) {
+			jobJobunitParams = new HashMap<String, String>();
+
+			try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+				HinemosEntityManager em = jtm.getEntityManager();
+
+				Collection<JobParamMstEntity> collection 
+					= em.createNamedQuery("JobParamMstEntity.findByJobunitId", JobParamMstEntity.class)
+						.setParameter("jobunitId", jobunitId)
+						.getResultList();
+				if (collection == null) {
+					JobMasterNotFound je = new JobMasterNotFound("JobParamMstEntity.findByJobunitId"
+							+ ", jobunitId = " + jobunitId);
+					m_log.info("getJobunitParamValue() : " + je.getClass().getSimpleName() + ", " + je.getMessage());
+					throw je;
+				}
+				if(collection.size() > 0){
+					Iterator<JobParamMstEntity> itr = collection.iterator();
+					while(itr.hasNext()){
+						JobParamMstEntity param = itr.next();
+						jobJobunitParams.put(param.getId().getParamId(), param.getValue());
+					}
+				}
+			}
+		}
+
+		// 変換する。
+		if (jobJobunitParams.containsKey(paramId)) { 
+			ret = jobJobunitParams.get(paramId) == null ? "" : jobJobunitParams.get(paramId) ;
+		}
+
+		m_log.debug("getJobJobunitParamValue() end paramId=" + paramId + ",jobunitId=" + jobunitId + ",value=" + ret);
 		return ret;
 	}
 
@@ -315,7 +361,7 @@ public class ParameterUtil {
 		
 		// HinemosPropertyより値を取得する
 		if (disableStrAry == null) {
-			String disableStr = HinemosPropertyUtil.getHinemosPropertyStr(PARAM_JOB_PARAM_DISABLE, "");
+			String disableStr = HinemosPropertyCommon.job_param_disable.getStringValue();
 			if (disableStr != null && !"".equals(disableStr)) {
 				disableStrAry = disableStr.split(",");
 			}
@@ -351,6 +397,7 @@ public class ParameterUtil {
 		// Main
 		if (commandOrig == null) {
 			m_log.info("registed command is invalid. (session_id = " + sessionId + ", facility_id = " + facilityId + ", command_orig = null)");
+			throw new HinemosUnknown();
 		} else {
 			m_log.debug("generating command string... (session_id = " + sessionId + ", facility_id = " + facilityId + ", command_orig = " + commandOrig + ")");
 		}
@@ -461,6 +508,31 @@ public class ParameterUtil {
 			}
 		}
 		return ret;
+	}
+
+	/**
+	 * strが#[param]の形式であるかを判定する
+	 *
+	 * @param str
+	 * @param param
+	 * @return
+	 */
+	public static boolean isParamFormat(String str) {
+		if (str == null) {
+			return false;
+		}
+		return str.startsWith(SystemParameterConstant.PREFIX)
+				&& str.endsWith(SystemParameterConstant.SUFFIX);
+	}
+
+	/**
+	 * ジョブ変数（パラメータ形式）からパラメータIDを返却する
+	 *
+	 * @param paramText
+	 * @return
+	 */
+	public static String getParamId(String paramText){
+		return paramText.substring(SystemParameterConstant.PREFIX.length(), paramText.length()-SystemParameterConstant.SUFFIX.length());
 	}
 
 	public static void main(String args[]) {

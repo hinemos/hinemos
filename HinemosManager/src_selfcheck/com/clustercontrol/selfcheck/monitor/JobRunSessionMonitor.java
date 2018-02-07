@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.selfcheck.monitor;
@@ -20,9 +13,9 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
-import com.clustercontrol.platform.QueryPertial;
+import com.clustercontrol.platform.QueryDivergence;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -64,7 +57,7 @@ public class JobRunSessionMonitor extends SelfCheckMonitorBase {
 	 */
 	@Override
 	public void execute() {
-		if (!HinemosPropertyUtil.getHinemosPropertyBool("selfcheck.monitoring.job.runningsession", true)) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_job_runningsession.getBooleanValue()) {
 			m_log.debug("skip");
 			return;
 		}
@@ -73,7 +66,7 @@ public class JobRunSessionMonitor extends SelfCheckMonitorBase {
 		long count = -1;
 		boolean warn = true;
 
-		threshold = HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.monitoring.job.runningsession.threshold", Long.valueOf(1000));
+		threshold = HinemosPropertyCommon.selfcheck_monitoring_job_runningsession_threshold.getNumericValue();
 
 		/** メイン処理 */
 		if (m_log.isDebugEnabled())
@@ -143,7 +136,7 @@ public class JobRunSessionMonitor extends SelfCheckMonitorBase {
 			tm.begin();
 			em = tm.getEntityManager();
 
-			Long row = QueryPertial.countResult(em.createNativeQuery(query).getSingleResult());
+			Long row = QueryDivergence.countResult(em.createNativeQuery(query).getSingleResult());
 			if (row != null) {
 				count = row;
 			}

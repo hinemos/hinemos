@@ -1,0 +1,2148 @@
+        DECNET-PHIV-MIB DEFINITIONS ::= BEGIN
+
+        IMPORTS
+           Gauge
+              FROM RFC1155-SMI
+            OBJECT-TYPE
+               FROM RFC-1212
+            mib-2, DisplayString
+              FROM RFC1213-MIB;
+
+
+        phiv      OBJECT IDENTIFIER ::= { mib-2 18 }
+
+
+   PhivAddr ::= OCTET STRING (SIZE (2))
+
+   PhivCounter ::= INTEGER
+
+
+
+
+
+
+   InterfaceIndex ::= INTEGER
+
+
+
+         phivSystem             OBJECT IDENTIFIER ::= { phiv 1 }
+         phivManagement         OBJECT IDENTIFIER ::= { phiv 2 }
+         session                OBJECT IDENTIFIER ::= { phiv 3 }
+         end                    OBJECT IDENTIFIER ::= { phiv 4 }
+         routing                OBJECT IDENTIFIER ::= { phiv 5 }
+         circuit                OBJECT IDENTIFIER ::= { phiv 6 }
+         ddcmp                  OBJECT IDENTIFIER ::= { phiv 7 }
+         control                OBJECT IDENTIFIER ::= { phiv 8 }
+         ethernet               OBJECT IDENTIFIER ::= { phiv 9 }
+         counters               OBJECT IDENTIFIER ::= { phiv 10 }
+         adjacency              OBJECT IDENTIFIER ::= { phiv 11 }
+         line                   OBJECT IDENTIFIER ::= { phiv 12 }
+         nonBroadcastLine       OBJECT IDENTIFIER ::= { phiv 14 }
+         area                   OBJECT IDENTIFIER ::= { phiv 15 }
+
+
+
+   phivSystemState OBJECT-TYPE
+        SYNTAX INTEGER {
+            on (1),
+            off (2),
+            shut (3),
+            restricted (4)
+        }
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivSystem 1 }
+
+   phivExecIdent OBJECT-TYPE
+        SYNTAX DisplayString (SIZE (0..32))
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivSystem 2 }
+
+
+
+
+   phivMgmtMgmtVers OBJECT-TYPE
+        SYNTAX DisplayString (SIZE (0..255))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivManagement 1 }
+
+
+
+   phivSessionSystemName OBJECT-TYPE
+        SYNTAX DisplayString (SIZE (0..6))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { session 1 }
+
+   phivSessionInTimer OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { session 2 }
+
+   phivSessionOutTimer OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { session 3 }
+
+
+
+
+   phivEndRemoteTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivEndRemoteEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { end 1 }
+
+   phivEndRemoteEntry OBJECT-TYPE
+        SYNTAX PhivEndRemoteEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivEndRemoteHostNodeID }
+        ::= { phivEndRemoteTable 1 }
+
+   PhivEndRemoteEntry ::=
+        SEQUENCE {
+            phivEndRemoteHostNodeID
+                PhivAddr,
+            phivEndRemoteState
+                INTEGER,
+            phivEndCircuitIndex
+                INTEGER,
+            phivEndActiveLinks
+                INTEGER,
+            phivEndDelay
+                INTEGER
+        }
+
+   phivEndRemoteHostNodeID OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndRemoteEntry 1 }
+
+   phivEndRemoteState OBJECT-TYPE
+        SYNTAX INTEGER {
+            on (1),
+            off (2),
+            shut (3),
+            restricted (4)
+        }
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivEndRemoteEntry 2 }
+
+   phivEndCircuitIndex OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndRemoteEntry 3 }
+
+   phivEndActiveLinks OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndRemoteEntry 4 }
+
+   phivEndDelay OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndRemoteEntry 5 }
+
+
+
+
+
+
+
+   phivEndCountTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivEndCountEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { end 2 }
+
+   phivEndCountEntry OBJECT-TYPE
+        SYNTAX PhivEndCountEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivEndCountHostNodeID }
+        ::= { phivEndCountTable 1 }
+
+   PhivEndCountEntry ::=
+        SEQUENCE {
+            phivEndCountHostNodeID
+                PhivAddr,
+            phivEndCountSecsLastZeroed
+                PhivCounter,
+            phivEndCountUsrBytesRec
+                PhivCounter,
+            phivEndCountUsrBytesSent
+                PhivCounter,
+            phivEndUCountUsrMessRec
+                PhivCounter,
+            phivEndCountUsrMessSent
+                PhivCounter,
+            phivEndCountTotalBytesRec
+                PhivCounter,
+            phivEndCountTotalBytesSent
+                PhivCounter,
+            phivEndCountTotalMessRec
+                PhivCounter,
+            phivEndCountTotalMessSent
+                PhivCounter,
+            phivEndCountConnectsRecd
+                PhivCounter,
+            phivEndCountConnectsSent
+                PhivCounter,
+
+
+
+
+
+            phivEndCountReponseTimeouts
+                PhivCounter,
+            phivEndCountRecdConnectResErrs
+                PhivCounter
+        }
+
+   phivEndCountHostNodeID OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 1 }
+
+   phivEndCountSecsLastZeroed OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 2 }
+
+   phivEndCountUsrBytesRec OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 3 }
+
+   phivEndCountUsrBytesSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 4 }
+
+   phivEndUCountUsrMessRec OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 5 }
+
+   phivEndCountUsrMessSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 6 }
+
+   phivEndCountTotalBytesRec OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 7 }
+
+   phivEndCountTotalBytesSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 8 }
+
+   phivEndCountTotalMessRec OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 9 }
+
+   phivEndCountTotalMessSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 10 }
+
+   phivEndCountConnectsRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 11 }
+
+   phivEndCountConnectsSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= {phivEndCountEntry 12 }
+
+   phivEndCountReponseTimeouts OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEndCountEntry 13 }
+
+   phivEndCountRecdConnectResErrs OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= {phivEndCountEntry 14 }
+
+
+   phivEndMaxLinks OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { end 3 }
+
+   phivEndNSPVers OBJECT-TYPE
+        SYNTAX DisplayString (SIZE (0..255))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { end 4 }
+
+
+
+
+
+
+   phivEndRetransmitFactor OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { end 5 }
+
+   phivEndDelayFact OBJECT-TYPE
+        SYNTAX INTEGER (1..255)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { end 6 }
+
+   phivEndDelayWeight OBJECT-TYPE
+        SYNTAX INTEGER (1..255)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { end 7 }
+
+   phivEndInactivityTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { end 8 }
+
+
+
+
+
+
+   phivEndCountZeroCount OBJECT-TYPE
+        SYNTAX INTEGER {
+            other (1),
+            reset (2)
+        }
+        ACCESS read-write
+        STATUS mandatory
+        ::= { end 9 }
+
+   phivEndMaxLinksActive OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { end 10 }
+
+
+
+   phivRouteBroadcastRouteTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 1 }
+
+   phivRouteBuffSize OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 2 }
+
+   phivRouteRoutingVers OBJECT-TYPE
+        SYNTAX DisplayString (SIZE (0..255))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { routing 3 }
+
+   phivRouteMaxAddr OBJECT-TYPE
+        SYNTAX INTEGER (1..1023)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 4 }
+
+   phivRouteMaxBdcastNonRouters OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 5 }
+
+   phivRouteMaxBdcastRouters OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 6 }
+
+   phivRouteMaxBuffs OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 7 }
+
+   phivRouteMaxCircuits OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 8 }
+
+   phivRouteMaxCost OBJECT-TYPE
+        SYNTAX INTEGER (1..1022)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 9 }
+
+
+
+
+
+
+   phivRouteMaxHops OBJECT-TYPE
+        SYNTAX INTEGER (1..30)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 10 }
+
+   phivRouteMaxVisits OBJECT-TYPE
+        SYNTAX INTEGER (1..63)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 11 }
+
+   phivRouteRoutingTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 12 }
+
+   phivRouteSegBuffSize OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 13 }
+
+   phivRouteType OBJECT-TYPE
+        SYNTAX INTEGER {
+            routing-III (1),
+            nonrouting-III (2),
+            area (3),
+            routing-IV (4),
+            nonrouting-IV (5)
+        }
+        ACCESS read-only
+        STATUS obsolete
+        ::= { routing 14 }
+
+   phivRouteCountAgedPktLoss OBJECT-TYPE
+        SYNTAX PhivCounter (0..127)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { routing 15 }
+
+   phivRouteCountNodeUnrPktLoss OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { routing 16 }
+
+   phivRouteCountOutRngePktLoss OBJECT-TYPE
+        SYNTAX PhivCounter (0..127)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { routing 17 }
+
+   phivRouteCountOverSzePktLoss OBJECT-TYPE
+        SYNTAX PhivCounter (0..127)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { routing 18 }
+
+   phivRouteCountPacketFmtErr OBJECT-TYPE
+        SYNTAX PhivCounter (0..127)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { routing 19 }
+
+
+
+
+
+
+   phivRouteCountPtlRteUpdtLoss OBJECT-TYPE
+        SYNTAX PhivCounter (0..127)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { routing 20 }
+
+   phivRouteCountVerifReject OBJECT-TYPE
+        SYNTAX PhivCounter (0..127)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { routing 21 }
+
+
+   phivLevel1RouteTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivLevel1RouteEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { routing 22 }
+
+   phivLevel1RouteEntry OBJECT-TYPE
+        SYNTAX PhivLevel1RouteEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivLevel1RouteNodeAddr }
+        ::= { phivLevel1RouteTable 1 }
+
+   PhivLevel1RouteEntry ::=
+        SEQUENCE {
+            phivLevel1RouteNodeAddr
+                PhivAddr,
+            phivLevel1RouteCircuitIndex
+                INTEGER,
+            phivLevel1RouteCost
+                INTEGER,
+            phivLevel1RouteHops
+                INTEGER,
+            phivLevel1RouteNextNode
+
+
+
+
+
+                PhivAddr
+        }
+
+   phivLevel1RouteNodeAddr OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLevel1RouteEntry 1 }
+
+   phivLevel1RouteCircuitIndex OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLevel1RouteEntry 2 }
+
+   phivLevel1RouteCost OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLevel1RouteEntry 3 }
+
+   phivLevel1RouteHops OBJECT-TYPE
+        SYNTAX INTEGER (0..127)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLevel1RouteEntry 4 }
+
+   phivLevel1RouteNextNode OBJECT-TYPE
+
+
+
+
+
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLevel1RouteEntry 5 }
+
+
+   phivRouteCountZeroCount OBJECT-TYPE
+        SYNTAX INTEGER {
+            other (1),
+            reset (2)
+        }
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 23 }
+
+   phivRouteSystemAddr OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS obsolete
+        ::= { routing 24 }
+
+   phivRouteRoutingType OBJECT-TYPE
+        SYNTAX INTEGER {
+            routing-III (1),
+            nonrouting-III (2),
+            area (3),
+            routing-IV (4),
+            nonrouting-IV (5)
+        }
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 25 }
+
+   phivRouteSystemAddress OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-write
+        STATUS mandatory
+        ::= { routing 26 }
+
+
+
+
+   phivCircuitParametersTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivCircuitParametersEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= {circuit 1 }
+
+
+
+
+
+   phivCircuitParametersEntry OBJECT-TYPE
+        SYNTAX PhivCircuitParametersEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivCircuitIndex }
+        ::= { phivCircuitParametersTable 1 }
+
+   PhivCircuitParametersEntry ::=
+        SEQUENCE {
+            phivCircuitIndex
+                INTEGER,
+            phivCircuitLineIndex
+                INTEGER,
+            phivCircuitCommonState
+                INTEGER,
+            phivCircuitCommonSubState
+                INTEGER,
+            phivCircuitCommonName
+                DisplayString,
+            phivCircuitExecRecallTimer
+                INTEGER,
+            phivCircuitCommonType
+                INTEGER,
+            phivCircuitService
+                INTEGER,
+            phivCircuitExecCost
+                INTEGER,
+            phivCircuitExecHelloTimer
+                INTEGER
+       }
+
+   phivCircuitIndex OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitParametersEntry 1 }
+
+   phivCircuitLineIndex OBJECT-TYPE
+        SYNTAX InterfaceIndex
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitParametersEntry 2 }
+
+   phivCircuitCommonState OBJECT-TYPE
+        SYNTAX INTEGER {
+            on (1),
+            off (2),
+            service (3),
+            cleared (4)
+        }
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivCircuitParametersEntry 3 }
+
+   phivCircuitCommonSubState OBJECT-TYPE
+        SYNTAX INTEGER {
+            starting (1),
+            reflecting (2),
+            looping (3),
+            loading (4),
+            dumping (5),
+            triggering (6),
+            autoservice (7),
+            autoloading (8),
+            autodumping (9),
+            autotriggering (10),
+            synchronizing (11),
+            failed (12),
+            running (13)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitParametersEntry 4 }
+
+   phivCircuitCommonName OBJECT-TYPE
+        SYNTAX DisplayString (SIZE (0..16))
+        ACCESS read-only
+        STATUS mandatory
+
+
+
+
+
+        ::= { phivCircuitParametersEntry 5 }
+
+   phivCircuitExecRecallTimer OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivCircuitParametersEntry 6 }
+
+   phivCircuitCommonType OBJECT-TYPE
+        SYNTAX INTEGER {
+            ddcmp-point (1),
+            ddcmp-control (2),
+            ddcmp-tributary (3),
+            x25 (4),
+            ddcmp-dmc (5),
+            ethernet (6),
+            ci (7),
+            qp2-dte20 (8),
+            bisync (9),
+            other (14),
+            fddi (15)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitParametersEntry 7 }
+
+   phivCircuitService  OBJECT-TYPE
+        SYNTAX INTEGER {
+            enabled (1),
+            disabled (2)
+        }
+        ACCESS read-write
+        STATUS mandatory
+
+
+
+
+
+        ::= { phivCircuitParametersEntry 8 }
+
+   phivCircuitExecCost OBJECT-TYPE
+        SYNTAX INTEGER (1..25)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivCircuitParametersEntry 9 }
+
+   phivCircuitExecHelloTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..8191)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivCircuitParametersEntry 10 }
+
+
+   phivCircuitCountTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivCircuitCountEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { circuit 2 }
+
+          phivCircuitCountEntry OBJECT-TYPE
+        SYNTAX PhivCircuitCountEntry
+
+
+
+
+
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX     { phivCircuitIndex }
+        ::= { phivCircuitCountTable 1 }
+
+   PhivCircuitCountEntry ::=
+        SEQUENCE {
+            phivCircuitCountSecLastZeroed
+                PhivCounter,
+            phivCircuitCountTermPacketsRecd
+                PhivCounter,
+            phivCircuitCountOriginPackSent
+                PhivCounter,
+            phivCircuitCountTermCongLoss
+                PhivCounter,
+            phivCircuitCountCorruptLoss
+                PhivCounter,
+            phivCircuitCountTransitPksRecd
+                PhivCounter,
+            phivCircuitCountTransitPkSent
+                PhivCounter,
+            phivCircuitCountTransitCongestLoss
+                PhivCounter,
+            phivCircuitCountCircuitDown
+                PhivCounter,
+            phivCircuitCountInitFailure
+                PhivCounter,
+            phivCircuitCountAdjDown
+                PhivCounter,
+            phivCircuitCountPeakAdj
+                PhivCounter,
+            phivCircuitCountBytesRecd
+                PhivCounter,
+            phivCircuitCountBytesSent
+                PhivCounter,
+            phivCircuitCountDataBlocksRecd
+                PhivCounter,
+            phivCircuitCountDataBlocksSent
+                PhivCounter,
+            phivCircuitCountUsrBuffUnav
+                PhivCounter
+        }
+
+   phivCircuitCountSecLastZeroed  OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+
+
+
+
+
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 1 }
+
+   phivCircuitCountTermPacketsRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 2 }
+
+   phivCircuitCountOriginPackSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 3 }
+
+   phivCircuitCountTermCongLoss OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 4 }
+
+   phivCircuitCountCorruptLoss OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 5 }
+
+   phivCircuitCountTransitPksRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 6 }
+
+   phivCircuitCountTransitPkSent OBJECT-TYPE
+
+
+
+
+
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 7 }
+
+   phivCircuitCountTransitCongestLoss OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 8 }
+
+   phivCircuitCountCircuitDown OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 9 }
+
+   phivCircuitCountInitFailure OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 10 }
+
+   phivCircuitCountAdjDown OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+
+
+
+
+
+        ::= { phivCircuitCountEntry 11 }
+
+   phivCircuitCountPeakAdj OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 12 }
+
+   phivCircuitCountBytesRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 13 }
+
+   phivCircuitCountBytesSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 14 }
+
+   phivCircuitCountDataBlocksRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 15 }
+
+   phivCircuitCountDataBlocksSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 16 }
+
+   phivCircuitCountUsrBuffUnav OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCircuitCountEntry 17 }
+
+
+   phivCircuitOrigQueueLimit OBJECT-TYPE
+        SYNTAX INTEGER
+        ACCESS read-write
+        STATUS mandatory
+        ::= { circuit 3 }
+
+   phivCircuitCountZeroCount OBJECT-TYPE
+        SYNTAX INTEGER {
+            other (1),
+            reset (2)
+        }
+        ACCESS read-write
+        STATUS mandatory
+        ::= { circuit 4 }
+
+
+
+
+   phivDDCMPCircuitParametersTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivDDCMPCircuitParametersEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { ddcmp 1}
+
+   phivDDCMPCircuitParametersEntry OBJECT-TYPE
+        SYNTAX PhivDDCMPCircuitParametersEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX     { phivDDCMPCircuitIndex }
+        ::= { phivDDCMPCircuitParametersTable 1 }
+
+   PhivDDCMPCircuitParametersEntry ::=
+        SEQUENCE {
+            phivDDCMPCircuitIndex
+                INTEGER,
+            phivDDCMPCircuitAdjNodeAddr
+                INTEGER,
+            phivDDCMPCircuitTributary
+                INTEGER
+        }
+
+   phivDDCMPCircuitIndex OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPCircuitParametersEntry 1 }
+
+   phivDDCMPCircuitAdjNodeAddr OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPCircuitParametersEntry 2 }
+
+   phivDDCMPCircuitTributary OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPCircuitParametersEntry 3 }
+
+
+   phivDDCMPCircuitCountTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivDDCMPCircuitCountEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { ddcmp 2 }
+
+   phivDDCMPCircuitCountEntry OBJECT-TYPE
+        SYNTAX PhivDDCMPCircuitCountEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX     { phivCircuitIndex }
+        ::= { phivDDCMPCircuitCountTable 1 }
+
+   PhivDDCMPCircuitCountEntry ::=
+        SEQUENCE {
+            phivDDCMPCircuitErrorsInbd
+                PhivCounter,
+            phivDDCMPCircuitErrorsOutbd
+                PhivCounter,
+            phivDDCMPCircuitRmteReplyTimeouts
+                PhivCounter,
+            phivDDCMPCircuitLocalReplyTimeouts
+                PhivCounter,
+            phivDDCMPCircuitRmteBuffErrors
+                PhivCounter,
+            phivDDCMPCircuitLocalBuffErrors
+                PhivCounter,
+            phivDDCMPCircuitSelectIntervalsElap
+                PhivCounter,
+            phivDDCMPCircuitSelectTimeouts
+                PhivCounter
+        }
+
+   phivDDCMPCircuitErrorsInbd OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPCircuitCountEntry 1 }
+
+   phivDDCMPCircuitErrorsOutbd OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPCircuitCountEntry 2 }
+
+
+
+
+
+
+   phivDDCMPCircuitRmteReplyTimeouts OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPCircuitCountEntry 3 }
+
+   phivDDCMPCircuitLocalReplyTimeouts OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPCircuitCountEntry 4 }
+
+   phivDDCMPCircuitRmteBuffErrors OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPCircuitCountEntry 5 }
+
+   phivDDCMPCircuitLocalBuffErrors  OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPCircuitCountEntry 6 }
+
+   phivDDCMPCircuitSelectIntervalsElap OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= {phivDDCMPCircuitCountEntry 7 }
+
+   phivDDCMPCircuitSelectTimeouts OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= {phivDDCMPCircuitCountEntry 8 }
+
+
+
+
+
+
+
+   phivDDCMPLineCountTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivDDCMPLineCountEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { ddcmp 3 }
+
+   phivDDCMPLineCountEntry OBJECT-TYPE
+        SYNTAX PhivDDCMPLineCountEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivDDCMPLineCountIndex }
+        ::= { phivDDCMPLineCountTable 1 }
+
+   PhivDDCMPLineCountEntry ::=
+        SEQUENCE {
+            phivDDCMPLineCountIndex
+                InterfaceIndex,
+            phivDDCMPLineCountDataErrsIn
+                PhivCounter,
+            phivDDCMPLineCountRmteStationErrs
+                PhivCounter,
+            phivDDCMPLineCountLocalStationErrs
+                PhivCounter
+        }
+
+   phivDDCMPLineCountIndex OBJECT-TYPE
+        SYNTAX InterfaceIndex
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPLineCountEntry 1 }
+
+   phivDDCMPLineCountDataErrsIn OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+
+
+
+
+
+        ::= { phivDDCMPLineCountEntry 2 }
+
+   phivDDCMPLineCountRmteStationErrs OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPLineCountEntry 3 }
+
+   phivDDCMPLineCountLocalStationErrs OBJECT-TYPE
+        SYNTAX PhivCounter (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivDDCMPLineCountEntry 4 }
+
+
+
+   phivControlSchedTimer OBJECT-TYPE
+        SYNTAX INTEGER (50..65535)
+        ACCESS read-only
+        STATUS mandatory
+        DEFVAL { 200 }
+        ::= { control 1 }
+
+   phivControlDeadTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        DEFVAL { 10000 }
+        ::= { control 2 }
+
+   phivControlDelayTimer OBJECT-TYPE
+
+
+
+
+
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { control 3 }
+
+   phivControlStreamTimer OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        DEFVAL { 6000 }
+        ::= { control 4 }
+
+
+   phivControlParametersTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivControlParametersEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { control 5 }
+
+   phivControlParametersEntry OBJECT-TYPE
+        SYNTAX PhivControlParametersEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivControlCircuitIndex }
+        ::= { phivControlParametersTable 1 }
+
+   PhivControlParametersEntry ::=
+        SEQUENCE {
+            phivControlCircuitIndex
+                INTEGER,
+
+
+
+
+
+            phivControlBabbleTimer
+                INTEGER,
+            phivControlMaxBuffs
+                INTEGER,
+            phivControlMaxTransmits
+                INTEGER,
+            phivControlDyingBase
+                INTEGER,
+            phivControlDyingIncrement
+                INTEGER,
+            phivControlDeadThreshold
+                INTEGER,
+            phivControlDyingThreshold
+                INTEGER,
+            phivControlInactTreshold
+                INTEGER,
+            phivControlPollingState
+                INTEGER,
+            phivControlPollingSubState
+                INTEGER,
+            phivControlTransTimer
+                INTEGER
+        }
+
+   phivControlCircuitIndex OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivControlParametersEntry 1 }
+
+   phivControlBabbleTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-write
+        STATUS mandatory
+        DEFVAL { 6000 }
+        ::= { phivControlParametersEntry 2 }
+
+   phivControlMaxBuffs  OBJECT-TYPE
+        SYNTAX INTEGER (1..254)
+        ACCESS read-write
+
+
+
+
+
+        STATUS mandatory
+        ::= { phivControlParametersEntry 3 }
+
+   phivControlMaxTransmits  OBJECT-TYPE
+        SYNTAX INTEGER (1..255)
+        ACCESS read-write
+        STATUS mandatory
+        DEFVAL { 4 }
+        ::= { phivControlParametersEntry 4 }
+
+   phivControlDyingBase OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivControlParametersEntry 5 }
+
+   phivControlDyingIncrement OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivControlParametersEntry 6 }
+
+   phivControlDeadThreshold OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-write
+        STATUS mandatory
+
+
+
+
+
+        DEFVAL { 8 }
+        ::= { phivControlParametersEntry 7 }
+
+   phivControlDyingThreshold OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-write
+        STATUS mandatory
+        DEFVAL { 2 }
+        ::= { phivControlParametersEntry 8 }
+
+   phivControlInactTreshold OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-write
+        STATUS mandatory
+        DEFVAL { 8 }
+        ::= { phivControlParametersEntry 9 }
+
+   phivControlPollingState OBJECT-TYPE
+        SYNTAX INTEGER {
+            automatic (1),
+            active (2),
+            inactive (3),
+            dying (4),
+            dead (5)
+        }
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivControlParametersEntry 10 }
+
+   phivControlPollingSubState OBJECT-TYPE
+        SYNTAX INTEGER {
+            active (1),
+            inactive (2),
+            dying (3),
+            dead (4)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivControlParametersEntry 11 }
+
+   phivControlTransTimer OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-write
+        STATUS mandatory
+        DEFVAL { 0 }
+        ::= { phivControlParametersEntry 12 }
+
+
+
+
+
+
+
+
+
+   phivEthLinkParametersTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivEthLinkParametersEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { ethernet 1}
+
+   phivEthLinkParametersEntry OBJECT-TYPE
+        SYNTAX PhivEthLinkParametersEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX     { phivEthLinkIndex }
+        ::= { phivEthLinkParametersTable 1 }
+
+   PhivEthLinkParametersEntry ::=
+        SEQUENCE {
+            phivEthLinkIndex
+                INTEGER,
+            phivEthDesigRouterNodeAddr
+                PhivAddr,
+            phivEthMaxRouters
+                INTEGER,
+            phivEthRouterPri
+                INTEGER,
+            phivEthHardwareAddr
+                OCTET STRING
+         }
+
+   phivEthLinkIndex OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEthLinkParametersEntry 1 }
+
+   phivEthDesigRouterNodeAddr OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS mandatory
+
+
+
+
+
+        ::= { phivEthLinkParametersEntry 2 }
+
+   phivEthMaxRouters OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { phivEthLinkParametersEntry 3 }
+
+   phivEthRouterPri OBJECT-TYPE
+        SYNTAX INTEGER (0..127)
+        ACCESS read-write
+        STATUS mandatory
+        DEFVAL { 64 }
+        ::= { phivEthLinkParametersEntry 4 }
+
+   phivEthHardwareAddr OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (6))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivEthLinkParametersEntry 5 }
+
+
+
+
+   phivCountersCountTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivCountersCountEntry
+
+
+
+
+
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { counters 1 }
+
+   phivCountersCountEntry OBJECT-TYPE
+        SYNTAX PhivCountersCountEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX     { phivCountersIndex }
+        ::= { phivCountersCountTable 1 }
+
+   PhivCountersCountEntry ::=
+        SEQUENCE {
+            phivCountersIndex
+                InterfaceIndex,
+            phivCountersCountBytesRecd
+                PhivCounter,
+            phivCountersCountBytesSent
+                PhivCounter,
+            phivCountersCountDataBlocksRecd
+                PhivCounter,
+            phivCountersCountDataBlocksSent
+                PhivCounter,
+            phivCountersCountEthUsrBuffUnav
+                PhivCounter,
+            phivCountersCountMcastBytesRecd
+                PhivCounter,
+            phivCountersCountDataBlksRecd
+                PhivCounter,
+            phivCountersCountDataBlksSent
+                PhivCounter,
+            phivCountersCountMcastBlksRecd
+                PhivCounter,
+            phivCountersCountBlksSentDef
+                PhivCounter,
+            phivCountersCountBlksSentSingleCol
+                PhivCounter,
+            phivCountersCountBlksSentMultCol
+                PhivCounter,
+            phivCountersCountSendFailure
+                PhivCounter,
+            phivCountersCountCollDetectFailure
+                PhivCounter,
+
+
+
+
+
+            phivCountersCountReceiveFailure
+                PhivCounter,
+            phivCountersCountUnrecFrameDest
+                PhivCounter,
+            phivCountersCountDataOver
+                PhivCounter,
+            phivCountersCountSysBuffUnav
+                PhivCounter,
+            phivCountersCountUsrBuffUnav
+                PhivCounter
+         }
+
+   phivCountersIndex OBJECT-TYPE
+        SYNTAX InterfaceIndex
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 1 }
+
+   phivCountersCountBytesRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 2 }
+
+   phivCountersCountBytesSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 3 }
+
+   phivCountersCountDataBlocksRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivCountersCountEntry 4 }
+
+   phivCountersCountDataBlocksSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+
+
+
+
+
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivCountersCountEntry 5 }
+
+   phivCountersCountEthUsrBuffUnav OBJECT-TYPE
+        SYNTAX PhivCounter (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 6 }
+
+   phivCountersCountMcastBytesRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 7 }
+
+   phivCountersCountDataBlksRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 8 }
+
+   phivCountersCountDataBlksSent OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 9 }
+
+   phivCountersCountMcastBlksRecd OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 10 }
+
+   phivCountersCountBlksSentDef OBJECT-TYPE
+
+
+
+
+
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 11 }
+
+   phivCountersCountBlksSentSingleCol OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 12 }
+
+   phivCountersCountBlksSentMultCol OBJECT-TYPE
+        SYNTAX PhivCounter (0..2147483647)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 13 }
+
+   phivCountersCountSendFailure OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 14 }
+
+   phivCountersCountCollDetectFailure OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 15 }
+
+   phivCountersCountReceiveFailure OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+
+
+
+
+
+        ::= { phivCountersCountEntry 16 }
+
+   phivCountersCountUnrecFrameDest OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 17 }
+
+   phivCountersCountDataOver OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 18 }
+
+   phivCountersCountSysBuffUnav OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 19 }
+
+   phivCountersCountUsrBuffUnav OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivCountersCountEntry 20 }
+
+
+
+
+   phivAdjTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivAdjEntry
+        ACCESS not-accessible
+        STATUS obsolete
+        ::= { adjacency 1 }
+
+   phivAdjEntry OBJECT-TYPE
+        SYNTAX PhivAdjEntry
+        ACCESS not-accessible
+        STATUS obsolete
+        INDEX  { phivAdjCircuitIndex }
+        ::= { phivAdjTable 1 }
+
+   PhivAdjEntry ::=
+        SEQUENCE {
+            phivAdjCircuitIndex
+                INTEGER,
+            phivAdjNodeAddr
+                PhivAddr,
+            phivAdjBlockSize
+                INTEGER,
+            phivAdjListenTimer
+                INTEGER (1..65535),
+            phivAdjCircuitEtherServPhysAddr
+                OCTET STRING,
+            phivAdjType
+                INTEGER,
+            phivAdjState
+                INTEGER,
+            phivAdjPriority
+                INTEGER,
+            phivAdjExecListenTimer
+                INTEGER (1..65535)
+         }
+   phivAdjCircuitIndex OBJECT-TYPE
+        SYNTAX INTEGER
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivAdjEntry 1 }
+
+   phivAdjNodeAddr OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivAdjEntry 2 }
+
+
+
+
+
+
+   phivAdjBlockSize OBJECT-TYPE
+        SYNTAX INTEGER
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivAdjEntry 3 }
+
+   phivAdjListenTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivAdjEntry 4 }
+
+   phivAdjCircuitEtherServPhysAddr OBJECT-TYPE
+        SYNTAX OCTET STRING ( SIZE (6) )
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivAdjEntry 5 }
+
+   phivAdjType OBJECT-TYPE
+        SYNTAX INTEGER {
+            routing-III (1),
+            nonrouting-III (2),
+            area (3),
+            routing-IV (4),
+            nonrouting-IV (5)
+        }
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivAdjEntry 6 }
+
+   phivAdjState OBJECT-TYPE
+        SYNTAX INTEGER {
+            initializing (1),          -- Ethernet one-way
+            up (2),                    -- Ethernet two-way
+            run (3),                   -- The eight DDCMP/X.25 states
+            circuit-rejected (4),
+            data-link-start (5),
+            routing-layer-initialize (6),
+            routing-layer-verify (7),
+            routing-layer-complete (8),
+            off (9),
+            halt (10)
+        }
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivAdjEntry 7 }
+
+   phivAdjPriority OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-only
+        STATUS obsolete
+     ::= { phivAdjEntry 8 }
+
+   phivAdjExecListenTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS obsolete
+        ::= { phivAdjEntry 9 }
+
+
+   phivAdjNodeTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivAdjNodeEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { adjacency 2 }
+
+   phivAdjNodeEntry OBJECT-TYPE
+        SYNTAX PhivAdjNodeEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivAdjNodeCircuitIndex, phivAdjAddr }
+        ::= { phivAdjNodeTable 1 }
+
+   PhivAdjNodeEntry ::=
+        SEQUENCE {
+            phivAdjNodeCircuitIndex
+                INTEGER,
+
+
+
+
+
+            phivAdjAddr
+                PhivAddr,
+            phivAdjNodeBlockSize
+                INTEGER,
+            phivAdjNodeListenTimer
+                INTEGER,
+            phivAdjNodeCircuitEtherServPhysAddr
+                OCTET STRING,
+            phivAdjNodeType
+                INTEGER,
+            phivAdjNodeState
+                INTEGER,
+            phivAdjNodePriority
+                INTEGER
+         }
+
+   phivAdjNodeCircuitIndex OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAdjNodeEntry 1 }
+
+   phivAdjAddr OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAdjNodeEntry 2 }
+
+   phivAdjNodeBlockSize OBJECT-TYPE
+        SYNTAX INTEGER
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAdjNodeEntry 3 }
+
+   phivAdjNodeListenTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+
+
+
+
+
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAdjNodeEntry 4 }
+
+   phivAdjNodeCircuitEtherServPhysAddr OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (6))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAdjNodeEntry 5 }
+
+   phivAdjNodeType OBJECT-TYPE
+        SYNTAX INTEGER {
+            routing-III (1),
+            nonrouting-III (2),
+            area (3),
+            routing-IV (4),
+            nonrouting-IV (5)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAdjNodeEntry 6 }
+
+   phivAdjNodeState OBJECT-TYPE
+        SYNTAX INTEGER {
+            initializing (1),          -- Ethernet one-way
+            up (2),                    -- Ethernet two-way
+            run (3),                   -- The eight DDCMP/X.25 states
+            circuit-rejected (4),
+
+
+
+
+
+            data-link-start (5),
+            routing-layer-initialize (6),
+            routing-layer-verify (7),
+            routing-layer-complete (8),
+            off (9),
+            halt (10)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAdjNodeEntry 7 }
+
+   phivAdjNodePriority OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-only
+        STATUS mandatory
+           ::= { phivAdjNodeEntry 8 }
+
+
+
+
+
+
+
+
+
+
+   phivLineTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivLineEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { line 1 }
+
+   phivLineEntry OBJECT-TYPE
+        SYNTAX PhivLineEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivLineIndex }
+        ::= { phivLineTable 1 }
+
+   PhivLineEntry ::=
+        SEQUENCE {
+            phivLineIndex
+                InterfaceIndex,
+            phivLineName
+                DisplayString,
+            phivLineState
+                INTEGER,
+            phivLineSubstate
+                INTEGER,
+            phivLineService
+                INTEGER,
+            phivLineDevice
+                DisplayString,
+            phivLineReceiveBuffs
+                INTEGER,
+            phivLineProtocol
+                INTEGER,
+            phivLineServiceTimer
+                INTEGER,
+            phivLineMaxBlock
+                INTEGER
+        }
+
+   phivLineIndex OBJECT-TYPE
+        SYNTAX InterfaceIndex
+
+
+
+
+
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLineEntry 1 }
+
+   phivLineName OBJECT-TYPE
+        SYNTAX DisplayString (SIZE (0..16))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLineEntry 2 }
+
+   phivLineState OBJECT-TYPE
+        SYNTAX INTEGER {
+            on (1),
+            off (2),
+            service (3),
+            cleared (4)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLineEntry 3 }
+
+   phivLineSubstate OBJECT-TYPE
+        SYNTAX INTEGER {
+            starting (1),
+            reflecting (2),
+            looping (3),
+            loading (4),
+            dumping (5),
+            triggering (6),
+            auto-service (7),
+            auto-loading (8),
+            auto-dumping (9),
+            auto-triggering (10),
+            synchronizing (11),
+            failed (12),
+            running (13)
+        }
+        ACCESS read-only
+
+
+
+
+
+        STATUS mandatory
+        ::= { phivLineEntry 4 }
+
+   phivLineService OBJECT-TYPE
+        SYNTAX INTEGER {
+            starting (1),
+            reflecting (2),
+            looping (3),
+            other (4)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLineEntry 5 }
+
+   phivLineDevice OBJECT-TYPE
+        SYNTAX DisplayString (SIZE (0..16))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLineEntry 6 }
+
+   phivLineReceiveBuffs OBJECT-TYPE
+        SYNTAX INTEGER (0..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLineEntry 7 }
+
+   phivLineProtocol OBJECT-TYPE
+        SYNTAX INTEGER {
+            ddcmp-point (1),
+
+
+
+
+
+            ddcmp-control (2),
+            ddcmp-tributary (3),
+            reserved (4),
+            ddcmp-dmc (5),
+            olapb (6),
+            ethernet (7),
+            ci (8),
+            qp2 (9),
+            other (14),
+            fddi (15)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLineEntry 8 }
+
+   phivLineServiceTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLineEntry 9 }
+
+   phivLineMaxBlock OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivLineEntry 10 }
+
+
+
+   phivNonBroadcastTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivNonBroadcastEntry
+        ACCESS not-accessible
+
+
+
+
+
+        STATUS mandatory
+        ::= { nonBroadcastLine 1 }
+
+   phivNonBroadcastEntry OBJECT-TYPE
+        SYNTAX PhivNonBroadcastEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivNonBroadcastIndex }
+        ::= { phivNonBroadcastTable 1 }
+
+   PhivNonBroadcastEntry ::=
+        SEQUENCE {
+            phivNonBroadcastIndex
+                InterfaceIndex,
+            phivNonBroadcastController
+                INTEGER,
+            phivNonBroadcastDuplex
+                INTEGER,
+            phivNonBroadcastClock
+                INTEGER,
+            phivNonBroadcastRetransmitTimer
+                INTEGER
+        }
+
+   phivNonBroadcastIndex OBJECT-TYPE
+        SYNTAX InterfaceIndex
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivNonBroadcastEntry 1 }
+
+   phivNonBroadcastController OBJECT-TYPE
+        SYNTAX INTEGER {
+            normal (1),
+            loopback (2),
+            other (3)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivNonBroadcastEntry 2 }
+
+   phivNonBroadcastDuplex OBJECT-TYPE
+        SYNTAX INTEGER {
+            full (1),
+            half (2)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivNonBroadcastEntry 3 }
+
+   phivNonBroadcastClock OBJECT-TYPE
+        SYNTAX INTEGER {
+            external (1),
+            internal (2),
+            other (3)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivNonBroadcastEntry 4 }
+
+   phivNonBroadcastRetransmitTimer OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        DEFVAL { 3000 }
+        ::= { phivNonBroadcastEntry 5 }
+
+
+
+   phivAreaTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF PhivAreaEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        ::= { area 1 }
+
+   phivAreaEntry OBJECT-TYPE
+        SYNTAX PhivAreaEntry
+        ACCESS not-accessible
+        STATUS mandatory
+        INDEX  { phivAreaNum }
+
+
+
+
+
+        ::= { phivAreaTable 1 }
+
+   PhivAreaEntry ::=
+        SEQUENCE {
+            phivAreaNum
+                INTEGER,
+            phivAreaState
+                INTEGER,
+            phivAreaCost
+                Gauge,
+            phivAreaHops
+                INTEGER,
+            phivAreaNextNode
+                PhivAddr,
+            phivAreaCircuitIndex
+               INTEGER
+        }
+
+   phivAreaNum OBJECT-TYPE
+        SYNTAX INTEGER (0..64)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAreaEntry 1 }
+
+   phivAreaState OBJECT-TYPE
+        SYNTAX INTEGER {
+            reachable (4),
+            unreachable (5)
+        }
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAreaEntry 2 }
+
+   phivAreaCost OBJECT-TYPE
+        SYNTAX Gauge
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAreaEntry 3 }
+
+
+
+
+
+
+   phivAreaHops OBJECT-TYPE
+        SYNTAX INTEGER (0..255)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAreaEntry 4 }
+
+   phivAreaNextNode OBJECT-TYPE
+        SYNTAX PhivAddr -- OCTET STRING (SIZE (2))
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAreaEntry 5 }
+
+   phivAreaCircuitIndex OBJECT-TYPE
+        SYNTAX INTEGER (1..65535)
+        ACCESS read-only
+        STATUS mandatory
+        ::= { phivAreaEntry 6 }
+
+
+   phivAreaMaxCost OBJECT-TYPE
+        SYNTAX INTEGER (1..1022)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { area 2 }
+
+   phivAreaMaxHops OBJECT-TYPE
+        SYNTAX INTEGER (1..30)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { area 3 }
+
+   phivRouteMaxArea OBJECT-TYPE
+        SYNTAX INTEGER (1..63)
+        ACCESS read-write
+        STATUS mandatory
+        ::= { area 4 }
+
+          END

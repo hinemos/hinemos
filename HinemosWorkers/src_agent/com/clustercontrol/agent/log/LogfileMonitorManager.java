@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2011 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.agent.log;
@@ -53,26 +46,23 @@ public class LogfileMonitorManager {
 	private static Map<String, LogfileMonitor> logfileMonitorCache =
 			new HashMap<String, LogfileMonitor>();
 	
-//	// 監視ジョブ
-//	private static Map<RunInstructionInfo, MonitorInfo> monitorMapForMonitorJob
-//		= new HashMap<RunInstructionInfo, MonitorInfo>();
-	
 	/** Queue送信  */
 	private static SendQueue sendQueue;
 
 	/** ログファイル監視間隔 */
 	private static int runInterval = 10000; // 10sec
-
-//	/** このエージェントの監視設定 */
-//	private static List<MonitorInfo> monitorList;
 	
 	/** 読み込み状態 */
 	private static ReadingStatusRoot statusRoot;
 	
+	/** ログファイル監視スレッド */
 	private static LogfileThread thread;
 	
-	
+	/** ログファイル監視設定リスト(監視ジョブ含む) */
 	private static List<MonitorInfoWrapper> monitorList;
+	
+	/** 前回監視実行時のログファイル監視設定リスト(読込状態ディレクトリの削除用) */
+	private static List<MonitorInfoWrapper> beforeMonitorList;
 	
 	
 	/**
@@ -153,6 +143,7 @@ public class LogfileMonitorManager {
 			log.debug("refresh() : start");
 
 			List<MonitorInfoWrapper> monitorList = popMonitorInfoList();
+			List<MonitorInfoWrapper> beforeMonitorList = LogfileMonitorManager.beforeMonitorList;
 			
 			// 新たに監視設定が登録されているなら、読み取るファイルおよび読み取り状態を更新する
 			if (monitorList != null) {
@@ -163,9 +154,10 @@ public class LogfileMonitorManager {
 					statusRoot = new ReadingStatusRoot(monitorList, getReadingStatesStorePath());
 					log.debug("refresh() : ReadingStatusRoot is initialized.");
 				} else {
-					statusRoot.update(monitorList);
+					statusRoot.update(monitorList, beforeMonitorList);
 					log.debug("refresh() : ReadingStatusRoot is updated.");
 				}
+				LogfileMonitorManager.beforeMonitorList = monitorList;
 			} else {
 				// 監視対象のファイルに対する更新
 				if (statusRoot != null)

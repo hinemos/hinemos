@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.process.factory;
@@ -34,6 +27,7 @@ import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorNumericValueType;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCache;
+import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.poller.bean.PollerProtocolConstant;
 import com.clustercontrol.poller.impl.Snmp4jPollerImpl;
 import com.clustercontrol.poller.impl.WbemPollerImpl;
@@ -101,7 +95,7 @@ public class RunMonitorProcess extends RunMonitorNumericValueType {
 	/**
 	 * @see runMonitorAggregateByNode
 	 */
-	protected boolean runMonitorInfo() throws FacilityNotFound, MonitorNotFound, InvalidRole, HinemosUnknown {
+	protected List<OutputBasicInfo> runMonitorInfo() throws FacilityNotFound, MonitorNotFound, InvalidRole, HinemosUnknown {
 		// リソース監視は、通常の他の監視の「監視項目単位」の監視実行ではなく、「ノード単位」で実行するため、
 		// runMonitorInfo ではなく runMonitorInfoAggregatedByNode が監視の実態となる
 		throw new UnsupportedOperationException();

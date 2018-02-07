@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -245,136 +238,139 @@ public class OperateStopOfJob {
 	public void stopNode(String sessionId, String jobunitId, String jobId, String facilityId) throws HinemosUnknown, JobInfoNotFound, InvalidRole, FacilityNotFound {
 		m_log.info("stopNode() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 
-		//セッションIDとジョブIDから、セッションジョブを取得
-		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-		JobSessionNodeEntity stopNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
-		//実行状態が実行中(ノードに対する停止処理)、コマンド停止(ジョブに対する停止処理)の場合でなければ、
-		//ノードに対する停止処理は無効とする。
-		if(stopNode.getStatus() != StatusConstant.TYPE_RUNNING &&
-				stopNode.getStatus() != StatusConstant.TYPE_STOPPING){
-			m_log.info("not running : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId +
-					", status=" + stopNode.getStatus());
-			return;
-		}
+			//セッションIDとジョブIDから、セッションジョブを取得
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			JobSessionNodeEntity stopNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
 
-		JobInfoEntity job = sessionJob.getJobInfoEntity();
-		List<JobSessionNodeEntity> sessionNodeList = null;
-		if(facilityId != null && facilityId.length() > 0){
-			JobSessionNodeEntity sessionNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
-			sessionNodeList = new ArrayList<JobSessionNodeEntity>();
-			sessionNodeList.add(sessionNode);
-		} else {
-			sessionNodeList = sessionJob.getJobSessionNodeEntities();
-		}
+			//実行状態が実行中(ノードに対する停止処理)、コマンド停止(ジョブに対する停止処理)の場合でなければ、
+			//ノードに対する停止処理は無効とする。
+			if(stopNode.getStatus() != StatusConstant.TYPE_RUNNING &&
+					stopNode.getStatus() != StatusConstant.TYPE_STOPPING){
+				m_log.info("not running : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId +
+						", status=" + stopNode.getStatus());
+				return;
+			}
 
-		//待ち条件ジョブ判定
-		for (JobSessionNodeEntity sessionNode : sessionNodeList) {
-			//実行状態が実行中の場合
-			if(sessionNode.getStatus() == StatusConstant.TYPE_RUNNING){
-				if(job.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS ||
-						(job.getStopType() == CommandStopTypeConstant.EXECUTE_COMMAND &&
-						job.getStopCommand() != null && job.getStopCommand().length() > 0)){
-					//実行中から他の状態に遷移した場合は、キャッシュを更新する。
-					if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
-						JpaTransactionManager jtm = new JpaTransactionManager();
-						jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
-					} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
-						JobMultiplicityCache.removeWait(sessionNode.getId());
-					}
-					//実行状態を停止処理中にする
-					sessionNode.setStatus(StatusConstant.TYPE_STOPPING);
-					//開始・再実行日時をクリア
-					sessionNode.setStartDate(null);
-					//メッセージをエージェント応答待ちに戻す
-					if (job.getJobType() != JobConstant.TYPE_MONITORJOB
-						&& job.getJobType() != JobConstant.TYPE_APPROVALJOB) {
-						new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.WAIT_AGENT_RESPONSE.getMessage());
-					}
-					
-					if (job.getJobType() == JobConstant.TYPE_APPROVALJOB) {
+			JobInfoEntity job = sessionJob.getJobInfoEntity();
+			List<JobSessionNodeEntity> sessionNodeList = null;
+			if(facilityId != null && facilityId.length() > 0){
+				JobSessionNodeEntity sessionNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
+				sessionNodeList = new ArrayList<JobSessionNodeEntity>();
+				sessionNodeList.add(sessionNode);
+			} else {
+				sessionNodeList = sessionJob.getJobSessionNodeEntities();
+			}
+
+			//待ち条件ジョブ判定
+			for (JobSessionNodeEntity sessionNode : sessionNodeList) {
+				//実行状態が実行中の場合
+				if(sessionNode.getStatus() == StatusConstant.TYPE_RUNNING){
+					if(job.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS ||
+							(job.getStopType() == CommandStopTypeConstant.EXECUTE_COMMAND &&
+							job.getStopCommand() != null && job.getStopCommand().length() > 0)){
+						//実行中から他の状態に遷移した場合は、キャッシュを更新する。
+						if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
+							jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
+						} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
+							JobMultiplicityCache.removeWait(sessionNode.getId());
+						}
+						//実行状態を停止処理中にする
+						sessionNode.setStatus(StatusConstant.TYPE_STOPPING);
+						//開始・再実行日時をクリア
+						sessionNode.setStartDate(null);
+						//メッセージをエージェント応答待ちに戻す
+						if (job.getJobType() != JobConstant.TYPE_MONITORJOB
+							&& job.getJobType() != JobConstant.TYPE_APPROVALJOB) {
+							new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.WAIT_AGENT_RESPONSE.getMessage());
+						}
+						
+						if (job.getJobType() == JobConstant.TYPE_APPROVALJOB) {
+							//実行状態をコマンド停止にする
+							sessionNode.setStatus(StatusConstant.TYPE_STOP);
+							sessionNode.setApprovalStatus(JobApprovalStatusConstant.TYPE_STOP);
+							new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.STOP_AT_ONCE.getMessage());
+							// Topic送信しない
+							continue;
+						}
+
+						if (job.getJobType() == JobConstant.TYPE_MONITORJOB) {
+							// 監視ジョブの停止処理を行う
+							sessionNode.setStatus(StatusConstant.TYPE_STOP);
+							new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.STOP_AT_ONCE.getMessage());
+							RunInstructionInfo runInstructionInfo = RunHistoryUtil.findRunHistory(
+									sessionId, jobunitId, jobId, sessionNode.getId().getFacilityId());
+							if (runInstructionInfo == null) {
+								//実行指示情報を作成
+								runInstructionInfo = new RunInstructionInfo();
+								runInstructionInfo.setSessionId(sessionId);
+								runInstructionInfo.setJobunitId(jobunitId);
+								runInstructionInfo.setJobId(jobId);
+								runInstructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
+								runInstructionInfo.setSpecifyUser(job.getSpecifyUser());
+								runInstructionInfo.setUser(job.getEffectiveUser());
+								runInstructionInfo.setCommandType(CommandTypeConstant.STOP);
+								runInstructionInfo.setCommand(CommandConstant.MONITOR);
+								runInstructionInfo.setStopType(job.getStopType());
+							}
+							MonitorJobWorker.runJob(runInstructionInfo);
+							// Topic送信しない
+							continue;
+						}
+						//実行指示情報を作成
+						RunInstructionInfo instructionInfo = new RunInstructionInfo();
+						instructionInfo.setSessionId(sessionId);
+						instructionInfo.setJobunitId(jobunitId);
+						instructionInfo.setJobId(jobId);
+						instructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
+						instructionInfo.setSpecifyUser(job.getSpecifyUser());
+						instructionInfo.setUser(job.getEffectiveUser());
+						instructionInfo.setCommandType(CommandTypeConstant.STOP);
+						instructionInfo.setStopType(job.getStopType());
+						//環境変数情報の設定
+						List<JobEnvVariableInfo> envInfoList = new ArrayList<JobEnvVariableInfo>();
+						for(JobEnvVariableInfoEntity envEntity : job.getJobEnvVariableInfoEntities()) {
+							JobEnvVariableInfo envInfo = new JobEnvVariableInfo();
+							envInfo.setEnvVariableId(envEntity.getId().getEnvVariableId());
+							String value = envEntity.getValue();
+							String replacedValue = ParameterUtil.replaceSessionParameterValue(sessionId, facilityId, value);
+							envInfo.setValue(replacedValue);
+							envInfo.setDescription(envEntity.getDescription());
+							envInfoList.add(envInfo);
+						}
+						instructionInfo.setJobEnvVariableInfoList(envInfoList);
+						
+						if (job.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS) {
+							m_log.info("stopNode() : Process Destroy");
+							instructionInfo.setCommand("");
+						} else {
+							m_log.info("stopNode() : Send Stop Command");
+							//コマンド内のパラメータを置き換える
+							String stopCommand = ParameterUtil.replaceSessionParameterValue(
+									sessionId, sessionNode.getId().getFacilityId(), job.getStopCommand());
+							//コマンド内のパラメータを置き換える(#[RETURN:jobid:facilityId])
+							stopCommand = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, stopCommand);
+							instructionInfo.setCommand(stopCommand);
+						}
+
+						try {
+							//Topicに送信
+							SendTopic.put(instructionInfo);
+						} catch (Exception e) {
+							m_log.warn("stopNode() RunInstructionInfo(command type:STOP) send error : "
+									+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+						}
+					}else{
+						//実行中から他の状態に遷移した場合は、キャッシュを更新する。
+						if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
+							jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
+						} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
+							JobMultiplicityCache.removeWait(sessionNode.getId());
+						}
 						//実行状態をコマンド停止にする
 						sessionNode.setStatus(StatusConstant.TYPE_STOP);
-						sessionNode.setApprovalStatus(JobApprovalStatusConstant.TYPE_STOP);
-						new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.STOP_AT_ONCE.getMessage());
-						// Topic送信しない
-						continue;
 					}
-
-					if (job.getJobType() == JobConstant.TYPE_MONITORJOB) {
-						// 監視ジョブの停止処理を行う
-						sessionNode.setStatus(StatusConstant.TYPE_STOP);
-						new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.STOP_AT_ONCE.getMessage());
-						RunInstructionInfo runInstructionInfo = RunHistoryUtil.findRunHistory(
-								sessionId, jobunitId, jobId, sessionNode.getId().getFacilityId());
-						if (runInstructionInfo == null) {
-							//実行指示情報を作成
-							runInstructionInfo = new RunInstructionInfo();
-							runInstructionInfo.setSessionId(sessionId);
-							runInstructionInfo.setJobunitId(jobunitId);
-							runInstructionInfo.setJobId(jobId);
-							runInstructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
-							runInstructionInfo.setSpecifyUser(job.getSpecifyUser());
-							runInstructionInfo.setUser(job.getEffectiveUser());
-							runInstructionInfo.setCommandType(CommandTypeConstant.STOP);
-							runInstructionInfo.setCommand(CommandConstant.MONITOR);
-							runInstructionInfo.setStopType(job.getStopType());
-						}
-						MonitorJobWorker.runJob(runInstructionInfo);
-						// Topic送信しない
-						continue;
-					}
-					//実行指示情報を作成
-					RunInstructionInfo instructionInfo = new RunInstructionInfo();
-					instructionInfo.setSessionId(sessionId);
-					instructionInfo.setJobunitId(jobunitId);
-					instructionInfo.setJobId(jobId);
-					instructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
-					instructionInfo.setSpecifyUser(job.getSpecifyUser());
-					instructionInfo.setUser(job.getEffectiveUser());
-					instructionInfo.setCommandType(CommandTypeConstant.STOP);
-					instructionInfo.setStopType(job.getStopType());
-					//環境変数情報の設定
-					List<JobEnvVariableInfo> envInfoList = new ArrayList<JobEnvVariableInfo>();
-					for(JobEnvVariableInfoEntity envEntity : job.getJobEnvVariableInfoEntities()) {
-						JobEnvVariableInfo envInfo = new JobEnvVariableInfo();
-						envInfo.setEnvVariableId(envEntity.getId().getEnvVariableId());
-						envInfo.setValue(envEntity.getValue());
-						envInfo.setDescription(envEntity.getDescription());
-						envInfoList.add(envInfo);
-					}
-					instructionInfo.setJobEnvVariableInfoList(envInfoList);
-					
-					if (job.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS) {
-						m_log.info("stopNode() : Process Destroy");
-						instructionInfo.setCommand("");
-					} else {
-						m_log.info("stopNode() : Send Stop Command");
-						//コマンド内のパラメータを置き換える
-						String stopCommand = ParameterUtil.replaceSessionParameterValue(
-								sessionId, sessionNode.getId().getFacilityId(), job.getStopCommand());
-						//コマンド内のパラメータを置き換える(#[RETURN:jobid:facilityId])
-						stopCommand = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, stopCommand);
-						instructionInfo.setCommand(stopCommand);
-					}
-
-					try {
-						//Topicに送信
-						SendTopic.put(instructionInfo);
-					} catch (Exception e) {
-						m_log.warn("stopNode() RunInstructionInfo(command type:STOP) send error : "
-								+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-					}
-				}else{
-					//実行中から他の状態に遷移した場合は、キャッシュを更新する。
-					if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
-						JpaTransactionManager jtm = new JpaTransactionManager();
-						jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
-					} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
-						JobMultiplicityCache.removeWait(sessionNode.getId());
-					}
-					//実行状態をコマンド停止にする
-					sessionNode.setStatus(StatusConstant.TYPE_STOP);
 				}
 			}
 		}

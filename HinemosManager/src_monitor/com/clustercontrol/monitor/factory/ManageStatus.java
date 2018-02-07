@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.factory;
@@ -54,38 +47,40 @@ public class ManageStatus {
 	 * @see com.clustercontrol.bean.StatusExpirationConstant
 	 */
 	public void execute(){
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// 有効期限切れのステータス情報一覧を取得
-		Long now = HinemosTime.currentTimeMillis();
-		List<StatusInfoEntity> ct = QueryUtil.getStatusInfoByExpirationStatus(now);
+			// 有効期限切れのステータス情報一覧を取得
+			Long now = HinemosTime.currentTimeMillis();
+			List<StatusInfoEntity> ct = QueryUtil.getStatusInfoByExpirationStatus(now);
 
-		// 有効期限切れステータスの情報を更新する
-		Iterator<StatusInfoEntity> itr = ct.iterator();
-		StatusInfoEntity status = null;
-		while(itr.hasNext())
-		{
-			status = itr.next();
-			if(status.getExpirationFlg() != null){
-				int flg = status.getExpirationFlg().intValue();
+			// 有効期限切れステータスの情報を更新する
+			Iterator<StatusInfoEntity> itr = ct.iterator();
+			StatusInfoEntity status = null;
+			while(itr.hasNext())
+			{
+				status = itr.next();
+				if(status.getExpirationFlg() != null){
+					int flg = status.getExpirationFlg().intValue();
 
-				// 削除
-				if(StatusExpirationConstant.TYPE_DELETE == flg){
-					em.remove(status);
-				}
-				// 更新されていない旨のメッセージに置換える
-				else if(StatusExpirationConstant.TYPE_CRITICAL == flg ||
-						StatusExpirationConstant.TYPE_WARNING == flg ||
-						StatusExpirationConstant.TYPE_INFO == flg ||
-						StatusExpirationConstant.TYPE_UNKNOWN == flg){
-					// 重要度の設定
-					status.setPriority(flg);
-					// メッセージに更新されていない旨のメッセージを設定
-					status.setMessage(MessageConstant.MONITOR_STATUS_NO_UPDATE.getMessage());
-					// 有効期限切れ制御フラグに有効期限切れを設定
-					status.setExpirationFlg(StatusExpirationConstant.TYPE_EXPIRATION);
-					// 更新日時を設定
-					status.setOutputDate(now);
+					// 削除
+					if(StatusExpirationConstant.TYPE_DELETE == flg){
+						em.remove(status);
+					}
+					// 更新されていない旨のメッセージに置換える
+					else if(StatusExpirationConstant.TYPE_CRITICAL == flg ||
+							StatusExpirationConstant.TYPE_WARNING == flg ||
+							StatusExpirationConstant.TYPE_INFO == flg ||
+							StatusExpirationConstant.TYPE_UNKNOWN == flg){
+						// 重要度の設定
+						status.setPriority(flg);
+						// メッセージに更新されていない旨のメッセージを設定
+						status.setMessage(MessageConstant.MONITOR_STATUS_NO_UPDATE.getMessage());
+						// 有効期限切れ制御フラグに有効期限切れを設定
+						status.setExpirationFlg(StatusExpirationConstant.TYPE_EXPIRATION);
+						// 更新日時を設定
+						status.setOutputDate(now);
+					}
 				}
 			}
 		}

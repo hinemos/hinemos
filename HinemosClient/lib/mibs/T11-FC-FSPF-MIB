@@ -1,0 +1,717 @@
+T11-FC-FSPF-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+    Counter32, Integer32, Unsigned32, TimeTicks,
+    Gauge32, mib-2                     FROM SNMPv2-SMI   -- [RFC2578]
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP                 FROM SNMPv2-CONF  -- [RFC2580]
+    TEXTUAL-CONVENTION, RowStatus, StorageType,
+    TruthValue                         FROM SNMPv2-TC    -- [RFC2579]
+    ifIndex, InterfaceIndex            FROM IF-MIB       -- [RFC2863]
+    fcmInstanceIndex, fcmSwitchIndex,
+    FcDomainIdOrZero                   FROM FC-MGMT-MIB  -- [FC-MGMT]
+    T11FabricIndex                     FROM T11-TC-MIB   -- [RFC4439]
+    t11FamConfigDomainId
+                       FROM T11-FC-FABRIC-ADDR-MGR-MIB;  -- [RFC4439]
+
+t11FcFspfMIB MODULE-IDENTITY
+    LAST-UPDATED "200608140000Z"
+    ORGANIZATION "T11"
+
+    ::= { mib-2 143 }
+
+t11FspfNotifications      OBJECT IDENTIFIER ::= { t11FcFspfMIB 0 }
+t11FspfObjects            OBJECT IDENTIFIER ::= { t11FcFspfMIB 1 }
+t11FspfConformance        OBJECT IDENTIFIER ::= { t11FcFspfMIB 2 }
+t11FspfConfiguration      OBJECT IDENTIFIER ::= { t11FspfObjects 1 }
+t11FspfDatabase           OBJECT IDENTIFIER ::= { t11FspfObjects 2 }
+
+
+T11FspfLsrType ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    Integer32 (0..255)
+
+T11FspfLinkType ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    Integer32 (0..255)
+
+T11FspfInterfaceState ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX  INTEGER {
+                   down(1),
+                   init(2),
+                   dbExchange(3),
+                   dbAckwait(4),
+                   dbWait(5),
+                   full(6)
+            }
+
+T11FspfLastCreationTime ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX  TimeTicks
+
+
+
+
+
+
+t11FspfTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF T11FspfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FspfConfiguration 1 }
+
+t11FspfEntry OBJECT-TYPE
+    SYNTAX      T11FspfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX      { fcmInstanceIndex, fcmSwitchIndex, t11FspfFabricIndex }
+    ::= { t11FspfTable 1 }
+
+T11FspfEntry ::= SEQUENCE  {
+    t11FspfFabricIndex                 T11FabricIndex,
+    t11FspfMinLsArrival                Unsigned32,
+    t11FspfMinLsInterval               Unsigned32,
+    t11FspfLsRefreshTime               Unsigned32,
+    t11FspfMaxAge                      Unsigned32,
+    t11FspfMaxAgeDiscards              Counter32,
+    t11FspfPathComputations            Counter32,
+    t11FspfChecksumErrors              Counter32,
+    t11FspfLsrs                        Gauge32,
+    t11FspfCreateTime                  T11FspfLastCreationTime,
+    t11FspfAdminStatus                 INTEGER,
+    t11FspfOperStatus                  INTEGER,
+    t11FspfNbrStateChangNotifyEnable   TruthValue,
+    t11FspfSetToDefault                INTEGER,
+    t11FspfStorageType                 StorageType
+
+
+
+
+
+}
+
+t11FspfFabricIndex OBJECT-TYPE
+    SYNTAX      T11FabricIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FspfEntry 1 }
+
+t11FspfMinLsArrival OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    UNITS       "milliSeconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL     {1000}
+    ::= { t11FspfEntry 2 }
+
+t11FspfMinLsInterval OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    UNITS       "milliSeconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+
+
+
+
+
+    DEFVAL     {5000}
+    ::= { t11FspfEntry 3 }
+
+t11FspfLsRefreshTime OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "Minutes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL     {30}
+    ::= { t11FspfEntry 4 }
+
+t11FspfMaxAge OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "Minutes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL     {60}
+    ::= { t11FspfEntry 5 }
+
+t11FspfMaxAgeDiscards OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfEntry 6 }
+
+t11FspfPathComputations OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfEntry 7 }
+
+t11FspfChecksumErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfEntry 8 }
+
+t11FspfLsrs OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfEntry 9 }
+
+t11FspfCreateTime OBJECT-TYPE
+    SYNTAX      T11FspfLastCreationTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfEntry 10 }
+
+t11FspfAdminStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    up(1),
+                    down(2)
+                    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL {up}
+    ::= { t11FspfEntry 11 }
+
+t11FspfOperStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                      up(1),
+                      down(2)
+                     }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfEntry 12 }
+
+t11FspfNbrStateChangNotifyEnable OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { false }
+    ::= { t11FspfEntry 13 }
+
+t11FspfSetToDefault OBJECT-TYPE
+    SYNTAX      INTEGER {
+                     default(1),
+                     noOp(2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { t11FspfEntry 14 }
+
+t11FspfStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { t11FspfEntry 15 }
+
+
+t11FspfIfTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FspfIfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FspfConfiguration 2 }
+
+t11FspfIfEntry OBJECT-TYPE
+    SYNTAX      T11FspfIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { fcmInstanceIndex, fcmSwitchIndex,
+                  t11FspfFabricIndex, t11FspfIfIndex }
+    ::= { t11FspfIfTable 1 }
+
+T11FspfIfEntry ::= SEQUENCE {
+    t11FspfIfIndex                     InterfaceIndex,
+    t11FspfIfHelloInterval             Unsigned32,
+    t11FspfIfDeadInterval              Unsigned32,
+    t11FspfIfRetransmitInterval        Unsigned32,
+    t11FspfIfInLsuPkts                 Counter32,
+    t11FspfIfInLsaPkts                 Counter32,
+    t11FspfIfOutLsuPkts                Counter32,
+    t11FspfIfOutLsaPkts                Counter32,
+    t11FspfIfOutHelloPkts              Counter32,
+    t11FspfIfInHelloPkts               Counter32,
+    t11FspfIfRetransmittedLsuPkts      Counter32,
+    t11FspfIfInErrorPkts               Counter32,
+    t11FspfIfNbrState                  T11FspfInterfaceState,
+    t11FspfIfNbrDomainId               FcDomainIdOrZero,
+    t11FspfIfNbrPortIndex              Unsigned32,
+    t11FspfIfAdminStatus               INTEGER,
+    t11FspfIfCreateTime                T11FspfLastCreationTime,
+    t11FspfIfSetToDefault              INTEGER,
+
+
+
+
+
+    t11FspfIfLinkCostFactor            Unsigned32,
+    t11FspfIfStorageType               StorageType,
+    t11FspfIfRowStatus                 RowStatus
+}
+
+t11FspfIfIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FspfIfEntry 1 }
+
+t11FspfIfHelloInterval OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..65535)
+    UNITS       "Seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL {20}
+    ::= { t11FspfIfEntry 2 }
+
+t11FspfIfDeadInterval OBJECT-TYPE
+    SYNTAX      Unsigned32 (2..65535)
+    UNITS       "Seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL {80}
+    ::= { t11FspfIfEntry 3 }
+
+t11FspfIfRetransmitInterval OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..65535)
+    UNITS       "Seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL {5}
+    ::= { t11FspfIfEntry 4 }
+
+t11FspfIfInLsuPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 5 }
+
+t11FspfIfInLsaPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 6 }
+
+t11FspfIfOutLsuPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 7 }
+
+t11FspfIfOutLsaPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 8 }
+
+
+
+
+
+
+t11FspfIfOutHelloPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 9 }
+
+t11FspfIfInHelloPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 10 }
+
+t11FspfIfRetransmittedLsuPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 11 }
+
+t11FspfIfInErrorPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 12 }
+
+t11FspfIfNbrState OBJECT-TYPE
+    SYNTAX      T11FspfInterfaceState
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 13 }
+
+t11FspfIfNbrDomainId OBJECT-TYPE
+    SYNTAX      FcDomainIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 14 }
+
+t11FspfIfNbrPortIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..16777215)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 15 }
+
+t11FspfIfAdminStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                up(1),
+                down(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL  {up}
+    ::= { t11FspfIfEntry 16 }
+
+
+
+
+
+t11FspfIfCreateTime OBJECT-TYPE
+    SYNTAX      T11FspfLastCreationTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfIfEntry 17 }
+
+t11FspfIfSetToDefault OBJECT-TYPE
+    SYNTAX      INTEGER {
+                     default(1),
+                     noOp(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { t11FspfIfEntry 18 }
+
+t11FspfIfLinkCostFactor OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..65535)
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    DEFVAL { 100 }
+    ::= { t11FspfIfEntry 19 }
+
+t11FspfIfStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+       DEFVAL { nonVolatile }
+    ::= { t11FspfIfEntry 20 }
+
+t11FspfIfRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { t11FspfIfEntry 21 }
+
+
+t11FspfLsrTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FspfLsrEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+
+
+
+
+
+    ::= { t11FspfDatabase 1 }
+
+t11FspfLsrEntry OBJECT-TYPE
+    SYNTAX      T11FspfLsrEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX      { fcmInstanceIndex, fcmSwitchIndex, t11FspfFabricIndex,
+                 t11FspfLsrDomainId, t11FspfLsrType }
+    ::= { t11FspfLsrTable 1 }
+
+T11FspfLsrEntry ::= SEQUENCE {
+    t11FspfLsrDomainId           FcDomainIdOrZero,
+    t11FspfLsrType               T11FspfLsrType,
+    t11FspfLsrAdvDomainId        FcDomainIdOrZero,
+    t11FspfLsrAge                Unsigned32,
+    t11FspfLsrIncarnationNumber  Unsigned32,
+    t11FspfLsrCheckSum           Unsigned32,
+    t11FspfLsrLinks              Unsigned32
+}
+
+t11FspfLsrDomainId OBJECT-TYPE
+    SYNTAX      FcDomainIdOrZero
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FspfLsrEntry 1 }
+
+t11FspfLsrType OBJECT-TYPE
+    SYNTAX      T11FspfLsrType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FspfLsrEntry 2 }
+
+t11FspfLsrAdvDomainId OBJECT-TYPE
+    SYNTAX      FcDomainIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLsrEntry 3 }
+
+t11FspfLsrAge OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    UNITS       "Seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLsrEntry 4 }
+
+t11FspfLsrIncarnationNumber OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLsrEntry 5 }
+
+t11FspfLsrCheckSum OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLsrEntry 6 }
+
+t11FspfLsrLinks OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65355)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLsrEntry 7 }
+
+t11FspfLinkNumber  OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..2147483647)
+
+
+
+
+
+    MAX-ACCESS  read-only
+    STATUS      current
+        ::= { t11FspfDatabase 3 }
+
+t11FspfLinkTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FspfLinkEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FspfDatabase 4 }
+
+t11FspfLinkEntry OBJECT-TYPE
+    SYNTAX      T11FspfLinkEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX      { fcmInstanceIndex, fcmSwitchIndex, t11FspfFabricIndex,
+                 t11FspfLsrDomainId, t11FspfLsrType, t11FspfLinkIndex}
+    ::= { t11FspfLinkTable 1 }
+
+T11FspfLinkEntry ::= SEQUENCE {
+    t11FspfLinkIndex             Unsigned32,
+    t11FspfLinkNbrDomainId       FcDomainIdOrZero,
+    t11FspfLinkPortIndex         Unsigned32,
+    t11FspfLinkNbrPortIndex      Unsigned32,
+    t11FspfLinkType              T11FspfLinkType,
+    t11FspfLinkCost              Integer32
+}
+
+t11FspfLinkIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FspfLinkEntry 1 }
+
+t11FspfLinkNbrDomainId OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      FcDomainIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLinkEntry 2 }
+
+t11FspfLinkPortIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..16777215)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLinkEntry 3 }
+
+t11FspfLinkNbrPortIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..16777215)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLinkEntry 4 }
+
+t11FspfLinkType OBJECT-TYPE
+    SYNTAX      T11FspfLinkType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLinkEntry 5 }
+
+t11FspfLinkCost OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FspfLinkEntry 6 }
+
+
+t11FspfIfPrevNbrState OBJECT-TYPE
+    SYNTAX      T11FspfInterfaceState
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { t11FspfConfiguration 3 }
+
+
+t11FspfNbrStateChangNotify NOTIFICATION-TYPE
+    OBJECTS     { ifIndex,
+                  t11FamConfigDomainId,
+                  t11FspfIfNbrDomainId,
+                  t11FspfIfNbrState,
+                  t11FspfIfPrevNbrState
+    }
+    STATUS      current
+    ::= { t11FspfNotifications 1 }
+
+
+t11FspfMIBCompliances
+    OBJECT IDENTIFIER ::= { t11FspfConformance 1 }
+
+t11FspfMIBGroups
+    OBJECT IDENTIFIER ::= { t11FspfConformance 2 }
+
+
+
+
+
+
+t11FspfMIBCompliance MODULE-COMPLIANCE
+    STATUS     current
+    MODULE -- this module
+        MANDATORY-GROUPS { t11FspfGeneralGroup,
+                           t11FspfIfGroup,
+                           t11FspfDatabaseGroup,
+                           t11FspfNotificationGroup }
+
+        GROUP      t11FspfIfCounterGroup
+
+        OBJECT     t11FspfIfRowStatus
+        SYNTAX     INTEGER { active(1) }
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfIfStorageType
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfNbrStateChangNotifyEnable
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfMinLsArrival
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfMinLsInterval
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfAdminStatus
+        MIN-ACCESS read-only
+
+
+
+
+
+        OBJECT     t11FspfSetToDefault
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfStorageType
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfIfHelloInterval
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfIfDeadInterval
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfIfRetransmitInterval
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfIfAdminStatus
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfIfSetToDefault
+        MIN-ACCESS read-only
+
+        OBJECT     t11FspfIfLinkCostFactor
+        MIN-ACCESS read-only
+
+        ::= { t11FspfMIBCompliances 1 }
+
+
+t11FspfGeneralGroup OBJECT-GROUP
+    OBJECTS  { t11FspfMinLsArrival,
+               t11FspfMinLsInterval,
+               t11FspfLsRefreshTime,
+
+
+
+
+
+               t11FspfMaxAge,
+               t11FspfMaxAgeDiscards,
+               t11FspfPathComputations,
+               t11FspfChecksumErrors,
+               t11FspfLsrs,
+               t11FspfCreateTime,
+               t11FspfAdminStatus,
+               t11FspfOperStatus,
+               t11FspfNbrStateChangNotifyEnable,
+               t11FspfSetToDefault,
+               t11FspfStorageType }
+    STATUS   current
+    ::= { t11FspfMIBGroups 1 }
+
+t11FspfIfGroup OBJECT-GROUP
+    OBJECTS  { t11FspfIfHelloInterval,
+               t11FspfIfDeadInterval,
+               t11FspfIfRetransmitInterval,
+               t11FspfIfNbrState,
+               t11FspfIfNbrDomainId,
+               t11FspfIfNbrPortIndex,
+               t11FspfIfAdminStatus,
+               t11FspfIfCreateTime,
+               t11FspfIfSetToDefault,
+               t11FspfIfLinkCostFactor,
+               t11FspfIfRowStatus,
+               t11FspfIfStorageType,
+               t11FspfIfPrevNbrState }
+    STATUS   current
+    ::= { t11FspfMIBGroups 2 }
+
+t11FspfIfCounterGroup OBJECT-GROUP
+    OBJECTS  { t11FspfIfInLsuPkts,
+               t11FspfIfInLsaPkts,
+               t11FspfIfOutLsuPkts,
+               t11FspfIfOutLsaPkts,
+               t11FspfIfOutHelloPkts,
+               t11FspfIfInHelloPkts,
+               t11FspfIfRetransmittedLsuPkts,
+               t11FspfIfInErrorPkts  }
+    STATUS   current
+    ::= { t11FspfMIBGroups 3 }
+
+t11FspfDatabaseGroup OBJECT-GROUP
+    OBJECTS  { t11FspfLsrAdvDomainId,
+               t11FspfLsrAge,
+               t11FspfLsrIncarnationNumber,
+               t11FspfLsrCheckSum,
+               t11FspfLsrLinks,
+               t11FspfLinkNbrDomainId,
+               t11FspfLinkPortIndex,
+               t11FspfLinkNbrPortIndex,
+               t11FspfLinkType,
+               t11FspfLinkCost,
+               t11FspfLinkNumber }
+    STATUS   current
+    ::= { t11FspfMIBGroups 4 }
+t11FspfNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS  { t11FspfNbrStateChangNotify }
+    STATUS   current
+    ::= { t11FspfMIBGroups 5 }
+END

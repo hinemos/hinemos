@@ -1,0 +1,1050 @@
+   TE-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE,
+       NOTIFICATION-TYPE, mib-2,
+       Integer32, Gauge32, Counter32,
+       Counter64, Unsigned32, TimeTicks     FROM SNMPv2-SMI
+
+       RowStatus, StorageType, TimeStamp,
+       TruthValue                           FROM SNMPv2-TC
+
+       SnmpAdminString                      FROM SNMP-FRAMEWORK-MIB
+
+       MODULE-COMPLIANCE, OBJECT-GROUP,
+       NOTIFICATION-GROUP                   FROM SNMPv2-CONF
+
+       TeHopAddress, TeHopAddressType,
+       MplsBitRate                          FROM MPLS-TC-STD-MIB;
+
+   teMIB MODULE-IDENTITY
+       LAST-UPDATED "200501040000Z"         -- 01 January 2005
+       ORGANIZATION "IETF Traffic Engineering Working Group"
+
+
+       ::= { mib-2 122 }
+
+
+   teMIBNotifications  OBJECT IDENTIFIER ::= { teMIB 0 }
+   teMIBObjects        OBJECT IDENTIFIER ::= { teMIB 1 }
+   teMIBConformance    OBJECT IDENTIFIER ::= { teMIB 2 }
+
+
+
+   teInfo OBJECT IDENTIFIER ::= { teMIBObjects 1 }
+
+   teDistProtocol   OBJECT-TYPE
+
+
+
+
+
+       SYNTAX       BITS {
+                        other(0),
+                        isis(1),
+                        ospf(2)
+                    }
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teInfo 1 }
+
+   teSignalingProto OBJECT-TYPE
+       SYNTAX       BITS {
+                        other(0),
+                        rsvpte(1),
+                        crldp(2),
+                        static(3)    -- static configuration
+                    }
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teInfo 2 }
+
+   teNotificationEnable OBJECT-TYPE
+       SYNTAX       TruthValue
+       MAX-ACCESS   read-write
+       STATUS       current
+       DEFVAL { false }
+       ::= { teInfo 3 }
+
+   teNextTunnelIndex OBJECT-TYPE
+       SYNTAX       Unsigned32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teInfo 4 }
+
+   teNextPathHopIndex OBJECT-TYPE
+       SYNTAX       Unsigned32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teInfo 5 }
+
+   teConfiguredTunnels OBJECT-TYPE
+       SYNTAX       Gauge32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teInfo 6 }
+
+   teActiveTunnels  OBJECT-TYPE
+       SYNTAX       Gauge32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teInfo 7 }
+
+   tePrimaryTunnels OBJECT-TYPE
+       SYNTAX       Gauge32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teInfo 8 }
+
+   teAdminGroupTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF TeAdminGroupEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+
+
+
+
+       ::= { teInfo 9 }
+
+   teAdminGroupEntry OBJECT-TYPE
+       SYNTAX       TeAdminGroupEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX       { teAdminGroupNumber }
+       ::= { teAdminGroupTable 1 }
+
+   TeAdminGroupEntry ::=
+       SEQUENCE {
+           teAdminGroupNumber    Integer32,
+           teAdminGroupName      SnmpAdminString,
+           teAdminGroupRowStatus RowStatus
+       }
+
+   teAdminGroupNumber OBJECT-TYPE
+       SYNTAX       Integer32 (1..32)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { teAdminGroupEntry 1 }
+
+   teAdminGroupName OBJECT-TYPE
+       SYNTAX       SnmpAdminString (SIZE (1..32))
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { teAdminGroupEntry 2 }
+
+   teAdminGroupRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { teAdminGroupEntry 3 }
+
+
+   teTunnelTable    OBJECT-TYPE
+       SYNTAX       SEQUENCE OF TeTunnelEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { teMIBObjects 2 }
+
+   teTunnelEntry    OBJECT-TYPE
+       SYNTAX       TeTunnelEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX       { teTunnelIndex }
+       ::= { teTunnelTable 1 }
+
+   TeTunnelEntry ::=
+       SEQUENCE {
+           teTunnelIndex                   Unsigned32,
+           teTunnelName                    SnmpAdminString,
+           teTunnelNextPathIndex           Unsigned32,
+           teTunnelRowStatus               RowStatus,
+           teTunnelStorageType             StorageType,
+           teTunnelSourceAddressType       TeHopAddressType,
+           teTunnelSourceAddress           TeHopAddress,
+           teTunnelDestinationAddressType  TeHopAddressType,
+           teTunnelDestinationAddress      TeHopAddress,
+           teTunnelState                   INTEGER,
+           teTunnelDiscontinuityTimer      TimeStamp,
+           teTunnelOctets                  Counter64,
+           teTunnelPackets                 Counter64,
+           teTunnelLPOctets                Counter32,
+           teTunnelLPPackets               Counter32,
+           teTunnelAge                     TimeTicks,
+           teTunnelTimeUp                  TimeTicks,
+           teTunnelPrimaryTimeUp           TimeTicks,
+           teTunnelTransitions             Counter32,
+           teTunnelLastTransition          TimeTicks,
+
+
+
+
+
+           teTunnelPathChanges             Counter32,
+           teTunnelLastPathChange          TimeTicks,
+           teTunnelConfiguredPaths         Gauge32,
+           teTunnelStandbyPaths            Gauge32,
+           teTunnelOperationalPaths        Gauge32
+       }
+
+   teTunnelIndex    OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4294967295)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { teTunnelEntry 1 }
+
+   teTunnelName     OBJECT-TYPE
+       SYNTAX       SnmpAdminString (SIZE (1..32))
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { teTunnelEntry 2 }
+
+   teTunnelNextPathIndex  OBJECT-TYPE
+       SYNTAX       Unsigned32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 3 }
+
+   teTunnelRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { teTunnelEntry 4 }
+
+   teTunnelStorageType OBJECT-TYPE
+       SYNTAX       StorageType
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { teTunnelEntry 5 }
+
+
+
+
+
+
+   teTunnelSourceAddressType OBJECT-TYPE
+       SYNTAX       TeHopAddressType
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { teTunnelEntry 6 }
+
+   teTunnelSourceAddress OBJECT-TYPE
+       SYNTAX       TeHopAddress
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { teTunnelEntry 7 }
+
+   teTunnelDestinationAddressType OBJECT-TYPE
+       SYNTAX       TeHopAddressType
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { teTunnelEntry 8 }
+
+   teTunnelDestinationAddress OBJECT-TYPE
+       SYNTAX       TeHopAddress
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { teTunnelEntry 9 }
+
+   teTunnelState    OBJECT-TYPE
+       SYNTAX       INTEGER {
+                        unknown(1),
+                        up(2),
+                        down(3),
+                        testing(4)
+                    }
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 10 }
+
+   teTunnelDiscontinuityTimer OBJECT-TYPE
+       SYNTAX       TimeStamp
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 11 }
+
+
+
+
+
+   teTunnelOctets   OBJECT-TYPE
+       SYNTAX       Counter64
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 12 }
+
+   teTunnelPackets  OBJECT-TYPE
+       SYNTAX       Counter64
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 13 }
+
+   teTunnelLPOctets OBJECT-TYPE
+       SYNTAX       Counter32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 14 }
+
+   teTunnelLPPackets OBJECT-TYPE
+       SYNTAX       Counter32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 15 }
+
+   teTunnelAge      OBJECT-TYPE
+       SYNTAX       TimeTicks
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 16 }
+
+   teTunnelTimeUp   OBJECT-TYPE
+       SYNTAX       TimeTicks
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 17 }
+
+   teTunnelPrimaryTimeUp OBJECT-TYPE
+       SYNTAX       TimeTicks
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 18 }
+
+   teTunnelTransitions OBJECT-TYPE
+       SYNTAX       Counter32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 19 }
+
+   teTunnelLastTransition OBJECT-TYPE
+       SYNTAX       TimeTicks
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 20 }
+
+   teTunnelPathChanges OBJECT-TYPE
+       SYNTAX       Counter32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 21 }
+
+   teTunnelLastPathChange OBJECT-TYPE
+       SYNTAX       TimeTicks
+       MAX-ACCESS   read-only
+       STATUS       current
+
+
+
+
+
+       ::= { teTunnelEntry 22 }
+
+   teTunnelConfiguredPaths OBJECT-TYPE
+       SYNTAX       Gauge32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 23 }
+
+   teTunnelStandbyPaths OBJECT-TYPE
+       SYNTAX       Gauge32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 24 }
+
+   teTunnelOperationalPaths OBJECT-TYPE
+       SYNTAX       Gauge32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { teTunnelEntry 25 }
+
+
+   tePathTable      OBJECT-TYPE
+       SYNTAX       SEQUENCE OF TePathEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { teMIBObjects 3 }
+
+
+
+
+
+   tePathEntry      OBJECT-TYPE
+       SYNTAX       TePathEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX       { teTunnelIndex, tePathIndex }
+       ::= { tePathTable 1 }
+
+   TePathEntry ::=
+       SEQUENCE {
+           tePathIndex                Unsigned32,
+           tePathName                 SnmpAdminString,
+           tePathRowStatus            RowStatus,
+           tePathStorageType          StorageType,
+           tePathType                 INTEGER,
+           tePathConfiguredRoute      Unsigned32,
+           tePathBandwidth            MplsBitRate,
+           tePathIncludeAny           Unsigned32,
+           tePathIncludeAll           Unsigned32,
+           tePathExclude              Unsigned32,
+           tePathSetupPriority        Integer32,
+           tePathHoldPriority         Integer32,
+           tePathProperties           BITS,
+           tePathOperStatus           INTEGER,
+           tePathAdminStatus          INTEGER,
+           tePathComputedRoute        Unsigned32,
+           tePathRecordedRoute        Unsigned32
+       }
+
+   tePathIndex      OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4294967295)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { tePathEntry 1 }
+
+   tePathName       OBJECT-TYPE
+       SYNTAX       SnmpAdminString (SIZE(0..32))
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathEntry 2 }
+
+   tePathRowStatus  OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathEntry 3 }
+
+   tePathStorageType OBJECT-TYPE
+       SYNTAX       StorageType
+       MAX-ACCESS   read-create
+       STATUS       current
+
+
+
+
+
+       ::= { tePathEntry 4 }
+
+   tePathType OBJECT-TYPE
+       SYNTAX       INTEGER {
+                        other(1),
+                        primary(2),
+                        standby(3),
+                        secondary(4)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathEntry 5 }
+
+   tePathConfiguredRoute OBJECT-TYPE
+       SYNTAX       Unsigned32
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathEntry 6 }
+
+   tePathBandwidth  OBJECT-TYPE
+       SYNTAX       MplsBitRate
+       UNITS       "Kilobits per second"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL      { 0 }
+       ::= { tePathEntry 7 }
+
+   tePathIncludeAny OBJECT-TYPE
+       SYNTAX       Unsigned32
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL      { 0 }
+       ::= { tePathEntry 8 }
+
+   tePathIncludeAll OBJECT-TYPE
+
+       SYNTAX       Unsigned32
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL      { 0 }
+       ::= { tePathEntry 9 }
+
+   tePathExclude    OBJECT-TYPE
+       SYNTAX       Unsigned32
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL      { 0 }
+       ::= { tePathEntry 10 }
+
+   tePathSetupPriority OBJECT-TYPE
+       SYNTAX       Integer32 (0..7)
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL      { 7 }
+
+
+
+
+
+       ::= { tePathEntry 11 }
+
+   tePathHoldPriority OBJECT-TYPE
+       SYNTAX       Integer32 (0..7)
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL      { 0 }
+       ::= { tePathEntry 12 }
+
+   tePathProperties OBJECT-TYPE
+       SYNTAX       BITS {
+                        recordRoute(0),
+                        cspf(1),
+                        makeBeforeBreak(2),
+                        mergeable(3),
+                        fastReroute(4),
+                        protected(5)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathEntry 13 }
+
+   tePathOperStatus OBJECT-TYPE
+       SYNTAX       INTEGER {
+                        unknown(0),
+                        down(1),
+                        testing(2),
+                        dormant(3),
+                        ready(4),
+                        operational(5)
+                    }
+       MAX-ACCESS   read-only
+       STATUS       current
+
+
+
+
+
+       ::= { tePathEntry 14 }
+
+   tePathAdminStatus OBJECT-TYPE
+       SYNTAX       INTEGER {
+                        normal(1),
+                        testing(2)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathEntry 15 }
+
+   tePathComputedRoute OBJECT-TYPE
+       SYNTAX       Unsigned32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { tePathEntry 16 }
+
+   tePathRecordedRoute OBJECT-TYPE
+       SYNTAX       Unsigned32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { tePathEntry 17 }
+
+
+   tePathHopTable   OBJECT-TYPE
+       SYNTAX       SEQUENCE OF TePathHopEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { teMIBObjects 4 }
+
+   tePathHopEntry   OBJECT-TYPE
+       SYNTAX       TePathHopEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX       { teHopListIndex, tePathHopIndex }
+       ::= { tePathHopTable 1 }
+
+   TePathHopEntry ::=
+       SEQUENCE {
+           teHopListIndex              Unsigned32,
+           tePathHopIndex              Unsigned32,
+           tePathHopRowStatus          RowStatus,
+           tePathHopStorageType        StorageType,
+           tePathHopAddrType           TeHopAddressType,
+           tePathHopAddress            TeHopAddress,
+           tePathHopType               INTEGER
+       }
+
+   teHopListIndex   OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4294967295)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { tePathHopEntry 1 }
+
+
+
+
+
+   tePathHopIndex   OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..4294967295)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { tePathHopEntry 2 }
+
+   tePathHopRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathHopEntry 3 }
+
+   tePathHopStorageType OBJECT-TYPE
+       SYNTAX       StorageType
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathHopEntry 4 }
+
+   tePathHopAddrType OBJECT-TYPE
+       SYNTAX       TeHopAddressType
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathHopEntry 5 }
+
+
+
+
+
+   tePathHopAddress OBJECT-TYPE
+       SYNTAX       TeHopAddress
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { tePathHopEntry 6 }
+
+   tePathHopType    OBJECT-TYPE
+       SYNTAX       INTEGER {
+                        unknown(0),
+                        loose(1),
+                        strict(2)
+                    }
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { tePathHopEntry 7 }
+
+
+   teTunnelUp       NOTIFICATION-TYPE
+       OBJECTS      { teTunnelName,
+                      tePathName }  -- TunnelPath
+       STATUS       current
+       ::= { teMIBNotifications 1 }
+
+   teTunnelDown     NOTIFICATION-TYPE
+       OBJECTS      { teTunnelName,
+                      tePathName }  -- TunnelPath
+       STATUS       current
+       ::= { teMIBNotifications 2 }
+
+   teTunnelChanged  NOTIFICATION-TYPE
+       OBJECTS      { teTunnelName,
+                      tePathName }  -- toTunnelPath
+       STATUS       current
+       ::= { teMIBNotifications 3 }
+
+   teTunnelRerouted NOTIFICATION-TYPE
+       OBJECTS      { teTunnelName,
+                      tePathName }  -- toTunnelPath
+       STATUS       current
+       ::= { teMIBNotifications 4 }
+
+
+
+
+
+
+
+   teGroups
+       OBJECT IDENTIFIER ::= { teMIBConformance 1 }
+
+   teModuleCompliance
+       OBJECT IDENTIFIER ::= { teMIBConformance 2 }
+
+
+   teTrafficEngineeringGroup OBJECT-GROUP
+       OBJECTS {
+           teTunnelName,
+           teTunnelNextPathIndex,
+           teTunnelRowStatus,
+           teTunnelStorageType,
+           teTunnelSourceAddressType,
+           teTunnelSourceAddress,
+           teTunnelDestinationAddressType,
+           teTunnelDestinationAddress,
+           teTunnelState,
+           teTunnelDiscontinuityTimer,
+           teTunnelOctets,
+           teTunnelPackets,
+           teTunnelLPOctets,
+           teTunnelLPPackets,
+           teTunnelAge,
+           teTunnelTimeUp,
+           teTunnelPrimaryTimeUp,
+           teTunnelTransitions,
+           teTunnelLastTransition,
+           teTunnelPathChanges,
+           teTunnelLastPathChange,
+           teTunnelConfiguredPaths,
+           teTunnelStandbyPaths,
+           teTunnelOperationalPaths,
+           tePathBandwidth,
+           tePathIncludeAny,
+           tePathIncludeAll,
+           tePathExclude,
+
+
+
+
+
+           tePathSetupPriority,
+           tePathHoldPriority,
+           tePathProperties,
+           tePathOperStatus,
+           tePathAdminStatus,
+           tePathComputedRoute,
+           tePathRecordedRoute,
+           teDistProtocol,
+           teSignalingProto,
+           teNotificationEnable,
+           teNextTunnelIndex,
+           teNextPathHopIndex,
+           teAdminGroupName,
+           teAdminGroupRowStatus,
+           teConfiguredTunnels,
+           teActiveTunnels,
+           tePrimaryTunnels,
+           tePathName,
+           tePathType,
+           tePathRowStatus,
+           tePathStorageType,
+           tePathConfiguredRoute,
+           tePathHopRowStatus,
+           tePathHopStorageType,
+           tePathHopAddrType,
+           tePathHopAddress,
+           tePathHopType
+       }
+       STATUS       current
+       ::= { teGroups 1 }
+
+   teNotificationGroup NOTIFICATION-GROUP
+      NOTIFICATIONS {
+          teTunnelUp,
+          teTunnelDown,
+          teTunnelChanged,
+          teTunnelRerouted
+      }
+      STATUS       current
+      ::= { teGroups 2 }
+
+
+
+
+
+
+
+   teModuleReadOnlyCompliance MODULE-COMPLIANCE
+       STATUS       current
+
+       MODULE       -- enclosing module, i.e., TE-MIB
+
+           MANDATORY-GROUPS {
+               teTrafficEngineeringGroup
+           }
+
+           GROUP        teNotificationGroup
+
+           OBJECT       teNotificationEnable
+           MIN-ACCESS   read-only
+
+           OBJECT       teAdminGroupName
+           MIN-ACCESS   read-only
+
+           OBJECT       teAdminGroupRowStatus
+           SYNTAX       RowStatus { active(1) }
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelName
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelRowStatus
+           SYNTAX       RowStatus { active(1) }
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelStorageType
+           MIN-ACCESS   read-only
+
+
+
+
+
+
+           OBJECT       teTunnelSourceAddressType
+           SYNTAX       TeHopAddressType { ipv4(1), ipv6(2) }
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelSourceAddress
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelDestinationAddressType
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelDestinationAddress
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathName
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathRowStatus
+           SYNTAX       RowStatus { active(1) }
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathStorageType
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathType
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathConfiguredRoute
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathBandwidth
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathIncludeAny
+           MIN-ACCESS   read-only
+
+
+
+
+
+
+           OBJECT       tePathIncludeAll
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathExclude
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathSetupPriority
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHoldPriority
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathProperties
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathAdminStatus
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHopRowStatus
+           SYNTAX       RowStatus { active(1) }
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHopStorageType
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHopAddrType
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHopAddress
+           MIN-ACCESS   read-only
+
+       ::= { teModuleCompliance 1 }
+
+   teModuleFullCompliance MODULE-COMPLIANCE
+       STATUS       current
+
+       MODULE       -- enclosing module, i.e., TE-MIB
+
+           MANDATORY-GROUPS {
+               teTrafficEngineeringGroup
+           }
+
+           GROUP        teNotificationGroup
+
+
+           OBJECT       teAdminGroupRowStatus
+           SYNTAX       RowStatus { active(1) }
+           WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+           OBJECT       teTunnelRowStatus
+           SYNTAX       RowStatus { active(1), notInService(2) }
+           WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                    createAndGo(4), destroy(6)
+                                  }
+
+           OBJECT       teTunnelSourceAddressType
+           SYNTAX       TeHopAddressType { ipv4(1), ipv6(2) }
+
+           OBJECT       tePathRowStatus
+           SYNTAX       RowStatus { active(1), notInService(2) }
+           WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                    createAndGo(4), destroy(6)
+                                  }
+
+           OBJECT       tePathHopRowStatus
+           SYNTAX       RowStatus { active(1), notInService(2) }
+           WRITE-SYNTAX RowStatus { active(1), notInService(2),
+
+
+
+
+
+                                    createAndGo(4), destroy(6)
+                                  }
+       ::= { teModuleCompliance 2 }
+
+   teModuleServerReadOnlyCompliance MODULE-COMPLIANCE
+       STATUS       current
+
+       MODULE       -- enclosing module, i.e., TE-MIB
+
+           MANDATORY-GROUPS {
+               teTrafficEngineeringGroup
+           }
+
+           GROUP        teNotificationGroup
+
+           OBJECT       teNotificationEnable
+           MIN-ACCESS   read-only
+
+           OBJECT       teAdminGroupName
+           MIN-ACCESS   read-only
+
+           OBJECT       teAdminGroupRowStatus
+           SYNTAX       RowStatus { active(1) }
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelName
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelRowStatus
+           SYNTAX       RowStatus { active(1) }
+           MIN-ACCESS   read-only
+
+
+
+
+
+
+           OBJECT       teTunnelStorageType
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelSourceAddressType
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelSourceAddress
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelDestinationAddressType
+           MIN-ACCESS   read-only
+
+           OBJECT       teTunnelDestinationAddress
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathName
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathRowStatus
+           SYNTAX       RowStatus { active(1) }
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathStorageType
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathType
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathConfiguredRoute
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathBandwidth
+           MIN-ACCESS   read-only
+
+
+
+
+
+
+           OBJECT       tePathIncludeAny
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathIncludeAll
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathExclude
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathSetupPriority
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHoldPriority
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathProperties
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathAdminStatus
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHopRowStatus
+           SYNTAX       RowStatus { active(1) }
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHopStorageType
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHopAddrType
+           MIN-ACCESS   read-only
+
+           OBJECT       tePathHopAddress
+           MIN-ACCESS   read-only
+
+       ::= { teModuleCompliance 3 }
+
+   teModuleServerFullCompliance MODULE-COMPLIANCE
+
+
+
+
+
+       STATUS       current
+
+       MODULE       -- enclosing module, i.e., TE-MIB
+           MANDATORY-GROUPS {
+               teTrafficEngineeringGroup
+           }
+
+           GROUP        teNotificationGroup
+
+
+           OBJECT       teAdminGroupRowStatus
+           SYNTAX       RowStatus { active(1) }
+           WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+           OBJECT       teTunnelRowStatus
+           SYNTAX       RowStatus { active(1), notInService(2) }
+           WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                    createAndGo(4), destroy(6)
+                                  }
+
+           OBJECT       teTunnelSourceAddressType
+
+           OBJECT       tePathRowStatus
+           SYNTAX       RowStatus { active(1), notInService(2) }
+           WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                    createAndGo(4), destroy(6)
+                                  }
+
+           OBJECT       tePathHopRowStatus
+
+
+
+
+
+           SYNTAX       RowStatus { active(1), notInService(2) }
+           WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                    createAndGo(4), destroy(6)
+                                  }
+       ::= { teModuleCompliance 4 }
+
+   END

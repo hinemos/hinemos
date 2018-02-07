@@ -1,0 +1,36 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"JmxMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"JmxInfo.MasterId",
+			"JmxInfo.AuthUser",
+			"JmxInfo.AuthPassword",
+			"JmxInfo.Port",
+			"JmxInfo.ConvertFlag",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"NumericValue.*.ThresholdUpperLimit",
+			"NumericValue.*.ThresholdLowerLimit"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"JmxMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

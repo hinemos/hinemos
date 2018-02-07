@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.composite;
@@ -171,6 +164,11 @@ public class ParameterComposite extends Composite {
 							m_selectItem = null;
 							m_viewer.setInput(list);
 						}
+					} else {
+						MessageDialog.openWarning(
+								null,
+								Messages.getString("warning"),
+								Messages.getString("message.job.129"));
 					}
 				}
 			}
@@ -185,7 +183,7 @@ public class ParameterComposite extends Composite {
 		this.m_deleteCondition.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (m_selectItem != null) {
+				if (m_selectItem != null && m_selectItem.size() > 0) {
 					ArrayList<?> list = (ArrayList<?>) m_viewer.getInput();
 					for(Object obj : m_selectItem) {
 						if(obj instanceof ArrayList) {
@@ -196,6 +194,11 @@ public class ParameterComposite extends Composite {
 							m_viewer.setInput(list);
 						}
 					}
+				} else {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							Messages.getString("message.job.129"));
 				}
 			}
 		});

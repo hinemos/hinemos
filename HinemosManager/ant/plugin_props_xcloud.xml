@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!-- 
+  Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+  
+  Hinemos module-build.xml for Cloud package
+ -->
+
+<project name="plugin_props_xcloud" basedir=".">
+	<property name="hinemos.home" value="/opt/hinemos"/>
+
+	<property name="hinemos_common.dir" value="../HinemosCommon" />
+	<property name="hinemos_manager.dir" value="../HinemosManager" />
+
+	<property name="lib.dir" value="lib/xcloud"/>
+	<property name="sbin.dir" value="sbin/xcloud"/>
+	<property name="etc.dir" value="etc/xcloud"/>
+	<property name="etc.template.dir" value="etc.template/xcloud"/>
+	<property name="var.dir" value="var/xcloud"/>
+	
+	<property name="build.dir" value="build/" />
+	<property name="common_module.dir" value="common_module/"/>
+	<property name="settings.dir" value="settings/"/>
+	<property name="rpm.dir" value="${build.dir}/rpm"/>
+	
+	<property name="src.plugin.dir" value="src" />
+	<property name="src.module.dir" value="src_module" />
+	
+	<property name="rpm.settings.dir" value="${rpm.dir}/${settings.dir}" />
+	<property name="rpm.sources.dir" value="${rpm.dir}/sources" />
+	
+	<property name="xcloud.ws.sei.classes" value="com.clustercontrol.ws.xcloud.CloudEndpointImpl" />
+	<property name="xcloud.service.wsdls" value="CloudEndpointService.wsdl"/>
+	<property name="xcloud.wsclient.jar" value="xCloudManagerWS.jar"/>
+
+	<property name="xcloud.lib.dir" value="${lib.dir}"/>
+	<property name="xcloud.sbin.dir" value="${sbin.dir}"/>
+	<property name="xcloud.secure.dir" value=".secure"/>
+	<property name="xcloud.etc.dir" value="${etc.dir}"/>
+	<property name="xcloud.etc.template.dir" value="${etc.template.dir}"/>
+	<property name="xcloud.var.dir" value="${var.dir}"/>
+	
+	<property name="xcloud.plugin.name" value="hinemos-${major.version}-manager-xcloud-core" />
+	<property name="xcloud.jar.plugin" value="xCloudManager.jar" />
+	<property name="xcloud.jar.model" value="xCloudManagerModel.jar" />
+	
+	<property name="xcloud.project.name" value="xCloudManager" />
+	<property name="xcloud.refresh.project.name" value="${xcloud.project.name}" />
+</project>

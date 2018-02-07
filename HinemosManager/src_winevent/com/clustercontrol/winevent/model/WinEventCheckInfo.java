@@ -1,17 +1,11 @@
 /*
-
- Copyright (C) 2013 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.winevent.model;
 
 import java.io.Serializable;
@@ -32,8 +26,6 @@ import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.monitor.run.model.MonitorCheckInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 
@@ -71,13 +63,6 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 	
 	@Deprecated
 	public WinEventCheckInfo() {
-	}
-
-	public WinEventCheckInfo(MonitorInfo monitorInfo) {
-		this.setMonitorId(monitorInfo.getMonitorId());
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToMonitorInfo(monitorInfo);
 	}
 
 	@Id

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.util;
@@ -36,9 +29,9 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.NotifyNotFound;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.notify.bean.ExecFacilityConstant;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -63,11 +56,6 @@ import com.clustercontrol.util.apllog.AplLogger;
  * @since 3.0.0
  */
 public class SendSyslog implements Notifier {
-	private static final String PROP_HOSTNAME = "notify.log.escalate.manager.hostname";
-	private static final String PROP_PROTOCOL = "notify.log.escalate.manager.protocol";
-	private static final String PROP_RETRY_COUNT = "notify.log.escalate.manager.retry.count";
-	private static final String PROP_RETRY_INTERVAL = "notify.log.escalate.manager.retry.interval";
-	private static final String PROP_TCP_TIMEOUT = "notify.log.escalate.manager.tcp.timeout";
 
 	/** ログ出力のインスタンス。 */
 	private static Log m_log = LogFactory.getLog( SendSyslog.class );
@@ -264,7 +252,7 @@ public class SendSyslog implements Notifier {
 					logEscalateInfo.getNotifyInfoEntity());
 			StringBinder binder = new StringBinder(param);
 
-			return binder.bindParam(message);
+			return binder.replace(message);
 		} catch (Exception e) {
 			m_log.warn("getMessage() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -364,7 +352,7 @@ public class SendSyslog implements Notifier {
 	private static String getSyslogHeaderHost(String facilityId) {
 		JpaTransactionManager jtm = null;
 		// ローカル変数
-		String hostname = HinemosPropertyUtil.getHinemosPropertyStr(PROP_HOSTNAME, null);
+		String hostname = HinemosPropertyCommon.notify_log_escalate_manager_hostname.getStringValue();
 
 		if (hostname == null) {
 			// undef hostname of syglog header
@@ -447,7 +435,7 @@ public class SendSyslog implements Notifier {
 	private void sendMsgWithRetry(InetAddress ipAddress, int port, int syslogPriority, String headerTimestamp,
 			String hostname, String message) throws IOException {
 
-		String protocol = HinemosPropertyUtil.getHinemosPropertyStr(PROP_PROTOCOL, "udp");
+		String protocol = HinemosPropertyCommon.notify_log_escalate_manager_protocol.getStringValue();
 		
 		String sendMessage = "<"+ syslogPriority + ">" + headerTimestamp + " " + hostname + " " + message;
 
@@ -460,8 +448,8 @@ public class SendSyslog implements Notifier {
 		m_log.debug("sendMsgWithRetry. (ipAddresss=" + ipAddress + ", port=" + port +
 				", sendMessage=" + sendMessage + ")");
 
-		int retryCount = HinemosPropertyUtil.getHinemosPropertyNum(PROP_RETRY_COUNT, Long.valueOf(1)).intValue();
-		int retryInterval = HinemosPropertyUtil.getHinemosPropertyNum(PROP_RETRY_INTERVAL, Long.valueOf(10000)).intValue();
+		int retryCount = HinemosPropertyCommon.notify_log_escalate_manager_retry_count.getIntegerValue();
+		int retryInterval = HinemosPropertyCommon.notify_log_escalate_manager_retry_interval.getIntegerValue();
 		IOException lastException = null;
 		int retrytime;
 		for (retrytime = 0; retrytime < retryCount; retrytime++) {
@@ -502,7 +490,7 @@ public class SendSyslog implements Notifier {
 		try {
 			InetSocketAddress endpoint= new InetSocketAddress(ipAddress, port); 
 			socket = new Socket() ; 
-			socket.connect(endpoint, HinemosPropertyUtil.getHinemosPropertyNum(PROP_TCP_TIMEOUT, Long.valueOf(3000)).intValue());
+			socket.connect(endpoint, HinemosPropertyCommon.notify_log_escalate_manager_tcp_timeout.getIntegerValue());
 			
 			os = socket.getOutputStream();
 			writer = new PrintWriter(socket.getOutputStream(), true);

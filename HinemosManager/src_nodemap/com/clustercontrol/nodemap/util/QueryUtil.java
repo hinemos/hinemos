@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.nodemap.util;
@@ -39,71 +32,83 @@ public class QueryUtil {
 	private static Log m_log = LogFactory.getLog( QueryUtil.class );
 
 	public static MapInfoEntity getMapInfoPK(String mapId) throws NodeMapNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		MapInfoEntity entity = em.find(MapInfoEntity.class, mapId, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			NodeMapNotFound e = new NodeMapNotFound("MapInfoEntity.findByPrimaryKey"
-					+ ", mapId = " + mapId);
-			m_log.info("getMapInfoPK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			MapInfoEntity entity = em.find(MapInfoEntity.class, mapId, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				NodeMapNotFound e = new NodeMapNotFound("MapInfoEntity.findByPrimaryKey"
+						+ ", mapId = " + mapId);
+				m_log.info("getMapInfoPK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static MapIconImageEntity getMapIconImagePK(String filename) throws IconFileNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		MapIconImageEntity entity = em.find(MapIconImageEntity.class, filename, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			IconFileNotFound e = new IconFileNotFound("MapIconImageEntity.findByPrimaryKey"
-					+ ", filename = " + filename);
-			m_log.info("getMapIconImagePK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			MapIconImageEntity entity = em.find(MapIconImageEntity.class, filename, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				IconFileNotFound e = new IconFileNotFound("MapIconImageEntity.findByPrimaryKey"
+						+ ", filename = " + filename);
+				m_log.info("getMapIconImagePK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static List<MapIconImageEntity> getAllMapIconImage() {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MapIconImageEntity> list
-		= em.createNamedQuery("MapIconImageEntity.findAll", MapIconImageEntity.class)
-		.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MapIconImageEntity> list
+			= em.createNamedQuery("MapIconImageEntity.findAll", MapIconImageEntity.class)
+			.getResultList();
+			return list;
+		}
 	}
 
 	public static MapBgImageEntity getMapBgImagePK(String filename) throws BgFileNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		MapBgImageEntity entity = em.find(MapBgImageEntity.class, filename, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			BgFileNotFound e = new BgFileNotFound("MapBgImageEntity.findByPrimaryKey"
-					+ ", filename = " + filename);
-			m_log.info("getMapBgImagePK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			MapBgImageEntity entity = em.find(MapBgImageEntity.class, filename, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				BgFileNotFound e = new BgFileNotFound("MapBgImageEntity.findByPrimaryKey"
+						+ ", filename = " + filename);
+				m_log.info("getMapBgImagePK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static List<MapBgImageEntity> getAllMapBgImage() {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MapBgImageEntity> list
-		= em.createNamedQuery("MapBgImageEntity.findAll", MapBgImageEntity.class)
-		.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MapBgImageEntity> list
+			= em.createNamedQuery("MapBgImageEntity.findAll", MapBgImageEntity.class)
+			.getResultList();
+			return list;
+		}
 	}
 
 	public static MapPositionEntity getMapPositionPK(MapPositionEntityPK pk) throws NodeMapNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		MapPositionEntity entity = em.find(MapPositionEntity.class, pk, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			NodeMapNotFound e = new NodeMapNotFound("MapPositionEntity.findByPrimaryKey"
-					+ pk.toString());
-			m_log.info("getMapPositionPK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			MapPositionEntity entity = em.find(MapPositionEntity.class, pk, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				NodeMapNotFound e = new NodeMapNotFound("MapPositionEntity.findByPrimaryKey"
+						+ pk.toString());
+				m_log.info("getMapPositionPK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static MapPositionEntity getMapPositionPK(String mapId, String elementId) throws NodeMapNotFound {
@@ -111,16 +116,18 @@ public class QueryUtil {
 	}
 
 	public static MapAssociationEntity getMapAssociationPK(MapAssociationEntityPK pk) throws NodeMapNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		MapAssociationEntity entity = em.find(MapAssociationEntity.class, pk, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			NodeMapNotFound e = new NodeMapNotFound("MapAssociationEntity.findByPrimaryKey"
-					+ pk.toString());
-			m_log.info("getMapAssociationPK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			MapAssociationEntity entity = em.find(MapAssociationEntity.class, pk, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				NodeMapNotFound e = new NodeMapNotFound("MapAssociationEntity.findByPrimaryKey"
+						+ pk.toString());
+				m_log.info("getMapAssociationPK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static MapAssociationEntity getMapAssociationPK(String mapId, String source, String target) throws NodeMapNotFound {
@@ -128,29 +135,35 @@ public class QueryUtil {
 	}
 
 	public static List<MapAssociationEntity> getMapAssociationByMapId(String mapId) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MapAssociationEntity> list
-		= em.createNamedQuery("MapAssociationEntity.findByMapId", MapAssociationEntity.class)
-		.setParameter("mapId", mapId)
-		.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MapAssociationEntity> list
+			= em.createNamedQuery("MapAssociationEntity.findByMapId", MapAssociationEntity.class)
+			.setParameter("mapId", mapId)
+			.getResultList();
+			return list;
+		}
 	}
 	
 	public static List<MapAssociationEntity> getMapAssociationBySourceOrTarget(List<String> nodeList) throws NodeMapNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MapAssociationEntity> list = em.createNamedQuery("MapAssociationEntity.findBySourceOrTarget", MapAssociationEntity.class)
-				.setParameter("source", nodeList)
-				.setParameter("target", nodeList)
-				.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MapAssociationEntity> list = em.createNamedQuery("MapAssociationEntity.findBySourceOrTarget", MapAssociationEntity.class)
+					.setParameter("source", nodeList)
+					.setParameter("target", nodeList)
+					.getResultList();
+			return list;
+		}
 	}
 	
 	public static List<MapPositionEntity> getMapPositionByMapIdOrElementId(List<String> mapIdList, List<String> elementIdList) throws NodeMapNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MapPositionEntity> list = em.createNamedQuery("MapPositionEntity.findByMapIdOrElementId", MapPositionEntity.class)
-				.setParameter("mapId", mapIdList)
-				.setParameter("elementId", elementIdList)
-				.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MapPositionEntity> list = em.createNamedQuery("MapPositionEntity.findByMapIdOrElementId", MapPositionEntity.class)
+					.setParameter("mapId", mapIdList)
+					.setParameter("elementId", elementIdList)
+					.getResultList();
+			return list;
+		}
 	}
 }

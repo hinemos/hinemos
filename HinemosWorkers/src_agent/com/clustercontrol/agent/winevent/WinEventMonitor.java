@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.agent.winevent;
@@ -46,6 +39,7 @@ import com.clustercontrol.bean.PluginConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.winevent.bean.WinEventConstant;
 import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
 import com.clustercontrol.ws.monitor.MonitorInfo;
@@ -64,6 +58,11 @@ public class WinEventMonitor {
 	
 	// Windowsでファイル名として無効な文字「*、|、\、:、"、<、>、?、/」 
 	public static final String INVALID_FILE_CHARACTER = "[*|\\\\:\"<>?/]";
+	
+	// ファイル名として無効な文字の中で置き換えが必要な文字
+	private static final String LOG_NAME_REPLACE_CHARACTER  = "monitor.winevent.logname.replace.character";
+	// xxx:yyy の場合 xxx を yyy に置き換える。置き換えが複数ある場合は , で区切る。
+	private static final String REPLACE_CHARACTER = "/:%4";
 	
 	// Hinemos監視用定義におけるイベントログ名のエンクロージャー 「 " 」
 	public static final String EVENT_LOG_NAME_ENCLOSURE_CHARACTER = "\"";
@@ -133,7 +132,7 @@ public class WinEventMonitor {
 		}
 		winEventReader = new WinEventReader();
 		for(String logName : monitorInfo.getWinEventCheckInfo().getLogName()) {
-			String bookmarkFileName = runPath + PREFIX + key + "-" + logName.replaceAll(INVALID_FILE_CHARACTER, "") + POSTFIX_BOOKMARK + ".xml";
+			String bookmarkFileName = runPath + PREFIX + key + "-" + logNameReplaceCharacter(logName) + POSTFIX_BOOKMARK + ".xml";
 			bookmarkFileNameMap.put(logName, bookmarkFileName);
 			try {
 				if(!new File(bookmarkFileName).exists()) {
@@ -290,7 +289,7 @@ public class WinEventMonitor {
 					m_log.debug("formattedEventLog : " + (formattedEventLog));
 
 					// 実行結果をパースしてEventLogRecordクラスに格納
-					ArrayList<EventLogRecord> eventlogs = parseEventXML(new ByteArrayInputStream(formattedEventLog.getBytes()));
+					ArrayList<EventLogRecord> eventlogs = parseEventXML(new ByteArrayInputStream(XMLUtil.ignoreInvalidString(formattedEventLog).getBytes()));
 					Collections.reverse(eventlogs);
 
 					// 監視設定をもとにパターンマッチし、通知情報をマネージャに送信する
@@ -638,4 +637,20 @@ public class WinEventMonitor {
 		return logName.substring(1, strLen - 1);
 	}
 	
+	/**
+	  * イベントログ名に含まれるファイルとして無効な文字を置き換える
+	  * @param logName
+	  * @return
+	  */
+	 public static String logNameReplaceCharacter(String logName) {
+		String replaceChar = AgentProperties.getProperty(LOG_NAME_REPLACE_CHARACTER, REPLACE_CHARACTER);
+		String[] commaSplit = replaceChar.split(",");
+		for(String s : commaSplit) {
+			 String[] colonSplit = s.split(":");
+			 logName = logName.replace(colonSplit[0], colonSplit[1]);
+		}
+		
+		logName = logName.replaceAll(INVALID_FILE_CHARACTER, "");
+		return logName;
+	}
 }

@@ -1,29 +1,16 @@
 /*
-
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.commons.util;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 
 public class AsyncTaskPersistentConfig {
-
-	private static Log log = LogFactory.getLog(AsyncTaskPersistentConfig.class);
 
 	/**
 	 * 該当のモジュール種別からの出力結果を永続化させるかどうかを返します。
@@ -32,53 +19,53 @@ public class AsyncTaskPersistentConfig {
 		boolean ret = true;
 
 		if ( HinemosModuleConstant.MONITOR_AGENT.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.monitor.agent", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_agent.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_CUSTOM_N.equals(typeId)
 				||  HinemosModuleConstant.MONITOR_CUSTOM_S.equals(typeId)) {
-			ret = getConfig("worker.async.task.persist.monitor.custom", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_custom.getBooleanValue();
 		} else if (HinemosModuleConstant.MONITOR_HTTP_N.equals(typeId)
 				|| HinemosModuleConstant.MONITOR_HTTP_S.equals(typeId)) {
-			ret = getConfig("worker.async.task.persist.monitor.http", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_http.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_PERFORMANCE.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.monitor.performance", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_performance.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_PING.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.monitor.ping", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_ping.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_PORT.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.monitor.port", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_port.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_PROCESS.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.monitor.process", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_process.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_SNMPTRAP.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.monitor.snmptrap", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_snmptrap.getBooleanValue();
 		} else if (HinemosModuleConstant.MONITOR_SNMP_N.equals(typeId)
 				|| HinemosModuleConstant.MONITOR_SNMP_S.equals(typeId)) {
-			ret = getConfig("worker.async.task.persist.monitor.snmp", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_snmp.getBooleanValue();
 		} else if (HinemosModuleConstant.MONITOR_SQL_N.equals(typeId)
 				|| HinemosModuleConstant.MONITOR_SQL_S.equals(typeId)) {
-			ret = getConfig("worker.async.task.persist.monitor.sql", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_sql.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.monitor.syslog", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_syslog.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_LOGFILE.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.monitor.logfile", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_logfile.getBooleanValue();
+		} else if ( HinemosModuleConstant.MONITOR_LOGCOUNT.equals(typeId) ) {
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_logcount.getBooleanValue();
+		} else if (HinemosModuleConstant.MONITOR_BINARYFILE_BIN.equals(typeId)) {
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_binaryfile.getBooleanValue();
+		} else if (HinemosModuleConstant.MONITOR_PCAP_BIN.equals(typeId)) {
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_packetcapture.getBooleanValue();
 		} else if ( HinemosModuleConstant.JOB.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.job", true);
+			ret = HinemosPropertyCommon.worker_async_task_persist_job.getBooleanValue();
 		} else if ( HinemosModuleConstant.SYSYTEM_MAINTENANCE.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.maintenance", true);
+			ret = HinemosPropertyCommon.worker_async_task_persist_maintenance.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_WINEVENT.equals(typeId) ) {
-			ret = getConfig("worker.async.task.persist.monitor.winevent", true);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_winevent.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_CUSTOMTRAP_N.equals(typeId)
 				||  HinemosModuleConstant.MONITOR_CUSTOMTRAP_S.equals(typeId)) {
-			ret = getConfig("worker.async.task.persist.monitor.customtrap", false);
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_customtrap.getBooleanValue();
+		} else if ( HinemosModuleConstant.MONITOR_CORRELATION.equals(typeId) ) {
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_correlation.getBooleanValue();
+		} else if ( HinemosModuleConstant.MONITOR_INTEGRATION.equals(typeId) ) {
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_integration.getBooleanValue();
 		}
-
-		return ret;
-	}
-
-	private static boolean getConfig(String key, boolean def) {
-		boolean ret = def;
-
-		// プロパティファイルから該当するキーの値を読み込む
-		ret = HinemosPropertyUtil.getHinemosPropertyBool(key, def);
-		log.debug("initialized async task persistency (" + key + ") :" + ret);
 
 		return ret;
 	}

@@ -1,0 +1,60 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+
+	]},
+
+	{
+	"propName":"deviceIndex",
+	"annotations":[
+		{"type":"Column", "columnName":"FSInfo_deviceIndex"}
+	]},
+
+	{
+	"propName":"deviceType",
+	"annotations":[
+		{"type":"Column", "columnName":"FSInfo_deviceType"}
+	]},
+
+	{
+	"propName":"deviceName",
+	"annotations":[
+		{"type":"Column", "columnName":"FSInfo_deviceName"}
+	]},
+
+	{
+	"propName":"deviceDisplayName",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"deviceSize",
+	"annotations":[
+		{"type":"Column", "columnName":"FSInfo_deviceSize"}
+	]},
+
+	{
+	"propName":"deviceSizeUnit",
+	"annotations":[
+		{"type":"Column", "columnName":"FSInfo_deviceSizeUnit"}
+	]},
+
+	{
+	"propName":"deviceDescription",
+	"annotations":[
+		{"type":"Column", "columnName":"FSInfo_deviceDescription"}
+	]},
+
+	{
+	"propName":"deviceFSType",
+	"annotations":[
+		{"type":"Column", "columnName":"FSInfo_deviceFSType"}
+	]}
+]
+}

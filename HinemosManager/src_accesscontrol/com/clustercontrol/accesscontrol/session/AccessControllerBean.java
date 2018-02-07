@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) since 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.accesscontrol.session;
@@ -24,6 +17,7 @@ import javax.persistence.EntityExistsException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.ManagerInfo;
 import com.clustercontrol.accesscontrol.bean.ObjectPrivilegeFilterInfo;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
@@ -39,6 +33,7 @@ import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.accesscontrol.model.UserInfo;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeUtil;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeValidator;
+import com.clustercontrol.accesscontrol.util.OptionManager;
 import com.clustercontrol.accesscontrol.util.QueryUtil;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
@@ -79,6 +74,7 @@ import com.clustercontrol.repository.util.FacilityIdCacheInitCallback;
 import com.clustercontrol.repository.util.FacilityTreeCacheRefreshCallback;
 import com.clustercontrol.repository.util.RepositoryChangedNotificationCallback;
 import com.clustercontrol.repository.util.RepositoryValidator;
+import com.clustercontrol.util.HinemosTime;
 
 /**
  * アカウント機能を実現するSession Bean<BR>
@@ -93,8 +89,9 @@ public class AccessControllerBean {
 	 * ログインチェックの為、本メソッドを使用します。
 	 *
 	 */
-	public void checkLogin() {
-
+	public ManagerInfo checkLogin() {
+		// Hinemosプロパティで設定されたタイムゾーンオフセットを取得し、返却する
+		return new ManagerInfo(HinemosTime.getTimeZoneOffset(), OptionManager.getOptions());
 	}
 
 	/**

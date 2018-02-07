@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository;
@@ -22,13 +15,12 @@ import java.util.concurrent.Callable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.accesscontrol.bean.UserIdConstant;
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.fault.SnmpResponseError;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.bean.EventConfirmConstant;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
@@ -66,7 +58,7 @@ public class DeviceSearchTask implements Callable<Boolean> {
 		NodeInfoDeviceSearch nodeDeviceSearch = null;
 
 		try {
-			String user = HinemosPropertyUtil.getHinemosPropertyStr("repository.auto.device.user", UserIdConstant.HINEMOS);
+			String user = HinemosPropertyCommon.repository_auto_device_user.getStringValue();
 			HinemosSessionContext.instance().setProperty(HinemosSessionContext.LOGIN_USER_ID, user);
 			HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR,
 					new AccessControllerBean().isAdministrator());
@@ -102,13 +94,13 @@ public class DeviceSearchTask implements Callable<Boolean> {
 			}
 		} catch (SnmpResponseError e) {
 			//SNMPの応答エラー時にイベント登録有無を取得
-			isOutPutLog = HinemosPropertyUtil.getHinemosPropertyBool("repository.auto.device.find.log", false);
+			isOutPutLog = HinemosPropertyCommon.repository_auto_device_find_log.getBooleanValue();
 		} catch (Exception e) {
 			m_log.warn("run() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			isExceptionOccur = true;
 			//SNMPの応答エラー時にイベント登録有無を取得
-			isOutPutLog = HinemosPropertyUtil.getHinemosPropertyBool("repository.auto.device.find.log", false);
+			isOutPutLog = HinemosPropertyCommon.repository_auto_device_find_log.getBooleanValue();
 		} finally {
 			//イベントログの登録
 			if (isOutPutLog) {

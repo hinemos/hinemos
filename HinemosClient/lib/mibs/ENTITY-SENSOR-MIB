@@ -1,0 +1,208 @@
+ENTITY-SENSOR-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE,
+        Integer32, Unsigned32, mib-2
+                FROM SNMPv2-SMI
+        MODULE-COMPLIANCE, OBJECT-GROUP
+                FROM SNMPv2-CONF
+        TEXTUAL-CONVENTION, TimeStamp
+                FROM SNMPv2-TC
+        entPhysicalIndex, entityPhysicalGroup
+                FROM ENTITY-MIB
+        SnmpAdminString
+                FROM SNMP-FRAMEWORK-MIB;
+
+entitySensorMIB MODULE-IDENTITY
+    LAST-UPDATED    "200212160000Z"
+    ORGANIZATION    "IETF Entity MIB Working Group"
+
+    ::= { mib-2 99 }
+
+entitySensorObjects              OBJECT IDENTIFIER
+     ::= { entitySensorMIB 1 }
+
+entitySensorConformance          OBJECT IDENTIFIER
+     ::= { entitySensorMIB 3 }
+
+
+EntitySensorDataType ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX INTEGER {
+        other(1),
+        unknown(2),
+        voltsAC(3),
+        voltsDC(4),
+        amperes(5),
+        watts(6),
+        hertz(7),
+        celsius(8),
+        percentRH(9),
+        rpm(10),
+        cmm(11),
+        truthvalue(12)
+    }
+
+EntitySensorDataScale ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX INTEGER {
+        yocto(1),   -- 10^-24
+        zepto(2),   -- 10^-21
+        atto(3),    -- 10^-18
+        femto(4),   -- 10^-15
+        pico(5),    -- 10^-12
+        nano(6),    -- 10^-9
+        micro(7),   -- 10^-6
+        milli(8),   -- 10^-3
+        units(9),   -- 10^0
+        kilo(10),   -- 10^3
+        mega(11),   -- 10^6
+        giga(12),   -- 10^9
+        tera(13),   -- 10^12
+        exa(14),    -- 10^15
+        peta(15),   -- 10^18
+        zetta(16),  -- 10^21
+        yotta(17)   -- 10^24
+    }
+
+EntitySensorPrecision ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX Integer32 (-8..9)
+
+EntitySensorValue ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX Integer32 (-1000000000..1000000000)
+
+EntitySensorStatus ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX INTEGER {
+        ok(1),
+        unavailable(2),
+        nonoperational(3)
+    }
+
+
+entPhySensorTable OBJECT-TYPE
+    SYNTAX        SEQUENCE OF EntPhySensorEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    ::= { entitySensorObjects 1 }
+
+entPhySensorEntry OBJECT-TYPE
+    SYNTAX        EntPhySensorEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX  { entPhysicalIndex }    -- SPARSE-AUGMENTS
+    ::= { entPhySensorTable 1 }
+
+EntPhySensorEntry ::= SEQUENCE {
+        entPhySensorType            EntitySensorDataType,
+        entPhySensorScale           EntitySensorDataScale,
+        entPhySensorPrecision       EntitySensorPrecision,
+        entPhySensorValue           EntitySensorValue,
+        entPhySensorOperStatus      EntitySensorStatus,
+        entPhySensorUnitsDisplay    SnmpAdminString,
+        entPhySensorValueTimeStamp  TimeStamp,
+        entPhySensorValueUpdateRate Unsigned32
+}
+
+entPhySensorType OBJECT-TYPE
+    SYNTAX        EntitySensorDataType
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { entPhySensorEntry 1 }
+
+entPhySensorScale OBJECT-TYPE
+    SYNTAX        EntitySensorDataScale
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { entPhySensorEntry 2 }
+
+
+
+
+
+
+
+
+entPhySensorPrecision OBJECT-TYPE
+    SYNTAX        EntitySensorPrecision
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { entPhySensorEntry 3 }
+
+entPhySensorValue OBJECT-TYPE
+    SYNTAX        EntitySensorValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { entPhySensorEntry 4 }
+
+entPhySensorOperStatus OBJECT-TYPE
+    SYNTAX        EntitySensorStatus
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { entPhySensorEntry 5 }
+
+entPhySensorUnitsDisplay OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhySensorEntry 6 }
+
+
+
+
+
+
+
+entPhySensorValueTimeStamp OBJECT-TYPE
+    SYNTAX        TimeStamp
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { entPhySensorEntry 7 }
+
+entPhySensorValueUpdateRate  OBJECT-TYPE
+    SYNTAX        Unsigned32
+    UNITS         "milliseconds"
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { entPhySensorEntry 8 }
+
+
+entitySensorCompliances OBJECT IDENTIFIER
+    ::= { entitySensorConformance 1 }
+entitySensorGroups      OBJECT IDENTIFIER
+    ::= { entitySensorConformance 2 }
+
+entitySensorCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS { entitySensorValueGroup }
+
+
+
+
+
+
+
+    MODULE ENTITY-MIB
+        MANDATORY-GROUPS { entityPhysicalGroup }
+
+    ::= { entitySensorCompliances 1 }
+
+
+entitySensorValueGroup OBJECT-GROUP
+    OBJECTS {
+             entPhySensorType,
+             entPhySensorScale,
+             entPhySensorPrecision,
+             entPhySensorValue,
+             entPhySensorOperStatus,
+             entPhySensorUnitsDisplay,
+             entPhySensorValueTimeStamp,
+             entPhySensorValueUpdateRate
+    }
+    STATUS  current
+    ::= { entitySensorGroups 1 }
+
+END

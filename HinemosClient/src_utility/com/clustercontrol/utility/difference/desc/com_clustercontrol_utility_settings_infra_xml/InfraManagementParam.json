@@ -1,0 +1,36 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"paramId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"passwordFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementParam_passwordFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"true", "name":"name_circle"},
+				{"value":"false", "name":"name_hyphen"}
+			]
+		}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementParam_description"}
+	]},
+
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementParam_value"}
+	]}
+]
+}

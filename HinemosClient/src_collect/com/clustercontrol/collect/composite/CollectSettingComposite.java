@@ -1,28 +1,24 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.collect.composite;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.SWT;
@@ -34,20 +30,28 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
+import com.clustercontrol.collect.bean.CollectConstant;
+import com.clustercontrol.collect.bean.GraphTypeConstant;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.bean.SummaryTypeMessage;
+import com.clustercontrol.collect.dialog.CollectItemJobDialog;
 import com.clustercontrol.collect.util.CollectEndpointWrapper;
 import com.clustercontrol.collect.view.CollectGraphView;
 import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.ws.collect.CollectKeyInfoPK;
+import com.clustercontrol.ws.collect.HinemosDbTimeout_Exception;
 import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
 import com.clustercontrol.ws.collect.InvalidRole_Exception;
 import com.clustercontrol.ws.collect.InvalidUserPass_Exception;
+import com.clustercontrol.ws.repository.FacilityInfo;
 import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
@@ -59,10 +63,22 @@ import com.clustercontrol.ws.repository.FacilityTreeItem;
 public class CollectSettingComposite extends Composite {
 	private static Log m_log = LogFactory.getLog(CollectSettingComposite.class);
 
+	/** シェル */
+	private Shell m_shell = null;
+
 	/**
 	 * 
 	 */
 	private CollectGraphView m_collectGraphView;
+
+	/** 収集値表示名（ジョブ）のマップ（収集値表示名、収集値表示名の情報） */
+	private Map<String, String> m_collectorItemJobMap = new HashMap<>();
+
+	/** 収集値表示名（ジョブ）選択項目のリスト(収集値表示名) */
+	private List<String> m_collectorItemJobCheckList = new ArrayList<>();
+
+	/** ジョブ収集値表示名一覧ダイアログ表示ボタン */
+	private Button m_showJobHistoryButton = null;
 
 	/** 監視項目種別のリスト */
 	private org.eclipse.swt.widgets.List m_listCollectorItem = null;
@@ -81,6 +97,8 @@ public class CollectSettingComposite extends Composite {
 	private Button thresholdButton = null;
 	/** 凡例表示フラグ */
 	private Button legendButton = null;
+	/** 予測変動幅表示フラグ */
+	private Button predictedButton = null;
 	/** 監視項目IDの選択順番index保持用 */
 	private List<Integer> selectIndexList = new ArrayList<>();
 	/** [適用]ボタン */
@@ -88,14 +106,14 @@ public class CollectSettingComposite extends Composite {
 
 	private static final int SUMMARY_CODE_INVALID = -1;
 	
-	/** 区切り文字(#) */
-	protected static final String SEPARATOR_HASH = "#";
+	/** 区切り文字(\u2029) */
+	protected static final String SEPARATOR_HASH = "\u2029";
 	/** 区切り文字(##@##) */
 	protected static final String SEPARATOR_HASH_HASH_AT_HASH_HASH = "##@##";
 	/** 区切り文字(#!#) */
 	protected static final String SEPARATOR_HASH_EX_HASH = "#!#";
-	/** 区切り文字(@) */
-	protected static final String SEPARATOR_AT = "@";
+	/** 区切り文字(＠) */
+	protected static final String SEPARATOR_AT = "＠";
 	
 	/** 画面サイズで折り返しフラグ */
 	public static final String P_COLLECT_GRAPH_SIZE_RETURN_FLG = "collectGraphSizeReturnFlg";
@@ -117,6 +135,9 @@ public class CollectSettingComposite extends Composite {
 
 	/** 凡例モードフラグ */
 	public static final String P_COLLECT_GRAPH_LEGEND_FLG = "collectGraphLegendFlg";
+	
+	/**  */
+	public static final String P_COLLECT_GRAPH_SIGMA_FLG = "collectGraphSigmaFlg";
 
 	/** ツリー選択状態 */
 	public static final String P_COLLECT_GRAPH_SELECT_NODE_INFO = "collectGraphSelectNodeInfo";
@@ -145,6 +166,9 @@ public class CollectSettingComposite extends Composite {
 	 */
 	public CollectSettingComposite(Composite parent, int style, CollectGraphView collectGraphView) {
 		super(parent, style);
+
+		m_shell = this.getShell();
+
 		// 初期化
 		initialize();
 		m_collectGraphView = collectGraphView;
@@ -160,6 +184,7 @@ public class CollectSettingComposite extends Composite {
 		// itemCode
 		Label itemCodeLabel = new Label(graphCompo, SWT.NONE | SWT.RIGHT);
 		itemCodeLabel.setText(Messages.getString("collection.display.name") + " : ");
+
 		// itemCodeのリスト
 		m_listCollectorItem = new org.eclipse.swt.widgets.List(graphCompo, SWT.MULTI | SWT.V_SCROLL | SWT.LEFT | SWT.BORDER | SWT.H_SCROLL | SWT.NONE);
 		WidgetTestUtil.setTestId(this, "collectorItem", this.m_listCollectorItem);
@@ -216,6 +241,25 @@ public class CollectSettingComposite extends Composite {
 				m_log.debug("監視項目リストの選択順番(index):" + selectIndexList.toString());
 			}
 		});
+		// ジョブ収集値表示名一覧ダイアログ表示ボタン
+		m_showJobHistoryButton = new Button(graphCompo, SWT.NONE);
+		m_showJobHistoryButton.setText(Messages.getString("collection.graph.jobhistory.show"));
+		m_showJobHistoryButton.setToolTipText(Messages.getString("collection.graph.jobhistory.show"));
+		gridData = new GridData();
+		gridData.horizontalAlignment = GridData.FILL;
+		m_showJobHistoryButton.setLayoutData(gridData);
+		m_showJobHistoryButton.addSelectionListener( new SelectionAdapter(){
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				CollectItemJobDialog dialog 
+						= new CollectItemJobDialog(m_shell, m_collectorItemJobMap,
+								m_collectorItemJobCheckList);
+				if (dialog.open() == IDialogConstants.OK_ID) {
+					// 処理なし
+				}
+			}
+		});
+
 		// グラフ種別
 		Label graphTypeLabel = new Label(graphCompo, SWT.RIGHT | SWT.NONE);
 		graphTypeLabel.setText(Messages.getString("collection.graph.graphkind") + " : ");
@@ -285,6 +329,12 @@ public class CollectSettingComposite extends Composite {
 		legendButton.setToolTipText(Messages.getString("collection.graph.legend"));
 		// preferenceの情報を取得
 		legendButton.setSelection(store.getBoolean(P_COLLECT_GRAPH_LEGEND_FLG));
+		
+		// 
+		predictedButton = new Button(checkCompsite, SWT.CHECK);
+		predictedButton.setText(Messages.getString("collection.graph.predicted")); // 予測変動表示
+		predictedButton.setToolTipText(Messages.getString("collection.graph.predicted"));
+		predictedButton.setSelection(store.getBoolean(P_COLLECT_GRAPH_SIGMA_FLG));
 
 		// 適用ボタン
 		gridData = new GridData();
@@ -344,6 +394,7 @@ public class CollectSettingComposite extends Composite {
 		store.setValue(P_COLLECT_GRAPH_APPROX_FLG, approximateButton.getSelection());
 		store.setValue(P_COLLECT_GRAPH_THRESHOLD_FLG, thresholdButton.getSelection());
 		store.setValue(P_COLLECT_GRAPH_LEGEND_FLG, legendButton.getSelection());
+		store.setValue(P_COLLECT_GRAPH_SIGMA_FLG, predictedButton.getSelection());
 		store.setValue(P_COLLECT_GRAPH_ZOOM_LEVEL, m_collectGraphView.getCollectGraphComposite().getZoomLevel());
 		String checkedTreeInfo = storeCheckedTreeInfo();
 		m_log.debug("checkedTreeInfo : " + checkedTreeInfo);
@@ -384,7 +435,8 @@ public class CollectSettingComposite extends Composite {
 	 * @return 監視項目種別リスト
 	 */
 	private List<CollectKeyInfoPK> getCollectorItems(){
-		if (selectIndexList == null || selectIndexList.size() == 0) {
+		if ((selectIndexList == null || selectIndexList.size() == 0)
+				&& (m_collectorItemJobCheckList == null || m_collectorItemJobCheckList.size() == 0)) {
 			return null;
 		}
 		List<CollectKeyInfoPK> collectKeyInfoList = new ArrayList<>();
@@ -400,6 +452,26 @@ public class CollectSettingComposite extends Composite {
 			pk.setMonitorId(monitorId);
 			collectKeyInfoList.add(pk);
 			m_log.info("getCollectorItem() 選択した監視項目情報 number:" + number + ", itemName:" + pk.getItemName() 
+			+ ", displayName:" + pk.getDisplayName() + ", monitorId:" + pk.getMonitorId());
+		}
+		int type = getGraphTypeItem();
+		if (type != GraphTypeConstant.LINE 
+				&& type != GraphTypeConstant.LINE_SUMMARIZED 
+				&& type != GraphTypeConstant.AREA) {
+			// 折れ線グラフ、積み上げ面以外はジョブ履歴は対象外
+			return 	collectKeyInfoList;
+		}
+		for (String collectorItemJobCheck : m_collectorItemJobCheckList) {
+			String itemCodeName = m_collectorItemJobMap.get(collectorItemJobCheck);
+			CollectKeyInfoPK pk = new CollectKeyInfoPK();
+			String itemName = itemCodeName.split(SEPARATOR_AT)[0];
+			String displayName = itemCodeName.split(SEPARATOR_AT)[1];
+			String monitorId = itemCodeName.split(SEPARATOR_AT)[2];
+			pk.setItemName(itemName);
+			pk.setDisplayName(displayName);
+			pk.setMonitorId(monitorId);
+			collectKeyInfoList.add(pk);
+			m_log.info("getCollectorItem() 選択した監視項目情報 itemName:" + pk.getItemName() 
 			+ ", displayName:" + pk.getDisplayName() + ", monitorId:" + pk.getMonitorId());
 		}
 		return collectKeyInfoList;
@@ -432,7 +504,9 @@ public class CollectSettingComposite extends Composite {
 				}
 			}
 		}
-		
+		for (Map.Entry<String, List<String>> managerFacilityInfo : managerFacilityMap.entrySet()) {
+			managerFacilityInfo.getValue().add(RoleSettingTreeConstant.ROOT_ID);
+		}
 		for (Map.Entry<String, List<String>> map : managerFacilityMap.entrySet()) {
 			String managerName = map.getKey();
 			List<String> facilityList = map.getValue();
@@ -464,7 +538,7 @@ public class CollectSettingComposite extends Composite {
 				String monitorId = collectKeyInfo.getMonitorId();
 				String displayName = collectKeyInfo.getDisplayName();
 				if (!allItemList.contains(itemName + SEPARATOR_AT + displayName + SEPARATOR_AT + monitorId)) {
-					// itemCode@itemName にしてリストに追加
+					// itemCode＠itemName にしてリストに追加
 					allItemList.add(itemName + SEPARATOR_AT + displayName + SEPARATOR_AT + monitorId);
 				}
 			}
@@ -479,12 +553,31 @@ public class CollectSettingComposite extends Composite {
 			if (!displayName.equals("") && !itemName.endsWith("[" + displayName + "]")) {
 				itemName += "[" + displayName + "]";
 			}
-			String itemNameStr = itemName + "(" + monitorId + ")";
-			if (!(Arrays.asList(m_listCollectorItem.getItems())).contains(itemNameStr)) {
-				m_listCollectorItem.add(itemNameStr);
-				m_listCollectorItem.setData(itemNameStr, itemCodeName);
+			String itemNameStr = "";
+			if (!monitorId.equals(CollectConstant.COLLECT_TYPE_JOB)) {
+				// ジョブ履歴以外
+				itemNameStr = itemName + "(" + monitorId + ")";
+				if (!(Arrays.asList(m_listCollectorItem.getItems())).contains(itemNameStr)) {
+					m_listCollectorItem.add(itemNameStr);
+					m_listCollectorItem.setData(itemNameStr, itemCodeName);
+				}
+			} else {
+				// ジョブ履歴
+				itemNameStr = itemName;
+				if (!m_collectorItemJobMap.containsKey(itemNameStr)) {
+					m_collectorItemJobMap.put(itemNameStr, itemCodeName);
+				}
+				Iterator<String> iter = m_collectorItemJobCheckList.iterator();
+				while(iter.hasNext()) {
+					String collectorItemJobCheck = iter.next();
+					if (!m_collectorItemJobMap.containsKey(collectorItemJobCheck)) {
+						iter.remove();
+					}
+				}
 			}
 		}
+		// webクライアントで描画中に次に進むとエラーになる場合があるのでいったんチェックする（マネージャアクセス等は発生しない)
+		m_listCollectorItem.update();
 
 		// 選択状態の復元
 		setDefaultItemInfo();
@@ -517,6 +610,8 @@ public class CollectSettingComposite extends Composite {
 		m_comboGraphTypeItem.removeAll();
 		setCheckBoxEnableByGraphKind();
 		selectIndexList.clear();
+		m_collectorItemJobMap.clear();
+		m_collectorItemJobCheckList.clear();
 	}
 
 	/**
@@ -537,6 +632,9 @@ public class CollectSettingComposite extends Composite {
 		
 		// 監視項目名リストの選択状態を取得しメンバに設定する
 		this.selectIndexList = getSelectIndexListByItemName();
+
+		// ジョブ監視項目名リストの選択状態を取得しメンバに設定する
+		this.m_collectorItemJobCheckList = getSelectIndexListByItemNameForJob();
 	}
 	
 	/**
@@ -547,34 +645,44 @@ public class CollectSettingComposite extends Composite {
 		m_log.debug("グラフ種別のComboを生成し、Preferenceから復元します");
 		List<String> graphTypeList = Arrays.asList(m_comboGraphTypeItem.getItems());
 		if (graphTypeList == null || graphTypeList.size() == 0) {
-			m_comboGraphTypeItem.add(Messages.getString("collection.graph.line"));// 折れ線グラフ
-			m_comboGraphTypeItem.setData(Messages.getString("collection.graph.line"), 1);
-			m_comboGraphTypeItem.add(Messages.getString("collection.graph.line") 
-					+ "(" + Messages.getString("collection.graph.summarizedinmonitorid") + ")"); // 折れ線(監視項目で集約)
-			m_comboGraphTypeItem.setData(Messages.getString("collection.graph.line") 
-					+ "(" + Messages.getString("collection.graph.summarizedinmonitorid") + ")", 2);
-			m_comboGraphTypeItem.add(Messages.getString("collection.graph.area"));// 積み上げ面
-			m_comboGraphTypeItem.setData(Messages.getString("collection.graph.area"), 3);
-			m_comboGraphTypeItem.add(Messages.getString("collection.graph.scatter")); // 散布図
-			m_comboGraphTypeItem.setData(Messages.getString("collection.graph.scatter"), 6);
-			m_comboGraphTypeItem.add(Messages.getString("collection.graph.scatter") 
-					+ "(" + Messages.getString("collection.graph.summarized") + ")");// 散布図(集約)
-			m_comboGraphTypeItem.setData(Messages.getString("collection.graph.scatter") 
-					+ "(" + Messages.getString("collection.graph.summarized") + ")", 7);
-			m_comboGraphTypeItem.add("--------------------");
-			m_comboGraphTypeItem.setData("--------------------", 10);
-			m_comboGraphTypeItem.add(Messages.getString("collection.graph.pie"));// 円グラフ
-			m_comboGraphTypeItem.setData(Messages.getString("collection.graph.pie"), 4);
-			m_comboGraphTypeItem.add(Messages.getString("collection.graph.pie") 
-					+ "(" + Messages.getString("collection.graph.summarizedinmonitorid") + ")");// 円グラフ(監視項目で集約)
-			m_comboGraphTypeItem.setData(Messages.getString("collection.graph.pie") 
-					+ "(" + Messages.getString("collection.graph.summarizedinmonitorid") + ")", 5);
-			m_comboGraphTypeItem.add(Messages.getString("collection.graph.stackedbar"));// 棒線
-			m_comboGraphTypeItem.setData(Messages.getString("collection.graph.stackedbar"), 8);
-			m_comboGraphTypeItem.add(Messages.getString("collection.graph.stackedbar") // 棒線(監視項目で集約)
-					+ "(" + Messages.getString("collection.graph.summarizedinmonitorid") + ")");
-			m_comboGraphTypeItem.setData(Messages.getString("collection.graph.stackedbar") 
-					+ "(" + Messages.getString("collection.graph.summarizedinmonitorid") + ")", 9);
+			// 折れ線グラフ
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(GraphTypeConstant.LINE));
+			m_comboGraphTypeItem.setData(GraphTypeConstant.typeToString(GraphTypeConstant.LINE), 
+					GraphTypeConstant.LINE);
+			// 折れ線(監視項目で集約)
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(GraphTypeConstant.LINE_SUMMARIZED));
+			m_comboGraphTypeItem.setData(GraphTypeConstant.typeToString(GraphTypeConstant.LINE_SUMMARIZED), 
+					GraphTypeConstant.LINE_SUMMARIZED);
+			// 積み上げ面
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(GraphTypeConstant.AREA));
+			m_comboGraphTypeItem.setData(GraphTypeConstant.typeToString(GraphTypeConstant.AREA), 
+					GraphTypeConstant.AREA);
+			// 散布図
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(GraphTypeConstant.SCATTER)); 
+			m_comboGraphTypeItem.setData(GraphTypeConstant.typeToString(GraphTypeConstant.SCATTER), 
+					GraphTypeConstant.SCATTER);
+			// 散布図(集約)
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(GraphTypeConstant.SCATTER_SUMMARIZED));
+			m_comboGraphTypeItem.setData(GraphTypeConstant.typeToString(GraphTypeConstant.SCATTER_SUMMARIZED), 
+					GraphTypeConstant.SCATTER_SUMMARIZED);
+			// 区切り
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(null));
+			// 円グラフ
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(GraphTypeConstant.PIE));
+			m_comboGraphTypeItem.setData(GraphTypeConstant.typeToString(GraphTypeConstant.PIE), 
+					GraphTypeConstant.PIE);
+			// 円グラフ(監視項目で集約)
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(GraphTypeConstant.PIE_SUMMARIZED));
+			m_comboGraphTypeItem.setData(GraphTypeConstant.typeToString(GraphTypeConstant.PIE_SUMMARIZED), 
+					GraphTypeConstant.PIE_SUMMARIZED);
+			// 棒線
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(GraphTypeConstant.STACKEDBAR));
+			m_comboGraphTypeItem.setData(GraphTypeConstant.typeToString(GraphTypeConstant.STACKEDBAR), 
+					GraphTypeConstant.STACKEDBAR);
+			// 棒線(監視項目で集約)
+			m_comboGraphTypeItem.add(GraphTypeConstant.typeToString(GraphTypeConstant.STACKEDBAR_SUMMARIZED));
+			m_comboGraphTypeItem.setData(GraphTypeConstant.typeToString(GraphTypeConstant.STACKEDBAR_SUMMARIZED), 
+					GraphTypeConstant.STACKEDBAR_SUMMARIZED);
 			
 			// preferenceから前回の情報を取得
 			int type = ClusterControlPlugin.getDefault().getPreferenceStore()
@@ -596,7 +704,7 @@ public class CollectSettingComposite extends Composite {
 		if (itemName == null || itemName.equals("")) {
 			return SUMMARY_CODE_INVALID;
 		}
-		if ((Integer)m_comboGraphTypeItem.getData(itemName) == 10) {// 境目の[-----]
+		if (m_comboGraphTypeItem.getData(itemName) == null) {// 境目の[-----]
 			return SUMMARY_CODE_INVALID;
 		}
 		return (Integer)m_comboGraphTypeItem.getData(itemName);
@@ -675,7 +783,8 @@ public class CollectSettingComposite extends Composite {
 			return false;
 		}
 
-		if ((getGraphTypeItem() == 6 || getGraphTypeItem() == 7) && itemCodeList.size() < 2) {
+		if ((getGraphTypeItem() == GraphTypeConstant.SCATTER || getGraphTypeItem() == GraphTypeConstant.SCATTER_SUMMARIZED) 
+				&& itemCodeList.size() < 2) {
 			m_log.debug("checkTreeCombo() 散布図で監視項目IDが複数でない");
 			MessageDialog.openInformation(
 					null,
@@ -695,7 +804,11 @@ public class CollectSettingComposite extends Composite {
 			return false;
 		}
 		
-		if ((getGraphTypeItem() == 3 || getGraphTypeItem() == 6 || getGraphTypeItem() == 7 || getGraphTypeItem() == 8 || getGraphTypeItem() == 9) 
+		if ((getGraphTypeItem() == GraphTypeConstant.AREA 
+				|| getGraphTypeItem() == GraphTypeConstant.SCATTER 
+				|| getGraphTypeItem() == GraphTypeConstant.SCATTER_SUMMARIZED 
+				|| getGraphTypeItem() == GraphTypeConstant.STACKEDBAR 
+				|| getGraphTypeItem() == GraphTypeConstant.STACKEDBAR_SUMMARIZED) 
 				&& summaryType == SummaryTypeConstant.TYPE_RAW) {
 			// 積み上げ面グラフ、散布図、積み上げ棒グラフはローデータの場合はグラフを表示しない
 			m_log.debug("checkTreeCombo() ローデータで表示できないグラフ種別を選択");
@@ -720,30 +833,34 @@ public class CollectSettingComposite extends Composite {
 		returnButton.setEnabled(true);
 		returnKindButton.setEnabled(true);
 		switch (type) {
-			case 1: // 折れ線
-			case 2: // 折れ線(集約)
+			case GraphTypeConstant.LINE: // 折れ線
+			case GraphTypeConstant.LINE_SUMMARIZED: // 折れ線(集約)
 				approximateButton.setEnabled(true);
 				thresholdButton.setEnabled(true);
 				legendButton.setEnabled(true);
+				predictedButton.setEnabled(true);
 				break;
-			case 3: // 積み上げ面
+			case GraphTypeConstant.AREA: // 積み上げ面
 				approximateButton.setEnabled(false);
 				thresholdButton.setEnabled(false);
 				legendButton.setEnabled(true);
+				predictedButton.setEnabled(false);
 				break;
-			case 4: // 円グラフ
-			case 5: // 円グラフ(集約)
-			case 8: // 積み上げ棒
-			case 9: // 積み上げ棒(集約)
+			case GraphTypeConstant.PIE: // 円グラフ
+			case GraphTypeConstant.PIE_SUMMARIZED: // 円グラフ(集約)
+			case GraphTypeConstant.STACKEDBAR: // 積み上げ棒
+			case GraphTypeConstant.STACKEDBAR_SUMMARIZED: // 積み上げ棒(集約)
 				approximateButton.setEnabled(false);
 				thresholdButton.setEnabled(false);
 				legendButton.setEnabled(false);
+				predictedButton.setEnabled(false);
 				break;
-			case 6: // 散布図
-			case 7: // 散布図(集約)
+			case GraphTypeConstant.SCATTER: // 散布図
+			case GraphTypeConstant.SCATTER_SUMMARIZED: // 散布図(集約)
 				approximateButton.setEnabled(true);
 				thresholdButton.setEnabled(false);
 				legendButton.setEnabled(true);
+				predictedButton.setEnabled(false);
 				break;
 			default: // -------
 				returnButton.setEnabled(false);
@@ -751,6 +868,7 @@ public class CollectSettingComposite extends Composite {
 				approximateButton.setEnabled(false);
 				thresholdButton.setEnabled(false);
 				legendButton.setEnabled(false);
+				predictedButton.setEnabled(false);
 		}
 	}
 	
@@ -761,27 +879,65 @@ public class CollectSettingComposite extends Composite {
 	 * @param summaryType 選択されたサマリータイプ
 	 */
 	private void drawGraphs(List<CollectKeyInfoPK> collectKeyList, int summaryType, String selectItemName) {
-		List<FacilityTreeItem> treeItemList = m_collectGraphView.getCheckedTreeItemList();
+
 		int type = getGraphTypeItem();
-		boolean totalflg = type == 1 ? false : true;
-		boolean stackflg = type == 3 ? true : false;
-		boolean pieflg = type == 4 || type == 5 ? true : false;
-		totalflg = type == 4 ? false : totalflg;
-		totalflg = type == 5 ? true : totalflg;
-		boolean scatterflg = type == 6 || type == 7 ? true : false;
-		totalflg = type == 6 ? false : totalflg;
-		totalflg = type == 7 ? true : totalflg;
-		boolean barflg = type == 8 || type == 9 ? true : false;
-		totalflg = type == 8 ? false : totalflg;
-		totalflg = type == 9 ? true : totalflg;
+
+		List<FacilityTreeItem> treeItemList = m_collectGraphView.getCheckedTreeItemList();
+		Map<String, List<FacilityInfo>> facilityInfoMap = new TreeMap<>();
+		for (FacilityTreeItem treeItem : treeItemList) {
+			if (treeItem.getData().getFacilityType() != FacilityConstant.TYPE_NODE) {
+				continue;
+			}
+			String managerName = ScopePropertyUtil.getManager(treeItem).getData().getFacilityId();
+			if (!facilityInfoMap.containsKey(managerName)) {
+				facilityInfoMap.put(managerName, new ArrayList<FacilityInfo>());
+				if (!m_collectorItemJobCheckList.isEmpty()
+						&& (type == GraphTypeConstant.LINE 
+						|| type == GraphTypeConstant.LINE_SUMMARIZED 
+						|| type == GraphTypeConstant.AREA)) {
+					// ジョブ履歴を表示する場合
+					FacilityInfo rootFacilityInfo = new FacilityInfo();
+					rootFacilityInfo.setFacilityId(RoleSettingTreeConstant.ROOT_ID);
+					rootFacilityInfo.setFacilityName("");
+					rootFacilityInfo.setFacilityType(FacilityConstant.TYPE_NODE);
+					facilityInfoMap.get(managerName).add(rootFacilityInfo);
+				}
+			}
+			facilityInfoMap.get(managerName).add(treeItem.getData());
+		}
+
+		boolean totalflg = false;
+		boolean stackflg = false;
+		boolean pieflg = false;
+		boolean scatterflg = false;
+		boolean barflg = false;
+		if (type == GraphTypeConstant.AREA) {
+			stackflg = true;
+		}
+		if (type == GraphTypeConstant.PIE || type == GraphTypeConstant.PIE_SUMMARIZED) {
+			pieflg = true;
+		}
+		if (type == GraphTypeConstant.SCATTER || type == GraphTypeConstant.SCATTER_SUMMARIZED) {
+			scatterflg = true;
+		}
+		if (type == GraphTypeConstant.STACKEDBAR || type == GraphTypeConstant.STACKEDBAR_SUMMARIZED) {
+			barflg = true;
+		}
+		if (type == GraphTypeConstant.LINE_SUMMARIZED
+				|| type == GraphTypeConstant.AREA
+				|| type == GraphTypeConstant.PIE_SUMMARIZED
+				|| type == GraphTypeConstant.SCATTER_SUMMARIZED
+				|| type == GraphTypeConstant.STACKEDBAR_SUMMARIZED) {
+			totalflg = true;
+		}
 		
 		try {
 			// 適用ボタンを押下不可にする
 			apply.setEnabled(false);
-			m_collectGraphView.getCollectGraphComposite().drawGraphs(collectKeyList, selectItemName, summaryType, treeItemList,
+			m_collectGraphView.getCollectGraphComposite().drawGraphs(collectKeyList, selectItemName, summaryType, facilityInfoMap,
 					returnButton.getSelection(), returnKindButton.getSelection(), totalflg, stackflg,
 					approximateButton.getSelection(), thresholdButton.getSelection(), pieflg, scatterflg,
-					legendButton.getSelection(), barflg);
+					legendButton.getSelection(), predictedButton.getSelection(), barflg);
 		} catch (InvalidRole_Exception e) {
 			m_log.error("drawGraphs InvalidRole_Exception");
 			MessageDialog.openInformation(null, Messages.getString("message"),
@@ -791,6 +947,14 @@ public class CollectSettingComposite extends Composite {
 			m_log.error("drawGraphs InvalidUserPass_Exception");
 			MessageDialog.openInformation(null, Messages.getString("message"),
 			Messages.getString("message.accesscontrol.45"));
+			m_collectGraphView.getCollectGraphComposite().removeGraphSliderDisp();
+		} catch (HinemosDbTimeout_Exception e) {
+			String message = HinemosMessage.replace(e.getMessage());
+			m_log.error("drawGraphs グラフ描画時にエラーが発生 message=" + message, e);
+			MessageDialog.openError(
+					null,
+					Messages.getString("error"),
+					Messages.getString("message.collection.graph.unexpected.error") + " : " + message);
 			m_collectGraphView.getCollectGraphComposite().removeGraphSliderDisp();
 		} catch (Exception e) {
 			m_log.error("drawGraphs グラフ描画時にエラーが発生 message=" + e.getMessage(), e);
@@ -807,7 +971,7 @@ public class CollectSettingComposite extends Composite {
 
 	/**
 	 * 画面の選択順番はindex番号で管理し、監視項目名を取得して<br>
-	 * 項目名を「#」で連結して返します。<br>
+	 * 項目名を区切り文字で連結して返します。<br>
 	 * List.getSelectionIndex：rcpの場合は選択したindexが取れるが、rapの場合は選択したindexが取れない。<br>
 	 * List.getSelectionIndices：rcpの場合は選択順番どおりに取れない(Listに追加順で取れる)が、rapの場合は選択順番どおりに取れる。<br>
 	 * List.getSelection：rcpの場合は選択した順番どおりに取れない(Listに追加順で取れる)が、rapの場合は選択順番どおりに取れる。<br>
@@ -831,12 +995,17 @@ public class CollectSettingComposite extends Composite {
 				m_log.error("getSelectItemNameBySelectIndex() エラー発生" + e.getMessage());
 			}
 		}
+		// ジョブ
+		for (String collectorItemJob : m_collectorItemJobCheckList) {
+			selectStrBuilder.append(collectorItemJob + SEPARATOR_HASH);
+		}
+		
 		m_log.debug("監視項目選択順番連結 selectStr:" + selectStrBuilder.toString());
 		return selectStrBuilder.toString();
 	}
 	
 	/**
-	 * preferenceで保持していた監視項目選択情報(監視項目名の「#」連結)から<br>
+	 * preferenceで保持していた監視項目選択情報(区切り文字で連結されている監視項目名)から<br>
 	 * index番号に変換してリストで返します。<br>
 	 * @return
 	 */
@@ -859,6 +1028,27 @@ public class CollectSettingComposite extends Composite {
 		m_log.debug("preferenceからindex情報を生成 :" + selectList.toString());
 		return selectList;
 	}
+
+	/**
+	 * preferenceで保持していた監視項目選択情報(監視項目名の「#」連結)をリストにして返します。<br>
+	 * @return
+	 */
+	private List<String> getSelectIndexListByItemNameForJob() {
+		List<String> selectList = new ArrayList<>();
+		String treeSelect = ClusterControlPlugin.getDefault().getPreferenceStore()
+				.getString(CollectSettingComposite.P_COLLECT_GRAPH_SELECT_ITEM_INFO);
+		if (treeSelect == null || treeSelect.equals("")) {
+			return selectList;
+		}
+		for (String str : treeSelect.split(SEPARATOR_HASH)) {
+			if (m_collectorItemJobMap.containsKey(str)) {
+				selectList.add(str);
+			}
+		}
+		m_log.debug("preferenceからindex情報を生成 :" + selectList.toString());
+		return selectList;
+	}
+
 	/**
 	 * ファシリティツリーの選択状態を返します。<br>
 	 * 以下のような形式：<br>

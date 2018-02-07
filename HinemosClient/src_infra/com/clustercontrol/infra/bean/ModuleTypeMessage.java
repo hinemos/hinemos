@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.bean;
@@ -31,6 +24,8 @@ public class ModuleTypeMessage {
 	public static final String STRING_COMMAND = Messages.getString("infra.command.module");
 	/** ファイル配布モジュール */
 	public static final String STRING_FILETRANSFER = Messages.getString("infra.file.transfer.module");
+	/** 参照環境構築モジュール */
+	public static final String STRING_REFERMANAGEMENT = Messages.getString("infra.refer.management.module");
 	/**
 	 * 種別から文字列に変換します。<BR>
 	 * 
@@ -42,6 +37,8 @@ public class ModuleTypeMessage {
 			return STRING_COMMAND;
 		} else if (type ==  ModuleTypeConstant.TYPE_FILETRANSFER) {
 			return STRING_FILETRANSFER;
+		} else if (type == ModuleTypeConstant.TYPE_REFERMANAGEMENT) {
+			return STRING_REFERMANAGEMENT;
 		}
 		return "";
 	}
@@ -57,6 +54,8 @@ public class ModuleTypeMessage {
 			return  ModuleTypeConstant.TYPE_COMMAND;
 		} else if (string.equals(STRING_FILETRANSFER)) {
 			return  ModuleTypeConstant.TYPE_FILETRANSFER;
+		} else if (string.equals(STRING_REFERMANAGEMENT)) {
+			return ModuleTypeConstant.TYPE_REFERMANAGEMENT;
 		}
 		return -1;
 	}
@@ -66,6 +65,7 @@ public class ModuleTypeMessage {
 		
 		strings.add(STRING_COMMAND);
 		strings.add(STRING_FILETRANSFER);
+		strings.add(STRING_REFERMANAGEMENT);
 		
 		return strings;
 	}

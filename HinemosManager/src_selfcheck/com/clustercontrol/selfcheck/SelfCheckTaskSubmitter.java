@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.selfcheck;
@@ -29,9 +22,9 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.HinemosManagerMain;
 import com.clustercontrol.HinemosManagerMain.StartupMode;
 import com.clustercontrol.commons.bean.ThreadInfo;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
-import com.clustercontrol.platform.selfcheck.SelfCheckPertial;
+import com.clustercontrol.platform.selfcheck.SelfCheckDivergence;
 import com.clustercontrol.plugin.impl.SchedulerInfo;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
@@ -73,7 +66,7 @@ public class SelfCheckTaskSubmitter implements Runnable {
 		});
 
 		_executorService = Executors.newFixedThreadPool(
-				HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.threadpool.size", Long.valueOf(4)).intValue(),
+				HinemosPropertyCommon.selfcheck_threadpool_size.getIntegerValue(),
 				new ThreadFactory() {
 					private volatile int _count = 0;
 
@@ -90,8 +83,8 @@ public class SelfCheckTaskSubmitter implements Runnable {
 	 */
 	public void start() {
 		_scheduler.scheduleWithFixedDelay(this
-				, HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.startup.delay", Long.valueOf(90))
-				, HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.interval", Long.valueOf(150)),
+				, HinemosPropertyCommon.selfcheck_startup_delay.getNumericValue()
+				, HinemosPropertyCommon.selfcheck_interval.getNumericValue(),
 				TimeUnit.SECONDS);
 	}
 
@@ -101,7 +94,7 @@ public class SelfCheckTaskSubmitter implements Runnable {
 	public void shutdown() {
 		// キック元となるスケジューラから停止していく
 		_scheduler.shutdown();
-		long _shutdownTimeoutMsec = HinemosPropertyUtil.getHinemosPropertyNum("hinemos.selfcheck.shutdown.timeout", Long.valueOf(15000));
+		long _shutdownTimeoutMsec = HinemosPropertyCommon.hinemos_selfcheck_shutdown_timeout.getNumericValue();
 
 		try {
 			if (! _scheduler.awaitTermination(_shutdownTimeoutMsec, TimeUnit.MILLISECONDS)) {
@@ -221,7 +214,7 @@ public class SelfCheckTaskSubmitter implements Runnable {
 		}
 		
 		// platform
-		SelfCheckMonitor[] platformMonitors = SelfCheckPertial.getMonitors(HinemosManagerMain._startupMode);
+		SelfCheckMonitor[] platformMonitors = SelfCheckDivergence.getMonitors(HinemosManagerMain._startupMode);
 		for (SelfCheckMonitor monitor : platformMonitors) {
 			_executorService.submit(new SelfCheckTask(monitor));
 		}

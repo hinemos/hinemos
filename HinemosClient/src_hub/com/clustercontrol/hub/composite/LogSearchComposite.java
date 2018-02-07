@@ -1,21 +1,19 @@
 /*
-
- Copyright (C) 2016 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.composite;
 
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -24,13 +22,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.TableColumnLayout;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnPixelData;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
@@ -45,6 +47,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Table;
@@ -52,7 +55,11 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.binary.util.BinaryEndpointWrapper;
+import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.hub.action.DownloadCollectedData;
 import com.clustercontrol.hub.commons.LogSearchPeriodConstants;
+import com.clustercontrol.hub.dialog.RecordInfoDialog;
 import com.clustercontrol.hub.preference.HubPreferencePage;
 import com.clustercontrol.hub.util.HubEndpointWrapper;
 import com.clustercontrol.hub.util.TableViewerSorter;
@@ -63,6 +70,7 @@ import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.viewer.CommonTableViewerSorter;
+import com.clustercontrol.ws.hub.BinaryQueryInfo;
 import com.clustercontrol.ws.hub.InvalidRole_Exception;
 import com.clustercontrol.ws.hub.InvalidSetting_Exception;
 import com.clustercontrol.ws.hub.Operator;
@@ -71,20 +79,23 @@ import com.clustercontrol.ws.hub.StringQueryInfo;
 import com.clustercontrol.ws.hub.StringQueryResult;
 import com.clustercontrol.ws.hub.Tag;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
+import com.clustercontrol.ws.monitor.MonitorInfoBean;
 import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 
 /**
  * ログ検索画面クラス<br/>
  *
- * @version 6.0.0
+ * @version 6.1.0 バイナリ検索機能追加.
  * @since 6.0.0
  */
 public class LogSearchComposite extends Composite {
 
 	private static Logger logger  = Logger.getLogger(LogSearchDateTimeComposite.class);
-	
-	private enum ViewColumn {
+
+	/**
+	 * 検索結果:一覧ビュー カラム定義enum
+	 */
+	public enum ViewColumn {
 		time(Messages.getString("view.hub.log.search.result.culumn.timestamp"), new ColumnPixelData(110, true, true),
 			new ColumnLabelProvider() {
 				@Override
@@ -162,8 +173,8 @@ public class LogSearchComposite extends Composite {
 			});
 
 		private String label;
-		private ColumnLabelProvider provider;
-		private ColumnPixelData pixelData;
+		private transient  ColumnLabelProvider provider;
+		private transient  ColumnPixelData pixelData;
 		
 		ViewColumn(String label, ColumnPixelData pixelData, ColumnLabelProvider provider) {
 			this.label = label;
@@ -212,24 +223,71 @@ public class LogSearchComposite extends Composite {
 	private LogSearchDateTimeComposite dateTimeCompositeTo;
 	private Label lbltotal;
 	private Text browser;
+	
+	// バイナリ検索向けに追加した部品.
+	private Button btnText;
+	private Button btnBinary;
+	private Text txtEncoding;
+	private Button btnDownload;
+	private Shell m_shell = null;
 
 	/** 検索結果の出力範囲 */
 	private Label lblPage;
 	private TableViewer tableViewer;
 	private Table table;
 
+	/**
+	 * コンストラクタ.
+	 */
 	public LogSearchComposite(Composite parent, int style) {
 		super(parent, style);
+		this.m_shell = this.getShell();
 		initialize();
 	}
-
+	
+	/**
+	 * 入力項目等の初期化.
+	 */
 	private void initialize() {
 		setLayout(new GridLayout(1, false));
 		
 		// 検索UI
 		Composite searchComposite = new Composite(this, SWT.NONE);
 		searchComposite.setLayout(new GridLayout(1, false));
-		
+
+		// 検索UI - 検索条件 テキスト検索/バイナリ検索.
+		Composite textOrBinary = new Composite(searchComposite, SWT.NONE);
+		GridLayout gl_textOrBinary = new GridLayout(2, false);
+		gl_textOrBinary.verticalSpacing = 1;
+		textOrBinary.setLayout(gl_textOrBinary);
+		textOrBinary.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, false, false, 1, 1));
+
+		btnText = new Button(textOrBinary, SWT.RADIO);
+		btnText.setText(Messages.getString("search.text"));
+		btnText.setSelection(true);
+
+		btnBinary = new Button(textOrBinary, SWT.RADIO);
+		btnBinary.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
+		btnBinary.setText(Messages.getString("search.binary"));
+
+		SelectionAdapter textOrBinarySelection = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (btnBinary.getSelection()) {
+					txtEncoding.setEnabled(true);
+					txtEncoding.setText("UTF-8");
+				} else {
+					txtEncoding.setEnabled(false);
+					txtEncoding.setText("");
+				}
+				updateMonitorCombo();
+				clearResultComposite();
+			}
+		};
+		btnText.addSelectionListener(textOrBinarySelection);
+		btnBinary.addSelectionListener(textOrBinarySelection);
+
+		// 検索UI - 期間指定.		
 		Composite compositePeriod = new Composite(searchComposite, SWT.NONE);
 		GridLayout gl_groupPeriod = new GridLayout(12, false);
 		gl_groupPeriod.verticalSpacing = 0;
@@ -240,7 +298,7 @@ public class LogSearchComposite extends Composite {
 		
 		Label lblPeriod = new Label(compositePeriod, SWT.NONE);
 		GridData gd_lblPeriod = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
-		gd_lblPeriod.widthHint = 81;
+		gd_lblPeriod.widthHint = 98;
 		lblPeriod.setLayoutData(gd_lblPeriod);
 		lblPeriod.setText(Messages.getString("view.hub.log.search.condition.period.select"));
 		
@@ -298,22 +356,21 @@ public class LogSearchComposite extends Composite {
 		gridLayout.marginWidth = 0;
 		enableDateTime(false);
 		
-		// 検索UI - キーワード
-		Composite compositeKeyword = new Composite(searchComposite, SWT.NONE);
-		GridLayout gl_compositeKeyword = new GridLayout(4, false);
-		gl_compositeKeyword.marginHeight = 0;
-		compositeKeyword.setLayout(gl_compositeKeyword);
-		GridData gd_compositeKeyword = new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1);
-		gd_compositeKeyword.heightHint = 60;
-		compositeKeyword.setLayoutData(gd_compositeKeyword);
+		// 検索UI - 監視ID
+		Composite compositeMonitor = new Composite(searchComposite, SWT.NONE);
+		GridLayout gl_compositeMonitor = new GridLayout(4, false);
+		gl_compositeMonitor.marginHeight = 0;
+		compositeMonitor.setLayout(gl_compositeMonitor);
+		GridData gd_compositeMonitor = new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1);
+		compositeMonitor.setLayoutData(gd_compositeMonitor);
 
-		Label lblMonitorId = new Label(compositeKeyword, SWT.NONE);
+		Label lblMonitorId = new Label(compositeMonitor, SWT.NONE);
 		GridData gd_lblMonitorId = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_lblMonitorId.widthHint = 81;
+		gd_lblMonitorId.widthHint = 98;
 		lblMonitorId.setLayoutData(gd_lblMonitorId);
 		lblMonitorId.setText(Messages.getString("monitor.id"));
 
-		cmbMonitorId = new Combo(compositeKeyword, SWT.READ_ONLY);
+		cmbMonitorId = new Combo(compositeMonitor, SWT.READ_ONLY);
 		GridData gd_monitorId = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
 		gd_monitorId.heightHint = 18;
 		gd_monitorId.widthHint = 481;
@@ -332,23 +389,29 @@ public class LogSearchComposite extends Composite {
 			public void mouseUp(MouseEvent e) {
 			}
 		});
-		new Label(compositeKeyword, SWT.NONE);
 		for (String str : LogSearchPeriodConstants.getPeriodStrList()) {
 			cmbPeriod.add(str);
 		}
 		cmbPeriod.select(0);
-		
-		new Label(compositeKeyword, SWT.NONE);
 
+		// 検索UI - キーワード
+		Composite compositeKeyword = new Composite(searchComposite, SWT.NONE);
+		GridLayout gl_compositeKeyword = new GridLayout(4, false);
+		gl_compositeKeyword.marginHeight = 0;
+		compositeKeyword.setLayout(gl_compositeKeyword);
+		GridData gd_compositeKeyword = new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1);
+		compositeKeyword.setLayoutData(gd_compositeKeyword);
+		
 		Label lblKeyword = new Label(compositeKeyword, SWT.NONE);
-		GridData gd_lblKeyword = new GridData(SWT.LEFT, SWT.BOTTOM, false, false, 1, 1);
-		gd_lblKeyword.widthHint = 81;
+		GridData gd_lblKeyword = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_lblKeyword.widthHint = 98;
 		lblKeyword.setLayoutData(gd_lblKeyword);
 		lblKeyword.setText(Messages.getString("view.hub.log.search.condition.keyword"));
 
 		txtKeywords = new Text(compositeKeyword, SWT.BORDER);
-		GridData gd_txtKeywords = new GridData(SWT.FILL, SWT.BOTTOM, true, false, 1, 1);
-		gd_txtKeywords.widthHint = 436;
+		GridData gd_txtKeywords = new GridData(SWT.LEFT, SWT.BOTTOM, false, false, 1, 1);
+		gd_txtKeywords.widthHint = 500;
+		txtKeywords.setMessage(Messages.getString("pattern.placeholder.like"));
 		txtKeywords.setLayoutData(gd_txtKeywords);
 
 		// 検索UI - 検索条件 AND/OR
@@ -356,31 +419,93 @@ public class LogSearchComposite extends Composite {
 		GridLayout gl_compositeConditionAndOr = new GridLayout(2, false);
 		gl_compositeConditionAndOr.verticalSpacing = 1;
 		compositeConditionAndOr.setLayout(gl_compositeConditionAndOr);
-		compositeConditionAndOr.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, false, false, 1, 1));
+		compositeConditionAndOr.setLayoutData(new GridData(SWT.LEFT, SWT.BOTTOM, false, false, 1, 1));
 
 		btnAnd = new Button(compositeConditionAndOr, SWT.RADIO);
 		btnAnd.setText(Messages.getString("and"));
 		btnAnd.setSelection(true);
 
 		btnOr = new Button(compositeConditionAndOr, SWT.RADIO);
-		btnOr.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
 		btnOr.setText(Messages.getString("or"));
 
-		Button btnSearchSimply = new Button(compositeKeyword, SWT.NONE);
+		// 検索UI - 検索条件 エンコーディング(バイナリ検索向け)
+		Composite compositeEncoding = new Composite(searchComposite, SWT.NONE);
+		GridLayout gl_compositeEncoding = new GridLayout(4, false);
+		gl_compositeEncoding.marginHeight = 0;
+		compositeEncoding.setLayout(gl_compositeEncoding);
+		GridData gd_compositeEncoding = new GridData(SWT.FILL, SWT.TOP, true, true, 1, 1);
+		compositeEncoding.setLayoutData(gd_compositeEncoding);
+
+		Label lblEncoding = new Label(compositeEncoding, SWT.NONE);
+		GridData gd_lblEncoding = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gd_lblEncoding.widthHint = 98;
+		lblEncoding.setLayoutData(gd_lblEncoding);
+		lblEncoding.setText(Messages.getString("job.script.encoding"));
+
+		txtEncoding = new Text(compositeEncoding, SWT.BORDER);
+		GridData gd_txtEncoding = new GridData(SWT.LEFT, SWT.CENTER, true, false, 1, 1);
+		gd_txtEncoding.heightHint = 18;
+		gd_txtEncoding.widthHint = 500;
+		txtEncoding.setLayoutData(gd_txtEncoding);
+		txtEncoding.setEnabled(false);
+		txtEncoding.setToolTipText(Messages.getString("tooltip.input.java.charset"));
+
+		// 検索UI - 検索ボタン
+		Button btnSearchSimply = new Button(compositeEncoding, SWT.NONE);
 		GridData gd_btnSearchSimply = new GridData(SWT.FILL, SWT.BOTTOM, false, false, 1, 1);
-		gd_btnSearchSimply.widthHint = 80;
+		gd_btnSearchSimply.widthHint = 82;
 		btnSearchSimply.setLayoutData(gd_btnSearchSimply);
 		btnSearchSimply.setSize(300, 30);
 		btnSearchSimply.setText(Messages.getString("search"));
 		btnSearchSimply.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// 検索実行
-				StringQueryInfo query = makeNewQuery();
-				StringQueryResult stringQueryResult = getQueryExecute(manager, query);
-				updateResultComposite(query,stringQueryResult);
+				// 入力値チェック.
+				ValidateResult result = checkInputForSearch();
+				if (result == null || result.isValid()) {
+					StringQueryInfo query = null;
+					BinaryQueryInfo binaryQuery = null;
+					Boolean isNeedCount = null;
+					if (btnText.getSelection()) {
+						query = makeNewQuery();
+						isNeedCount = query.isNeedCount();
+					} else {
+						binaryQuery = makeNewBinaryQuery();
+						isNeedCount = binaryQuery.isNeedCount();
+					}
+					StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
+					updateResultComposite(isNeedCount, stringQueryResult);
+				} else {
+					// クライアントにエラーダイアログ表示.
+					MessageDialog.openWarning(null, result.getID(), result.getMessage());
+				}
 			}
 		});
+
+		// 検索UI - ダウンロードボタン
+		btnDownload = new Button(compositeEncoding, SWT.NONE);
+		GridData gd_btnDownload = new GridData(SWT.FILL, SWT.BOTTOM, false, false, 1, 1);
+		gd_btnDownload.widthHint = 82;
+		btnDownload.setLayoutData(gd_btnDownload);
+		btnDownload.setText(Messages.getString("view.hub.binary.download"));
+		btnDownload.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// 表示されているレコードを全件取得(ページ外除く).
+				@SuppressWarnings("unchecked")
+				List<StringData> dataList = (List<StringData>) tableViewer.getInput();
+				DownloadCollectedData downloadLog = new DownloadCollectedData();
+				if (btnBinary.getSelection()) {
+					// バイナリデータを複数ダウンロード.
+					downloadLog.executeBinaryRecords(m_shell, manager, dataList);
+				}
+				if (btnText.getSelection()) {
+					// オリジナルメッセージをファイルとして出力.
+					downloadLog.executeTextRecordsToOne(browser.getText(), dataList, m_shell);
+				}
+			}
+		});
+		btnDownload.setEnabled(false);
 
 		// 検索結果UI
 		Composite resultComposite = new Composite(this, SWT.NONE);
@@ -404,6 +529,18 @@ public class LogSearchComposite extends Composite {
 
 		tableViewer = new TableViewer(compositeTable, SWT.FULL_SELECTION | SWT.MULTI);
 		ColumnViewerToolTipSupport.enableFor(tableViewer);
+		// ダブルクリックにて選択レコードの詳細をダイアログ表示.
+		tableViewer.addDoubleClickListener(new IDoubleClickListener() {
+			@Override
+			public void doubleClick(DoubleClickEvent event) {
+				// 選択アイテムを取得する
+				StringData selectStringData = (StringData) ((StructuredSelection) event.getSelection())
+						.getFirstElement();
+				RecordInfoDialog dialog = new RecordInfoDialog(m_shell, manager, selectStringData,
+						btnBinary.getSelection());
+				dialog.open();
+			}
+		});
 		table = tableViewer.getTable();
 		table.setLinesVisible(true);
 		table.setHeaderVisible(true);
@@ -464,9 +601,18 @@ public class LogSearchComposite extends Composite {
 		btnTop.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				StringQueryInfo query = makeContinuousQuery(0, getDataCountPerPage(getTable()));
-				StringQueryResult stringQueryResult = getQueryExecute(manager, query);
-				updateResultComposite(query,stringQueryResult);
+				StringQueryInfo query = null;
+				BinaryQueryInfo binaryQuery = null;
+				Boolean isNeedCount = null;
+				if (btnText.getSelection()) {
+					query = makeContinuousQuery(0, getDataCountPerPage(getTable()));
+					isNeedCount = query.isNeedCount();
+				} else {
+					binaryQuery = makeContinuousBinaryQuery(0, getDataCountPerPage(getTable()));
+					isNeedCount = binaryQuery.isNeedCount();
+				}
+				StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
+				updateResultComposite(isNeedCount, stringQueryResult);
 			}
 		});
 		btnTop.setEnabled(false);
@@ -478,9 +624,18 @@ public class LogSearchComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				int offset = Math.max(0,dispOffset-getDataCountPerPage(getTable()));
-				StringQueryInfo query = makeContinuousQuery(offset, getDataCountPerPage(getTable()));
-				StringQueryResult stringQueryResult = getQueryExecute(manager, query);
-				updateResultComposite(query,stringQueryResult);
+				StringQueryInfo query = null;
+				BinaryQueryInfo binaryQuery = null;
+				Boolean isNeedCount = null;
+				if (btnText.getSelection()) {
+					query = makeContinuousQuery(offset, getDataCountPerPage(getTable()));
+					isNeedCount = query.isNeedCount();
+				} else {
+					binaryQuery = makeContinuousBinaryQuery(offset, getDataCountPerPage(getTable()));
+					isNeedCount = binaryQuery.isNeedCount();
+				}
+				StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
+				updateResultComposite(isNeedCount, stringQueryResult);
 			}
 		});
 		btnPerv.setEnabled(false);
@@ -504,13 +659,22 @@ public class LogSearchComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				int offset = dispOffset+dispSize;
-				StringQueryInfo query = makeContinuousQuery(offset, getDataCountPerPage(getTable()));
-				StringQueryResult stringQueryResult = getQueryExecute(manager, query);
+				StringQueryInfo query = null;
+				BinaryQueryInfo binaryQuery = null;
+				Boolean isNeedCount = null;
+				if (btnText.getSelection()) {
+					query = makeContinuousQuery(offset, getDataCountPerPage(getTable()));
+					isNeedCount = query.isNeedCount();
+				} else {
+					binaryQuery = makeContinuousBinaryQuery(offset, getDataCountPerPage(getTable()));
+					isNeedCount = binaryQuery.isNeedCount();
+				}
+				StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
 				// 追加データがなかった
 				if (0 == stringQueryResult.getSize()){
 					return;
 				}
-				updateResultComposite(query,stringQueryResult);
+				updateResultComposite(isNeedCount, stringQueryResult);
 			}
 		});
 		btnNext.setEnabled(false);
@@ -525,13 +689,22 @@ public class LogSearchComposite extends Composite {
 				int pageCount = dataCount / dataCountPerPage;
 				pageCount = (dataCount % dataCountPerPage) ==0 ? pageCount-1:pageCount;
 				int offset = pageCount * dataCountPerPage;
-				StringQueryInfo query = makeContinuousQuery(offset, getDataCountPerPage(getTable()));
-				StringQueryResult stringQueryResult = getQueryExecute(manager, query);
+				StringQueryInfo query = null;
+				BinaryQueryInfo binaryQuery = null;
+				Boolean isNeedCount = null;
+				if (btnText.getSelection()) {
+					query = makeContinuousQuery(offset, getDataCountPerPage(getTable()));
+					isNeedCount = query.isNeedCount();
+				} else {
+					binaryQuery = makeContinuousBinaryQuery(offset, getDataCountPerPage(getTable()));
+					isNeedCount = binaryQuery.isNeedCount();
+				}
+				StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
 				// 追加データがなかった
 				if (0 == stringQueryResult.getSize()){
 					return;
 				}
-				updateResultComposite(query,stringQueryResult);
+				updateResultComposite(isNeedCount, stringQueryResult);
 			}
 		});
 		btnEnd.setEnabled(false);
@@ -541,7 +714,57 @@ public class LogSearchComposite extends Composite {
 		dateTimeCompositeFrom.setEnabled(enable);
 		dateTimeCompositeTo.setEnabled(enable);
 	}
-	
+
+	/**
+	 * 検索ボタン押下時入力値チェック.
+	 */
+	private ValidateResult checkInputForSearch() {
+
+		// エラーメッセージ用引数.
+		String[] args = null;
+		ValidateResult result = null;
+
+		// エンコード.
+		if (this.txtEncoding.getText() != null && !"".equals(this.txtEncoding.getText())) {
+			// 妥当なエンコーディング方式かチェック.
+			try {
+				Charset.forName(this.txtEncoding.getText());
+			} catch (IllegalCharsetNameException exception) {
+				// 不正なエンコーディング方式の場合.
+				args = new String[] { this.txtEncoding.getText() };
+				result = this.getValidateResult(Messages.getString("message.hinemos.1"),
+						Messages.getString("message.binary.2", args));
+			} catch (UnsupportedCharsetException exception) {
+				// サポートされていないエンコーディング方式の場合.
+				args = new String[] { this.txtEncoding.getText() };
+				result = this.getValidateResult(Messages.getString("message.hinemos.1"),
+						Messages.getString("message.binary.3", args));
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * エラー内容をセット.
+	 *
+	 * @param id
+	 *            メッセージID
+	 * @param message
+	 *            メッセージ内容
+	 */
+	private ValidateResult getValidateResult(String id, String message) {
+
+		ValidateResult result = new ValidateResult();
+		result.setValid(false);
+		result.setID(id);
+		result.setMessage(message);
+
+		return result;
+	}
+
+	/**
+	 * 検索条件の作成.
+	 */
 	private StringQueryInfo makeNewQuery() {
 		ope = btnAnd.getSelection()? Operator.AND: Operator.OR;
 		if (cmbMonitorId.getText().isEmpty()){
@@ -570,7 +793,47 @@ public class LogSearchComposite extends Composite {
 				true
 				);
 	}
-	
+
+	/**
+	 * バイナリ検索条件の作成.
+	 */
+	private BinaryQueryInfo makeNewBinaryQuery() {
+		StringQueryInfo stringQueryInfo = makeNewQuery();
+		BinaryQueryInfo binaryQueryInfo = this.getBinaryQueryInfo(stringQueryInfo);
+		return binaryQueryInfo;
+	}
+
+	/**
+	 * バイナリ検索条件を生成して取得.
+	 * 
+	 * @param stringQueryInfo
+	 *            生成済の親の検索条件.
+	 */
+	private BinaryQueryInfo getBinaryQueryInfo(StringQueryInfo stringQueryInfo) {
+
+		BinaryQueryInfo binaryQueryInfo = new BinaryQueryInfo();
+		// 親クラスの検索条件設定.
+		binaryQueryInfo.setFrom(stringQueryInfo.getFrom());
+		binaryQueryInfo.setTo(stringQueryInfo.getTo());
+		binaryQueryInfo.setMonitorId(stringQueryInfo.getMonitorId());
+		binaryQueryInfo.setFacilityId(stringQueryInfo.getFacilityId());
+		binaryQueryInfo.setKeywords(stringQueryInfo.getKeywords());
+		binaryQueryInfo.setOperator(stringQueryInfo.getOperator());
+		binaryQueryInfo.setOffset(stringQueryInfo.getOffset());
+		binaryQueryInfo.setSize(stringQueryInfo.getSize());
+		binaryQueryInfo.setNeedCount(stringQueryInfo.isNeedCount());
+
+		// バイナリの検索条件設定.
+		if (txtEncoding.getText() != null && !txtEncoding.getText().isEmpty()) {
+			binaryQueryInfo.setTextEncoding(txtEncoding.getText());
+		}
+
+		return binaryQueryInfo;
+	}
+
+	/**
+	 * 表示範囲指定して検索条件生成.
+	 */
 	private StringQueryInfo makeContinuousQuery(int dispOffset, int dispSize) {
 		return makeQuery(
 				from,
@@ -584,6 +847,18 @@ public class LogSearchComposite extends Composite {
 				);
 	}
 	
+	/**
+	 * 表示範囲指定してバイナリ検索条件生成.
+	 */
+	private BinaryQueryInfo makeContinuousBinaryQuery(int dispOffset, int dispSize) {
+		StringQueryInfo stringQueryInfo = makeContinuousQuery(dispOffset, dispSize);
+		BinaryQueryInfo binaryQueryInfo = this.getBinaryQueryInfo(stringQueryInfo);
+		return binaryQueryInfo;
+	}
+
+	/**
+	 * クエリの生成.
+	 */
 	private StringQueryInfo makeQuery(Long from, Long to, String monitorId, String keywords, Operator ope, int dispOffset, int dispSize, boolean firstQuery){
 		StringQueryInfo query = new StringQueryInfo();
 		query.setFacilityId(facilityId);
@@ -624,13 +899,18 @@ public class LogSearchComposite extends Composite {
 	 * 転送データ種別一覧の取得
 	 * @param managerName マネージャ名
 	 */
-	private StringQueryResult getQueryExecute(String managerName, StringQueryInfo query){
+	private StringQueryResult getQueryExecute(String managerName, StringQueryInfo query, BinaryQueryInfo binaryQuery) {
 		Map<String, String> errorMsgs = new HashMap<>();
 
 		StringQueryResult stringQueryResult=null;
 		try {
 			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
-			stringQueryResult = wrapper.queryCollectStringData(query);
+			BinaryEndpointWrapper binaryWrapper = BinaryEndpointWrapper.getWrapper(managerName);
+			if (this.btnText.getSelection()) {
+				stringQueryResult = wrapper.queryCollectStringData(query);
+			} else {
+				stringQueryResult = binaryWrapper.queryCollectBinaryData(binaryQuery);
+			}
 		} catch (InvalidSetting_Exception e){
 			errorMsgs.put(managerName, Messages.getString(HinemosMessage.replace(e.getMessage())));
 		} catch (InvalidRole_Exception e) {
@@ -648,13 +928,13 @@ public class LogSearchComposite extends Composite {
 		return stringQueryResult;
 	}
 	
-	private void updateResultComposite(StringQueryInfo query, StringQueryResult result){
+	private void updateResultComposite(Boolean isNeedCount, StringQueryResult result) {
 		if (result == null) {
 			return;
 		}
 
 		// データ件数・表示オフセット・表示行数更新
-		if (query.isNeedCount()){
+		if (isNeedCount) {
 			dataCount = result.getCount();
 		}
 
@@ -674,6 +954,11 @@ public class LogSearchComposite extends Composite {
 		if (dataCount != 0){
 			currentPage = result.getOffset()/dateCntPerPage +1;
 			dataFrom +=1;
+			// データ存在する場合はダウンロードボタンを活性化.
+			this.btnDownload.setEnabled(true);
+		} else {
+			// 0件の場合はダウンロードボタン非活性.
+			this.btnDownload.setEnabled(false);
 		}
 		lbltotal.setText(Messages.getString("view.hub.log.search.result.page.number", 
 				new Object[] { dataCount, dataFrom, dispOffset + dispSize, new DecimalFormat("#.##").format(((double)result.getTime()) / 1000)}));
@@ -681,6 +966,42 @@ public class LogSearchComposite extends Composite {
 		
 		tableViewer.setInput(result.getDataList());
 		updateSourceView(result.getDataList());
+		
+		btnPerv.setEnabled(currentPage > 1);
+		btnNext.setEnabled(currentPage < allPage);
+		
+		btnTop.setEnabled(currentPage > 1);
+		btnEnd.setEnabled(currentPage < allPage);
+	}
+
+	/**
+	 * 検索結果の表示クリア.
+	 */
+	private void clearResultComposite() {
+
+		// データ件数・表示オフセット・表示行数更新
+		dataCount = 0;
+
+		// 総ページ数
+		Table table = tableViewer.getTable();
+		long dateCntPerPage = getDataCountPerPage(table);
+		if (dateCntPerPage == 0) {
+			return;
+		}
+		
+		long allPage = 0;
+		dispOffset = 0;
+		dispSize = 0;
+		
+		long currentPage = 0;
+		long dataFrom = dispOffset;
+		this.btnDownload.setEnabled(false);
+		lbltotal.setText(Messages.getString("view.hub.log.search.result.page.number", 
+				new Object[] { dataCount, dataFrom, dispOffset + dispSize, new DecimalFormat("#.##").format((0) / 1000)}));
+		lblPage.setText(currentPage + " / "+ allPage);
+		
+		tableViewer.setInput(new ArrayList<StringData>());
+		updateSourceView(new ArrayList<StringData>());
 		
 		btnPerv.setEnabled(currentPage > 1);
 		btnNext.setEnabled(currentPage < allPage);
@@ -696,6 +1017,9 @@ public class LogSearchComposite extends Composite {
 		return ClusterControlPlugin.getDefault().getPreferenceStore().getInt(HubPreferencePage.P_SIZE_POS);
 	}
 
+	/**
+	 * オリジナルメッセージ欄の表示内容更新.
+	 */
 	private void updateSourceView(List<StringData> stringDataList){
 		if (null == stringDataList){
 			return;
@@ -704,7 +1028,9 @@ public class LogSearchComposite extends Composite {
 		for (StringData stringData: stringDataList){
 			sb.append(stringData.getData()).append("\n");
 		}
+		
 		browser.setText(sb.toString());
+		browser.redraw();
 	}
 
 	public static String decode(String text) {
@@ -723,12 +1049,15 @@ public class LogSearchComposite extends Composite {
 		this.facilityId = facilityId;
 	}
 
+	/**
+	 * 監視IDコンボボックス更新.
+	 */
 	public void updateMonitorCombo() {
 		// Message collecting
 		Map<String, String> errMsgs = new ConcurrentHashMap<>();
 
 		// データ取得
-		Map<String, List<MonitorInfo>> dispDataMap= new ConcurrentHashMap<>();
+		Map<String, List<MonitorInfoBean>> dispDataMap= new ConcurrentHashMap<>();
 
 		for(String managerName : EndpointManager.getActiveManagerSet()) {
 			getMonitorList(managerName, dispDataMap, errMsgs);
@@ -738,13 +1067,14 @@ public class LogSearchComposite extends Composite {
 		if( 0 < errMsgs.size() ){
 			UIManager.showMessageBox(errMsgs, true);
 		}
-		
+
+		this.cmbMonitorId.removeAll();
 		this.cmbMonitorId.add("");
-		for( Map.Entry<String, List<MonitorInfo>> e: dispDataMap.entrySet() ){
+		for( Map.Entry<String, List<MonitorInfoBean>> e: dispDataMap.entrySet() ){
 			if (e.getKey().equals(this.manager)) {
-				for (MonitorInfo monitor : e.getValue()) {
-					if (isCollectableMonitor(monitor.getMonitorType())){
-						this.cmbMonitorId.add(monitor.getMonitorId());
+				for (MonitorInfoBean monitorBean : e.getValue()) {
+					if (isCollectableMonitor(monitorBean.getMonitorType())){
+						this.cmbMonitorId.add(monitorBean.getMonitorId());
 					}
 				}
 			}
@@ -752,20 +1082,35 @@ public class LogSearchComposite extends Composite {
 		this.cmbMonitorId.select(0);
 	}
 	
+	/**
+	 * 収集向け監視種別か判定.
+	 * 
+	 * @param monitorType
+	 *            判定対象の監視種別
+	 * @return true:収集向け監視対象,false:対象外
+	 */
 	private boolean isCollectableMonitor(Integer monitorType){
 		boolean ret = false;
-		if (MonitorTypeConstant.TYPE_STRING == monitorType || MonitorTypeConstant.TYPE_TRAP == monitorType){
-			ret=true;
+		if (this.btnText.getSelection()) {
+			// 文字列検索の場合は文字列・トラップ.
+			if (MonitorTypeConstant.TYPE_STRING == monitorType || MonitorTypeConstant.TYPE_TRAP == monitorType) {
+				ret = true;
+			}
+		} else {
+			// バイナリ検索の場合.
+			if (MonitorTypeConstant.TYPE_BINARY == monitorType) {
+				ret = true;
+			}
 		}
 		return ret;
 	}
 	
 	private void getMonitorList(String managerName,
-			Map<String, List<MonitorInfo>> dispDataMap,
+			Map<String, List<MonitorInfoBean>> dispDataMap,
 			Map<String, String> errorMsgs) {
 		try {
 			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			List<MonitorInfo> list = wrapper.getMonitorList();
+			List<MonitorInfoBean> list = wrapper.getMonitorBeanList();
 			if( null != list ){
 				dispDataMap.put(managerName, list);
 			}

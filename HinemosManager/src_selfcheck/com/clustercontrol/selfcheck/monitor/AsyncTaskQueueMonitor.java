@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.selfcheck.monitor;
@@ -24,8 +17,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
 import com.clustercontrol.selfcheck.AsyncTaskQueueConfig;
 import com.clustercontrol.util.MessageConstant;
@@ -62,16 +55,13 @@ public class AsyncTaskQueueMonitor extends SelfCheckMonitorBase {
 	 */
 	@Override
 	public void execute() {
-		if (!HinemosPropertyUtil.getHinemosPropertyBool("selfcheck.monitoring.asynctask.queue", true)) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_asynctask_queue.getBooleanValue()) {
 			m_log.debug("skip");
 			return;
 		}
 
 		/** ローカル変数 */
-		String asyncTaskRaw = HinemosPropertyUtil
-				.getHinemosPropertyStr(
-						"selfcheck.monitoring.asynctask.queue.list",
-						"NotifyStatusTaskFactory:10000,NotifyEventTaskFactory:10000,NotifyMailTaskFactory:10000,NotifyCommandTaskFactory:10000,NotifyLogEscalationTaskFactory:10000,NotifyJobTaskFactory:10000,CreateJobSessionTaskFactory:100,NotifyInfraTaskFactory:10000");
+		String asyncTaskRaw = HinemosPropertyCommon.selfcheck_monitoring_asynctask_queue_list.getStringValue();
 		List<AsyncTaskQueueConfig> asyncTasks = new ArrayList<AsyncTaskQueueConfig>();
 		for (String task : asyncTaskRaw.split(",")) {
 			String[] pair = task.split(":");

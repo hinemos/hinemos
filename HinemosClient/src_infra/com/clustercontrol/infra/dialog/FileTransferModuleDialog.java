@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.dialog;
@@ -120,6 +113,8 @@ public class FileTransferModuleDialog extends CommonDialog {
 	private Button m_rename = null;
 	/** チェックコマンド*/
 	private Button m_check = null;
+	/** 戻り値の変数名用テキスト */
+	private Text m_execReturnParamName = null;
 
 	private FileReplaceSettingComposite m_chenge;
 	/** シェル */
@@ -329,7 +324,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		//ラベル
 		Label labelSelectMethod = new Label(fileDistributeMethod, SWT.LEFT);
 		gridData = new GridData();
-		gridData.horizontalSpan = 4;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalIndent = 20;
@@ -338,7 +333,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		//テキスト
 		this.m_scpOwner = new Text(fileDistributeMethod, SWT.BORDER);
 		gridData = new GridData();
-		gridData.horizontalSpan = 10;
+		gridData.horizontalSpan = 8;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalIndent = 20;
@@ -353,7 +348,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		//ラベル
 		Label labelSelectMetho = new Label(fileDistributeMethod, SWT.LEFT);
 		gridData = new GridData();
-		gridData.horizontalSpan = 4;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalIndent = 20;
@@ -363,7 +358,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		//テキスト
 		m_scpFileAttribute = new Text(fileDistributeMethod, SWT.BORDER);
 		gridData = new GridData();
-		gridData.horizontalSpan = 10;
+		gridData.horizontalSpan = 8;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalIndent = 20;
@@ -427,7 +422,31 @@ public class FileTransferModuleDialog extends CommonDialog {
 		m_md5Check.setText(Messages.getString("infra.module.md5.check"));
 		m_md5Check.setLayoutData(gridData);
 		m_md5Check.setSelection(true);
-		
+
+		/*
+		 * 戻り値変数
+		 */
+		Label label = new Label(fileCheckComposite, SWT.LEFT);
+		gridData = new GridData();
+		gridData.horizontalSpan = 3;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		label.setText(Messages.getString("infra.module.exec.return.param.name") + " : ");
+		label.setLayoutData(gridData);
+		m_execReturnParamName = new Text(fileCheckComposite, SWT.BORDER);
+		gridData = new GridData();
+		gridData.horizontalSpan = 8;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		gridData.horizontalIndent = 25;
+		m_execReturnParamName.setLayoutData(gridData);
+		m_execReturnParamName.addModifyListener(new ModifyListener(){
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+			}
+		});
+
 		// 空白
 		dumyLabel = new Label(fileCheckComposite, SWT.NONE);
 		gridData = new GridData();
@@ -662,6 +681,10 @@ public class FileTransferModuleDialog extends CommonDialog {
 			m_rename.setSelection(module.isBackupIfExistFlg());
 			// MD5
 			m_md5Check.setSelection(module.isPrecheckFlg());
+			// 戻り値の変数名
+			if (module.getExecReturnParamName() != null) {
+				m_execReturnParamName.setText(module.getExecReturnParamName());
+			}
 			//	設定の有効･無効
 			m_valid.setSelection(module.isValidFlg());
 
@@ -713,6 +736,10 @@ public class FileTransferModuleDialog extends CommonDialog {
 
 		moduleInfo.setPrecheckFlg(m_md5Check.getSelection());
 
+		// 戻り値の変数名
+		if (m_execReturnParamName.getText() != null) {
+			moduleInfo.setExecReturnParamName(m_execReturnParamName.getText());
+		}
 		moduleInfo.getFileTransferVariableList().clear();
 		moduleInfo.getFileTransferVariableList().addAll(m_chenge.getInputData());
 
@@ -722,36 +749,6 @@ public class FileTransferModuleDialog extends CommonDialog {
 
 	@Override
 	protected ValidateResult validate() {
-		if ("".equals((m_moduleId.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.id")}));
-		}
-		if ("".equals((m_moduleName.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.name")}));
-		}
-		if ("".equals((this.m_comboFileId.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.placement.file")}));
-		}
-		if ("".equals((this.m_placementPath.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.placement.path")}));
-		}
-		if (m_scpOwner.isEnabled() && "".equals((this.m_scpOwner.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.transfer.method.owner")}));
-		}
-		if (m_scpFileAttribute.isEnabled() && "".equals((this.m_scpFileAttribute.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.transfer.method.scp.file.attribute")}));
-		}
 		return super.validate();
 	}
 

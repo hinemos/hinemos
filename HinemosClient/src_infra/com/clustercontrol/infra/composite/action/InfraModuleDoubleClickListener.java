@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.composite.action;
@@ -29,6 +22,7 @@ import com.clustercontrol.infra.action.GetInfraModuleTableDefine;
 import com.clustercontrol.infra.composite.InfraModuleComposite;
 import com.clustercontrol.infra.dialog.CommandModuleDialog;
 import com.clustercontrol.infra.dialog.FileTransferModuleDialog;
+import com.clustercontrol.infra.dialog.ReferManagementModuleDialog;
 import com.clustercontrol.infra.util.InfraEndpointWrapper;
 import com.clustercontrol.ws.infra.CommandModuleInfo;
 import com.clustercontrol.ws.infra.FileTransferModuleInfo;
@@ -39,6 +33,7 @@ import com.clustercontrol.ws.infra.InfraModuleInfo;
 import com.clustercontrol.ws.infra.InvalidRole_Exception;
 import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
 import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
+import com.clustercontrol.ws.infra.ReferManagementModuleInfo;
 
 /**
  * 環境構築[構築・チェック]ビューまたは環境構築[モジュール]ビューのテーブルビューア用のDoubleClickListenerです。
@@ -114,6 +109,11 @@ public class InfraModuleDoubleClickListener implements IDoubleClickListener {
 							PropertyDefineConstant.MODE_MODIFY);
 				} else if (module instanceof FileTransferModuleInfo) {
 					dialog = new FileTransferModuleDialog(
+							m_composite.getShell(), managerName,
+							managementId, moduleId,
+							PropertyDefineConstant.MODE_MODIFY);
+				} else if (module instanceof ReferManagementModuleInfo) {
+					dialog = new ReferManagementModuleDialog(
 							m_composite.getShell(), managerName,
 							managementId, moduleId,
 							PropertyDefineConstant.MODE_MODIFY);

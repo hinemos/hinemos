@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.accesscontrol.util;
 
 import java.util.List;
@@ -19,6 +27,7 @@ import com.clustercontrol.ws.access.InvalidRole_Exception;
 import com.clustercontrol.ws.access.InvalidSetting_Exception;
 import com.clustercontrol.ws.access.InvalidUserPass_Exception;
 import com.clustercontrol.ws.access.JobMasterNotFound_Exception;
+import com.clustercontrol.ws.access.ManagerInfo;
 import com.clustercontrol.ws.access.ObjectPrivilegeFilterInfo;
 import com.clustercontrol.ws.access.ObjectPrivilegeInfo;
 import com.clustercontrol.ws.access.PrivilegeDuplicate_Exception;
@@ -68,14 +77,13 @@ public class AccessEndpointWrapper {
 		return endpointUnit.getEndpoint(AccessEndpointService.class, AccessEndpoint.class);
 	}
 
-	public int checkLogin( EndpointUnit endpointUnit ) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception{
+	public ManagerInfo checkLogin( EndpointUnit endpointUnit ) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception{
 		WebServiceException wse = null;
 		for (EndpointSetting<AccessEndpoint> endpointSetting : getAccessEndpoint(endpointUnit)) {
 			m_log.info("endpointSetting " + getAccessEndpoint(endpointUnit).size());
 			try {
 				AccessEndpoint endpoint = endpointSetting.getEndpoint();
-				int timezoneOffset = endpoint.checkLogin();
-				return timezoneOffset;
+				return endpoint.checkLogin();
 			} catch (WebServiceException e) {
 				wse = e;
 				m_log.warn("checkLogin(), " + e.getMessage());

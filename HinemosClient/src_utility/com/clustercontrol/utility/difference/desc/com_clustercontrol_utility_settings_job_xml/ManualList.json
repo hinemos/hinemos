@@ -1,0 +1,28 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"ManualList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Name",
+			"OwnerRoleId",
+			"JobunitId",
+			"JobId",
+			"ValidFlg",
+			"JobRuntimeInfo",
+			"JobRuntimeInfo.ParamType",
+			"JobRuntimeInfo.Description",
+			"JobRuntimeInfo.DefaultValue",
+			"JobRuntimeInfo.RequiredFlg",
+			"JobRuntimeInfo.JobRuntimeDetailInfo",
+			"JobRuntimeInfo.JobRuntimeDetailInfo.*"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"ManualInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

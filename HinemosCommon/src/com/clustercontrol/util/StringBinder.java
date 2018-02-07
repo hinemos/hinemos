@@ -1,22 +1,17 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.util;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,6 +29,16 @@ public class StringBinder {
 
 	private static String replaceChar = "?";
 	private static boolean replace = false;
+	
+	/** 入れ子のない #[...] にマッチする
+	* 「((?!#\\[).)*?」を分解すると、
+	* -----
+	*  (
+	*    (?!#\\[.*]). -> #[...] じゃなくればどんな文字でもよい
+	*  )*? -> 上記の最短一致
+	* -----
+	*/
+	private static Pattern pattern = Pattern.compile("#\\[((?!#\\[.*]).)*?\\]", Pattern.DOTALL);
 
 	/**
 	 * 置換のマッピングを引数としたコンストラクタ
@@ -118,6 +123,8 @@ public class StringBinder {
 			str = str.replace("'", "\\'");
 			// escape ` to \`
 			str = str.replace("`", "\\`");
+			// escepe $ to \$
+			str = str.replace("$", "\\$"); // replace時におかしくなるのでエスケープする。replace時に\$は$に戻るのでユーザ動作には影響しない
 			// escape control to \xXX (0 - 1F & 7F)
 			for (byte ascii = 0; ascii < 0x20; ascii++) {
 				byte[] byteCode = { ascii };
@@ -145,6 +152,37 @@ public class StringBinder {
 		return ret;
 	}
 
+	public String replace(String input) {
+		log.debug("input : " + input);
+
+		String ret = input;
+		int n = 100; // 無限ループを防ぐために、ループ回数を100に制限しておく。
+		try {
+			for(int i = 0; i < n; i++) {
+					StringBuffer sb = new StringBuffer();
+					Matcher m = pattern.matcher(ret);
+					while(m.find()) {
+						log.debug("m.group() : " + m.group());
+						m.appendReplacement(sb, bindParam(m.group()));
+					}
+					m.appendTail(sb);
+	
+					// 前回と置換結果が同じ場合、これ以上置換できないのでループを抜ける
+					if(sb.toString().equals(ret)) {
+							log.debug("no more replaced");
+							break;
+					}
+					ret = sb.toString();
+			}
+		} catch (RuntimeException e) {
+			// 少なくともappendReplacementでIllegalArgumentExceptionが発生する場合がある。
+			log.warn("replace() : " + e.getMessage()+", input="+input+", ret="+ret, e);
+		}
+
+		log.debug("ret : " + ret);
+		return ret;
+	}
+
 	public static void main(String[] args) {
 
 		String str = "foo #[PARAM] bar #[ESCAPE] #[NOTFOUND] foo";
@@ -162,9 +200,32 @@ public class StringBinder {
 		System.out.println("BINDED   : " + binder.bindParam(str));
 		StringBinder.setReplace(true);
 		System.out.println("BINDED   : " + binder.bindParam(str));
-		StringBinder.setReplaceChar("$");
+		StringBinder.setReplaceChar("?");
 		StringBinder.setReplace(true);
 		System.out.println("BINDED   : " + binder.bindParam(str));
+		
+		Map<String, String> param2 = new HashMap<>();
+		param2.put("FOO", "foo");
+		param2.put("BAR", "$[bar]");
+		param2.put("HOGE:uga", "hoge");
+		param2.put("HOGE", "zzz");
+		param2.put("UGA", "uga");
+		StringBinder binder2 = new StringBinder(param2);
+
+		String input = "#[HOGE]";
+		System.out.println(binder2.replace(input));
+		input = "#[HOGE:#[UGA]]";
+		System.out.println(binder2.replace(input));
+		input = "#[FOO] AAA#[HOGE:#[UGA]]BBB #[BAR]";
+		System.out.println(binder2.replace(input));
+		input = "#[FOO] AAA#[HOGE:#[]]BBB #[BAR]";
+		System.out.println(binder2.replace(input));
+		input = "#[FOO] AAA#[HOGE:#[UGA]BBB #[BAR]";
+		System.out.println(binder2.replace(input));
+		input = "#[FOO] AAA#[HOGE:#[AHE]]BBB #[BAR]";
+		System.out.println(binder2.replace(input));
+		input = "#[FOO] AAA#[HOGE:#[UGA]]BBB #[AHE]";
+		System.out.println(binder2.replace(input));
 	}
 
 }

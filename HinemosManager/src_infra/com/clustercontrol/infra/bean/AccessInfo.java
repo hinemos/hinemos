@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.bean;
@@ -20,6 +13,7 @@ import javax.xml.bind.annotation.XmlType;
 @XmlType(namespace = "http://infra.ws.clustercontrol.com")
 public class AccessInfo {
 	private String facilityId;
+	private String moduleId;
 	private String sshUser;
 	private String sshPassword;
 	private String sshPrivateKeyFilepath;
@@ -30,12 +24,21 @@ public class AccessInfo {
 	private String winRmPassword;
 	private int winRmPort;
 	private int winRmTimeout;
+
+	/** モジュールID区切り文字 */
+	public final static String MODULEID_DELIMITER = "#";
 	
 	public String getFacilityId() {
 		return facilityId;
 	}
 	public void setFacilityId(String facilityId) {
 		this.facilityId = facilityId;
+	}
+	public String getModuleId() {
+		return moduleId;
+	}
+	public void setModuleId(String moduleId) {
+		this.moduleId = moduleId;
 	}
 	public String getSshUser() {
 		return sshUser;
@@ -107,6 +110,8 @@ public class AccessInfo {
 		result = prime * result
 				+ ((facilityId == null) ? 0 : facilityId.hashCode());
 		result = prime * result
+				+ ((moduleId == null) ? 0 : moduleId.hashCode());
+		result = prime * result
 				+ ((sshUser == null) ? 0 : sshUser.hashCode());
 		result = prime * result
 				+ ((sshPassword == null) ? 0 : sshPassword.hashCode());
@@ -139,6 +144,13 @@ public class AccessInfo {
 				return false;
 			}
 		} else if (!facilityId.equals(other.facilityId)) {
+			return false;
+		}
+		if (moduleId == null) {
+			if (other.moduleId != null) {
+				return false;
+			}
+		} else if (!moduleId.equals(other.moduleId)) {
 			return false;
 		}
 		if (sshUser == null) {
@@ -202,6 +214,7 @@ public class AccessInfo {
 	public String toString() {
 		return "AccessInfo ["
 				+ "facilityId=" + facilityId +
+				", moduleId=" + moduleId +
 				", sshUser=" + sshUser +
 				", sshPassword=" + sshPassword +
 				", sshPrivateKeyFilepath=" + sshPrivateKeyFilepath +

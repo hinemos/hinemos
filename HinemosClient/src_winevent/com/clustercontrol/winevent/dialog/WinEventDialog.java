@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2013 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.winevent.dialog;
 
 import java.util.ArrayList;
@@ -195,7 +189,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		this.levelInformational = new Button(groupCheckRule, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "infomationalcheck", levelInformational);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE_LONG;
+		gridData.horizontalSpan = WIDTH_VALUE_LONG + 1;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.levelInformational.setLayoutData(gridData);
@@ -217,7 +211,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		this.logName = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "logname", logName);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TEXT_LONG;
+		gridData.horizontalSpan = WIDTH_TEXT_LONG + WIDTH_VALUE_LONG + 1;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.logName.setLayoutData(gridData);
@@ -244,7 +238,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		this.source = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "source", source);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TEXT_LONG;
+		gridData.horizontalSpan = WIDTH_TEXT_LONG + WIDTH_VALUE_LONG + 1;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.source.setLayoutData(gridData);
@@ -266,7 +260,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		this.eventId = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "eventid", eventId);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TEXT_LONG;
+		gridData.horizontalSpan = WIDTH_TEXT_LONG + WIDTH_VALUE_LONG + 1;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.eventId.setLayoutData(gridData);
@@ -288,7 +282,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		this.category = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "category", category);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TEXT_LONG;
+		gridData.horizontalSpan = WIDTH_TEXT_LONG + WIDTH_VALUE_LONG + 1;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.category.setLayoutData(gridData);
@@ -310,7 +304,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		this.keywords = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "keywords", keywords);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TEXT_LONG;
+		gridData.horizontalSpan = WIDTH_TEXT_LONG + WIDTH_VALUE_LONG + 1;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.keywords.setLayoutData(gridData);

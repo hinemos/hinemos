@@ -1,0 +1,1111 @@
+   TE-LINK-STD-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+      MODULE-IDENTITY, OBJECT-TYPE, transmission, Integer32, Unsigned32
+         FROM SNMPv2-SMI
+
+      MODULE-COMPLIANCE, OBJECT-GROUP
+         FROM SNMPv2-CONF
+
+      TEXTUAL-CONVENTION, RowStatus, StorageType
+         FROM SNMPv2-TC
+
+      InterfaceIndexOrZero, ifIndex
+         FROM IF-MIB
+
+      InetAddressType, InetAddress
+         FROM INET-ADDRESS-MIB;
+
+
+   teLinkStdMIB MODULE-IDENTITY
+      LAST-UPDATED "200510110000Z"  -- 11 October 2005
+      ORGANIZATION "Multiprotocol Label Switching (MPLS) Working Group"
+
+
+      ::= { transmission 200 }
+
+
+   TeLinkBandwidth ::= TEXTUAL-CONVENTION
+      STATUS       current
+      SYNTAX       OCTET STRING (SIZE(4))
+
+   TeLinkPriority ::= TEXTUAL-CONVENTION
+      DISPLAY-HINT "d"
+      STATUS       current
+
+
+
+
+
+      SYNTAX       Unsigned32 (0..7)
+
+   TeLinkProtection ::= TEXTUAL-CONVENTION
+      STATUS       current
+      SYNTAX       INTEGER {
+                       primary(1),
+                       secondary(2)
+                   }
+
+   TeLinkSwitchingCapability ::= TEXTUAL-CONVENTION
+      STATUS       current
+      SYNTAX       INTEGER {
+                       packetSwitch1(1),
+                       packetSwitch2(2),
+                       packetSwitch3(3),
+                       packetSwitch4(4),
+                       layer2Switch(51),
+                       tdm(100),
+                       lambdaSwitch(150),
+                       fiberSwitch(200)
+                   }
+
+   TeLinkEncodingType ::= TEXTUAL-CONVENTION
+      STATUS       current
+      SYNTAX       INTEGER {
+                       packet(1),
+                       ethernet(2),
+                       ansiEtsiPdh(3),
+                       sdhItuSonetAnsi(5),
+                       digitalWrapper(7),
+                       lambda(8),
+                       fiber(9),
+                       fiberChannel(11)
+                   }
+
+   TeLinkSonetSdhIndication ::= TEXTUAL-CONVENTION
+
+
+
+
+
+      STATUS       current
+      SYNTAX       INTEGER {
+                       standard(0),
+                       arbitrary(1)
+                   }
+
+
+   teLinkNotifications OBJECT IDENTIFIER ::= { teLinkStdMIB 0 }
+   teLinkObjects       OBJECT IDENTIFIER ::= { teLinkStdMIB 1 }
+   teLinkConformance   OBJECT IDENTIFIER ::= { teLinkStdMIB 2 }
+
+
+   teLinkTable OBJECT-TYPE
+      SYNTAX        SEQUENCE OF TeLinkEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkObjects 1 }
+
+   teLinkEntry OBJECT-TYPE
+      SYNTAX        TeLinkEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+
+
+
+
+
+      INDEX         { ifIndex }
+      ::= { teLinkTable 1 }
+
+   TeLinkEntry ::= SEQUENCE {
+     teLinkAddressType                 InetAddressType,
+     teLinkLocalIpAddr                 InetAddress,
+     teLinkRemoteIpAddr                InetAddress,
+     teLinkMetric                      Unsigned32,
+     teLinkMaximumReservableBandwidth  TeLinkBandwidth,
+     teLinkProtectionType              INTEGER,
+     teLinkWorkingPriority             TeLinkPriority,
+     teLinkResourceClass               Unsigned32,
+     teLinkIncomingIfId                Integer32,
+     teLinkOutgoingIfId                InterfaceIndexOrZero,
+     teLinkRowStatus                   RowStatus,
+     teLinkStorageType                 StorageType
+   }
+
+   teLinkAddressType OBJECT-TYPE
+      SYNTAX        InetAddressType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 1 }
+
+   teLinkLocalIpAddr OBJECT-TYPE
+      SYNTAX        InetAddress
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 2 }
+
+   teLinkRemoteIpAddr OBJECT-TYPE
+      SYNTAX        InetAddress
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 3 }
+
+   teLinkMetric OBJECT-TYPE
+      SYNTAX        Unsigned32
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 4 }
+
+   teLinkMaximumReservableBandwidth OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-only
+      STATUS        current
+
+
+
+
+
+      ::= { teLinkEntry 5 }
+
+   teLinkProtectionType OBJECT-TYPE
+      SYNTAX        INTEGER {
+                        extraTraffic(1),
+                        unprotected(2),
+                        shared(3),
+                        dedicated1For1(4),
+                        dedicated1Plus1(5),
+                        enhanced(6)
+                    }
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 6 }
+
+   teLinkWorkingPriority OBJECT-TYPE
+      SYNTAX        TeLinkPriority
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 7 }
+
+   teLinkResourceClass OBJECT-TYPE
+      SYNTAX        Unsigned32
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 8 }
+
+   teLinkIncomingIfId OBJECT-TYPE
+      SYNTAX        Integer32 (0..2147483647)
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 9 }
+
+   teLinkOutgoingIfId OBJECT-TYPE
+      SYNTAX        InterfaceIndexOrZero
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 10 }
+
+   teLinkRowStatus OBJECT-TYPE
+      SYNTAX        RowStatus
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 11 }
+
+
+
+
+
+
+   teLinkStorageType OBJECT-TYPE
+      SYNTAX        StorageType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkEntry 12 }
+
+
+
+
+   teLinkDescriptorTable OBJECT-TYPE
+      SYNTAX        SEQUENCE OF TeLinkDescriptorEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkObjects 2 }
+
+   teLinkDescriptorEntry OBJECT-TYPE
+      SYNTAX        TeLinkDescriptorEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      INDEX         { ifIndex, teLinkDescriptorId }
+      ::= { teLinkDescriptorTable 1 }
+
+   TeLinkDescriptorEntry ::= SEQUENCE {
+     teLinkDescriptorId               Unsigned32,
+     teLinkDescrSwitchingCapability   TeLinkSwitchingCapability,
+     teLinkDescrEncodingType          TeLinkEncodingType,
+     teLinkDescrMinLspBandwidth       TeLinkBandwidth,
+     teLinkDescrMaxLspBandwidthPrio0  TeLinkBandwidth,
+     teLinkDescrMaxLspBandwidthPrio1  TeLinkBandwidth,
+     teLinkDescrMaxLspBandwidthPrio2  TeLinkBandwidth,
+
+
+
+
+
+     teLinkDescrMaxLspBandwidthPrio3  TeLinkBandwidth,
+     teLinkDescrMaxLspBandwidthPrio4  TeLinkBandwidth,
+     teLinkDescrMaxLspBandwidthPrio5  TeLinkBandwidth,
+     teLinkDescrMaxLspBandwidthPrio6  TeLinkBandwidth,
+     teLinkDescrMaxLspBandwidthPrio7  TeLinkBandwidth,
+     teLinkDescrInterfaceMtu          Unsigned32,
+     teLinkDescrIndication            TeLinkSonetSdhIndication,
+     teLinkDescrRowStatus             RowStatus,
+     teLinkDescrStorageType           StorageType
+   }
+
+   teLinkDescriptorId OBJECT-TYPE
+      SYNTAX        Unsigned32 (1..4294967295)
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkDescriptorEntry 1 }
+
+   teLinkDescrSwitchingCapability OBJECT-TYPE
+      SYNTAX        TeLinkSwitchingCapability
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 2 }
+
+   teLinkDescrEncodingType OBJECT-TYPE
+      SYNTAX        TeLinkEncodingType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 3 }
+
+   teLinkDescrMinLspBandwidth OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 4 }
+
+   teLinkDescrMaxLspBandwidthPrio0 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 5 }
+
+   teLinkDescrMaxLspBandwidthPrio1 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 6 }
+
+   teLinkDescrMaxLspBandwidthPrio2 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 7 }
+
+   teLinkDescrMaxLspBandwidthPrio3 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 8 }
+
+   teLinkDescrMaxLspBandwidthPrio4 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 9 }
+
+   teLinkDescrMaxLspBandwidthPrio5 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 10 }
+
+   teLinkDescrMaxLspBandwidthPrio6 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 11 }
+
+   teLinkDescrMaxLspBandwidthPrio7 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 12 }
+
+   teLinkDescrInterfaceMtu OBJECT-TYPE
+      SYNTAX        Unsigned32 (1..65535)
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 13 }
+
+   teLinkDescrIndication OBJECT-TYPE
+      SYNTAX        TeLinkSonetSdhIndication
+
+
+
+
+
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 14 }
+
+   teLinkDescrRowStatus OBJECT-TYPE
+      SYNTAX        RowStatus
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 15 }
+
+   teLinkDescrStorageType OBJECT-TYPE
+      SYNTAX        StorageType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkDescriptorEntry 16 }
+
+
+
+
+   teLinkSrlgTable OBJECT-TYPE
+      SYNTAX        SEQUENCE OF TeLinkSrlgEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkObjects 3 }
+
+   teLinkSrlgEntry OBJECT-TYPE
+      SYNTAX        TeLinkSrlgEntry
+      MAX-ACCESS    not-accessible
+
+
+
+
+
+      STATUS        current
+      INDEX         { ifIndex, teLinkSrlg }
+      ::= { teLinkSrlgTable 1 }
+
+   TeLinkSrlgEntry ::= SEQUENCE {
+     teLinkSrlg            Unsigned32,
+     teLinkSrlgRowStatus   RowStatus,
+     teLinkSrlgStorageType StorageType
+   }
+
+   teLinkSrlg OBJECT-TYPE
+      SYNTAX        Unsigned32 (0..4294967295)
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkSrlgEntry 1 }
+
+   teLinkSrlgRowStatus OBJECT-TYPE
+      SYNTAX        RowStatus
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkSrlgEntry 2 }
+
+   teLinkSrlgStorageType OBJECT-TYPE
+      SYNTAX        StorageType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkSrlgEntry 3 }
+
+
+
+
+   teLinkBandwidthTable OBJECT-TYPE
+      SYNTAX        SEQUENCE OF TeLinkBandwidthEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkObjects 4 }
+
+   teLinkBandwidthEntry OBJECT-TYPE
+      SYNTAX        TeLinkBandwidthEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      INDEX         { ifIndex, teLinkBandwidthPriority }
+      ::= { teLinkBandwidthTable 1 }
+
+   TeLinkBandwidthEntry ::= SEQUENCE {
+     teLinkBandwidthPriority    TeLinkPriority,
+     teLinkBandwidthUnreserved  TeLinkBandwidth,
+     teLinkBandwidthRowStatus   RowStatus,
+     teLinkBandwidthStorageType StorageType
+   }
+
+   teLinkBandwidthPriority OBJECT-TYPE
+      SYNTAX        TeLinkPriority
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkBandwidthEntry 1 }
+
+   teLinkBandwidthUnreserved OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-only
+      STATUS        current
+      ::= { teLinkBandwidthEntry 2 }
+
+   teLinkBandwidthRowStatus OBJECT-TYPE
+      SYNTAX        RowStatus
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkBandwidthEntry 3 }
+
+   teLinkBandwidthStorageType OBJECT-TYPE
+      SYNTAX        StorageType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { teLinkBandwidthEntry 4 }
+
+
+
+
+
+
+
+
+   componentLinkTable  OBJECT-TYPE
+      SYNTAX        SEQUENCE OF ComponentLinkEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkObjects 5 }
+
+   componentLinkEntry  OBJECT-TYPE
+      SYNTAX        ComponentLinkEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      INDEX         { ifIndex }
+      ::= { componentLinkTable 1 }
+
+   ComponentLinkEntry ::= SEQUENCE {
+     componentLinkMaxResBandwidth     TeLinkBandwidth,
+     componentLinkPreferredProtection TeLinkProtection,
+     componentLinkCurrentProtection   TeLinkProtection,
+     componentLinkRowStatus           RowStatus,
+     componentLinkStorageType         StorageType
+   }
+
+   componentLinkMaxResBandwidth OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkEntry 1 }
+
+   componentLinkPreferredProtection OBJECT-TYPE
+
+
+
+
+
+      SYNTAX        TeLinkProtection
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkEntry 2 }
+
+   componentLinkCurrentProtection OBJECT-TYPE
+      SYNTAX        TeLinkProtection
+      MAX-ACCESS    read-only
+      STATUS        current
+      ::= { componentLinkEntry 3 }
+
+   componentLinkRowStatus OBJECT-TYPE
+      SYNTAX        RowStatus
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkEntry 4 }
+
+   componentLinkStorageType OBJECT-TYPE
+      SYNTAX        StorageType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkEntry 5 }
+
+
+
+
+   componentLinkDescriptorTable OBJECT-TYPE
+      SYNTAX        SEQUENCE OF ComponentLinkDescriptorEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkObjects 6 }
+
+   componentLinkDescriptorEntry OBJECT-TYPE
+      SYNTAX        ComponentLinkDescriptorEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      INDEX         { ifIndex, componentLinkDescrId }
+      ::= { componentLinkDescriptorTable 1 }
+
+   ComponentLinkDescriptorEntry ::= SEQUENCE {
+     componentLinkDescrId                    Unsigned32,
+     componentLinkDescrSwitchingCapability   TeLinkSwitchingCapability,
+     componentLinkDescrEncodingType          TeLinkEncodingType,
+     componentLinkDescrMinLspBandwidth       TeLinkBandwidth,
+     componentLinkDescrMaxLspBandwidthPrio0  TeLinkBandwidth,
+     componentLinkDescrMaxLspBandwidthPrio1  TeLinkBandwidth,
+     componentLinkDescrMaxLspBandwidthPrio2  TeLinkBandwidth,
+     componentLinkDescrMaxLspBandwidthPrio3  TeLinkBandwidth,
+     componentLinkDescrMaxLspBandwidthPrio4  TeLinkBandwidth,
+     componentLinkDescrMaxLspBandwidthPrio5  TeLinkBandwidth,
+     componentLinkDescrMaxLspBandwidthPrio6  TeLinkBandwidth,
+     componentLinkDescrMaxLspBandwidthPrio7  TeLinkBandwidth,
+     componentLinkDescrInterfaceMtu          Unsigned32,
+     componentLinkDescrIndication            TeLinkSonetSdhIndication,
+     componentLinkDescrRowStatus             RowStatus,
+     componentLinkDescrStorageType           StorageType
+   }
+
+   componentLinkDescrId OBJECT-TYPE
+      SYNTAX        Unsigned32 (1..4294967295)
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 1 }
+
+
+
+
+
+
+   componentLinkDescrSwitchingCapability OBJECT-TYPE
+      SYNTAX        TeLinkSwitchingCapability
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 2 }
+
+   componentLinkDescrEncodingType OBJECT-TYPE
+      SYNTAX        TeLinkEncodingType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 3 }
+
+   componentLinkDescrMinLspBandwidth OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 4 }
+
+   componentLinkDescrMaxLspBandwidthPrio0 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 5 }
+
+
+
+
+
+   componentLinkDescrMaxLspBandwidthPrio1 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 6 }
+
+   componentLinkDescrMaxLspBandwidthPrio2 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 7 }
+
+   componentLinkDescrMaxLspBandwidthPrio3 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 8 }
+
+   componentLinkDescrMaxLspBandwidthPrio4 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 9 }
+
+   componentLinkDescrMaxLspBandwidthPrio5 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "thousand bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 10 }
+
+   componentLinkDescrMaxLspBandwidthPrio6 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 11 }
+
+   componentLinkDescrMaxLspBandwidthPrio7 OBJECT-TYPE
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 12 }
+
+   componentLinkDescrInterfaceMtu OBJECT-TYPE
+      SYNTAX        Unsigned32 (1..65535)
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 13 }
+
+   componentLinkDescrIndication OBJECT-TYPE
+      SYNTAX        TeLinkSonetSdhIndication
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 14 }
+
+   componentLinkDescrRowStatus OBJECT-TYPE
+      SYNTAX        RowStatus
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 15 }
+
+   componentLinkDescrStorageType OBJECT-TYPE
+      SYNTAX        StorageType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkDescriptorEntry 16 }
+
+
+
+
+   componentLinkBandwidthTable OBJECT-TYPE
+      SYNTAX        SEQUENCE OF ComponentLinkBandwidthEntry
+
+
+
+
+
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { teLinkObjects 7 }
+
+   componentLinkBandwidthEntry OBJECT-TYPE
+      SYNTAX        ComponentLinkBandwidthEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      INDEX         { ifIndex, componentLinkBandwidthPriority }
+      ::= { componentLinkBandwidthTable 1 }
+
+   ComponentLinkBandwidthEntry ::= SEQUENCE {
+     componentLinkBandwidthPriority    TeLinkPriority,
+     componentLinkBandwidthUnreserved  TeLinkBandwidth,
+     componentLinkBandwidthRowStatus   RowStatus,
+     componentLinkBandwidthStorageType StorageType
+   }
+
+   componentLinkBandwidthPriority OBJECT-TYPE
+      SYNTAX        TeLinkPriority
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { componentLinkBandwidthEntry 1 }
+
+   componentLinkBandwidthUnreserved OBJECT-TYPE
+
+
+
+
+
+      SYNTAX        TeLinkBandwidth
+      UNITS         "bps"
+      MAX-ACCESS    read-only
+      STATUS        current
+      ::= { componentLinkBandwidthEntry 2 }
+
+   componentLinkBandwidthRowStatus OBJECT-TYPE
+      SYNTAX        RowStatus
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkBandwidthEntry 3 }
+
+   componentLinkBandwidthStorageType OBJECT-TYPE
+      SYNTAX        StorageType
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { componentLinkBandwidthEntry 4 }
+
+
+
+
+   teLinkCompliances
+      OBJECT IDENTIFIER ::= { teLinkConformance 1 }
+
+   teLinkGroups
+      OBJECT IDENTIFIER ::= { teLinkConformance 2 }
+
+   teLinkModuleFullCompliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE -- this module
+
+         MANDATORY-GROUPS    { teLinkGroup,
+                               teLinkBandwidthGroup,
+                               componentLinkBandwidthGroup }
+
+         GROUP teLinkSrlgGroup
+
+         GROUP teLinkPscGroup
+
+         GROUP teLinkTdmGroup
+
+
+         OBJECT      teLinkAddressType
+         SYNTAX      INTEGER { unknown(0), ipv4(1), ipv6(2) }
+
+         OBJECT      teLinkLocalIpAddr
+         SYNTAX      InetAddress (SIZE(0|4|16))
+
+         OBJECT      teLinkRemoteIpAddr
+         SYNTAX      InetAddress (SIZE(0|4|16))
+
+
+
+
+
+
+         OBJECT      teLinkRowStatus
+         SYNTAX      RowStatus { active(1), notInService(2) }
+         WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                  createAndGo(4), destroy(6) }
+
+
+         OBJECT      teLinkDescrRowStatus
+         SYNTAX      RowStatus { active(1), notInService(2) }
+         WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                  createAndGo(4), destroy(6) }
+
+
+         OBJECT      teLinkSrlgRowStatus
+         SYNTAX      RowStatus { active(1), notInService(2) }
+         WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                  createAndGo(4), destroy(6) }
+
+
+         OBJECT      teLinkBandwidthRowStatus
+         SYNTAX      RowStatus { active(1), notInService(2) }
+         WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                  createAndGo(4), destroy(6) }
+
+
+         OBJECT      componentLinkRowStatus
+         SYNTAX      RowStatus { active(1), notInService(2) }
+         WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                  createAndGo(4), destroy(6) }
+
+
+
+
+
+
+
+         OBJECT      componentLinkDescrRowStatus
+         SYNTAX      RowStatus { active(1), notInService(2) }
+         WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                  createAndGo(4), destroy(6) }
+
+
+         OBJECT      componentLinkBandwidthRowStatus
+         SYNTAX      RowStatus { active(1), notInService(2) }
+         WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                  createAndGo(4), destroy(6) }
+
+      ::= { teLinkCompliances 1 }
+
+   teLinkModuleReadOnlyCompliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE -- this module
+
+         MANDATORY-GROUPS    { teLinkGroup,
+                               teLinkBandwidthGroup,
+                               componentLinkBandwidthGroup }
+
+         GROUP teLinkSrlgGroup
+
+         GROUP teLinkPscGroup
+
+         GROUP teLinkTdmGroup
+
+
+
+
+
+
+         OBJECT      teLinkAddressType
+         SYNTAX      INTEGER { unknown(0), ipv4(1), ipv6(2) }
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkLocalIpAddr
+         SYNTAX      InetAddress (SIZE(0|4|16))
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkRemoteIpAddr
+         SYNTAX      InetAddress (SIZE(0|4|16))
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkProtectionType
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkWorkingPriority
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkRowStatus
+         SYNTAX      RowStatus { active(1) }
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkStorageType
+         MIN-ACCESS  read-only
+
+
+
+
+
+
+
+         OBJECT      teLinkDescrSwitchingCapability
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrEncodingType
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrMinLspBandwidth
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrMaxLspBandwidthPrio0
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrMaxLspBandwidthPrio1
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrMaxLspBandwidthPrio2
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrMaxLspBandwidthPrio3
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrMaxLspBandwidthPrio4
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrMaxLspBandwidthPrio5
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrMaxLspBandwidthPrio6
+
+
+
+
+
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrMaxLspBandwidthPrio7
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrRowStatus
+         SYNTAX      RowStatus { active(1) }
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkDescrStorageType
+         MIN-ACCESS  read-only
+
+
+         OBJECT      teLinkSrlgRowStatus
+         SYNTAX      RowStatus { active(1) }
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkSrlgStorageType
+         MIN-ACCESS  read-only
+
+
+         OBJECT      teLinkBandwidthRowStatus
+         SYNTAX      RowStatus { active(1) }
+         MIN-ACCESS  read-only
+
+         OBJECT      teLinkBandwidthStorageType
+         MIN-ACCESS  read-only
+
+
+
+
+
+
+         OBJECT      componentLinkMaxResBandwidth
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkPreferredProtection
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkRowStatus
+         SYNTAX      RowStatus { active(1) }
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkStorageType
+         MIN-ACCESS  read-only
+
+
+         OBJECT      componentLinkDescrSwitchingCapability
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrEncodingType
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrMinLspBandwidth
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrMaxLspBandwidthPrio0
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrMaxLspBandwidthPrio1
+         MIN-ACCESS  read-only
+
+
+
+
+
+
+         OBJECT      componentLinkDescrMaxLspBandwidthPrio2
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrMaxLspBandwidthPrio3
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrMaxLspBandwidthPrio4
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrMaxLspBandwidthPrio5
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrMaxLspBandwidthPrio6
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrMaxLspBandwidthPrio7
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrInterfaceMtu
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrIndication
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrRowStatus
+         SYNTAX      RowStatus { active(1) }
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkDescrStorageType
+         MIN-ACCESS  read-only
+
+
+         OBJECT      componentLinkBandwidthRowStatus
+         SYNTAX      RowStatus { active(1) }
+         MIN-ACCESS  read-only
+
+         OBJECT      componentLinkBandwidthStorageType
+         MIN-ACCESS  read-only
+
+      ::= { teLinkCompliances 2 }
+
+
+   teLinkGroup OBJECT-GROUP
+      OBJECTS { teLinkAddressType,
+                teLinkLocalIpAddr,
+                teLinkRemoteIpAddr,
+                teLinkMetric,
+                teLinkProtectionType,
+                teLinkWorkingPriority,
+                teLinkResourceClass,
+                teLinkIncomingIfId,
+                teLinkOutgoingIfId,
+                teLinkRowStatus,
+                teLinkStorageType,
+                teLinkDescrSwitchingCapability,
+                teLinkDescrEncodingType,
+                teLinkDescrRowStatus,
+                teLinkDescrStorageType,
+                componentLinkPreferredProtection,
+                componentLinkCurrentProtection,
+                componentLinkRowStatus,
+                componentLinkStorageType,
+                componentLinkDescrSwitchingCapability,
+                componentLinkDescrEncodingType,
+                componentLinkDescrRowStatus,
+
+
+
+
+
+                componentLinkDescrStorageType
+              }
+
+      STATUS  current
+      ::= { teLinkGroups 1 }
+
+   teLinkSrlgGroup OBJECT-GROUP
+      OBJECTS { teLinkSrlgRowStatus,
+                teLinkSrlgStorageType
+              }
+
+      STATUS  current
+      ::= { teLinkGroups 2 }
+
+   teLinkBandwidthGroup OBJECT-GROUP
+      OBJECTS { teLinkMaximumReservableBandwidth,
+                teLinkDescrMaxLspBandwidthPrio0,
+                teLinkDescrMaxLspBandwidthPrio1,
+                teLinkDescrMaxLspBandwidthPrio2,
+                teLinkDescrMaxLspBandwidthPrio3,
+                teLinkDescrMaxLspBandwidthPrio4,
+                teLinkDescrMaxLspBandwidthPrio5,
+                teLinkDescrMaxLspBandwidthPrio6,
+                teLinkDescrMaxLspBandwidthPrio7,
+                teLinkBandwidthUnreserved,
+                teLinkBandwidthRowStatus,
+                teLinkBandwidthStorageType
+              }
+
+      STATUS  current
+      ::= { teLinkGroups 3 }
+
+   componentLinkBandwidthGroup OBJECT-GROUP
+      OBJECTS { componentLinkMaxResBandwidth,
+                componentLinkDescrMaxLspBandwidthPrio0,
+                componentLinkDescrMaxLspBandwidthPrio1,
+                componentLinkDescrMaxLspBandwidthPrio2,
+                componentLinkDescrMaxLspBandwidthPrio3,
+
+
+
+
+
+                componentLinkDescrMaxLspBandwidthPrio4,
+                componentLinkDescrMaxLspBandwidthPrio5,
+                componentLinkDescrMaxLspBandwidthPrio6,
+                componentLinkDescrMaxLspBandwidthPrio7,
+                componentLinkBandwidthUnreserved,
+                componentLinkBandwidthRowStatus,
+                componentLinkBandwidthStorageType
+              }
+
+      STATUS  current
+      ::= { teLinkGroups 4 }
+
+   teLinkPscGroup OBJECT-GROUP
+      OBJECTS { teLinkDescrMinLspBandwidth,
+                teLinkDescrInterfaceMtu,
+                componentLinkDescrMinLspBandwidth,
+                componentLinkDescrInterfaceMtu
+              }
+
+      STATUS  current
+      ::= { teLinkGroups 5 }
+
+   teLinkTdmGroup OBJECT-GROUP
+      OBJECTS { teLinkDescrMinLspBandwidth,
+                teLinkDescrIndication,
+                componentLinkDescrMinLspBandwidth,
+                componentLinkDescrIndication
+              }
+
+      STATUS  current
+      ::= { teLinkGroups 6 }
+
+   END

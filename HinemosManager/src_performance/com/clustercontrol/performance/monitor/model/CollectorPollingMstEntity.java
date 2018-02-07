@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.performance.monitor.model;
 
 import java.io.Serializable;
@@ -14,8 +22,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 
 
@@ -41,43 +47,21 @@ public class CollectorPollingMstEntity implements Serializable {
 	public CollectorPollingMstEntity() {
 	}
 
-	public CollectorPollingMstEntity(CollectorPollingMstEntityPK pk,
-			CollectorItemCodeMstEntity collectorItemCodeMstEntity,
-			CollectorPlatformMstEntity collectorPlatformMstEntity,
-			SnmpValueTypeMstEntity snmpValueTypeMstEntity) {
+	public CollectorPollingMstEntity(CollectorPollingMstEntityPK pk) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToCollectorItemCodeMstEntity(collectorItemCodeMstEntity);
-		this.relateToCollectorPlatformMstEntity(collectorPlatformMstEntity);
-		this.relateToSnmpValueTypeMstEntity(snmpValueTypeMstEntity);
-	}
-
-	public CollectorPollingMstEntity(String collectMethod,
-			String platformId,
-			String subPlatformId,
-			String itemCode,
-			String variableId,
-			CollectorItemCodeMstEntity collectorItemCodeMstEntity,
-			CollectorPlatformMstEntity collectorPlatformMstEntity,
-			SnmpValueTypeMstEntity snmpValueTypeMstEntity) {
-		this(new CollectorPollingMstEntityPK(collectMethod, platformId, subPlatformId, itemCode, variableId),
-				collectorItemCodeMstEntity, collectorPlatformMstEntity, snmpValueTypeMstEntity);
 	}
 
 	public CollectorPollingMstEntity(CollectorPlatformMstEntity collectorPlatformMstEntity,
 			CollectorItemCodeMstEntity collectorItemCodeMstEntity,
 			String collectMethod,
 			String subPlatformId,
-			String variableId,
-			SnmpValueTypeMstEntity snmpValueTypeMstEntity) {
+			String variableId) {
 		this(new CollectorPollingMstEntityPK(
 				collectMethod,
 				collectorPlatformMstEntity.getPlatformId(),
 				subPlatformId,
 				collectorItemCodeMstEntity.getItemCode(),
-				variableId),
-				collectorItemCodeMstEntity, collectorPlatformMstEntity, snmpValueTypeMstEntity);
+				variableId));
 	}
 
 

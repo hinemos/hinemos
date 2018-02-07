@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id: platform_system_privilege.xsd 295 2015-02-09 19:00:00Z uchiyama $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:include schemaLocation="part_version.xsd" />
+  <xs:complexType name="SchemaInfoType">
+    <xs:annotation>
+      <xs:documentation>XMLスキーマ情報</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="G">
+        <xs:annotation>
+          <xs:documentation>データ型のタイプ</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+        <xs:annotation>
+          <xs:documentation>データ型のバージョン</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+        <xs:annotation>
+          <xs:documentation>データ型のバージョン</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="InfraFile">
+    <xs:annotation>
+      <xs:documentation>環境構築用ファイル一覧のルートエレメントです。</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:annotation>
+        <xs:documentation>環境構築用ファイル一覧のデータ型です。</xs:documentation>
+      </xs:annotation>
+      <xs:sequence>
+        <xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+          <xs:annotation>
+            <xs:documentation>XMLに付与する一般情報</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+          <xs:annotation>
+            <xs:documentation>XMLスキーマ情報</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="InfraFileInfo" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>環境構築用ファイルの配列</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="InfraFileInfo">
+    <xs:annotation>
+      <xs:documentation>環境構築用ファイル情報</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:annotation>
+        <xs:documentation>環境構築用ファイル情報です。</xs:documentation>
+      </xs:annotation>
+      <xs:attribute name="fileId" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>ファイルID</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="fileName" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>ファイル名</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="ownerRoleId" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>オーナーロールID</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="createDatetime" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+            ファイル情報の作成日時です。 マネージャ登録時の日時が入力されます。
+            登録時には本項目は無視されます。
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="createUserId" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+            ファイル情報の作成ユーザです。 マネージャ登録時のユーザが入力されます。
+            登録時には本項目は無視されます。
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="modifyDatetime" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+            ファイル情報の更新日時です。 マネージャ登録時の日時が入力されます。
+            登録時には本項目は無視されます。
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="modifyUserId" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+            ファイル情報の更新ユーザです。 マネージャ登録時のユーザが入力されます。
+            登録時には本項目は無視されます。
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

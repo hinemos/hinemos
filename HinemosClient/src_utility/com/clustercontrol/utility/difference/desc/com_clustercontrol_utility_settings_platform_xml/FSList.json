@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"FSList_funcName"}
+],
+"props":[
+	{
+	"propName":"FSInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

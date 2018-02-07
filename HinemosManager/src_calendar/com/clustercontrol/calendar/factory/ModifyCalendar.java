@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.calendar.factory;
@@ -62,10 +55,9 @@ public class ModifyCalendar {
 	public void addCalendar(CalendarInfo info, String userName)
 			throws HinemosUnknown, CalendarDuplicate, CalendarNotFound {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		HinemosEntityManager em = jtm.getEntityManager();
 		//カレンダを作成
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			//現在日時を取得
 			Long now = HinemosTime.currentTimeMillis();
 			
@@ -144,10 +136,11 @@ public class ModifyCalendar {
 	public void addCalendarPattern(CalendarPatternInfo info, String userName)
 			throws HinemosUnknown, InvalidRole, CalendarDuplicate, CalendarNotFound {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
 		//カレンダパターンを作成
 		String id = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
 			//現在日時を取得
 			long now = HinemosTime.currentTimeMillis();
 			//ID取得
@@ -166,7 +159,7 @@ public class ModifyCalendar {
 			entity.setRegUser(userName);
 			entity.setUpdateDate(now);
 			entity.setUpdateUser(userName);
-
+			em.persist(entity);
 			if(info.getYmd() != null){
 				int num = 1;
 				for(YMD ymd : info.getYmd()){
@@ -200,9 +193,8 @@ public class ModifyCalendar {
 	private void addCalendarPatternDetail(String id, YMD ymd)
 			throws InvalidRole, CalendarDuplicate, CalendarNotFound, HinemosUnknown {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			CalendarPatternInfo calPatternEntity = QueryUtil.getCalPatternInfoPK(id);
 
 			//年を取得
@@ -219,7 +211,7 @@ public class ModifyCalendar {
 			YMDPK entityPk = new YMDPK(id,year,month,day);
 			// インスタンス生成
 			ymd.setCalPatternId(id);
-			jtm.getEntityManager().persist(ymd);
+			em.persist(ymd);
 			ymd.relateToCalPatternInfoEntity(calPatternEntity);
 
 			// 重複チェック
@@ -251,7 +243,8 @@ public class ModifyCalendar {
 	public void modifyCalendar(CalendarInfo info, String userName)
 			throws CalendarNotFound, HinemosUnknown, InvalidRole {
 		String id = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			//現在日時を取得
 			Long now = HinemosTime.currentTimeMillis();
 			//ID取得
@@ -282,7 +275,6 @@ public class ModifyCalendar {
 				List<CalendarDetailInfoPK> calDetailInfoEntityPkList
 				= new ArrayList<CalendarDetailInfoPK>();
 				
-				HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 				for (int i = 0 ; i < info.getCalendarDetailList().size();  i++ ) {
 					try {
 						calDetailInfoEntity = QueryUtil.getCalDetailInfoPK(id, i + 1);
@@ -318,7 +310,8 @@ public class ModifyCalendar {
 	public void modifyCalendarPattern(CalendarPatternInfo info, String userName)
 			throws HinemosUnknown, CalendarNotFound, InvalidRole {
 		String id = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			//現在日時を取得
 			long now = HinemosTime.currentTimeMillis();
 			//ID取得
@@ -345,13 +338,12 @@ public class ModifyCalendar {
 				List<YMDPK> calPatternDetailInfoEntityPkList
 				= new ArrayList<YMDPK>();
 				
-				JpaTransactionManager jtm = new JpaTransactionManager();
 				for (YMD ymd : info.getYmd()) {
 					try {
 						QueryUtil.getCalPatternDetailInfoPK(id, ymd.getYear(), ymd.getMonth(), ymd.getDay());
 					} catch (CalendarNotFound e) {
 						YMD y = new YMD(id, ymd.getYear(), ymd.getMonth(), ymd.getDay());
-						jtm.getEntityManager().persist(y);
+						em.persist(y);
 						y.relateToCalPatternInfoEntity(entity);
 					}
 					calPatternDetailInfoEntityPkList.add(new YMDPK(id, ymd.getYear(), ymd.getMonth(), ymd.getDay()));
@@ -385,9 +377,8 @@ public class ModifyCalendar {
 	 */
 	public void deleteCalendar(String id) throws HinemosUnknown, CalendarNotFound, InvalidRole {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			//カレンダ情報を検索し取得
 			CalendarInfo cal = QueryUtil.getCalInfoPK(id, ObjectPrivilegeMode.MODIFY);
 
@@ -416,9 +407,9 @@ public class ModifyCalendar {
 	 */
 	public void deleteCalendarPattern(String id) throws HinemosUnknown, CalendarNotFound, InvalidRole {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 		m_log.info("deleteCalendarPattern : deleted " + id);
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			//カレンダ[カレンダパターン]情報を検索し取得
 			CalendarPatternInfo calPa = QueryUtil.getCalPatternInfoPK(id, ObjectPrivilegeMode.MODIFY);
 			//カレンダ[カレンダパターン]情報を削除

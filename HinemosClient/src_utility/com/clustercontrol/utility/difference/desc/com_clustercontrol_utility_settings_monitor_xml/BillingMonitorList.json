@@ -1,0 +1,31 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"BillingMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"NumericValue",
+			"BillingMonitor"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"BillingMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

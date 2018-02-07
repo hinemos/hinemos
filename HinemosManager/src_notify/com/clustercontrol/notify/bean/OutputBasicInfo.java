@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.bean;
@@ -110,6 +103,11 @@ public class OutputBasicInfo implements java.io.Serializable, Cloneable {
 	 * 標準出力ノード
 	 */
 	private List<String> m_jobFacilityId = new ArrayList<>();
+	
+	/**
+	 * 通知グループID
+	 */
+	private String m_notifyGroupId;
 	
 	public OutputBasicInfo() {}
 
@@ -380,9 +378,31 @@ public class OutputBasicInfo implements java.io.Serializable, Cloneable {
 		m_jobFacilityId = node;
 	}
 
+	
+	/**
+	 *  通知グループIDを返します。
+	 * 
+	 * @return  通知グループID
+	 */
+	public String getNotifyGroupId() {
+		return m_notifyGroupId;
+	}
+	/**
+	 *  通知グループIDを設定します。
+	 * 
+	 * @param notifyGroupId  通知グループID
+	 */
+	public void setNotifyGroupId(String notifyGroupId) {
+		m_notifyGroupId = notifyGroupId;
+	}
+
 	@Override
 	public String toString(){
-		String str = "OutputBasicInfo : FacilityId = " + m_facilityId + ", PluginId = " + m_pluginId + ", MonitorId = " + m_monitorId;
+		String str = "OutputBasicInfo : "
+				+ "FacilityId = " + m_facilityId 
+				+ ", PluginId = " + m_pluginId 
+				+ ", MonitorId = " + m_monitorId
+				+ ", NotifyGroupId = " + m_notifyGroupId;
 		return str;
 	}
 	
@@ -402,6 +422,7 @@ public class OutputBasicInfo implements java.io.Serializable, Cloneable {
 			clonedInfo.setPriority(m_priority);
 			clonedInfo.setScopeText(m_scopeText);
 			clonedInfo.setSubKey(m_subKey);
+			clonedInfo.setNotifyGroupId(m_notifyGroupId);
 		} catch (CloneNotSupportedException e) {
 			// do nothing
 		}

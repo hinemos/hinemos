@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"serviceName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinServiceInfo_serviceName"}
+	]}
+]
+}

@@ -1,0 +1,133 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"notifyId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfoType_description"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfoType_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"calendarId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfoType_calendarId"}
+	]},
+
+	{
+	"propName":"notifyType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfoType_notifyType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_statusNotification"},
+				{"value":"1", "name":"name_eventNotification"},
+				{"value":"2", "name":"name_mailNotification"},
+				{"value":"3", "name":"name_jobNotification"},
+				{"value":"4", "name":"name_logNotification"},
+				{"value":"5", "name":"name_commandNotification"},
+				{"value":"6", "name":"name_infraNotification"}
+			]
+		}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfoType_validFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"initialCount",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfoType_initialCount"}
+	]},
+
+	{
+	"propName":"notFirstNotify",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfoType_notFirstNotify"}
+	]},
+
+	{
+	"propName":"renotifyType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfoType_renotifyType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_alwaysNotify"},
+				{"value":"1", "name":"name_notNotifyConditional"},
+				{"value":"2", "name":"name_notNotify"}
+			]
+		}
+	]},
+
+	{
+	"propName":"renotifyPeriod",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfoType_renotifyPeriod"}
+	]},
+
+	{
+	"propName":"notifyStatusInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]},
+
+	{
+	"propName":"notifyEventInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]},
+
+	{
+	"propName":"notifyMailInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]},
+
+	{
+	"propName":"notifyJobInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]},
+
+	{
+	"propName":"notifyLogEscalateInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]},
+
+	{
+	"propName":"notifyCommandInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]},
+	
+	{
+	"propName":"notifyInfraInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+
+]
+}

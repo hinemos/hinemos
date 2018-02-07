@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.snmptrap.service;
@@ -57,7 +50,7 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import com.clustercontrol.bean.SnmpProtocolConstant;
 import com.clustercontrol.bean.SnmpSecurityLevelConstant;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.snmptrap.bean.SnmpTrap;
 import com.clustercontrol.snmptrap.bean.SnmpVarBind;
 import com.clustercontrol.snmptrap.bean.TrapId;
@@ -82,13 +75,6 @@ public class Snmp4JSession implements SnmpTrapSession {
 	private List<SnmpTrap> receivedTrapBuffer = new ArrayList<SnmpTrap>();
 	private Object receivedTrapBufferLock = new Object();
 	private boolean stopOnReceivedThread = false;
-	
-	private static final String PROP_SNMPTRAP_V3_USER = "monitor.snmptrap.v3.user";
-	private static final String PROP_SNMPTRAP_V3_AUTH_PASSWORD = "monitor.snmptrap.v3.auth.password";
-	private static final String PROP_SNMPTRAP_V3_PRIV_PASSWORD = "monitor.snmptrap.v3.priv.password";
-	private static final String PROP_SNMPTRAP_V3_AUTH_PROTOCOL = "monitor.snmptrap.v3.auth.protocol";
-	private static final String PROP_SNMPTRAP_PRIV_V3_PRIV_PROTOCOL = "monitor.snmptrap.v3.priv.protocol";
-	private static final String PROP_SNMPTRAP_PRIV_V3_SECURITY_LEVEL = "monitor.snmptrap.v3.security.level";
 
 	// snmp4J のsessionインスタンス
 	private Snmp snmp;
@@ -343,12 +329,12 @@ public class Snmp4JSession implements SnmpTrapSession {
 		snmp.getMessageDispatcher().addMessageProcessingModel(new MPv3(usm));
 		SecurityModels.getInstance().addSecurityModel(usm);
 		
-		String user = HinemosPropertyUtil.getHinemosPropertyStr(PROP_SNMPTRAP_V3_USER, "hinemos");
-		String authPass = HinemosPropertyUtil.getHinemosPropertyStr(PROP_SNMPTRAP_V3_AUTH_PASSWORD, "authPassword");
-		String privPass = HinemosPropertyUtil.getHinemosPropertyStr(PROP_SNMPTRAP_V3_PRIV_PASSWORD, "privPassword");
-		String authProtocolStr = HinemosPropertyUtil.getHinemosPropertyStr(PROP_SNMPTRAP_V3_AUTH_PROTOCOL, SnmpProtocolConstant.MD5);
-		String privProtocolStr = HinemosPropertyUtil.getHinemosPropertyStr(PROP_SNMPTRAP_PRIV_V3_PRIV_PROTOCOL, SnmpProtocolConstant.DES);
-		String securityLevel = HinemosPropertyUtil.getHinemosPropertyStr(PROP_SNMPTRAP_PRIV_V3_SECURITY_LEVEL, SnmpSecurityLevelConstant.NOAUTH_NOPRIV);
+		String user = HinemosPropertyCommon.monitor_snmptrap_v3_user.getStringValue();
+		String authPass = HinemosPropertyCommon.monitor_snmptrap_v3_auth_password.getStringValue();
+		String privPass = HinemosPropertyCommon.monitor_snmptrap_v3_priv_password.getStringValue();
+		String authProtocolStr = HinemosPropertyCommon.monitor_snmptrap_v3_auth_protocol.getStringValue();
+		String privProtocolStr = HinemosPropertyCommon.monitor_snmptrap_v3_priv_protocol.getStringValue();
+		String securityLevel = HinemosPropertyCommon.monitor_snmptrap_v3_security_level.getStringValue();
 		
 		OID authProtocol = AuthMD5.ID;
 		if (SnmpProtocolConstant.SHA.equals(authProtocolStr)) {

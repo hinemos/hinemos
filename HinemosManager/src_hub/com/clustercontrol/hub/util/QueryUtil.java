@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.util;
 
 import java.util.List;
@@ -61,10 +55,10 @@ public class QueryUtil {
 	 */
 	public static LogFormat getLogFormatPK(String formatId, ObjectPrivilegeMode mode) throws LogFormatNotFound, InvalidRole {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 		LogFormat entity = null;
 
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			entity = em.find(LogFormat.class, formatId, mode);
 			if (entity == null) {
 				LogFormatNotFound e = new LogFormatNotFound("LogFormat.findByPrimaryKey, formatId = " + formatId);
@@ -79,30 +73,67 @@ public class QueryUtil {
 		}
 		return entity;
 	}
+
+	/**
+	 * ログフォーマット
+	 * @param formatId
+	 * @param mode
+	 * @return
+	 * @throws LogNotFound 
+	 * @throws InvalidRole 
+	 * @throws Exception
+	 */
+	public static LogFormat getLogFormatPK_OR(String formatId, String ownerRoleId) throws LogFormatNotFound, InvalidRole {
+
+		LogFormat entity = null;
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			entity = em.find_OR(LogFormat.class, formatId, ownerRoleId);
+			if (entity == null) {
+				LogFormatNotFound e = new LogFormatNotFound("LogFormat.findByPrimaryKey_OR, formatId = " + formatId);
+				m_log.info("getLogFormatPK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		} catch (ObjectPrivilege_InvalidRole e) {
+			m_log.info("getLogFormatPK_OR() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw new InvalidRole(e.getMessage(), e);
+		}
+		return entity;
+	}
+
 	/**
 	 * @return
 	 */
 	public static List<LogFormat> getLogFormatList() {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<LogFormat> list = em.createNamedQuery("LogFormat.findAll", LogFormat.class).getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<LogFormat> list = em.createNamedQuery("LogFormat.findAll", LogFormat.class).getResultList();
+			return list;
+		}
 	}
 
 	/**
 	 * @return
 	 */
 	public static List<LogFormat> getLogFormatList_OR(String ownerRoleId) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<LogFormat> list = em.createNamedQuery_OR("LogFormat.findAll", LogFormat.class, ownerRoleId).getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<LogFormat> list = em.createNamedQuery_OR("LogFormat.findAll", LogFormat.class, ownerRoleId).getResultList();
+			return list;
+		}
 	}
 
 	public static boolean isLogFormatUsed(String logFormatId) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		TypedQuery<MonitorInfo> query = em.createNamedQuery("MonitorInfo.findBylogFormatId", MonitorInfo.class);
-		query.setParameter("logFormatId", logFormatId);
-		query.setMaxResults(1);
-		return !query.getResultList().isEmpty();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			TypedQuery<MonitorInfo> query = em.createNamedQuery("MonitorInfo.findBylogFormatId", MonitorInfo.class);
+			query.setParameter("logFormatId", logFormatId);
+			query.setMaxResults(1);
+			return !query.getResultList().isEmpty();
+		}
 	}
 	
 	/**
@@ -110,9 +141,9 @@ public class QueryUtil {
 	 * @return
 	 */
 	public static Long getMaxId(){
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 		Long maxid = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			maxid = em.createNamedQuery("CollectStringKeyInfo.findMaxId",Long.class).getSingleResult();
 		} catch (NoResultException e) {
 			m_log.debug("getMaxCollectStringKeyId : "
@@ -126,9 +157,9 @@ public class QueryUtil {
 	 * @return
 	 */
 	public static Long getMaxCollectStringDataId(){
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 		Long maxid = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			maxid = em.createNamedQuery("CollectStringData.findMaxDataId",Long.class).getSingleResult();
 		} catch (NoResultException e) {
 			m_log.debug("getMaxCollectStringDataId : "
@@ -144,10 +175,12 @@ public class QueryUtil {
 	 */
 	public static CollectStringKeyInfo getCollectStringKeyPK(CollectStringKeyInfoPK pk){
 		m_log.debug("getCollectStringKeyPK() : " + pk.toString());
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		CollectStringKeyInfo entity=null;
-		entity = em.find(CollectStringKeyInfo.class, pk, ObjectPrivilegeMode.NONE);
-		return entity;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			CollectStringKeyInfo entity=null;
+			entity = em.find(CollectStringKeyInfo.class, pk, ObjectPrivilegeMode.NONE);
+			return entity;
+		}
 	}
 	
 	/**
@@ -170,10 +203,10 @@ public class QueryUtil {
 	 * @throws InvalidRole
 	 */
 	public static TransferInfo getTransferInfo(String transferId, ObjectPrivilegeMode mode) throws LogTransferNotFound, InvalidRole {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 		TransferInfo entity = null;
 
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			entity = em.find(TransferInfo.class, transferId, mode);
 			if (entity == null) {
 				LogTransferNotFound e = new LogTransferNotFound("TransferInfo.findByPrimaryKey, transferId = " + transferId);
@@ -194,10 +227,12 @@ public class QueryUtil {
 	 * @return
 	 */
 	public static List<TransferInfo> getTransferInfoList() {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<TransferInfo> list
-			= em.createNamedQuery("TransferInfo.findAll", TransferInfo.class).getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<TransferInfo> list
+				= em.createNamedQuery("TransferInfo.findAll", TransferInfo.class).getResultList();
+			return list;
+		}
 	}
 	/**
 	 * 
@@ -205,10 +240,12 @@ public class QueryUtil {
 	 * @return
 	 */
 	public static List<TransferInfo> getTransferInfoList_OR(String ownerRoleId) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<TransferInfo> list
-			= em.createNamedQuery_OR("TransferInfo.findAll", TransferInfo.class, ownerRoleId)
-			.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<TransferInfo> list
+				= em.createNamedQuery_OR("TransferInfo.findAll", TransferInfo.class, ownerRoleId)
+				.getResultList();
+			return list;
+		}
 	}
 }

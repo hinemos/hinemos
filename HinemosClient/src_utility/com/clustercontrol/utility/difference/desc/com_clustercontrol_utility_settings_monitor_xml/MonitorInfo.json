@@ -1,0 +1,198 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitorId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_description"}
+	]},
+
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_facilityId"}
+	]},
+
+	{
+	"propName":"scope",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_scope"}
+	]},
+
+	{
+	"propName":"monitorType",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_monitorType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_truth"},
+				{"value":"1", "name":"name_num"},
+				{"value":"2", "name":"name_string"},
+				{"value":"3", "name":"name_trap"},
+				{"value":"4", "name":"name_scenario"},
+				{"value":"5", "name":"name_binary"}
+			]
+		}
+	]},
+
+	{
+	"propName":"monitorTypeId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_monitorTypeId"}
+	]},
+
+	{
+	"propName":"runInterval",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_runInterval"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_zero"},
+				{"value":"30", "name":"name_halfMinute"},
+				{"value":"60", "name":"name_oneMinute"},
+				{"value":"300", "name":"name_fiveMinutes"},
+				{"value":"600", "name":"name_tenMinutes"},
+				{"value":"1800", "name":"name_halfHour"},
+				{"value":"3600", "name":"name_Hour"}
+			]
+		}
+	]},
+
+	{
+	"propName":"calendarId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_calendarId"}
+	]},
+
+	{
+	"propName":"notifyId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_notifyId"},
+		{"type":"Array"}
+	]},
+
+	{
+	"propName":"application",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_application"}
+	]},
+
+	{
+	"propName":"monitorFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_monitorFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"collectorFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_collectorFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"itemName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_itemName"}
+	]},
+
+	{
+	"propName":"measure",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_measure"}
+	]},
+
+	{
+	"propName":"logFormatId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_logFormatId"}
+	]},
+
+	{
+	"propName":"predictionFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_predictionFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"predictionMethod",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_predictionMethod"},
+		{
+			"type":"Translate",
+			"values":[
+				{"value":"POLYNOMIAL_1", "name":"name_polynomial_1"},
+				{"value":"POLYNOMIAL_2", "name":"name_polynomial_2"},
+				{"value":"POLYNOMIAL_3", "name":"name_polynomial_3"}
+			]
+		}
+	]},
+
+	{
+	"propName":"predictionAnalysysRange",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_predictionAnalysysRange"}
+	]},
+
+	{
+	"propName":"predictionTarget",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_predictionTarget"}
+	]},
+
+	{
+	"propName":"predictionApplication",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_predictionApplication"}
+	]},
+
+	{
+	"propName":"predictionNotifyId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_predictionNotifyId"},
+		{"type":"Array"}
+	]},
+
+	{
+	"propName":"changeFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_changeFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"changeAnalysysRange",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_changeAnalysysRange"}
+	]},
+
+	{
+	"propName":"changeApplication",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_changeApplication"}
+	]},
+
+	{
+	"propName":"changeNotifyId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_changeNotifyId"},
+		{"type":"Array"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_ownerRoleId"}
+	]}
+]
+}

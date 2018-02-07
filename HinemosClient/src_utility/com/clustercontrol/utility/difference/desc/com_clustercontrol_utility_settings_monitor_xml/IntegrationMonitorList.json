@@ -1,0 +1,41 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"IntegrationMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"IntegrationInfo.MessageOk",
+			"IntegrationInfo.MessageNg",
+			"IntegrationInfo.NotOrder",
+			"IntegrationInfo.Timeout",
+			"IntegrationInfo.ConditionValue.monitorNode",
+			"IntegrationInfo.ConditionValue.targetFacilityId",
+			"IntegrationInfo.ConditionValue.targetMonitorId",
+			"IntegrationInfo.ConditionValue.targetMonitorType",
+			"IntegrationInfo.ConditionValue.targetItemName",
+			"IntegrationInfo.ConditionValue.targetDisplayName",
+			"IntegrationInfo.ConditionValue.description",
+			"IntegrationInfo.ConditionValue.comparisonMethod",
+			"IntegrationInfo.ConditionValue.comparisonValue",
+			"IntegrationInfo.ConditionValue.isAnd",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"TruthValue.*.Priority"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"IntegrationMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

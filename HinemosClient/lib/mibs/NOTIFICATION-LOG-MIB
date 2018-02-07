@@ -1,0 +1,486 @@
+NOTIFICATION-LOG-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    Integer32, Unsigned32,
+    TimeTicks, Counter32, Counter64,
+    IpAddress, Opaque, mib-2       FROM SNMPv2-SMI
+    TimeStamp, DateAndTime,
+    StorageType, RowStatus,
+    TAddress, TDomain              FROM SNMPv2-TC
+    SnmpAdminString, SnmpEngineID  FROM SNMP-FRAMEWORK-MIB
+    MODULE-COMPLIANCE, OBJECT-GROUP     FROM SNMPv2-CONF;
+
+notificationLogMIB MODULE-IDENTITY
+    LAST-UPDATED "200011270000Z"            -- 27 November 2000
+    ORGANIZATION "IETF Distributed Management Working Group"
+
+    ::= { mib-2 92 }
+
+
+notificationLogMIBObjects OBJECT IDENTIFIER ::= { notificationLogMIB 1 }
+
+nlmConfig OBJECT IDENTIFIER ::= { notificationLogMIBObjects 1 }
+nlmStats  OBJECT IDENTIFIER ::= { notificationLogMIBObjects 2 }
+nlmLog         OBJECT IDENTIFIER ::= { notificationLogMIBObjects 3 }
+
+
+nlmConfigGlobalEntryLimit OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { nlmConfig 1 }
+
+nlmConfigGlobalAgeOut OBJECT-TYPE
+    SYNTAX      Unsigned32
+
+
+
+
+
+    UNITS       "minutes"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 1440 }  -- 24 hours
+    ::= { nlmConfig 2 }
+
+
+
+nlmConfigLogTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NlmConfigLogEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { nlmConfig 3 }
+
+nlmConfigLogEntry OBJECT-TYPE
+    SYNTAX      NlmConfigLogEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX      { nlmLogName }
+    ::= { nlmConfigLogTable 1 }
+
+NlmConfigLogEntry ::= SEQUENCE {
+    nlmLogName           SnmpAdminString,
+    nlmConfigLogFilterName    SnmpAdminString,
+    nlmConfigLogEntryLimit    Unsigned32,
+    nlmConfigLogAdminStatus   INTEGER,
+
+
+
+
+
+    nlmConfigLogOperStatus    INTEGER,
+    nlmConfigLogStorageType   StorageType,
+    nlmConfigLogEntryStatus   RowStatus
+    }
+
+nlmLogName OBJECT-TYPE
+    SYNTAX     SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { nlmConfigLogEntry 1 }
+
+nlmConfigLogFilterName OBJECT-TYPE
+    SYNTAX     SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { ''H }
+    ::= { nlmConfigLogEntry 2 }
+
+nlmConfigLogEntryLimit OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 0 }
+    ::= { nlmConfigLogEntry 3 }
+
+nlmConfigLogAdminStatus OBJECT-TYPE
+    SYNTAX     INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { enabled }
+    ::= { nlmConfigLogEntry 4 }
+
+nlmConfigLogOperStatus OBJECT-TYPE
+    SYNTAX     INTEGER { disabled(1), operational(2), noFilter(3) }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlmConfigLogEntry 5 }
+
+nlmConfigLogStorageType OBJECT-TYPE
+    SYNTAX     StorageType
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { nlmConfigLogEntry 6 }
+
+nlmConfigLogEntryStatus OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { nlmConfigLogEntry 7 }
+
+
+nlmStatsGlobalNotificationsLogged OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "notifications"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmStats 1 }
+
+nlmStatsGlobalNotificationsBumped OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "notifications"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmStats 2 }
+
+
+nlmStatsLogTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NlmStatsLogEntry
+    MAX-ACCESS  not-accessible
+
+
+
+
+
+    STATUS      current
+    ::= { nlmStats 3 }
+
+nlmStatsLogEntry OBJECT-TYPE
+    SYNTAX      NlmStatsLogEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    AUGMENTS { nlmConfigLogEntry }
+    ::= { nlmStatsLogTable 1 }
+
+NlmStatsLogEntry ::= SEQUENCE {
+    nlmStatsLogNotificationsLogged Counter32,
+    nlmStatsLogNotificationsBumped Counter32
+}
+
+nlmStatsLogNotificationsLogged OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "notifications"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmStatsLogEntry 1 }
+
+nlmStatsLogNotificationsBumped OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "notifications"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmStatsLogEntry 2 }
+
+
+
+
+
+
+
+
+
+nlmLogTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NlmLogEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { nlmLog 1 }
+
+nlmLogEntry OBJECT-TYPE
+    SYNTAX      NlmLogEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { nlmLogName, nlmLogIndex }
+    ::= { nlmLogTable 1 }
+
+
+
+
+
+
+NlmLogEntry ::= SEQUENCE {
+    nlmLogIndex                Unsigned32,
+    nlmLogTime                 TimeStamp,
+    nlmLogDateAndTime          DateAndTime,
+    nlmLogEngineID             SnmpEngineID,
+    nlmLogEngineTAddress       TAddress,
+    nlmLogEngineTDomain        TDomain,
+    nlmLogContextEngineID      SnmpEngineID,
+    nlmLogContextName          SnmpAdminString,
+    nlmLogNotificationID       OBJECT IDENTIFIER
+}
+
+nlmLogIndex OBJECT-TYPE
+    SYNTAX     Unsigned32 (1..4294967295)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { nlmLogEntry 1 }
+
+nlmLogTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogEntry 2 }
+
+nlmLogDateAndTime OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogEntry 3 }
+
+nlmLogEngineID OBJECT-TYPE
+    SYNTAX      SnmpEngineID
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogEntry 4 }
+
+nlmLogEngineTAddress OBJECT-TYPE
+    SYNTAX      TAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogEntry 5 }
+
+nlmLogEngineTDomain OBJECT-TYPE
+    SYNTAX      TDomain
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogEntry 6 }
+
+nlmLogContextEngineID OBJECT-TYPE
+    SYNTAX      SnmpEngineID
+    MAX-ACCESS  read-only
+    STATUS      current
+     ::= { nlmLogEntry 7 }
+
+nlmLogContextName OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogEntry 8 }
+
+nlmLogNotificationID OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogEntry 9 }
+
+
+nlmLogVariableTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NlmLogVariableEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { nlmLog 2 }
+
+nlmLogVariableEntry OBJECT-TYPE
+    SYNTAX      NlmLogVariableEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { nlmLogName, nlmLogIndex, nlmLogVariableIndex }
+    ::= { nlmLogVariableTable 1 }
+
+NlmLogVariableEntry ::= SEQUENCE {
+
+
+
+
+
+    nlmLogVariableIndex              Unsigned32,
+    nlmLogVariableID                 OBJECT IDENTIFIER,
+    nlmLogVariableValueType          INTEGER,
+    nlmLogVariableCounter32Val       Counter32,
+    nlmLogVariableUnsigned32Val      Unsigned32,
+    nlmLogVariableTimeTicksVal       TimeTicks,
+    nlmLogVariableInteger32Val       Integer32,
+    nlmLogVariableOctetStringVal     OCTET STRING,
+    nlmLogVariableIpAddressVal       IpAddress,
+    nlmLogVariableOidVal             OBJECT IDENTIFIER,
+    nlmLogVariableCounter64Val       Counter64,
+    nlmLogVariableOpaqueVal          Opaque
+}
+
+nlmLogVariableIndex OBJECT-TYPE
+    SYNTAX     Unsigned32 (1..4294967295)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { nlmLogVariableEntry 1 }
+
+nlmLogVariableID OBJECT-TYPE
+    SYNTAX     OBJECT IDENTIFIER
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { nlmLogVariableEntry 2 }
+
+nlmLogVariableValueType OBJECT-TYPE
+    SYNTAX      INTEGER { counter32(1), unsigned32(2), timeTicks(3),
+                 integer32(4), ipAddress(5), octetString(6),
+                 objectId(7), counter64(8), opaque(9) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 3 }
+
+nlmLogVariableCounter32Val OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 4 }
+
+nlmLogVariableUnsigned32Val OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 5 }
+
+nlmLogVariableTimeTicksVal OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 6 }
+
+nlmLogVariableInteger32Val OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 7 }
+
+nlmLogVariableOctetStringVal OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 8 }
+
+nlmLogVariableIpAddressVal OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 9 }
+
+nlmLogVariableOidVal OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 10 }
+
+nlmLogVariableCounter64Val OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 11 }
+
+nlmLogVariableOpaqueVal OBJECT-TYPE
+    SYNTAX      Opaque
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { nlmLogVariableEntry 12 }
+
+
+
+notificationLogMIBConformance OBJECT IDENTIFIER ::=
+    { notificationLogMIB 3 }
+notificationLogMIBCompliances OBJECT IDENTIFIER ::=
+    { notificationLogMIBConformance 1 }
+notificationLogMIBGroups      OBJECT IDENTIFIER ::=
+    { notificationLogMIBConformance 2 }
+
+
+notificationLogMIBCompliance MODULE-COMPLIANCE
+     STATUS current
+     MODULE    -- this module
+
+
+
+
+
+          MANDATORY-GROUPS {
+               notificationLogConfigGroup,
+               notificationLogStatsGroup,
+               notificationLogLogGroup
+          }
+
+     OBJECT nlmConfigGlobalEntryLimit
+         SYNTAX Unsigned32 (0..4294967295)
+         MIN-ACCESS read-only
+
+     OBJECT nlmConfigLogEntryLimit
+         SYNTAX Unsigned32 (0..4294967295)
+         MIN-ACCESS read-only
+
+     OBJECT nlmConfigLogEntryStatus
+         MIN-ACCESS read-only
+
+     GROUP notificationLogDateGroup
+
+     ::= { notificationLogMIBCompliances 1 }
+
+
+notificationLogConfigGroup OBJECT-GROUP
+     OBJECTS {
+          nlmConfigGlobalEntryLimit,
+          nlmConfigGlobalAgeOut,
+          nlmConfigLogFilterName,
+          nlmConfigLogEntryLimit,
+          nlmConfigLogAdminStatus,
+          nlmConfigLogOperStatus,
+          nlmConfigLogStorageType,
+          nlmConfigLogEntryStatus
+     }
+
+
+
+
+
+     STATUS current
+     ::= { notificationLogMIBGroups 1 }
+
+notificationLogStatsGroup OBJECT-GROUP
+     OBJECTS {
+          nlmStatsGlobalNotificationsLogged,
+          nlmStatsGlobalNotificationsBumped,
+          nlmStatsLogNotificationsLogged,
+          nlmStatsLogNotificationsBumped
+     }
+     STATUS current
+     ::= { notificationLogMIBGroups 2 }
+
+notificationLogLogGroup OBJECT-GROUP
+     OBJECTS {
+          nlmLogTime,
+          nlmLogEngineID,
+          nlmLogEngineTAddress,
+          nlmLogEngineTDomain,
+          nlmLogContextEngineID,
+          nlmLogContextName,
+          nlmLogNotificationID,
+          nlmLogVariableID,
+          nlmLogVariableValueType,
+          nlmLogVariableCounter32Val,
+          nlmLogVariableUnsigned32Val,
+          nlmLogVariableTimeTicksVal,
+          nlmLogVariableInteger32Val,
+          nlmLogVariableOctetStringVal,
+          nlmLogVariableIpAddressVal,
+          nlmLogVariableOidVal,
+          nlmLogVariableCounter64Val,
+          nlmLogVariableOpaqueVal
+     }
+     STATUS current
+     ::= { notificationLogMIBGroups 3 }
+
+notificationLogDateGroup OBJECT-GROUP
+     OBJECTS {
+          nlmLogDateAndTime
+     }
+     STATUS current
+
+
+
+
+
+     ::= { notificationLogMIBGroups 4 }
+
+END

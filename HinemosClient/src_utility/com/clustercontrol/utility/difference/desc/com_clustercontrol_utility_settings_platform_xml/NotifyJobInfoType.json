@@ -1,0 +1,134 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"infoJobunitId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_infoJobunitId"}
+	]},
+
+	{
+	"propName":"warnJobunitId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_warnJobunitId"}
+	]},
+
+	{
+	"propName":"criticalJobunitId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_criticalJobunitId"}
+	]},
+
+	{
+	"propName":"unknownJobunitId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_unknownJobunitId"}
+	]},
+
+	{
+	"propName":"infoJobId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_infoJobId"}
+	]},
+
+	{
+	"propName":"warnJobId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_warnJobId"}
+	]},
+
+	{
+	"propName":"criticalJobId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_criticalJobId"}
+	]},
+
+	{
+	"propName":"unknownJobId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_unknownJobId"}
+	]},
+
+	{
+	"propName":"infoJobFailurePriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_infoJobFailurePriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"warnJobFailurePriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_warnJobFailurePriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"criticalJobFailurePriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_criticalJobFailurePriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"unknownJobFailurePriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_unknownJobFailurePriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"jobExecFacilityFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_jobExecFacilityFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_EventOccurs"},
+				{"value":"1", "name":"name_FixedScope"}
+			]
+		}
+	]},
+
+	{
+	"propName":"jobExecFacility",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_jobExecFacility"}
+	]},
+
+	{
+	"propName":"jobExecScope",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_jobExecScope"}
+	]}
+]
+}

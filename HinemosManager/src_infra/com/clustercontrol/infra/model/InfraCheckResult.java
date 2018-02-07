@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.infra.model;
 
 import javax.persistence.Cacheable;
@@ -71,7 +79,9 @@ public class InfraCheckResult {
 	}
 	
 	public void removeSelf() {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.remove(this);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			em.remove(this);
+		}
 	}
 }

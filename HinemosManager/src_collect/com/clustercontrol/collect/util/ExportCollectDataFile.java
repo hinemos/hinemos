@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.collect.util;
 
 import java.io.BufferedWriter;
@@ -29,10 +37,10 @@ import com.clustercontrol.collect.model.SummaryDay;
 import com.clustercontrol.collect.model.SummaryHour;
 import com.clustercontrol.collect.model.SummaryMonth;
 import com.clustercontrol.collect.session.CollectControllerBean;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
@@ -195,11 +203,10 @@ public class ExportCollectDataFile {
 
 		PrintWriter pw = null;
 
-		String exportEncode = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.encode", "MS932");
+		String exportEncode = HinemosPropertyCommon.performance_export_encode.getStringValue();
 
 		String exportLineSeparator = "\r\n";
-		String exportLineSeparatorStr = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.line.separator",
-				"CRLF");
+		String exportLineSeparatorStr = HinemosPropertyCommon.performance_export_line_separator.getStringValue();
 
 		if ("CRLF".equals(exportLineSeparatorStr)) {
 			exportLineSeparator = "\r\n";
@@ -275,11 +282,10 @@ public class ExportCollectDataFile {
 			File file = new File(filepath);
 
 			if (checkBeforeWritefile(file)) {
-				String exportEncode = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.encode", "MS932");
+				String exportEncode = HinemosPropertyCommon.performance_export_encode.getStringValue();
 
 				String exportLineSeparator = "\r\n";
-				String exportLineSeparatorStr = HinemosPropertyUtil
-						.getHinemosPropertyStr("performance.export.line.separator", "CRLF");
+				String exportLineSeparatorStr = HinemosPropertyCommon.performance_export_line_separator.getStringValue();
 
 				if ("CRLF".equals(exportLineSeparatorStr)) {
 					exportLineSeparator = "\r\n";
@@ -330,8 +336,7 @@ public class ExportCollectDataFile {
 	public static void deleteFile(ArrayList<String> fileNameList) throws HinemosUnknown {
 		m_log.debug("deleteFile()");
 
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir",
-				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
+		String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
 
 		for (String fileName : fileNameList) {
 			String filePath = exportDirectory + fileName;
@@ -397,8 +402,7 @@ public class ExportCollectDataFile {
 	 * @return
 	 */
 	public static boolean isCreatedFile(String fileName) {
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir",
-				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
+		String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
 
 		String createFilePath = exportDirectory + fileName;
 		File file = new File(createFilePath);
@@ -491,8 +495,7 @@ public class ExportCollectDataFile {
 
 				CollectControllerBean controller = new CollectControllerBean();
 
-				String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir",
-						HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
+				String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
 
 				Map<String, Map<Long, Float>> itemCodeTimeDataMap = new HashMap<String, Map<Long, Float>>();
 
@@ -674,7 +677,8 @@ public class ExportCollectDataFile {
 				m_log.debug("run() create archive csv file : " + craeteZipArchiveFilePath);
 
 				// 圧縮
-				ZipCompresser.archive(createFilePathList, createTmpArchiveFilePath);
+				ZipCompressor.archive(createFilePathList, createTmpArchiveFilePath, 
+						HinemosPropertyDefault.performance_export_manager_encode.getStringValue());
 
 				// 元ファイルの削除
 				deleteFilePath(createFilePathList);

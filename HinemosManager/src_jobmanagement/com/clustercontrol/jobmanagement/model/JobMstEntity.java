@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.jobmanagement.model;
 
 import java.util.List;
@@ -13,13 +21,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
-import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
-import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 
 
 
@@ -54,6 +57,9 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	private Boolean messageRetryEndFlg;
 	private Integer messageRetryEndValue;
 	private Boolean commandRetryFlg;
+	private Integer commandRetryEndStatus;
+	private Boolean jobRetryFlg;
+	private Integer jobRetryEndStatus;
 	private String facilityId;
 	private Integer processMode;
 	private String startCommand;
@@ -82,12 +88,15 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	private Integer endDelaySessionValue;
 	private Boolean endDelayTime;
 	private Long endDelayTimeValue;
+	private Boolean endDelayChangeMount;
+	private Double endDelayChangeMountValue;
 	private Boolean multiplicity_notify;
 	private Integer multiplicity_notify_priority;
 	private Integer multiplicity_operation;
 	private Integer multiplicity_end_value;
 	private Integer messageRetry;
 	private Integer commandRetry;
+	private Integer jobRetry;
 	private Boolean skip;
 	private Integer skipEndStatus;
 	private Integer skipEndValue;
@@ -107,6 +116,9 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	private Boolean unmatchEndFlg;
 	private Integer unmatchEndStatus;
 	private Integer unmatchEndValue;
+	private Boolean exclusiveBranchFlg;
+	private Integer exclusiveBranchEndStatus;
+	private Integer exclusiveBranchEndValue;
 	private String calendarId;
 	// cc_job_file_mst
 	private Boolean checkFlg;
@@ -146,6 +158,7 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	private List<JobCommandParamMstEntity> jobCommandParamEntities;
 	private List<JobEnvVariableMstEntity> jobEnvVariableMstEntities;
 	private List<JobStartParamMstEntity> jobStartParamMstEntities;
+	private List<JobNextJobOrderMstEntity> jobNextJobOrderMstEntities;
 	private String parentJobunitId;
 	private String parentJobId;
 
@@ -176,22 +189,8 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 
 	public JobMstEntity(JobMstEntityPK pk, Integer jobType) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
 		this.jobType = jobType;
 		this.setObjectId(this.getId().getJobunitId());
-
-		// JOBUNIT以外は、JOBUNITのowner_role_idを設定する
-		if (this.getJobType() != null && this.getJobType() != JobConstant.TYPE_JOBUNIT) {
-			JobMstEntity jobMstEntity
-			= em.find(JobMstEntity.class,
-					new JobMstEntityPK(this.getId().getJobunitId(), this.getId().getJobunitId()), ObjectPrivilegeMode.NONE);
-			if (jobMstEntity != null && jobMstEntity.getOwnerRoleId() != null) {
-				this.setOwnerRoleId(jobMstEntity.getOwnerRoleId());
-			} else {
-				this.setOwnerRoleId(RoleIdConstant.INTERNAL);
-			}
-		}
 	}
 
 	public JobMstEntity(String jobunitId, String jobId, Integer jobType) {
@@ -359,6 +358,32 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 		this.commandRetryFlg = commandRetryFlg;
 	}
 
+	@Column(name="command_retry_end_status")
+	public Integer getCommandRetryEndStatus() {
+		return commandRetryEndStatus;
+	}
+
+	public void setCommandRetryEndStatus(Integer commandRetryEndStatus) {
+		this.commandRetryEndStatus = commandRetryEndStatus;
+	}
+
+	@Column(name="job_retry_flg")
+	public Boolean getJobRetryFlg() {
+		return jobRetryFlg;
+	}
+
+	public void setJobRetryFlg(Boolean jobRetryFlg) {
+		this.jobRetryFlg = jobRetryFlg;
+	}
+
+	@Column(name="job_retry_end_status")
+	public Integer getJobRetryEndStatus() {
+		return jobRetryEndStatus;
+	}
+
+	public void setJobRetryEndStatus(Integer jobRetryEndStatus) {
+		this.jobRetryEndStatus = jobRetryEndStatus;
+	}
 
 	@Column(name="facility_id")
 	public String getFacilityId() {
@@ -625,6 +650,24 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 		this.endDelayTimeValue = endDelayTimeValue;
 	}
 
+	@Column(name="end_delay_change_mount")
+	public Boolean getEndDelayChangeMount() {
+		return this.endDelayChangeMount;
+	}
+
+	public void setEndDelayChangeMount(Boolean endDelayChangeMount) {
+		this.endDelayChangeMount = endDelayChangeMount;
+	}
+
+	@Column(name="end_delay_change_mount_value")
+	public Double getEndDelayChangeMountValue() {
+		return this.endDelayChangeMountValue;
+	}
+
+	public void setEndDelayChangeMountValue(Double endDelayChangeMountValue) {
+		this.endDelayChangeMountValue = endDelayChangeMountValue;
+	}
+
 	@Column(name="message_retry")
 	public Integer getMessageRetry() {
 		return this.messageRetry;
@@ -641,6 +684,15 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 
 	public void setCommandRetry(Integer commandRetry) {
 		this.commandRetry = commandRetry;
+	}
+
+	@Column(name="job_retry")
+	public Integer getJobRetry() {
+		return jobRetry;
+	}
+
+	public void setJobRetry(Integer jobRetry) {
+		this.jobRetry = jobRetry;
 	}
 
 	@Column(name="multiplicity_notify")
@@ -867,7 +919,32 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	public void setUnmatchEndValue(Integer unmatchEndValue) {
 		this.unmatchEndValue = unmatchEndValue;
 	}
+	@Column(name="exclusive_branch_flg")
+	public Boolean getExclusiveBranchFlg() {
+		return this.exclusiveBranchFlg;
+	}
 
+	public void setExclusiveBranchFlg(Boolean exclusiveBranchFlg) {
+		this.exclusiveBranchFlg = exclusiveBranchFlg;
+	}
+
+	@Column(name="exclusive_branch_end_status")
+	public Integer getExclusiveBranchEndStatus() {
+		return this.exclusiveBranchEndStatus;
+	}
+
+	public void setExclusiveBranchEndStatus(Integer exclusiveBranchEndStatus) {
+		this.exclusiveBranchEndStatus = exclusiveBranchEndStatus;
+	}
+
+	@Column(name="exclusive_branch_end_value")
+	public Integer getExclusiveBranchEndValue() {
+		return this.exclusiveBranchEndValue;
+	}
+
+	public void setExclusiveBranchEndValue(Integer exclusiveBranchEndValue) {
+		this.exclusiveBranchEndValue = exclusiveBranchEndValue;
+	}
 
 	@Column(name="calendar_id")
 	public String getCalendarId() {
@@ -1342,5 +1419,15 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 
 	public void setJobStartParamMstEntities(List<JobStartParamMstEntity> jobStartParamMstEntities) {
 		this.jobStartParamMstEntities = jobStartParamMstEntities;
+	}
+
+	//bi-directional many-to-one association to JobNextJobOrderMstEntity
+	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobNextJobOrderMstEntity> getJobNextJobOrderMstEntities() {
+		return this.jobNextJobOrderMstEntities;
+	}
+
+	public void setJobNextJobOrderMstEntities(List<JobNextJobOrderMstEntity> jobNextJobOrderMstEntities) {
+		this.jobNextJobOrderMstEntities = jobNextJobOrderMstEntities;
 	}
 }

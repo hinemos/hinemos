@@ -1,0 +1,195 @@
+   DS0BUNDLE-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE,
+        transmission                      FROM SNMPv2-SMI
+        MODULE-COMPLIANCE, OBJECT-GROUP   FROM SNMPv2-CONF
+        DisplayString, RowStatus,
+        TestAndIncr                       FROM SNMPv2-TC
+        ifIndex, InterfaceIndex           FROM IF-MIB;
+
+
+   ds0Bundle MODULE-IDENTITY
+       LAST-UPDATED "9807161630Z"
+       ORGANIZATION "IETF Trunk MIB Working Group"
+
+       ::= { transmission 82 }
+
+
+
+
+
+
+
+   dsx0BundleNextIndex OBJECT-TYPE
+       SYNTAX  TestAndIncr
+       MAX-ACCESS  read-write
+       STATUS  current
+       ::= { ds0Bundle 2 }
+
+   dsx0BundleTable OBJECT-TYPE
+       SYNTAX  SEQUENCE OF Dsx0BundleEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       ::= { ds0Bundle 3 }
+
+   dsx0BundleEntry OBJECT-TYPE
+       SYNTAX  Dsx0BundleEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+
+
+
+
+
+       INDEX   { dsx0BundleIndex }
+       ::= { dsx0BundleTable 1 }
+
+   Dsx0BundleEntry ::=
+       SEQUENCE {
+           dsx0BundleIndex              INTEGER,
+           dsx0BundleIfIndex            InterfaceIndex,
+           dsx0BundleCircuitIdentifier  DisplayString,
+           dsx0BundleRowStatus          RowStatus
+   }
+
+   dsx0BundleIndex OBJECT-TYPE
+       SYNTAX  INTEGER (0..2147483647)
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       ::= { dsx0BundleEntry 1 }
+
+   dsx0BundleIfIndex OBJECT-TYPE
+       SYNTAX  InterfaceIndex
+       MAX-ACCESS  read-only
+       STATUS  current
+       ::= { dsx0BundleEntry 2 }
+
+   dsx0BundleCircuitIdentifier OBJECT-TYPE
+        SYNTAX  DisplayString (SIZE (0..255))
+        MAX-ACCESS  read-create
+        STATUS  current
+        ::= { dsx0BundleEntry 3 }
+
+   dsx0BundleRowStatus OBJECT-TYPE
+       SYNTAX  RowStatus
+       MAX-ACCESS  read-create
+
+
+
+
+
+       STATUS  current
+       ::= { dsx0BundleEntry 4 }
+
+
+
+
+
+   dsx0BondingTable OBJECT-TYPE
+       SYNTAX  SEQUENCE OF Dsx0BondingEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       ::= { ds0Bundle 1 }
+
+   dsx0BondingEntry OBJECT-TYPE
+       SYNTAX  Dsx0BondingEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       INDEX   { ifIndex }
+       ::= { dsx0BondingTable 1 }
+
+   Dsx0BondingEntry ::=
+       SEQUENCE {
+           dsx0BondMode            INTEGER,
+           dsx0BondStatus          INTEGER,
+           dsx0BondRowStatus       RowStatus
+   }
+
+   dsx0BondMode OBJECT-TYPE
+       SYNTAX  INTEGER {
+                   none(1),
+                   other(2),
+                   mode0(3),
+                   mode1(4),
+                   mode2(5),
+
+
+
+
+
+                   mode3(6)
+       }
+       MAX-ACCESS  read-create
+       STATUS  current
+       ::= { dsx0BondingEntry 1 }
+
+   dsx0BondStatus OBJECT-TYPE
+       SYNTAX  INTEGER {
+                   idle(1),
+                   callSetup(2),
+                   dataTransfer(3)
+       }
+       MAX-ACCESS  read-only
+       STATUS  current
+       ::= { dsx0BondingEntry 2 }
+
+   dsx0BondRowStatus OBJECT-TYPE
+       SYNTAX  RowStatus
+       MAX-ACCESS  read-create
+       STATUS  current
+       ::= { dsx0BondingEntry 3 }
+
+
+
+
+
+
+
+
+   ds0BundleConformance OBJECT IDENTIFIER ::= { ds0Bundle 4 }
+
+   ds0BundleGroups      OBJECT IDENTIFIER
+       ::= { ds0BundleConformance 1 }
+
+   ds0BundleCompliances OBJECT IDENTIFIER
+       ::= { ds0BundleConformance 2 }
+
+
+
+
+   ds0BundleCompliance MODULE-COMPLIANCE
+       STATUS  current
+       MODULE  -- this module
+           MANDATORY-GROUPS {ds0BundleConfigGroup }
+
+           GROUP       ds0BondingGroup
+
+           OBJECT      dsx0BundleRowStatus
+           SYNTAX      INTEGER {
+                           active(1),
+                           createAndGo(4),
+                           destroy(6)
+                       }
+           MIN-ACCESS  read-only
+
+           OBJECT      dsx0BundleCircuitIdentifier
+           MIN-ACCESS  read-only
+
+                   ::= { ds0BundleCompliances 1 }
+
+
+               ds0BondingGroup  OBJECT-GROUP
+                   OBJECTS { dsx0BondMode,
+                             dsx0BondStatus,
+                             dsx0BondRowStatus }
+                   STATUS  current
+       ::= { ds0BundleGroups 1 }
+   ds0BundleConfigGroup  OBJECT-GROUP
+       OBJECTS { dsx0BundleNextIndex,
+                 dsx0BundleIfIndex,
+                 dsx0BundleCircuitIdentifier,
+                 dsx0BundleRowStatus }
+       STATUS  current
+       ::= { ds0BundleGroups 2 }
+   END

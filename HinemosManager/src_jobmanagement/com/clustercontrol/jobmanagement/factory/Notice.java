@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -26,6 +19,8 @@ import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.StatusConstant;
+import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
@@ -33,9 +28,10 @@ import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.session.NotifyControllerBean;
+import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.notify.util.NotifyUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
@@ -70,97 +66,107 @@ public class Notice {
 	public void notify(String sessionId, String jobunitId, String jobId, Integer type) throws JobInfoNotFound, InvalidRole {
 		m_log.debug("notify() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", type=" + type);
 
-		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-		JobInfoEntity job = sessionJob.getJobInfoEntity();
-		Integer priority = getPriority(type, job);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
-		// 通知先の指定において以下の場合は通知しない。
-		// 1.重要度がnull、もしくはPriorityConstant.TYPE_NONE（空欄）
-		// 2.通知IDがnull、もしくは0文字
-		if (priority == null || priority == PriorityConstant.TYPE_NONE
-				|| job.getNotifyGroupId() == null
-				|| job.getNotifyGroupId().isEmpty()) {
-			return;
-		}
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			JobInfoEntity job = sessionJob.getJobInfoEntity();
+			Integer priority = getPriority(type, job);
 
-		//通知する
-		Locale locale = NotifyUtil.getNotifyLocale();
-		
-		//通知情報作成
-		OutputBasicInfo info = new OutputBasicInfo();
-		//プラグインID
-		info.setPluginId(HinemosModuleConstant.JOB);
-		//アプリケーション
-		info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), locale));
-		//監視項目ID
-		info.setMonitorId(sessionId);
-		
-		//メッセージID、メッセージ、オリジナルメッセージ
-		if(type == EndStatusConstant.TYPE_BEGINNING){
-			String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
-			String jobName = job.getJobName();
-			String[] args1 = {jobType,jobName,jobId,sessionId};
-			info.setMessage(MessageConstant.MESSAGE_STARTED_SUCCESSFULLY.getMessage(args1));
-		} else if(type == EndStatusConstant.TYPE_NORMAL){
-			String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
-			String jobName = job.getJobName();
-			String[] args1 = {jobType,jobName,jobId,sessionId};
-			info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_NORMAL.getMessage(args1));
-		} else if(type == EndStatusConstant.TYPE_WARNING){
-			String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
-			String jobName = job.getJobName();
-			String[] args1 = {jobType,jobName,jobId,sessionId};
-			info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_WARNING.getMessage(args1));
-		} else if(type == EndStatusConstant.TYPE_ABNORMAL){
-			String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
-			String jobName = job.getJobName();
-			String[] args1 = {jobType,jobName,jobId,sessionId};
-			info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_ERROR.getMessage(args1));
-		}
-		if(job.getJobType() == JobConstant.TYPE_JOB
-				|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
-				|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
-			//ファシリティID
-			info.setFacilityId(job.getFacilityId());
-			//スコープ
-			info.setScopeText(sessionJob.getScopeText());
-		} else {
-			//ファシリティID
-			info.setFacilityId("");
-			//スコープ
-			info.setScopeText("");
-		}
-		
-		// 承認ジョブに関する情報設定
-		if(job.getJobType() == JobConstant.TYPE_APPROVALJOB){
-			info.setJobApprovalText(job.getApprovalReqSentence());
-			if(job.isUseApprovalReqSentence()){
-				info.setJobApprovalMail(job.getApprovalReqSentence());
-			}else{
-				info.setJobApprovalMail(job.getApprovalReqMailBody());
+			// 通知先の指定において以下の場合は通知しない。
+			// 1.重要度がnull、もしくはPriorityConstant.TYPE_NONE（空欄）
+			// 2.通知IDがnull、もしくは0文字
+			if (priority == null || priority == PriorityConstant.TYPE_NONE
+					|| job.getNotifyGroupId() == null
+					|| job.getNotifyGroupId().isEmpty()) {
+				return;
 			}
-		}
-		
-		//重要度
-		m_log.debug("priority = " + priority);
-		info.setPriority(priority);
-		//発生日時
-		info.setGenerationDate(HinemosTime.getDateInstance().getTime());
 
-		JobSessionJobEntity entity = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-		List<JobSessionNodeEntity> list = entity.getJobSessionNodeEntities();
-		List<String> facilityId = new ArrayList<String>();
-		List<String> jobMessage = new ArrayList<String>();
-		for (JobSessionNodeEntity node : list) {
-			facilityId.add(node.getId().getFacilityId());
-			jobMessage.add(node.getMessage());
-			m_log.debug("Notice.notify  >>>info.setJobFacilityId() = : " + node.getId().getFacilityId());
-			m_log.debug("Notice.notify  >>>info.setJobMessage() = : " + node.getMessage());
-		}
-		info.setJobFacilityId(facilityId);
-		info.setJobMessage(jobMessage);
+			//通知する
+			Locale locale = NotifyUtil.getNotifyLocale();
+			
+			//通知情報作成
+			OutputBasicInfo info = new OutputBasicInfo();
+			// 通知グループID
+			info.setNotifyGroupId(job.getNotifyGroupId());
+			//プラグインID
+			info.setPluginId(HinemosModuleConstant.JOB);
+			//アプリケーション
+			info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), locale));
+			//監視項目ID
+			info.setMonitorId(sessionId);
+			
+			//メッセージID、メッセージ、オリジナルメッセージ
+			if(type == EndStatusConstant.TYPE_BEGINNING){
+				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+				String jobName = job.getJobName();
+				String[] args1 = {jobType,jobName,jobId,sessionId};
+				info.setMessage(MessageConstant.MESSAGE_STARTED_SUCCESSFULLY.getMessage(args1));
+			} else if(type == EndStatusConstant.TYPE_NORMAL){
+				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+				String jobName = job.getJobName();
+				String[] args1 = {jobType,jobName,jobId,sessionId};
+				info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_NORMAL.getMessage(args1));
+			} else if(type == EndStatusConstant.TYPE_WARNING){
+				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+				String jobName = job.getJobName();
+				String[] args1 = {jobType,jobName,jobId,sessionId};
+				info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_WARNING.getMessage(args1));
+			} else if(type == EndStatusConstant.TYPE_ABNORMAL){
+				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+				String jobName = job.getJobName();
+				String[] args1 = {jobType,jobName,jobId,sessionId};
+				info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_ERROR.getMessage(args1));
+			}
+			if(job.getJobType() == JobConstant.TYPE_JOB
+					|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
+					|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
+				//ファシリティID
+				info.setFacilityId(job.getFacilityId());
+				//スコープ
+				info.setScopeText(sessionJob.getScopeText());
+			} else {
+				//ファシリティID
+				info.setFacilityId("");
+				//スコープ
+				info.setScopeText("");
+			}
+			
+			// 承認ジョブに関する情報設定
+			if(job.getJobType() == JobConstant.TYPE_APPROVALJOB){
+				info.setJobApprovalText(job.getApprovalReqSentence());
+				if(job.isUseApprovalReqSentence()){
+					String jobApprovalMail = job.getApprovalReqSentence();
+					// 承認依頼文を利用する場合リンクアドレスを付与する。取得に失敗しても処理は継続する。
+					try {
+						jobApprovalMail += "\r\n\r\n" + new JobControllerBean().getApprovalPageLink();
+					} catch (HinemosUnknown e) {
+						// 処理しない
+					}
+					info.setJobApprovalMail(jobApprovalMail);
+				}else{
+					info.setJobApprovalMail(job.getApprovalReqMailBody());
+				}
+			}
+			
+			//重要度
+			m_log.debug("priority = " + priority);
+			info.setPriority(priority);
+			//発生日時
+			info.setGenerationDate(HinemosTime.getDateInstance().getTime());
 
-		try{
+			JobSessionJobEntity entity = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			List<JobSessionNodeEntity> list = entity.getJobSessionNodeEntities();
+			List<String> facilityId = new ArrayList<String>();
+			List<String> jobMessage = new ArrayList<String>();
+			for (JobSessionNodeEntity node : list) {
+				facilityId.add(node.getId().getFacilityId());
+				jobMessage.add(node.getMessage());
+				m_log.debug("Notice.notify  >>>info.setJobFacilityId() = : " + node.getId().getFacilityId());
+				m_log.debug("Notice.notify  >>>info.setJobMessage() = : " + node.getMessage());
+			}
+			info.setJobFacilityId(facilityId);
+			info.setJobMessage(jobMessage);
+
 			//メッセージ送信
 			if (m_log.isDebugEnabled()) {
 				m_log.debug("sending message"
@@ -169,12 +175,8 @@ public class Notice {
 						+ " monitorId=" + info.getMonitorId()
 						+ " facilityId=" + info.getFacilityId() + ")");
 			}
-
-			// 通知処理
-			new NotifyControllerBean().notify(info, job.getNotifyGroupId());
-		} catch (Exception e) {
-			m_log.warn("notify() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(info));
 		}
 	}
 
@@ -207,6 +209,7 @@ public class Notice {
 	 * @param sessionId セッションID
 	 * @param jobId ジョブID
 	 * @param startDelay 開始遅延フラグ（true：開始遅延、false：終了遅延）
+	 * @param reason 遅延判定で使われた条件
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
 	 * 
@@ -214,96 +217,106 @@ public class Notice {
 	 * @see com.clustercontrol.bean.JobConstant
 	 * @see com.clustercontrol.monitor.message.LogOutputNotifyInfo
 	 */
-	public void delayNotify(String sessionId, String jobunitId, String jobId, boolean startDelay) throws JobInfoNotFound, InvalidRole {
+	public void delayNotify(String sessionId, String jobunitId, String jobId, boolean startDelay, String reason) throws JobInfoNotFound, InvalidRole {
 		m_log.debug("delayNotify() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", startDelay=" + startDelay);
 
-		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-		JobInfoEntity job = sessionJob.getJobInfoEntity();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
-		// 通知先の指定において以下の場合は通知しない
-		// 1.通知IDがnull、もしくは0文字
-		if(job.getNotifyGroupId() == null || job.getNotifyGroupId().isEmpty()){
-			return;
-		}
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			JobInfoEntity job = sessionJob.getJobInfoEntity();
 
-		//通知する
+			// 通知先の指定において以下の場合は通知しない
+			// 1.通知IDがnull、もしくは0文字
+			if(job.getNotifyGroupId() == null || job.getNotifyGroupId().isEmpty()){
+				return;
+			}
 
-		//通知情報作成
-		OutputBasicInfo info = new OutputBasicInfo();
-		//プラグインID
-		info.setPluginId(HinemosModuleConstant.JOB);
-		//アプリケーション
-		info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), NotifyUtil.getNotifyLocale()));
-		//監視項目ID
-		info.setMonitorId(sessionId);
+			//通知する
 
-		Locale locale = NotifyUtil.getNotifyLocale();
+			//通知情報作成
+			OutputBasicInfo info = new OutputBasicInfo();
+			// 通知グループID
+			info.setNotifyGroupId(job.getNotifyGroupId());
+			//プラグインID
+			info.setPluginId(HinemosModuleConstant.JOB);
+			//アプリケーション
+			info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), NotifyUtil.getNotifyLocale()));
+			//監視項目ID
+			info.setMonitorId(sessionId);
 
-		//メッセージID、メッセージ、オリジナルメッセージ
-		StringBuilder message = new StringBuilder();
-		if(startDelay){
-			String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
-			String jobName = job.getJobName();
-			String[] args1 = {jobType,jobName,jobId,sessionId};
-			message.append(MessageConstant.MESSAGE_DELAY_OF_START_OCCURRED.getMessage(args1));
+			Locale locale = NotifyUtil.getNotifyLocale();
 
-			//操作
-			if(job.getStartDelayOperation().booleanValue()){
-				int type = job.getStartDelayOperationType();
+			//メッセージID、メッセージ、オリジナルメッセージ
+			StringBuilder message = new StringBuilder();
+			StringBuilder orgMessage = new StringBuilder();
+			if(startDelay){
+				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+				String jobName = job.getJobName();
+				String[] args1 = {jobType,jobName,jobId,sessionId};
+				message.append(MessageConstant.MESSAGE_DELAY_OF_START_OCCURRED.getMessage(args1));
+				orgMessage.append(MessageConstant.MESSAGE_DELAY_OF_START_OCCURRED.getMessage(args1)).append("\n");
+				orgMessage.append(reason);
 
-				String[] args2 = {Messages.getString(OperationConstant.typeToMessageCode(type), locale)};
-				message.append(" " + MessageConstant.MESSAGE_OPERATION_IS_ABOUT_TO_BE_RUN.getMessage(args2));
+				//操作
+				if(job.getStartDelayOperation().booleanValue()){
+					int type = job.getStartDelayOperationType();
 
-				if(type == OperationConstant.TYPE_STOP_SKIP){
-					String[] args3 = {job.getStartDelayOperationEndValue().toString()};
-					message.append(" " + MessageConstant.MESSAGE_END_VALUE.getMessage(args3));
+					String[] args2 = {Messages.getString(OperationConstant.typeToMessageCode(type), locale)};
+					message.append(" " + MessageConstant.MESSAGE_OPERATION_IS_ABOUT_TO_BE_RUN.getMessage(args2));
+					orgMessage.append(MessageConstant.MESSAGE_OPERATION_IS_ABOUT_TO_BE_RUN.getMessage(args2));
+
+					if(type == OperationConstant.TYPE_STOP_SKIP){
+						String[] args3 = {job.getStartDelayOperationEndValue().toString()};
+						message.append(" " + MessageConstant.MESSAGE_END_VALUE.getMessage(args3));
+						orgMessage.append(MessageConstant.MESSAGE_END_VALUE.getMessage(args3));
+					}
 				}
+				info.setMessage(message.toString());
+				info.setMessageOrg(orgMessage.toString());
+			} else {
+				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+				String jobName = job.getJobName();
+				String[] args1 = {jobType,jobName,jobId,sessionId};
+				message.append(MessageConstant.MESSAGE_DELAY_OF_END_OCCURRED.getMessage(args1));
+				orgMessage.append(MessageConstant.MESSAGE_DELAY_OF_END_OCCURRED.getMessage(args1)).append("\n");
+				orgMessage.append(reason);
+
+				//操作
+				if(job.getEndDelayOperation().booleanValue()){
+					int type = job.getEndDelayOperationType();
+
+					String[] args2 = {Messages.getString(OperationConstant.typeToMessageCode(type), locale)};
+					message.append(" " + MessageConstant.MESSAGE_OPERATION_IS_ABOUT_TO_BE_RUN.getMessage(args2));
+					orgMessage.append(MessageConstant.MESSAGE_OPERATION_IS_ABOUT_TO_BE_RUN.getMessage(args2));
+				}
+				info.setMessage(message.toString());
+				info.setMessageOrg(orgMessage.toString());
 			}
-			info.setMessage(message.toString());
-		} else {
-			String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
-			String jobName = job.getJobName();
-			String[] args1 = {jobType,jobName,jobId,sessionId};
-			message.append(MessageConstant.MESSAGE_DELAY_OF_END_OCCURRED.getMessage(args1));
 
-			//操作
-			if(job.getEndDelayOperation().booleanValue()){
-				int type = job.getEndDelayOperationType();
-
-				String[] args2 = {Messages.getString(OperationConstant.typeToMessageCode(type), locale)};
-				message.append(" " + MessageConstant.MESSAGE_OPERATION_IS_ABOUT_TO_BE_RUN.getMessage(args2));
+			if(job.getJobType() == JobConstant.TYPE_JOB
+					|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
+					|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
+				//ファシリティID
+				info.setFacilityId(job.getFacilityId());
+				//スコープ
+				info.setScopeText(sessionJob.getScopeText());
+			} else {
+				//ファシリティID
+				info.setFacilityId("");
+				//スコープ
+				info.setScopeText("");
 			}
-			info.setMessage(message.toString());
-		}
+			//重要度
+			if(startDelay) {
+				info.setPriority(job.getStartDelayNotifyPriority());
+			} else {
+				info.setPriority(job.getEndDelayNotifyPriority());
+			}
+			//発生日時
+			info.setGenerationDate(HinemosTime.getDateInstance().getTime());
 
-		if(job.getJobType() == JobConstant.TYPE_JOB
-				|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
-				|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
-			//ファシリティID
-			info.setFacilityId(job.getFacilityId());
-			//スコープ
-			info.setScopeText(sessionJob.getScopeText());
-		} else {
-			//ファシリティID
-			info.setFacilityId("");
-			//スコープ
-			info.setScopeText("");
-		}
-		//重要度
-		if(startDelay) {
-			info.setPriority(job.getStartDelayNotifyPriority());
-		} else {
-			info.setPriority(job.getEndDelayNotifyPriority());
-		}
-		//発生日時
-		info.setGenerationDate(HinemosTime.getDateInstance().getTime());
-
-		try {
-			// 通知処理
-			new NotifyControllerBean().notify(info, job.getNotifyGroupId());
-		} catch (Exception e) {
-			m_log.warn("delayNotify() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(info));
 		}
 	}
 
@@ -324,54 +337,54 @@ public class Notice {
 	public void multiplicityNotify(String sessionId, String jobunitId, String jobId, int operationType) throws JobInfoNotFound, InvalidRole {
 		m_log.debug("multiplicityNotify() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", type=" + operationType);
 
-		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-		JobInfoEntity job = sessionJob.getJobInfoEntity();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
-		// 通知先の指定において以下の場合は通知しない
-		// 1.通知IDがnull、もしくは0文字
-		if(job.getNotifyGroupId() == null || job.getNotifyGroupId().length() == 0){
-			return;
-		}
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			JobInfoEntity job = sessionJob.getJobInfoEntity();
 
-		//通知する
+			// 通知先の指定において以下の場合は通知しない
+			// 1.通知IDがnull、もしくは0文字
+			if(job.getNotifyGroupId() == null || job.getNotifyGroupId().length() == 0){
+				return;
+			}
 
-		//通知情報作成
-		OutputBasicInfo info = new OutputBasicInfo();
-		//プラグインID
-		info.setPluginId(HinemosModuleConstant.JOB);
-		//アプリケーション
-		info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), NotifyUtil.getNotifyLocale()));
-		//監視項目ID
-		info.setMonitorId(sessionId);
-		
-		Locale locale = NotifyUtil.getNotifyLocale();
-		info.setMessage(MessageConstant.MESSAGE_EXCEEDED_MULTIPLICITY_OF_JOBS.getMessage() + "(" 
-		+ Messages.getString(StatusConstant.typeToMessageCode(operationType), locale) + ")");
+			//通知する
 
-		if(job.getJobType() == JobConstant.TYPE_JOB
-				|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
-				|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
-			//ファシリティID
-			info.setFacilityId(job.getFacilityId());
-			//スコープ
-			info.setScopeText(sessionJob.getScopeText());
-		} else {
-			//ファシリティID
-			info.setFacilityId("");
-			//スコープ
-			info.setScopeText("");
-		}
-		//重要度
-		info.setPriority(job.getMultiplicityNotifyPriority());
-		//発生日時
-		info.setGenerationDate(HinemosTime.getDateInstance().getTime());
+			//通知情報作成
+			OutputBasicInfo info = new OutputBasicInfo();
+			// 通知グループID
+			info.setNotifyGroupId(job.getNotifyGroupId());
+			//プラグインID
+			info.setPluginId(HinemosModuleConstant.JOB);
+			//アプリケーション
+			info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), NotifyUtil.getNotifyLocale()));
+			//監視項目ID
+			info.setMonitorId(sessionId);
+			
+			Locale locale = NotifyUtil.getNotifyLocale();
+			info.setMessage(MessageConstant.MESSAGE_EXCEEDED_MULTIPLICITY_OF_JOBS.getMessage() + "(" 
+			+ Messages.getString(StatusConstant.typeToMessageCode(operationType), locale) + ")");
 
-		try {
-			// 通知処理
-			new NotifyControllerBean().notify(info, job.getNotifyGroupId());
-		} catch (Exception e) {
-			m_log.warn("multiplicityNotify() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if(job.getJobType() == JobConstant.TYPE_JOB
+					|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
+					|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
+				//ファシリティID
+				info.setFacilityId(job.getFacilityId());
+				//スコープ
+				info.setScopeText(sessionJob.getScopeText());
+			} else {
+				//ファシリティID
+				info.setFacilityId("");
+				//スコープ
+				info.setScopeText("");
+			}
+			//重要度
+			info.setPriority(job.getMultiplicityNotifyPriority());
+			//発生日時
+			info.setGenerationDate(HinemosTime.getDateInstance().getTime());
+
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(info));
 		}
 	}
 }

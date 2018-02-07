@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.run.util;
 
 import java.util.ArrayList;
@@ -159,7 +167,10 @@ public final class NodeToMonitorCache {
 						}
 						
 						// 監視か収集が有効のものだけ追加する
-						if (monitor.getMonitorFlg() || monitor.getCollectorFlg()) {
+						if (monitor.getMonitorFlg() 
+								|| monitor.getCollectorFlg()
+								|| monitor.getPredictionFlg()
+								|| monitor.getChangeFlg()) {
 							interval2monitor.get(monitor.getRunInterval()).add(monitor);
 						}
 					}

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2013 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.bean;
@@ -23,7 +16,7 @@ import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 /**
  * 監視種別<BR>
  * 
- * @version 4.1.0
+ * @version 6.1.0
  * @since 1.0.0
  */
 public class MonitorTypeMstConstant {
@@ -110,6 +103,10 @@ public class MonitorTypeMstConstant {
 		list.add(MonitorTypeConstant.TYPE_STRING);
 		monitorTypeMst.add(list);
 		list = new ArrayList<Object>();
+		list.add(HinemosModuleConstant.MONITOR_LOGCOUNT);
+		list.add(MonitorTypeConstant.TYPE_NUMERIC);
+		monitorTypeMst.add(list);
+		list = new ArrayList<Object>();
 		list.add(HinemosModuleConstant.MONITOR_JMX);
 		list.add(MonitorTypeConstant.TYPE_NUMERIC);
 		monitorTypeMst.add(list);
@@ -121,6 +118,22 @@ public class MonitorTypeMstConstant {
 		list.add(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S);
 		list.add(MonitorTypeConstant.TYPE_STRING);
 		monitorTypeMst.add(list);
+		list = new ArrayList<Object>();
+		list.add(HinemosModuleConstant.MONITOR_CORRELATION);
+		list.add(MonitorTypeConstant.TYPE_NUMERIC);
+		monitorTypeMst.add(list);
+		list = new ArrayList<Object>();
+		list.add(HinemosModuleConstant.MONITOR_INTEGRATION);
+		list.add(MonitorTypeConstant.TYPE_TRUTH);
+		monitorTypeMst.add(list);
+		list = new ArrayList<Object>();
+		list.add(HinemosModuleConstant.MONITOR_BINARYFILE_BIN);
+		list.add(MonitorTypeConstant.TYPE_BINARY);
+		monitorTypeMst.add(list);
+		list = new ArrayList<Object>();
+		list.add(HinemosModuleConstant.MONITOR_PCAP_BIN);
+		list.add(MonitorTypeConstant.TYPE_BINARY);
+		monitorTypeMst.add(list);	
 	}
 
 	public static ArrayList<ArrayList<Object>> getListAll() {

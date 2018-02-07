@@ -1,0 +1,24 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"orderNo",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"paramValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRuntimeDetailInfo_paramValue"}
+	]},
+	
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRuntimeDetailInfo_description"}
+	]}
+]
+}

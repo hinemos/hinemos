@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.commons.util;
@@ -20,16 +13,14 @@ package com.clustercontrol.commons.util;
  */
 public interface JpaTransactionCallback {
 
-	/**
-	 * begin()のコール前に呼ばれる処理を実装するインタフェース
-	 */
-	public void preBegin();
 
 	/**
-	 * begin()のコール後に呼ばれる処理を実装するインタフェース<br/>
-	 * ただし、begin()で例外が生じた場合、インタフェースはコールされない。<br/>
+	 * トランザクション処理フラグ
+	 * @return true:トランザクション処理のCallback
 	 */
-	public void postBegin();
+	default boolean isTransaction() {
+		return true;
+	}
 
 	/**
 	 * flush()のコール前に呼ばれる処理を実装するインタフェース

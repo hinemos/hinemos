@@ -1,0 +1,429 @@
+T11-FC-RSCN-MIB DEFINITIONS ::= BEGIN
+
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    NOTIFICATION-TYPE,
+    Counter32, mib-2                     FROM SNMPv2-SMI   -- [RFC2578]
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP                   FROM SNMPv2-CONF  -- [RFC2580]
+    TruthValue                           FROM SNMPv2-TC    -- [RFC2579]
+    fcmInstanceIndex, fcmSwitchIndex,
+    FcNameIdOrZero, FcAddressIdOrZero    FROM FC-MGMT-MIB  -- [RFC4044]
+    T11NsGs4RejectReasonCode   FROM T11-FC-NAME-SERVER-MIB -- [RFC4438]
+    T11FabricIndex                       FROM T11-TC-MIB;  -- [RFC4439]
+
+t11FcRscnMIB  MODULE-IDENTITY
+    LAST-UPDATED "200701080000Z"
+    ORGANIZATION "For the initial versions, T11.
+                  For later versions, the IETF's IMSS Working Group."
+
+    ::= { mib-2 161 }
+
+t11FcRscnNotifications  OBJECT IDENTIFIER ::= { t11FcRscnMIB 0 }
+t11FcRscnObjects        OBJECT IDENTIFIER ::= { t11FcRscnMIB 1 }
+t11FcRscnConformance    OBJECT IDENTIFIER ::= { t11FcRscnMIB 2 }
+t11FcRscnRegistrations  OBJECT IDENTIFIER ::= { t11FcRscnObjects 1 }
+t11FcRscnStats          OBJECT IDENTIFIER ::= { t11FcRscnObjects 2 }
+t11FcRscnInformation    OBJECT IDENTIFIER ::= { t11FcRscnObjects 3 }
+
+
+
+t11FcRscnRegTable  OBJECT-TYPE
+    SYNTAX         SEQUENCE OF T11FcRscnRegEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    ::= { t11FcRscnRegistrations 1 }
+
+t11FcRscnRegEntry  OBJECT-TYPE
+    SYNTAX        T11FcRscnRegEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex, t11FcRscnFabricIndex,
+              t11FcRscnRegFcId }
+    ::= { t11FcRscnRegTable 1 }
+
+T11FcRscnRegEntry ::= SEQUENCE {
+
+
+
+
+
+    t11FcRscnFabricIndex         T11FabricIndex,
+    t11FcRscnRegFcId             FcAddressIdOrZero,
+    t11FcRscnRegType             BITS
+}
+
+t11FcRscnFabricIndex OBJECT-TYPE
+    SYNTAX      T11FabricIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRscnRegEntry 1 }
+
+t11FcRscnRegFcId  OBJECT-TYPE
+    SYNTAX        FcAddressIdOrZero (SIZE (3))
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    ::= { t11FcRscnRegEntry 2 }
+
+t11FcRscnRegType  OBJECT-TYPE
+    SYNTAX        BITS {
+                      fromFabricController(0),
+                      fromNxPort(1)
+                  }
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FcRscnRegEntry 3 }
+
+
+
+t11FcRscnStatsTable  OBJECT-TYPE
+    SYNTAX         SEQUENCE OF T11FcRscnStatsEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    ::= { t11FcRscnStats 1 }
+
+t11FcRscnStatsEntry  OBJECT-TYPE
+    SYNTAX        T11FcRscnStatsEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX  { fcmInstanceIndex, fcmSwitchIndex, t11FcRscnFabricIndex }
+    ::= { t11FcRscnStatsTable 1 }
+
+T11FcRscnStatsEntry ::= SEQUENCE {
+    t11FcRscnInScrs                    Counter32,
+
+
+
+
+
+    t11FcRscnInRscns                   Counter32,
+    t11FcRscnOutRscns                  Counter32,
+    t11FcRscnInSwRscns                 Counter32,
+    t11FcRscnOutSwRscns                Counter32,
+    t11FcRscnScrRejects                Counter32,
+    t11FcRscnRscnRejects               Counter32,
+    t11FcRscnSwRscnRejects             Counter32,
+    t11FcRscnInUnspecifiedRscns        Counter32,
+    t11FcRscnOutUnspecifiedRscns       Counter32,
+    t11FcRscnInChangedAttribRscns      Counter32,
+    t11FcRscnOutChangedAttribRscns     Counter32,
+    t11FcRscnInChangedServiceRscns     Counter32,
+    t11FcRscnOutChangedServiceRscns    Counter32,
+    t11FcRscnInChangedSwitchRscns      Counter32,
+    t11FcRscnOutChangedSwitchRscns     Counter32,
+    t11FcRscnInRemovedRscns            Counter32,
+    t11FcRscnOutRemovedRscns           Counter32
+}
+
+t11FcRscnInScrs  OBJECT-TYPE
+    SYNTAX         Counter32
+    MAX-ACCESS     read-only
+    STATUS         current
+    ::= { t11FcRscnStatsEntry 1 }
+
+
+t11FcRscnInRscns  OBJECT-TYPE
+    SYNTAX         Counter32
+    MAX-ACCESS     read-only
+    STATUS         current
+    ::= { t11FcRscnStatsEntry 2 }
+
+t11FcRscnOutRscns  OBJECT-TYPE
+    SYNTAX         Counter32
+    MAX-ACCESS     read-only
+    STATUS         current
+
+
+
+
+
+    ::= { t11FcRscnStatsEntry 3 }
+
+
+t11FcRscnInSwRscns  OBJECT-TYPE
+    SYNTAX         Counter32
+    MAX-ACCESS     read-only
+    STATUS         current
+    ::= { t11FcRscnStatsEntry 4 }
+
+t11FcRscnOutSwRscns  OBJECT-TYPE
+    SYNTAX         Counter32
+    MAX-ACCESS     read-only
+    STATUS         current
+    ::= { t11FcRscnStatsEntry 5 }
+
+t11FcRscnScrRejects  OBJECT-TYPE
+    SYNTAX         Counter32
+    MAX-ACCESS     read-only
+    STATUS         current
+    ::= { t11FcRscnStatsEntry 6 }
+
+t11FcRscnRscnRejects OBJECT-TYPE
+    SYNTAX         Counter32
+    MAX-ACCESS     read-only
+
+
+
+
+
+    STATUS         current
+    ::= { t11FcRscnStatsEntry 7 }
+
+t11FcRscnSwRscnRejects  OBJECT-TYPE
+    SYNTAX         Counter32
+    MAX-ACCESS     read-only
+    STATUS         current
+    ::= { t11FcRscnStatsEntry 8 }
+
+t11FcRscnInUnspecifiedRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcRscnStatsEntry 9 }
+
+t11FcRscnOutUnspecifiedRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcRscnStatsEntry 10 }
+
+t11FcRscnInChangedAttribRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcRscnStatsEntry 11 }
+
+t11FcRscnOutChangedAttribRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcRscnStatsEntry 12 }
+
+t11FcRscnInChangedServiceRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcRscnStatsEntry 13 }
+
+t11FcRscnOutChangedServiceRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcRscnStatsEntry 14 }
+
+t11FcRscnInChangedSwitchRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcRscnStatsEntry 15 }
+
+t11FcRscnOutChangedSwitchRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    ::= { t11FcRscnStatsEntry 16 }
+
+t11FcRscnInRemovedRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcRscnStatsEntry 17 }
+
+t11FcRscnOutRemovedRscns  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcRscnStatsEntry 18 }
+
+
+
+
+
+
+
+t11FcRscnNotifyControlTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcRscnNotifyControlEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcRscnInformation 1 }
+
+t11FcRscnNotifyControlEntry OBJECT-TYPE
+    SYNTAX       T11FcRscnNotifyControlEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX  { fcmInstanceIndex, fcmSwitchIndex, t11FcRscnFabricIndex }
+    ::= { t11FcRscnNotifyControlTable 1 }
+
+T11FcRscnNotifyControlEntry ::= SEQUENCE {
+     t11FcRscnIlsRejectNotifyEnable     TruthValue,
+     t11FcRscnElsRejectNotifyEnable     TruthValue,
+     t11FcRscnRejectedRequestString     OCTET STRING,
+     t11FcRscnRejectedRequestSource     FcNameIdOrZero,
+     t11FcRscnRejectReasonCode          T11NsGs4RejectReasonCode,
+     t11FcRscnRejectReasonCodeExp       OCTET STRING,
+     t11FcRscnRejectReasonVendorCode    OCTET STRING
+}
+
+t11FcRscnIlsRejectNotifyEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { false }
+    ::= { t11FcRscnNotifyControlEntry 1 }
+
+
+
+
+
+t11FcRscnElsRejectNotifyEnable OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+    STATUS        current
+    DEFVAL { false }
+    ::= { t11FcRscnNotifyControlEntry 2 }
+
+t11FcRscnRejectedRequestString OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0..255))
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FcRscnNotifyControlEntry 3 }
+
+t11FcRscnRejectedRequestSource OBJECT-TYPE
+    SYNTAX       FcNameIdOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    ::= { t11FcRscnNotifyControlEntry 4 }
+
+t11FcRscnRejectReasonCode OBJECT-TYPE
+    SYNTAX        T11NsGs4RejectReasonCode
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FcRscnNotifyControlEntry 5 }
+
+t11FcRscnRejectReasonCodeExp OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE(1))
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FcRscnNotifyControlEntry 6 }
+
+t11FcRscnRejectReasonVendorCode OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE(1))
+    MAX-ACCESS    read-only
+    STATUS        current
+
+
+
+
+
+    ::= { t11FcRscnNotifyControlEntry 7 }
+
+
+
+t11FcRscnElsRejectReqNotify NOTIFICATION-TYPE
+    OBJECTS { t11FcRscnRejectedRequestString,
+              t11FcRscnRejectedRequestSource,
+              t11FcRscnRejectReasonCode,
+              t11FcRscnRejectReasonCodeExp,
+              t11FcRscnRejectReasonVendorCode }
+    STATUS  current
+    ::= { t11FcRscnNotifications 1 }
+
+t11FcRscnIlsRejectReqNotify NOTIFICATION-TYPE
+    OBJECTS { t11FcRscnRejectedRequestString,
+              t11FcRscnRejectedRequestSource,
+              t11FcRscnRejectReasonCode,
+              t11FcRscnRejectReasonCodeExp,
+              t11FcRscnRejectReasonVendorCode }
+    STATUS  current
+    ::= { t11FcRscnNotifications 2 }
+
+t11FcRscnCompliances OBJECT IDENTIFIER ::= { t11FcRscnConformance 1 }
+t11FcRscnGroups      OBJECT IDENTIFIER ::= { t11FcRscnConformance 2 }
+
+
+
+
+
+t11FcRscnCompliance MODULE-COMPLIANCE
+    STATUS    current
+    MODULE
+        MANDATORY-GROUPS { t11FcRscnRegistrationGroup,
+                           t11FcRscnNotifyControlGroup,
+                           t11FcRscnNotifyGroup }
+
+    GROUP   t11FcRscnStatsGroup
+
+    OBJECT       t11FcRscnIlsRejectNotifyEnable
+    MIN-ACCESS   read-only
+
+    OBJECT       t11FcRscnElsRejectNotifyEnable
+    MIN-ACCESS   read-only
+
+    ::= { t11FcRscnCompliances 1 }
+
+
+
+t11FcRscnRegistrationGroup  OBJECT-GROUP
+    OBJECTS { t11FcRscnRegType }
+    STATUS  current
+    ::= { t11FcRscnGroups 1 }
+
+t11FcRscnStatsGroup   OBJECT-GROUP
+    OBJECTS { t11FcRscnInScrs,
+              t11FcRscnInRscns,
+              t11FcRscnOutRscns,
+              t11FcRscnInSwRscns,
+              t11FcRscnOutSwRscns,
+              t11FcRscnScrRejects,
+              t11FcRscnRscnRejects,
+              t11FcRscnSwRscnRejects,
+              t11FcRscnInUnspecifiedRscns,
+
+
+
+
+
+              t11FcRscnOutUnspecifiedRscns,
+              t11FcRscnInChangedAttribRscns,
+              t11FcRscnOutChangedAttribRscns,
+              t11FcRscnInChangedServiceRscns,
+              t11FcRscnOutChangedServiceRscns,
+              t11FcRscnInChangedSwitchRscns,
+              t11FcRscnOutChangedSwitchRscns,
+              t11FcRscnInRemovedRscns,
+              t11FcRscnOutRemovedRscns
+            }
+    STATUS  current
+    ::= { t11FcRscnGroups 2 }
+
+t11FcRscnNotifyControlGroup  OBJECT-GROUP
+    OBJECTS { t11FcRscnIlsRejectNotifyEnable,
+              t11FcRscnElsRejectNotifyEnable,
+              t11FcRscnRejectedRequestString,
+              t11FcRscnRejectedRequestSource,
+              t11FcRscnRejectReasonCode,
+              t11FcRscnRejectReasonCodeExp,
+              t11FcRscnRejectReasonVendorCode
+            }
+    STATUS  current
+    ::= { t11FcRscnGroups 3 }
+
+t11FcRscnNotifyGroup   NOTIFICATION-GROUP
+    NOTIFICATIONS { t11FcRscnIlsRejectReqNotify,
+                    t11FcRscnElsRejectReqNotify
+                  }
+    STATUS        current
+    ::= { t11FcRscnGroups 4 }
+
+END

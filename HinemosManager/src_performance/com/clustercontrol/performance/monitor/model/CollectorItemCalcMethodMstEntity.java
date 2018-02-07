@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.performance.monitor.model;
 
 import java.io.Serializable;
@@ -13,8 +21,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 
 
@@ -37,29 +43,19 @@ public class CollectorItemCalcMethodMstEntity implements Serializable {
 	public CollectorItemCalcMethodMstEntity() {
 	}
 
-	public CollectorItemCalcMethodMstEntity(CollectorItemCalcMethodMstEntityPK pk,
-			CollectorCalcMethodMstEntity collectorCalcMethodMstEntity,
-			CollectorItemCodeMstEntity collectorItemCodeMstEntity,
-			CollectorPlatformMstEntity collectorPlatformMstEntity) {
+	public CollectorItemCalcMethodMstEntity(CollectorItemCalcMethodMstEntityPK pk) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToCollectorCalcMethodMstEntity(collectorCalcMethodMstEntity);
-		this.relateToCollectorItemCodeMstEntity(collectorItemCodeMstEntity);
-		this.relateToCollectorPlatformMstEntity(collectorPlatformMstEntity);
 	}
 
 	public CollectorItemCalcMethodMstEntity(CollectorPlatformMstEntity collectorPlatformMstEntity,
 			CollectorItemCodeMstEntity collectorItemCodeMstEntity,
 			String collectMethod,
-			String subPlatformId,
-			CollectorCalcMethodMstEntity collectorCalcMethodMstEntity) {
+			String subPlatformId) {
 		this(new CollectorItemCalcMethodMstEntityPK(
 				collectMethod,
 				collectorPlatformMstEntity.getPlatformId(),
 				subPlatformId,
-				collectorItemCodeMstEntity.getItemCode()),
-				collectorCalcMethodMstEntity, collectorItemCodeMstEntity, collectorPlatformMstEntity);
+				collectorItemCodeMstEntity.getItemCode()));
 	}
 
 

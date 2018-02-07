@@ -21,7 +21,7 @@ BEGIN
             VALUE "CompanyName",      "NTT DATA Corporation"
             VALUE "FileDescription",  "Hinemos SNMP Extension Agent DLL"
             VALUE "FileVersion",      "5,1,0,0\0"
-            VALUE "LegalCopyright",   "Copyright (C) 2015 NTT DATA Corporation\0"
+            VALUE "LegalCopyright",   "Copyright (c) 2018 NTT DATA INTELLILINK Corporation\0"
             VALUE "OriginalFilename", "HinemosSNMPExtAgent.dll\0"
             VALUE "ProductName",      "HinemosSNMPExtAgent\0"
             VALUE "ProductVersion",   "5,1,0,0\0"

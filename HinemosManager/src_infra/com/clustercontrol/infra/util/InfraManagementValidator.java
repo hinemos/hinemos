@@ -1,17 +1,11 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.infra.util;
 
 import org.apache.log4j.Logger;
@@ -25,6 +19,7 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.infra.model.InfraFileInfo;
 import com.clustercontrol.infra.model.InfraManagementInfo;
+import com.clustercontrol.infra.model.InfraManagementParamInfo;
 import com.clustercontrol.infra.model.InfraModuleInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.repository.util.FacilityTreeCache;
@@ -71,10 +66,16 @@ public class InfraManagementValidator {
 		CommonValidator.validateOwnerRoleId(infraManagementInfo.getOwnerRoleId(), true, infraManagementInfo.getManagementId(), HinemosModuleConstant.INFRA);
 
 		// facilityId
-		if(infraManagementInfo.getFacilityId() == null || "".equals(infraManagementInfo.getFacilityId())){
+		if(infraManagementInfo.getFacilityId() == null){
 			infraManagementInfo.setFacilityId(null);
 			infraManagementInfo.setScope(null);
 		}else{
+			if("".equals(infraManagementInfo.getFacilityId())){
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SCOPE.getMessage());
+				m_log.info("validateInfraManagementInfo() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
 			try {
 				FacilityTreeCache.validateFacilityId(infraManagementInfo.getFacilityId(), infraManagementInfo.getOwnerRoleId(), false);
 			} catch (FacilityNotFound e) {
@@ -94,6 +95,24 @@ public class InfraManagementValidator {
 		// abnormalPriorityRun : not implemented
 		// normalPriorityCheck : not implemented
 		// abnormalPriorityCheck : not implemented
+
+		// parameterInfo
+		if (infraManagementInfo.getInfraManagementParamList() != null) {
+			for (InfraManagementParamInfo paramInfo : infraManagementInfo.getInfraManagementParamList()) {
+				CommonValidator.validateString(MessageConstant.INFRA_PARAM_ID.getMessage(), paramInfo.getParamId(), true, 1, 64);
+				// IDのパターンと":"以外は許容しない
+				String pattern = "^[A-Za-z0-9-_.@:]+$";
+				if(!paramInfo.getParamId().matches(pattern)){
+					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_PARAMID_ILLEGAL_CHARACTERS.getMessage(
+							MessageConstant.INFRA_PARAM_ID.getMessage(), paramInfo.getParamId()));
+					m_log.info("validateId() : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage());
+					throw e;
+				}
+				CommonValidator.validateString(MessageConstant.DESCRIPTION.getMessage(), paramInfo.getDescription(), false, 0, 256);
+				CommonValidator.validateString(MessageConstant.INFRA_PARAM_VALUE.getMessage(), paramInfo.getValue(), true, 1, 1024);
+			}
+		}
 		
 		// notifyId
 		if(infraManagementInfo.getNotifyRelationList() != null){
@@ -145,7 +164,7 @@ public class InfraManagementValidator {
 		} catch (Exception e) {
 			m_log.info("validateInfraManagementId() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_JOB.getMessage() +
+			InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_INFRA_MANAGEMENT.getMessage() +
 					" Target construct is not exist! managementId = " + managementId);
 			throw e1;
 		}

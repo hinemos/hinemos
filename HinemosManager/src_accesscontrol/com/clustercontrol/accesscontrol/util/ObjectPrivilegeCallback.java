@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.accesscontrol.util;
@@ -44,12 +37,6 @@ public class ObjectPrivilegeCallback implements JpaTransactionCallback {
 	private static Log m_log = LogFactory.getLog( ObjectPrivilegeCallback.class );
 
 	@Override
-	public void preBegin() { }
-
-	@Override
-	public void postBegin() { }
-
-	@Override
 	public void preFlush() { }
 
 	@Override
@@ -57,122 +44,124 @@ public class ObjectPrivilegeCallback implements JpaTransactionCallback {
 
 	@Override
 	public void preCommit() throws ObjectPrivilege_InvalidRole {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		HinemosEntityManager em = jtm.getEntityManager();
 
-		// オブジェクト権限削除リスト({objectType, objectId, isModifyCheck})
-		List<Object[]> deleteList = new ArrayList<Object[]>();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// SQLをDBに反映させるためflushする。
-		jtm.flush();
+			// オブジェクト権限削除リスト({objectType, objectId, isModifyCheck})
+			List<Object[]> deleteList = new ArrayList<Object[]>();
 
-		// オブジェクト権限対象 取得
-		@SuppressWarnings("unchecked")
-		List<ObjectPrivilegeTargetBean> targetList
-		= (List<ObjectPrivilegeTargetBean>)HinemosSessionContext.instance().getProperty(HinemosSessionContext.OBJECT_PRIVILEGE_TARGET_LIST);
+			// SQLをDBに反映させるためflushする。
+			jtm.flush();
 
-		if (targetList != null) {
-			// ログインユーザ 取得
-			String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
-			Boolean isAdministrator = (Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);
+			// オブジェクト権限対象 取得
+			@SuppressWarnings("unchecked")
+			List<ObjectPrivilegeTargetBean> targetList
+			= (List<ObjectPrivilegeTargetBean>)HinemosSessionContext.instance().getProperty(HinemosSessionContext.OBJECT_PRIVILEGE_TARGET_LIST);
 
-			List<String> roleIdList = new ArrayList<String>();
-			// ユーザ情報の取得
-			if (loginUser != null && !"".equals(loginUser.trim())) {
-				roleIdList = UserRoleCache.getRoleIdList(loginUser);
-			}
+			if (targetList != null) {
+				// ログインユーザ 取得
+				String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+				Boolean isAdministrator = (Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);
 
-			for (ObjectPrivilegeTargetBean bean : targetList) {
-				HinemosObjectPrivilege hinemosObjectPrivilege = bean.getEntityClass().getAnnotation(HinemosObjectPrivilege.class);
-				if (hinemosObjectPrivilege == null) {
-					// HinemosObjectPrivilegeアノテーションが設定されていない場合はチェック対象外
-					continue;
-				}
-
-				// ジョブの場合、jobunitId='_ROOT_'はチェック対象外
-				if (hinemosObjectPrivilege.objectType().equals(HinemosModuleConstant.JOB_MST)
-						&& bean.getObjectId().equals(CreateJobSession.TOP_JOBUNIT_ID)) {
-					continue;
-				}
-				
-				// オーナーロールスコープの削除の場合はチェック対象外
-				// TODO:ほかにスマートな方法があれば修正する
-				if (hinemosObjectPrivilege.objectType().equals(HinemosModuleConstant.PLATFORM_REPOSITORY)
-						&& bean.getObjectId().equals(bean.getOwnerRoleId())){
-					continue;
-				}
-
-				// 削除するエンティティの場合、オブジェクト権限削除リストに追加する
-				if (bean.isDeleteFlg()) {
-					Object[] args = {hinemosObjectPrivilege.objectType(), bean.getObjectId(), hinemosObjectPrivilege.isModifyCheck()};
-					deleteList.add(args);
-				}
-
-				// チェック対象外の場合はチェックしない
-				if (bean.isUncheckFlg()) {
-					m_log.debug("preCommit() isUncheckFlg entity targetClass = " + bean.getEntityClass().getSimpleName()
-							+ ", objectId = " + bean.getObjectId()
-							+ ", ownerRoleId = " + bean.getOwnerRoleId());
-					continue;
-				}
-
-				// ユーザ情報が取得できない場合はオブジェクト権限チェックはしない
+				List<String> roleIdList = new ArrayList<String>();
+				// ユーザ情報の取得
 				if (loginUser != null && !"".equals(loginUser.trim())) {
+					roleIdList = UserRoleCache.getRoleIdList(loginUser);
+				}
 
-					if (isAdministrator != null && isAdministrator) {
-						// ADMINISTRATORSロールに所属している場合、オブジェクト権限チェックはしない
-						continue;		// オブジェクト権限有り
-					}
-
-					// オーナーロールにユーザのロールが設定されている場合は変更可
-					boolean existsflg = false;
-					for (String roleId : roleIdList) {
-						m_log.debug("preCommit() userRoleId = " + roleId);
-						if (roleId.equals(bean.getOwnerRoleId())) {
-							existsflg = true;
-							break;
-						}
-					}
-					if (existsflg) {
-						continue;		// オブジェクト権限有り
+				for (ObjectPrivilegeTargetBean bean : targetList) {
+					HinemosObjectPrivilege hinemosObjectPrivilege = bean.getEntityClass().getAnnotation(HinemosObjectPrivilege.class);
+					if (hinemosObjectPrivilege == null) {
+						// HinemosObjectPrivilegeアノテーションが設定されていない場合はチェック対象外
+						continue;
 					}
 
-					// オブジェクト権限テーブルにデータが存在するかの確認
-					String objectType = hinemosObjectPrivilege.objectType();
-					for (String roleId : roleIdList) {
-						// 所属ロールで設定されている場合は変更可
-						ObjectPrivilegeInfoPK objectPrivilegeEntityPK 
-							= new ObjectPrivilegeInfoPK(
-									objectType, 
-									bean.getObjectId(), 
-									roleId, 
-									ObjectPrivilegeMode.MODIFY.name());
-						ObjectPrivilegeInfo objectPrivilegeEntity = em.find(ObjectPrivilegeInfo.class, objectPrivilegeEntityPK, ObjectPrivilegeMode.READ);
-						if (objectPrivilegeEntity != null) {
-							existsflg = true;		// オブジェクト権限有り
-							break;
-						}
+					// ジョブの場合、jobunitId='_ROOT_'はチェック対象外
+					if (hinemosObjectPrivilege.objectType().equals(HinemosModuleConstant.JOB_MST)
+							&& bean.getObjectId().equals(CreateJobSession.TOP_JOBUNIT_ID)) {
+						continue;
 					}
-					if (!existsflg) {
-						// オブジェクト権限エラー
-						ObjectPrivilege_InvalidRole e = new ObjectPrivilege_InvalidRole(
-								"targetClass = " + bean.getEntityClass().getSimpleName()
+					
+					// オーナーロールスコープの削除の場合はチェック対象外
+					// TODO:ほかにスマートな方法があれば修正する
+					if (hinemosObjectPrivilege.objectType().equals(HinemosModuleConstant.PLATFORM_REPOSITORY)
+							&& bean.getObjectId().equals(bean.getOwnerRoleId())){
+						continue;
+					}
+
+					// 削除するエンティティの場合、オブジェクト権限削除リストに追加する
+					if (bean.isDeleteFlg()) {
+						Object[] args = {hinemosObjectPrivilege.objectType(), bean.getObjectId(), hinemosObjectPrivilege.isModifyCheck()};
+						deleteList.add(args);
+					}
+
+					// チェック対象外の場合はチェックしない
+					if (bean.isUncheckFlg()) {
+						m_log.debug("preCommit() isUncheckFlg entity targetClass = " + bean.getEntityClass().getSimpleName()
 								+ ", objectId = " + bean.getObjectId()
 								+ ", ownerRoleId = " + bean.getOwnerRoleId());
-						m_log.warn("preCommit() object privilege error. : "
-								+ e.getClass().getSimpleName() + ", " + e.getMessage());
-						throw e;
+						continue;
+					}
+
+					// ユーザ情報が取得できない場合はオブジェクト権限チェックはしない
+					if (loginUser != null && !"".equals(loginUser.trim())) {
+
+						if (isAdministrator != null && isAdministrator) {
+							// ADMINISTRATORSロールに所属している場合、オブジェクト権限チェックはしない
+							continue;		// オブジェクト権限有り
+						}
+
+						// オーナーロールにユーザのロールが設定されている場合は変更可
+						boolean existsflg = false;
+						for (String roleId : roleIdList) {
+							m_log.debug("preCommit() userRoleId = " + roleId);
+							if (roleId.equals(bean.getOwnerRoleId())) {
+								existsflg = true;
+								break;
+							}
+						}
+						if (existsflg) {
+							continue;		// オブジェクト権限有り
+						}
+
+						// オブジェクト権限テーブルにデータが存在するかの確認
+						String objectType = hinemosObjectPrivilege.objectType();
+						for (String roleId : roleIdList) {
+							// 所属ロールで設定されている場合は変更可
+							ObjectPrivilegeInfoPK objectPrivilegeEntityPK 
+								= new ObjectPrivilegeInfoPK(
+										objectType, 
+										bean.getObjectId(), 
+										roleId, 
+										ObjectPrivilegeMode.MODIFY.name());
+							ObjectPrivilegeInfo objectPrivilegeEntity = em.find(ObjectPrivilegeInfo.class, objectPrivilegeEntityPK, ObjectPrivilegeMode.READ);
+							if (objectPrivilegeEntity != null) {
+								existsflg = true;		// オブジェクト権限有り
+								break;
+							}
+						}
+						if (!existsflg) {
+							// オブジェクト権限エラー
+							ObjectPrivilege_InvalidRole e = new ObjectPrivilege_InvalidRole(
+									"targetClass = " + bean.getEntityClass().getSimpleName()
+									+ ", objectId = " + bean.getObjectId()
+									+ ", ownerRoleId = " + bean.getOwnerRoleId());
+							m_log.warn("preCommit() object privilege error. : "
+									+ e.getClass().getSimpleName() + ", " + e.getMessage());
+							throw e;
+						}
 					}
 				}
-			}
 
-			// オブジェクト権限削除リストに格納されたオブジェクト種別、オブジェクトIDのレコードをオブジェクト権限テーブルから削除する。
-			for (Object[] args : deleteList) {
-				if ((Boolean)args[2]) {
-					if (HinemosModuleConstant.JOB.equals((String)args[0])) {
-						// JobMstEntityの場合は、ModifyJob#deleteJobunit()で削除する。
-					} else {
-						ObjectPrivilegeUtil.deleteObjectPrivilege((String)args[0], (String)args[1]);
+				// オブジェクト権限削除リストに格納されたオブジェクト種別、オブジェクトIDのレコードをオブジェクト権限テーブルから削除する。
+				for (Object[] args : deleteList) {
+					if ((Boolean)args[2]) {
+						if (HinemosModuleConstant.JOB.equals((String)args[0])) {
+							// JobMstEntityの場合は、ModifyJob#deleteJobunit()で削除する。
+						} else {
+							ObjectPrivilegeUtil.deleteObjectPrivilege((String)args[0], (String)args[1]);
+						}
 					}
 				}
 			}
@@ -202,12 +191,13 @@ public class ObjectPrivilegeCallback implements JpaTransactionCallback {
 	
 	@Override
 	public int hashCode() {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		HinemosEntityManager em = jtm.getEntityManager();
-		
-		int h = 1;
-		h = h * 31 + (em == null ? 0 : em.hashCode());
-		return h;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			
+			int h = 1;
+			h = h * 31 + (em == null ? 0 : em.hashCode());
+			return h;
+		}
 	}
 	
 	@Override

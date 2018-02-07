@@ -1,0 +1,887 @@
+   RAQMON-MIB DEFINITIONS ::= BEGIN
+
+       IMPORTS
+           OBJECT-GROUP, NOTIFICATION-GROUP, MODULE-COMPLIANCE
+               FROM SNMPv2-CONF
+           Integer32, Unsigned32,
+           Gauge32, Counter32, OBJECT-TYPE,
+           MODULE-IDENTITY, NOTIFICATION-TYPE
+               FROM SNMPv2-SMI
+           InetAddressType, InetAddress, InetPortNumber
+               FROM INET-ADDRESS-MIB
+                    SnmpAdminString
+           FROM SNMP-FRAMEWORK-MIB
+           rmon
+               FROM RMON-MIB
+           RowStatus, TruthValue, DateAndTime, RowPointer
+               FROM SNMPv2-TC;
+
+       raqmonMIB MODULE-IDENTITY
+           LAST-UPDATED "200610100000Z"     -- October 10, 2006
+           ORGANIZATION
+               "IETF RMON MIB Working Group"
+           ::= { rmon 31 }
+
+
+
+
+
+       raqmonNotifications OBJECT IDENTIFIER ::= { raqmonMIB 0 }
+
+       raqmonSessionAlarm NOTIFICATION-TYPE
+           OBJECTS { raqmonParticipantAddr,
+               raqmonParticipantName,
+               raqmonParticipantPeerAddrType,
+               raqmonParticipantPeerAddr,
+               raqmonQoSEnd2EndNetDelay,
+               raqmonQoSInterArrivalJitter,
+               raqmonQosLostPackets,
+               raqmonQosRcvdPackets }
+           STATUS current
+           ::= { raqmonNotifications 1 }
+
+
+       raqmonMIBObjects OBJECT IDENTIFIER ::= { raqmonMIB 1 }
+
+       raqmonSession OBJECT IDENTIFIER ::= { raqmonMIBObjects 1 }
+
+       raqmonParticipantTable OBJECT-TYPE
+           SYNTAX SEQUENCE OF RaqmonParticipantEntry
+           MAX-ACCESS not-accessible
+           STATUS current
+           ::= { raqmonSession 1 }
+
+       raqmonParticipantEntry OBJECT-TYPE
+           SYNTAX RaqmonParticipantEntry
+           MAX-ACCESS not-accessible
+           STATUS current
+
+
+
+
+
+           INDEX { raqmonParticipantStartDate, raqmonParticipantIndex }
+           ::= { raqmonParticipantTable 1 }
+
+       RaqmonParticipantEntry ::=
+           SEQUENCE {
+               raqmonParticipantStartDate     DateAndTime,
+               raqmonParticipantIndex         Unsigned32,
+               raqmonParticipantReportCaps    BITS,
+               raqmonParticipantAddrType      InetAddressType,
+               raqmonParticipantAddr          InetAddress,
+               raqmonParticipantSendPort      InetPortNumber,
+               raqmonParticipantRecvPort      InetPortNumber,
+               raqmonParticipantSetupDelay    Integer32,
+               raqmonParticipantName          SnmpAdminString,
+               raqmonParticipantAppName       SnmpAdminString,
+               raqmonParticipantQosCount      Gauge32,
+               raqmonParticipantEndDate       DateAndTime,
+               raqmonParticipantDestPayloadType  Integer32,
+               raqmonParticipantSrcPayloadType   Integer32,
+               raqmonParticipantActive        TruthValue,
+               raqmonParticipantPeer          RowPointer,
+               raqmonParticipantPeerAddrType  InetAddressType,
+               raqmonParticipantPeerAddr      InetAddress,
+               raqmonParticipantSrcL2Priority     Integer32,
+               raqmonParticipantDestL2Priority    Integer32,
+               raqmonParticipantSrcDSCP       Integer32,
+               raqmonParticipantDestDSCP      Integer32,
+               raqmonParticipantCpuMean       Integer32,
+               raqmonParticipantCpuMin        Integer32,
+               raqmonParticipantCpuMax        Integer32,
+               raqmonParticipantMemoryMean    Integer32,
+               raqmonParticipantMemoryMin     Integer32,
+               raqmonParticipantMemoryMax     Integer32,
+               raqmonParticipantNetRTTMean    Integer32,
+               raqmonParticipantNetRTTMin     Integer32,
+               raqmonParticipantNetRTTMax     Integer32,
+               raqmonParticipantIAJitterMean  Integer32,
+               raqmonParticipantIAJitterMin   Integer32,
+               raqmonParticipantIAJitterMax   Integer32,
+               raqmonParticipantIPDVMean      Integer32,
+               raqmonParticipantIPDVMin       Integer32,
+               raqmonParticipantIPDVMax       Integer32,
+               raqmonParticipantNetOwdMean    Integer32,
+               raqmonParticipantNetOwdMin     Integer32,
+               raqmonParticipantNetOwdMax     Integer32,
+               raqmonParticipantAppDelayMean  Integer32,
+               raqmonParticipantAppDelayMin   Integer32,
+               raqmonParticipantAppDelayMax   Integer32,
+
+
+
+
+
+               raqmonParticipantPacketsRcvd   Integer32,
+               raqmonParticipantPacketsSent   Integer32,
+               raqmonParticipantOctetsRcvd    Integer32,
+               raqmonParticipantOctetsSent    Integer32,
+               raqmonParticipantLostPackets   Integer32,
+               raqmonParticipantLostPacketsFrct  Integer32,
+               raqmonParticipantDiscards      Integer32,
+               raqmonParticipantDiscardsFrct  Integer32
+            }
+
+       raqmonParticipantStartDate OBJECT-TYPE
+           SYNTAX DateAndTime
+           MAX-ACCESS not-accessible
+           STATUS current
+           ::= { raqmonParticipantEntry 1 }
+
+       raqmonParticipantIndex OBJECT-TYPE
+           SYNTAX Unsigned32 (1..2147483647)
+           MAX-ACCESS not-accessible
+           STATUS current
+           ::= { raqmonParticipantEntry 2 }
+
+       raqmonParticipantReportCaps   OBJECT-TYPE
+           SYNTAX      BITS {
+               raqmonPartRepDsrcName(0),
+               raqmonPartRepRecvName(1),
+               raqmonPartRepDsrcPort(2),
+               raqmonPartRepRecvPort(3),
+               raqmonPartRepSetupTime(4),
+               raqmonPartRepSetupDelay(5),
+               raqmonPartRepSessionDuration(6),
+               raqmonPartRepSetupStatus(7),
+               raqmonPartRepRTEnd2EndNetDelay(8),
+               raqmonPartRepOWEnd2EndNetDelay(9),
+               raqmonPartApplicationDelay(10),
+               raqmonPartRepIAJitter(11),
+               raqmonPartRepIPDV(12),
+
+
+
+
+
+               raqmonPartRepRcvdPackets(13),
+               raqmonPartRepRcvdOctets(14),
+               raqmonPartRepSentPackets(15),
+               raqmonPartRepSentOctets(16),
+               raqmonPartRepCumPacketsLoss(17),
+               raqmonPartRepFractionPacketsLoss(18),
+               raqmonPartRepCumDiscards(19),
+               raqmonPartRepFractionDiscards(20),
+               raqmonPartRepSrcPayloadType(21),
+               raqmonPartRepDestPayloadType(22),
+               raqmonPartRepSrcLayer2Priority(23),
+               raqmonPartRepSrcTosDscp(24),
+               raqmonPartRepDestLayer2Priority(25),
+               raqmonPartRepDestTosDscp(26),
+               raqmonPartRepCPU(27),
+               raqmonPartRepMemory(28),
+               raqmonPartRepAppName(29)
+               }
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { raqmonParticipantEntry 3 }
+
+       raqmonParticipantAddrType OBJECT-TYPE
+           SYNTAX InetAddressType
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 4 }
+
+      raqmonParticipantAddr OBJECT-TYPE
+           SYNTAX InetAddress
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 5 }
+
+      raqmonParticipantSendPort OBJECT-TYPE
+           SYNTAX InetPortNumber
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 6 }
+
+       raqmonParticipantRecvPort OBJECT-TYPE
+           SYNTAX InetPortNumber
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 7 }
+
+       raqmonParticipantSetupDelay OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 8 }
+
+       raqmonParticipantName OBJECT-TYPE
+           SYNTAX SnmpAdminString
+           MAX-ACCESS read-only
+           STATUS current
+          ::= { raqmonParticipantEntry 9 }
+
+       raqmonParticipantAppName OBJECT-TYPE
+           SYNTAX SnmpAdminString
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 10 }
+
+       raqmonParticipantQosCount OBJECT-TYPE
+           SYNTAX Gauge32
+           UNITS  "entries"
+           MAX-ACCESS read-only
+           STATUS current
+
+
+
+
+
+           ::= { raqmonParticipantEntry 11 }
+
+       raqmonParticipantEndDate OBJECT-TYPE
+           SYNTAX DateAndTime
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 12 }
+
+       raqmonParticipantDestPayloadType OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..127)
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 13 }
+
+       raqmonParticipantSrcPayloadType OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..127)
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 14 }
+
+       raqmonParticipantActive OBJECT-TYPE
+           SYNTAX TruthValue
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 15 }
+
+
+
+
+
+
+       raqmonParticipantPeer OBJECT-TYPE
+           SYNTAX RowPointer
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 16 }
+
+       raqmonParticipantPeerAddrType OBJECT-TYPE
+           SYNTAX InetAddressType
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 17 }
+
+      raqmonParticipantPeerAddr OBJECT-TYPE
+           SYNTAX InetAddress
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 18 }
+
+      raqmonParticipantSrcL2Priority OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..7)
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 19 }
+
+       raqmonParticipantDestL2Priority OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..7)
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 20 }
+
+       raqmonParticipantSrcDSCP OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..63)
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 21 }
+
+       raqmonParticipantDestDSCP OBJECT-TYPE
+           SYNTAX Integer32  (-1|0..63)
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 22 }
+
+       raqmonParticipantCpuMean OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..100)
+           UNITS  "percents"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 23 }
+
+       raqmonParticipantCpuMin OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..100)
+           UNITS  "percents"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 24 }
+
+       raqmonParticipantCpuMax OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..100)
+           UNITS  "percents"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 25 }
+
+       raqmonParticipantMemoryMean OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..100)
+           UNITS  "percents"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 26 }
+
+       raqmonParticipantMemoryMin OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..100)
+           UNITS  "percents"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 27 }
+
+       raqmonParticipantMemoryMax OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..100)
+
+
+
+
+
+           UNITS  "percents"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 28 }
+
+       raqmonParticipantNetRTTMean OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 29 }
+
+       raqmonParticipantNetRTTMin OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 30 }
+
+       raqmonParticipantNetRTTMax OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 31 }
+
+       raqmonParticipantIAJitterMean OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 32 }
+
+       raqmonParticipantIAJitterMin OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 33 }
+
+       raqmonParticipantIAJitterMax OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 34 }
+
+       raqmonParticipantIPDVMean OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+
+
+
+
+
+           STATUS current
+           ::= { raqmonParticipantEntry 35 }
+
+       raqmonParticipantIPDVMin OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 36 }
+
+       raqmonParticipantIPDVMax OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 37 }
+
+       raqmonParticipantNetOwdMean OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 38 }
+
+
+
+
+
+
+       raqmonParticipantNetOwdMin OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 39 }
+
+       raqmonParticipantNetOwdMax OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 40 }
+
+       raqmonParticipantAppDelayMean OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 41 }
+
+       raqmonParticipantAppDelayMin OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+
+
+
+
+
+           ::= { raqmonParticipantEntry 42 }
+
+       raqmonParticipantAppDelayMax OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 43 }
+
+       raqmonParticipantPacketsRcvd OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "packets"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 44 }
+
+       raqmonParticipantPacketsSent OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "packets"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 45 }
+
+       raqmonParticipantOctetsRcvd OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "Octets"
+           MAX-ACCESS read-only
+           STATUS current
+
+
+
+
+
+           ::= { raqmonParticipantEntry 46 }
+
+       raqmonParticipantOctetsSent OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "Octets"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 47 }
+
+       raqmonParticipantLostPackets OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "packets"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 48 }
+
+       raqmonParticipantLostPacketsFrct OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..100)
+           UNITS  "percents"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 49 }
+
+
+
+
+
+
+       raqmonParticipantDiscards OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..2147483647)
+           UNITS  "packets"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 50 }
+
+       raqmonParticipantDiscardsFrct OBJECT-TYPE
+           SYNTAX Integer32 (-1|0..100)
+           UNITS  "percents"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantEntry 51 }
+
+
+    raqmonQosTable OBJECT-TYPE
+           SYNTAX SEQUENCE OF RaqmonQosEntry
+           MAX-ACCESS not-accessible
+           STATUS current
+           ::= { raqmonSession 2 }
+
+       raqmonQosEntry OBJECT-TYPE
+           SYNTAX RaqmonQosEntry
+           MAX-ACCESS not-accessible
+           STATUS current
+           INDEX { raqmonParticipantStartDate,
+                   raqmonParticipantIndex,
+                   raqmonQosTime }
+           ::= { raqmonQosTable 1 }
+
+       RaqmonQosEntry ::=
+           SEQUENCE {
+               raqmonQosTime          Unsigned32,
+               raqmonQoSEnd2EndNetDelay           Integer32,
+               raqmonQoSInterArrivalJitter        Integer32,
+               raqmonQosRcvdPackets   Integer32,
+               raqmonQosRcvdOctets    Integer32,
+               raqmonQosSentPackets   Integer32,
+               raqmonQosSentOctets    Integer32,
+               raqmonQosLostPackets   Integer32,
+               raqmonQosSessionStatus SnmpAdminString
+               }
+
+       raqmonQosTime OBJECT-TYPE
+           SYNTAX Unsigned32 (0..2147483647)
+           UNITS  "seconds"
+           MAX-ACCESS not-accessible
+           STATUS current
+           ::= { raqmonQosEntry 1 }
+
+       raqmonQoSEnd2EndNetDelay OBJECT-TYPE
+           SYNTAX Integer32 (-1 | 0..2147483647)
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonQosEntry 2 }
+
+       raqmonQoSInterArrivalJitter OBJECT-TYPE
+           SYNTAX Integer32 (-1 | 0..2147483647)
+
+
+
+
+
+           UNITS  "milliseconds"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonQosEntry 3 }
+
+       raqmonQosRcvdPackets OBJECT-TYPE
+           SYNTAX Integer32 (-1 | 0..2147483647)
+           UNITS  "packets"
+           MAX-ACCESS read-only
+           STATUS current
+       ::= { raqmonQosEntry 4 }
+
+       raqmonQosRcvdOctets OBJECT-TYPE
+           SYNTAX Integer32 (-1 | 0..2147483647)
+           UNITS  "octets"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonQosEntry 5 }
+
+       raqmonQosSentPackets OBJECT-TYPE
+           SYNTAX Integer32 (-1 | 0..2147483647)
+           UNITS  "packets"
+           MAX-ACCESS read-only
+           STATUS current
+       ::= { raqmonQosEntry 6 }
+
+       raqmonQosSentOctets OBJECT-TYPE
+           SYNTAX Integer32 (-1 | 0..2147483647)
+           UNITS  "octets"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonQosEntry 7 }
+
+       raqmonQosLostPackets OBJECT-TYPE
+           SYNTAX Integer32 (-1 | 0..2147483647)
+           UNITS  "packets"
+           MAX-ACCESS read-only
+           STATUS current
+       ::= { raqmonQosEntry 8 }
+
+       raqmonQosSessionStatus OBJECT-TYPE
+           SYNTAX SnmpAdminString
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonQosEntry 9 }
+
+
+       raqmonParticipantAddrTable OBJECT-TYPE
+
+
+
+
+
+           SYNTAX SEQUENCE OF RaqmonParticipantAddrEntry
+           MAX-ACCESS not-accessible
+           STATUS current
+           ::= { raqmonSession 3 }
+
+       raqmonParticipantAddrEntry OBJECT-TYPE
+           SYNTAX RaqmonParticipantAddrEntry
+           MAX-ACCESS not-accessible
+           STATUS current
+           INDEX { raqmonParticipantAddrType,
+                   raqmonParticipantAddr,
+                   raqmonParticipantStartDate,
+                   raqmonParticipantIndex }
+           ::= { raqmonParticipantAddrTable 1 }
+
+       RaqmonParticipantAddrEntry ::=
+           SEQUENCE { raqmonParticipantAddrEndDate DateAndTime }
+
+       raqmonParticipantAddrEndDate OBJECT-TYPE
+           SYNTAX DateAndTime
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonParticipantAddrEntry 1 }
+
+
+       raqmonException OBJECT IDENTIFIER ::= { raqmonMIBObjects 2 }
+
+       raqmonSessionExceptionTable OBJECT-TYPE
+
+
+
+
+
+           SYNTAX SEQUENCE OF RaqmonSessionExceptionEntry
+           MAX-ACCESS not-accessible
+           STATUS current
+           ::= { raqmonException 2 }
+
+       raqmonSessionExceptionEntry OBJECT-TYPE
+           SYNTAX RaqmonSessionExceptionEntry
+           MAX-ACCESS not-accessible
+           STATUS current
+           INDEX { raqmonSessionExceptionIndex }
+           ::= { raqmonSessionExceptionTable 1 }
+
+       RaqmonSessionExceptionEntry ::=
+           SEQUENCE {
+               raqmonSessionExceptionIndex                Unsigned32,
+               raqmonSessionExceptionIAJitterThreshold    Unsigned32,
+               raqmonSessionExceptionNetRTTThreshold      Unsigned32,
+               raqmonSessionExceptionLostPacketsThreshold Unsigned32,
+               raqmonSessionExceptionRowStatus            RowStatus
+               }
+
+       raqmonSessionExceptionIndex OBJECT-TYPE
+           SYNTAX Unsigned32 (1..65535)
+           MAX-ACCESS not-accessible
+           STATUS current
+           ::= { raqmonSessionExceptionEntry 2 }
+
+       raqmonSessionExceptionIAJitterThreshold OBJECT-TYPE
+           SYNTAX Unsigned32
+           UNITS  "milliseconds"
+           MAX-ACCESS read-create
+           STATUS current
+           ::= { raqmonSessionExceptionEntry 3 }
+
+       raqmonSessionExceptionNetRTTThreshold OBJECT-TYPE
+           SYNTAX Unsigned32
+           UNITS  "milliseconds"
+           MAX-ACCESS read-create
+           STATUS current
+           ::= { raqmonSessionExceptionEntry 4 }
+
+       raqmonSessionExceptionLostPacketsThreshold OBJECT-TYPE
+           SYNTAX Unsigned32 (0..1000)
+           UNITS  "tenth of a percent"
+           MAX-ACCESS read-create
+           STATUS current
+           ::= { raqmonSessionExceptionEntry 5 }
+
+       raqmonSessionExceptionRowStatus OBJECT-TYPE
+           SYNTAX RowStatus
+           MAX-ACCESS read-create
+           STATUS current
+           ::= { raqmonSessionExceptionEntry 7 }
+
+
+       raqmonConfig OBJECT IDENTIFIER ::= { raqmonMIBObjects 3 }
+
+       raqmonConfigPort OBJECT-TYPE
+           SYNTAX InetPortNumber
+
+
+
+
+
+           MAX-ACCESS read-write
+           STATUS current
+           ::= { raqmonConfig 1 }
+
+          raqmonConfigPduTransport OBJECT-TYPE
+            SYNTAX BITS
+               {
+                   other(0),
+                   tcp(1),
+                   snmp(2)
+               }
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonConfig 2 }
+
+
+       raqmonConfigRaqmonPdus OBJECT-TYPE
+           SYNTAX Counter32
+           UNITS  "PDUs"
+           MAX-ACCESS read-only
+           STATUS current
+           ::= { raqmonConfig 3 }
+
+       raqmonConfigRDSTimeout OBJECT-TYPE
+           SYNTAX Unsigned32
+           MAX-ACCESS read-write
+           STATUS current
+           ::= { raqmonConfig 4 }
+
+
+
+
+       raqmonConformance OBJECT IDENTIFIER ::= { raqmonMIB 2 }
+
+
+       raqmonCompliances OBJECT IDENTIFIER ::= { raqmonConformance 1 }
+       raqmonGroups OBJECT IDENTIFIER ::= { raqmonConformance 2 }
+
+       raqmonCompliance MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+           MANDATORY-GROUPS { raqmonCollectorGroup,
+                              raqmonCollectorNotificationsGroup
+                            }
+
+           OBJECT raqmonParticipantAddrType
+           SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+           OBJECT raqmonParticipantAddr
+           SYNTAX  InetAddress (SIZE(4|16))
+
+           OBJECT raqmonParticipantPeerAddrType
+           SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+           OBJECT raqmonParticipantPeerAddr
+           SYNTAX  InetAddress (SIZE(4|16))
+
+              ::= { raqmonCompliances 1 }
+
+
+
+
+
+
+
+       raqmonCollectorGroup OBJECT-GROUP
+           OBJECTS {
+               raqmonParticipantReportCaps,
+               raqmonParticipantAddrType,
+               raqmonParticipantAddr,
+               raqmonParticipantSendPort,
+               raqmonParticipantRecvPort,
+               raqmonParticipantSetupDelay,
+               raqmonParticipantName,
+               raqmonParticipantAppName,
+               raqmonParticipantQosCount,
+               raqmonParticipantEndDate,
+               raqmonParticipantDestPayloadType,
+               raqmonParticipantSrcPayloadType,
+               raqmonParticipantActive,
+               raqmonParticipantPeer,
+               raqmonParticipantPeerAddrType,
+               raqmonParticipantPeerAddr,
+               raqmonParticipantSrcL2Priority,
+               raqmonParticipantDestL2Priority,
+               raqmonParticipantSrcDSCP,
+               raqmonParticipantDestDSCP,
+               raqmonParticipantCpuMean,
+               raqmonParticipantCpuMin,
+               raqmonParticipantCpuMax,
+               raqmonParticipantMemoryMean,
+               raqmonParticipantMemoryMin,
+               raqmonParticipantMemoryMax,
+               raqmonParticipantNetRTTMean,
+               raqmonParticipantNetRTTMin,
+               raqmonParticipantNetRTTMax,
+               raqmonParticipantIAJitterMean,
+               raqmonParticipantIAJitterMin,
+               raqmonParticipantIAJitterMax,
+               raqmonParticipantIPDVMean,
+               raqmonParticipantIPDVMin,
+               raqmonParticipantIPDVMax,
+               raqmonParticipantNetOwdMean,
+               raqmonParticipantNetOwdMin,
+               raqmonParticipantNetOwdMax,
+               raqmonParticipantAppDelayMean,
+               raqmonParticipantAppDelayMin,
+               raqmonParticipantAppDelayMax,
+               raqmonParticipantPacketsRcvd,
+               raqmonParticipantPacketsSent,
+               raqmonParticipantOctetsRcvd,
+               raqmonParticipantOctetsSent,
+               raqmonParticipantLostPackets,
+
+
+
+
+
+               raqmonParticipantLostPacketsFrct,
+               raqmonParticipantDiscards,
+               raqmonParticipantDiscardsFrct,
+               raqmonQoSEnd2EndNetDelay,
+               raqmonQoSInterArrivalJitter,
+               raqmonQosRcvdPackets,
+               raqmonQosRcvdOctets,
+               raqmonQosSentPackets,
+               raqmonQosSentOctets,
+               raqmonQosLostPackets,
+               raqmonQosSessionStatus,
+               raqmonParticipantAddrEndDate,
+               raqmonConfigPort,
+               raqmonSessionExceptionIAJitterThreshold,
+               raqmonSessionExceptionNetRTTThreshold,
+               raqmonSessionExceptionLostPacketsThreshold,
+               raqmonSessionExceptionRowStatus,
+               raqmonConfigPduTransport,
+               raqmonConfigRaqmonPdus,
+               raqmonConfigRDSTimeout}
+           STATUS current
+
+
+           ::= { raqmonGroups 1 }
+
+       raqmonCollectorNotificationsGroup NOTIFICATION-GROUP
+           NOTIFICATIONS { raqmonSessionAlarm }
+           STATUS current
+           ::= { raqmonGroups 2 }
+
+   END

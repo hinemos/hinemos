@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.action;
@@ -24,6 +17,7 @@ import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.jobmanagement.bean.DecisionObjectConstant;
 import com.clustercontrol.jobmanagement.bean.DecisionObjectMessage;
+import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectMessage;
 import com.clustercontrol.jobmanagement.editor.JobPropertyDefine;
@@ -43,6 +37,9 @@ public class WaitRuleProperty {
 
 	/** ジョブID */
 	public static final String ID_JOB_ID = "jobId";
+
+	/** セッション横断ジョブID */
+	public static final String ID_CROSS_SESSION_JOB_ID = "crossSessionJobId";
 
 	/** 値（終了状態） */
 	public static final String ID_CONDITION_END_STATUS = "conditionEndStatus";
@@ -67,6 +64,9 @@ public class WaitRuleProperty {
 
 	/** 判定値2 */
 	public static final String ID_DECISION_VALUE_2 = "decisionValue2";
+	
+	/** セッション横断待ち条件ジョブ履歴範囲（分） */
+	public static final String ID_CROSS_SESSION_RANGE = "cross_session_range";
 
 	/**
 	 * 待ち条件用プロパティを取得します。<BR>
@@ -133,6 +133,8 @@ public class WaitRuleProperty {
 				Messages.getString("name"), PropertyDefineConstant.EDITOR_SELECT);
 		Property job = new Property(ID_JOB_ID,
 				Messages.getString("job.id"), PropertyDefineConstant.EDITOR_JOB);
+		Property jobCrossSession = new Property(ID_CROSS_SESSION_JOB_ID,
+				 Messages.getString("job.id"), PropertyDefineConstant.EDITOR_JOB);
 		Property conditionEndStatus = new Property(ID_CONDITION_END_STATUS,
 				Messages.getString("value"), PropertyDefineConstant.EDITOR_SELECT);
 		Property conditionEndValue = new Property(ID_CONDITION_END_VALUE,
@@ -149,10 +151,15 @@ public class WaitRuleProperty {
 				Messages.getString("wait.rule.decision.condition"), PropertyDefineConstant.EDITOR_SELECT);
 		Property decisionValue2 = new Property(ID_DECISION_VALUE_2,
 				Messages.getString("wait.rule.decision.value2"), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_128);
+		Property crossSessionRange = new Property(ID_CROSS_SESSION_RANGE,
+				Messages.getString("wait.rule.cross.session.range"), PropertyDefineConstant.EDITOR_NUM, DataRangeConstant.SMALLINT_HIGH, 0);
 
 		//JobPropertyDefineクラスはClusterControlでは定義されていない
 		JobPropertyDefine define = new JobPropertyDefine(item);
 		job.setDefine(define);
+		// JobConstant.TYPE_REFERJOBを渡すことで参照ジョブと同様にジョブユニット配下を全て表示する
+		JobPropertyDefine defineCrossSession = new JobPropertyDefine(item, JobConstant.TYPE_REFERJOB);
+		jobCrossSession.setDefine(defineCrossSession);
 
 		//ジョブ終了状態
 		ArrayList<Object> jobEndStatusPropertyList = new ArrayList<Object>();
@@ -173,6 +180,28 @@ public class WaitRuleProperty {
 		HashMap<String, Object> jobEndValueMap = new HashMap<String, Object>();
 		jobEndValueMap.put("value", JudgmentObjectMessage.STRING_JOB_END_VALUE);
 		jobEndValueMap.put("property", jobEndValuePropertyList);
+
+		//セッション横断ジョブ終了状態
+		ArrayList<Object> jobCrossSessionEndStatusPropertyList = new ArrayList<Object>();
+		jobCrossSessionEndStatusPropertyList.add(jobCrossSession);
+		jobCrossSessionEndStatusPropertyList.add(conditionEndStatus);
+		jobCrossSessionEndStatusPropertyList.add(crossSessionRange);
+		jobCrossSessionEndStatusPropertyList.add(description);
+		
+		HashMap<String, Object> jobCrossSessionEndStatusMap = new HashMap<String, Object>();
+		jobCrossSessionEndStatusMap.put("value", JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_STATUS);
+		jobCrossSessionEndStatusMap.put("property", jobCrossSessionEndStatusPropertyList);
+
+		//セッション横断ジョブ終了値
+		ArrayList<Object> jobCrossSessionEndValuePropertyList = new ArrayList<Object>();
+		jobCrossSessionEndValuePropertyList.add(jobCrossSession);
+		jobCrossSessionEndValuePropertyList.add(conditionEndValue);
+		jobCrossSessionEndValuePropertyList.add(crossSessionRange);
+		jobCrossSessionEndValuePropertyList.add(description);
+		
+		HashMap<String, Object> jobCrossSessionEndValueMap = new HashMap<String, Object>();
+		jobCrossSessionEndValueMap.put("value", JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_VALUE);
+		jobCrossSessionEndValueMap.put("property", jobCrossSessionEndValuePropertyList);
 
 		//時刻
 		ArrayList<Object> timePropertyList = new ArrayList<Object>();
@@ -209,8 +238,10 @@ public class WaitRuleProperty {
 					JudgmentObjectMessage.STRING_JOB_END_VALUE,
 					JudgmentObjectMessage.STRING_TIME,
 					JudgmentObjectMessage.STRING_START_MINUTE,
-					JudgmentObjectMessage.STRING_JOB_PARAMETER},
-					{ jobEndStatusMap, jobEndValueMap, timeMap, startMinuteMap, jobParamMap } };
+					JudgmentObjectMessage.STRING_JOB_PARAMETER,
+					JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_STATUS,
+					JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_VALUE},
+					{ jobEndStatusMap, jobEndValueMap, timeMap, startMinuteMap, jobParamMap , jobCrossSessionEndStatusMap, jobCrossSessionEndValueMap} };
 
 		Object conditionEndStatuss[][] = {
 				{ EndStatusMessage.STRING_NORMAL,
@@ -254,10 +285,12 @@ public class WaitRuleProperty {
 		decisionValue1.setValue("");
 		decisionCondition.setValue("");
 		decisionValue2.setValue("");
+		crossSessionRange.setValue(60);  //セッション横断待ち条件ジョブ履歴範囲のデフォルト60（分）とする
 		
 		//変更の可/不可を設定
 		judgmentObject.setModify(PropertyDefineConstant.MODIFY_OK);
 		job.setModify(PropertyDefineConstant.MODIFY_OK);
+		jobCrossSession.setModify(PropertyDefineConstant.MODIFY_OK);
 		conditionEndStatus.setModify(PropertyDefineConstant.MODIFY_OK);
 		conditionEndValue.setModify(PropertyDefineConstant.MODIFY_OK);
 		time.setModify(PropertyDefineConstant.MODIFY_OK);
@@ -266,6 +299,7 @@ public class WaitRuleProperty {
 		decisionValue1.setModify(PropertyDefineConstant.MODIFY_OK);
 		decisionCondition.setModify(PropertyDefineConstant.MODIFY_OK);
 		decisionValue2.setModify(PropertyDefineConstant.MODIFY_OK);
+		crossSessionRange.setModify(PropertyDefineConstant.MODIFY_OK);
 
 		Property property = new Property(null, null, null);
 
@@ -331,6 +365,34 @@ public class WaitRuleProperty {
 			judgmentObject.addChildren(decisionValue1);
 			judgmentObject.addChildren(decisionCondition);
 			judgmentObject.addChildren(decisionValue2);
+			judgmentObject.addChildren(description);
+		}
+		else if (type == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS) {
+			judgmentObject.setValue(JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_STATUS);
+
+			// 初期表示ツリーを構成。
+			property.removeChildren();
+			property.addChildren(judgmentObject);
+
+			// 判定対象ツリー
+			judgmentObject.removeChildren();
+			judgmentObject.addChildren(jobCrossSession);
+			judgmentObject.addChildren(conditionEndStatus);
+			judgmentObject.addChildren(crossSessionRange);
+			judgmentObject.addChildren(description);
+		}
+		else if (type == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
+			judgmentObject.setValue(JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_VALUE);
+
+			// 初期表示ツリーを構成。
+			property.removeChildren();
+			property.addChildren(judgmentObject);
+
+			// 判定対象ツリー
+			judgmentObject.removeChildren();
+			judgmentObject.addChildren(jobCrossSession);
+			judgmentObject.addChildren(conditionEndValue);
+			judgmentObject.addChildren(crossSessionRange);
 			judgmentObject.addChildren(description);
 		}
 

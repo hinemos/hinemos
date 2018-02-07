@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.notify.monitor.model;
 
 import javax.persistence.AttributeOverride;
@@ -9,9 +17,6 @@ import javax.persistence.Table;
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.notify.util.NotifyUtil;
 
 
 /**
@@ -51,34 +56,7 @@ public class EventLogEntity extends ObjectPrivilegeTargetInfo implements Cloneab
 
 	public EventLogEntity(EventLogEntityPK pk) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
 		this.setObjectId(this.getId().getMonitorId());
-
-		this.setOwnerRoleId(NotifyUtil.getOwnerRoleId(pk.getPluginId(), pk.getMonitorId(),
-				pk.getMonitorDetailId(), pk.getFacilityId(), true));
-	}
-
-	public EventLogEntity(String monitorId,
-			String monitorDetailId,
-			String pluginId,
-			Long outputDate,
-			String facilityId) {
-		this(new EventLogEntityPK(monitorId,
-				monitorDetailId,
-				pluginId,
-				outputDate,
-				facilityId));
-	}
-
-	public EventLogEntity(String monitorId, String monitorDetailId,
-			String pluginId, Long outputDate, String facilityId,
-			String ownerRoleId) {
-
-		this.setId(new EventLogEntityPK(monitorId, monitorDetailId, pluginId,
-				outputDate, facilityId));
-		this.setObjectId(this.getId().getMonitorId());
-		this.setOwnerRoleId(ownerRoleId);
 	}
 
 	@EmbeddedId

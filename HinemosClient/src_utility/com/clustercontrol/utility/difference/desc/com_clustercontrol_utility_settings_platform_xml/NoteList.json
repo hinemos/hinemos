@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"NoteList_funcName"}
+],
+"props":[
+	{
+	"propName":"NoteInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.commons.util;
 
 import java.util.List;
@@ -773,7 +781,7 @@ public class HinemosEntityManager implements EntityManager {
 	 * @param paramValue パラメータ値
 	 * @return JPQLのIN句に設定するパラメータ名
 	 */
-	public static String getParamNameString(String paramName, String[] paramValues) {
+	public static String getParamNameString(String paramName, Object[] paramValues) {
 		String rtnString = "";
 		int count = paramValues.length;
 		if (count > 0) {
@@ -788,11 +796,6 @@ public class HinemosEntityManager implements EntityManager {
 		}
 		return rtnString;
 	}
-
-	public static String getParamNameString(String paramName, List<String> paramValueList) {
-		return getParamNameString(paramName, paramValueList.toArray(new String[0]));
-	}
-
 
 	/**
 	 * JPQLのIN句にパラメータ値を設定したTypedQueryを返す。
@@ -810,7 +813,7 @@ public class HinemosEntityManager implements EntityManager {
 	 * @param paramValue パラメータ値
 	 * @return JPQLのIN句に値を設定したTypedQuery
 	 */
-	public static <T> TypedQuery<T> appendParam(TypedQuery<T> query, String paramName, String[] paramValues) {
+	public static <T> TypedQuery<T> appendParam(TypedQuery<T> query, String paramName, Object[] paramValues) {
 		TypedQuery<T> typedQuery = query;
 		int count = paramValues.length;
 		if (count > 0) {

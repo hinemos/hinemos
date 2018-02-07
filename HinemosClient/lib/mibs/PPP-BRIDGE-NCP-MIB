@@ -1,0 +1,263 @@
+          PPP-BRIDGE-NCP-MIB DEFINITIONS ::= BEGIN
+
+          IMPORTS
+               Counter
+                    FROM RFC1155-SMI
+               ifIndex
+                    FROM RFC1213-MIB
+               OBJECT-TYPE
+                    FROM RFC-1212
+               ppp
+                    FROM PPP-LCP-MIB;
+
+               pppBridge OBJECT IDENTIFIER ::= { ppp 4 }
+
+
+
+
+
+
+
+
+
+          pppBridgeTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppBridgeEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppBridge 1 }
+
+
+          pppBridgeEntry   OBJECT-TYPE
+               SYNTAX    PppBridgeEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex }
+               ::= { pppBridgeTable 1 }
+
+
+          PppBridgeEntry ::= SEQUENCE {
+               pppBridgeOperStatus
+                    INTEGER,
+               pppBridgeLocalToRemoteTinygramCompression
+                    INTEGER,
+               pppBridgeRemoteToLocalTinygramCompression
+                    INTEGER,
+               pppBridgeLocalToRemoteLanId
+                    INTEGER,
+               pppBridgeRemoteToLocalLanId
+                    INTEGER
+          }
+
+          pppBridgeOperStatus   OBJECT-TYPE
+               SYNTAX    INTEGER {opened(1), not-opened(2)}
+               ACCESS    read-only
+
+
+
+
+
+               STATUS    mandatory
+               ::= { pppBridgeEntry 1 }
+
+
+          pppBridgeLocalToRemoteTinygramCompression   OBJECT-TYPE
+               SYNTAX    INTEGER { false(1), true(2) }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppBridgeEntry 2 }
+
+
+          pppBridgeRemoteToLocalTinygramCompression   OBJECT-TYPE
+               SYNTAX    INTEGER { false(1), true(2) }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppBridgeEntry 3 }
+
+
+
+
+
+
+
+
+          pppBridgeLocalToRemoteLanId   OBJECT-TYPE
+               SYNTAX    INTEGER { false(1), true(2) }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppBridgeEntry 4 }
+
+
+          pppBridgeRemoteToLocalLanId   OBJECT-TYPE
+               SYNTAX    INTEGER { false(1), true(2) }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppBridgeEntry 5 }
+
+
+
+          pppBridgeConfigTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppBridgeConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppBridge 2 }
+
+
+          pppBridgeConfigEntry   OBJECT-TYPE
+               SYNTAX    PppBridgeConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex }
+               ::= { pppBridgeConfigTable 1 }
+
+
+          PppBridgeConfigEntry ::= SEQUENCE {
+               pppBridgeConfigAdminStatus
+                    INTEGER,
+               pppBridgeConfigTinygram
+                    INTEGER,
+               pppBridgeConfigRingId
+                    INTEGER,
+               pppBridgeConfigLineId
+                    INTEGER,
+               pppBridgeConfigLanId
+                    INTEGER
+          }
+
+
+          pppBridgeConfigAdminStatus   OBJECT-TYPE
+               SYNTAX    INTEGER { open(1), close(2) }
+               ACCESS    read-write
+               STATUS    mandatory
+               ::= { pppBridgeConfigEntry 1 }
+
+
+          pppBridgeConfigTinygram   OBJECT-TYPE
+               SYNTAX    INTEGER { false(1), true(2) }
+
+
+
+
+
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { true }
+               ::= { pppBridgeConfigEntry 2 }
+
+
+          pppBridgeConfigRingId   OBJECT-TYPE
+               SYNTAX    INTEGER { false(1), true(2) }
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { false }
+               ::= { pppBridgeConfigEntry 3 }
+
+
+          pppBridgeConfigLineId   OBJECT-TYPE
+               SYNTAX    INTEGER { false(1), true(2) }
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { false }
+               ::= { pppBridgeConfigEntry 4 }
+
+
+
+
+
+          pppBridgeConfigLanId   OBJECT-TYPE
+               SYNTAX    INTEGER { false(1), true(2) }
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { false }
+               ::= { pppBridgeConfigEntry 5 }
+
+
+
+          pppBridgeMediaTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppBridgeMediaEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppBridge 3 }
+
+
+          pppBridgeMediaEntry   OBJECT-TYPE
+               SYNTAX    PppBridgeMediaEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex, pppBridgeMediaMacType }
+               ::= { pppBridgeMediaTable 1 }
+
+
+          PppBridgeMediaEntry ::= SEQUENCE {
+               pppBridgeMediaMacType
+                    INTEGER,
+               pppBridgeMediaLocalStatus
+                    INTEGER,
+               pppBridgeMediaRemoteStatus
+                    INTEGER
+
+
+
+
+
+          }
+
+          pppBridgeMediaMacType   OBJECT-TYPE
+               SYNTAX    INTEGER(0..2147483647)
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppBridgeMediaEntry 1 }
+
+
+          pppBridgeMediaLocalStatus   OBJECT-TYPE
+               SYNTAX    INTEGER { accept(1), dont-accept(2) }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppBridgeMediaEntry 2 }
+
+
+          pppBridgeMediaRemoteStatus   OBJECT-TYPE
+               SYNTAX    INTEGER { accept(1), dont-accept(2) }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppBridgeMediaEntry 3 }
+
+
+
+          pppBridgeMediaConfigTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppBridgeMediaConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppBridge 4 }
+
+
+          pppBridgeMediaConfigEntry   OBJECT-TYPE
+               SYNTAX    PppBridgeMediaConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex, pppBridgeMediaConfigMacType }
+               ::= { pppBridgeMediaConfigTable 1 }
+
+
+          PppBridgeMediaConfigEntry ::= SEQUENCE {
+               pppBridgeMediaConfigMacType
+                    INTEGER,
+               pppBridgeMediaConfigLocalStatus
+                    INTEGER
+          }
+
+
+          pppBridgeMediaConfigMacType   OBJECT-TYPE
+               SYNTAX    INTEGER(0..2147483647)
+               ACCESS    read-write
+               STATUS    mandatory
+               ::= { pppBridgeMediaConfigEntry 1 }
+
+
+          pppBridgeMediaConfigLocalStatus   OBJECT-TYPE
+               SYNTAX    INTEGER { accept(1), dont-accept(2) }
+               ACCESS    read-write
+               STATUS    mandatory
+               ::= { pppBridgeMediaConfigEntry 2 }
+
+
+          END

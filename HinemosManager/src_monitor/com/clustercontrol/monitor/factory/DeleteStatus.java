@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.factory;
@@ -53,18 +46,22 @@ public class DeleteStatus {
 	 * @see #delete(String, String, String)
 	 */
 	public boolean delete(ArrayList<StatusDataInfo> list) throws MonitorNotFound, InvalidRole {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 
 		String monitorId = "";
 		String monitorDetailId = "";
 		String pluginId = "";
 		String facilityId = "";
 
-		if (list != null && list.size()>0) {
+		if (list == null || list.size() == 0) {
+			return true;
+		}
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			for(StatusDataInfo status : list){
 				if (status == null)
 					continue;
-
+	
 				// ステータス情報を取得
 				monitorId = status.getMonitorId();
 				monitorDetailId = status.getMonitorDetailId();
@@ -82,8 +79,8 @@ public class DeleteStatus {
 				}
 				em.remove(statusInfo);
 			}
+			return true;
 		}
-		return true;
 	}
 }
 

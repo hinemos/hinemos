@@ -1,0 +1,116 @@
+INTEGRATED-SERVICES-GUARANTEED-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+            MODULE-IDENTITY, OBJECT-TYPE             FROM SNMPv2-SMI
+            RowStatus                                FROM SNMPv2-TC
+            MODULE-COMPLIANCE, OBJECT-GROUP          FROM SNMPv2-CONF
+            intSrv                        FROM INTEGRATED-SERVICES-MIB
+            ifIndex                                  FROM IF-MIB;
+
+
+intSrvGuaranteed MODULE-IDENTITY
+        LAST-UPDATED "9511030500Z" -- Thu Aug 28 09:04:22 PDT 1997
+        ORGANIZATION "IETF Integrated Services Working Group"
+    ::= { intSrv 5 }
+
+intSrvGuaranteedObjects          OBJECT IDENTIFIER
+                                 ::= { intSrvGuaranteed 1 }
+intSrvGuaranteedNotifications    OBJECT IDENTIFIER
+                                 ::= { intSrvGuaranteed 2 }
+intSrvGuaranteedConformance      OBJECT IDENTIFIER
+                                 ::= { intSrvGuaranteed 3 }
+
+
+
+
+    intSrvGuaranteedIfTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF IntSrvGuaranteedIfEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+
+
+
+
+
+       ::= { intSrvGuaranteedObjects 1 }
+
+
+    intSrvGuaranteedIfEntry OBJECT-TYPE
+        SYNTAX      IntSrvGuaranteedIfEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+       INDEX { ifIndex }
+       ::= { intSrvGuaranteedIfTable 1 }
+
+IntSrvGuaranteedIfEntry ::=
+    SEQUENCE {
+        intSrvGuaranteedIfBacklog INTEGER,
+        intSrvGuaranteedIfDelay   INTEGER,
+        intSrvGuaranteedIfSlack   INTEGER,
+        intSrvGuaranteedIfStatus  RowStatus
+    }
+
+    intSrvGuaranteedIfBacklog OBJECT-TYPE
+        SYNTAX      INTEGER (0..'0FFFFFFF'h)
+        UNITS       "bytes"
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvGuaranteedIfEntry 1 }
+
+    intSrvGuaranteedIfDelay OBJECT-TYPE
+
+
+
+
+
+        SYNTAX      INTEGER (0..'0FFFFFFF'h)
+        UNITS       "microseconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvGuaranteedIfEntry 2 }
+
+    intSrvGuaranteedIfSlack OBJECT-TYPE
+        SYNTAX      INTEGER (0..'0FFFFFFF'h)
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvGuaranteedIfEntry 3 }
+
+
+    intSrvGuaranteedIfStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvGuaranteedIfEntry 4 }
+
+
+
+
+
+
+
+intSrvGuaranteedGroups      OBJECT IDENTIFIER
+                            ::= { intSrvGuaranteedConformance 1 }
+intSrvGuaranteedCompliances OBJECT IDENTIFIER
+                            ::= { intSrvGuaranteedConformance 2 }
+
+
+    intSrvGuaranteedCompliance MODULE-COMPLIANCE
+        STATUS  current
+       MODULE  -- this module
+       MANDATORY-GROUPS {
+           intSrvGuaranteedIfAttribGroup
+           }
+       ::= { intSrvGuaranteedCompliances 1 }
+
+
+    intSrvGuaranteedIfAttribGroup OBJECT-GROUP
+         OBJECTS {
+            intSrvGuaranteedIfBacklog,
+            intSrvGuaranteedIfDelay,
+            intSrvGuaranteedIfSlack,
+            intSrvGuaranteedIfStatus
+        }
+        STATUS  current
+       ::= { intSrvGuaranteedGroups 2 }
+
+END

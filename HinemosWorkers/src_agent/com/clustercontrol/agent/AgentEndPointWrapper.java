@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.agent;
 
 import java.io.IOException;
@@ -33,7 +41,6 @@ import com.clustercontrol.ws.agent.JobMasterNotFound_Exception;
 import com.clustercontrol.ws.agent.JobSessionDuplicate_Exception;
 import com.clustercontrol.ws.agent.MonitorNotFound_Exception;
 import com.clustercontrol.ws.agent.OutputBasicInfo;
-import com.clustercontrol.ws.cloud.CloudCommonEndpoint;
 import com.clustercontrol.ws.jobmanagement.JobFileCheck;
 import com.clustercontrol.ws.jobmanagement.RunResultInfo;
 import com.clustercontrol.ws.monitor.CommandExecuteDTO;
@@ -455,26 +462,6 @@ public class AgentEndPointWrapper {
 				AgentEndpoint endpoint = (AgentEndpoint) endpointSetting.getEndpoint();
 				endpoint.setAgentLibMd5(agentLibMd5List, Agent.getAgentInfo());
 				return;
-			} catch (WebServiceException e) {
-				wse = e;
-				m_log.info("WebServiceException " + e.getMessage());
-				EndpointManager.changeEndpoint();
-			}
-		}
-		throw wse;
-	}
-
-	public static DataHandler downloadScripts(String filename)
-			throws com.clustercontrol.ws.cloud.HinemosUnknown_Exception,
-			com.clustercontrol.ws.cloud.InvalidRole_Exception,
-			com.clustercontrol.ws.cloud.InvalidUserPass_Exception {
-		WebServiceException wse = null;
-		for (EndpointSetting endpointSetting : EndpointManager
-				.getCloudCommonEndpoint()) {
-			try {
-				CloudCommonEndpoint endpoint = (CloudCommonEndpoint) endpointSetting
-						.getEndpoint();
-				return endpoint.downloadScripts(filename);
 			} catch (WebServiceException e) {
 				wse = e;
 				m_log.info("WebServiceException " + e.getMessage());

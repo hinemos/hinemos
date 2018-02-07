@@ -1,38 +1,40 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.analytics.util.OperatorChangeUtil;
+import com.clustercontrol.analytics.util.OperatorCommonUtil;
 import com.clustercontrol.bean.EndStatusConstant;
+import com.clustercontrol.bean.ReturnValue;
 import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
+import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
@@ -40,6 +42,8 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosArithmeticException;
+import com.clustercontrol.fault.HinemosIllegalArgumentException;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
@@ -52,14 +56,18 @@ import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
 import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.bean.ProcessingMethodConstant;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobNextJobOrderInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobStartJobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobStartParamInfoEntity;
+import com.clustercontrol.jobmanagement.util.JobSessionChangeDataCache;
+import com.clustercontrol.jobmanagement.util.JobSessionJobUtil;
 import com.clustercontrol.jobmanagement.util.ParameterUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 
 public class JobSessionJobImpl {
 	/** ログ出力のインスタンス */
@@ -191,6 +199,60 @@ public class JobSessionJobImpl {
 	}
 
 	/**
+	 * 定期的に待ち合わせ解除をチェックするジョブを記憶しておきます。
+	 * key: sessionId
+	 * value: List<{jobunitId, jobId}>
+	 */
+	private static ConcurrentHashMap <String, List<String[]>> waitCheckJobMap = new ConcurrentHashMap<>();
+	
+	/**
+	 * 定期待ち条件判定チェックジョブを登録します。
+	 * 異なるスレッドが同一のジョブセッションについてこの処理を呼び出すことはないので排他制御は不要です。
+	 * @param sessionId
+	 * @param jobunitId
+	 * @param jobId
+	 */
+	private void addWaitCheckJob(String sessionId, String[] jobunitIdJobId) {
+		List<String[]> waitCheckJobIdList = waitCheckJobMap.get(sessionId);
+		if (waitCheckJobIdList == null) {
+			waitCheckJobIdList = new ArrayList<>();
+			waitCheckJobMap.put(sessionId, waitCheckJobIdList);
+		}
+		//定期チェックの対象となるJobunitId, JobIdを配列に格納
+		//既に登録されている場合は登録しない
+		for(String[] exists: waitCheckJobIdList) {
+			if (exists[0].equals(jobunitIdJobId[0]) &&
+					exists[1].equals(jobunitIdJobId[1])) {
+				return;
+			}
+		}
+		waitCheckJobIdList.add(jobunitIdJobId);
+		m_log.info("addWaitCheckJob " + sessionId + ","
+					+ " jobunitId=" + jobunitIdJobId[0] + ", jobId=" + jobunitIdJobId[1]);
+	}
+
+	/**
+	 * 待ち合わせチェックジョブのリストを返します。
+	 * @param sessionId
+	 * @return List<{jobunitId, jobId}の配列>  対象のジョブが無い場合は空のリストを返します。
+	 */
+	public List<String[]> getWaitCheckJob(String sessionId) {
+		List<String[]> waitCheckJobIdList = waitCheckJobMap.getOrDefault(sessionId, new ArrayList<String[]>());
+		return waitCheckJobIdList;
+	}
+	
+	/**
+	 * 待ち合わせチェックジョブを空にします。
+	 */
+	public void clearWaitCheckMap(String sessionId) {
+		List<String[]> waitCheckJobIdList = waitCheckJobMap.get(sessionId);
+		if (waitCheckJobIdList != null) {
+			m_log.info("clearWaitCheckJob " + sessionId);
+			waitCheckJobMap.put(sessionId, new ArrayList<String[]>());
+		}
+	}
+
+	/**
 	 * ジョブ開始処理メイン1を行います。
 	 *
 	 * @param sessionId
@@ -219,6 +281,8 @@ public class JobSessionJobImpl {
 				sessionJob.setStatus(StatusConstant.TYPE_RUNNING);
 				//開始・再実行日時を設定
 				sessionJob.setStartDate(HinemosTime.currentTimeMillis());
+				//実行回数をインクリメント
+				sessionJob.setRunCount(sessionJob.getRunCount() + 1);
 				//通知処理
 				new Notice().notify(sessionId, jobunitId, jobId, EndStatusConstant.TYPE_BEGINNING);
 				if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_JOB
@@ -232,7 +296,15 @@ public class JobSessionJobImpl {
 				}
 			} else {
 				//実行できなかった場合は開始遅延チェック
-				checkStartDelayRecursive(sessionId, jobunitId, jobId);
+				Boolean delayCheck = checkStartDelayRecursive(sessionId, jobunitId, jobId);
+				//待機中ジョブがジョブ変数、又はセッション横断待ち条件を持つ場合、
+				//定期チェックで待ち合わせ解除を確認する
+				if(!delayCheck){
+					//開始遅延の操作が行われなかった場合のみ定期チェックに登録する
+					if (sessionJob.getWaitCheckFlg() != null && sessionJob.getWaitCheckFlg()) {
+						addWaitCheckJob(sessionId, new String[] {sessionJob.getId().getJobunitId(), sessionJob.getId().getJobId()});
+					}
+				}
 			}
 		} else if(sessionJob.getStatus() == StatusConstant.TYPE_RUNNING){
 			//実行中の場合
@@ -286,19 +358,37 @@ public class JobSessionJobImpl {
 		}
 	}
 
+	/**
+	 * ジョブの待ち条件のチェックを行います。
+	 * @see checkWaitCondition(String, String, String, boolean)
+	 * @param sessionId
+	 * @param jobunitId
+	 * @param jobId
+	 * @return
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws FacilityNotFound
+	 */
+	private boolean checkWaitCondition(String sessionId, String jobunitId, String jobId) 
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
+		return checkWaitCondition(sessionId, jobunitId, jobId, false /* skipTimeCondition=false */);
+	}
 
 	/**
 	 * ジョブの待ち条件のチェックを行います。
 	 *
 	 * @param sessionId セッションID
+	 * @param jobunitId ジョブユニットID
 	 * @param jobId ジョブID
+	 * @param skipTimeCondition 時刻、セッション開始後の時間の判定をスキップする場合にtrueを渡す(排他分岐で使用)
 	 * @return true：実行可、false：実行不可
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * @throws FacilityNotFound 
 	 */
-	private boolean checkWaitCondition(String sessionId, String jobunitId, String jobId)
+	private boolean checkWaitCondition(String sessionId, String jobunitId, String jobId, boolean skipTimeCondition)
 			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
 		m_log.debug("checkWaitCondition() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
@@ -345,59 +435,40 @@ public class JobSessionJobImpl {
 		}
 
 		//待ち条件ジョブ判定
-		for(JobStartJobInfoEntity startJob: startJobs){
+		boolean crossSessionExists = false;
+		for(JobStartJobInfoEntity startJob: startJobs) {
 			//待ち条件ジョブを取得
-
-			//セッションIDとジョブIDから、対象セッションジョブを取得
-			JobSessionJobEntity targetSessionJob = QueryUtil.getJobSessionJobPK(
-					sessionJob.getId().getSessionId(),
-					startJob.getId().getTargetJobunitId(),
-					startJob.getId().getTargetJobId());
-
-			//対象セッションジョブ(先行ジョブ)の実行状態をチェック
-			if(StatusConstant.isEndGroup(targetSessionJob.getStatus())){
-				//終了または、変更済の場合
-
-				if(startJob.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS){
-					//終了状態での比較
-
-					Integer endStatus = targetSessionJob.getEndStatus();
-					if(endStatus != null){
-						//対象セッションジョブの実行状態と待ち条件の終了状態を比較
-						if((startJob.getId().getTargetJobEndValue() == EndStatusConstant.TYPE_ANY)
-								|| (endStatus.equals(startJob.getId().getTargetJobEndValue()))){
-							jobResult.add(true);
-							//OR条件の場合、これ以上ループを回す必要はない
-							if(job.getConditionType() == ConditionTypeConstant.TYPE_OR) {
-								break;
-							}
-						}else{
-							jobResult.add(false);
-						}
-					}else{
-						jobResult.add(false);
+			JobSessionJobEntity targetSessionJob;
+			ReturnValue ok;  //待ち条件を満たしているかどうか
+			if (startJob.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS 
+				&& startJob.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE){
+				//通常の待ち条件の場合
+				targetSessionJob = QueryUtil.getJobSessionJobPK(
+						sessionJob.getId().getSessionId(),
+						startJob.getId().getTargetJobunitId(),
+						startJob.getId().getTargetJobId());
+				ok = JobSessionJobUtil.checkStartCondition(targetSessionJob, startJob);
+			} else {
+				//セッション横断待ち条件の場合
+				m_log.info("CrossSessionJob exists : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
+				crossSessionExists = true;
+				//ジョブユニットID、ジョブID、ジョブ終了日時から、対象セッションジョブを取得
+				List<JobSessionJobEntity> targetCrossSessionJobList = JobSessionJobUtil.searchCrossSessionJob(startJob);
+				ok = JobSessionJobUtil.checkStartCrossSessionCondition(targetCrossSessionJobList, startJob);
+			}
+			if (!ok.equals(ReturnValue.NONE)) {
+				//先行ジョブが終了済み
+				if (ok.equals(ReturnValue.TRUE)) {
+					//待ち条件を満たしている
+					jobResult.add(true);
+					//OR条件の場合、これ以上ループを回す必要はない
+					if(job.getConditionType() == ConditionTypeConstant.TYPE_OR){
+						break;
 					}
-				}else if(startJob.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE){
-					//終了値での比較
-					Integer endValue = targetSessionJob.getEndValue();
-					if(endValue != null){
-						//対象セッションジョブの実行状態と待ち条件の終了値を比較
-						if(endValue.equals(startJob.getId().getTargetJobEndValue())){
-							jobResult.add(true);
-							//OR条件の場合、これ以上ループを回す必要はない
-							if(job.getConditionType() == ConditionTypeConstant.TYPE_OR){
-								break;
-							}
-						}else{
-							jobResult.add(false);
-						}
-					}else{
-						jobResult.add(false);
-					}
-				}else{
+				} else {
 					jobResult.add(false);
 				}
-			}else{
+			} else {
 				// 終了していないジョブが存在するため、allEndCheckフラグをfalseに変更
 				allEndCheck = false;
 				if(job.getConditionType() == ConditionTypeConstant.TYPE_AND) {
@@ -411,6 +482,11 @@ public class JobSessionJobImpl {
 				}
 			}
 		}
+		if (crossSessionExists) {
+			//セッション横断待ち条件の場合、将来別のセッションで実行されたジョブによって
+			//待ち条件が満たされる可能性があるため常にfalseにする
+			allEndCheck = false;
+		}
 
 		// 待ち条件変数判定
 		for (JobStartParamInfoEntity jobStartParamInfoEntity : jobStartParamInfonList) {
@@ -421,11 +497,27 @@ public class JobSessionJobImpl {
 			String decisionValue02 = "";
 			String regex = "#\\[[a-zA-Z0-9-_:]+\\]";
 			Pattern pattern = Pattern.compile(regex);
+			// ファシリティIDの文字列
+			String decisionFacilityId = job.getFacilityId();
+			// ファシリティIDが正規表現にマッチするか検証する
+			if (pattern.matcher(decisionFacilityId).find()) {
+				// ファシリティIDの置換
+				decisionFacilityId = ParameterUtil.replaceSessionParameterValue(
+						sessionId, decisionFacilityId, decisionFacilityId);
+				
+				// ファシリティIDが置換されているかどうか再度検証し、置換されていなければ次の判定処理まで待機
+				if (pattern.matcher(decisionFacilityId).find()) {
+					replaceCheck = false;
+					jobResult.add(false);
+					continue;
+				}
+			}
 			// 判定値1が正規表現にマッチするか検証する
 			if(pattern.matcher(jobStartParamInfoEntity.getId().getStartDecisionValue01()).find()) {
 				// 判定値1の置換
 				decisionValue01 = ParameterUtil.replaceSessionParameterValue(
-						sessionId, job.getFacilityId(), jobStartParamInfoEntity.getId().getStartDecisionValue01());
+						sessionId, decisionFacilityId, jobStartParamInfoEntity.getId().getStartDecisionValue01());
+				decisionValue01 = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, decisionValue01);
 				
 				// 判定値1が置換されているかどうか再度検証し、置換されていなければ次の判定処理まで待機
 				if (pattern.matcher(decisionValue01).find()) {
@@ -442,7 +534,8 @@ public class JobSessionJobImpl {
 			if(pattern.matcher(jobStartParamInfoEntity.getId().getStartDecisionValue02()).find()) {
 				// 判定値2の置換
 				decisionValue02 = ParameterUtil.replaceSessionParameterValue(
-						sessionId, job.getFacilityId(), jobStartParamInfoEntity.getId().getStartDecisionValue02());
+						sessionId, decisionFacilityId, jobStartParamInfoEntity.getId().getStartDecisionValue02());
+				decisionValue02 = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, decisionValue02);
 				
 				// 判定値2が置換されているかどうか再度検証し、置換されていなければ次の判定処理まで待機
 				if (pattern.matcher(decisionValue02).find()) {
@@ -568,23 +661,6 @@ public class JobSessionJobImpl {
 					+ ", value01 : "+ decisionValue01
 					+ ", value02 : "+ decisionValue02);
 		}
-
-		// 待ち条件に設定された変数が置換されていない場合は再実行日時を設定
-		if (!replaceCheck) {
-			boolean rerunflag = false;
-			// OR条件の場合
-			if (job.getConditionType() == ConditionTypeConstant.TYPE_OR) {
-				for (Boolean flag : jobResult) {
-					if(flag){
-						rerunflag = true;
-						break;
-					}
-				}
-			}
-			if (!rerunflag) {
-				addCheckDate(sessionId, HinemosTime.currentTimeMillis());
-			}
-		}
 		
 		// 待ち条件判定開始
 		if(statusCheck){
@@ -623,33 +699,35 @@ public class JobSessionJobImpl {
 				}
 			}
 
-			// 待ち条件時間のチェック
-			if(job.getConditionType() == ConditionTypeConstant.TYPE_AND){
-				// 待ち条件が「AND」の場合
-				//待ち条件ジョブ判定を満たしていたら、待ち条件時間をチェック
-				if(startCheck &&job.getStartTime() != null){
-					startCheck = checkWaitTime(startCheck,sessionId, job.getStartTime());
+			if (!skipTimeCondition) {
+				// 待ち条件時間のチェック
+				if(job.getConditionType() == ConditionTypeConstant.TYPE_AND){
+					// 待ち条件が「AND」の場合
+					//待ち条件ジョブ判定を満たしていたら、待ち条件時間をチェック
+					if(startCheck &&job.getStartTime() != null){
+						startCheck = checkWaitTime(startCheck,sessionId, job.getStartTime());
+					}
+				}else {
+					// 待ち条件が「OR」の場合
+					// 待ち条件ジョブ判定を満たしていない場合、待ち条件時間をチェック
+					if(!startCheck && job.getStartTime() != null){
+						startCheck = checkWaitTime(startCheck,sessionId, job.getStartTime());
+					}
 				}
-			}else {
-				// 待ち条件が「OR」の場合
-				// 待ち条件ジョブ判定を満たしていない場合、待ち条件時間をチェック
-				if(!startCheck && job.getStartTime() != null){
-					startCheck = checkWaitTime(startCheck,sessionId, job.getStartTime());
-				}
-			}
 
-			// 待ち条件－セッション開始時の時間（分）のチェック
-			if(job.getConditionType() == ConditionTypeConstant.TYPE_AND){
-				// 待ち条件が「AND」の場合
-				//待ち条件ジョブ判定を満たしていたら、待ち条件－セッション開始時の時間（分）をチェック
-				if(startCheck &&job.getStartMinute() != null){
-					startCheck = checkStartMinute(startCheck,sessionId, job.getStartMinute());
-				}
-			}else {
-				// 待ち条件が「OR」の場合
-				//待ち条件ジョブ判定を満たしていたら、待ち条件－セッション開始時の時間（分）をチェック
-				if(!startCheck && job.getStartMinute() != null){
-					startCheck = checkStartMinute(startCheck,sessionId, job.getStartMinute());
+				// 待ち条件－セッション開始時の時間（分）のチェック
+				if(job.getConditionType() == ConditionTypeConstant.TYPE_AND){
+					// 待ち条件が「AND」の場合
+					//待ち条件ジョブ判定を満たしていたら、待ち条件－セッション開始時の時間（分）をチェック
+					if(startCheck &&job.getStartMinute() != null){
+						startCheck = checkStartMinute(startCheck,sessionId, job.getStartMinute());
+					}
+				}else {
+					// 待ち条件が「OR」の場合
+					//待ち条件ジョブ判定を満たしていたら、待ち条件－セッション開始時の時間（分）をチェック
+					if(!startCheck && job.getStartMinute() != null){
+						startCheck = checkStartMinute(startCheck,sessionId, job.getStartMinute());
+					}
 				}
 			}
 		}
@@ -771,17 +849,19 @@ public class JobSessionJobImpl {
 	 * @return true=操作あり, false=操作なし
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
+	 * @return true: 遅延あり、false: 遅延なし
 	 */
-	private void checkStartDelayRecursive(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
+	private Boolean checkStartDelayRecursive(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
 		m_log.debug("checkStartDelayMain() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
 		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+		Boolean delayCheck = false;
 
 		//実行状態チェック
 		if(sessionJob.getStatus() == StatusConstant.TYPE_WAIT){
 			//開始遅延チェック
-			checkStartDelaySub(sessionId, jobunitId, jobId);
+			delayCheck = checkStartDelaySub(sessionId, jobunitId, jobId);
 		}
 
 		//セッションIDとジョブIDから、直下のジョブを取得
@@ -790,7 +870,7 @@ public class JobSessionJobImpl {
 
 		if (collection == null) {
 			m_log.trace("collection is null. " + sessionId + "," + jobunitId + "," + jobId);
-			return;
+			return delayCheck;
 		}
 		for (JobSessionJobEntity childSessionJob : collection) {
 			String childSessionId = childSessionJob.getId().getSessionId();
@@ -800,6 +880,7 @@ public class JobSessionJobImpl {
 			//開始遅延チェックメイン処理を行う（再帰呼び出し）
 			checkStartDelayRecursive(childSessionId, childJobUnitId, childJobId);
 		}
+		return delayCheck;
 	}
 
 	/**
@@ -811,7 +892,7 @@ public class JobSessionJobImpl {
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
 	 */
-	private void checkStartDelaySub(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
+	private Boolean checkStartDelaySub(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
 		m_log.debug("checkStartDelay() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
 		//セッションIDとジョブIDから、セッションジョブを取得
@@ -821,10 +902,12 @@ public class JobSessionJobImpl {
 		boolean delayCheck = true;
 
 		if(!job.getStartDelay().booleanValue()){
-			return;
+			return false;
 		}
 		//開始遅延が設定されている場合
 		Long sessionDate = null;
+		
+		StringBuilder reason = new StringBuilder();
 
 		if(job.getStartDelaySession().booleanValue()){
 			//セッション開始後の時間が設定されている場合
@@ -843,6 +926,9 @@ public class JobSessionJobImpl {
 			 */
 			if (!startDelayCheck) {
 				addCheckDate(sessionId, check);
+			}
+			if (startDelayCheck) {
+				reason.append(MessageConstant.TIME_AFTER_SESSION_START.getMessage()).append(" > ").append(job.getStartDelaySessionValue()).append("\n");
 			}
 			result.add(startDelayCheck);
 		}
@@ -878,6 +964,11 @@ public class JobSessionJobImpl {
 				 */
 				if (!startDelayCheck) {
 					addCheckDate(sessionId, startDelay);
+				}
+				if (startDelayCheck) {
+					SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.US);
+					sdf.setTimeZone(HinemosTime.getTimeZone());
+					reason.append(MessageConstant.TIMESTAMP.getMessage()).append(" > ").append(sdf.format(startDelay)).append("\n");
 				}
 				result.add(startDelayCheck);
 			}else{
@@ -924,7 +1015,7 @@ public class JobSessionJobImpl {
 					//通知済みフラグが「通知・操作なし」又は「終了遅延通知済み」の場合
 
 					//通知処理
-					new Notice().delayNotify(sessionId, jobunitId, jobId, true);
+					new Notice().delayNotify(sessionId, jobunitId, jobId, true, reason.toString());
 
 					if(notifyFlg == DelayNotifyConstant.NONE) {
 						sessionJob.setDelayNotifyFlg(DelayNotifyConstant.START);
@@ -951,6 +1042,7 @@ public class JobSessionJobImpl {
 				}
 			}
 		}
+		return delayCheck;
 	}
 
 	/**
@@ -975,6 +1067,9 @@ public class JobSessionJobImpl {
 
 		ArrayList<Boolean> result = new ArrayList<Boolean>();
 		boolean delayCheck = true;
+		
+		// 遅延と判定するのに満たされた条件
+		StringBuilder reason = new StringBuilder();
 
 		//終了遅延が設定されていない場合
 		if(!job.getEndDelay().booleanValue()){
@@ -1002,6 +1097,9 @@ public class JobSessionJobImpl {
 			if (!endDelayCheck) {
 				addCheckDate(sessionId, check);
 			}
+			if (endDelayCheck) {
+				reason.append(MessageConstant.TIME_AFTER_SESSION_START.getMessage()).append(" > ").append(job.getEndDelaySessionValue()).append("\n");
+			}
 			result.add(endDelayCheck);
 		}
 
@@ -1022,6 +1120,9 @@ public class JobSessionJobImpl {
 			 */
 			if (!endDelayCheck) {
 				addCheckDate(sessionId, check);
+			}
+			if (endDelayCheck) {
+				reason.append(MessageConstant.TIME_AFTER_JOB_START.getMessage()).append(" > ").append(job.getEndDelayJobValue()).append("\n");
 			}
 			result.add(endDelayCheck);
 		}
@@ -1058,6 +1159,95 @@ public class JobSessionJobImpl {
 				 */
 				if (!endDelayCheck) {
 					addCheckDate(sessionId, endDelay);
+				}
+				if (endDelayCheck) {
+					SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.US);
+					sdf.setTimeZone(HinemosTime.getTimeZone());
+					reason.append(MessageConstant.TIMESTAMP.getMessage()).append(" > ").append(sdf.format(endDelay)).append("\n");
+				}
+				result.add(endDelayCheck);
+			}else{
+				result.add(false);
+			}
+		}
+
+		if(job.getEndDelayChangeMount().booleanValue()){
+			//実行履歴からの変化量が設定されている場合
+			// 次回確認する時間
+			long check = HinemosTime.currentTimeMillis();
+			// 経過時間
+			Long sessionTime = check - sessionJob.getStartDate();
+			boolean endDelayCheck = false;
+			if(job.getEndDelayChangeMountValue() != null){
+				// 判定用データ取得
+				List<Double> jobSessionChangeList = JobSessionChangeDataCache.getJobSessionChangeDataDoubleList(sessionJob);
+				// 判定用データの最小件数
+				Long dataCount = HinemosPropertyCommon.job_end_delay_change_mount_lower_limit.getNumericValue();
+				if (jobSessionChangeList.size() < dataCount) {
+					// 判定対象のデータが最小件数より下回る場合は、終了遅延としない
+					m_log.debug("checkEndDelay():" + " sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId 
+							+ ": The number of data is insufficient. : dataCount=" + jobSessionChangeList.size());
+				} else {
+					// 判定情報の取得
+					Double average = null;
+					Double standardDeviation = null;
+					try {
+						average = OperatorCommonUtil.getAverage(jobSessionChangeList);
+						standardDeviation = OperatorCommonUtil.getStandardDeviation(jobSessionChangeList);
+					} catch (HinemosArithmeticException e) {
+						// 正常処理とする
+						m_log.warn("checkEndDelay():" + " sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + "\n" + e.getMessage());
+					} catch (HinemosIllegalArgumentException e) {
+						// 正常処理とする
+						m_log.info("checkEndDelay():" + " sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + "\n" + e.getMessage());					
+					}
+					m_log.debug("checkEndDelay():" + " sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId
+							+ "\n" + ", jobSessionChangeList=" + jobSessionChangeList + ", average=" + average + ", standardDeviation=" + standardDeviation
+							+ ", sigma=" + job.getEndDelayChangeMountValue());
+					if (average == null || standardDeviation == null) {
+						// 標準偏差がnullの場合は正常
+					} else if (standardDeviation.doubleValue() == 0D
+							&& sessionTime > average.doubleValue()) {
+						// 標準偏差=0の場合
+						// 値 > 平均値は遅延
+							endDelayCheck = true;
+							if (endDelayCheck) {
+								reason.append(MessageConstant.JOB_CHANGE_MOUNT.getMessage()).append(" > ");
+								reason.append((int)(average.doubleValue() / 1000 / 60));
+								reason.append("\n");
+							}
+					} else {
+						// 比較対象時間
+						Double checkTime = OperatorChangeUtil.getStandardDeviation(average, standardDeviation, job.getEndDelayChangeMountValue());
+						m_log.debug("checkEndDelay():" + " sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + "\n" 
+								+ ", average=" + average + ", standardDeviation=" + standardDeviation + ", sigma=" + job.getEndDelayChangeMountValue()
+								+ ", checkTime=" + checkTime + ", sessionTime=" + sessionTime);
+						if (checkTime != null) {
+							if (sessionTime.doubleValue() > checkTime) {
+								endDelayCheck = true;
+							} else {
+								check = sessionJob.getStartDate() + checkTime.longValue();
+							}
+						}
+						if (endDelayCheck) {
+							reason.append(MessageConstant.JOB_CHANGE_MOUNT.getMessage()).append(" > ");
+							reason.append((int)(checkTime / 1000 / 60));
+							reason.append("\n");
+						}
+					}
+				}
+				/*
+				 * 終了遅延(変化量)が実行されない場合は、
+				 * checkDateMapに追加する。
+				 */
+				m_log.debug("checkEndDelay():"
+						+ " sessionId=" + sessionId
+						+ ", jobunitId=" + jobunitId
+						+ ", jobId=" + jobId
+						+ "\n" 
+						+ ", endDelayCheck=" + endDelayCheck);
+				if (!endDelayCheck) {
+					addCheckDate(sessionId, check);
 				}
 				result.add(endDelayCheck);
 			}else{
@@ -1104,7 +1294,7 @@ public class JobSessionJobImpl {
 			if(notifyFlg == DelayNotifyConstant.NONE || notifyFlg == DelayNotifyConstant.START){
 				//通知済みフラグが「通知・操作なし」又は「開始遅延通知済み」の場合
 				//通知処理
-				new Notice().delayNotify(sessionId, jobunitId, jobId, false);
+				new Notice().delayNotify(sessionId, jobunitId, jobId, false, reason.toString());
 				if(notifyFlg == DelayNotifyConstant.NONE) {
 					sessionJob.setDelayNotifyFlg(DelayNotifyConstant.END);
 				} else if(notifyFlg == DelayNotifyConstant.START) {
@@ -1161,138 +1351,106 @@ public class JobSessionJobImpl {
 	 */
 	protected Integer checkEndStatus(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		m_log.debug("checkEndStatus() : sessionId=" + sessionId + ", jobId=" + jobId);
+			m_log.debug("checkEndStatus() : sessionId=" + sessionId + ", jobId=" + jobId);
 
-		//セッションIDとジョブIDから、セッションジョブを取得
-		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-		// ジョブ情報を取得
-		JobInfoEntity job = sessionJob.getJobInfoEntity();
+			//セッションIDとジョブIDから、セッションジョブを取得
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			// ジョブ情報を取得
+			JobInfoEntity job = sessionJob.getJobInfoEntity();
 
-		ArrayList<Integer> statusList = new ArrayList<Integer>();
+			ArrayList<Integer> statusList = new ArrayList<Integer>();
 
-		if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_JOB
-				|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB
-				|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB){
-			//ジョブの場合
+			if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_JOB
+					|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB
+					|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB){
+				//ジョブの場合
 
-			//セッションジョブからセッションノードを取得
-			Collection<JobSessionNodeEntity> collection = sessionJob.getJobSessionNodeEntities();
-			for (JobSessionNodeEntity sessionNode : sessionJob.getJobSessionNodeEntities()) {
+				//セッションジョブからセッションノードを取得
+				Collection<JobSessionNodeEntity> collection = sessionJob.getJobSessionNodeEntities();
+				for (JobSessionNodeEntity sessionNode : sessionJob.getJobSessionNodeEntities()) {
 
-				Integer endValue = sessionNode.getEndValue();
-				if(endValue == null){
-					continue;
-				}
-				Integer status = null;
-				if(endValue >= job.getNormalEndValueFrom()
-						&& endValue <= job.getNormalEndValueTo()){
-					//終了状態（正常）の範囲内ならば、正常とする
-					status = EndStatusConstant.TYPE_NORMAL;
-					statusList.add(status);
-				}else if(endValue >= job.getWarnEndValueFrom()
-						&& endValue <= job.getWarnEndValueTo()){
-					//終了状態（警告）の範囲内ならば、警告とする
-					status = EndStatusConstant.TYPE_WARNING;
-					statusList.add(status);
-				}else{
-					//終了状態（異常）の範囲内ならば、異常とする
-					status = EndStatusConstant.TYPE_ABNORMAL;
-					statusList.add(status);
-				}
-
-				//コマンドの実行が正常終了するまで順次リトライの場合
-				if(job.getProcessMode() == ProcessingMethodConstant.TYPE_RETRY &&
-						status == EndStatusConstant.TYPE_NORMAL){
-					statusList.clear();
-					statusList.add(EndStatusConstant.TYPE_NORMAL);
-					break;
-				}
-			}
-			//配下にセッションノードが存在しない場合
-			if(collection.size() == 0){
-				statusList.clear();
-				statusList.add(EndStatusConstant.TYPE_ABNORMAL);
-			}
-		}else{
-			//ジョブ以外の場合
-
-			Integer endStatusCheck = sessionJob.getEndStausCheckFlg();
-			if(endStatusCheck == null ||
-					endStatusCheck == EndStatusCheckConstant.NO_WAIT_JOB){
-				//待ち条件に指定されていないジョブのみで判定
-
-				//セッションIDとジョブIDの直下のジョブを取得
-				Collection<JobSessionJobEntity> collection = QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
-
-				for (JobSessionJobEntity childSessionJob : collection) {
-
-					//待ち条件に指定されているかチェック
-					Collection<JobStartJobInfoEntity> targetJobList = null;
-					targetJobList = em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
-							.setParameter("sessionId", sessionId)
-							.setParameter("targetJobId", childSessionJob.getId().getJobId())
-							.getResultList();
-
-					if(targetJobList.size() > 0){
+					Integer endValue = sessionNode.getEndValue();
+					if(endValue == null){
 						continue;
 					}
+					Integer status = JobSessionJobUtil.checkEndStatus(sessionJob, endValue);
+					statusList.add(status);
 
-					//待ち条件に指定されていないジョブ及びジョブネットを対象にする
-					Integer endValue = childSessionJob.getEndValue();
-					if(endValue >= job.getNormalEndValueFrom()
-							&& endValue <= job.getNormalEndValueTo()){
-						//終了状態（正常）の範囲内ならば、正常とする
+					//コマンドの実行が正常終了するまで順次リトライの場合
+					if(job.getProcessMode() == ProcessingMethodConstant.TYPE_RETRY &&
+							status == EndStatusConstant.TYPE_NORMAL){
+						statusList.clear();
 						statusList.add(EndStatusConstant.TYPE_NORMAL);
-					}else if(endValue >= job.getWarnEndValueFrom()
-							&& endValue <= job.getWarnEndValueTo()){
-						//終了状態（警告）の範囲内ならば、警告とする
-						statusList.add(EndStatusConstant.TYPE_WARNING);
-					}else{
-						//終了状態（異常）の範囲内ならば、異常とする
-						statusList.add(EndStatusConstant.TYPE_ABNORMAL);
+						break;
 					}
 				}
-				//配下にセッションジョブが存在しない場合
+				//配下にセッションノードが存在しない場合
 				if(collection.size() == 0){
 					statusList.clear();
 					statusList.add(EndStatusConstant.TYPE_ABNORMAL);
 				}
 			}else{
-				//全ジョブで判定
+				//ジョブ以外の場合
 
-				//セッションIDとジョブIDの直下のジョブを取得
-				Collection<JobSessionJobEntity> collection = QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
+				Integer endStatusCheck = sessionJob.getEndStausCheckFlg();
+				if(endStatusCheck == null ||
+						endStatusCheck == EndStatusCheckConstant.NO_WAIT_JOB){
+					//待ち条件に指定されていないジョブのみで判定
 
-				for (JobSessionJobEntity childSessionJob : collection) {
+					//セッションIDとジョブIDの直下のジョブを取得
+					Collection<JobSessionJobEntity> collection = QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
 
-					Integer endValue = childSessionJob.getEndValue();
-					if(endValue >= job.getNormalEndValueFrom()
-							&& endValue <= job.getNormalEndValueTo()){
-						//終了状態（正常）の範囲内ならば、正常とする
-						statusList.add(EndStatusConstant.TYPE_NORMAL);
-					}else if(endValue >= job.getWarnEndValueFrom()
-							&& endValue <= job.getWarnEndValueTo()){
-						//終了状態（警告）の範囲内ならば、警告とする
-						statusList.add(EndStatusConstant.TYPE_WARNING);
-					}else{
-						//終了状態（異常）の範囲内ならば、異常とする
+					for (JobSessionJobEntity childSessionJob : collection) {
+
+						//待ち条件に指定されているかチェック
+						Collection<JobStartJobInfoEntity> targetJobList = null;
+						targetJobList = em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
+								.setParameter("sessionId", sessionId)
+								.setParameter("targetJobId", childSessionJob.getId().getJobId())
+								.getResultList();
+
+						if(targetJobList.size() > 0){
+							continue;
+						}
+
+						//待ち条件に指定されていないジョブ及びジョブネットを対象にする
+						Integer endValue = childSessionJob.getEndValue();
+						Integer status = JobSessionJobUtil.checkEndStatus(sessionJob, endValue);
+						statusList.add(status);
+					}
+					//配下にセッションジョブが存在しない場合
+					if(collection.size() == 0){
+						statusList.clear();
+						statusList.add(EndStatusConstant.TYPE_ABNORMAL);
+					}
+				}else{
+					//全ジョブで判定
+
+					//セッションIDとジョブIDの直下のジョブを取得
+					Collection<JobSessionJobEntity> collection = QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
+
+					for (JobSessionJobEntity childSessionJob : collection) {
+
+						Integer endValue = childSessionJob.getEndValue();
+						Integer status = JobSessionJobUtil.checkEndStatus(sessionJob, endValue);
+						statusList.add(status);
+					}
+					//配下にセッションジョブが存在しない場合
+					if(collection.size() == 0){
+						statusList.clear();
 						statusList.add(EndStatusConstant.TYPE_ABNORMAL);
 					}
 				}
-				//配下にセッションジョブが存在しない場合
-				if(collection.size() == 0){
-					statusList.clear();
-					statusList.add(EndStatusConstant.TYPE_ABNORMAL);
-				}
 			}
+
+			//終了判定を行う。
+			Integer endStatus = EndJudgment.judgment(statusList);
+
+			return endStatus;
 		}
-
-		//終了判定を行う。
-		Integer endStatus = EndJudgment.judgment(statusList);
-
-		return endStatus;
 	}
 
 	/**
@@ -1393,6 +1551,10 @@ public class JobSessionJobImpl {
 		}
 		//終了日時を設定
 		sessionJob.setEndDate(HinemosTime.currentTimeMillis());
+		// ジョブ履歴用キャッシュ更新
+		JobSessionChangeDataCache.add(sessionJob);
+		// 収集データ更新
+		CollectDataUtil.put(sessionJob);
 		//結果を設定
 		sessionJob.setResult(result);
 
@@ -1415,78 +1577,207 @@ public class JobSessionJobImpl {
 	 */
 	protected void endJob(String sessionId, String jobunitId, String jobId, String result, boolean normalEndFlag)
 			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		m_log.info("endJob() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
-
-		////////// 状態遷移、通知 //////////
-		if (normalEndFlag){
-			//終了状態を判定し、終了状態と終了値を設定
-			Integer endStatus = checkEndStatus(sessionId, jobunitId, jobId);
-			//実行状態、終了状態、終了値、終了日時を設定
-			setEndStatus(sessionId, jobunitId, jobId, StatusConstant.TYPE_END, endStatus, null, result);
-		}
-
-		////////// 待ち条件の処理 //////////
-		// 終了ジョブ(endJobメソッドの引数)を待ち条件に指定しているジョブの処理
-		Collection<JobStartJobInfoEntity> collection;
-		collection = em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
-				.setParameter("sessionId", sessionId)
-				.setParameter("targetJobId", jobId)
-				.getResultList();
-		ArrayList<JobSessionJobEntity> list = new ArrayList<JobSessionJobEntity>();
-		for (JobStartJobInfoEntity startJob : collection) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			m_log.info("endJob() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 			//セッションIDとジョブIDから、セッションジョブを取得
-			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(
-					startJob.getId().getSessionId(),
-					startJob.getId().getJobunitId(),
-					startJob.getId().getJobId());
-			if (list.contains(sessionJob)) {
-				m_log.debug("duplicate " + sessionJob.getId().toString());
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+
+			////////// 状態遷移、通知 //////////
+			if (normalEndFlag){
+				//終了状態を判定し、終了状態と終了値を設定
+				Integer endStatus = checkEndStatus(sessionId, jobunitId, jobId);
+				//実行状態、終了状態、終了値、終了日時を設定
+				setEndStatus(sessionId, jobunitId, jobId, StatusConstant.TYPE_END, endStatus, null, result);
+			}
+
+			////////// 繰り返し実行を判定 //////////
+			Boolean jobRetryFlg = sessionJob.getJobInfoEntity().getJobRetryFlg();
+			if (jobRetryFlg != null && jobRetryFlg && JobSessionJobUtil.checkRetryContinueCondition(sessionJob)) {
+				//ジョブの状態等をリセットする
+				JobSessionJobUtil.resetJobStatusRecursive(sessionJob, false /* resetRunCount=false */);
+				//自身を再実行する
+				startJob(sessionJob.getId().getSessionId(), sessionJob.getId().getJobunitId(), sessionJob.getId().getJobId());
+				m_log.info("Retry job : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", runCount=" + sessionJob.getRunCount());
+				return;  //繰り返し実行する場合はここで終了し後続ジョブを実行しない
+			}
+
+			////////// 待ち条件の処理 //////////
+			// 終了ジョブ(endJobメソッドの引数)を待ち条件に指定しているジョブの処理
+			Collection<JobStartJobInfoEntity> collection;
+			collection = em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
+					.setParameter("sessionId", sessionId)
+					.setParameter("targetJobId", jobId)
+					.getResultList();
+			ArrayList<JobSessionJobEntity> targetJobList = new ArrayList<JobSessionJobEntity>();
+			for (JobStartJobInfoEntity startJob : collection) {
+				//セッションIDとジョブIDから、セッションジョブを取得
+				JobSessionJobEntity targetSessionJob = QueryUtil.getJobSessionJobPK(
+						startJob.getId().getSessionId(),
+						startJob.getId().getJobunitId(),
+						startJob.getId().getJobId());
+				if (targetJobList.contains(targetSessionJob)) {
+					m_log.debug("duplicate " + targetSessionJob.getId().toString());
+				} else {
+					targetJobList.add(targetSessionJob);
+				}
+			}
+			// 「後続ジョブは１つだけ実行する」フラグをチェック
+			JobInfoEntity currentJobInfo = sessionJob.getJobInfoEntity();
+			Boolean exclusiveBranchFlg = currentJobInfo.getExclusiveBranchFlg();
+			if (exclusiveBranchFlg == null || exclusiveBranchFlg == false) {
+				for (JobSessionJobEntity targetSessionJob : targetJobList) {
+					String startSessionId = targetSessionJob.getId().getSessionId();
+					String startJobUnitId = targetSessionJob.getId().getJobunitId();
+					String startJobId = targetSessionJob.getId().getJobId();
+					int status = targetSessionJob.getStatus();
+					if(status == StatusConstant.TYPE_WAIT || status == StatusConstant.TYPE_SKIP) {
+						//実行状態が待機の場合
+						//ジョブ開始処理を行う
+						startJob(startSessionId, startJobUnitId, startJobId);
+					}
+				}
 			} else {
-				list.add(sessionJob);
+				//後続ジョブを１つだけ実行する
+				m_log.info("ExclusiveBranch job: sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
+				// 先行ジョブに設定されている後続ジョブ実行優先度を取得する
+				List<JobNextJobOrderInfoEntity> jobNextJobOrderInfoEntities = QueryUtil.getJobNextJobOrderInfoEntityFindBySessionIdJobunitIdJobId(sessionId, jobunitId, jobId);
+				JobSessionJobEntity startJobSessionJob = selectExclusiveBranchJob(targetJobList, jobNextJobOrderInfoEntities);
+				Integer endStatus = currentJobInfo.getExclusiveBranchEndStatus(); 
+				Integer endValue = currentJobInfo.getExclusiveBranchEndValue(); 
+				doExclusiveBranch(startJobSessionJob, targetJobList, endStatus, endValue);
 			}
-		}
-		for (JobSessionJobEntity sessionJob : list) {
-			String startSessionId = sessionJob.getId().getSessionId();
-			String startJobUnitId = sessionJob.getId().getJobunitId();
-			String startJobId = sessionJob.getId().getJobId();
-			int status = sessionJob.getStatus();
-			if(status == StatusConstant.TYPE_WAIT || status == StatusConstant.TYPE_SKIP) {
-				//実行状態が待機の場合
-				//ジョブ開始処理を行う
-				startJob(startSessionId, startJobUnitId, startJobId);
-			}
-		}
 
-		////////// 親ジョブに対してendJob()を実行する。 //////////
-		//セッションIDとジョブIDから、セッションジョブを取得
-		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-		//親ジョブのジョブIDを取得
-		String parentJobunitId = null;
-		String parentJobId = null;
-		QueryUtil.getJobSessionJobPK(sessionId, sessionJob.getParentJobunitId(), sessionJob.getParentJobId());
-		parentJobunitId = sessionJob.getParentJobunitId();
-		parentJobId = sessionJob.getParentJobId();
-		//同一階層のジョブが全て完了したかチェック
-		boolean endAll = true;
-		for (JobSessionJobEntity sessionJob1 : QueryUtil.getChildJobSessionJob(sessionId, parentJobunitId, parentJobId)) {
-			//実行状態が終了または変更済以外の場合、同一階層のジョブは未完了
-			if(!StatusConstant.isEndGroup(sessionJob1.getStatus())){
-				endAll = false;
-				break;
+			////////// 親ジョブに対してendJob()を実行する。 //////////
+			//親ジョブのジョブIDを取得
+			String parentJobunitId = null;
+			String parentJobId = null;
+			QueryUtil.getJobSessionJobPK(sessionId, sessionJob.getParentJobunitId(), sessionJob.getParentJobId());
+			parentJobunitId = sessionJob.getParentJobunitId();
+			parentJobId = sessionJob.getParentJobId();
+			//同一階層のジョブが全て完了したかチェック
+			boolean endAll = true;
+			for (JobSessionJobEntity sessionJob1 : QueryUtil.getChildJobSessionJob(sessionId, parentJobunitId, parentJobId)) {
+				//実行状態が終了または変更済以外の場合、同一階層のジョブは未完了
+				if(!StatusConstant.isEndGroup(sessionJob1.getStatus())){
+					endAll = false;
+					break;
+				}
 			}
-		}
-		if(!endAll){
-			return;
-		}
-		//同一階層のジョブが全て完了の場合
-		if(!CreateJobSession.TOP_JOB_ID.equals(parentJobId)){
-			//セッションIDとジョブIDから、セッションジョブを取得
-			//ジョブ終了時関連処理（再帰呼び出し）
-			endJob(sessionId, parentJobunitId, parentJobId, null, true);
+			if(!endAll){
+				return;
+			}
+			//同一階層のジョブが全て完了の場合
+			if(!CreateJobSession.TOP_JOB_ID.equals(parentJobId)){
+				//セッションIDとジョブIDから、セッションジョブを取得
+				//ジョブ終了時関連処理（再帰呼び出し）
+				endJob(sessionId, parentJobunitId, parentJobId, null, true);
+			}
 		}
 	}
 
+	/**
+	 * 待機中の後続ジョブの中から優先度に従って排他分岐で実行すべきジョブを調べて返します。
+	 *
+	 * @param nextJobList 後続ジョブのJobSessionJobEntityのリスト
+	 * @param jobNextJobOrderInfoEntities 後続ジョブ優先度設定のリスト
+	 * @return 実行すべき待機中の後続ジョブ(対象のジョブが無い場合はnullを返す)
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws FacilityNotFound 
+	 */
+	private JobSessionJobEntity selectExclusiveBranchJob(List<JobSessionJobEntity> nextJobList, List<JobNextJobOrderInfoEntity> jobNextJobOrderInfoEntities)
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
+		//後続ジョブが存在しない場合はnullを返す
+		if (nextJobList.size() == 0) {
+			return null;
+		}
+		//ジョブユニット内の後続ジョブとその優先度のHashMap
+		HashMap<String, Integer> jobSessionJobPriorityMap = new HashMap<>();
+		for (JobNextJobOrderInfoEntity order: jobNextJobOrderInfoEntities) {
+			jobSessionJobPriorityMap.put(order.getId().getNextJobId(), order.getOrder());
+		}
+
+		//優先度が設定されていないジョブは優先度を最も低くする(MAX_VALUE)
+		Comparator<JobSessionJobEntity> tmpComparator = Comparator.comparing(
+			targetSessionJob -> jobSessionJobPriorityMap.getOrDefault(targetSessionJob.getId().getJobId(), Integer.MAX_VALUE));
+		//優先度が設定されていないジョブはJOB_IDの昇順の優先度とする
+		Comparator<JobSessionJobEntity> orderComparator = tmpComparator.thenComparing(
+			targetSessionJob -> targetSessionJob.getId().getJobId());
+		//後続ジョブを優先度順にソート
+		nextJobList.sort(orderComparator);
+
+		for (JobSessionJobEntity targetSessionJob : nextJobList) {
+			String startSessionId = targetSessionJob.getId().getSessionId();
+			String startJobunitId = targetSessionJob.getId().getJobunitId();
+			String startJobId = targetSessionJob.getId().getJobId();
+			
+			//既に後続ジョブが終了している場合は待ち条件判定を行わない
+			if (targetSessionJob.getStatus() == StatusConstant.TYPE_END) {
+				return targetSessionJob;
+			}
+
+			//排他分岐の条件判定では時刻とセッション開始後の時間の待ち条件は除外して判定を行う
+			if(checkWaitCondition(startSessionId, startJobunitId, startJobId, true /* skipTimeCondition=true */) &&
+				checkCalendar(startSessionId, startJobunitId, startJobId) &&
+				targetSessionJob.getStatus() == StatusConstant.TYPE_WAIT) {
+				//実行する後続ジョブを返す
+				return targetSessionJob;
+			}
+		}
+		//待ち条件を満たす後続ジョブがない場合、優先度の最も高いジョブを返す
+		//(優先度の最も高いジョブだけが将来実行されるようにする)
+		return nextJobList.get(0);
+	}
+	
+	/**
+	 * 排他分岐において後続ジョブから１つのジョブを実行し、その他のジョブは終了させます。
+	 *
+	 * @param startJobSessionJob 実行する後続ジョブ
+	 * @param nextJobList 後続ジョブのJobSessionJobEntityのリスト
+	 * @param endStatus 実行されなかった後続ジョブの終了状態
+	 * @param endValue 実行されなかった後続ジョブの終了値
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws FacilityNotFound 
+	 */
+	private void doExclusiveBranch(JobSessionJobEntity startJobSessionJob, List<JobSessionJobEntity> nextJobList, Integer endStatus, Integer endValue) 
+			throws JobInfoNotFound, HinemosUnknown, InvalidRole, FacilityNotFound {
+		//実行できる後続ジョブが無いときは何も行わない
+		if (startJobSessionJob == null) {
+			return;
+		}
+		String startSessionId = startJobSessionJob.getId().getSessionId();
+		String startJobunitId = startJobSessionJob.getId().getJobunitId();
+		String startJobId = startJobSessionJob.getId().getJobId();
+		//ジョブ開始処理を行う
+		startJob(startSessionId, startJobunitId, startJobId);
+		m_log.info("ExclusiveBranch next job started : sessionId=" + startSessionId + ", jobunitId=" + startJobunitId + ", jobId=" + startJobId);
+		//後続ジョブを１つ実行したらそれ以外のジョブを先行ジョブの設定基づいて終了させる
+		//実行しなかったジョブを終了させる
+		for(JobSessionJobEntity abort: nextJobList){
+			String abortSessionId = abort.getId().getSessionId();
+			String abortJobunitId = abort.getId().getJobunitId();
+			String abortJobId = abort.getId().getJobId();
+			if (abortSessionId.equals(startSessionId) &&
+				abortJobunitId.equals(startJobunitId) &&
+				abortJobId.equals(startJobId)) {
+				continue;
+			}
+			//カレンダによって終了状態が設定されたもの等は処理しない
+			if(abort.getStatus() != StatusConstant.TYPE_WAIT) {
+				continue;
+			}
+			setEndStatus(
+				abortSessionId, abortJobunitId, abortJobId,
+				StatusConstant.TYPE_END_EXCLUSIVE_BRANCH, endStatus, endValue, null
+			);
+			m_log.info("ExclusiveBranch next job aborted : sessionId=" + abortSessionId + ", jobunitId=" + abortJobunitId + ", jobId=" + abortJobId);
+		}
+	}
+	
 	/**
 	 * 入力された判定値をDoubleに変換し、比較結果を返却する。
 	 * @param value1 判定値1

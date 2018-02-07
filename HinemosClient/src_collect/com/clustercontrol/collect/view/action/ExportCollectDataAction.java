@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.collect.view.action;
 
 import java.util.ArrayList;
@@ -17,6 +25,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.clustercontrol.collect.dialog.ExportDialog;
 import com.clustercontrol.collect.util.CollectGraphUtil;
+import com.clustercontrol.collect.util.CollectGraphUtil.CollectFacilityDataInfo;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.collect.CollectKeyInfoPK;
 
@@ -68,16 +77,16 @@ public class ExportCollectDataAction extends AbstractHandler{
 		//(つまりグラフを一度表示させないとCSVがDLできない状態)
 		
 		//(マネージャ名＋#＋ファシリティID)、ファシリティ名のマップ
-		TreeMap<String, String> m_managerFacilityIdNameMap = CollectGraphUtil.getM_managerFacilityIdNameMap();
+		TreeMap<String, CollectFacilityDataInfo> m_managerFacilityDataInfoMap = CollectGraphUtil.getManagerFacilityDataInfoMap();
 		
 		//サマリタイプ
 		Integer m_summaryType = CollectGraphUtil.getSummaryType();
 		
 		// itemanmeとmonitorid
-		List<CollectKeyInfoPK> collectKeyInfoList = CollectGraphUtil.getM_collectKeyInfoList();
+		List<CollectKeyInfoPK> collectKeyInfoList = CollectGraphUtil.getCollectKeyInfoList();
 
 		// マネージャ名とmonitorIdとcollectIdのリスト
-		TreeMap<String, Map<String, List<Integer>>> m_targetItemCodeCollectMap = CollectGraphUtil.getM_managerMonitorCollectIdMap();
+		TreeMap<String, Map<String, List<Integer>>> m_targetItemCodeCollectMap = CollectGraphUtil.getManagerMonitorCollectIdMap();
 		if (m_targetItemCodeCollectMap != null && m_targetItemCodeCollectMap.size() > 1) {
 			m_log.debug("Download CSV multi manager not supported. size = " + m_targetItemCodeCollectMap.size());
 			MessageDialog.openError(
@@ -88,7 +97,7 @@ public class ExportCollectDataAction extends AbstractHandler{
 		}
 		
 		//マネージャ名、(ファシリティID、collectIDのリスト)のマップ(ItemCode混合)
-		TreeMap<String, TreeMap<String, List<Integer>>> m_targetManagerFacilityCollectMap = CollectGraphUtil.getM_targetManagerFacilityCollectMap();
+		TreeMap<String, TreeMap<String, List<Integer>>> m_targetManagerFacilityCollectMap = CollectGraphUtil.getTargetManagerFacilityCollectMap();
 		
 		// マネージャ名とファシリティIdのMapを作成
 		TreeMap<String, List<String>> managerFacilityIdMap = new TreeMap<String, List<String>>();
@@ -99,10 +108,10 @@ public class ExportCollectDataAction extends AbstractHandler{
 		
 		// エクスポート時はマネージャ情報とファシリティ情報と収集地項目情報のみ渡す
 		// それ以外(collectIDなど)は、マネージャ側で取り直す
-		if (!m_managerFacilityIdNameMap.isEmpty() || !m_targetItemCodeCollectMap.isEmpty() 
+		if (!m_managerFacilityDataInfoMap.isEmpty() || !m_targetItemCodeCollectMap.isEmpty() 
 				|| !m_targetManagerFacilityCollectMap.isEmpty() || m_summaryType == null || !collectKeyInfoList.isEmpty()) {
 			ExportDialog exportDialog = new ExportDialog(
-					this.viewPart.getSite().getShell(), m_managerFacilityIdNameMap, m_summaryType, 
+					this.viewPart.getSite().getShell(), m_managerFacilityDataInfoMap, m_summaryType, 
 					collectKeyInfoList, managerFacilityIdMap);
 			exportDialog.open();
 		} else {

@@ -1,0 +1,144 @@
+          PPP-IP-NCP-MIB DEFINITIONS ::= BEGIN
+
+          IMPORTS
+               Counter
+                    FROM RFC1155-SMI
+               ifIndex
+                    FROM RFC1213-MIB
+               OBJECT-TYPE
+                    FROM RFC-1212
+               ppp
+                    FROM PPP-LCP-MIB;
+
+
+               pppIp OBJECT IDENTIFIER ::= { ppp 3 }
+
+
+          pppIpTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppIpEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppIp 1 }
+
+
+          pppIpEntry   OBJECT-TYPE
+
+
+
+
+
+               SYNTAX    PppIpEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex }
+               ::= { pppIpTable 1 }
+
+
+          PppIpEntry ::= SEQUENCE {
+               pppIpOperStatus
+                    INTEGER,
+               pppIpLocalToRemoteCompressionProtocol
+                    INTEGER,
+               pppIpRemoteToLocalCompressionProtocol
+                    INTEGER,
+               pppIpRemoteMaxSlotId
+                    INTEGER,
+               pppIpLocalMaxSlotId
+                    INTEGER
+          }
+
+
+
+          pppIpOperStatus   OBJECT-TYPE
+               SYNTAX    INTEGER {opened(1), not-opened(2)}
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppIpEntry 1 }
+
+
+          pppIpLocalToRemoteCompressionProtocol   OBJECT-TYPE
+               SYNTAX    INTEGER {
+                         none(1),
+                         vj-tcp(2)
+                    }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppIpEntry 2 }
+
+
+          pppIpRemoteToLocalCompressionProtocol   OBJECT-TYPE
+               SYNTAX    INTEGER {
+                         none(1),
+                         vj-tcp(2)
+                    }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppIpEntry 3 }
+
+
+          pppIpRemoteMaxSlotId   OBJECT-TYPE
+               SYNTAX    INTEGER(0..255)
+               ACCESS    read-only
+               STATUS    mandatory
+
+
+
+
+
+               ::= { pppIpEntry 4 }
+
+
+          pppIpLocalMaxSlotId   OBJECT-TYPE
+               SYNTAX    INTEGER(0..255)
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppIpEntry 5 }
+
+
+
+          pppIpConfigTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppIpConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppIp 2 }
+
+
+          pppIpConfigEntry   OBJECT-TYPE
+               SYNTAX    PppIpConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex }
+               ::= { pppIpConfigTable 1 }
+
+
+          PppIpConfigEntry ::= SEQUENCE {
+               pppIpConfigAdminStatus
+                    INTEGER,
+               pppIpConfigCompression
+
+
+
+
+
+                    INTEGER
+          }
+
+          pppIpConfigAdminStatus   OBJECT-TYPE
+               SYNTAX    INTEGER {open(1), close(2)}
+               ACCESS    read-write
+               STATUS    mandatory
+               ::= { pppIpConfigEntry 1 }
+
+
+          pppIpConfigCompression   OBJECT-TYPE
+               SYNTAX    INTEGER {
+                         none(1),
+                         vj-tcp(2)
+                    }
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { none }
+               ::= { pppIpConfigEntry 2 }
+
+
+          END

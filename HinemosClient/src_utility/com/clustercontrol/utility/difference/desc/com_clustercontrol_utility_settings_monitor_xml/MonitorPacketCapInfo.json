@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"promiscuousMode",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_promiscuousMode"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_circle"}, {"value":"false", "name":"name_hyphen"}]}
+	]},
+	
+	{
+	"propName":"filterStr",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryInfo_filterStr"}
+	]}
+]
+}

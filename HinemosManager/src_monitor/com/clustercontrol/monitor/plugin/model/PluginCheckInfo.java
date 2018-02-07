@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.plugin.model;
 
 import java.io.Serializable;
@@ -79,14 +87,16 @@ public class PluginCheckInfo extends MonitorCheckInfo implements Serializable {
 	 * 
 	 */
 	public void deleteMonitorPluginNumericInfoEntities(List<MonitorPluginNumericInfoEntityPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MonitorPluginNumericInfo> list = this.getMonitorPluginNumericInfoList();
-		Iterator<MonitorPluginNumericInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			MonitorPluginNumericInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MonitorPluginNumericInfo> list = this.getMonitorPluginNumericInfoList();
+			Iterator<MonitorPluginNumericInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				MonitorPluginNumericInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -98,14 +108,16 @@ public class PluginCheckInfo extends MonitorCheckInfo implements Serializable {
 	 * 
 	 */
 	public void deleteMonitorPluginStringInfoEntities(List<MonitorPluginStringInfoEntityPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MonitorPluginStringInfo> list = this.getMonitorPluginStringInfoList();
-		Iterator<MonitorPluginStringInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			MonitorPluginStringInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MonitorPluginStringInfo> list = this.getMonitorPluginStringInfoList();
+			Iterator<MonitorPluginStringInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				MonitorPluginStringInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}

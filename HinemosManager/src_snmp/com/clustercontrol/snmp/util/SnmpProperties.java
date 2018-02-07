@@ -1,21 +1,14 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.snmp.util;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 
 /**
  * SNMP監視プロパティ情報を取得するクラス<BR>
@@ -49,7 +42,7 @@ public class SnmpProperties {
 	 * @return m_validSecond を戻します。
 	 */
 	public int getValidSecond() {
-		m_validSecond = HinemosPropertyUtil.getHinemosPropertyNum("monitor.snmp.valid.second", Long.valueOf(15)).intValue();
+		m_validSecond = HinemosPropertyCommon.monitor_snmp_valid_second.getIntegerValue();
 		return m_validSecond;
 	}
 }

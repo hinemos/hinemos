@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.bean;
@@ -39,6 +32,9 @@ public class MonitorTypeMessage {
 	/** シナリオ（文字列）。 */
 	public static final String STRING_SCENARIO = Messages.getString("scenario");
 	
+	/** バイナリ（文字列）。 */
+	public static final String STRING_BINARY = Messages.getString("binary");
+	
 	/**
 	 * 種別から文字列に変換します。
 	 * 
@@ -56,6 +52,8 @@ public class MonitorTypeMessage {
 			return STRING_TRAP;
 		} else if (type == MonitorTypeConstant.TYPE_SCENARIO) {
 			return STRING_SCENARIO;
+		} else if (type == MonitorTypeConstant.TYPE_BINARY) {
+			return STRING_BINARY;
 		}
 		return "";
 	}
@@ -77,6 +75,8 @@ public class MonitorTypeMessage {
 			return MonitorTypeConstant.TYPE_TRAP;
 		} else if (string.equals(STRING_SCENARIO)) {
 			return MonitorTypeConstant.TYPE_SCENARIO;
+		} else if (string.equals(STRING_BINARY)) {
+			return MonitorTypeConstant.TYPE_BINARY;
 		}
 		return -1;
 	}

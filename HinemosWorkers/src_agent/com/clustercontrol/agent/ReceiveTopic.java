@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.agent;
@@ -26,6 +19,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.agent.bean.TopicFlagConstant;
+import com.clustercontrol.agent.binary.BinaryMonitorManager;
 import com.clustercontrol.agent.custom.CommandCollector;
 import com.clustercontrol.agent.filecheck.FileCheckManager;
 import com.clustercontrol.agent.job.CheckSumThread;
@@ -42,6 +36,7 @@ import com.clustercontrol.agent.util.CollectorManager;
 import com.clustercontrol.agent.util.CommandMonitoringWSUtil;
 import com.clustercontrol.agent.winevent.WinEventMonitor;
 import com.clustercontrol.agent.winevent.WinEventMonitorManager;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.jobmanagement.bean.CommandConstant;
 import com.clustercontrol.jobmanagement.bean.CommandStopTypeConstant;
 import com.clustercontrol.jobmanagement.bean.CommandTypeConstant;
@@ -68,6 +63,8 @@ import com.clustercontrol.ws.monitor.MonitorInfo;
  * Topicへの接続と、メッセージの受信を行います。
  * 
  * Topicでマネージャからのジョブ実行指示を受け取ります。
+ * 
+ * @version 6.1.0 バイナリ監視対応
  */
 public class ReceiveTopic extends Thread {
 
@@ -149,6 +146,7 @@ public class ReceiveTopic extends Thread {
 		
 		// マネージャとの接続queueを設定
 		LogfileMonitorManager.setSendQueue(m_sendQueue);
+		BinaryMonitorManager.setSendQueue(m_sendQueue);
 		WinEventMonitorManager.setSendQueue(m_sendQueue);
 	}
 
@@ -249,6 +247,7 @@ public class ReceiveTopic extends Thread {
 				m_log.debug("run : disconnectCounter=" + disconnectCounter);
 				if (disconnectCounter != 0 || isReloadFlg()) {
 					reloadLogfileMonitor(updateInfo, true);
+					reloadBinaryMonitor(updateInfo, true);
 					reloadCustomMonitor(updateInfo, true);
 					reloadWinEventMonitor(updateInfo, true);
 					reloadJobFileCheck(updateInfo, true);
@@ -316,6 +315,7 @@ public class ReceiveTopic extends Thread {
 				}
 
 				reloadLogfileMonitor(updateInfo, false);
+				reloadBinaryMonitor(updateInfo, false);
 				reloadCustomMonitor(updateInfo, false);
 				reloadWinEventMonitor(updateInfo, false);
 				reloadJobFileCheck(updateInfo, false);
@@ -385,6 +385,30 @@ public class ReceiveTopic extends Thread {
 			if (settingLastUpdateInfo.getLogFileMonitorUpdateTime() == updateInfo.getLogFileMonitorUpdateTime()
 					&& settingLastUpdateInfo.getCalendarUpdateTime() == updateInfo.getCalendarUpdateTime()
 					&& settingLastUpdateInfo.getRepositoryUpdateTime() == updateInfo.getRepositoryUpdateTime()) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+	}
+
+	/**
+	 * バイナリ監視読込実施判定.
+	 * 
+	 * @return 読込実施の場合はtrue.
+	 */
+	private boolean isBinaryMonitorReload(SettingUpdateInfo updateInfo) {
+		if (updateInfo == null) {
+			// マネージャー更新情報が存在しない場合は実施対象外.
+			return false;
+		} else if (settingLastUpdateInfo == null) {
+			// マネージャーからの更新実施していない場合は実施対象.
+			return true;
+		} else {
+			if (settingLastUpdateInfo.getBinaryMonitorUpdateTime() == updateInfo.getBinaryMonitorUpdateTime()
+					&& settingLastUpdateInfo.getCalendarUpdateTime() == updateInfo.getCalendarUpdateTime()
+					&& settingLastUpdateInfo.getRepositoryUpdateTime() == updateInfo.getRepositoryUpdateTime()) {
+				// バイナリ監視・カレンダー・リポジトリの更新がされていない場合は実施対象外.
 				return false;
 			} else {
 				return true;
@@ -501,6 +525,90 @@ public class ReceiveTopic extends Thread {
 			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
 		}
 	}
+	
+	/**
+	 * バイナリ監視読込処理.
+	 */
+	private void reloadBinaryMonitor(SettingUpdateInfo updateInfo, boolean force) {
+		// バイナリ監視読込判定.
+		if (!isBinaryMonitorReload(updateInfo) && !force) {
+			return;
+		}
+		m_log.info("reloading configuration of binary monitoring...");
+		try {
+			// 監視ジョブ以外(監視設定一覧から設定した監視).
+			ArrayList<MonitorInfo> list = AgentBinaryEndPointWrapper.getMonitorBinary();
+			for (MonitorInfo info : list) {
+				String monitorTypeId = info.getMonitorTypeId();
+				if (HinemosModuleConstant.MONITOR_BINARYFILE_BIN.equals(monitorTypeId)) {
+					// バイナリファイル監視の場合.
+					m_log.info("binaryfile: " + "monitorId=" + info.getMonitorId() + ", collectType="
+							+ info.getBinaryCheckInfo().getCollectType() + ", directory="
+							+ info.getBinaryCheckInfo().getDirectory() + ", filename="
+							+ info.getBinaryCheckInfo().getFileName() + ", monitorFlg=" + info.isMonitorFlg()
+							+ ", collectorFlg=" + info.isCollectorFlg());
+				} else if (HinemosModuleConstant.MONITOR_PCAP_BIN.equals(monitorTypeId)) {
+					// パケットキャプチャ監視の場合.
+					m_log.info("packetcapture: " + "monitorId=" + info.getMonitorId() + ", filter="
+							+ info.getPacketCheckInfo().getFilterStr() + ", promiscuousMode="
+							+ info.getPacketCheckInfo().isPromiscuousMode() + ", monitorFlg=" + info.isMonitorFlg()
+							+ ", collectorFlg=" + info.isCollectorFlg());
+				} else {
+					// 想定外の監視種別ID.
+					m_log.warn("invalid type id of binary monitor: " + "monitorTypeId=" + info.getMonitorTypeId()
+							+ ", monitorId=" + info.getMonitorId() + ", monitorFlg=" + info.isMonitorFlg()
+							+ ", collectorFlg=" + info.isCollectorFlg());
+					continue;
+				}
+			}
+
+			// 監視ジョブ
+			HashMapInfo binFileHashMapInfo = AgentBinaryEndPointWrapper.getMonitorJobBinaryFile();
+			HashMapInfo pcapHashMapInfo = AgentBinaryEndPointWrapper.getMonitorJobPcap();
+			Map8 binFileMap = binFileHashMapInfo.getMap8();
+			Map8 pcapMap = pcapHashMapInfo.getMap8();
+			HashMap<RunInstructionInfo, MonitorInfo> rtnMap = new HashMap<RunInstructionInfo, MonitorInfo>();
+			for (Map8.Entry entry : binFileMap.getEntry()) {
+				// バイナリファイル監視ジョブ.
+				m_log.info("binaryfile: " + "directory=" + entry.getValue().getBinaryCheckInfo().getDirectory()
+						+ ", filename=" + entry.getValue().getBinaryCheckInfo().getFileName() + ", collectType="
+						+ entry.getValue().getBinaryCheckInfo().getCollectType() + ", sessionId="
+						+ entry.getKey().getSessionId() + ", jobunitId=" + entry.getKey().getJobunitId() + ", jobId="
+						+ entry.getKey().getJobId() + ", facilityId=" + entry.getKey().getFacilityId() + ", monitorId="
+						+ entry.getValue().getMonitorId() + ", monitorFlg=" + entry.getValue().isMonitorFlg());
+				rtnMap.put(entry.getKey(), entry.getValue());
+			}
+			for (Map8.Entry entry : pcapMap.getEntry()) {
+				// パケットキャプチャ監視ジョブ.
+				m_log.info("packetcapture: " + "filter=" + entry.getValue().getPacketCheckInfo().getFilterStr()
+						+ ", promiscuousMode=" + entry.getValue().getPacketCheckInfo().isPromiscuousMode()
+						+ ", sessionId=" + entry.getKey().getSessionId() + ", jobunitId="
+						+ entry.getKey().getJobunitId() + ", jobId=" + entry.getKey().getJobId() + ", facilityId="
+						+ entry.getKey().getFacilityId() + ", monitorId=" + entry.getValue().getMonitorId()
+						+ ", monitorFlg=" + entry.getValue().isMonitorFlg());
+				rtnMap.put(entry.getKey(), entry.getValue());
+			}
+
+			BinaryMonitorManager.pushMonitorInfoList(list, rtnMap);
+
+		} catch (com.clustercontrol.ws.agentbinary.HinemosUnknown_Exception e) {
+			m_log.error(e, e);
+		} catch (HinemosUnknown_Exception e) {
+			m_log.error(e, e);
+		} catch (com.clustercontrol.ws.agentbinary.InvalidRole_Exception e) {
+			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+		} catch (InvalidRole_Exception e) {
+			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+		} catch (com.clustercontrol.ws.agentbinary.InvalidUserPass_Exception e) {
+			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+		} catch (InvalidUserPass_Exception e) {
+			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+		} catch (com.clustercontrol.ws.agentbinary.MonitorNotFound_Exception e) {
+			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+		} catch (MonitorNotFound_Exception e) {
+			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+		}
+	}
 
 	private void reloadWinEventMonitor (SettingUpdateInfo updateInfo, boolean force) {
 		if (!isWinEventMonitorReload(updateInfo) && !force) {
@@ -534,7 +642,7 @@ public class ReceiveTopic extends Thread {
 				
 				// register needed bookmark file
 				for(String logName : info.getWinEventCheckInfo().getLogName()) {
-					necessaryBookmarkFileList.add(WinEventMonitor.PREFIX + info.getMonitorId() + "-" + logName.replaceAll(WinEventMonitor.INVALID_FILE_CHARACTER, "") + WinEventMonitor.POSTFIX_BOOKMARK + ".xml");
+					necessaryBookmarkFileList.add(WinEventMonitor.PREFIX + info.getMonitorId() + "-" + WinEventMonitor.logNameReplaceCharacter(logName) + WinEventMonitor.POSTFIX_BOOKMARK + ".xml");
 				}
 			}
 
@@ -561,7 +669,7 @@ public class ReceiveTopic extends Thread {
 
 				// register needed bookmark file
 				for(String logName : entry.getValue().getWinEventCheckInfo().getLogName()) {
-					necessaryBookmarkFileList.add(WinEventMonitor.PREFIX + mapKey + "-" + logName.replaceAll(WinEventMonitor.INVALID_FILE_CHARACTER, "") + WinEventMonitor.POSTFIX_BOOKMARK + ".xml");
+					necessaryBookmarkFileList.add(WinEventMonitor.PREFIX + mapKey + "-" + WinEventMonitor.logNameReplaceCharacter(logName) + WinEventMonitor.POSTFIX_BOOKMARK + ".xml");
 				}
 			}
 			m_log.debug("windows event monitoring list size (monitoring job) : " + rtnMap.size());

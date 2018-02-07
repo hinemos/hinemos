@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"DiskList_funcName"}
+],
+"props":[
+	{
+	"propName":"DiskInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

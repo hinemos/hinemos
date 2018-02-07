@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) since 2009 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.performance.factory;
@@ -57,10 +50,9 @@ public class OperateCollectItemCalcMethodMaster {
 	 */
 	public boolean add(CollectorItemCalcMethodMstData data) throws EntityExistsException, CollectorNotFound, FacilityNotFound {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
 		// 収集毎の計算方法情報の追加
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			CollectorCalcMethodMstEntity collectorCalcMethodMstEntity = null;
 			try {
 				collectorCalcMethodMstEntity = QueryUtil.getCollectorCalcMethodMstPK(data.getCalcMethod());
@@ -77,10 +69,14 @@ public class OperateCollectItemCalcMethodMaster {
 					collectorPlatformMstEntity,
 					collectorItemCodeMstEntity,
 					data.getCollectMethod(),
-					data.getSubPlatformId(),
-					collectorCalcMethodMstEntity);
+					data.getSubPlatformId());
 			// 重複チェック
 			jtm.checkEntityExists(CollectorItemCalcMethodMstEntity.class, entity.getId());
+			// 登録
+			em.persist(entity);
+			entity.relateToCollectorCalcMethodMstEntity(collectorCalcMethodMstEntity);
+			entity.relateToCollectorItemCodeMstEntity(collectorItemCodeMstEntity);
+			entity.relateToCollectorPlatformMstEntity(collectorPlatformMstEntity);
 		} catch (EntityExistsException e) {
 			m_log.info("add() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -104,19 +100,21 @@ public class OperateCollectItemCalcMethodMaster {
 	 */
 	public boolean delete(CollectorItemCalcMethodMstPK pk) throws CollectorNotFound {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		CollectorItemCalcMethodMstEntity entity
-		= QueryUtil.getCollectorItemCalcMethodMstPK(
-				pk.getCollectMethod(),
-				pk.getPlatformId(),
-				pk.getSubPlatformId(),
-				pk.getItemCode());
-		// pkが同じデータが登録されている場合は、削除する
-		entity.unchain();	// 削除前処理
-		em.remove(entity);
+			CollectorItemCalcMethodMstEntity entity
+			= QueryUtil.getCollectorItemCalcMethodMstPK(
+					pk.getCollectMethod(),
+					pk.getPlatformId(),
+					pk.getSubPlatformId(),
+					pk.getItemCode());
+			// pkが同じデータが登録されている場合は、削除する
+			entity.unchain();	// 削除前処理
+			em.remove(entity);
 
-		return true;
+			return true;
+		}
 	}
 
 	/**
@@ -124,17 +122,19 @@ public class OperateCollectItemCalcMethodMaster {
 	 */
 	public boolean deleteAll() {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		List<CollectorItemCalcMethodMstEntity> col
-		= QueryUtil.getAllCollectorItemCalcMethodMst();
-		for (CollectorItemCalcMethodMstEntity entity : col) {
-			// 削除処理
-			entity.unchain();	// 削除前処理
-			em.remove(entity);
+			List<CollectorItemCalcMethodMstEntity> col
+			= QueryUtil.getAllCollectorItemCalcMethodMst();
+			for (CollectorItemCalcMethodMstEntity entity : col) {
+				// 削除処理
+				entity.unchain();	// 削除前処理
+				em.remove(entity);
+			}
+
+			return true;
 		}
-
-		return true;
 	}
 
 	/**

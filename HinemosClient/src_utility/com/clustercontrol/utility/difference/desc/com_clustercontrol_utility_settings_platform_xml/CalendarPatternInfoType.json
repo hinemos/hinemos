@@ -1,0 +1,31 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"calendarPatternId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"calendarPatternName",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarPatternInfoType_calendarPatternName"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarPatternInfoType_ownerRoleId"}
+	]},
+
+	{
+	"propName":"calendarPatternDetailInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"calendarPatternDetailInfo"},
+		{"type":"Array", "idType":"props", "props":["yearNo", "monthNo", "dayNo"]}
+	]}
+]
+}

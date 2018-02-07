@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.factory;
@@ -24,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
@@ -96,12 +90,13 @@ public class NodeProperty {
 	public static void updateNode (String facilityId) {
 		m_log.info("update NodeCache : " + facilityId);
 		
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			_lock.writeLock();
 			
 			ConcurrentHashMap<String, NodeInfo> cache = getCache();
 			try {
-				new JpaTransactionManager().getEntityManager().clear();
+				em.clear();
 				NodeInfo facilityEntity = QueryUtil.getNodePK(facilityId);
 				cache.put(facilityId, facilityEntity);
 			} catch (Exception e) {
@@ -116,13 +111,12 @@ public class NodeProperty {
 	}
 
 	public static void init() {
-		JpaTransactionManager jtm = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			_lock.writeLock();
 			
 			long startTime = System.currentTimeMillis();
-			jtm = new JpaTransactionManager();
-			jtm.getEntityManager().clear();
+			em.clear();
 			
 			ConcurrentHashMap<String, NodeInfo> cache = new ConcurrentHashMap<String, NodeInfo>();
 			
@@ -134,9 +128,6 @@ public class NodeProperty {
 			
 			m_log.info("init cache " + (System.currentTimeMillis() - startTime) + "ms. size=" + cache.size());
 		} finally {
-			if(jtm != null) {
-				jtm.close();
-			}
 			_lock.writeUnlock();
 		}
 	}

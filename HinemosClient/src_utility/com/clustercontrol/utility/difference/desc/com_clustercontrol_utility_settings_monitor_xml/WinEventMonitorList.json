@@ -1,0 +1,37 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"WinEventMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"WinEventInfo.LevelCritical",
+			"WinEventInfo.LevelWarning",
+			"WinEventInfo.LevelVerbose",
+			"WinEventInfo.LevelError",
+			"WinEventInfo.LevelInformational",
+			"WinEventInfo.Log",
+			"WinEventInfo.Source",
+			"WinEventInfo.EventId",
+			"WinEventInfo.Category",
+			"WinEventInfo.Keyword",
+			"Monitor.MonitorFlg",
+			"TruthValue.*.Priority",
+			"Monitor.Application"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"WinEventMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

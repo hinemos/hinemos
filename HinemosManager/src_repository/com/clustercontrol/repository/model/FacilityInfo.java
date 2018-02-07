@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.repository.model;
 
 import javax.persistence.AttributeOverride;
@@ -5,8 +13,8 @@ import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.DiscriminatorColumn;
 import javax.persistence.DiscriminatorType;
+import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
-import javax.persistence.EntityManager;
 import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
@@ -16,7 +24,6 @@ import javax.persistence.Transient;
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.factory.FacilitySelector;
 import com.clustercontrol.util.HinemosTime;
@@ -33,10 +40,11 @@ import com.clustercontrol.util.HinemosTime;
 @HinemosObjectPrivilege(
 		objectType=HinemosModuleConstant.PLATFORM_REPOSITORY,
 		isModifyCheck=true)
-@DiscriminatorColumn(name="facility_type" , discriminatorType=DiscriminatorType.INTEGER)
+@DiscriminatorColumn(name="facility_type", discriminatorType=DiscriminatorType.INTEGER)
+@DiscriminatorValue(value="2")
 @Inheritance(strategy=InheritanceType.JOINED)
 @AttributeOverride(name="objectId",
-column=@Column(name="facility_id", insertable=false, updatable=false))
+		column=@Column(name="facility_id", insertable=false, updatable=false))
 public class FacilityInfo extends ObjectPrivilegeTargetInfo implements Cloneable {
 	private static final long serialVersionUID = 1L;
 	private String facilityId = "";
@@ -220,11 +228,6 @@ public class FacilityInfo extends ObjectPrivilegeTargetInfo implements Cloneable
 	}
 	
 	public void persistSelf() {
-		persistSelf(new JpaTransactionManager().getEntityManager());
-	}
-	
-	public void persistSelf(EntityManager em) {
 		preparePersisting();
-		em.persist(this);
 	}
 }

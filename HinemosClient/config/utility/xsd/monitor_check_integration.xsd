@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:annotation>
+		<xs:documentation>収集値統合監視設定情報です。</xs:documentation>
+	</xs:annotation>
+	<xs:include schemaLocation="part_monitor_master.xsd" />
+	<xs:include schemaLocation="part_monitor_check.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="I">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="integrationMonitors" type="IntegrationMonitorList">
+		<xs:annotation>
+			<xs:documentation>収集値統合監視設定情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="IntegrationMonitorList">
+		<xs:annotation>
+			<xs:documentation>収集値統合監視設定情報のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="integrationMonitor" type="MonitorIntegration" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>収集値統合監視設定です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="integration" type="MonitorIntegration" />
+	<xs:complexType name="MonitorIntegration">
+		<xs:annotation>
+			<xs:documentation>収集値統合監視の１設定分です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="monitor" type="MonitorInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視設定情報（共通）です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="integrationInfo" type="MonitorIntegrationInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定情報（収集値統合監視固有部分）です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="truthValue" type="MonitorTruthValueInfo" minOccurs="2" maxOccurs="2">
+				<xs:annotation>
+					<xs:documentation>真偽値判定情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="MonitorIntegrationInfo">
+		<xs:annotation>
+			<xs:documentation>収集値統合設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="MonitorCheckInfo">
+				<xs:sequence>
+					<xs:element name="timeout" type="xs:int" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								タイムアウト値です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="notOrder" type="xs:boolean" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								収集の順序を考慮するかのフラグです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="messageOk" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								条件が全てOKだった場合に出力するメッセージです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="messageNg" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								判定条件にNGが含まれていた場合に出力するメッセージです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="conditionValue" type="MonitorIntegrationConditionInfo" minOccurs="0" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>
+								判定対象と条件のリストです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="MonitorIntegrationConditionInfo">
+		<xs:annotation>
+			<xs:documentation>収集値統合監視の判定条件の情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="orderNo" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定条件の順序です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorNode" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視対象が監視設定で指定されているスコープと同じかどうかのフラグです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="targetFacilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定する対象のファシリティIDです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="targetMonitorId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定する対象の監視項目IDです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="targetMonitorType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視の種別です。
+						{真偽値監視=0,数値監視=1,文字列監視=2,トラップ監視=3,シナリオ監視=4,バイナリ監視=5}の内、
+						数値監視、文字列監視が指定できます。(監視設定の作成時には使用しません)
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="targetItemName" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定対象の収集項目名です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="targetDisplayName" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定対象のデバイス名です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="comparisonMethod" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定方法です。
+						{
+						&gt;,
+						&gt;=,
+						&lt;,
+						&lt;=,
+						=
+						}の中から指定します。
+						文字列の収集値においては{=}のみ指定可能です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="comparisonValue" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定値です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="isAnd" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>文字列の収集値における判定値に対し、全一致かどうかのスイッチです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

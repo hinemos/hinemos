@@ -1,0 +1,939 @@
+POLICY-BASED-MANAGEMENT-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+    Counter32, Gauge32, Unsigned32,
+    mib-2                                       FROM SNMPv2-SMI
+    RowStatus, RowPointer, TEXTUAL-CONVENTION,
+    DateAndTime, StorageType                    FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP                          FROM SNMPv2-CONF
+    SnmpAdminString                             FROM SNMP-FRAMEWORK-MIB;
+
+
+pmMib MODULE-IDENTITY
+    LAST-UPDATED "200502070000Z"  -- February 7, 2005
+    ORGANIZATION "IETF SNMP Configuration Working Group"
+
+    ::= { mib-2 124 }
+
+
+
+
+
+
+
+PmUTF8String ::= TEXTUAL-CONVENTION
+    STATUS       current
+       SYNTAX       OCTET STRING (SIZE (0..65535))
+
+
+pmPolicyTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmPolicyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmMib 1 }
+
+pmPolicyEntry OBJECT-TYPE
+    SYNTAX      PmPolicyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { pmPolicyAdminGroup, pmPolicyIndex }
+    ::= { pmPolicyTable 1 }
+
+PmPolicyEntry ::= SEQUENCE {
+    pmPolicyAdminGroup            PmUTF8String,
+    pmPolicyIndex                 Unsigned32,
+    pmPolicyPrecedenceGroup       PmUTF8String,
+    pmPolicyPrecedence            Unsigned32,
+    pmPolicySchedule              Unsigned32,
+    pmPolicyElementTypeFilter     PmUTF8String,
+    pmPolicyConditionScriptIndex  Unsigned32,
+    pmPolicyActionScriptIndex     Unsigned32,
+    pmPolicyParameters            OCTET STRING,
+    pmPolicyConditionMaxLatency   Unsigned32,
+    pmPolicyActionMaxLatency      Unsigned32,
+    pmPolicyMaxIterations         Unsigned32,
+    pmPolicyDescription           PmUTF8String,
+    pmPolicyMatches               Gauge32,
+    pmPolicyAbnormalTerminations  Gauge32,
+    pmPolicyExecutionErrors       Counter32,
+    pmPolicyDebugging             INTEGER,
+    pmPolicyAdminStatus           INTEGER,
+    pmPolicyStorageType           StorageType,
+    pmPolicyRowStatus             RowStatus
+
+
+
+
+
+}
+
+pmPolicyAdminGroup OBJECT-TYPE
+    SYNTAX      PmUTF8String (SIZE(0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmPolicyEntry 1 }
+
+pmPolicyIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmPolicyEntry 2 }
+
+pmPolicyPrecedenceGroup OBJECT-TYPE
+    SYNTAX      PmUTF8String (SIZE (0..32))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 3 }
+
+pmPolicyPrecedence OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    ::= { pmPolicyEntry 4 }
+
+pmPolicySchedule OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 5 }
+
+
+
+
+
+pmPolicyElementTypeFilter OBJECT-TYPE
+    SYNTAX      PmUTF8String (SIZE (0..128))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 6 }
+
+pmPolicyConditionScriptIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pmPolicyEntry 7 }
+
+pmPolicyActionScriptIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  read-only
+    STATUS      current
+
+
+
+
+
+    ::= { pmPolicyEntry 8 }
+
+pmPolicyParameters OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (0..65535))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 9 }
+
+pmPolicyConditionMaxLatency OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..2147483647)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 10 }
+
+pmPolicyActionMaxLatency OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..2147483647)
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 11 }
+
+pmPolicyMaxIterations OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 12 }
+
+pmPolicyDescription OBJECT-TYPE
+    SYNTAX      PmUTF8String
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 13 }
+
+pmPolicyMatches OBJECT-TYPE
+    SYNTAX      Gauge32
+
+
+
+
+
+    UNITS       "elements"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pmPolicyEntry 14 }
+
+pmPolicyAbnormalTerminations OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS       "elements"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pmPolicyEntry 15 }
+
+pmPolicyExecutionErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "errors"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pmPolicyEntry 16 }
+
+pmPolicyDebugging OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    off(1),
+                    on(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { off }
+    ::= { pmPolicyEntry 17 }
+
+
+
+
+
+
+pmPolicyAdminStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    disabled(1),
+                    enabled(2),
+                    enabledAutoRemove(3)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 18 }
+
+pmPolicyStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 19 }
+
+pmPolicyRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyEntry 20 }
+
+
+pmPolicyCodeTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmPolicyCodeEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmMib 2 }
+
+pmPolicyCodeEntry OBJECT-TYPE
+    SYNTAX      PmPolicyCodeEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { pmPolicyAdminGroup, pmPolicyCodeScriptIndex,
+            pmPolicyCodeSegment }
+    ::= { pmPolicyCodeTable 1 }
+
+PmPolicyCodeEntry ::= SEQUENCE {
+    pmPolicyCodeScriptIndex    Unsigned32,
+    pmPolicyCodeSegment        Unsigned32,
+    pmPolicyCodeText           PmUTF8String,
+    pmPolicyCodeStatus         RowStatus
+
+
+
+
+
+}
+
+pmPolicyCodeScriptIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmPolicyCodeEntry 1 }
+
+pmPolicyCodeSegment OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmPolicyCodeEntry 2 }
+
+pmPolicyCodeText OBJECT-TYPE
+    SYNTAX      PmUTF8String (SIZE (1..1024))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyCodeEntry 3 }
+
+
+
+
+
+
+pmPolicyCodeStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmPolicyCodeEntry 4 }
+
+
+pmElementTypeRegTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmElementTypeRegEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmMib 3 }
+
+pmElementTypeRegEntry OBJECT-TYPE
+    SYNTAX      PmElementTypeRegEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { pmElementTypeRegOIDPrefix }
+    ::= { pmElementTypeRegTable 1 }
+
+PmElementTypeRegEntry ::= SEQUENCE {
+    pmElementTypeRegOIDPrefix     OBJECT IDENTIFIER,
+    pmElementTypeRegMaxLatency    Unsigned32,
+    pmElementTypeRegDescription   PmUTF8String,
+    pmElementTypeRegStorageType   StorageType,
+    pmElementTypeRegRowStatus     RowStatus
+}
+
+pmElementTypeRegOIDPrefix OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmElementTypeRegEntry 2 }
+
+
+
+
+
+
+
+pmElementTypeRegMaxLatency OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmElementTypeRegEntry 3 }
+
+pmElementTypeRegDescription OBJECT-TYPE
+    SYNTAX      PmUTF8String (SIZE (0..64))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmElementTypeRegEntry 4 }
+
+pmElementTypeRegStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmElementTypeRegEntry 5 }
+
+pmElementTypeRegRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmElementTypeRegEntry 6 }
+
+
+
+
+
+
+pmRoleTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmRoleEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmMib 4 }
+
+
+
+
+
+
+
+pmRoleEntry OBJECT-TYPE
+    SYNTAX      PmRoleEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { pmRoleElement, pmRoleContextName,
+                  pmRoleContextEngineID, pmRoleString }
+    ::= { pmRoleTable 1 }
+
+PmRoleEntry ::= SEQUENCE {
+    pmRoleElement          RowPointer,
+    pmRoleContextName      SnmpAdminString,
+    pmRoleContextEngineID  OCTET STRING,
+    pmRoleString           PmUTF8String,
+    pmRoleStatus           RowStatus
+}
+
+pmRoleElement OBJECT-TYPE
+    SYNTAX      RowPointer
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmRoleEntry 1 }
+
+
+
+
+
+
+
+
+pmRoleContextName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmRoleEntry 2 }
+
+pmRoleContextEngineID OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (0 | 5..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmRoleEntry 3 }
+
+pmRoleString OBJECT-TYPE
+    SYNTAX      PmUTF8String (SIZE (0..64))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmRoleEntry 4 }
+
+pmRoleStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmRoleEntry 5 }
+
+
+pmCapabilitiesTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmCapabilitiesEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmMib 5 }
+
+pmCapabilitiesEntry OBJECT-TYPE
+    SYNTAX      PmCapabilitiesEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { pmCapabilitiesType }
+    ::= { pmCapabilitiesTable 1 }
+
+PmCapabilitiesEntry ::= SEQUENCE {
+    pmCapabilitiesType               OBJECT IDENTIFIER
+}
+
+pmCapabilitiesType OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pmCapabilitiesEntry 1 }
+
+
+pmCapabilitiesOverrideTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmCapabilitiesOverrideEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmMib 6 }
+
+pmCapabilitiesOverrideEntry OBJECT-TYPE
+    SYNTAX      PmCapabilitiesOverrideEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { pmCapabilitiesOverrideType }
+    ::= { pmCapabilitiesOverrideTable 1 }
+
+PmCapabilitiesOverrideEntry ::= SEQUENCE {
+    pmCapabilitiesOverrideType               OBJECT IDENTIFIER,
+    pmCapabilitiesOverrideState              INTEGER,
+    pmCapabilitiesOverrideRowStatus          RowStatus
+}
+
+pmCapabilitiesOverrideType OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmCapabilitiesOverrideEntry 1 }
+
+pmCapabilitiesOverrideState OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    invalid(1),
+                    valid(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmCapabilitiesOverrideEntry 2 }
+
+pmCapabilitiesOverrideRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmCapabilitiesOverrideEntry 3 }
+
+
+pmSchedLocalTime OBJECT-TYPE
+    SYNTAX      DateAndTime (SIZE (11))
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pmMib 7 }
+
+
+pmSchedTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmSchedEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmMib 8 }
+
+pmSchedEntry OBJECT-TYPE
+    SYNTAX      PmSchedEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { pmSchedIndex }
+    ::= { pmSchedTable 1 }
+
+
+
+
+
+
+
+
+
+PmSchedEntry ::= SEQUENCE {
+    pmSchedIndex          Unsigned32,
+    pmSchedGroupIndex     Unsigned32,
+    pmSchedDescr          PmUTF8String,
+    pmSchedTimePeriod     PmUTF8String,
+    pmSchedMonth          BITS,
+    pmSchedDay            BITS,
+    pmSchedWeekDay        BITS,
+    pmSchedTimeOfDay      PmUTF8String,
+    pmSchedLocalOrUtc     INTEGER,
+    pmSchedStorageType    StorageType,
+    pmSchedRowStatus      RowStatus
+}
+
+pmSchedIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmSchedEntry 1 }
+
+pmSchedGroupIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmSchedEntry 2 }
+
+
+
+
+
+
+
+
+pmSchedDescr OBJECT-TYPE
+    SYNTAX      PmUTF8String
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { ''H }
+    ::= { pmSchedEntry 3 }
+
+pmSchedTimePeriod OBJECT-TYPE
+    SYNTAX      PmUTF8String (SIZE (0..31))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmSchedEntry 4 }
+
+pmSchedMonth OBJECT-TYPE
+    SYNTAX      BITS {
+                    january(0),
+                    february(1),
+                    march(2),
+                    april(3),
+                    may(4),
+                    june(5),
+                    july(6),
+                    august(7),
+                    september(8),
+                    october(9),
+                    november(10),
+                    december(11)
+                }
+
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { { january, february, march, april, may, june, july,
+               august, september, october, november, december } }
+    ::= { pmSchedEntry 5 }
+
+pmSchedDay OBJECT-TYPE
+    SYNTAX      BITS {
+                    d1(0),   d2(1),   d3(2),   d4(3),   d5(4),
+                    d6(5),   d7(6),   d8(7),   d9(8),   d10(9),
+                    d11(10), d12(11), d13(12), d14(13), d15(14),
+                    d16(15), d17(16), d18(17), d19(18), d20(19),
+                    d21(20), d22(21), d23(22), d24(23), d25(24),
+                    d26(25), d27(26), d28(27), d29(28), d30(29),
+                    d31(30),
+                    r1(31),  r2(32),  r3(33),  r4(34),  r5(35),
+                    r6(36),  r7(37),  r8(38),  r9(39),  r10(40),
+                    r11(41), r12(42), r13(43), r14(44), r15(45),
+                    r16(46), r17(47), r18(48), r19(49), r20(50),
+                    r21(51), r22(52), r23(53), r24(54), r25(55),
+
+
+
+
+
+                    r26(56), r27(57), r28(58), r29(59), r30(60),
+                    r31(61)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { {  d1, d2, d3, d4, d5, d6, d7, d8, d9, d10,
+                d11, d12, d13, d14, d15, d16, d17, d18, d19, d20,
+                d21, d22, d23, d24, d25, d26, d27, d28, d29, d30,
+                d31, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10,
+                r11, r12, r13, r14, r15, r16, r17, r18, r19, r20,
+                r21, r22, r23, r24, r25, r26, r27, r28, r29, r30,
+                r31 } }
+    ::= { pmSchedEntry 6 }
+
+pmSchedWeekDay OBJECT-TYPE
+    SYNTAX      BITS {
+                    sunday(0),
+                    monday(1),
+                    tuesday(2),
+                    wednesday(3),
+                    thursday(4),
+                    friday(5),
+
+
+
+
+
+                    saturday(6)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { { sunday, monday, tuesday, wednesday, thursday,
+               friday, saturday } }
+    ::= { pmSchedEntry 7 }
+
+pmSchedTimeOfDay OBJECT-TYPE
+    SYNTAX      PmUTF8String (SIZE (0..15))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { '543030303030302F54323335393539'H } -- T000000/T235959
+    ::= { pmSchedEntry 8 }
+
+pmSchedLocalOrUtc OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    localTime(1),
+                    utcTime(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { utcTime }
+    ::= { pmSchedEntry 9 }
+
+pmSchedStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { volatile }
+    ::= { pmSchedEntry 10 }
+
+
+
+
+
+
+
+
+
+pmSchedRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pmSchedEntry 11 }
+
+
+
+pmTrackingPETable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmTrackingPEEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmMib 9 }
+
+pmTrackingPEEntry OBJECT-TYPE
+    SYNTAX      PmTrackingPEEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { pmPolicyIndex, pmTrackingPEElement,
+                  pmTrackingPEContextName, pmTrackingPEContextEngineID }
+    ::= { pmTrackingPETable 1 }
+
+
+
+
+
+
+
+
+
+PmTrackingPEEntry ::= SEQUENCE {
+    pmTrackingPEElement          RowPointer,
+    pmTrackingPEContextName      SnmpAdminString,
+    pmTrackingPEContextEngineID  OCTET STRING,
+    pmTrackingPEInfo             BITS
+}
+
+pmTrackingPEElement OBJECT-TYPE
+    SYNTAX      RowPointer
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmTrackingPEEntry 1 }
+
+pmTrackingPEContextName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmTrackingPEEntry 2 }
+
+pmTrackingPEContextEngineID OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (0 | 5..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmTrackingPEEntry 3 }
+
+pmTrackingPEInfo OBJECT-TYPE
+    SYNTAX      BITS {
+                    actionSkippedDueToPrecedence(0),
+                    conditionRunTimeException(1),
+                    conditionUserSignal(2),
+
+
+
+
+
+                    actionRunTimeException(3),
+                    actionUserSignal(4)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pmTrackingPEEntry 4 }
+
+
+pmTrackingEPTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmTrackingEPEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    ::= { pmMib 10 }
+
+pmTrackingEPEntry OBJECT-TYPE
+    SYNTAX      PmTrackingEPEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { pmTrackingEPElement, pmTrackingEPContextName,
+                  pmTrackingEPContextEngineID, pmPolicyIndex }
+    ::= { pmTrackingEPTable 1 }
+
+PmTrackingEPEntry ::= SEQUENCE {
+    pmTrackingEPElement          RowPointer,
+    pmTrackingEPContextName      SnmpAdminString,
+    pmTrackingEPContextEngineID  OCTET STRING,
+    pmTrackingEPStatus           INTEGER
+}
+
+pmTrackingEPElement OBJECT-TYPE
+    SYNTAX      RowPointer
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmTrackingEPEntry 1 }
+
+pmTrackingEPContextName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmTrackingEPEntry 2 }
+
+pmTrackingEPContextEngineID OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (0 | 5..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmTrackingEPEntry 3 }
+
+pmTrackingEPStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    on(1),
+                    forceOff(2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { pmTrackingEPEntry 4 }
+
+
+pmDebuggingTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PmDebuggingEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    ::= { pmMib 11 }
+
+pmDebuggingEntry OBJECT-TYPE
+    SYNTAX      PmDebuggingEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { pmPolicyIndex, pmDebuggingElement,
+                  pmDebuggingContextName, pmDebuggingContextEngineID,
+                  pmDebuggingLogIndex }
+    ::= { pmDebuggingTable 1 }
+
+PmDebuggingEntry ::= SEQUENCE {
+    pmDebuggingElement          RowPointer,
+    pmDebuggingContextName      SnmpAdminString,
+    pmDebuggingContextEngineID  OCTET STRING,
+    pmDebuggingLogIndex         Unsigned32,
+    pmDebuggingMessage          PmUTF8String
+}
+
+
+
+
+
+
+
+
+pmDebuggingElement OBJECT-TYPE
+    SYNTAX      RowPointer
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmDebuggingEntry 1 }
+
+pmDebuggingContextName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmDebuggingEntry 2 }
+
+pmDebuggingContextEngineID OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (0 | 5..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmDebuggingEntry 3 }
+
+pmDebuggingLogIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pmDebuggingEntry 4 }
+
+
+
+
+
+pmDebuggingMessage OBJECT-TYPE
+    SYNTAX      PmUTF8String (SIZE (0..128))
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pmDebuggingEntry 5 }
+
+
+pmNotifications OBJECT IDENTIFIER ::= { pmMib 0 }
+
+pmNewRoleNotification NOTIFICATION-TYPE
+    OBJECTS     { pmRoleStatus }
+    STATUS      current
+    ::= { pmNotifications 1 }
+
+pmNewCapabilityNotification NOTIFICATION-TYPE
+    OBJECTS     { pmCapabilitiesType }
+    STATUS      current
+    ::= { pmNotifications 2 }
+
+pmAbnormalTermNotification NOTIFICATION-TYPE
+    OBJECTS     { pmTrackingPEInfo }
+    STATUS      current
+
+
+
+
+
+    ::= { pmNotifications 3 }
+
+
+    pmConformance   OBJECT IDENTIFIER ::= { pmMib 12 }
+    pmCompliances   OBJECT IDENTIFIER ::= { pmConformance 1 }
+    pmGroups        OBJECT IDENTIFIER ::= { pmConformance 2 }
+
+pmCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS { pmPolicyManagementGroup, pmSchedGroup,
+                           pmNotificationGroup }
+    ::= { pmCompliances 1 }
+
+pmPolicyManagementGroup OBJECT-GROUP
+    OBJECTS { pmPolicyPrecedenceGroup, pmPolicyPrecedence,
+              pmPolicySchedule, pmPolicyElementTypeFilter,
+              pmPolicyConditionScriptIndex, pmPolicyActionScriptIndex,
+              pmPolicyParameters,
+              pmPolicyConditionMaxLatency, pmPolicyActionMaxLatency,
+              pmPolicyMaxIterations,
+              pmPolicyDescription, pmPolicyMatches,
+              pmPolicyAbnormalTerminations,
+              pmPolicyExecutionErrors, pmPolicyDebugging,
+              pmPolicyStorageType, pmPolicyAdminStatus,
+              pmPolicyRowStatus, pmPolicyCodeText, pmPolicyCodeStatus,
+              pmElementTypeRegMaxLatency, pmElementTypeRegDescription,
+              pmElementTypeRegStorageType, pmElementTypeRegRowStatus,
+              pmRoleStatus,
+              pmCapabilitiesType, pmCapabilitiesOverrideState,
+              pmCapabilitiesOverrideRowStatus,
+              pmTrackingPEInfo,
+              pmTrackingEPStatus,
+              pmDebuggingMessage }
+
+
+
+
+
+    STATUS  current
+    ::=  { pmGroups 1 }
+
+pmSchedGroup OBJECT-GROUP
+    OBJECTS { pmSchedLocalTime, pmSchedGroupIndex,
+              pmSchedDescr, pmSchedTimePeriod,
+              pmSchedMonth, pmSchedDay, pmSchedWeekDay,
+              pmSchedTimeOfDay, pmSchedLocalOrUtc, pmSchedStorageType,
+              pmSchedRowStatus
+            }
+    STATUS current
+    ::= { pmGroups 2 }
+
+pmNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { pmNewRoleNotification,
+                    pmNewCapabilityNotification,
+                    pmAbnormalTermNotification }
+    STATUS        current
+    ::= { pmGroups 3 }
+
+pmBaseFunctionLibrary OBJECT IDENTIFIER ::= { pmGroups 4 }
+
+END

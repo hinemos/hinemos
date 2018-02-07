@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.ws.hub;
 
 import java.util.ArrayList;
@@ -26,6 +20,7 @@ import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -492,11 +487,13 @@ public class HubEndpoint {
 	 * 
 	 * @param query
 	 * @return
+	 * @throws InvalidUserPass
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
+	 * @throws HinemosDbTimeout
 	 * @throws InvalidSetting
 	 */
-	public StringQueryResult queryCollectStringData(StringQueryInfo query) throws InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
+	public StringQueryResult queryCollectStringData(StringQueryInfo query) throws InvalidUserPass, InvalidRole, HinemosUnknown, HinemosDbTimeout, InvalidSetting {
 		m_log.debug("queryCollectStringData");
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
 		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HUB, SystemPrivilegeMode.READ));

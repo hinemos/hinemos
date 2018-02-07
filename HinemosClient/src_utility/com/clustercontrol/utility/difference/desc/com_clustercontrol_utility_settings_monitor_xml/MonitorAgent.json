@@ -1,0 +1,23 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitor",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Ignore", "propNames":["measure", "itemName", "collectorFlg"]}
+	]},
+	{
+	"propName":"agentInfo",
+	"annotations":[
+		{"type":"Ignore", "propNames":["MonitorId", "MonitorTypeId"]}
+	]},
+	{
+	"propName":"truthValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"truthValue"}
+	]}
+]
+}

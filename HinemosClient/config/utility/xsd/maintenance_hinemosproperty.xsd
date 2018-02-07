@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: maintenance_hinemosproperty.xsd 303 2015-02-02 19:00:00Z uchiyama $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd"/>
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="G">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="HinemosProperty">
+		<xs:annotation>
+			<xs:documentation>Hinemosプロパティ定義一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>Hinemosプロパティ定義一覧のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLに付与する一般情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="HinemosPropertyInfo" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>Hinemosプロパティ定義の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="HinemosPropertyInfo">
+		<xs:annotation>
+			<xs:documentation>Hinemosプロパティ情報</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>Hinemosプロパティ情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="key" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>プロパティのキー値です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="valueType" type="xs:int" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						値種別です。
+						{文字列(1)、数値(2)、真偽値(3)}のどれかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="value" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						値です。
+						値種別に応じた値が、文字列として格納されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="description" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>プロパティの説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="ownerRoleId" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>オーナーロールIDです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

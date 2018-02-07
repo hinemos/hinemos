@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2013 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.jobmanagement.factory;
 
 import java.io.Serializable;
@@ -28,9 +22,9 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.calendar.factory.SelectCalendar;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.util.CalendarUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.util.HinemosTime;
 
 
@@ -260,7 +254,7 @@ public class JobPlanSchedule implements Serializable{
 	 * 日、月、年を進める
 	 */
 	private boolean next() {
-		int maxYear = HinemosPropertyUtil.getHinemosPropertyNum("job.schedule.plan.max", Long.valueOf(2030)).intValue();
+		int maxYear = HinemosPropertyCommon.job_schedule_plan_max.getIntegerValue();
 		if (maxYear < year) {
 			return false;
 		}

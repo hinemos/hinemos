@@ -1,0 +1,34 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"LogcountMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"LogcountInfo.TargetMonitorId",
+			"LogcountInfo.Keyword",
+			"LogcountInfo.IsAnd",
+			"LogcountInfo.Tag",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"NumericValue"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"LogcountMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

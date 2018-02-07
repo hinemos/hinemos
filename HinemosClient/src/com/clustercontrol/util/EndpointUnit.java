@@ -1,24 +1,23 @@
-/**********************************************************************
- * Copyright (C) 2014 NTT DATA Corporation
- * This program is free software; you can redistribute it and/or
- * Modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation, version 2.
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
  *
- * This program is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- * PURPOSE.  See the GNU General Public License for more details.
- *********************************************************************/
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
 
 package com.clustercontrol.util;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -32,6 +31,7 @@ import javax.xml.ws.WebServiceClient;
 import javax.xml.ws.WebServiceException;
 import javax.xml.ws.soap.SOAPBinding;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -41,6 +41,7 @@ import com.clustercontrol.fault.InvalidTimezone;
 import com.clustercontrol.ws.access.HinemosUnknown_Exception;
 import com.clustercontrol.ws.access.InvalidRole_Exception;
 import com.clustercontrol.ws.access.InvalidUserPass_Exception;
+import com.clustercontrol.ws.access.ManagerInfo;
 import com.sun.xml.internal.ws.client.BindingProviderProperties;
 import com.sun.xml.internal.ws.developer.JAXWSProperties;
 
@@ -56,7 +57,6 @@ public class EndpointUnit {
 	// ログ
 	private static Log m_log = LogFactory.getLog( EndpointUnit.class );
 
-	private String urlListStr;
 	private List<String> urlList;
 	private String userId;
 	private String password;
@@ -64,6 +64,8 @@ public class EndpointUnit {
 	private int status = LoginAccount.STATUS_UNCONNECTED;
 
 	private List<String> priorUrlList = null;
+	// 所持オプション
+	private Set<String> options = new HashSet<>();
 	
 	private ConcurrentHashMap<String, Object> endpointMap = new ConcurrentHashMap<String, Object>();
 
@@ -129,15 +131,49 @@ public class EndpointUnit {
 			}
 		}
 	}
-	
+
+	/**
+	 * 利便性向上のため、入力を正しいURLに自動整形する
+	 * @param  raw   raw input.
+	 * @return a well-formed or reformed URL for manager connection.
+	 */
+	private String validateManagerURL(String raw){
+		String newURL = raw.trim();
+		boolean hasProtocol = newURL.matches("\\w+://.*");
+		if(!hasProtocol){
+			newURL = "http://" + newURL;
+		}
+
+		try {
+			URL url = new URL(newURL);
+			String formatted = url.getProtocol() + "://" + url.getHost();
+			if( -1 != url.getPort()){
+				formatted += ":" + url.getPort();
+			}else if(!hasProtocol){ // Protocolが明記されていない場合デフォルト(8080)を代入
+					formatted += ":" + 8080;
+			}
+			if( null != url.getPath() && !url.getPath().isEmpty()){
+				formatted += url.getPath();
+			}else{
+				formatted += "/HinemosWS/";
+			}
+			if( !formatted.endsWith("/") ){
+				formatted += "/";
+			}
+			newURL = formatted;
+		} catch (MalformedURLException e) {
+			m_log.error("Invalid URL: " + newURL, e);
+		}
+		return newURL;
+	}
+
 	public void set(String urlListStr, String userId, String password, String managerName) {
 		List<String> urlList = new ArrayList<String>();
 		for (String urlStr : urlListStr.split(",")) {
-			String url = urlStr.trim();
+			String url = validateManagerURL(urlStr.trim());
 			urlList.add(url);
 		}
 
-		this.urlListStr = urlListStr;
 		this.urlList = Collections.unmodifiableList(urlList);
 		this.userId = userId;
 		this.password = password;
@@ -329,11 +365,13 @@ public class EndpointUnit {
 		m_log.debug("connect : " + urlList);
 
 		// Check login result at first
-		int managerTZOffset = AccessEndpointWrapper.getWrapperLoginCheck(managerName).checkLogin( this );
-		
+		ManagerInfo managerInfo = AccessEndpointWrapper.getWrapperLoginCheck(managerName).checkLogin( this );
+		int managerTZOffset = managerInfo.getTimeZoneOffset();
+		this.options = new HashSet<>(managerInfo.getOptions());
+
 		// タイムゾーンの取得
 		Integer clientTZOffset = TimezoneUtil.getTimeZoneOffset();
-		m_log.debug("connect : client's timezone = " + clientTZOffset + " , " + managerName + "'s timezone = " + managerTZOffset);
+		m_log.debug("connect : client's timezone = " + clientTZOffset + " , " + managerName + "'s timezone = " + managerTZOffset + ", options = " + options);
 
 		// クライアントが保持するタイムゾーンと接続先マネージャより取得したタイムゾーンが一致しない場合は
 		// ログインを失敗させる。
@@ -349,7 +387,6 @@ public class EndpointUnit {
 
 		// Add to active manager list after login success(no exception occurred)
 		status = LoginAccount.STATUS_CONNECTED;
-		return;
 	}
 
 	/**
@@ -360,11 +397,15 @@ public class EndpointUnit {
 
 		status = LoginAccount.STATUS_UNCONNECTED;
 	}
-	
+
 	public String getUrlListStr() {
-		return urlListStr;
+		if(null != urlList){
+			return StringUtils.join(getUrlList(), ", ");
+		}else{
+			return null;
+		}
 	}
-	
+
 	public List<String> getUrlList() {
 		return urlList;
 	}
@@ -379,5 +420,9 @@ public class EndpointUnit {
 	
 	public String getManagerName() {
 		return managerName;
+	}
+
+	public Set<String> getOptions() {
+		return options;
 	}
 }

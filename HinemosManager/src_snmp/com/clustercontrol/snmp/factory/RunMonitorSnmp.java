@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.snmp.factory;
@@ -184,6 +177,7 @@ public class RunMonitorSnmp extends RunMonitorNumericValueType {
 				MonitorSnmpValue valueEntity = null;
 				Double prevValue = 0d;
 				Long prevDate = 0l;
+				m_value = -1d;
 				if (!m_isMonitorJob) {
 					// 監視ジョブ以外の場合
 					// cacheより前回情報を取得

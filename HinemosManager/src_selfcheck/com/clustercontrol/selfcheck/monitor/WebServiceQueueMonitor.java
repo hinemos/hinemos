@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.selfcheck.monitor;
@@ -23,7 +16,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.plugin.impl.WebServiceAgentPlugin;
 import com.clustercontrol.plugin.impl.WebServiceCorePlugin;
 import com.clustercontrol.util.MessageConstant;
@@ -72,10 +65,11 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 		checkForClientQueue("ForClient");
 		checkForAgentQueue("ForAgent");
 		checkForAgentHubQueue("ForAgentHub");
+		checkForAgentBinaryQueue("ForAgentBinary");
 	}
 	
 	private void checkForClientQueue(String subKey) {
-		if (!HinemosPropertyUtil.getHinemosPropertyBool("selfcheck.monitoring.ws.queue", true)) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_ws_queue.getBooleanValue()) {
 			m_log.debug("skip checkForClientQueue");
 			return;
 		}
@@ -84,8 +78,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 		int queueSize = 0;
 		boolean warn = true;
 		
-		threshold = HinemosPropertyUtil.getHinemosPropertyNum(
-				"selfcheck.monitoring.ws.queue.threshold", Long.valueOf(240)).intValue();
+		threshold = HinemosPropertyCommon.selfcheck_monitoring_ws_queue_threshold.getIntegerValue();
 
 		/** メイン処理 */
 		queueSize = WebServiceCorePlugin.getQueueSize();
@@ -112,7 +105,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 	}
 	
 	private void checkForAgentQueue(String subKey) {
-		if (!HinemosPropertyUtil.getHinemosPropertyBool("selfcheck.monitoring.ws.agent.queue", true)) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_ws_agent_queue.getBooleanValue()) {
 			m_log.debug("skip checkForAgentQueue");
 			return;
 		}
@@ -121,8 +114,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 		int queueSize = 0;
 		boolean warn = true;
 		
-		threshold = HinemosPropertyUtil.getHinemosPropertyNum(
-				"selfcheck.monitoring.ws.agent.queue.threshold", Long.valueOf(960)).intValue();
+		threshold = HinemosPropertyCommon.selfcheck_monitoring_ws_agent_queue_threshold.getIntegerValue();
 
 		/** メイン処理 */
 		queueSize = WebServiceAgentPlugin.getAgentQueueSize();
@@ -149,7 +141,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 	}
 	
 	private void checkForAgentHubQueue(String subKey) {
-		if (!HinemosPropertyUtil.getHinemosPropertyBool("selfcheck.monitoring.ws.agenthub.queue", true)) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_ws_agenthub_queue.getBooleanValue()) {
 			m_log.debug("skip checkForAgentHubQueue");
 			return;
 		}
@@ -158,8 +150,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 		int queueSize = 0;
 		boolean warn = true;
 		
-		threshold = HinemosPropertyUtil.getHinemosPropertyNum(
-				"selfcheck.monitoring.ws.agenthub.queue.threshold", Long.valueOf(960)).intValue();
+		threshold = HinemosPropertyCommon.selfcheck_monitoring_ws_agenthub_queue_threshold.getIntegerValue();
 
 		/** メイン処理 */
 		queueSize = WebServiceAgentPlugin.getAgentHubQueueSize();
@@ -185,9 +176,42 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 				")");
 	}
 	
+	private void checkForAgentBinaryQueue(String subKey) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_ws_agentbinary_queue.getBooleanValue()) {
+			m_log.debug("skip checkForAgentBinaryQueue");
+			return;
+		}
+
+		/** ローカル変数 */
+		int queueSize = 0;
+		boolean warn = true;
+
+		threshold = HinemosPropertyCommon.selfcheck_monitoring_ws_agentbinary_queue_threshold.getIntegerValue();
+
+		/** メイン処理 */
+		queueSize = WebServiceAgentPlugin.getAgentBinaryQueueSize();
+		if (queueSize <= threshold) {
+			m_log.debug("web service queue (ForAgentBinary) is normal. (queueSize = " + queueSize + ")");
+			warn = false;
+		}
+
+		if (warn) {
+			m_log.info("web service queue (ForAgentBinary) is too large. (queueSize = " + queueSize + ")");
+		}
+		if (!isNotify(subKey, warn)) {
+			return;
+		}
+
+		String port = Integer.toString(getAgentPort());
+		String[] msgAttr1 = { port, Integer.toString(queueSize), Integer.toString(threshold) };
+		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_008_SYS_SFC, msgAttr1,
+				"too many request from AgentBinary to Hinemos Manager (tcp:" + port + "). (queued request " + queueSize
+						+ " > threshold " + threshold + ")");
+	}
+	
 	private int getClientPort() {
 		int port = 8080;
-		String address = HinemosPropertyUtil.getHinemosPropertyStr("ws.client.address" , "http://0.0.0.0:8080");
+		String address = HinemosPropertyCommon.ws_client_address.getStringValue();
 		try {
 			port = new URL(address).getPort();
 		} catch (MalformedURLException e) {
@@ -199,7 +223,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 	
 	private int getAgentPort() {
 		int port = 8081;
-		String address = HinemosPropertyUtil.getHinemosPropertyStr("ws.agent.address" , "http://0.0.0.0:8081");
+		String address = HinemosPropertyCommon.ws_agent_address.getStringValue();
 		try {
 			port = new URL(address).getPort();
 		} catch (MalformedURLException e) {

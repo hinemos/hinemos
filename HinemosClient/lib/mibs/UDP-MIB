@@ -1,0 +1,240 @@
+   UDP-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, Integer32, Counter32, Counter64,
+       Unsigned32, IpAddress, mib-2       FROM SNMPv2-SMI
+       MODULE-COMPLIANCE, OBJECT-GROUP    FROM SNMPv2-CONF
+       InetAddress, InetAddressType,
+       InetPortNumber                     FROM INET-ADDRESS-MIB;
+
+   udpMIB MODULE-IDENTITY
+       LAST-UPDATED "200505200000Z"  -- May 20, 2005
+       ORGANIZATION
+              "IETF IPv6 Working Group
+               http://www.ietf.org/html.charters/ipv6-charter.html"
+
+
+
+
+
+       ::= { mib-2 50 }
+
+
+   udp      OBJECT IDENTIFIER ::= { mib-2 7 }
+
+   udpInDatagrams OBJECT-TYPE
+       SYNTAX     Counter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udp 1 }
+
+   udpNoPorts OBJECT-TYPE
+       SYNTAX     Counter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udp 2 }
+
+   udpInErrors OBJECT-TYPE
+       SYNTAX     Counter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udp 3 }
+
+   udpOutDatagrams OBJECT-TYPE
+       SYNTAX     Counter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udp 4 }
+
+
+
+
+
+   udpHCInDatagrams OBJECT-TYPE
+       SYNTAX     Counter64
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udp 8 }
+
+   udpHCOutDatagrams OBJECT-TYPE
+       SYNTAX     Counter64
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udp 9 }
+
+
+
+   udpEndpointTable OBJECT-TYPE
+       SYNTAX     SEQUENCE OF UdpEndpointEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udp 7 }
+
+   udpEndpointEntry OBJECT-TYPE
+       SYNTAX     UdpEndpointEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+
+
+
+
+
+       INDEX   { udpEndpointLocalAddressType,
+                 udpEndpointLocalAddress,
+                 udpEndpointLocalPort,
+                 udpEndpointRemoteAddressType,
+                 udpEndpointRemoteAddress,
+                 udpEndpointRemotePort,
+                 udpEndpointInstance }
+       ::= { udpEndpointTable 1 }
+
+   UdpEndpointEntry ::= SEQUENCE {
+           udpEndpointLocalAddressType   InetAddressType,
+           udpEndpointLocalAddress       InetAddress,
+           udpEndpointLocalPort          InetPortNumber,
+           udpEndpointRemoteAddressType  InetAddressType,
+           udpEndpointRemoteAddress      InetAddress,
+           udpEndpointRemotePort         InetPortNumber,
+           udpEndpointInstance           Unsigned32,
+           udpEndpointProcess            Unsigned32
+       }
+
+   udpEndpointLocalAddressType OBJECT-TYPE
+       SYNTAX     InetAddressType
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpEndpointEntry 1 }
+
+   udpEndpointLocalAddress OBJECT-TYPE
+       SYNTAX     InetAddress
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpEndpointEntry 2 }
+
+   udpEndpointLocalPort OBJECT-TYPE
+       SYNTAX     InetPortNumber
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpEndpointEntry 3 }
+
+   udpEndpointRemoteAddressType OBJECT-TYPE
+       SYNTAX     InetAddressType
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpEndpointEntry 4 }
+
+   udpEndpointRemoteAddress OBJECT-TYPE
+       SYNTAX     InetAddress
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpEndpointEntry 5 }
+
+   udpEndpointRemotePort OBJECT-TYPE
+       SYNTAX     InetPortNumber
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { udpEndpointEntry 6 }
+
+   udpEndpointInstance OBJECT-TYPE
+       SYNTAX     Unsigned32 (1..'ffffffff'h)
+       MAX-ACCESS not-accessible
+       STATUS     current
+
+
+
+
+
+       ::= { udpEndpointEntry 7 }
+
+   udpEndpointProcess OBJECT-TYPE
+       SYNTAX     Unsigned32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { udpEndpointEntry 8 }
+
+
+
+   udpTable OBJECT-TYPE
+       SYNTAX     SEQUENCE OF UdpEntry
+       MAX-ACCESS not-accessible
+       STATUS     deprecated
+       ::= { udp 5 }
+
+   udpEntry OBJECT-TYPE
+       SYNTAX     UdpEntry
+       MAX-ACCESS not-accessible
+       STATUS     deprecated
+       INDEX   { udpLocalAddress, udpLocalPort }
+       ::= { udpTable 1 }
+
+   UdpEntry ::= SEQUENCE {
+       udpLocalAddress   IpAddress,
+       udpLocalPort      Integer32
+
+
+
+
+
+   }
+
+   udpLocalAddress OBJECT-TYPE
+       SYNTAX     IpAddress
+       MAX-ACCESS read-only
+       STATUS     deprecated
+       ::= { udpEntry 1 }
+
+   udpLocalPort OBJECT-TYPE
+       SYNTAX     Integer32 (0..65535)
+       MAX-ACCESS read-only
+       STATUS     deprecated
+       ::= { udpEntry 2 }
+
+
+   udpMIBConformance OBJECT IDENTIFIER ::= { udpMIB 2 }
+   udpMIBCompliances OBJECT IDENTIFIER ::= { udpMIBConformance 1 }
+   udpMIBGroups      OBJECT IDENTIFIER ::= { udpMIBConformance 2 }
+
+
+   udpMIBCompliance2 MODULE-COMPLIANCE
+       STATUS     current
+       MODULE  -- this module
+            MANDATORY-GROUPS { udpBaseGroup, udpEndpointGroup }
+            GROUP       udpHCGroup
+       ::= { udpMIBCompliances 2 }
+
+   udpMIBCompliance MODULE-COMPLIANCE
+       STATUS     deprecated
+       MODULE  -- this module
+           MANDATORY-GROUPS { udpGroup }
+       ::= { udpMIBCompliances 1 }
+
+
+   udpGroup OBJECT-GROUP
+       OBJECTS   { udpInDatagrams, udpNoPorts,
+                   udpInErrors, udpOutDatagrams,
+                   udpLocalAddress, udpLocalPort }
+
+
+
+
+
+       STATUS     deprecated
+       ::= { udpMIBGroups 1 }
+
+   udpBaseGroup OBJECT-GROUP
+       OBJECTS   { udpInDatagrams, udpNoPorts, udpInErrors,
+                   udpOutDatagrams }
+       STATUS     current
+       ::= { udpMIBGroups 2 }
+
+   udpHCGroup OBJECT-GROUP
+       OBJECTS   { udpHCInDatagrams, udpHCOutDatagrams }
+       STATUS     current
+       ::= { udpMIBGroups 3 }
+
+   udpEndpointGroup OBJECT-GROUP
+       OBJECTS    { udpEndpointProcess }
+       STATUS     current
+       ::= { udpMIBGroups 4 }
+
+   END

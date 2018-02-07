@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -21,6 +14,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.StatusConstant;
+import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -30,6 +24,7 @@ import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.util.FromRunningAfterCommitCallback;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
+import com.clustercontrol.jobmanagement.util.JobSessionChangeDataCache;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 
@@ -69,35 +64,40 @@ public class OperateMaintenanceOfJob {
 			String facilityId,
 			Integer endValue) throws JobInfoNotFound, InvalidRole, HinemosUnknown {
 		m_log.debug("maintenanceJob() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId + ", endValue=" + endValue);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
-		//セッションIDとジョブIDから、セッションジョブを取得
-		JobSessionNodeEntity sessionNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
+			//セッションIDとジョブIDから、セッションジョブを取得
+			JobSessionNodeEntity sessionNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
 
-		if(sessionNode != null){
-			//実行中から他の状態に遷移した場合は、キャッシュを更新する。
-			if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
-				JpaTransactionManager jtm = new JpaTransactionManager();
-				jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
-			} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
-				JobMultiplicityCache.removeWait(sessionNode.getId());
-			}
-			//実行状態を変更済にする
-			sessionNode.setStatus(StatusConstant.TYPE_MODIFIED);
-			//終了値を設定
-			sessionNode.setEndValue(endValue);
-			//終了日時を設定
-			sessionNode.setEndDate(HinemosTime.currentTimeMillis());
-			//ジョブ終了時関連処理
-			try {
-				new JobSessionNodeImpl().endNodeFinish(sessionId, jobunitId, jobId, facilityId, null, null);
-			} catch (EntityExistsException e) {
-				// TODO
-				// throwするExceptionをHinemosUnknownでラップしているが、後で修正すること。
-				m_log.warn("maintenanceNode " + e, e);
-				throw new HinemosUnknown(e.getMessage(), e);
-			} catch (FacilityNotFound e) {
-				m_log.warn("maintenanceNode " + e, e);
-				throw new HinemosUnknown(e.getMessage(), e);
+			if(sessionNode != null){
+				//実行中から他の状態に遷移した場合は、キャッシュを更新する。
+				if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
+					jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
+				} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
+					JobMultiplicityCache.removeWait(sessionNode.getId());
+				}
+				//実行状態を変更済にする
+				sessionNode.setStatus(StatusConstant.TYPE_MODIFIED);
+				//終了値を設定
+				sessionNode.setEndValue(endValue);
+				//終了日時を設定
+				sessionNode.setEndDate(HinemosTime.currentTimeMillis());
+
+				// 収集データ更新
+				CollectDataUtil.put(sessionNode);
+
+				//ジョブ終了時関連処理
+				try {
+					new JobSessionNodeImpl().endNodeFinish(sessionId, jobunitId, jobId, facilityId, null, null);
+				} catch (EntityExistsException e) {
+					// TODO
+					// throwするExceptionをHinemosUnknownでラップしているが、後で修正すること。
+					m_log.warn("maintenanceNode " + e, e);
+					throw new HinemosUnknown(e.getMessage(), e);
+				} catch (FacilityNotFound e) {
+					m_log.warn("maintenanceNode " + e, e);
+					throw new HinemosUnknown(e.getMessage(), e);
+				}
 			}
 		}
 	}
@@ -139,6 +139,10 @@ public class OperateMaintenanceOfJob {
 			sessionJob.setEndValue(endValue);
 			//終了日時を設定
 			sessionJob.setEndDate(HinemosTime.currentTimeMillis());
+			// ジョブ履歴用キャッシュ更新
+			JobSessionChangeDataCache.add(sessionJob);
+			// 収集データ更新
+			CollectDataUtil.put(sessionJob);
 			//ジョブ終了時関連処理
 			new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, null, false);
 		}

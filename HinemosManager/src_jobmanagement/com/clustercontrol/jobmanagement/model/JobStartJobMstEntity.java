@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.jobmanagement.model;
 
 import java.io.Serializable;
@@ -15,9 +23,6 @@ import javax.persistence.JoinColumns;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
-
 
 /**
  * The persistent class for the cc_job_start_job_mst database table.
@@ -31,17 +36,14 @@ public class JobStartJobMstEntity implements Serializable {
 	private JobStartJobMstEntityPK id;
 	private JobMstEntity jobMstEntity;
 	private String targetJobDescription;
+	private Integer targetJobCrossSessionRange;
 
 	@Deprecated
 	public JobStartJobMstEntity() {
 	}
 
-	public JobStartJobMstEntity(JobStartJobMstEntityPK pk,
-			JobMstEntity jobMstEntity) {
+	public JobStartJobMstEntity(JobStartJobMstEntityPK pk) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToJobMstEntity(jobMstEntity);
 	}
 
 	public JobStartJobMstEntity(JobMstEntity jobMstEntity,
@@ -55,7 +57,7 @@ public class JobStartJobMstEntity implements Serializable {
 				targetJobunitId,
 				targetJobId,
 				targetJobType,
-				targetJobEndValue), jobMstEntity);
+				targetJobEndValue));
 	}
 
 
@@ -90,6 +92,15 @@ public class JobStartJobMstEntity implements Serializable {
 	}
 	public void setTargetJobDescription(String targetJobDescription) {
 		this.targetJobDescription = targetJobDescription;
+	}
+
+	@Column(name="target_job_cross_session_range")
+	public Integer getTargetJobCrossSessionRange() {
+		return targetJobCrossSessionRange;
+	}
+
+	public void setTargetJobCrossSessionRange(Integer targetJobCrossSessionRange) {
+		this.targetJobCrossSessionRange = targetJobCrossSessionRange;
 	}
 
 	/**

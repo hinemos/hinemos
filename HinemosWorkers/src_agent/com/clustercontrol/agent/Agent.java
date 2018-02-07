@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.agent;
@@ -43,6 +36,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.PropertyConfigurator;
 
+import com.clustercontrol.agent.binary.BinaryMonitorManager;
 import com.clustercontrol.agent.filecheck.FileCheckManager;
 import com.clustercontrol.agent.job.RunHistoryUtil;
 import com.clustercontrol.agent.log.LogfileMonitorManager;
@@ -598,6 +592,10 @@ public class Agent {
 
 		// ログファイル読み込みスレッド開始
 		LogfileMonitorManager.start();
+		
+
+		// バイナリ監視スレッド開始
+		BinaryMonitorManager.start();
 
 		// ファイルチェック(ジョブ)読み込みスレッド開始
 		FileCheckManager fileCheckManager = new FileCheckManager();

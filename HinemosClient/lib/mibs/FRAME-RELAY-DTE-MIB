@@ -1,0 +1,743 @@
+     FRAME-RELAY-DTE-MIB DEFINITIONS ::= BEGIN
+
+     IMPORTS
+                 MODULE-IDENTITY, OBJECT-TYPE, Counter32,
+                 Integer32, NOTIFICATION-TYPE            FROM SNMPv2-SMI
+                 TEXTUAL-CONVENTION, RowStatus, TimeStamp FROM SNMPv2-TC
+                 MODULE-COMPLIANCE, OBJECT-GROUP,
+                 NOTIFICATION-GROUP                     FROM SNMPv2-CONF
+                 transmission                           FROM RFC1213-MIB
+                 InterfaceIndex                           FROM IF-MIB;
+
+
+     frameRelayDTE MODULE-IDENTITY
+         LAST-UPDATED "9705010229Z" -- Thu May  1 02:29:46 PDT 1997
+         ORGANIZATION "IETF IPLPDN Working Group"
+
+         ::= { transmission 32 }
+
+
+
+
+
+
+
+     DLCI ::= TEXTUAL-CONVENTION
+         STATUS      current
+         SYNTAX      Integer32(0..8388607)
+
+
+
+
+
+
+     frDlcmiTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF FrDlcmiEntry
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         ::= { frameRelayDTE 1 }
+
+     frDlcmiEntry OBJECT-TYPE
+         SYNTAX   FrDlcmiEntry
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         INDEX { frDlcmiIfIndex }
+         ::= { frDlcmiTable 1 }
+
+
+
+
+
+
+
+
+
+
+     FrDlcmiEntry ::=
+         SEQUENCE {
+             frDlcmiIfIndex                  InterfaceIndex,
+             frDlcmiState                    INTEGER,
+             frDlcmiAddress                  INTEGER,
+             frDlcmiAddressLen               INTEGER,
+             frDlcmiPollingInterval          Integer32,
+             frDlcmiFullEnquiryInterval      Integer32,
+             frDlcmiErrorThreshold           Integer32,
+             frDlcmiMonitoredEvents          Integer32,
+             frDlcmiMaxSupportedVCs          DLCI,
+             frDlcmiMulticast                INTEGER,
+             frDlcmiStatus                   INTEGER,
+             frDlcmiRowStatus                RowStatus
+     }
+
+
+     frDlcmiIfIndex OBJECT-TYPE
+
+         SYNTAX   InterfaceIndex
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frDlcmiEntry 1 }
+
+
+     frDlcmiState OBJECT-TYPE
+         SYNTAX INTEGER      {
+             noLmiConfigured (1),
+             lmiRev1         (2),
+             ansiT1617D      (3),  -- ANSI T1.617 Annex D
+             ansiT1617B      (4),  -- ANSI T1.617 Annex B
+             itut933A        (5),  -- CCITT Q933 Annex A
+             ansiT1617D1994  (6)   -- ANSI T1.617a-1994 Annex D
+         }
+         MAX-ACCESS   read-create
+         STATUS   current
+
+         ::= { frDlcmiEntry 2 }
+
+
+
+
+
+
+
+     frDlcmiAddress OBJECT-TYPE
+         SYNTAX      INTEGER {
+                     q921           (1),  -- 13 bit DLCI
+                     q922March90    (2),  -- 11 bit DLCI
+                     q922November90 (3),  -- 10 bit DLCI
+                     q922           (4)   -- Final Standard
+         }
+         MAX-ACCESS  read-create
+         STATUS  current
+         ::= { frDlcmiEntry 3 }
+
+
+     frDlcmiAddressLen OBJECT-TYPE
+         SYNTAX  INTEGER     {
+                 twoOctets (2),
+                 threeOctets (3),
+                 fourOctets (4)
+         }
+         MAX-ACCESS  read-create
+         STATUS  current
+         ::= { frDlcmiEntry 4 }
+
+
+     frDlcmiPollingInterval OBJECT-TYPE
+         SYNTAX   Integer32 (5..30)
+         UNITS    "seconds"
+         MAX-ACCESS   read-create
+         STATUS   current
+         DEFVAL { 10 }
+         ::= { frDlcmiEntry 5 }
+
+
+
+
+
+
+
+     frDlcmiFullEnquiryInterval OBJECT-TYPE
+         SYNTAX   Integer32 (1..255)
+         MAX-ACCESS   read-create
+         STATUS   current
+         DEFVAL { 6 }
+         ::= { frDlcmiEntry 6 }
+
+
+     frDlcmiErrorThreshold OBJECT-TYPE
+         SYNTAX   Integer32 (1..10)
+         MAX-ACCESS   read-create
+         STATUS   current
+         DEFVAL { 3 }
+         ::= { frDlcmiEntry 7 }
+
+
+     frDlcmiMonitoredEvents OBJECT-TYPE
+         SYNTAX   Integer32 (1..10)
+         MAX-ACCESS   read-create
+         STATUS   current
+         DEFVAL { 4 }
+         ::= { frDlcmiEntry 8 }
+
+
+
+
+
+
+
+
+
+     frDlcmiMaxSupportedVCs OBJECT-TYPE
+         SYNTAX   DLCI
+         MAX-ACCESS   read-create
+         STATUS   current
+         ::= { frDlcmiEntry 9 }
+
+
+     frDlcmiMulticast OBJECT-TYPE
+         SYNTAX   INTEGER    {
+                     nonBroadcast (1),
+                     broadcast (2)
+                     }
+         MAX-ACCESS   read-create
+         STATUS   current
+         ::= { frDlcmiEntry 10 }
+
+
+
+     frDlcmiStatus OBJECT-TYPE
+         SYNTAX   INTEGER    {
+                     running      (1),    -- init complete, system running
+                     fault        (2),    -- error threshold exceeded
+                     initializing (3)     -- system start up
+                     }
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frDlcmiEntry 11 }
+
+
+
+
+
+
+
+
+
+
+     frDlcmiRowStatus OBJECT-TYPE
+         SYNTAX   RowStatus
+         MAX-ACCESS   read-create
+         STATUS   current
+         ::= { frDlcmiEntry 12 }
+
+
+
+
+
+     frCircuitTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF FrCircuitEntry
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         ::= { frameRelayDTE 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     frCircuitEntry OBJECT-TYPE
+         SYNTAX   FrCircuitEntry
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         INDEX { frCircuitIfIndex, frCircuitDlci }
+         ::= { frCircuitTable 1 }
+
+
+     FrCircuitEntry ::=
+         SEQUENCE {
+             frCircuitIfIndex                InterfaceIndex,
+             frCircuitDlci                   DLCI,
+             frCircuitState                  INTEGER,
+             frCircuitReceivedFECNs          Counter32,
+             frCircuitReceivedBECNs          Counter32,
+             frCircuitSentFrames             Counter32,
+             frCircuitSentOctets             Counter32,
+             frCircuitReceivedFrames         Counter32,
+             frCircuitReceivedOctets         Counter32,
+             frCircuitCreationTime           TimeStamp,
+             frCircuitLastTimeChange         TimeStamp,
+             frCircuitCommittedBurst         Integer32,
+             frCircuitExcessBurst            Integer32,
+             frCircuitThroughput             Integer32,
+             frCircuitMulticast              INTEGER,
+             frCircuitType                   INTEGER,
+             frCircuitDiscards               Counter32,
+             frCircuitReceivedDEs            Counter32,
+             frCircuitSentDEs                Counter32,
+             frCircuitLogicalIfIndex         InterfaceIndex,
+             frCircuitRowStatus              RowStatus
+     }
+
+
+     frCircuitIfIndex OBJECT-TYPE
+         SYNTAX   InterfaceIndex
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 1 }
+
+
+
+
+
+
+
+     frCircuitDlci OBJECT-TYPE
+         SYNTAX   DLCI
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 2 }
+
+
+     frCircuitState OBJECT-TYPE
+         SYNTAX   INTEGER    {
+
+                     invalid (1),
+                     active (2),
+                     inactive (3)
+                  }
+         MAX-ACCESS   read-create
+         STATUS   current
+         DEFVAL { active }
+         ::= { frCircuitEntry 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+     frCircuitReceivedFECNs OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 4 }
+
+
+     frCircuitReceivedBECNs OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+
+
+         STATUS   current
+         ::= { frCircuitEntry 5 }
+
+
+     frCircuitSentFrames OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 6 }
+
+
+     frCircuitSentOctets OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+
+
+
+
+
+         ::= { frCircuitEntry 7 }
+
+
+     frCircuitReceivedFrames OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 8 }
+
+
+     frCircuitReceivedOctets OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 9 }
+
+
+     frCircuitCreationTime OBJECT-TYPE
+         SYNTAX   TimeStamp
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 10 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     frCircuitLastTimeChange OBJECT-TYPE
+         SYNTAX   TimeStamp
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 11 }
+
+
+     frCircuitCommittedBurst OBJECT-TYPE
+         SYNTAX   Integer32(0..2147483647)
+         MAX-ACCESS   read-create
+         STATUS   current
+         DEFVAL   { 0 }  -- the default indicates no commitment
+         ::= { frCircuitEntry 12 }
+
+
+     frCircuitExcessBurst OBJECT-TYPE
+         SYNTAX   Integer32(0..2147483647)
+         MAX-ACCESS   read-create
+         STATUS   current
+         ::= { frCircuitEntry 13 }
+
+
+     frCircuitThroughput OBJECT-TYPE
+         SYNTAX   Integer32(0..2147483647)
+         MAX-ACCESS   read-create
+         STATUS   current
+         DEFVAL {0}  -- the default value of Throughput is
+         ::= { frCircuitEntry 14 }
+
+
+     frCircuitMulticast OBJECT-TYPE
+         SYNTAX   INTEGER    {
+                     unicast   (1),
+                     oneWay    (2),
+                     twoWay    (3),
+                     nWay      (4)
+                     }
+         MAX-ACCESS   read-create
+         STATUS   current
+              DEFVAL {unicast}
+              ::= { frCircuitEntry 15 }
+
+
+     frCircuitType OBJECT-TYPE
+         SYNTAX   INTEGER    {
+                     static  (1),
+                     dynamic (2)
+                  }
+
+
+
+
+
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 16 }
+
+
+     frCircuitDiscards OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 17 }
+
+
+     frCircuitReceivedDEs OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frCircuitEntry 18 }
+
+
+     frCircuitSentDEs OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+        ::= { frCircuitEntry 19 }
+
+     frCircuitLogicalIfIndex OBJECT-TYPE
+         SYNTAX  InterfaceIndex
+         MAX-ACCESS read-create
+         STATUS  current
+        ::= { frCircuitEntry 20 }
+
+     frCircuitRowStatus OBJECT-TYPE
+         SYNTAX   RowStatus
+         MAX-ACCESS   read-create
+         STATUS   current
+         ::= { frCircuitEntry 21 }
+
+
+
+
+     frErrTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF FrErrEntry
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         ::= { frameRelayDTE 3 }
+
+     frErrEntry OBJECT-TYPE
+         SYNTAX   FrErrEntry
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         INDEX { frErrIfIndex }
+         ::= { frErrTable 1 }
+
+
+     FrErrEntry ::=
+         SEQUENCE {
+             frErrIfIndex            InterfaceIndex,
+             frErrType               INTEGER,
+             frErrData               OCTET STRING,
+             frErrTime               TimeStamp,
+             frErrFaults             Counter32,
+             frErrFaultTime          TimeStamp
+     }
+
+
+     frErrIfIndex OBJECT-TYPE
+         SYNTAX   InterfaceIndex
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frErrEntry 1 }
+
+
+         frErrType OBJECT-TYPE
+             SYNTAX   INTEGER    {
+                         unknownError(1),
+                         receiveShort(2),
+                         receiveLong(3),
+                         illegalAddress(4),
+                         unknownAddress(5),
+                         dlcmiProtoErr(6),
+                         dlcmiUnknownIE(7),
+                         dlcmiSequenceErr(8),
+                         dlcmiUnknownRpt(9),
+                         noErrorSinceReset(10)
+                      }
+
+
+
+
+
+
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frErrEntry 2 }
+
+
+     frErrData OBJECT-TYPE
+         SYNTAX   OCTET STRING (SIZE(1..1600))
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frErrEntry 3 }
+
+
+
+
+
+
+
+     frErrTime OBJECT-TYPE
+         SYNTAX   TimeStamp
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frErrEntry 4 }
+
+
+     frErrFaults OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frErrEntry 5 }
+
+
+     frErrFaultTime OBJECT-TYPE
+         SYNTAX   TimeStamp
+         MAX-ACCESS   read-only
+         STATUS   current
+         ::= { frErrEntry 6 }
+
+
+
+
+     frameRelayTrapControl OBJECT IDENTIFIER ::= { frameRelayDTE 4 }
+
+     frameRelayTraps OBJECT IDENTIFIER ::= { frameRelayDTE 0 }
+
+
+
+
+
+
+
+
+     frTrapState OBJECT-TYPE
+         SYNTAX  INTEGER     { enabled(1), disabled(2) }
+         MAX-ACCESS   read-write
+         STATUS   current
+         DEFVAL { disabled }
+         ::= { frameRelayTrapControl 1 }
+
+     frTrapMaxRate OBJECT-TYPE
+         SYNTAX  Integer32 (0..3600000)
+         MAX-ACCESS   read-write
+         STATUS   current
+         DEFVAL { 0 }        -- no minimum elapsed period is specified
+         ::= { frameRelayTrapControl 2 }
+
+
+
+
+     frDLCIStatusChange NOTIFICATION-TYPE
+         OBJECTS  { frCircuitState }
+         STATUS      current
+
+
+     ::= { frameRelayTraps 1 }
+
+     frConformance OBJECT IDENTIFIER ::= { frameRelayDTE 6 }
+
+     frGroups      OBJECT IDENTIFIER ::= { frConformance 1 }
+     frCompliances OBJECT IDENTIFIER ::= { frConformance 2 }
+
+
+
+
+
+
+
+     frCompliance MODULE-COMPLIANCE
+         STATUS  current
+         MODULE  -- this module
+         MANDATORY-GROUPS { frPortGroup, frCircuitGroup }
+
+         GROUP       frErrGroup
+
+         GROUP       frTrapGroup
+
+         GROUP       frNotificationGroup
+
+         OBJECT      frDlcmiRowStatus
+         MIN-ACCESS  read-only
+
+         OBJECT      frCircuitRowStatus
+
+         MIN-ACCESS  read-only
+
+         ::= { frCompliances 1 }
+
+     frCompliance0 MODULE-COMPLIANCE
+         STATUS  current
+         MODULE  -- this module
+         MANDATORY-GROUPS { frPortGroup0, frCircuitGroup0 }
+
+         GROUP       frErrGroup0
+
+
+
+
+
+
+         GROUP       frTrapGroup0
+
+         GROUP       frNotificationGroup
+
+         ::= { frCompliances 2 }
+
+
+     frPortGroup    OBJECT-GROUP
+         OBJECTS {
+                   frDlcmiIfIndex, frDlcmiState, frDlcmiAddress,
+                   frDlcmiAddressLen, frDlcmiPollingInterval,
+                   frDlcmiFullEnquiryInterval, frDlcmiErrorThreshold,
+                   frDlcmiMonitoredEvents, frDlcmiMaxSupportedVCs,
+                   frDlcmiMulticast, frDlcmiStatus, frDlcmiRowStatus
+                }
+         STATUS  current
+         ::= { frGroups 1 }
+
+     frCircuitGroup    OBJECT-GROUP
+         OBJECTS {
+                   frCircuitIfIndex, frCircuitDlci, frCircuitState,
+                   frCircuitReceivedFECNs, frCircuitReceivedBECNs,
+                   frCircuitSentFrames, frCircuitSentOctets,
+                   frCircuitReceivedFrames, frCircuitReceivedOctets,
+                   frCircuitCreationTime, frCircuitLastTimeChange,
+                   frCircuitCommittedBurst, frCircuitExcessBurst,
+                   frCircuitThroughput, frCircuitMulticast,
+                   frCircuitType, frCircuitDiscards,
+                   frCircuitReceivedDEs, frCircuitSentDEs,
+                   frCircuitLogicalIfIndex, frCircuitRowStatus
+                 }
+         STATUS  current
+         ::= { frGroups 2 }
+
+
+
+
+
+
+     frTrapGroup    OBJECT-GROUP
+         OBJECTS { frTrapState, frTrapMaxRate }
+         STATUS  current
+         ::= { frGroups 3 }
+
+     frErrGroup    OBJECT-GROUP
+         OBJECTS {
+                   frErrIfIndex, frErrType, frErrData, frErrTime,
+                   frErrFaults, frErrFaultTime
+                }
+         STATUS  current
+         ::= { frGroups 4 }
+
+     frNotificationGroup NOTIFICATION-GROUP
+         NOTIFICATIONS { frDLCIStatusChange }
+         STATUS  current
+         ::= { frGroups 5 }
+
+     frPortGroup0    OBJECT-GROUP
+         OBJECTS {
+                   frDlcmiIfIndex, frDlcmiState, frDlcmiAddress,
+                   frDlcmiAddressLen, frDlcmiPollingInterval,
+                   frDlcmiFullEnquiryInterval, frDlcmiErrorThreshold,
+                   frDlcmiMonitoredEvents, frDlcmiMaxSupportedVCs,
+                   frDlcmiMulticast
+                }
+         STATUS  current
+         ::= { frGroups 6 }
+
+     frCircuitGroup0    OBJECT-GROUP
+         OBJECTS {
+                   frCircuitIfIndex, frCircuitDlci, frCircuitState,
+                   frCircuitReceivedFECNs, frCircuitReceivedBECNs,
+                   frCircuitSentFrames, frCircuitSentOctets,
+
+
+
+
+
+                   frCircuitReceivedFrames, frCircuitReceivedOctets,
+                   frCircuitCreationTime, frCircuitLastTimeChange,
+                   frCircuitCommittedBurst, frCircuitExcessBurst,
+                   frCircuitThroughput
+                 }
+         STATUS  current
+         ::= { frGroups 7 }
+
+     frErrGroup0    OBJECT-GROUP
+         OBJECTS {
+                   frErrIfIndex, frErrType, frErrData, frErrTime
+                }
+         STATUS  current
+         ::= { frGroups 8 }
+
+
+     frTrapGroup0    OBJECT-GROUP
+         OBJECTS { frTrapState }
+         STATUS  current
+         ::= { frGroups 9 }
+
+     END

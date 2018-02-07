@@ -1,7 +1,14 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.infra.model;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.persistence.Cacheable;
@@ -15,7 +22,7 @@ import org.apache.log4j.Logger;
 
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -24,11 +31,10 @@ import com.clustercontrol.infra.bean.AccessInfo;
 import com.clustercontrol.infra.bean.AccessMethodConstant;
 import com.clustercontrol.infra.bean.ModuleNodeResult;
 import com.clustercontrol.infra.bean.OkNgConstant;
+import com.clustercontrol.infra.util.InfraParameterUtil;
 import com.clustercontrol.infra.util.JschUtil;
-import com.clustercontrol.infra.util.QueryUtil;
 import com.clustercontrol.infra.util.WinRMUtil;
 import com.clustercontrol.repository.model.NodeInfo;
-import com.clustercontrol.repository.util.RepositoryUtil;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.StringBinder;
 
@@ -46,7 +52,7 @@ public class CommandModuleInfo extends InfraModuleInfo<CommandModuleInfo> {
 	public static final int MESSAGE_SIZE = 1024;
 
 	public static final String typeName = "ExecModule";
-	
+
 	private int accessMethodType;
 	private String execCommand;
 	private String checkCommand;
@@ -88,10 +94,10 @@ public class CommandModuleInfo extends InfraModuleInfo<CommandModuleInfo> {
 	}
 	
 	@Override
-	public ModuleNodeResult run(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId) throws HinemosUnknown, InvalidUserPass {
+	public ModuleNodeResult run(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId, Map<String, String> paramMap) throws HinemosUnknown, InvalidUserPass {
 		Logger.getLogger(this.getClass()).debug(String.format(String.format("%s %s, manegementId = %s, moduleId = %s", "start", "run", management.getManagementId(), getModuleId())));
 
-		ModuleNodeResult result =  execCommand(node, getExecCommand(), access);
+		ModuleNodeResult result =  execCommand(management.getManagementId(), node, getExecCommand(), access, paramMap);
 		
 		Logger.getLogger(this.getClass()).debug(String.format(String.format("%s %s, manegementId = %s, moduleId = %s", "end", "run", management.getManagementId(), getModuleId())));
 		
@@ -99,41 +105,34 @@ public class CommandModuleInfo extends InfraModuleInfo<CommandModuleInfo> {
 	}
 
 	@Override
-	public ModuleNodeResult check(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId, boolean check) throws HinemosUnknown, InvalidUserPass {
-		return execCommand(node, getCheckCommand(), access);
+	public ModuleNodeResult check(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId, Map<String, String> paramMap, boolean check) throws HinemosUnknown, InvalidUserPass {
+		if (getCheckCommand() == null || getCheckCommand().isEmpty()) {
+			// チェックコマンドが未設定の場合
+			Long returnValue = HinemosPropertyCommon.infra_checkcommand_returnvalue_default.getNumericValue();
+			int result = OkNgConstant.TYPE_OK;
+			if (returnValue != 0) {
+				result = OkNgConstant.TYPE_NG;
+			}
+			return new ModuleNodeResult(node.getFacilityId(), result, returnValue.intValue(), "check command is not set.");
+		} else {
+			return execCommand(management.getManagementId(), node, getCheckCommand(), access, paramMap);
+		}
 	}
 	
-	private ModuleNodeResult execCommand(NodeInfo node, String command, AccessInfo access) {
+	private ModuleNodeResult execCommand(String managementId, NodeInfo node, String command, AccessInfo access, Map<String, String> paramMap) {
 		String facilityId = node.getFacilityId();
 		String address = node.getAvailableIpAddress();
-		
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		List<InfraFileInfo> fileList = QueryUtil.getAllInfraFile();
 
 		// コマンド文字列の置換
 		String bindCommand;
 		try {
-			HashMap<String, String> map = new HashMap<String, String>();
-			
-			// ノード変数
-			Map<String, String> variable = RepositoryUtil.createNodeParameter(node);
-			map.putAll(variable);
-			
-			// ファイルID			
-			for (InfraFileInfo file : fileList) {
-				String key = "FILE:" + file.getFileId();
-				String value = file.getFileName();
-				map.put(key, value);
-				Logger.getLogger(this.getClass()).debug("execCommand()  >>> param.put = : " + key  + "  value = " +  value);
-			}
+			HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap);
 			StringBinder binder = new StringBinder(map);
 			bindCommand = binder.bindParam(command);
 		} catch (Exception e) {
 			Logger.getLogger(this.getClass()).warn("execCommand() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			bindCommand = command;
-		} finally {
-			jtm.close();
 		}
 		
 		
@@ -159,7 +158,7 @@ public class CommandModuleInfo extends InfraModuleInfo<CommandModuleInfo> {
 	@Override
 	protected void validateSub(InfraManagementInfo infraManagementInfo) throws InvalidSetting, InvalidRole {
 		// execCommand
-		CommonValidator.validateString(MessageConstant.INFRA_MODULE_EXEC_COMMAND.getMessage(), getExecCommand(), false, 0, 1024);
+		CommonValidator.validateString(MessageConstant.INFRA_MODULE_EXEC_COMMAND.getMessage(), getExecCommand(), true, 1, 1024);
 		
 		// checkCommand
 		CommonValidator.validateString(MessageConstant.INFRA_MODULE_CHECK_COMMAND.getMessage(), getCheckCommand(), false, 0, 1024);

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.custom.factory;
@@ -37,12 +30,14 @@ public class ModifyCustomString extends ModifyMonitorStringValueType {
 	 */
 	@Override
 	protected boolean addCheckInfo() throws MonitorNotFound, InvalidRole {
-		// コマンド監視設定を登録する
-		CustomCheckInfo checkInfo = m_monitorInfo.getCustomCheckInfo();
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		checkInfo.setMonitorId(m_monitorInfo.getMonitorId());
-		em.persist(checkInfo);
-		return true;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			// コマンド監視設定を登録する
+			CustomCheckInfo checkInfo = m_monitorInfo.getCustomCheckInfo();
+			checkInfo.setMonitorId(m_monitorInfo.getMonitorId());
+			em.persist(checkInfo);
+			return true;
+		}
 	}
 
 	/**

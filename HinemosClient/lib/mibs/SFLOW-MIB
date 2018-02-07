@@ -1,0 +1,190 @@
+SFLOW-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+
+MODULE-IDENTITY, OBJECT-TYPE, Integer32, enterprises
+        FROM SNMPv2-SMI
+SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
+OwnerString
+        FROM RMON-MIB
+InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB
+MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF;
+
+sFlowMIB  MODULE-IDENTITY
+  LAST-UPDATED "200105150000Z"   -- May 15, 2001
+  ORGANIZATION "InMon Corp."
+
+
+  ::= { enterprises 4300 1 }
+
+sFlowAgent OBJECT IDENTIFIER ::= { sFlowMIB 1 }
+
+sFlowVersion OBJECT-TYPE
+     SYNTAX      SnmpAdminString
+     MAX-ACCESS  read-only
+     STATUS      current
+     DEFVAL { "1.2;;" }
+     ::= { sFlowAgent 1 }
+
+sFlowAgentAddressType OBJECT-TYPE
+     SYNTAX      InetAddressType
+     MAX-ACCESS  read-only
+     STATUS      current
+     ::= { sFlowAgent 2 }
+
+sFlowAgentAddress OBJECT-TYPE
+     SYNTAX      InetAddress
+     MAX-ACCESS  read-only
+     STATUS      current
+    ::= { sFlowAgent 3 }
+
+sFlowTable OBJECT-TYPE
+     SYNTAX      SEQUENCE OF SFlowEntry
+     MAX-ACCESS  not-accessible
+     STATUS      current
+     ::= { sFlowAgent 4 }
+
+sFlowEntry OBJECT-TYPE
+     SYNTAX      SFlowEntry
+
+
+
+
+
+     MAX-ACCESS  not-accessible
+     STATUS      current
+     INDEX { sFlowDataSource }
+     ::= { sFlowTable 1 }
+
+SFlowEntry ::= SEQUENCE {
+     sFlowDataSource               OBJECT IDENTIFIER,
+     sFlowOwner                    OwnerString,
+     sFlowTimeout                  Integer32,
+     sFlowPacketSamplingRate       Integer32,
+     sFlowCounterSamplingInterval  Integer32,
+     sFlowMaximumHeaderSize        Integer32,
+     sFlowMaximumDatagramSize      Integer32,
+     sFlowCollectorAddressType     InetAddressType,
+     sFlowCollectorAddress         InetAddress,
+     sFlowCollectorPort            Integer32,
+     sFlowDatagramVersion          Integer32
+}
+
+sFlowDataSource OBJECT-TYPE
+     SYNTAX      OBJECT IDENTIFIER
+     MAX-ACCESS  read-only
+     STATUS      current
+     ::= { sFlowEntry 1 }
+
+sFlowOwner OBJECT-TYPE
+     SYNTAX      OwnerString
+     MAX-ACCESS  read-write
+     STATUS      current
+     DEFVAL { "" }
+     ::= { sFlowEntry 2 }
+
+sFlowTimeout OBJECT-TYPE
+     SYNTAX      Integer32
+     MAX-ACCESS  read-write
+     STATUS      current
+     DEFVAL { 0 }
+     ::= { sFlowEntry 3 }
+
+sFlowPacketSamplingRate OBJECT-TYPE
+     SYNTAX      Integer32
+     MAX-ACCESS  read-write
+     STATUS      current
+     DEFVAL { 0 }
+     ::= { sFlowEntry 4 }
+
+sFlowCounterSamplingInterval OBJECT-TYPE
+  SYNTAX      Integer32
+     MAX-ACCESS  read-write
+     STATUS      current
+     DEFVAL { 0 }
+     ::= { sFlowEntry 5 }
+
+sFlowMaximumHeaderSize OBJECT-TYPE
+     SYNTAX      Integer32
+     MAX-ACCESS  read-write
+     STATUS      current
+     DEFVAL { 128 }
+     ::= { sFlowEntry 6 }
+
+sFlowMaximumDatagramSize OBJECT-TYPE
+     SYNTAX      Integer32
+     MAX-ACCESS  read-write
+     STATUS      current
+     DEFVAL { 1400 }
+     ::= { sFlowEntry 7 }
+
+sFlowCollectorAddressType OBJECT-TYPE
+     SYNTAX      InetAddressType
+     MAX-ACCESS  read-write
+
+
+
+
+
+     STATUS      current
+     DEFVAL { ipv4 }
+     ::= { sFlowEntry 8 }
+
+sFlowCollectorAddress OBJECT-TYPE
+     SYNTAX      InetAddress
+     MAX-ACCESS  read-write
+     STATUS      current
+     DEFVAL { "0.0.0.0" }
+     ::= { sFlowEntry 9 }
+
+sFlowCollectorPort OBJECT-TYPE
+     SYNTAX      Integer32
+     MAX-ACCESS  read-write
+     STATUS      current
+     DEFVAL { 6343 }
+     ::= { sFlowEntry 10 }
+
+sFlowDatagramVersion OBJECT-TYPE
+     SYNTAX      Integer32
+     MAX-ACCESS  read-write
+     STATUS      current
+     DEFVAL { 4 }
+     ::= { sFlowEntry 11 }
+
+
+sFlowMIBConformance OBJECT IDENTIFIER ::= { sFlowMIB 2 }
+sFlowMIBGroups      OBJECT IDENTIFIER ::= { sFlowMIBConformance 1 }
+sFlowMIBCompliances OBJECT IDENTIFIER ::= { sFlowMIBConformance 2 }
+
+sFlowCompliance MODULE-COMPLIANCE
+     STATUS      current
+
+
+
+
+
+
+     MODULE -- this module
+         MANDATORY-GROUPS { sFlowAgentGroup }
+         OBJECT     sFlowAgentAddressType
+         SYNTAX     InetAddressType { ipv4(1) }
+
+         OBJECT sFlowCollectorAddressType
+         SYNTAX InetAddressType { ipv4(1) }
+
+     ::= { sFlowMIBCompliances 1 }
+
+sFlowAgentGroup OBJECT-GROUP
+     OBJECTS { sFlowVersion, sFlowAgentAddressType, sFlowAgentAddress,
+               sFlowDataSource, sFlowOwner, sFlowTimeout,
+               sFlowPacketSamplingRate, sFlowCounterSamplingInterval,
+               sFlowMaximumHeaderSize, sFlowMaximumDatagramSize,
+               sFlowCollectorAddressType, sFlowCollectorAddress,
+               sFlowCollectorPort, sFlowDatagramVersion }
+      STATUS current
+       ::= { sFlowMIBGroups 1 }
+
+END
