@@ -26,7 +26,7 @@ You can install hinemos with the following commands.
 
 ```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.0/hinemos-6.1-web-6.1.0-1.el7.x86_64.rpm```
 
-See the [install document](https://github.com/hinemos/hinemos/releases/download/v6.1.0/en_doc_install_6.1.pdf) for details.
+See the install document for details.
 
 ## What's new in ver.6.1
 
