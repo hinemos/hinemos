@@ -43,12 +43,11 @@ See the [release notes](https://github.com/hinemos/hinemos/releases) for details
 
 ## Documentation
 
-- Installation Manual (
-[en_doc_install_6.1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.0/en_doc_install_6.1.pdf) )
-- User Manual (
-[en_doc_user_6.1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.0/en_doc_user_6.1.pdf) )
-- Administrator's Guide (
-[en_doc_admin_6.1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.0/en_doc_admin_6.1.pdf) )
+English manuals will be available soon.
+
+- Installation Manual 
+- User Manual 
+- Administrator's Guide 
 
 ## License
 
