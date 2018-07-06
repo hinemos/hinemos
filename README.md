@@ -1,4 +1,4 @@
-﻿## Hinemos
+## Hinemos
 
 <p align="center"> 
   <img alt="download" src="https://img.shields.io/github/downloads/hinemos/hinemos/total.svg"/>
@@ -12,7 +12,7 @@
 
 Hinemos is an open source integrated system management software providing both monitoring and job management (workload scheduling) features, to implement system operation automation.
 
-[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v6.1.0#packages)
+[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v6.1.1#packages)
 
 ## Installation
 
@@ -20,11 +20,11 @@ You can install hinemos with the following commands.
 
 - Manager Installation
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.0/hinemos-6.1-manager-6.1.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.1/hinemos-6.1-manager-6.1.1-1.el7.x86_64.rpm```
 
 - Web Client Installation
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.0/hinemos-6.1-web-6.1.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.1/hinemos-6.1-web-6.1.1-1.el7.x86_64.rpm```
 
 See the install document for details.
 
@@ -43,11 +43,9 @@ See the [release notes](https://github.com/hinemos/hinemos/releases) for details
 
 ## Documentation
 
-English manuals will be available soon.
-
-- Installation Manual 
-- User Manual 
-- Administrator's Guide 
+- Installation Manual ([en_Install_Linux_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.1/en_Install_Linux_6.1_rev1.pdf) )
+- User Manual ( [en_User_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.1/en_User_6.1_rev1.pdf) )
+- Administrator's Guide ( [en_Admin_Linux_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.1/en_Admin_Linux_6.1_rev1.pdf) )
 
 ## License
 
