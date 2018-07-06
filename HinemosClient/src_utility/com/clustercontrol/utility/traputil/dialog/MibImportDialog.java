@@ -27,7 +27,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
@@ -36,6 +35,7 @@ import com.clustercontrol.utility.traputil.action.GetImportMibDetailTableDefine;
 import com.clustercontrol.utility.traputil.bean.ImportMibDetailTableDefine;
 import com.clustercontrol.utility.traputil.bean.ImportStatus;
 import com.clustercontrol.utility.traputil.bean.SnmpTrapMasterInfo;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
@@ -208,7 +208,7 @@ public class MibImportDialog extends CommonDialog {
 		
 			Set<String> registeredSet = new HashSet<>();
 			try {
-				MonitorInfo info = MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitor(monitorId);
+				MonitorInfo info = MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorId);
 				for(TrapValueInfo trap: info.getTrapCheckInfo().getTrapValueInfos()){
 					registeredSet.add(trap.getTrapOid() + trap.getGenericId() + trap.getSpecificId() + trap.getMib());
 				}

@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
@@ -25,6 +24,7 @@ import com.clustercontrol.utility.settings.monitor.xml.AgentMonitorList;
 import com.clustercontrol.utility.settings.monitor.xml.AgentMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.TruthValue;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -88,7 +88,7 @@ public class AgentConv {
 		for (MonitorInfo monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
+			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
 
 			AgentMonitor agentMonitor = new AgentMonitor();
 			agentMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));

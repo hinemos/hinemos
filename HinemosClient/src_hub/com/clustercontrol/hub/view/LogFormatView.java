@@ -63,6 +63,7 @@ public class LogFormatView extends CommonViewPart implements ObjectPrivilegeTarg
 	 */
 	@Override
 	public void createPartControl(Composite parent) {
+		super.createPartControl(parent);
 		logFormatViewParentComposite = parent;
 
 		logFormatComposite = new LogFormatComposite(logFormatViewParentComposite, SWT.NONE);

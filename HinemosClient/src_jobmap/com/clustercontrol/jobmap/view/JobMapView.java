@@ -19,7 +19,7 @@ import com.clustercontrol.jobmanagement.view.JobMapViewIF;
 import com.clustercontrol.jobmap.composite.JobMapComposite;
 import com.clustercontrol.jobmap.composite.MapSearchBarComposite;
 import com.clustercontrol.jobmap.figure.JobFigure;
-import com.clustercontrol.jobmap.util.JobmapIconImageCache;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.view.AutoUpdateView;
 import com.clustercontrol.ws.jobmanagement.JobTreeItem;
@@ -35,7 +35,7 @@ public abstract class JobMapView extends AutoUpdateView implements JobMapViewIF 
 	
 	@Override
 	public void createPartControl(Composite parent) {
-
+		super.createPartControl(parent);
 		parent.setLayout(new GridLayout(1, false));
 		m_searchBar = new MapSearchBarComposite(parent ,SWT.NONE, true);
 		m_searchBar.setLayoutData( new GridData(GridData.GRAB_HORIZONTAL) );
@@ -50,6 +50,7 @@ public abstract class JobMapView extends AutoUpdateView implements JobMapViewIF 
 		m_searchBar.setJobMapComposite(m_canvasComposite);
 		//ビューの更新
 		m_canvasComposite.update();
+		m_canvasComposite.initialMessageDisplay();
 		
 		// 設定情報反映
 		applySetting();
@@ -101,7 +102,9 @@ public abstract class JobMapView extends AutoUpdateView implements JobMapViewIF 
 		m_canvasComposite.clearCanvas();
 		m_canvasComposite.clearMapData();
 		// アイコンイメージキャッシュの更新
-		JobmapIconImageCache.refresh();
+		JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
+		iconCache.refresh();
+		m_canvasComposite.initialMessageDisplay();
 	}
 
 	public JobMapComposite getCanvasComposite() {

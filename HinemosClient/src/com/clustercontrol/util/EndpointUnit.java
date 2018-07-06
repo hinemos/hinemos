@@ -31,7 +31,6 @@ import javax.xml.ws.WebServiceClient;
 import javax.xml.ws.WebServiceException;
 import javax.xml.ws.soap.SOAPBinding;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -400,7 +399,7 @@ public class EndpointUnit {
 
 	public String getUrlListStr() {
 		if(null != urlList){
-			return StringUtils.join(getUrlList(), ", ");
+			return String.join(", ", getUrlList());
 		}else{
 			return null;
 		}

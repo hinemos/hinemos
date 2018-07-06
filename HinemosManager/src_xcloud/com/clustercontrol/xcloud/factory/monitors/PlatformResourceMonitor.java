@@ -151,7 +151,6 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 		if (lock.tryLock()) {
 			try {
 				ActionMode.enterAutoDetection();
-				
 				logger.debug("Start async auto-detect...");
 				for (AutoDetectionListner listener: listeners) {
 					listener.onPreUpdateRoot();
@@ -176,7 +175,6 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 		if (lock.tryLock()) {
 			try {
 				ActionMode.enterAutoDetection();
-				
 				logger.debug("Start async auto-detect...");
 				
 				for (AutoDetectionListner listener: listeners) {
@@ -222,7 +220,6 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 					Future<CacheResourceManagement> future = threadPool.submit(new Callable<CacheResourceManagement>() {
 						@Override
 						public CacheResourceManagement call() throws Exception {
-							ActionMode.enterAutoDetection();
 							try (SessionScope sessionScope = SessionScope.open(contextData)) {
 								long start = System.currentTimeMillis();
 								logger.debug(String.format("Start getting cloud resources. %s", key));
@@ -265,8 +262,6 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 							} catch (Exception e) {
 								CloudMessageUtil.notify_AutoUpadate_Error(cloudScope.getId(), location.getLocationId(), e);
 								logger.warn(e.getMessage(), e);
-							} finally {
-								ActionMode.leaveAutoDetection();
 							}
 							return null;
 						}

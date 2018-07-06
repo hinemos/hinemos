@@ -36,8 +36,8 @@ import com.clustercontrol.utility.settings.DiffMethod;
 import com.clustercontrol.utility.settings.ExportMethod;
 import com.clustercontrol.utility.settings.ImportMethod;
 import com.clustercontrol.utility.settings.SettingConstants;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
 
 /**
  * インポート・エクスポート・削除するアクションの基底クラス<br>
@@ -175,7 +175,7 @@ public abstract class BaseAction<D, E, T> {
 
 		log.debug("Start Import " + getActionName());
 		
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 	    	getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 	    	getLogger().debug("End Import " + getActionName() + " (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;

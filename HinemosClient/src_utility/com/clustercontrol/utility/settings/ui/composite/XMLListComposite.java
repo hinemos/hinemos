@@ -19,14 +19,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 
-import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.ClusterControlPlugin.ManagerChangeListener;
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ui.action.ReadXMLAction;
 import com.clustercontrol.utility.settings.ui.bean.FuncTreeItem;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
 
 /**
@@ -113,7 +112,7 @@ public class XMLListComposite extends Composite {
 				1, 1);
 		
 
-		ClusterControlPlugin.getDefault().addManagerChangeListener(new ManagerChangeListener() {
+		UtilityManagerUtil.addManagerChangeListener(new UtilityManagerUtil.ManagerChangeListener() {
 			@Override
 			public void notifyManagerChanged() {
 				String dir = MultiManagerPathUtil.getDirectoryPath(SettingToolsXMLPreferencePage.KEY_XML);

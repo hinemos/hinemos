@@ -11,13 +11,14 @@ import static com.clustercontrol.xcloud.common.CloudConstants.Node_CloudScope;
 import static com.clustercontrol.xcloud.common.CloudConstants.Scope_All_Node;
 import static com.clustercontrol.xcloud.common.CloudConstants.Scope_CloudScope;
 import static com.clustercontrol.xcloud.common.CloudConstants.Scope_Location;
-import static com.clustercontrol.xcloud.common.CloudConstants.Scope_Private_Root;
 import static com.clustercontrol.xcloud.common.CloudConstants.Scope_Public_Root;
+import static com.clustercontrol.xcloud.common.CloudConstants.Scope_Private_Root;
 import static com.clustercontrol.xcloud.common.CloudConstants.privateRootId;
 import static com.clustercontrol.xcloud.common.CloudConstants.publicRootId;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +32,8 @@ import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
+import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
+import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.FacilityDuplicate;
@@ -61,8 +64,8 @@ import com.clustercontrol.xcloud.model.ExtendedProperty;
 import com.clustercontrol.xcloud.model.FacilityAdditionEntity;
 import com.clustercontrol.xcloud.model.IAssignableEntity;
 import com.clustercontrol.xcloud.model.InstanceEntity;
-import com.clustercontrol.xcloud.model.ResourceTag;
 import com.clustercontrol.xcloud.model.LocationEntity;
+import com.clustercontrol.xcloud.model.ResourceTag;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil.TransactionScope;
 import com.clustercontrol.xcloud.persistence.TransactionException;
@@ -132,7 +135,7 @@ public class RepositoryUtil {
 					
 					String cloudScopeScopeId = FacilityIdUtil.getCloudScopeScopeId(locationEntity.getCloudScope());
 					String locationScopeId = FacilityIdUtil.getLocationScopeId(locationEntity.getCloudScope().getId(), locationEntity);
-					ScopeInfo scopeInfo = createScopeIfNotExist(Scope_Location, cloudScopeScopeId, locationScopeId, locationEntity.getName(), locationEntity.getCloudScope().getOwnerRoleId(), listener);
+					ScopeInfo scopeInfo = createScopeIfNotExist(Scope_Location, cloudScopeScopeId, locationScopeId, locationEntity.getName(), locationEntity.getCloudScope().getOwnerRoleId(), false, listener);
 					tracer.traceLocation(scopeInfo, locationEntity);
 				} catch (CloudManagerException e) {
 					throw e;
@@ -144,14 +147,10 @@ public class RepositoryUtil {
 	}
 	
 	interface ScopeCreationListener {
-		void onCeated(ScopeInfo scopeInfo);
+		void onCeated(ScopeInfo scopeInfo) throws CloudManagerException;
 	}
 	
-	public static ScopeInfo createScopeIfNotExist(String eventType, String parentId, String cloudScopeId, String scopeName, String ownerRoleId) throws CloudManagerException {
-		return createScopeIfNotExist(eventType, parentId, cloudScopeId, scopeName, ownerRoleId, null);
-	}
-	
-	public static ScopeInfo createScopeIfNotExist(String eventType, String parentId, String cloudScopeId, String scopeName, String ownerRoleId, ScopeCreationListener listener) throws CloudManagerException {
+	public static ScopeInfo createScopeIfNotExist(String eventType, String parentId, String cloudScopeId, String scopeName, String ownerRoleId, boolean builtin, ScopeCreationListener listener) throws CloudManagerException {
 		ScopeInfo scopeInfo;
 		try {
 			scopeInfo = RepositoryControllerBeanWrapper.bean().getScope(cloudScopeId);
@@ -175,6 +174,7 @@ public class RepositoryUtil {
 			scopeInfo = CloudUtil.createScope(cloudScopeId, scopeName, ownerRoleId);
 			try (AddedEventNotifier<ScopeInfo> notifier = new AddedEventNotifier<>(ScopeInfo.class, eventType, scopeInfo)) {
 				RepositoryControllerBeanWrapper.bean().addScope(parentId, scopeInfo);
+				
 				if (listener != null)
 					listener.onCeated(scopeInfo);
 				notifier.setCompleted();
@@ -194,7 +194,21 @@ public class RepositoryUtil {
 	}
 	public static ScopeInfo createPublicRootScope(RepositoryUtil.Tracer tracer) throws CloudManagerException {
 		String facilityName = CloudMessageConstant.PUBLIC_CLOUDROOT_SCOPE_NAME.getMessage();
-		ScopeInfo scope = createScopeIfNotExist(Scope_Public_Root, null, publicRootId, facilityName, RoleIdConstant.ADMINISTRATORS, null);
+		ScopeInfo scope = createScopeIfNotExist(Scope_Public_Root, null, publicRootId, facilityName, RoleIdConstant.ADMINISTRATORS, true, 
+			s->{
+				AccessControllerBean access = new AccessControllerBean();
+				
+				ObjectPrivilegeInfo priv1 = new ObjectPrivilegeInfo();
+				priv1.setRoleId("ALL_USERS");
+				priv1.setObjectType("PLT_REP");
+				priv1.setObjectId(publicRootId);
+				priv1.setObjectPrivilege("READ");
+				try {
+					access.replaceObjectPrivilegeInfo("PLT_REP", publicRootId, Arrays.asList(priv1));
+				} catch (Exception e) {
+					throw new CloudManagerException(e);
+				}
+			});
 		tracer.traceRoot(scope);
 		return scope;
 	}
@@ -204,14 +218,25 @@ public class RepositoryUtil {
 	}
 	public static ScopeInfo createPrivateRootScope(RepositoryUtil.Tracer tracer) throws CloudManagerException {
 		String facilityName = CloudMessageConstant.PRIVATE_CLOUDROOT_SCOPE_NAME.getMessage();
-		ScopeInfo scope = createScopeIfNotExist(Scope_Private_Root, null, privateRootId, facilityName, RoleIdConstant.ADMINISTRATORS, null);
+		ScopeInfo scope = createScopeIfNotExist(Scope_Private_Root, null, privateRootId, facilityName, RoleIdConstant.ADMINISTRATORS, true,
+			s->{
+				AccessControllerBean access = new AccessControllerBean();
+				
+				ObjectPrivilegeInfo priv1 = new ObjectPrivilegeInfo();
+				priv1.setRoleId("ALL_USERS");
+				priv1.setObjectType("PLT_REP");
+				priv1.setObjectId(privateRootId);
+				priv1.setObjectPrivilege("READ");
+				try {
+					access.replaceObjectPrivilegeInfo("PLT_REP", privateRootId, Arrays.asList(priv1));
+				} catch (Exception e) {
+					throw new CloudManagerException(e);
+				}
+			});
 		tracer.traceRoot(scope);
 		return scope;
 	}
 
-	public static void createCloudScopeScope(CloudScopeEntity cloudScope) throws CloudManagerException {
-		createCloudScopeScope(cloudScope, new Tracer());
-	}
 	public static void createCloudScopeScope(final CloudScopeEntity cloudScope, final RepositoryUtil.Tracer tracer) throws CloudManagerException {
 		CloudManager.singleton().optionExecute(cloudScope.getPlatformId(), new OptionExecutor() {
 			@Override
@@ -244,11 +269,11 @@ public class RepositoryUtil {
 					
 					if (option.getCloudSpec().isPublicCloud()) {
 						String cloudScopeScopeId = FacilityIdUtil.getCloudScopeScopeId(cloudScope);
-						ScopeInfo scope = createScopeIfNotExist(Scope_CloudScope, publicRootId, cloudScopeScopeId, cloudScope.getName(), cloudScope.getOwnerRoleId(), listener);
+						ScopeInfo scope = createScopeIfNotExist(Scope_CloudScope, publicRootId, cloudScopeScopeId, cloudScope.getName(), cloudScope.getOwnerRoleId(), false, listener);
 						tracer.traceCloudScope(scope, cloudScope);
 					} else {
 						String cloudScopeScopeId = FacilityIdUtil.getCloudScopeScopeId(cloudScope);
-						ScopeInfo scope = createScopeIfNotExist(Scope_CloudScope, privateRootId, cloudScopeScopeId, cloudScope.getName(), cloudScope.getOwnerRoleId(), listener);
+						ScopeInfo scope = createScopeIfNotExist(Scope_CloudScope, privateRootId, cloudScopeScopeId, cloudScope.getName(), cloudScope.getOwnerRoleId(), false, listener);
 						tracer.traceCloudScope(scope, cloudScope);
 					}
 				} catch (CloudManagerException e) {
@@ -292,7 +317,7 @@ public class RepositoryUtil {
 	public static void createAllNodeScope(CloudScopeEntity cloudScope) throws CloudManagerException {
 		String allNodeName = CloudMessageConstant.ALL_NODE_SCOPE_NAME.getMessage();
 		String cloudScopeScopeId = FacilityIdUtil.getCloudScopeScopeId(cloudScope);
-		createScopeIfNotExist(Scope_All_Node, cloudScopeScopeId, FacilityIdUtil.getAllNodeScopeId(cloudScope.getPlatformId(), cloudScope.getId()), allNodeName, cloudScope.getOwnerRoleId(), null);
+		createScopeIfNotExist(Scope_All_Node, cloudScopeScopeId, FacilityIdUtil.getAllNodeScopeId(cloudScope.getPlatformId(), cloudScope.getId()), allNodeName, cloudScope.getOwnerRoleId(), false, null);
 	}
 	
 	public static void createCloudScopeRepository(CloudScopeEntity cloudScope) throws CloudManagerException {
@@ -556,10 +581,6 @@ public class RepositoryUtil {
 						CloudUtil.notifyInternalMessage(
 								Priority.WARNING,
 								CloudMessageUtil.pluginId_cloud,
-								cloudScope.getId(),
-								"",
-								CloudMessageUtil.InternalScopeText,
-								CloudMessageConstant.AUTODETECTION.getMessage(),
 								CloudMessageConstant.VALIDATION_SCOPE_NOT_FOUND.getMessage(entry.getValue().toString(),entry.getKey()),
 								""
 								);
@@ -590,10 +611,6 @@ public class RepositoryUtil {
 								CloudUtil.notifyInternalMessage(
 										CloudUtil.Priority.WARNING,
 										CloudMessageUtil.pluginId_cloud,
-										cloudScope.getId(),
-										"",
-										CloudMessageUtil.InternalScopeText,
-										"Auto Scope Assignner",
 										CloudMessageConstant.AUTOUPDATE_ERROR.getMessage(),
 										CloudMessageUtil.getExceptionStackTrace(e)
 								);
@@ -605,10 +622,6 @@ public class RepositoryUtil {
 					CloudUtil.notifyInternalMessage(
 							CloudUtil.Priority.WARNING,
 							CloudMessageUtil.pluginId_cloud,
-							cloudScope.getId(),
-							"",
-							CloudMessageUtil.InternalScopeText,
-							"Auto Scope Assignner",
 							CloudMessageConstant.AUTOUPDATE_ERROR.getMessage(),
 							CloudMessageUtil.getExceptionStackTrace(e)
 					);

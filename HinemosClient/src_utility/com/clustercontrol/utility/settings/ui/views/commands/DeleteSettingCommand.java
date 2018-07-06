@@ -40,7 +40,6 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.client.ui.util.FileDownloader;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
@@ -56,6 +55,7 @@ import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.FileUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
 import com.clustercontrol.utility.util.UtilityEndpointWrapper;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.utility.util.ZipUtil;
 import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
 import com.clustercontrol.ws.utility.InvalidRole_Exception;
@@ -97,7 +97,7 @@ public class DeleteSettingCommand extends AbstractHandler implements IElementUpd
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 
 		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 			String version = wrapper.getVersion();
 			if (version.length() > 7) {
 				boolean result = Boolean.valueOf(version.substring(7, version.length()));
@@ -273,7 +273,7 @@ public class DeleteSettingCommand extends AbstractHandler implements IElementUpd
 					MessageDialog.openQuestion(
 							null,
 							Messages.getString("message.confirm"),
-							Messages.getString("string.manager") + " :  " + ClusterControlPlugin.getDefault().getCurrentManagerName() + " ( " + EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getUrlListStr() + " )\n\n" +
+							Messages.getString("string.manager") + " :  " + UtilityManagerUtil.getCurrentManagerName() + " ( " + EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() + " )\n\n" +
 							Messages.getString("message.delete.confirm1") + "\n\n" +funcs ))
 			{
 				

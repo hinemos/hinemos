@@ -133,7 +133,8 @@ public class WinRMUtil {
 			//一時ファイルをディコードして、送信先ファイルに保存
 			output = decodeTempFile(winRs, shellId, tempFilePath, dstFilePath, isBackupIfExistFlg);
 			msg = "out=" + output.getStdout().trim() + "\n" + "err=" + output.getStderr().trim();
-			if (output.getExitCode() != 0) {
+			// PowershellでOOME発生の場合、ExitCode=0で返ってくるのでエラー出力も確認している
+			if (output.getExitCode() != 0 || output.getStderr().trim().contains("System.OutOfMemoryException")) {
 				log.warn("sendFile() code="+output.getExitCode()+",out="+output.getStdout()+",err="+output.getStderr());
 				return new ModuleNodeResult(OkNgConstant.TYPE_NG, 1, XMLUtil.ignoreInvalidString(msg));
 			}
@@ -301,9 +302,25 @@ public class WinRMUtil {
 		buffer.append("    }" + winReturnCode);
 		buffer.append("    rm $dest_file_path" + winReturnCode);
 		buffer.append("}" + winReturnCode);
-		buffer.append("$xmlDoc = [XML](Get-Content $tmp_file_path)" + winReturnCode);
-		buffer.append("$bytes = [System.Convert]::FromBase64String($xmlDoc.Envelope.Body.downloadTransferFileResponse.return)" + winReturnCode);
-		buffer.append("[System.IO.File]::WriteAllBytes($dest_file_path, $bytes)" + winReturnCode);
+		buffer.append("$f = [System.Xml.XmlReader]::create($tmp_file_path)" + winReturnCode);
+		buffer.append("$writer = [System.IO.File]::OpenWrite($dest_file_path)" + winReturnCode);
+		buffer.append("$bufferSize = 10 * 1024 * 1024 # should be a multiplier of 4" + winReturnCode);
+		buffer.append("$buffer = New-Object char[] $bufferSize" + winReturnCode);
+		buffer.append("while ($f.read()) {" + winReturnCode);
+		buffer.append("    switch ($f.NodeType) {" + winReturnCode);
+		buffer.append("        ([System.Xml.XmlNodeType]::Element) {" + winReturnCode);
+		buffer.append("            if ($f.Name -eq \"return\") {" + winReturnCode);
+		buffer.append("                $null = $f.read()" + winReturnCode);
+		buffer.append("                while (($len = $f.ReadValueChunk($buffer, 0 ,$bufferSize)) -ne 0) {" + winReturnCode);
+		buffer.append("                    $bytes = [Convert]::FromBase64CharArray($buffer, 0, $len)" + winReturnCode);
+		buffer.append("                    $writer.Write($bytes, 0, $bytes.Length)" + winReturnCode);
+		buffer.append("                }" + winReturnCode);
+		buffer.append("            }" + winReturnCode);
+		buffer.append("            break" + winReturnCode);
+		buffer.append("        }" + winReturnCode);
+		buffer.append("    }" + winReturnCode);
+		buffer.append("}" + winReturnCode);
+		buffer.append("$writer.Dispose()" + winReturnCode);
 		String str = buffer.toString();
 		log.debug(str);
 		return str;

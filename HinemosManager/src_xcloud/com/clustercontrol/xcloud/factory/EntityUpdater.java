@@ -302,7 +302,7 @@ public class EntityUpdater {
 				"OTHER", // Hard-code
 				cloudScope.getPlatformId(),
 				entityName,
-				"",
+				"Hinemos Auto Registered",
 				cloudScope.getPlatformId(),
 				cloudScope.getId(),
 				platformEntity.getName(),

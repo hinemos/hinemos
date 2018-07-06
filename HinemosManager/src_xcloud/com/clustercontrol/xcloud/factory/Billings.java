@@ -12,7 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -54,8 +54,8 @@ import com.clustercontrol.xcloud.model.BillingDetailRelationEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity.OptionCallable;
 import com.clustercontrol.xcloud.persistence.Transactional;
+import com.clustercontrol.xcloud.util.CsvUtil;
 import com.clustercontrol.xcloud.util.RepositoryControllerBeanWrapper;
-import com.clustercontrol.xcloud.util.csv.CSVWriter;
 
 
 @Transactional
@@ -255,7 +255,7 @@ public class Billings implements IBillings {
 		query.setParameter("start", start.toInstant(ZoneOffset.UTC).toEpochMilli());
 
 		// 月末。
-		LocalDateTime end = LocalDateTime.of(year, month + 1, 1, 0, 0);
+		LocalDateTime end = start.plusMonths(1);
 		query.setParameter("end", end.toInstant(ZoneOffset.UTC).toEpochMilli());
 
 		List<BillingDetailRelationEntity> relations = query.getResultList();
@@ -418,12 +418,12 @@ public class Billings implements IBillings {
 			ByteArrayOutputStream zipArray = new ByteArrayOutputStream();
 			ZipOutputStream zipOutput = new ZipOutputStream(zipArray);
 			zipOutput.putNextEntry(new ZipEntry(fileName));
-			try (CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(zipOutput))) {
+			try (PrintWriter csvWriter = new PrintWriter(zipOutput)) {
 				LocalDateTime beginDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(billingResult.getBeginTime()), ZoneOffset.UTC);
 				LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(billingResult.getEndTime()), ZoneOffset.UTC);
 				
 				// カラム名を書き込み。
-				List<String> columnNames = new ArrayList<>(Arrays.asList("facilityId", "facilityName", "accountResourceName", "resourceId", "category", "displayName", "unit"));
+				List<String> columnNames = new ArrayList<>(Arrays.asList("facilityId", "facilityName", "cloudScopeId", "resourceId", "category", "displayName", "unit"));
 				LocalDateTime previous = null;
 				for (LocalDateTime dateTime = beginDateTime; dateTime.isBefore(endDateTime); dateTime = dateTime.plusDays(1)) {
 					// 最初の日と月が変わったら、日付に月を付与する。
@@ -436,7 +436,7 @@ public class Billings implements IBillings {
 					previous = dateTime;
 				}
 				
-				csvWriter.writeNext(columnNames.toArray(new String[columnNames.size()]));
+				CsvUtil.writeCsvLine(csvWriter, columnNames.toArray(new String[columnNames.size()]));
 				for (FacilityBilling fb: billingResult.getFacilities()) {
 					List<String> totalValues = new ArrayList<>(Arrays.asList(fb.getFacilityId(), fb.getFacilityName(), "", "", "", "", ""));
 					for (LocalDateTime dateTime = beginDateTime; dateTime.isBefore(endDateTime); dateTime = dateTime.plusDays(1)) {
@@ -459,10 +459,10 @@ public class Billings implements IBillings {
 							totalValues.add("-");
 						}
 					}
-					csvWriter.writeNext(totalValues.toArray(new String[totalValues.size()]));
+					CsvUtil.writeCsvLine(csvWriter, totalValues.toArray(new String[totalValues.size()]));
 					
 					for (ResourceBilling rb: fb.getResources()) {
-						List<String> resourceValues = new ArrayList<>(Arrays.asList("", "", rb.getCloudScopeName(), rb.getResourceId(), rb.getCategoryDetail() == null ? rb.getCategory(): rb.getCategory() + "(" + rb.getCategoryDetail() + ")", rb.getDisplayName(), rb.getUnit()));
+						List<String> resourceValues = new ArrayList<>(Arrays.asList("", "", rb.getCloudScopeId(), rb.getResourceId(), rb.getCategoryDetail() == null ? rb.getCategory(): rb.getCategory() + "(" + rb.getCategoryDetail() + ")", rb.getDisplayName(), rb.getUnit()));
 						for (LocalDateTime dateTime = beginDateTime; dateTime.isBefore(endDateTime); dateTime = dateTime.plusDays(1)) {
 							DataPoint point = null;
 							int month = dateTime.getMonthValue();
@@ -483,7 +483,7 @@ public class Billings implements IBillings {
 								resourceValues.add("-");
 							}
 						}
-						csvWriter.writeNext(resourceValues.toArray(new String[resourceValues.size()]));
+						CsvUtil.writeCsvLine(csvWriter, resourceValues.toArray(new String[resourceValues.size()]));
 					}
 				}
 				csvWriter.flush();

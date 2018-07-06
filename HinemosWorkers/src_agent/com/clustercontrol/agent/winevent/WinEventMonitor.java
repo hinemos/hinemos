@@ -265,7 +265,7 @@ public class WinEventMonitor {
 				
 				String[] readEventResult;
 				// maxEventsずつイベントログの取得、パース、パターンマッチ、通知情報の送信を行う
-				while((readEventResult = winEventReader.readEventLog(entry.getValue(), query, maxEvents, timeout, logName)) != null) {
+				while((readEventResult = winEventReader.readEventLog(entry.getValue(), query, maxEvents, timeout, logName, lastMonitorDate)) != null) {
 			
 					// バッファのあふれをチェック
 					int eventLogLen = readEventResult[0].toString().getBytes(Charset.forName("MS932")).length;
@@ -428,6 +428,8 @@ public class WinEventMonitor {
 			}
 			xmlif.setProperty(xmlCoalescingKey, true); 
 			XMLStreamReader xmlr = xmlif.createXMLStreamReader(eventXmlStream);
+			boolean isNewEvent = true;
+			int eventNestCnt = 0;
 			
 			while (xmlr.hasNext()) {
 				switch (xmlr.getEventType()) {
@@ -438,9 +440,16 @@ public class WinEventMonitor {
 					m_log.trace("local name : " + localName);
 
 					if("Event".equals(localName)){
-						EventLogRecord eventlog = new EventLogRecord();
-						eventlogs.add(eventlog);
-						m_log.debug("create new EventLogRecord");
+						if(isNewEvent) {
+							EventLogRecord eventlog = new EventLogRecord();
+							eventlogs.add(eventlog);
+							isNewEvent = false;
+							m_log.debug("create new EventLogRecord");
+						} else {
+							// 入れ子の<Event>は新規イベントとして扱わない
+							eventNestCnt++;
+							m_log.debug("Increment eventNestCnt " + eventNestCnt);
+						}
 					} else {
 						String attrLocalName = null;
 						String attrValue = null;
@@ -563,6 +572,17 @@ public class WinEventMonitor {
 						}
 					}
 					targetProperty = null;
+					break;
+				case XMLStreamConstants.END_ELEMENT:
+					if("Event".equals(xmlr.getLocalName())) {
+						if(eventNestCnt == 0) {
+							isNewEvent = true;
+						} else {
+							// 0以外は入れ子の<Event>の終了タグ
+							eventNestCnt--;
+							m_log.debug("Decrement eventNestCnt " + eventNestCnt);
+						}
+					}
 					break;
 				default: // スルー
 					break;

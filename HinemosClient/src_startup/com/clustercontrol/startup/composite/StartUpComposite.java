@@ -25,7 +25,6 @@ import org.eclipse.draw2d.XYLayout;
 import org.eclipse.draw2d.geometry.Dimension;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.Rectangle;
-import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
@@ -42,11 +41,6 @@ import com.clustercontrol.startup.bean.StartUpItem;
 import com.clustercontrol.startup.figure.StartUpFigure;
 
 public class StartUpComposite extends Composite{
-	static {
-		JFaceResources.getColorRegistry().put("StartUpComposite_Background", new RGB(224, 226, 237));
-		JFaceResources.getColorRegistry().put("StartUpComposite_Label", new RGB(0, 63, 133));
-	}
-
 	// ログ
 	private static Log m_log = LogFactory.getLog( StartUpComposite.class );
 
@@ -72,6 +66,9 @@ public class StartUpComposite extends Composite{
 	// モデルと図の関係を保持するマップ
 	// 描画対象スコープ、ノードのファシリティIDとそれを描画している図（Figure）のリファレンスを保持
 	private ConcurrentHashMap<String, StartUpFigure> m_figureMap = new ConcurrentHashMap<String, StartUpFigure>();
+	
+	private Color background = new Color(Display.getCurrent(), new RGB(224, 226, 237));
+	private Color label = new Color(Display.getCurrent(), new RGB(0, 63, 133));
 
 	/**
 	 * インスタンスを返します。
@@ -103,7 +100,7 @@ public class StartUpComposite extends Composite{
 
 		//パネル作成
 		m_panel = new Panel();
-		m_panel.setBackgroundColor(JFaceResources.getColorRegistry().get("StartUpComposite_Background"));
+		m_panel.setBackgroundColor(background);
 		m_canvas.setContents(m_panel);
 		m_panel.setLayoutManager(new XYLayout());
 	}
@@ -210,8 +207,7 @@ public class StartUpComposite extends Composite{
 		m_labelTitle.setVisible(true);
 
 		m_labelTitle.setFont(titleLabelFont);
-		Color labelColor = JFaceResources.getColorRegistry().get("StartUpComposite_Label");
-		m_labelTitle.setForegroundColor(labelColor);
+		m_labelTitle.setForegroundColor(label);
 		m_panel.add(m_labelTitle);
 		Dimension dimension = new Dimension(-1, -1);
 		Point point = new Point(8, 8);
@@ -231,5 +227,11 @@ public class StartUpComposite extends Composite{
 
 	private void putStartUpFigure (String field, StartUpFigure figure) {
 		m_figureMap.put(field, figure);
+	}
+	
+	public void dispose() {
+		super.dispose();
+		background.dispose();
+		label.dispose();
 	}
 }

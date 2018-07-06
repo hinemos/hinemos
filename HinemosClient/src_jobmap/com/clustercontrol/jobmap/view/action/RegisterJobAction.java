@@ -25,6 +25,7 @@ import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.jobmap.composite.JobMapTreeComposite;
 import com.clustercontrol.jobmap.util.JobMapActionUtil;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.jobmap.view.JobTreeView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -215,6 +216,10 @@ public class RegisterJobAction extends BaseAction {
 						Messages.getString("message.job.111", args));
 			}
 		}
+		//定義情報更新時、アイコンキャッシュもリフレッシュする。
+		JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
+		iconCache.refresh();
+
 		tree.refresh();
 		tree.getTreeViewer().setSelection(tree.getTreeViewer().getSelection(), true);
 		tree.updateJobMapEditor(null);

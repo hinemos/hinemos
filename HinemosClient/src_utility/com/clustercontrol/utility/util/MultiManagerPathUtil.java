@@ -15,24 +15,22 @@ import java.net.URL;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.eclipse.jface.preference.IPreferenceStore;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
+import com.clustercontrol.utility.settings.ui.preference.PreferencePageConstant;
 
 public class MultiManagerPathUtil {
 	private static Log logger = LogFactory.getLog(MultiManagerPathUtil.class);
 
 	public static String getDirectoryPath(String directoryType){
-		IPreferenceStore store = ClusterControlPlugin.getDefault().getPreferenceStore();
+		IUtilityPreferenceStore store = UtilityPreferenceStore.get();
 
 		String baseDir = null;
 
-		if(directoryType.equals(SettingToolsXMLPreferencePage.KEY_XML)){
-			baseDir = store.getString(SettingToolsXMLPreferencePage.KEY_XML);
+		if(directoryType.equals(PreferencePageConstant.KEY_XML)){
+			baseDir = store.getString(PreferencePageConstant.KEY_XML);
 			if (baseDir.compareTo("") == 0){
-				baseDir = SettingToolsXMLPreferencePage.VALUE_XML;
+				baseDir = PreferencePageConstant.VALUE_XML;
 			}
 			if(baseDir != null){
 				String path = null;
@@ -44,10 +42,10 @@ public class MultiManagerPathUtil {
 				return path + ClientPathUtil.getInstance().getTempPath(path);
 			}
 		} else
-			if(directoryType.equals(SettingToolsXMLPreferencePage.KEY_DIFF_XML)){
-				baseDir = store.getString(SettingToolsXMLPreferencePage.KEY_DIFF_XML);
+			if(directoryType.equals(PreferencePageConstant.KEY_DIFF_XML)){
+				baseDir = store.getString(PreferencePageConstant.KEY_DIFF_XML);
 				if (baseDir.compareTo("") == 0){
-					baseDir = SettingToolsXMLPreferencePage.VALUE_DIFF_XML;
+					baseDir = PreferencePageConstant.VALUE_DIFF_XML;
 				}
 				if(baseDir != null){
 					return baseDir + ClientPathUtil.getInstance().getTempPath(baseDir);
@@ -58,14 +56,14 @@ public class MultiManagerPathUtil {
 	}
 
 	public static String getDirectoryPathTemporary(String directoryType){
-		IPreferenceStore store = ClusterControlPlugin.getDefault().getPreferenceStore();
+		IUtilityPreferenceStore store = UtilityPreferenceStore.get();
 
 		String baseDir = null;
 
-		if (directoryType.equals(SettingToolsXMLPreferencePage.KEY_XML)) {
-			baseDir = store.getString(SettingToolsXMLPreferencePage.KEY_XML);
+		if (directoryType.equals(PreferencePageConstant.KEY_XML)) {
+			baseDir = store.getString(PreferencePageConstant.KEY_XML);
 			if (baseDir.compareTo("") == 0) {
-				baseDir = SettingToolsXMLPreferencePage.VALUE_XML;
+				baseDir = PreferencePageConstant.VALUE_XML;
 			}
 			if (baseDir != null) {
 				String path = baseDir + File.separator + getManagerAddress();
@@ -73,10 +71,10 @@ public class MultiManagerPathUtil {
 				return path;
 			}
 		} else {
-			if (directoryType.equals(SettingToolsXMLPreferencePage.KEY_DIFF_XML)) {
-				baseDir = store.getString(SettingToolsXMLPreferencePage.KEY_DIFF_XML);
+			if (directoryType.equals(PreferencePageConstant.KEY_DIFF_XML)) {
+				baseDir = store.getString(PreferencePageConstant.KEY_DIFF_XML);
 				if (baseDir.compareTo("") == 0){
-					baseDir = SettingToolsXMLPreferencePage.VALUE_DIFF_XML;
+					baseDir = PreferencePageConstant.VALUE_DIFF_XML;
 				}
 				if(baseDir != null){
 					checkAndCreateDirectory(baseDir);
@@ -97,7 +95,7 @@ public class MultiManagerPathUtil {
 	}
 
 	public static String getXMLFileName(String xmlDefaultName){
-		IPreferenceStore store = ClusterControlPlugin.getDefault().getPreferenceStore();
+		IUtilityPreferenceStore store = UtilityPreferenceStore.get();
 		String xmlFileName = store.getString(xmlDefaultName);
 		if(xmlFileName.compareTo("") == 0) {
 			xmlFileName = xmlDefaultName;
@@ -106,9 +104,9 @@ public class MultiManagerPathUtil {
 	}
 
 	private static String getManagerAddress(){
-		if (ClusterControlPlugin.getDefault().getCurrentManagerName() == null) {return null;}
+		if (UtilityManagerUtil.getCurrentManagerName() == null) {return null;}
 		try {
-			URL url = new URL(EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getUrlListStr());
+			URL url = new URL(EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr());
 			return url.getHost();
 		} catch (MalformedURLException e) {
 			// TODO
@@ -117,7 +115,7 @@ public class MultiManagerPathUtil {
 	}
 
 	public static String getPreference(String defaultPreference){
-		IPreferenceStore store = ClusterControlPlugin.getDefault().getPreferenceStore();
+		IUtilityPreferenceStore store = UtilityPreferenceStore.get();
 		String preference = store.getString(defaultPreference);
 		if(preference.compareTo("") == 0) {
 			preference = defaultPreference;

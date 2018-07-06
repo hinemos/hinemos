@@ -251,6 +251,12 @@ public class NodeMapControllerBean {
 				try {
 					mapBgImageEntity = QueryUtil.getMapBgImagePK(map.getBgName());
 				} catch (BgFileNotFound e) {
+					//存在しないファイル名の場合は登録を中断
+					String[] args = { map.getBgName() };
+					BgFileNotFound bgFileNotFound =  new BgFileNotFound(
+							Messages.getString("SCOPE") + " " +map.getMapId() +". " +
+							Messages.getString("NODEMAP_FILE_NAME_NOTHING", args));
+					throw bgFileNotFound;
 				}
 				try {
 					bean = QueryUtil.getMapInfoPK(map.getMapId());
@@ -262,6 +268,8 @@ public class NodeMapControllerBean {
 					bean.relateToMapBgImageEntity(mapBgImageEntity);
 				}
 			} catch (EntityExistsException e) {
+				throw new HinemosUnknown(e.getMessage(), e);
+			} catch (BgFileNotFound e) {
 				throw new HinemosUnknown(e.getMessage(), e);
 			} catch (Exception e) {
 				m_log.warn("registerNodeMapModel() MapInfoEntity.create : "

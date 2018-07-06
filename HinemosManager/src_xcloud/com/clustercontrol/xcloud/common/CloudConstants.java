@@ -73,7 +73,7 @@ public class CloudConstants {
 	public static final String PATH_VAR = "var/xcloud";
 	
 	// パスワードを暗号化するためのキー
-	public static final String cryptkeyFileRelativePath = ".secure/xcloud.cfg";
+	public static final String cryptkeyFileRelativePath = "etc/db_crypt.key";
 	public static final String cryptkeyName = "cryptkey";
 	
 	public static DateFormat createTimeFormat() {

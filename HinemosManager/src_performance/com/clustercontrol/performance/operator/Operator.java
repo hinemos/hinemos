@@ -218,7 +218,7 @@ abstract public class Operator {
 						// エラー処理
 						String message = "getDifferenceValue() deviceName : " + deviceName + ", previousIndex is null";
 						m_log.debug(message);
-						throw new CollectedDataNotFoundException(message);
+						throw new CollectedDataNotFoundWithNoPollingException(message);
 					}
 
 					// pollingTargetにTableEntryから取得するためのKeyを与える

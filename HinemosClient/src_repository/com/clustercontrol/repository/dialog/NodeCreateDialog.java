@@ -566,6 +566,12 @@ public class NodeCreateDialog extends CommonDialog {
 							Integer awake = (Integer)awakeProperty.getValue();
 							nodeInfo.setAgentAwakePort(awake);
 						}
+						 // サブプラットフォームを変更しない
+						Property subPlatform = PropertyUtil.getProperty(propertyOld, NodeConstant.SUB_PLATFORM_FAMILY_NAME).get(0);
+						if (subPlatform != null && subPlatform.getValue() instanceof String) {
+							String subPlatformName = (String)subPlatform.getValue();
+							nodeInfo.setSubPlatformFamily(subPlatformName);
+						}
 						
 						propertySNMP = NodePropertyUtil.node2property(m_managerComposite.getText(), nodeInfo, PropertyDefineConstant.MODE_MODIFY, Locale.getDefault());
 						

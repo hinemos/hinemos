@@ -12,6 +12,8 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -23,6 +25,7 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnPixelData;
 import org.eclipse.jface.viewers.ILabelProvider;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
@@ -58,6 +61,8 @@ import com.clustercontrol.ws.access.InvalidRole_Exception;
 import com.clustercontrol.ws.access.InvalidUserPass_Exception;
 import com.clustercontrol.ws.access.RoleInfo;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
+import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
+import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
 import com.clustercontrol.xcloud.model.cloud.ILoginUser;
@@ -80,6 +85,7 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 	private FacilityRootUpdateService service;
 	
 	private class FacilityRootUpdateService {
+		private boolean disposed;
 		private com.clustercontrol.composite.FacilityTreeComposite listener;
 
 		public FacilityRootUpdateService() {
@@ -89,7 +95,8 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 					composite.getDisplay().asyncExec(new Runnable() {
 						@Override
 						public void run() {
-							RoleManagementView.this.update();
+							if (!disposed)
+								RoleManagementView.this.update();
 						}
 					});
 				}
@@ -106,6 +113,7 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 		}
 
 		public void dispose() {
+			disposed = true;
 			FacilityTreeCache.delComposite(listener);
 		}
 	}
@@ -116,6 +124,48 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 	private IHinemosManager currentManager;
 	private RoleInfo currentRole;
 	private Composite composite;
+	
+	private List<Object[]> loginUsers = new ArrayList<>(); 
+	
+	protected ElementBaseModeWatch.AnyPropertyWatcher watcher = new ElementBaseModeWatch.AnyPropertyWatcher() {
+		@Override
+		public void elementAdded(ElementAddedEvent event) {
+			refreshView();
+		}
+
+		@Override
+		public void elementRemoved(ElementRemovedEvent event) {
+			refreshView();
+		}
+
+		@Override
+		public void propertyChanged(ValueChangedEvent event) {
+			refreshView();
+		}
+
+		@Override
+		public void unwatched(IElement owning, IElement owned) {
+			refreshView();
+		}
+		
+		public void refreshView() {
+			if (refreshTask == null) {
+				refreshTask = new Runnable() {
+					@Override
+					public void run() {
+						try {
+							refresh(true);
+						} finally {
+							refreshTask = null;
+						}
+					}
+				};
+				Display.getCurrent().asyncExec(refreshTask);
+			}
+		}
+	};
+	
+	protected Runnable refreshTask;
 	
 	protected ITreeContentProvider roleTreeContentProvider = new ITreeContentProvider() {
 		public Object[] getChildren(Object element) {
@@ -328,16 +378,9 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 							HinemosRole role = (HinemosRole)selected;
 							currentManager = role.manager;
 							currentRole = role.roleInfo;
-							
-							List<ViewData> data = getViewData();
-							tableViewer.setInput(getViewData());
-							tableViewer.refresh();
-							lblFooter.setText(strFooterTitle + data.size());
 						}
-					} else {
-						tableViewer.setInput(null);
-						lblFooter.setText(strFooterTitle + 0);
 					}
+					reflectTreeSelectionToView(selection);
 				}
 			}
 		});
@@ -368,40 +411,102 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 	
 	protected void refresh(boolean update) {
 		managers = ClusterControlPlugin.getDefault().getHinemosManagers();
+		Collections.sort(managers, new Comparator<IHinemosManager>() {
+			@Override
+			public int compare(IHinemosManager o1, IHinemosManager o2) {
+				return o1.getManagerName().compareTo(o2.getManagerName());
+			}
+		});
 		if (update) {
-			for (IHinemosManager manager: managers) {
-				try {
+			
+			List<Object[]> newLoginUsers = new ArrayList<>();
+			
+			try {
+			
+				for (IHinemosManager manager: managers) {
 					manager.update();
 					for (ICloudScope cloudscope: manager.getCloudScopes().getCloudScopes()) {
 						cloudscope.getLoginUsers().update();
+						for (ILoginUser user: cloudscope.getLoginUsers().getLoginUsers()) {
+							newLoginUsers.add(new Object[]{manager, user});
+						}
 					}
 					updateRoleInfos(manager);
-				} catch (Exception e) {
-					logger.error(e.getMessage(), e);
-
-					String m = e.getMessage();
-					if (m == null) {
-						ByteArrayOutputStream bos = new ByteArrayOutputStream();
-						PrintStream ps = new PrintStream(bos, true);
-						e.printStackTrace(ps);
-						m = bos.toString();
-					}
+				}
+				
+				CollectionComparator.compareCollection(loginUsers, newLoginUsers,
+					new CollectionComparator.Comparator<Object[], Object[]>() {
 					
-					final String message = m;
-					Display.getCurrent().asyncExec(new Runnable() {
 						@Override
-						public void run() {
-							// 失敗報告ダイアログを生成
-							MessageDialog.openError(null, Messages.getString("failed"), message);
+						public boolean match(Object[] o1, Object[] o2) {
+							IHinemosManager man1 = (IHinemosManager)o1[0];
+							IHinemosManager man2 = (IHinemosManager)o2[0];
+							ILoginUser usr1 = (ILoginUser)o1[1];
+							ILoginUser usr2 = (ILoginUser)o2[1];
+							
+							return man1.getManagerName().equals(man2.getManagerName()) &&
+									usr1.getId().equals(usr2.getId());
+						}
+						@Override
+						public void afterO1(Object[] o1) {
+							loginUsers.remove(o1);
+							((IHinemosManager)o1[0]).getModelWatch().removeWatcher((IElement)o1[1], watcher);
+						}
+						@Override
+						public void afterO2(Object[] o2) {
+							loginUsers.add(o2);
+							((IHinemosManager)o2[0]).getModelWatch().addWatcher((IElement)o2[1], watcher);
 						}
 					});
+
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
+
+				String m = e.getMessage();
+				if (m == null) {
+					ByteArrayOutputStream bos = new ByteArrayOutputStream();
+					PrintStream ps = new PrintStream(bos, true);
+					e.printStackTrace(ps);
+					m = bos.toString();
 				}
+				
+				final String message = m;
+				Display.getCurrent().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						// 失敗報告ダイアログを生成
+						MessageDialog.openError(null, Messages.getString("failed"), message);
+					}
+				});
 			}
+			
 		}
 		treeViewer.setInput(managers);
 		treeViewer.refresh();
+		
+		reflectTreeSelectionToView(treeViewer.getSelection());
 	}
 
+	private void reflectTreeSelectionToView(ISelection treeSelection) {
+		//一覧にツリー選択の内容を反映
+		if (treeSelection instanceof IStructuredSelection) {
+			IStructuredSelection selection = (IStructuredSelection)treeSelection;
+			if (!selection.isEmpty()) {
+				Object selected = selection.getFirstElement();
+				if (selected instanceof HinemosRole) {
+					
+					List<ViewData> data = getViewData();
+					tableViewer.setInput(getViewData());
+					tableViewer.refresh();
+					lblFooter.setText(strFooterTitle + data.size());
+				}
+			} else {
+				tableViewer.setInput(null);
+				lblFooter.setText(strFooterTitle + 0);
+			}
+		}
+	}
+	
 	private static class ViewData {
 		private String cloudScopedId;
 		private String cloudPlatformName;
@@ -510,6 +615,10 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 
 	@Override
 	public void dispose() {
+		for (Object[] obj: loginUsers) {
+			((IHinemosManager)obj[0]).getModelWatch().removeWatcher((IElement)obj[1], watcher);
+		}
+		
 		if (service != null)
 			service.dispose();
 

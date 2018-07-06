@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
@@ -28,6 +27,7 @@ import com.clustercontrol.utility.settings.monitor.xml.NumericChangeAmount;
 import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.CommandExecType;
 import com.clustercontrol.ws.monitor.CustomCheckInfo;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
@@ -96,7 +96,7 @@ public class CustomConv {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
 			monitorInfo = MonitorSettingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			CustomMonitor customMonitor = new CustomMonitor();

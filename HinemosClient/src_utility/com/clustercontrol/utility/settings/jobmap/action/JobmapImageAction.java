@@ -23,9 +23,8 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
-import com.clustercontrol.jobmap.util.JobmapIconImageCache;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
@@ -46,12 +45,15 @@ import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.settings.ui.util.BackupUtil;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
 import com.clustercontrol.ws.jobmanagement.IconFileDuplicate_Exception;
 import com.clustercontrol.ws.jobmanagement.IconFileNotFound_Exception;
@@ -100,7 +102,7 @@ public class JobmapImageAction {
 		
 		// ジョブマップ用アイコンファイル一覧情報取得
 		try {
-			list = JobmapIconImageCache.getJobmapIconImageList(ClusterControlPlugin.getDefault().getCurrentManagerName());
+			list = JobmapImageCacheUtil.getJobmapIconImageList(UtilityManagerUtil.getCurrentManagerName());
 		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | InvalidSetting_Exception
 				| IconFileNotFound_Exception e) {
 			log.error(Messages.getString("JobmapImage.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -122,7 +124,7 @@ public class JobmapImageAction {
 			iconIds.add(iconId);
 			try {
 				JobMapEndpointWrapper
-				.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+				.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 				.deleteJobmapIconImage(iconIds);
 			} catch (HinemosUnknown_Exception e){
 				log.error(Messages.getString("JobmapImage.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -154,7 +156,7 @@ public class JobmapImageAction {
 		
 		// ジョブマップ用アイコンファイル一覧情報取得
 		try {
-			list = JobmapIconImageCache.getJobmapIconImageList(ClusterControlPlugin.getDefault().getCurrentManagerName());
+			list = JobmapImageCacheUtil.getJobmapIconImageList(UtilityManagerUtil.getCurrentManagerName());
 		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | InvalidSetting_Exception
 				| IconFileNotFound_Exception e) {
 			log.error(Messages.getString("JobmapImage.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -238,7 +240,7 @@ public class JobmapImageAction {
 		log.debug("Start Import Jobmap Image ");
 		int ret = 0;
 		
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			getLogger().debug("End Import JobmapImage (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -267,7 +269,7 @@ public class JobmapImageAction {
 			try {
 				jobmapImage = JobmapImageConv.getJobmapInfoDto(info);
 				JobMapEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.addJobmapIconImage(jobmapImage);
 				objectIdList.add(info.getIconId());
 				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + info.getIconId());
@@ -275,16 +277,16 @@ public class JobmapImageAction {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {info.getIconId()};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 					ImportProcessMode.setProcesstype(dialog.open());
 					ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 				
-				if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 					try {
 						JobMapEndpointWrapper
-							.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 							.modifyJobmapIconImage(jobmapImage);
 						objectIdList.add(info.getIconId());
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + info.getIconId());
@@ -295,9 +297,9 @@ public class JobmapImageAction {
 						log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 						ret = SettingConstants.ERROR_INPROCESS;
 					}
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + info.getIconId());
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 					return ret;
 				}
@@ -324,6 +326,10 @@ public class JobmapImageAction {
 		
 		//差分削除
 		checkDelete(jobmap);
+
+		//インポート終了時にキャッシュをリフレッシュ
+		JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
+		iconCache.refresh();
 		
 		// 処理の終了
 		if (ret == 0) {
@@ -358,7 +364,7 @@ public class JobmapImageAction {
 		
 		// ジョブマップ用アイコンファイル一覧情報取得
 		try {
-			subList = JobmapIconImageCache.getJobmapIconImageList(ClusterControlPlugin.getDefault().getCurrentManagerName());
+			subList = JobmapImageCacheUtil.getJobmapIconImageList(UtilityManagerUtil.getCurrentManagerName());
 		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | InvalidSetting_Exception
 				| IconFileNotFound_Exception e) {
 			log.error(Messages.getString("SettingTools.EndWithErrorCode") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -392,26 +398,26 @@ public class JobmapImageAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getIconId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 
-				if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
 						iconIds.clear();
 						iconIds.add(info.getIconId());
 						JobMapEndpointWrapper
-							.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 							.deleteJobmapIconImage(iconIds);
 						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getIconId());
 					} catch (Exception e1) {
 						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getIconId());
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 					return;
 				}

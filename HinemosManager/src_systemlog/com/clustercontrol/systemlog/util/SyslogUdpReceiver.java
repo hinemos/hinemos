@@ -116,18 +116,6 @@ public class SyslogUdpReceiver {
 						continue;
 					}
 					
-					if (!parser.containsHeader(message)) {
-						if (logger.isTraceEnabled()) {
-							logger.trace(String.format("read() : Not found a header. %s, message=%s", packet.getAddress().toString(), Arrays.toString(message)));
-						}
-						byte[] header = parser.createSyslogHeaderArray(new Date(), packet.getAddress().getHostAddress());
-						
-						byte[] temp = new byte[header.length + message.length];
-						System.arraycopy(header, 0, temp, 0, header.length);
-						System.arraycopy(message, 0, temp, header.length, message.length);
-						message = temp;
-					}
-					
 					if (logger.isTraceEnabled()) {
 						try {
 							String[] result = parser.splitSyslogMessage(message);
@@ -142,10 +130,12 @@ public class SyslogUdpReceiver {
 					}
 					
 					final byte[] m = message;
+					//packetクラスのまま別スレッドに引き渡すと、実行速度に影響するのでfinal指定で変数化
+					final String i = packet.getAddress().toString(); 
 					Runnable sender = new Runnable() {
 						@Override
 						public void run() {
-							handler.accept(m);
+							handler.accept(m, i);
 						}
 					};
 					

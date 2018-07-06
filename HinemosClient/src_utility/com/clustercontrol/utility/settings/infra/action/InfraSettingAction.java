@@ -20,7 +20,6 @@ import java.util.Set;
 
 import javax.xml.ws.WebServiceException;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.infra.util.InfraEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -34,9 +33,12 @@ import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.infra.InvalidRole_Exception;
 import com.clustercontrol.ws.infra.InvalidSetting_Exception;
 import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
@@ -61,14 +63,14 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 
 	@Override
 	protected List<com.clustercontrol.ws.infra.InfraManagementInfo> getList()	throws Exception {
-		return InfraEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getInfraManagementList();
+		return InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getInfraManagementList();
 	}
 
 	@Override
 	protected void deleteInfo(com.clustercontrol.ws.infra.InfraManagementInfo info) throws WebServiceException, Exception {
 		List<String> ids = new ArrayList<>();
 		ids.add(info.getManagementId());
-		InfraEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteInfraManagement(ids);
+		InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteInfraManagement(ids);
 	}
 
 	@Override
@@ -118,7 +120,7 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 	
 	@Override
 	protected int registElement(InfraManagementInfo element) throws Exception {
-		InfraEndpointWrapper endpoint = InfraEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+		InfraEndpointWrapper endpoint = InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		com.clustercontrol.ws.infra.InfraManagementInfo dto = conv.getDTO(element);
 		int ret = 0;
 		try {
@@ -128,13 +130,13 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {getKeyInfoE(element)};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 				    ImportProcessMode.setProcesstype(dialog.open());
 				    ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 			    
-			    if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+			    if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 			    	try {
 			    		endpoint.modifyInfraManagement(dto);
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + getKeyInfoE(element));
@@ -142,9 +144,9 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						ret = SettingConstants.ERROR_INPROCESS;
 					}
-			    } else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 			    	log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + getKeyInfoE(element));
-			    } else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			    	log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			    	ret = -1;
 			    }
@@ -232,22 +234,22 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {getKeyInfoD(info)};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 			    
-			    if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+			    if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 			    	try {
 			    		deleteInfo(info);
 						log.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + getKeyInfoD(info));
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 			    	log.info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + getKeyInfoD(info));
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			    	log.info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 			    }
 			}

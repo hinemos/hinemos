@@ -45,6 +45,7 @@ import com.clustercontrol.agent.binary.thread.WholeFileMonitorThread;
 import com.clustercontrol.agent.log.MonitorInfoWrapper;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.binary.bean.BinaryConstant;
+import com.clustercontrol.util.FileUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.ws.agent.OutputBasicInfo;
 import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
@@ -106,6 +107,91 @@ public class BinaryMonitorManager {
 		CUT_LENGTH,
 		/** エラー(処理種別に必要な情報が存在しない等) **/
 		ERROR
+	}
+
+	/**
+	 * クラス初期化処理.
+	 */
+	static {
+
+		// ファイル全体監視の一時ファイルが残っているようであれば削除する.
+		deleteTemporaryFiles: {
+			File rsDirectory = RootReadingStatus.getRootStoreDirectory();
+			if (!rsDirectory.exists()) {
+				log.debug(String.format(
+						"skip to delete temporary files, because directory of RS isn't exist." + " directory=[%s]",
+						rsDirectory.getAbsolutePath()));
+				break deleteTemporaryFiles;
+			}
+			ArrayList<File> allFileList = new ArrayList<File>();
+			FileUtil.addFileList(rsDirectory, allFileList, null, 500, true);
+			if (allFileList.isEmpty()) {
+				log.debug("skip to delete temporary files, because directory of RS has no file.");
+				break deleteTemporaryFiles;
+			}
+			ArrayList<File> tempFileList = new ArrayList<File>();
+			for (File fileDir : allFileList) {
+				if (!fileDir.exists()) {
+					// 削除された場合はスキップ.
+					continue;
+				}
+				if (BinaryMonitor.matchTmpFileName(fileDir.getName())) {
+					// 一時ファイルの名前に合致した場合.
+					tempFileList.add(fileDir);
+				}
+			}
+			allFileList = null;
+			// 削除対象の一時ファイルが存在しない場合は削除しない.
+			if (tempFileList.isEmpty()) {
+				log.debug("skip to delete temporary files, because temporary file isn't exist.");
+				break deleteTemporaryFiles;
+			}
+
+			log.debug(String.format("prepared to delete temporary files." + " size(tmpFiles)=%d", tempFileList.size()));
+			for (File tempFile : tempFileList) {
+				if (!tempFile.exists()) {
+					// 削除された場合はスキップ.
+					log.debug("skip to delete temporary file, because temporary file or fileRS isn't exist.");
+					continue;
+				}
+				// 一時ファイルのファイル名から監視対象ファイル名を取得.
+				String monitorFileName = BinaryMonitor.getMonNameFromTmp(tempFile.getName());
+				if (monitorFileName == null) {
+					continue;
+				}
+
+				// 対応ファイルRSのパスを生成.
+				if (tempFile.getParentFile() == null) {
+					log.warn(String.format(
+							"skip to delete temporary file, because failed to get parent." + " tempFile=[%s]",
+							tempFile.getAbsolutePath()));
+					continue;
+				}
+				File fileRs = new File(tempFile.getParentFile(), monitorFileName + ".json");
+
+				// 対応するファイルRSが存在しない場合はスキップ.
+				if (!fileRs.exists()) {
+					log.warn(String.format(
+							"skip to delete temporary file, because file RS isn't exist."
+									+ " tempFile=[%s], fileRS=[%s]",
+							tempFile.getAbsolutePath(), fileRs.getAbsolutePath()));
+				}
+
+				// 一時ファイルの削除.
+				if (!tempFile.delete()) {
+					log.warn(String.format("skip to delete temporary file." + " tempFile=[%s]",
+							tempFile.getAbsolutePath()));
+				} else {
+					log.info(String.format("success to delete temporary file." + " tempFile=[%s]",
+							tempFile.getAbsolutePath()));
+				}
+
+				// ファイルRSの更新(runMonitorをfalseにする).
+				FileReadingStatus.closeRumMonitor(fileRs, monitorFileName);
+			}
+
+		}
+
 	}
 
 	/**

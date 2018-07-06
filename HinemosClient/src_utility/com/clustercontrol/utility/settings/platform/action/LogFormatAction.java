@@ -24,7 +24,6 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.hub.util.HubEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -46,9 +45,12 @@ import com.clustercontrol.utility.settings.platform.xml.LogFormatInfo;
 import com.clustercontrol.utility.settings.platform.xml.LogFormatType;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.hub.HinemosUnknown_Exception;
 import com.clustercontrol.ws.hub.InvalidRole_Exception;
 import com.clustercontrol.ws.hub.InvalidSetting_Exception;
@@ -89,7 +91,7 @@ public class LogFormatAction {
 		List<com.clustercontrol.ws.hub.LogFormat> logformatList = null;
 
 		try {
-			logformatList = HubEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getLogFormatList();
+			logformatList = HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatList();
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -100,7 +102,7 @@ public class LogFormatAction {
 		// ログフォーマット定義の削除
 		for (com.clustercontrol.ws.hub.LogFormat logFormatInfo : logformatList) {
 			try {
-				HubEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteLogFormat(Arrays.asList(logFormatInfo.getLogFormatId()));
+				HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteLogFormat(Arrays.asList(logFormatInfo.getLogFormatId()));
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + logFormatInfo.getLogFormatId());
 			} catch (WebServiceException e) {
 				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -140,7 +142,7 @@ public class LogFormatAction {
 		// ログフォーマット定義一覧の取得
 		List<com.clustercontrol.ws.hub.LogFormat> logformatList = null;
 		try {
-			logformatList = HubEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getLogFormatList();
+			logformatList = HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatList();
 			Collections.sort(logformatList, new Comparator<com.clustercontrol.ws.hub.LogFormat>() {
 				@Override
 				public int compare(
@@ -209,7 +211,7 @@ public class LogFormatAction {
 		// 返り値変数(条件付き正常終了用）
 		int ret = 0;
 
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			getLogger().debug("End Import PlatformLogFormat (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -237,31 +239,31 @@ public class LogFormatAction {
 			com.clustercontrol.ws.hub.LogFormat info = null;
 			try {
 				info = LogFormatConv.getLogFormatData(logFormatInfo);
-				HubEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).addLogFormat(info);
+				HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addLogFormat(info);
 				objectIdList.add(logFormatInfo.getLogFormatId());
 				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + logFormatInfo.getLogFormatId());
 			} catch (LogFormatDuplicate_Exception e) {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {logFormatInfo.getLogFormatId()};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 					ImportProcessMode.setProcesstype(dialog.open());
 					ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 
-				if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 					try {
-						HubEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).modifyLogFormat(info);
+						HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyLogFormat(info);
 						objectIdList.add(logFormatInfo.getLogFormatId());
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + logFormatInfo.getLogFormatId());
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						ret = SettingConstants.ERROR_INPROCESS;
 					}
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + logFormatInfo.getLogFormatId());
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 					break;
 				}
@@ -436,7 +438,7 @@ public class LogFormatAction {
 	protected void checkDelete(LogFormatType xmlElements){
 		List<com.clustercontrol.ws.hub.LogFormat> subList = null;
 		try {
-			subList = HubEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getLogFormatList();
+			subList = HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatList();
 		}
 		catch (Exception e) {
 			getLogger().error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -463,22 +465,22 @@ public class LogFormatAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getLogFormatId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 
-				if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
-						HubEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteLogFormat(Arrays.asList(info.getLogFormatId()));
+						HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteLogFormat(Arrays.asList(info.getLogFormatId()));
 						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getLogFormatId());
 						} catch (Exception e1) {
 							getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						}
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getLogFormatId());
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 					return;
 				}

@@ -29,7 +29,6 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
@@ -47,6 +46,7 @@ import com.clustercontrol.utility.jobutil.util.JobConvert;
 import com.clustercontrol.utility.jobutil.util.JobStringUtil;
 import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.util.UtilityEndpointWrapper;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 import com.clustercontrol.ws.jobmanagement.OtherUserGetLock_Exception;
 import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
@@ -82,7 +82,7 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// keyチェック
 		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 			String version = wrapper.getVersion();
 			if (version.length() > 7) {
 				boolean result = Boolean.valueOf(version.substring(7, version.length()));

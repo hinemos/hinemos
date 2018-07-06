@@ -15,11 +15,14 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
+import com.clustercontrol.ws.monitor.InvalidRole_Exception;
+import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
 import com.clustercontrol.ws.monitor.MonitorFilterInfo;
 import com.clustercontrol.ws.monitor.MonitorInfo;
 import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.plugin.monitor.PlatformServiceBillingDetailMonitorPlugin;
+import com.clustercontrol.xcloud.util.CollectionComparator;
 
 
 public class BillingMonitors extends Element implements IBillingMonitors {
@@ -66,42 +69,25 @@ public class BillingMonitors extends Element implements IBillingMonitors {
 		if (billingMonitors == null)
 			billingMonitors = new ArrayList<>();
 		
-		if (!billingMonitors.isEmpty())
-			billingMonitors.clear();
-		
 		MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(getHinemosManager().getManagerName());
 		
 		MonitorFilterInfo filter = new MonitorFilterInfo();
 		filter.setMonitorTypeId(PlatformServiceBillingDetailMonitorPlugin.monitorPluginId);
 		
 		try {
-			List<MonitorInfo> monitors = wrapper.getMonitorListByCondition(filter);
-			for (MonitorInfo info : monitors) {
-				BillingMonitor billingMonitor = new BillingMonitor(this);
-				billingMonitor.setMonitorInfo(info);
-				billingMonitors.add(billingMonitor);
-			}
-		} catch (com.clustercontrol.ws.monitor.InvalidRole_Exception
-					| com.clustercontrol.ws.monitor.InvalidUserPass_Exception e) {
-			logger.debug("Not have enough permission.");
-		} catch (MonitorNotFound_Exception e) {
-			logger.debug("Billing monitor is not found.");
-		} catch (HinemosUnknown_Exception e) {
-			logger.warn("Unexpected internal failure occurred in Hinemos Manager.");
+			List<MonitorInfo> webBillingAlarm = wrapper.getMonitorListByCondition(filter);
+			CollectionComparator.compareCollection(billingMonitors, webBillingAlarm, new CollectionComparator.Comparator<BillingMonitor, MonitorInfo>() {
+				public boolean match(BillingMonitor o1, MonitorInfo o2) {return o1.getMonitorInfo().equals(o2);}
+				public void matched(BillingMonitor o1, MonitorInfo o2) {o1.update(o2);}
+				public void afterO1(BillingMonitor o1) {internalRemoveProperty(p.billingMonitors, o1, billingMonitors);}
+				public void afterO2(MonitorInfo o2) {
+					BillingMonitor newBillingAlarm = BillingMonitor.convert(BillingMonitors.this, o2);
+					internalAddProperty(p.billingMonitors, newBillingAlarm, billingMonitors);
+				}
+			});
+		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
+				| MonitorNotFound_Exception e) {
+			logger.warn(e.getMessage(), e);
 		}
-//		try {
-//			List<MonitorInfo> webBillingAlarm = wrapper.getMonitorListByCondition(filter);
-//			CollectionComparator.compareCollection(billingAlarms, webBillingAlarm, new CollectionComparator.Comparator<BillingMonitor, MonitorInfo>() {
-//				public boolean match(BillingMonitor o1, MonitorInfo o2) {return o1.getMonitorInfo().equals(o2);}
-//				public void matched(BillingMonitor o1, MonitorInfo o2) {o1.update(o2);}
-//				public void afterO1(BillingMonitor o1) {internalRemoveProperty(p.billingAlarms, o1, billingAlarms);}
-//				public void afterO2(MonitorInfo o2) {
-//					BillingMonitor newBillingAlarm = BillingMonitor.convert(BillingMonitors.this, o2);
-//					internalAddProperty(p.billingAlarms, newBillingAlarm, billingAlarms);
-//				}
-//			});
-//		} catch (HinemosUnknown_Exception | MonitorNotFound_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
-//			Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
-//		}
 	}
 }

@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %plugin.name
 Bundle-SymbolicName: com.clustercontrol; singleton:=true
-Bundle-Version: 6.1.0
+Bundle-Version: 6.1.1
 Bundle-Description: %product.about
 Bundle-ContactAddress: http://www.hinemos.info
 Bundle-Vendor: %provider.name
@@ -132,5 +132,4 @@ Export-Package: com.clustercontrol,
  org.apache.log4j,
  org.eclipse.draw2d,
  org.eclipse.draw2d.geometry,
- org.eclipse.rap.rwt,
- org.eclipse.wb.swt
+ org.eclipse.rap.rwt

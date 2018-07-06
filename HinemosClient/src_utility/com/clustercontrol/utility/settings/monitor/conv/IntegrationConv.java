@@ -17,7 +17,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
@@ -28,6 +27,7 @@ import com.clustercontrol.utility.settings.monitor.xml.IntegrationMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.IntegrationMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.TruthValue;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.IntegrationCheckInfo;
 import com.clustercontrol.ws.monitor.IntegrationConditionInfo;
@@ -125,7 +125,7 @@ public class IntegrationConv {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
 			monitorInfo = MonitorSettingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			IntegrationMonitor integrationMonitor = new IntegrationMonitor();

@@ -40,51 +40,54 @@ public class ModifyRoleAssignHandler extends AbstractHandler implements CloudStr
 		HinemosRole role = (HinemosRole)selection.getFirstElement();
 		
 		EditAssignRoleDialog dialog = new EditAssignRoleDialog(HandlerUtil.getActiveShell(event), role);
-
-		if (dialog.open() != Window.OK)
-			return null;
+		
+		loop_end:
+		while(true) {
+			if (dialog.open() != Window.OK) {
+				//Cancelが応答されたときはダイアログを表示
+				break loop_end;
+			}
 			
-		if (MessageDialog.openConfirm(
-			null,
-			Messages.getString("confirmed"),
-			msgConfirmModifyRoleRelations)) {
-			
-			List<EditAssignRoleDialog.DialogOutput> output = new ArrayList<>(dialog.getOutput());
-			try {
-				for(ICloudScope scope: role.getManager().getCloudScopes().getCloudScopes()){
-					for(ILoginUser user: scope.getLoginUsers().getLoginUsers()){
-						for(RoleRelation relation: user.getRoleRelations()){
-							if(relation.getId().equals(role.getRoleInfo().getRoleId())){
-								int index = indexOf(output, scope.getId(), user.getId());
-								if(index != -1){
-									output.remove(index);
-								} else {
-									user.removeRoleRelation(role.getRoleInfo().getRoleId());
+			if (MessageDialog.openConfirm(
+				null,
+				Messages.getString("confirmed"),
+				msgConfirmModifyRoleRelations)) {
+				
+				List<EditAssignRoleDialog.DialogOutput> output = new ArrayList<>(dialog.getOutput());
+				try {
+					for(ICloudScope scope: role.getManager().getCloudScopes().getCloudScopes()){
+						for(ILoginUser user: scope.getLoginUsers().getLoginUsers()){
+							for(RoleRelation relation: user.getRoleRelations()){
+								if(relation.getId().equals(role.getRoleInfo().getRoleId())){
+									int index = indexOf(output, scope.getId(), user.getId());
+									if(index != -1){
+										output.remove(index);
+									} else {
+										user.removeRoleRelation(role.getRoleInfo().getRoleId());
+									}
 								}
 							}
 						}
 					}
+	
+					for(EditAssignRoleDialog.DialogOutput item: output){
+						role.getManager().getCloudScopes().getCloudScope(item.getCloudScopeId()).getLoginUsers().getLoginUser(item.getCloudUserId()).addRoleRelation(role.getRoleInfo().getRoleId());
+					}
+				} catch (CloudModelException e) {
+					logger.error(e.getCause().getMessage(), e.getCause());
+	
+					// 失敗報告ダイアログを生成
+					ControlUtil.openError(e.getCause(), msgErrorFinishModifyRoleRelations);
+					return null;
 				}
-
-				for(EditAssignRoleDialog.DialogOutput item: output){
-					role.getManager().getCloudScopes().getCloudScope(item.getCloudScopeId()).getLoginUsers().getLoginUser(item.getCloudUserId()).addRoleRelation(role.getRoleInfo().getRoleId());
-				}
-			} catch (CloudModelException e) {
-				logger.error(e.getCause().getMessage(), e.getCause());
-
-				// 失敗報告ダイアログを生成
-				ControlUtil.openError(e.getCause(), msgErrorFinishModifyRoleRelations);
+	
+				// 成功報告ダイアログを生成
+				MessageDialog.openInformation(
+					null,
+					Messages.getString("successful"),
+					msgFinishModifyRoleRelations);
 				return null;
 			}
-
-			// 成功報告ダイアログを生成
-			MessageDialog.openInformation(
-				null,
-				Messages.getString("successful"),
-				msgFinishModifyRoleRelations);
-		}
-		else {
-			return null;
 		}
 		return null;
 	}

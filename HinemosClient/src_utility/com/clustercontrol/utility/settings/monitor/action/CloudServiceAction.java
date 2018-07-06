@@ -12,13 +12,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.CloudServiceConv;
 import com.clustercontrol.utility.settings.monitor.xml.CloudServiceMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.CloudServiceMonitors;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -67,7 +67,7 @@ public class CloudServiceAction extends AbstractMonitorAction<CloudServiceMonito
 		monitorFilterInfo.setMonitorTypeId(CloudServiceMonitorPlugin.monitorPluginId);
 		
 		List<MonitorInfo> list = MonitorSettingEndpointWrapper
-				.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitorListByCondition(monitorFilterInfo);
+				.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitorListByCondition(monitorFilterInfo);
 		
 		return list;
 	

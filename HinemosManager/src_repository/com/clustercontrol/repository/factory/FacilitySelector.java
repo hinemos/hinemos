@@ -59,6 +59,7 @@ import com.clustercontrol.repository.util.FacilityValidator;
 import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.xcloud.common.CloudConstants;
 
 public class FacilitySelector {
 
@@ -1433,6 +1434,11 @@ public class FacilitySelector {
 		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.UNREGISTERED_SCOPE);
 		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.OWNER_SCOPE);
 		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.OS_PARENT_SCOPE);
+		
+		// クラウドのルートスコープは、初期は存在しないが、作成されるとビルトインになる。
+		buildInScopeFacilityIdSet.add(CloudConstants.privateRootId);
+		buildInScopeFacilityIdSet.add(CloudConstants.publicRootId);
+		
 		buildInScopeFacilityIdSet.addAll(OsScopeInitializerPlugin.getOsScopeIdSet());
 		if (buildInScopeFacilityIdSet.contains(facility.getFacilityId())) {
 			return true;

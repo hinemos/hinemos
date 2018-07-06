@@ -49,7 +49,7 @@ import com.clustercontrol.jobmanagement.bean.JobRuntimeParamTypeMessage;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectMessage;
 import com.clustercontrol.jobmanagement.bean.ScheduleOnOffImageConstant;
 import com.clustercontrol.jobmanagement.bean.StatusImageConstant;
-import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.monitor.bean.ConfirmMessage;
 import com.clustercontrol.notify.util.NotifyTypeUtil;
 import com.clustercontrol.performance.bean.PerformanceStatusConstant;
@@ -315,7 +315,8 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			return JobApprovalResultImageConstant.typeToImage(((Number) item).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.JOBMAP_ICON_IMAGE) {
 			//データタイプが「ジョブマップアイコンイメージ」の処理
-			return JobmapIconImageUtil.getIconImage(((byte[]) item));
+			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
+			return iconCache.loadByteGraphicImage(((byte[]) item));
 		}
 
 		return null;

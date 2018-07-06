@@ -32,6 +32,7 @@ import com.clustercontrol.ws.xcloud.CloudManagerException;
 import com.clustercontrol.ws.xcloud.CloudScope;
 import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
 import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
 
@@ -94,7 +95,11 @@ public class ScopeTreeDialog extends CommonDialog {
 		CloudEndpoint endpoint = manager.getEndpoint(CloudEndpoint.class);
 		List<CloudScope> cloudScopes;
 		try {
-			cloudScopes = endpoint.getCloudScopesByRole(this.ownerRoleId);
+			if ("ADMINISTRATORS".equals(this.ownerRoleId)) {
+				cloudScopes = endpoint.getAllCloudScopes();
+			} else {
+				cloudScopes = endpoint.getCloudScopesByRole(this.ownerRoleId);
+			}
 		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
 			throw new CloudModelException(e);
 		}
@@ -136,8 +141,11 @@ public class ScopeTreeDialog extends CommonDialog {
 					}
 					
 					protected boolean checkValidScope(final FacilityTreeItem target) {
-						if (target.getData().isBuiltInFlg())
+						if (!CloudConstants.PRIVATE_CLOUD_SCOPE_ID.equals(target.getData().getFacilityId()) &&
+							!CloudConstants.PUBLIC_CLOUD_SCOPE_ID.equals(target.getData().getFacilityId()) &&
+							target.getData().isBuiltInFlg()) {
 							return false;
+						}
 						
 						// クラウドスコープが関連するノードで絞り込み
 						for (CloudScope cloudScope: cloudScopes) {

@@ -21,6 +21,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.agent.binary.BinaryMonitorConfig;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.util.BinaryUtil;
 
 /**
@@ -58,6 +59,12 @@ public class FileReadingStatus {
 
 	/** 比較用先頭バイナリのサイズ */
 	private int prefixSize = 0;
+
+	/** レコードスキップフラグ */
+	private boolean toSkipRecord = false;
+
+	/** レコードスキップサイズ （ファイルヘッダーは除外しているので注意） */
+	private long skipSize = 0;
 
 	// ファイル出力対象の項目.
 	/** 監視対象ファイル名(絶対パス)(コメント出力)(マップキー) */
@@ -124,48 +131,34 @@ public class FileReadingStatus {
 		log.debug(methodName + DELIMITER + "rstatus = " + rstatus.toString());
 		this.storeFileRSFile = rstatus;
 
+		// プロパティセット前に初期化.
+		this.skipSize = 0;
+		this.toSkipRecord = false;
+
 		Properties props = new Properties();
+		boolean toCreate = false;
 
 		if (rstatus.exists()) {
 			// 前回ファイル出力した読込情報が存在する場合.
 			try (FileInputStream fi = new FileInputStream(rstatus)) {
 				// ファイルから各プロパティを読込む.
 				props.load(fi);
-				String positionStr = props.getProperty(RootReadingStatus.position);
-				String prevSizeStr = props.getProperty(RootReadingStatus.prevSize);
-				String monFileLastModTimeStampStr = props.getProperty(RootReadingStatus.monFileLastModTimeStamp);
-				String lastModTimeStampByThreadStr = props.getProperty(RootReadingStatus.lastModTimeStampByThread);
-				String didFirstRunStr = props.getProperty(RootReadingStatus.didFirstRun);
-				String readingStatusStr = props.getProperty(RootReadingStatus.readingStatus);
-				String runMonitorStr = props.getProperty(RootReadingStatus.runMonitor);
-
-				// ログ出力.
-				if (log.isDebugEnabled()) {
-					String propsStr = String.format(
-							"position=%s, prevSize=%s, monFileLastModTimeStamp=%s,"
-									+ " lastModTimeStampByThread=%s, didFirstRun=%s, readingStatus=%s, runMonitor=%s",
-							positionStr, prevSizeStr, monFileLastModTimeStampStr, lastModTimeStampByThreadStr,
-							didFirstRunStr, readingStatusStr, runMonitorStr);
-					log.debug(
-							methodName + DELIMITER
-									+ String.format("fileRS is exist. monitorID=%s ,rsFile=[%s], rs=[%s]",
-											this.parentDirRS.getParentMonRS().getMonitorID(), rstatus.toString(),
-											propsStr));
-				}
-
-				// ファイルから読み込んだ情報をフィールドに設定.
-				this.position = Long.parseLong(positionStr);
-				this.prevSize = Long.parseLong(prevSizeStr);
-				this.monFileLastModTimeStamp = Long.parseLong(monFileLastModTimeStampStr);
-				this.lastModTimeStampByThread = Long.parseLong(lastModTimeStampByThreadStr);
-				this.didFirstRun = Boolean.valueOf(didFirstRunStr);
-				this.runMonitor = Boolean.valueOf(runMonitorStr);
-				this.prefixString = props.getProperty(RootReadingStatus.prefixString);
+				this.position = Long.parseLong(RootReadingStatus.getPropertyValue(props, RootReadingStatus.position));
+				this.prevSize = Long.parseLong(RootReadingStatus.getPropertyValue(props, RootReadingStatus.prevSize));
+				this.monFileLastModTimeStamp = Long.parseLong(
+						RootReadingStatus.getPropertyValue(props, RootReadingStatus.monFileLastModTimeStamp));
+				this.lastModTimeStampByThread = Long.parseLong(
+						RootReadingStatus.getPropertyValue(props, RootReadingStatus.lastModTimeStampByThread));
+				this.didFirstRun = Boolean
+						.valueOf(RootReadingStatus.getPropertyValue(props, RootReadingStatus.didFirstRun));
+				this.runMonitor = Boolean
+						.valueOf(RootReadingStatus.getPropertyValue(props, RootReadingStatus.runMonitor));
+				this.prefixString = RootReadingStatus.getPropertyValue(props, RootReadingStatus.prefixString);
 				// 読込状態は前回監視時点からファイルの更新時刻が変更されてたらopen.
 				if (this.monFileLastModTimeStamp != monFile.lastModified()) {
 					this.readingStatus = RootReadingStatus.RS_OPEN_STRING;
 				} else {
-					this.readingStatus = readingStatusStr;
+					this.readingStatus = RootReadingStatus.getPropertyValue(props, RootReadingStatus.readingStatus);
 				}
 
 				this.setRunWholeFileMonitor();
@@ -173,34 +166,56 @@ public class FileReadingStatus {
 				this.initialized = true;
 			} catch (FileNotFoundException e) {
 				log.debug(methodName + DELIMITER + e.getMessage(), e);
-			} catch (IOException | NumberFormatException e) {
+			} catch (IOException e) {
 				log.warn(methodName + DELIMITER + e.getMessage(), e);
+			} catch (InvalidSetting | NumberFormatException e) {
+				log.warn(methodName + DELIMITER + e.getMessage(), e);
+				// RSファイルが壊れてるので削除.
+				if (!rstatus.delete()) {
+					log.warn(methodName + DELIMITER + "failed to delete file = [" + rstatus.getAbsolutePath() + "]");
+				} else {
+					log.info(methodName + DELIMITER + "deleted file = [" + rstatus.getAbsolutePath() + "]");
+					// 削除したので新規作成.
+					toCreate = true;
+				}
 			}
 		} else {
+			// ファイル出力された読込情報が存在しない場合は、実際にファイルを読込んで情報出力.
+			toCreate = true;
+		}
+
+		// fileRS新規作成.
+		if (toCreate) {
 			log.debug(methodName + DELIMITER + String.format("fileRS isn't exist. monitorID=%s ,rs=[%s]",
 					this.parentDirRS.getParentMonRS().getMonitorID(), rstatus.toString()));
-			// ファイル出力された読込情報が存在しない場合は、実際にファイルを読込んで情報出力.
 			this.readingStatus = RootReadingStatus.RS_OPEN_STRING;
 
 			// 前回読込ファイルサイズ
 			this.prevSize = monFile.length();
 
 			// 読込完了位置.
+			this.position = 0;
 			// 前回ファイルRS作成日時を取得して監視設定更新日時と比較.
-			if (this.parentDirRS.getParentMonRS().getLastUpdateRs() >= this.parentDirRS.getParentMonRS().getUpdateDate()
-					.longValue()) {
-				// 監視設定の更新日時より後の場合は、前回も監視対象だが前回は存在しなかった新規生成ファイルなので最初から読込む.
-				this.position = 0;
-			} else {
-				// 監視設定の更新日時より前の場合は、前回は監視対象ではなかったファイルなので、現時点のファイルサイズからの増分を読込む.
-				this.position = prevSize;
+			if (!(this.parentDirRS.getParentMonRS().getLastUpdateRs() >= this.parentDirRS.getParentMonRS()
+					.getUpdateDate().longValue())) {
+				// 監視設定の更新日時より前の場合は、前回は監視対象ではなかったファイルなので、
+				// 現時点のファイルサイズより後の増分を読込むように、レコード分割時に位置調整するフラグを立てる.
+				this.toSkipRecord = true;
+				if( log.isDebugEnabled() ){
+					log.debug(methodName + DELIMITER
+							+ String.format(
+									"toSkipRecord is true . monitorID=%s ,rs=[%s]",
+									this.parentDirRS.getParentMonRS().getMonitorID(), rstatus.toString()));
+				}
 			}
-			log.debug(methodName + DELIMITER
-					+ String.format(
-							"init rerading position. position=%d, lastUpdateRsTime=%d, monitorInfoUpdated=%d, monitorID=%s ,rs=[%s]",
-							this.position, this.parentDirRS.getParentMonRS().getLastUpdateRs(),
-							this.parentDirRS.getParentMonRS().getUpdateDate(),
-							this.parentDirRS.getParentMonRS().getMonitorID(), rstatus.toString()));
+			if( log.isDebugEnabled() ){
+				log.debug(methodName + DELIMITER
+						+ String.format(
+								"init rerading position. position=%d, lastUpdateRsTime=%d, monitorInfoUpdated=%d, monitorID=%s ,rs=[%s]",
+								this.position, this.parentDirRS.getParentMonRS().getLastUpdateRs(),
+								this.parentDirRS.getParentMonRS().getUpdateDate(),
+								this.parentDirRS.getParentMonRS().getMonitorID(), rstatus.toString()));
+			}
 
 			// 最終更新タイムスタンプ取得.
 			this.monFileLastModTimeStamp = monFile.lastModified();
@@ -503,6 +518,86 @@ public class FileReadingStatus {
 		this.parentDirRS.checkCloseDirRS();
 	}
 
+	/**
+	 * 読み込み中フラグをクローズ.<br>
+	 * <br>
+	 * ファイルRS作成前に呼ぶ想定なのでstatic.
+	 */
+	public static void closeRumMonitor(File fileRs, String monitorFileName) {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+
+		String readingStatus = null;
+		Boolean didFirstRun = null;
+		long prevSize = 0;
+		long position = 0;
+		long monFileLastModTimeStamp = 0;
+		long lastModTimeStampByThread = 0;
+		String prefixString = null;
+
+		// 読込中フラグ以外をファイルから読込んだ値のままにするため読込む.
+		Properties props = new Properties();
+		try (FileInputStream fi = new FileInputStream(fileRs)) {
+			props.load(fi);
+			position = Long.parseLong(RootReadingStatus.getPropertyValue(props, RootReadingStatus.position));
+			prevSize = Long.parseLong(RootReadingStatus.getPropertyValue(props, RootReadingStatus.prevSize));
+			monFileLastModTimeStamp = Long
+					.parseLong(RootReadingStatus.getPropertyValue(props, RootReadingStatus.monFileLastModTimeStamp));
+			lastModTimeStampByThread = Long
+					.parseLong(RootReadingStatus.getPropertyValue(props, RootReadingStatus.lastModTimeStampByThread));
+			didFirstRun = Boolean.valueOf(RootReadingStatus.getPropertyValue(props, RootReadingStatus.didFirstRun));
+			prefixString = RootReadingStatus.getPropertyValue(props, RootReadingStatus.prefixString);
+			readingStatus = RootReadingStatus.getPropertyValue(props, RootReadingStatus.readingStatus);
+		} catch (FileNotFoundException e) {
+			log.warn(String.format(methodName + DELIMITER + "skip to update fileRS." + " fileRS=[%s] : ",
+					fileRs.getAbsolutePath()) + e.getMessage(), e);
+			return;
+		} catch (IOException e) {
+			log.warn(String.format(methodName + DELIMITER + "skip to update fileRS." + " fileRS=[%s] : ",
+					fileRs.getAbsolutePath()) + e.getMessage(), e);
+			return;
+		} catch (InvalidSetting | NumberFormatException e) {
+			log.warn(String.format(methodName + DELIMITER + "skip to update fileRS." + " fileRS=[%s] : ",
+					fileRs.getAbsolutePath()) + e.getMessage(), e);
+			// RSファイルが壊れてるので削除.
+			if (!fileRs.delete()) {
+				log.warn(methodName + DELIMITER + "failed to delete file = [" + fileRs.getAbsolutePath() + "]");
+			} else {
+				log.info(methodName + DELIMITER + "deleted file = [" + fileRs.getAbsolutePath() + "]");
+			}
+			return;
+		}
+
+		// プロパティを書き込む.
+		try (FileOutputStream fo = new FileOutputStream(fileRs)) {
+			props.put(RootReadingStatus.readingStatus, readingStatus);
+			props.put(RootReadingStatus.didFirstRun, didFirstRun.toString());
+			props.put(RootReadingStatus.prevSize, Long.valueOf(prevSize).toString());
+			props.put(RootReadingStatus.position, Long.valueOf(position).toString());
+			props.put(RootReadingStatus.monFileLastModTimeStamp, Long.valueOf(monFileLastModTimeStamp).toString());
+			props.put(RootReadingStatus.lastModTimeStampByThread, Long.valueOf(lastModTimeStampByThread).toString());
+			props.put(RootReadingStatus.prefixString, prefixString);
+			// 読込中フラグは固定値.
+			props.put(RootReadingStatus.runMonitor, Boolean.valueOf(false).toString());
+			props.store(fo, monitorFileName);
+			// 更新内容の出力(prefixString以外).
+			log.info(methodName + DELIMITER
+					+ String.format(
+							"success to update in flag of running in fileRS." + " fileRS=[%s], "
+									+ RootReadingStatus.readingStatus + "=[%s], " + RootReadingStatus.didFirstRun
+									+ "=[%s], " + RootReadingStatus.prevSize + "=[%d], " + RootReadingStatus.position
+									+ "=[%d], " + RootReadingStatus.monFileLastModTimeStamp + "=[%d], "
+									+ RootReadingStatus.lastModTimeStampByThread + "=[%d]",
+							fileRs.getAbsolutePath(), readingStatus, didFirstRun.toString(), prevSize, position,
+							monFileLastModTimeStamp, lastModTimeStampByThread));
+		} catch (FileNotFoundException e) {
+			log.warn(String.format(methodName + DELIMITER + "skip to update fileRS." + " fileRS=[%s] : ",
+					fileRs.getAbsolutePath()) + e.getMessage(), e);
+		} catch (IOException e) {
+			log.warn(String.format(methodName + DELIMITER + "skip to update fileRS." + " fileRS=[%s] : ",
+					fileRs.getAbsolutePath()) + e.getMessage(), e);
+		}
+	}
+
 	// 以下各フィールドのsetter.
 	/** ファイルハンドラのポジション */
 	public void setPosition(long position) {
@@ -513,6 +608,16 @@ public class FileReadingStatus {
 	public void setRunMonitor(boolean run) {
 		this.runMonitor = Boolean.valueOf(run);
 		this.outputRS();
+	}
+
+	/** レコードスキップフラグ */
+	public void setToSkipRecord(boolean toSkipRecord) {
+		this.toSkipRecord = toSkipRecord;
+	}
+
+	/** レコードスキップサイズ */
+	public void setSkipSize(long skipSize) {
+		this.skipSize = skipSize;
 	}
 
 	// 以下各フィールドのgetter.
@@ -584,6 +689,21 @@ public class FileReadingStatus {
 	/** 監視中フラグ(ファイル全体監視向け) */
 	public boolean isRunMonitor() {
 		return this.runMonitor.booleanValue();
+	}
+
+	/** 初回監視実行済フラグ(true:実行済,false:未実行) */
+	public boolean isDidFirstRun() {
+		return this.didFirstRun.booleanValue();
+	}
+
+	/** レコードスキップフラグ */
+	public boolean isToSkipRecord() {
+		return this.toSkipRecord;
+	}
+
+	/** レコードスキップサイズ */
+	public long getSkipSize() {
+		return this.skipSize;
 	}
 
 }

@@ -62,6 +62,9 @@ public class SnapshotDialog extends CommonDialog implements CloudStringConstants
 		lblNewLabel.setText(strSnapshotName + strSeparator);
 		
 		text = new Text(parent, SWT.BORDER);
+		if (snapshotName != null) {
+			text.setText(snapshotName);
+		}
 		text.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				checkFinished();
@@ -74,6 +77,9 @@ public class SnapshotDialog extends CommonDialog implements CloudStringConstants
 		lblNewLabel_1.setText(strDescription + strSeparator);
 		
 		text_1 = new Text(parent, SWT.BORDER | SWT.MULTI);
+		if (description != null) {
+			text_1.setText(description);
+		}
 		text_1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 2));
 
 		ControlUtil.setRequired(new Control[]{text});

@@ -67,6 +67,7 @@ public class CloudScopesView extends AbstractCloudViewPart {
 	private FacilityRootUpdateService service;
 	
 	private class FacilityRootUpdateService {
+		private boolean disposed;
 		private com.clustercontrol.composite.FacilityTreeComposite listener;
 
 		public FacilityRootUpdateService() {
@@ -76,7 +77,8 @@ public class CloudScopesView extends AbstractCloudViewPart {
 					composite.getDisplay().asyncExec(new Runnable() {
 						@Override
 						public void run() {
-							CloudScopesView.this.update();
+							if (!disposed)
+								CloudScopesView.this.update();
 						}
 					});
 				}
@@ -93,6 +95,7 @@ public class CloudScopesView extends AbstractCloudViewPart {
 		}
 
 		public void dispose() {
+			disposed = true;
 			FacilityTreeCache.delComposite(listener);
 		}
 	}
@@ -314,9 +317,7 @@ public class CloudScopesView extends AbstractCloudViewPart {
 						Image defaultImage = FacilityImageConstant.typeToImage(FacilityConstant.TYPE_SCOPE, true);
 						String platformId = ((ICloudScope)element).getPlatformId();
 						ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-						if (provider != null)
-							return provider.getImage(element, defaultImage);
-						return defaultImage;
+						return provider.getImage(element, defaultImage);
 					}
 					return null;
 				}

@@ -1,0 +1,1627 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version last-->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="performance_detail" pageWidth="595" pageHeight="842" columnWidth="595" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isSummaryWithPageHeaderAndFooter="true" uuid="b3555393-5ca6-4c3c-a841-04fcb1f6eb87">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<property name="net.sf.jasperreports.awt.ignore.missing.font" value="true"/>
+	<property name="ireport.zoom" value="1.1"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="4820"/>
+	<subDataset name="Dataset" uuid="5c5236c0-b9d1-4299-8ff9-8e7c8e00fe4f">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="CSV Data Adapter cc_calculated_data"/>
+		<queryString language="CSV">
+			<![CDATA[]]>
+		</queryString>
+		<field name="collectorid" class="java.lang.String"/>
+		<field name="item_code" class="java.lang.String"/>
+		<field name="item_name" class="java.lang.String"/>
+		<field name="display_name" class="java.lang.String"/>
+		<field name="date_time" class="java.sql.Timestamp"/>
+		<field name="facilityid" class="java.lang.String"/>
+		<field name="value" class="java.lang.Float"/>
+	</subDataset>
+	<parameter name="PAGE_OFFSET" class="java.lang.Integer" isForPrompting="false">
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NODE_NAME" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="FACILITY_NAME" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="FACILITY_ID" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="title.main" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="title.cover" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="DATASOURCE_1" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_2" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_3" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_4" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_5" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_6" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_7" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_8" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_9" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_10" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_11" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_12" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_13" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="LOGO_FILENAME" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="START_DATE" class="java.sql.Timestamp" isForPrompting="false"/>
+	<parameter name="END_DATE" class="java.sql.Timestamp" isForPrompting="false"/>
+	<parameter name="SHOW_PAGE" class="java.lang.Boolean" isForPrompting="false">
+		<defaultValueExpression><![CDATA[true]]></defaultValueExpression>
+	</parameter>
+	<parameter name="chart.title.1" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.2" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.3" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.4" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.5" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.6" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.7" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.8" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.9" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.10" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.11" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.12" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.13" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.1" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.2" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.3" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.4" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.5" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.6" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.7" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.8" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.9" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.10" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.11" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.12" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.13" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="category.title.net" class="java.lang.String"/>
+	<parameter name="category.title.disk" class="java.lang.String"/>
+	<parameter name="category.title.cpu" class="java.lang.String"/>
+	<queryString language="CSV">
+		<![CDATA[]]>
+	</queryString>
+	<field name="collectorid" class="java.lang.String"/>
+	<field name="item_code" class="java.lang.String"/>
+	<field name="display_name" class="java.lang.String"/>
+	<field name="date_time" class="java.sql.Timestamp"/>
+	<field name="facilityid" class="java.lang.String"/>
+	<field name="value" class="java.lang.Float"/>
+	<field name="item_name" class="java.lang.String"/>
+	<group name="Group1">
+		<groupHeader>
+			<band height="735">
+				<property name="local_mesure_unitheight" value="pixel"/>
+				<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				<image hAlign="Right" onErrorType="Blank">
+					<reportElement x="414" y="1" width="180" height="90" uuid="3b0d32f3-86af-403b-a099-fbfdda0bd397">
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<imageExpression><![CDATA[$P{LOGO_FILENAME}]]></imageExpression>
+				</image>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="40" y="380" width="520" height="250" uuid="146ddf12-ec0c-446f-971d-a2a2a8992c8c">
+							<property name="local_mesure_unitx" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.2}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="bb68ec82-b55c-4a6c-b4e4-951ab9d44c85">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_2}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.2}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat/>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+				<textField>
+					<reportElement x="30" y="10" width="380" height="80" uuid="bb464a45-c436-41a6-8b9e-3d6676f6e0d4">
+						<property name="local_mesure_unitwidth" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Bottom">
+						<font fontName="SansSerif" size="22" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title.main}+$P{category.title.cpu}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="22" y="99" width="550" height="1" uuid="ac52ec5d-aeb4-4bd1-8ebb-9821a24ce391">
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<graphicElement>
+						<pen lineWidth="3.0" lineColor="#999999"/>
+					</graphicElement>
+				</line>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="32" y="120" width="530" height="230" uuid="a054c32f-40df-40e7-b912-09f8d2e6f7a2">
+							<property name="local_mesure_unitx" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.1}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="19113181-69d4-4346-b49a-31f76fb1c606">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_1}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.1}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat/>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+						<rangeAxisMaxValueExpression><![CDATA[100]]></rangeAxisMaxValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+			</band>
+			<band height="700">
+				<property name="local_mesure_unitheight" value="pixel"/>
+				<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				<image hAlign="Right" onErrorType="Blank">
+					<reportElement x="414" y="1" width="180" height="90" uuid="42314561-e90a-4cc8-80bb-4d8e92398a1d">
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<imageExpression><![CDATA[$P{LOGO_FILENAME}]]></imageExpression>
+				</image>
+				<textField>
+					<reportElement x="30" y="10" width="380" height="80" uuid="a9a46168-ef28-4fcf-8de7-703633961b65">
+						<property name="local_mesure_unitwidth" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Bottom">
+						<font fontName="SansSerif" size="22" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title.main}+$P{category.title.disk}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="22" y="99" width="550" height="1" uuid="bc00124f-47a5-4421-bc38-463d2eb5fcc7">
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<graphicElement>
+						<pen lineWidth="3.0" lineColor="#999999"/>
+					</graphicElement>
+				</line>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="36" y="320" width="533" height="175" uuid="0626aa0a-0bd9-4a87-8e91-b40a47202495">
+							<property name="local_mesure_unitx" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.x" value="px"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.4}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="2fec8b37-bb98-4731-bc47-08e6e320801b">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_4}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.4}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat>
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="36" y="510" width="260" height="175" uuid="45ac7674-c19d-4902-8bb8-3119a9802844">
+							<property name="local_mesure_unity" value="pixel"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.5}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="e0c25d55-2d2e-4ab3-8a68-db3ab8f4678d">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_5}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.5}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat/>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="36" y="120" width="518" height="190" uuid="feaa1d47-7653-46b8-9712-100139475b11">
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.3}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="598c3e42-329c-4f36-be5b-abe69b4ec0fb">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_3}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<labelFont>
+									<font size="10"/>
+								</labelFont>
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.3}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat>
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="300" y="510" width="240" height="175" uuid="cf8422d1-b8b0-4d98-87dc-e291162bdbe1">
+							<property name="local_mesure_unity" value="pixel"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.6}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="e7077d83-57a7-444e-9a2b-5b0db818019c">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_6}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.6}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat/>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+			</band>
+			<band height="705">
+				<property name="local_mesure_unitheight" value="pixel"/>
+				<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				<image hAlign="Right" onErrorType="Blank">
+					<reportElement x="414" y="1" width="180" height="90" uuid="9148c468-351f-4d6c-9933-7efa1d45baae">
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<imageExpression><![CDATA[$P{LOGO_FILENAME}]]></imageExpression>
+				</image>
+				<textField>
+					<reportElement x="30" y="10" width="380" height="80" uuid="a86d23bf-2a81-47c9-8f4e-64f3fe95888e">
+						<property name="local_mesure_unitwidth" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Bottom">
+						<font fontName="SansSerif" size="22" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title.main}+$P{category.title.disk}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="22" y="99" width="550" height="1" uuid="0ef904b3-fe01-4c8b-910b-a8e2ea21d676">
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<graphicElement>
+						<pen lineWidth="3.0" lineColor="#999999"/>
+					</graphicElement>
+				</line>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="30" y="320" width="517" height="175" uuid="84364cb2-8a56-4c10-bf81-839a5109a2cf">
+							<property name="local_mesure_unitheight" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.8}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="b3de4d52-fea3-403a-9fe3-c6359d1b8aa1">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_8}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.8}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat/>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="32" y="120" width="519" height="175" uuid="32e9141e-2622-4db7-b4bd-7bffb77b194a">
+							<property name="local_mesure_unity" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.y" value="px"/>
+							<property name="local_mesure_unitheight" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.7}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="8e6da780-e810-4efc-bb44-ee80f27bb2e3">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_7}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.7}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat/>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="30" y="510" width="530" height="175" uuid="316784e5-cea0-4f06-aaa4-802445f5bb6b">
+							<property name="local_mesure_unitheight" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.9}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="0a53f079-764a-47a9-9d8e-37edba70461a">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_9}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.9}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat>
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+			</band>
+			<band height="735">
+				<property name="local_mesure_unitheight" value="pixel"/>
+				<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				<image hAlign="Right" onErrorType="Blank">
+					<reportElement x="414" y="1" width="180" height="90" uuid="3b0d32f3-86af-403b-a099-fbfdda0bd397">
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<imageExpression><![CDATA[$P{LOGO_FILENAME}]]></imageExpression>
+				</image>
+				<textField>
+					<reportElement x="30" y="10" width="380" height="80" uuid="bb464a45-c436-41a6-8b9e-3d6676f6e0d4">
+						<property name="local_mesure_unitwidth" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Bottom">
+						<font fontName="SansSerif" size="22" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title.main}+$P{category.title.disk}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="22" y="99" width="550" height="1" uuid="ac52ec5d-aeb4-4bd1-8ebb-9821a24ce391">
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<graphicElement>
+						<pen lineWidth="3.0" lineColor="#999999"/>
+					</graphicElement>
+				</line>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="30" y="520" width="531" height="175" uuid="e0be33f7-64d1-4c81-a40a-0f3019263eee">
+							<property name="com.jaspersoft.studio.unit.y" value="px"/>
+							<property name="local_mesure_unitheight" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.12}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="a874a560-f722-40e4-a83a-00b420fc4e82">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_12}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.12}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat>
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="31" y="130" width="532" height="175" uuid="e0d24d9a-8064-4cfe-b8c7-b597da20af76">
+							<property name="local_mesure_unity" value="pixel"/>
+							<property name="local_mesure_unitheight" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.10}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="4b7629bf-a60d-4765-b88f-b2ef81c131c9">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_10}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.10}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat>
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="30" y="320" width="530" height="175" uuid="e7a5d7df-f35a-403c-93c3-447e21372d03">
+							<property name="local_mesure_unity" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.y" value="px"/>
+							<property name="local_mesure_unitheight" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.11}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="2f0fc9c9-a317-4097-9e24-70ffe3a35231">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_11}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.11}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat>
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+			</band>
+			<band height="735">
+				<property name="local_mesure_unitheight" value="pixel"/>
+				<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				<image hAlign="Right" onErrorType="Blank">
+					<reportElement x="414" y="1" width="180" height="90" uuid="3b0d32f3-86af-403b-a099-fbfdda0bd397">
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<imageExpression><![CDATA[$P{LOGO_FILENAME}]]></imageExpression>
+				</image>
+				<textField>
+					<reportElement x="30" y="10" width="380" height="80" uuid="bb464a45-c436-41a6-8b9e-3d6676f6e0d4">
+						<property name="local_mesure_unitwidth" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unitheight" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<textElement textAlignment="Left" verticalAlignment="Bottom">
+						<font fontName="SansSerif" size="22" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title.main}+$P{category.title.net}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="22" y="99" width="550" height="1" uuid="ac52ec5d-aeb4-4bd1-8ebb-9821a24ce391">
+						<property name="local_mesure_unitx" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="local_mesure_unity" value="pixel"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<graphicElement>
+						<pen lineWidth="3.0" lineColor="#999999"/>
+					</graphicElement>
+				</line>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="20" y="120" width="531" height="350" uuid="aa38e6d3-8b7a-480a-baa6-bc4645e4626a">
+							<property name="local_mesure_unitheight" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							<property name="local_mesure_unitwidth" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<titleExpression><![CDATA[$P{chart.title.13}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="8"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="eca15553-ea7c-433b-978a-1a88c7e1db8a">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_13}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{item_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.13}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat>
+								<tickLabelFont>
+									<font size="8"/>
+								</tickLabelFont>
+							</axisFormat>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+			</band>
+		</groupHeader>
+	</group>
+	<pageFooter>
+		<band height="70">
+			<property name="local_mesure_unitheight" value="pixel"/>
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<rectangle>
+				<reportElement x="0" y="0" width="595" height="70" backcolor="#B9D7FF" uuid="e272108a-c51c-4810-b3f9-014c604cdeb8"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="53" width="595" height="17" backcolor="#00204D" uuid="961dce44-8cf6-4b20-b3e4-31468a0fdf72"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="335" y="0" width="250" height="53" forecolor="#000000" uuid="b6f41662-abca-41b9-af58-6ba2b391f75c">
+					<property name="local_mesure_unitx" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="local_mesure_unitwidth" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="18" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{title.cover}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="260" y="16" width="75" height="20" uuid="847bd726-0e28-4388-9466-93d22951edeb">
+					<printWhenExpression><![CDATA[$P{SHOW_PAGE}]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["- " + ($V{PAGE_NUMBER} + $P{PAGE_OFFSET}) + " -"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="10" y="0" width="250" height="50" forecolor="#000000" uuid="664f3abd-a942-4c00-88d0-a6065efc7022">
+					<property name="local_mesure_unitwidth" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="local_mesure_unitx" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="13" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{FACILITY_NAME} + "(" + $P{FACILITY_ID} + ")"]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

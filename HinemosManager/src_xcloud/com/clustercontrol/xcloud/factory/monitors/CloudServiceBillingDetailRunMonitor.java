@@ -7,10 +7,9 @@
  */
 package com.clustercontrol.xcloud.factory.monitors;
 
-import static com.clustercontrol.xcloud.util.CloudMessageUtil.notifyDelta;
-import static com.clustercontrol.xcloud.util.CloudMessageUtil.notifySum;
 import static com.clustercontrol.xcloud.util.CloudMessageUtil.notifyUnknown;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.persistence.EntityExistsException;
 import javax.persistence.NoResultException;
@@ -34,6 +34,7 @@ import javax.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.bean.PriorityConstant;
@@ -54,6 +55,8 @@ import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorNumericValueType;
+import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.monitor.run.model.MonitorJudgementInfo;
 import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil;
 import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil.CollectMonitorDataInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -61,13 +64,12 @@ import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.repository.bean.FacilityTreeItem;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.xcloud.HinemosCredential;
 import com.clustercontrol.xcloud.InternalManagerError;
 import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.Session.SessionScope;
 import com.clustercontrol.xcloud.common.CloudMessageConstant;
-import com.clustercontrol.xcloud.factory.IBillings;
-import com.clustercontrol.xcloud.factory.IBillings.PlatformServiceBilling;
 import com.clustercontrol.xcloud.model.BillingDetailEntity;
 import com.clustercontrol.xcloud.model.BillingDetailMonitorStatusEntity;
 import com.clustercontrol.xcloud.model.BillingDetailRelationEntity;
@@ -124,7 +126,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 		logger.debug("CloudServiceBillingDetailRunMonitor.runMonitorInfo()");
 
 		List<OutputBasicInfo> ret = new ArrayList<>();
-		m_now = new Date(System.currentTimeMillis());
+		m_now = HinemosTime.getDateInstance();
 
 		// 監視基本情報を設定
 		if (!setMonitorInfo(m_monitorTypeId, m_monitorId)) {
@@ -172,6 +174,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 			} catch(Exception e) {
 				notifyException("", e);
 				collectErrorSample("", CloudUtil.Priority.FAILURE.type);
+				throw new HinemosUnknown(e);
 			}
 			
 			String facilityType = null;
@@ -241,8 +244,8 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 						notifyUnknown(m_monitor, e);
 					
 					if (m_monitor.getCollectorFlg()) {
-						Sample sample = new Sample(new Date(), m_monitorId);
-						sample.set(m_facilityId, monitorKind, 0d, CollectedDataErrorTypeConstant.UNKNOWN);
+						Sample sample = new Sample(m_now, m_monitorId);
+						sample.set(m_facilityId, m_monitor.getItemName(), 0d, CollectedDataErrorTypeConstant.UNKNOWN);
 						CollectDataUtil.put(Arrays.asList(sample));
 					}
 					throw new HinemosUnknown(e);
@@ -256,7 +259,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 					{
 						// 月初の時刻を作成。
 						Calendar beginning = Calendar.getInstance();
-						beginning.setTime(new Date());
+						beginning.setTime(m_now);
 						beginning.set(Calendar.DAY_OF_MONTH, 1);
 						beginning.set(Calendar.HOUR_OF_DAY, 0);
 						beginning.set(Calendar.MINUTE, 0);
@@ -289,14 +292,44 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							
 							//通知
 							if (m_monitor.getMonitorFlg()){
-								notifySum(m_monitor, m_monitor.getFacilityId(), m_judgementInfoList, cost, set);
+								ret.add(createSumOutputBasicInfo(m_monitor, m_monitor.getFacilityId(), m_judgementInfoList, cost, set));
 							}
 							
 							//収集
-							if (m_monitor.getCollectorFlg()) {
-								Sample sample = new Sample(new Date(), m_monitorId);
-								sample.set(m_facilityId, monitorKind, cost, CollectedDataErrorTypeConstant.NOT_ERROR);
-								CollectDataUtil.put(Arrays.asList(sample));
+							if (m_monitor.getCollectorFlg() 
+									|| m_monitor.getPredictionFlg() 
+									|| m_monitor.getChangeFlg()) {
+								// 将来予測監視、変化量監視の処理を行う
+								CollectMonitorDataInfo collectMonitorDataInfo
+									= CollectMonitorManagerUtil.calculateChangePredict(null, m_monitor, m_facilityId,
+										null, m_monitor.getItemName(), m_now.getTime(), cost);
+
+								// 将来予測もしくは変更点監視が有効な場合、通知を行う
+								Double average = null;
+								Double standardDeviation = null;
+								if (collectMonitorDataInfo != null) {
+									if (collectMonitorDataInfo.getChangeMonitorRunResultInfo() != null) {
+										// 変化量監視の通知
+										MonitorRunResultInfo collectResult = collectMonitorDataInfo.getChangeMonitorRunResultInfo();
+										ret.add(createOutputBasicInfo(true, m_facilityId, collectResult.getCheckResult(), 
+												new Date(collectResult.getNodeDate()), collectResult, m_monitor));
+									}
+									if (collectMonitorDataInfo.getPredictionMonitorRunResultInfo() != null) {
+										// 将来予測監視の通知
+										MonitorRunResultInfo collectResult = collectMonitorDataInfo.getPredictionMonitorRunResultInfo();
+										ret.add(createOutputBasicInfo(true, m_facilityId, collectResult.getCheckResult(), 
+												new Date(collectResult.getNodeDate()), collectResult, m_monitor));
+									}
+									average = collectMonitorDataInfo.getAverage();
+									standardDeviation = collectMonitorDataInfo.getStandardDeviation();
+								}
+								
+								if (m_monitor.getCollectorFlg()) {
+									Sample sample = new Sample(m_now, m_monitorId);
+									sample.set(m_facilityId, m_monitor.getItemName(), cost, 
+											average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
+									CollectDataUtil.put(Arrays.asList(sample));
+								}
 							}
 						} else /*if (PER_NODE.equals(facilityType)) */{
 							Map<String, Double> costs = new HashMap<>();
@@ -333,17 +366,48 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							//通知
 							if (m_monitor.getMonitorFlg()){
 								for (Entry<String, Double> entry : costs.entrySet()) {
-									notifySum(m_monitor, entry.getKey(), m_judgementInfoList, entry.getValue(), resouceLists.get(entry.getKey()));
+									ret.add(createSumOutputBasicInfo(m_monitor, entry.getKey(), m_judgementInfoList, entry.getValue(), resouceLists.get(entry.getKey())));
 								}
 							}
 							
-							//収集
-							if (m_monitor.getCollectorFlg()) {
-								Sample sample = new Sample(new Date(), m_monitorId);
-								for (Entry<String, Double> entry : costs.entrySet()) {
-									sample.set(entry.getKey(), monitorKind, entry.getValue(), CollectedDataErrorTypeConstant.NOT_ERROR);
+							if (m_monitor.getCollectorFlg() 
+									|| m_monitor.getPredictionFlg() 
+									|| m_monitor.getChangeFlg()) {
+								Sample sample = new Sample(m_now, m_monitorId);
+								for (Map.Entry<String, Double> entry: costs.entrySet()) {
+
+									// 将来予測監視、変化量監視の処理を行う
+									CollectMonitorDataInfo collectMonitorDataInfo
+										= CollectMonitorManagerUtil.calculateChangePredict(null, m_monitor, entry.getKey(),
+											null, m_monitor.getItemName(), m_now.getTime(), entry.getValue());
+
+									// 将来予測もしくは変更点監視が有効な場合、通知を行う
+									Double average = null;
+									Double standardDeviation = null;
+									if (collectMonitorDataInfo != null) {
+										if (collectMonitorDataInfo.getChangeMonitorRunResultInfo() != null) {
+											// 変化量監視の通知
+											MonitorRunResultInfo collectResult = collectMonitorDataInfo.getChangeMonitorRunResultInfo();
+											ret.add(createOutputBasicInfo(true, entry.getKey(), collectResult.getCheckResult(), 
+													new Date(collectResult.getNodeDate()), collectResult, m_monitor));
+										}
+										if (collectMonitorDataInfo.getPredictionMonitorRunResultInfo() != null) {
+											// 将来予測監視の通知
+											MonitorRunResultInfo collectResult = collectMonitorDataInfo.getPredictionMonitorRunResultInfo();
+											ret.add(createOutputBasicInfo(true, entry.getKey(), collectResult.getCheckResult(), 
+													new Date(collectResult.getNodeDate()), collectResult, m_monitor));
+										}
+										average = collectMonitorDataInfo.getAverage();
+										standardDeviation = collectMonitorDataInfo.getStandardDeviation();
+									}
+									if (m_monitor.getCollectorFlg()) {
+										sample.set(entry.getKey(), m_monitor.getItemName(), entry.getValue(), 
+												average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
+									}
 								}
-								CollectDataUtil.put(Arrays.asList(sample));
+								if (m_monitor.getCollectorFlg()) {
+									CollectDataUtil.put(Arrays.asList(sample));
+								}
 							}
 						}
 					}
@@ -371,7 +435,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							else {
 								// 取得
 								Calendar regdate = Calendar.getInstance();
-								regdate.setTime(new Date());
+								regdate.setTime(m_now);
 								regdate.set(Calendar.HOUR_OF_DAY, 0);
 								regdate.set(Calendar.MINUTE, 0);
 								regdate.set(Calendar.SECOND, 0);
@@ -470,12 +534,42 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 								}
 								
 								if (m_monitor.getMonitorFlg())
-									notifyDelta(m_monitor, m_monitor.getFacilityId(), m_judgementInfoList, i.getTime().getTime(), cost, set);
+									ret.add(createDeltaOutputBasicInfo(m_monitor, m_monitor.getFacilityId(), m_judgementInfoList, i.getTime().getTime(), cost, set));
 								
-								if (m_monitor.getCollectorFlg()) {
-									Sample sample = new Sample(new Date(), m_monitorId);
-									sample.set(m_facilityId,monitorKind, cost, CollectedDataErrorTypeConstant.NOT_ERROR);
-									CollectDataUtil.put(Arrays.asList(sample));
+								if (m_monitor.getCollectorFlg() 
+										|| m_monitor.getPredictionFlg() 
+										|| m_monitor.getChangeFlg()) {
+									// 将来予測監視、変化量監視の処理を行う
+									CollectMonitorDataInfo collectMonitorDataInfo
+										= CollectMonitorManagerUtil.calculateChangePredict(null, m_monitor, m_facilityId,
+											null, m_monitor.getItemName(), i.getTime().getTime(), cost);
+
+									// 将来予測もしくは変更点監視が有効な場合、通知を行う
+									Double average = null;
+									Double standardDeviation = null;
+									if (collectMonitorDataInfo != null) {
+										if (collectMonitorDataInfo.getChangeMonitorRunResultInfo() != null) {
+											// 変化量監視の通知
+											MonitorRunResultInfo collectResult = collectMonitorDataInfo.getChangeMonitorRunResultInfo();
+											ret.add(createOutputBasicInfo(true, m_facilityId, collectResult.getCheckResult(), 
+													new Date(collectResult.getNodeDate()), collectResult, m_monitor));
+										}
+										if (collectMonitorDataInfo.getPredictionMonitorRunResultInfo() != null) {
+											// 将来予測監視の通知
+											MonitorRunResultInfo collectResult = collectMonitorDataInfo.getPredictionMonitorRunResultInfo();
+											ret.add(createOutputBasicInfo(true, m_facilityId, collectResult.getCheckResult(), 
+													new Date(collectResult.getNodeDate()), collectResult, m_monitor));
+										}
+										average = collectMonitorDataInfo.getAverage();
+										standardDeviation = collectMonitorDataInfo.getStandardDeviation();
+									}
+									
+									if (m_monitor.getCollectorFlg()) {
+										Sample sample = new Sample(m_now, m_monitorId);
+										sample.set(m_facilityId, m_monitor.getItemName(), cost, 
+												average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
+										CollectDataUtil.put(Arrays.asList(sample));
+									}
 								}
 							}
 						} else /*if (PER_NODE.equals(facilityType)) */{
@@ -522,14 +616,14 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 								
 								if (m_monitor.getMonitorFlg()){
 									for (Map.Entry<String, Double> entry: costs.entrySet()) {
-										notifyDelta(m_monitor, entry.getKey(), m_judgementInfoList, i.getTime().getTime(), entry.getValue(), resouceLists.get(entry.getKey()));
+										ret.add(createDeltaOutputBasicInfo(m_monitor, entry.getKey(), m_judgementInfoList, i.getTime().getTime(), entry.getValue(), resouceLists.get(entry.getKey())));
 									}
 								}
 								
 								if (m_monitor.getCollectorFlg() 
 										|| m_monitor.getPredictionFlg() 
 										|| m_monitor.getChangeFlg()) {
-									Sample sample = new Sample(new Date(), m_monitorId);
+									Sample sample = new Sample(m_now, m_monitorId);
 									for (Map.Entry<String, Double> entry: costs.entrySet()) {
 
 										// 将来予測監視、変化量監視の処理を行う
@@ -557,7 +651,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 											standardDeviation = collectMonitorDataInfo.getStandardDeviation();
 										}
 										if (m_monitor.getCollectorFlg()) {
-											sample.set(entry.getKey(), monitorKind, entry.getValue(), 
+											sample.set(entry.getKey(), m_monitor.getItemName(), entry.getValue(), 
 													average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
 										}
 									}
@@ -644,16 +738,22 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 	}
 	
 	protected void notifyException(String target, Exception exception) {
-		Date d = new Date();
 		String message = CloudMessageConstant.MONITOR_PLATFORM_BILLING_SERVICE_NOTIFY_UNKNOWN.getMessage(exception.getMessage());
 		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		String messageOrg = CloudMessageConstant.MONITOR_PLATFORM_BILLING_SERVICE_NOTIFY_ORG_UNKNOWN.getMessage(format.format(d.getTime()), CloudMessageUtil.getExceptionStackTrace(exception));
+		String messageOrg = CloudMessageConstant.MONITOR_PLATFORM_BILLING_SERVICE_NOTIFY_ORG_UNKNOWN.getMessage(format.format(m_now.getTime()), CloudMessageUtil.getExceptionStackTrace(exception));
 		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(CloudUtil.Priority.UNKNOWN, monitorTypeId, m_monitorId,
-				target, m_monitor.getApplication(), m_facilityId, message, messageOrg, d.getTime());
+				target, m_monitor.getApplication(), m_facilityId, message, messageOrg, m_now.getTime());
 		notify(output);
 	}
 	
-	protected void collect(Sample sample) {
+	protected void notifyError(CloudUtil.Priority priority, String subKey, String message) {
+		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId, subKey, m_monitor.getApplication(), m_facilityId, message, message, m_now.getTime());
+		notify(output);
+	}
+	
+	protected void collectErrorSample(String target, int errorType) {
+		Sample sample = new Sample(HinemosTime.getDateInstance(),m_monitorId);
+		sample.set(m_facilityId, target, 0.0, errorType);
 		if (logger.isDebugEnabled()) {
 			ObjectMapper objectMapper = new ObjectMapper();
 			ObjectWriter writer = objectMapper.writerFor(Sample.class);
@@ -672,57 +772,88 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 		}
 	}
 	
-	protected boolean notifyBilling(String target, Map<String,IBillings.PlatformServiceBilling> billings) {
-		boolean success = false;
-		for (Entry<String, PlatformServiceBilling> entry : billings.entrySet()) {
-			
-			String facilityId = entry.getKey();
-			PlatformServiceBilling billing = entry.getValue();
-			
-			CloudUtil.Priority prioriry = CloudUtil.checkPriorityRange(m_judgementInfoList, billing.getPrice());
-			OutputBasicInfo output;
-			Sample sample;
-			switch(prioriry.type) {
-			case PriorityConstant.TYPE_INFO:
-			case PriorityConstant.TYPE_WARNING:
-			case PriorityConstant.TYPE_CRITICAL:
-				output = createOutput(prioriry, facilityId, target, billing.getPrice(), billing.getUpdateDate());
-				sample = new Sample(new Date(),m_monitorId);
-				sample.set(facilityId, target, billing.getPrice(), CollectedDataErrorTypeConstant.NOT_ERROR);
-				success = true;
-				break;
-			default:
-				output = createOutput(prioriry, facilityId, target, billing.getPrice(), billing.getUpdateDate());
-				sample = new Sample(new Date(),m_monitorId);
-				sample.set(facilityId, target, billing.getPrice(), CollectedDataErrorTypeConstant.UNKNOWN);
-				break;
-			}
-			notify(output);
-			collect(sample);
-		}
-		return success;
-	}
-	
-	protected void notifyError(CloudUtil.Priority priority, String subKey, String message) {
-		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId, subKey, m_monitor.getApplication(), m_facilityId, message, message, new Date().getTime());
-		notify(output);
-	}
-	
-	protected void collectErrorSample(String target, int errorType) {
-		Sample sample = new Sample(new Date(),m_monitorId);
-		sample.set(m_facilityId, target, 0.0, errorType);
-		collect(sample);
-	}
-	
 	protected OutputBasicInfo createOutput(CloudUtil.Priority priority, String facilityId, String target, double value, Long generationDate) {
 		String message = String.format("%s : %f", target, value);
 		return CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId,
-				target, m_monitor.getApplication(), facilityId, message, message, generationDate == null ? Long.valueOf(new Date().getTime()): generationDate);
+				target, m_monitor.getApplication(), facilityId, message, message, generationDate == null ? Long.valueOf(m_now.getTime()): generationDate);
 	}
 	
 	protected OutputBasicInfo createUnknownOutput(String target, Long generationDate) {
 		String message = CloudMessageConstant.MONITOR_UNKNOWN.getMessage();
 		return CloudUtil.createOutputBasicInfoEx(CloudUtil.Priority.UNKNOWN, monitorTypeId, m_monitorId,
-				target, m_monitor.getApplication(), m_facilityId, message, message, new Date().getTime());
+				target, m_monitor.getApplication(), m_facilityId, message, message, m_now.getTime());
+	}
+	
+	/**
+	 * 課金詳細監視([増分])
+	 * @param ba
+	 * @param judgements
+	 * @param targetDate
+	 * @param cost
+	 * @param resourceIds
+	 */
+	protected OutputBasicInfo createDeltaOutputBasicInfo(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, Long targetDate, double cost, Set<String> resourceIds) {
+		StringBuffer sb = new StringBuffer();
+		for (String s: resourceIds) {
+			if (sb.length() > 0)
+				sb.append(',');
+			sb.append(s);
+		}
+		
+		String truncatedPrice = new BigDecimal(cost).setScale(8, BigDecimal.ROUND_UP).toPlainString();
+		Logger.getLogger(CloudMessageUtil.class).debug("facilityId=" + ba.getFacilityId() + " , OriginalPriceData=" +cost+" , TruncatedPrice=" + truncatedPrice);
+		
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd H:mm:ss");
+		Date d = new Date();
+		return createCostOutputBasicInfo(
+				ba,
+				facilityId,
+				judgements,
+				cost,
+				d.getTime(),
+				CloudMessageConstant.BILLINGALARM_NOTIFY_DELTA.getMessage(format.format(targetDate), truncatedPrice),
+				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_DELTA.getMessage(format.format(targetDate), truncatedPrice, format.format(d.getTime())) + (resourceIds.isEmpty() ? "nothing": sb.toString())
+				);
+	}
+	
+	protected OutputBasicInfo createSumOutputBasicInfo(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, double cost, Set<String> resourceIds) {
+		StringBuffer sb = new StringBuffer();
+		for (String s: resourceIds) {
+			if (sb.length() > 0)
+				sb.append(',');
+			sb.append(s);
+		}
+		
+		String truncatedPrice = new BigDecimal(cost).setScale(8, BigDecimal.ROUND_UP).toPlainString();
+		Logger.getLogger(CloudMessageUtil.class).debug("facilityId=" + ba.getFacilityId() + " , OriginalPriceData=" +cost+" , TruncatedPrice=" + truncatedPrice);
+		
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd H:mm:ss");
+		OutputBasicInfo output = createCostOutputBasicInfo(
+				ba,
+				facilityId,
+				judgements,
+				cost,
+				m_now.getTime(),
+				CloudMessageConstant.BILLINGALARM_NOTIFY_SUM.getMessage(truncatedPrice),
+				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_SUM.getMessage(truncatedPrice, format.format(m_now.getTime())) + " resourceIds:" + (resourceIds.isEmpty() ? "nothing": sb.toString())
+				);
+		return output;
+	}
+	
+	protected OutputBasicInfo createCostOutputBasicInfo(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, double cost, Long generationDate, String message, String messageOrg) {
+		CloudUtil.Priority priority = CloudUtil.checkPriorityRange(judgements, cost);
+		
+		OutputBasicInfo output = CloudMessageUtil.createOutputBasicInfo(
+				priority,
+				ba.getMonitorId(),
+				facilityId,
+				ba.getApplication(),
+				ba.getNotifyGroupId(),
+				generationDate,
+				message,
+				messageOrg
+				);
+		output.setNotifyGroupId(m_monitor.getNotifyGroupId());
+		return output;
 	}
 }

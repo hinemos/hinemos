@@ -24,7 +24,6 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
@@ -44,9 +43,10 @@ import com.clustercontrol.utility.settings.nodemap.conv.NodeMapConv;
 import com.clustercontrol.utility.settings.nodemap.xml.NodeMap;
 import com.clustercontrol.utility.settings.nodemap.xml.NodeMapModel;
 import com.clustercontrol.utility.settings.nodemap.xml.NodeMapType;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.nodemap.NodeMapException_Exception;
 import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
 import com.clustercontrol.ws.repository.InvalidRole_Exception;
@@ -75,7 +75,7 @@ public class NodeMapAction {
 		List<com.clustercontrol.ws.repository.FacilityInfo> scopeList = null;
 		try {
 			scopeList =
-					RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getFacilityList(parentScopeId);
+					RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityList(parentScopeId);
 			for (com.clustercontrol.ws.repository.FacilityInfo info:scopeList){
 				if (info.getFacilityType() == FacilityConstant.TYPE_SCOPE){
 					scopeListAll.add(info);
@@ -99,7 +99,7 @@ public class NodeMapAction {
 		
 		com.clustercontrol.ws.nodemap.NodeMapModel nodeMapModel = null;
 		NodeMapEndpointWrapper wrapperNodeMap =
-				NodeMapEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+				NodeMapEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		for (com.clustercontrol.ws.repository.FacilityInfo facilityInfo: scopeList){
 			try {
 				nodeMapModel = wrapperNodeMap.getNodeMapModel(facilityInfo.getFacilityId());
@@ -205,7 +205,7 @@ public class NodeMapAction {
 		
 		int ret=0;
 		
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			log.debug("End Import importNodeMap (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -232,7 +232,7 @@ public class NodeMapAction {
 		NodeMapModel[] nodeMapModels = nodeMap.getNodeMapModel();
 		
 		NodeMapEndpointWrapper wrapperNodeMap =
-				NodeMapEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+				NodeMapEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 
 		// インポート
 		// BGFile

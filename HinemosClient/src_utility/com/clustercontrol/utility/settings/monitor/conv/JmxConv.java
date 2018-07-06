@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
@@ -27,6 +26,7 @@ import com.clustercontrol.utility.settings.monitor.xml.JmxMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.NumericChangeAmount;
 import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -93,7 +93,7 @@ public class JmxConv {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
 			monitorInfo = MonitorSettingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			JmxMonitor jmxMonitor = new JmxMonitor();

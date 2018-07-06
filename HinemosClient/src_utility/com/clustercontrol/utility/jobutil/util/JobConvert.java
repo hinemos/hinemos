@@ -19,9 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.eclipse.jface.preference.IPreferenceStore;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.util.HinemosMessage;
@@ -37,6 +35,8 @@ import com.clustercontrol.utility.settings.platform.conv.CommonConv;
 import com.clustercontrol.utility.settings.ui.action.CommandAction;
 import com.clustercontrol.utility.settings.ui.action.CommandAction.AccountInfo;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.IUtilityPreferenceStore;
+import com.clustercontrol.utility.util.UtilityPreferenceStore;
 import com.clustercontrol.ws.jobmanagement.JobInfo;
 import com.clustercontrol.ws.jobmanagement.JobNextJobOrderInfo;
 import com.clustercontrol.ws.jobmanagement.JobTreeItem;
@@ -239,7 +239,7 @@ public class JobConvert {
 		
 		Config.putConfig("Login.URL", accountInfo.url);
 		Config.putConfig("Login.USER", accountInfo.userid);
-		IPreferenceStore clientStore = ClusterControlPlugin.getDefault().getPreferenceStore();
+		IUtilityPreferenceStore clientStore = UtilityPreferenceStore.get();
 		Config.putConfig("HTTP.CONNECT.TIMEOUT", Integer.toString(clientStore.getInt(LoginManager.KEY_HTTP_REQUEST_TIMEOUT)));
 		Config.putConfig("HTTP.REQUEST.TIMEOUT", Integer.toString(clientStore.getInt(LoginManager.KEY_HTTP_REQUEST_TIMEOUT)));
 		

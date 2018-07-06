@@ -73,6 +73,11 @@ public class Agent {
 	/** log4j設定ファイル再読み込み間隔 */
 	private long m_reconfigLog4jInterval = 60000;
 
+	/** AgentInfoの更新判定時間 [msec] */
+	private static long m_agentInfoUpdateTime = 10000;
+	/** AgentInfoの前回更新時間 */
+	private static long lastAgentInfoUpdateTime = 0;
+	
 	private static AgentInfo agentInfo = new AgentInfo();
 
 	public static final Integer DEFAULT_CONNECT_TIMEOUT = 10000;
@@ -569,6 +574,17 @@ public class Agent {
 			m_sendQueue.put(output);
 		}
 
+		// AgentInfoの更新判定時間の更新
+		String time = AgentProperties.getProperty("agent.info.update.time");
+		if (time != null) {
+			try {
+				m_agentInfoUpdateTime = Long.parseLong(time);
+				m_log.info("agent.info.update.time = " + m_agentInfoUpdateTime + " ms");
+			} catch (NumberFormatException e) {
+				m_log.error("agent.info.update.time",e);
+			}
+		}
+
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
@@ -694,6 +710,14 @@ public class Agent {
 	}
 
 	public static AgentInfo getAgentInfo() {
+		// 更新判定時間以内の場合agentInfoを書き換えない
+		long diffTime = HinemosTime.currentTimeMillis() - lastAgentInfoUpdateTime;
+		m_log.debug("diffTime : " + diffTime);
+		if(m_agentInfoUpdateTime >= Math.abs(diffTime)) {
+			m_log.debug("m_agentInfoUpdateTime >= diffTime(AgentInfo no update.)");
+			return agentInfo;
+		}
+			
 		// IPアドレスが変更されて設定の再取得中はagentInfoを書き換えない
 		if (ReceiveTopic.isReloadFlg()) {
 			return agentInfo;
@@ -752,6 +776,7 @@ public class Agent {
 
 		m_log.debug(getAgentStr());
 
+		lastAgentInfoUpdateTime = HinemosTime.currentTimeMillis();
 		return agentInfo;
 	}
 

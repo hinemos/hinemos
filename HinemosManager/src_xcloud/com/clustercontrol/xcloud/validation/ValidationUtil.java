@@ -127,7 +127,7 @@ public class ValidationUtil {
 		@Override
 		protected void internalValidate(String property, String group) throws PluginException {
 			try {
-				CommonValidatorEx.validateId(getElementId(), property, max);
+				CommonValidatorEx.validateId(CloudMessage.getMessage(getElementId()), property, max);
 			}
 			catch (InvalidSetting e) {
 				throw createValidationFault(e.getMessage());
@@ -151,7 +151,7 @@ public class ValidationUtil {
 		@Override
 		protected void internalValidate(String property, String group) throws PluginException {
 			try {
-				CommonValidatorEx.validateString(getElementId(), property, false, min, max);
+				CommonValidatorEx.validateString(CloudMessage.getMessage(getElementId()), property, false, min, max);
 			}
 			catch (InvalidSetting e) {
 				throw createValidationFault(e.getMessage());
@@ -179,7 +179,7 @@ public class ValidationUtil {
 			}
 
 			try {
-				CommonValidatorEx.validateLong(getElementId(), property.longValue(), min, max);
+				CommonValidatorEx.validateLong(CloudMessage.getMessage(getElementId()), property.longValue(), min, max);
 			}
 			catch (InvalidSetting e) {
 				throw createValidationFault(e.getMessage());
@@ -207,7 +207,7 @@ public class ValidationUtil {
 			}
 
 			try {
-				CommonValidatorEx.validateDouble(getElementId(), property, min, max);
+				CommonValidatorEx.validateDouble(CloudMessage.getMessage(getElementId()), property, min, max);
 			}
 			catch (InvalidSetting e) {
 				throw createValidationFault(e.getMessage());
@@ -257,7 +257,7 @@ public class ValidationUtil {
 			}
 			
 			try {
-				CommonValidatorEx.validateId(getElementId(), property, max);
+				CommonValidatorEx.validateId(CloudMessage.getMessage(getElementId()), property, max);
 			}
 			catch (InvalidSetting e) {
 				throw createValidationFault(e.getMessage());
@@ -425,7 +425,7 @@ public class ValidationUtil {
 			}
 
 			try {
-				CommonValidator.validateNotifyId(property.getNotifyId(), true, null);
+				CommonValidator.validateNotifyId(CloudMessage.getMessage(property.getNotifyId()), true, null);
 			}
 			catch (InvalidSetting e) {
 				throw createValidationFault(e.getMessage());

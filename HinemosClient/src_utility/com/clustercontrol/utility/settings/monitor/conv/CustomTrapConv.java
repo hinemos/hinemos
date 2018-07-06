@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
@@ -28,6 +27,7 @@ import com.clustercontrol.utility.settings.monitor.xml.NumericChangeAmount;
 import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.CustomTrapCheckInfo;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
@@ -94,7 +94,7 @@ public class CustomTrapConv {
 		for (MonitorInfo monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
+			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
 
 			CustomTrapMonitor customTrapMonitor = new CustomTrapMonitor();
 			customTrapMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));

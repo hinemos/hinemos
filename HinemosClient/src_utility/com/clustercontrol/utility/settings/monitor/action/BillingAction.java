@@ -12,13 +12,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.BillingConv;
 import com.clustercontrol.utility.settings.monitor.xml.BillingMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.BillingMonitors;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -67,11 +67,11 @@ public class BillingAction extends AbstractMonitorAction<BillingMonitors> {
 		monitorFilterInfo.setMonitorTypeId(PlatformServiceBillingMonitorPlugin.monitorPluginId);
 		
 		List<MonitorInfo> list = MonitorSettingEndpointWrapper
-				.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitorListByCondition(monitorFilterInfo);
+				.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitorListByCondition(monitorFilterInfo);
 		monitorFilterInfo.setMonitorTypeId(PlatformServiceBillingDetailMonitorPlugin.monitorPluginId);
 		
 		List<MonitorInfo> list2 = MonitorSettingEndpointWrapper
-				.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitorListByCondition(monitorFilterInfo);
+				.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitorListByCondition(monitorFilterInfo);
 		list.addAll(list2);
 		return list;
 	}

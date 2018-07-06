@@ -498,9 +498,12 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 	}
 
 	@Override
-	public void accept(byte[] message) {
+	public void accept(byte[] message, String senderAddress) {
+		if (log.isDebugEnabled()) {
+			log.debug( "accept senderAddress="+senderAddress) ;
+		}
 		try {
-			SyslogMessage syslogMessage = byteToSyslog(message);
+			SyslogMessage syslogMessage = byteToSyslog(message, senderAddress);
 			List<SyslogMessage> syslogList = new ArrayList<SyslogMessage>();
 			syslogList.add(syslogMessage);
 			syslogReceived(syslogList);
@@ -516,8 +519,8 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 		this.charset = charset;
 	}
 	
-	public SyslogMessage byteToSyslog(byte[] syslogRaw) throws ParseException, HinemosUnknown {
+	public SyslogMessage byteToSyslog(byte[] syslogRaw, String senderAddress) throws ParseException, HinemosUnknown {
 		String syslog = new String(syslogRaw, 0, syslogRaw.length, charset);
-		return SyslogMessage.parse(syslog);
+		return SyslogMessage.parse(syslog, senderAddress);
 	}
 }

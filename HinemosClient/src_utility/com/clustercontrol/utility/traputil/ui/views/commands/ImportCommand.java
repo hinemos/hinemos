@@ -27,7 +27,6 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
@@ -37,6 +36,7 @@ import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.traputil.bean.SnmpTrapMasterInfo;
 import com.clustercontrol.utility.traputil.dialog.ImportDialog;
 import com.clustercontrol.utility.util.UtilityEndpointWrapper;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidSetting_Exception;
@@ -74,7 +74,7 @@ public class ImportCommand extends AbstractHandler implements IElementUpdater {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// keyチェック
 		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 			String version = wrapper.getVersion();
 			if (version.length() > 7) {
 				boolean result = Boolean.valueOf(version.substring(7, version.length()));

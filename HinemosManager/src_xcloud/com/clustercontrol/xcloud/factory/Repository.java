@@ -7,15 +7,12 @@
  */
 package com.clustercontrol.xcloud.factory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import javax.persistence.TypedQuery;
 
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.repository.model.FacilityInfo;
@@ -234,10 +231,7 @@ public class Repository implements IRepository {
 		public void visitEnd() throws CloudManagerException {
 			// フォルダー情報更新
 			HinemosEntityManager em = Session.current().getEntityManager();
-			
-			TypedQuery<FacilityAdditionEntity> query = em.createNamedQuery(FacilityAdditionEntity.findFacilityAdditions, FacilityAdditionEntity.class);
-			query.setParameter("facilityIds", new ArrayList<>(scopeMap.keySet()));
-			List<FacilityAdditionEntity> entities = query.getResultList();
+			List<FacilityAdditionEntity> entities = PersistenceUtil.findAll(em, FacilityAdditionEntity.class);
 			
 			CollectionComparator.compare(scopeMap.values(), entities, new CollectionComparator.Comparator<HScope, FacilityAdditionEntity>() {
 				@Override

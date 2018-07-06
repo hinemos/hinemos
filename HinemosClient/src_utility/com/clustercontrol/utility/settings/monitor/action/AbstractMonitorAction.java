@@ -30,7 +30,6 @@ import org.apache.log4j.Logger;
 import org.exolab.castor.xml.Marshaller;
 import org.exolab.castor.xml.Unmarshaller;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -46,8 +45,11 @@ import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.access.HinemosUnknown_Exception;
 import com.clustercontrol.ws.access.InvalidRole_Exception;
 import com.clustercontrol.ws.access.InvalidUserPass_Exception;
@@ -74,7 +76,7 @@ public abstract class AbstractMonitorAction<T> {
 	public int importXml(String filePath) throws ConvertorException {
 		getLogger().debug("Start Import "  + getDataClass().getSimpleName());
 
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 	    	getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 	    	getLogger().debug("End Import "  + getDataClass().getSimpleName() + " (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -118,7 +120,7 @@ public abstract class AbstractMonitorAction<T> {
 					returnValue = SettingConstants.ERROR_INPROCESS;
 				}
 				else{
-					if (MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).addMonitor(monitorInfo)) {
+					if (MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addMonitor(monitorInfo)) {
 						objectIdList.add(monitorInfo.getMonitorId());
 						getLogger().info(Messages.getString("SettingTools.ImportSucceeded") + " : " + monitorInfo.getMonitorId());
 					} else {
@@ -130,15 +132,15 @@ public abstract class AbstractMonitorAction<T> {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {monitorInfo.getMonitorId()};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 				    ImportProcessMode.setProcesstype(dialog.open());
 				    ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 
-			    if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+			    if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 			    	try {
-			    		if (MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).modifyMonitor(monitorInfo)) {
+			    		if (MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyMonitor(monitorInfo)) {
 			    			objectIdList.add(monitorInfo.getMonitorId());
 							getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + monitorInfo.getMonitorId());
 						} else {
@@ -149,9 +151,9 @@ public abstract class AbstractMonitorAction<T> {
 						getLogger().warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						returnValue = SettingConstants.ERROR_INPROCESS;
 					}
-			    } else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 			    	getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + monitorInfo.getMonitorId());
-			    } else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			    	getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			    	returnValue = SettingConstants.ERROR_INPROCESS;
 			    	break;
@@ -408,7 +410,7 @@ public abstract class AbstractMonitorAction<T> {
 
 		for(Entry<String, List<String>> ent : monitorMap.entrySet()){
 			try {
-				MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteMonitor(ent.getValue());
+				MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteMonitor(ent.getValue());
 				getLogger().info(Messages.getString("SettingTools.ClearSucceeded") + " : " + ent.getValue().toString());
 			} catch (WebServiceException e) {
 				getLogger().error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -522,24 +524,24 @@ public abstract class AbstractMonitorAction<T> {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getMonitorId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 
-			    if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+			    if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 			    	try {
 			    		List<String> args = new ArrayList<>();
 			    		args.add(info.getMonitorId());
-			    		MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteMonitor(args);
+			    		MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteMonitor(args);
 			    		getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getMonitorId());
 					} catch (Exception e1) {
 						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getMonitorId());
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 			    	return;
 			    }

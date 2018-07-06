@@ -28,12 +28,11 @@ import java.util.Map.Entry;
 
 import javax.xml.ws.WebServiceException;
 
-import org.apache.commons.codec.binary.Base64;
+import java.util.Base64;
 import org.apache.log4j.Logger;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.ValidationException;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -57,9 +56,12 @@ import com.clustercontrol.utility.settings.platform.xml.User;
 import com.clustercontrol.utility.settings.platform.xml.UserInfo;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.access.HinemosUnknown_Exception;
 import com.clustercontrol.ws.access.InvalidRole_Exception;
 import com.clustercontrol.ws.access.InvalidSetting_Exception;
@@ -96,7 +98,7 @@ public class UserRoleAction {
 		
 		// ユーザID一覧の取得
 		try {
-			userList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getUserInfoList();
+			userList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getUserInfoList();
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			 ret=SettingConstants.ERROR_INPROCESS ;
@@ -106,7 +108,7 @@ public class UserRoleAction {
 		
 		// ロール情報一覧の取得
 		try {
-			roleList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getRoleInfoList();
+			roleList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList();
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -131,7 +133,7 @@ public class UserRoleAction {
 					// 現在のログインユーザは削除しない
 					log.info(Messages.getString("SettingTools.ExceptUser") + " : User : " + id);
 				} else {
-					AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteUserInfo(tmp);
+					AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteUserInfo(tmp);
 					log.info(Messages.getString("SettingTools.ClearSucceeded") + " : User : " + id);
 				}
 			} catch (HinemosUnknown_Exception e) {
@@ -157,10 +159,10 @@ public class UserRoleAction {
 		for (int i = 0; i < roleList.size(); i++) {
 			roleId = roleList.get(i).getRoleId();
 			try {
-				AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).assignUserRole(roleId, new ArrayList<String>());
+				AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).assignUserRole(roleId, new ArrayList<String>());
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : RoleUser : " + roleId);
 				
-				AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteRoleInfo(Arrays.asList(new String[]{roleId}));
+				AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteRoleInfo(Arrays.asList(new String[]{roleId}));
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : Role : " + roleId);
 			} catch (UnEditableRole_Exception e) {
 				// 編集不可なロールはスキップする
@@ -210,7 +212,7 @@ public class UserRoleAction {
 
 		// ユーザ情報一覧の取得
 		try {
-			userList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getUserInfoList();
+			userList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getUserInfoList();
 			Collections.sort(userList, new Comparator<com.clustercontrol.ws.access.UserInfo>() {
 				@Override
 				public int compare(
@@ -228,7 +230,7 @@ public class UserRoleAction {
 		
 		// ロール情報一覧の取得
 		try {
-			roleList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getRoleInfoList();
+			roleList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList();
 			Collections.sort(roleList, new Comparator<com.clustercontrol.ws.access.RoleInfo>() {
 				@Override
 				public int compare(
@@ -262,7 +264,7 @@ public class UserRoleAction {
 		// ロール情報の取得
 		for (com.clustercontrol.ws.access.RoleInfo info : roleList) {
 			try {
-				com.clustercontrol.ws.access.RoleInfo roleInfo = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getRoleInfo(info.getRoleId());
+				com.clustercontrol.ws.access.RoleInfo roleInfo = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfo(info.getRoleId());
 				role.addRoleInfo(UserRoleConv.convRoleDto2Xml(roleInfo));
 				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : Role : " + info.getRoleId());
 
@@ -346,7 +348,7 @@ public class UserRoleAction {
 
 		log.debug("Start Import PlatformUserRole ");
 		
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			log.debug("End Import PlatformUserRole (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -410,7 +412,7 @@ public class UserRoleAction {
 			if (!roleInfo.getRoleId().equals("")) {
 				try {
 					dto = UserRoleConv.convRoleXml2Dto(roleInfo);
-					AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).addRoleInfo(dto);
+					AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addRoleInfo(dto);
 					log.info(Messages.getString("SettingTools.ImportSucceeded") + " : Role : " + roleInfo.getRoleId());
 					
 				} catch (UnEditableRole_Exception e) {
@@ -420,7 +422,7 @@ public class UserRoleAction {
 					//重複時、インポート処理方法を確認する
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {roleInfo.getRoleId()};
-						ImportProcessDialog dialog = new ImportProcessDialog(
+						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 								null, Messages.getString("message.import.confirm2", args));
 						ImportProcessMode.setProcesstype(dialog.open());
 						ImportProcessMode.setSameprocess(dialog.getToggleState());
@@ -435,17 +437,17 @@ public class UserRoleAction {
 					}
 					//システムロールではない場合
 					else{
-						if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+						if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 							try {
-								AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).modifyRoleInfo(dto);
+								AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyRoleInfo(dto);
 								log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : Role : " + roleInfo.getRoleId());
 							} catch (Exception e1) {
 								log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 								ret = SettingConstants.ERROR_INPROCESS;
 							}
-						} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+						} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 							log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : Role : " + roleInfo.getRoleId());
-						} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+						} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 							log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 							ret = SettingConstants.ERROR_INPROCESS;
 							return ret;
@@ -485,13 +487,13 @@ public class UserRoleAction {
 					if (userInfo.getUserId().equals(Config.getConfig("Login.USER"))) {
 						log.info(Messages.getString("SettingTools.ExceptUser") + " : User : " + userInfo.getUserId());
 					} else {
-						AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).addUserInfo(dto);
+						AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addUserInfo(dto);
 						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : User : " + userInfo.getUserId());
 
 						if(null != userInfo.getPassword() && !"".equals(userInfo.getPassword())){
 							byte[] bytes = MessageDigest.getInstance("MD5").digest(userInfo.getPassword().getBytes());
-							String passwordHash = Base64.encodeBase64String(bytes);
-							AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).changePassword(userInfo.getUserId(), passwordHash);
+							String passwordHash = Base64.getEncoder().encodeToString(bytes);
+							AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).changePassword(userInfo.getUserId(), passwordHash);
 							log.info(Messages.getString("SettingTools.ChangePassword") + " : User : " + userInfo.getUserId());
 						}
 					}
@@ -499,29 +501,29 @@ public class UserRoleAction {
 					//重複時、インポート処理方法を確認する
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {userInfo.getUserId()};
-						ImportProcessDialog dialog = new ImportProcessDialog(
+						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 								null, Messages.getString("message.import.confirm2", args));
 						ImportProcessMode.setProcesstype(dialog.open());
 						ImportProcessMode.setSameprocess(dialog.getToggleState());
 					}
 
-					if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+					if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 						try {
-							AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).modifyUserInfo(dto);
+							AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyUserInfo(dto);
 							log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : User : " + userInfo.getUserId());
 
 							if(null != userInfo.getPassword() && !"".equals(userInfo.getPassword())){
-								String passwordHash = Base64.encodeBase64String(MessageDigest.getInstance("MD5").digest(userInfo.getPassword().getBytes()));
-								AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).changePassword(userInfo.getUserId(), passwordHash);
+								String passwordHash = Base64.getEncoder().encodeToString(MessageDigest.getInstance("MD5").digest(userInfo.getPassword().getBytes()));
+								AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).changePassword(userInfo.getUserId(), passwordHash);
 								log.info(Messages.getString("SettingTools.ImportSucceeded") + " : User : " + userInfo.getUserId());
 							}
 						} catch (Exception e1) {
 							log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 							ret = SettingConstants.ERROR_INPROCESS;
 						}
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : User : " + userInfo.getUserId());
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 						ret = SettingConstants.ERROR_INPROCESS;
 						return ret;
@@ -561,7 +563,7 @@ public class UserRoleAction {
 		
 		for(Entry<String, List<String>> entry : mapRoleUser.entrySet()){
 			try {
-				AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).assignUserRole(entry.getKey(), entry.getValue());
+				AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).assignUserRole(entry.getKey(), entry.getValue());
 				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : RoleUser : " + entry.getKey());
 			} catch (UnEditableRole_Exception e) {
 				// 編集不可なロールはスキップする
@@ -836,7 +838,7 @@ public class UserRoleAction {
 		
 		List<com.clustercontrol.ws.access.UserInfo> subList = null;
 		try {
-			subList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getUserInfoList();
+			subList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getUserInfoList();
 		}
 		catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -863,24 +865,24 @@ public class UserRoleAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getUserId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 				
-				if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
 						List<String> args = new ArrayList<>();
 						args.add(info.getUserId());
-						AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteUserInfo(args);
+						AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteUserInfo(args);
 						log.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getUserId());
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getUserId());
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 					return;
 				}
@@ -892,7 +894,7 @@ public class UserRoleAction {
 		
 		List<com.clustercontrol.ws.access.RoleInfo> subList = null;
 		try {
-			subList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getRoleInfoList();
+			subList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList();
 		}
 		catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -919,24 +921,24 @@ public class UserRoleAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getRoleId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 				
-				if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
 						List<String> args = new ArrayList<>();
 						args.add(info.getRoleId());
-						AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteRoleInfo(args);
+						AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteRoleInfo(args);
 						log.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getRoleId());
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getRoleId());
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 					return;
 				}

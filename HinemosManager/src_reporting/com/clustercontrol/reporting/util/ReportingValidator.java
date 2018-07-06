@@ -8,16 +8,23 @@
 
 package com.clustercontrol.reporting.util;
 
+import java.util.ArrayList;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.commons.util.CommonValidator;
+import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.bean.TemplateSetDetailInfo;
 import com.clustercontrol.reporting.bean.TemplateSetInfo;
+import com.clustercontrol.reporting.factory.SelectReportingInfo;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 
 /**
@@ -171,6 +178,34 @@ public class ReportingValidator {
 					Messages.getString("TEMPLATE_ID") + " : " + detailInfo.getTemplateId() + " - " + Messages.getString("TITLE_NAME"), 
 					detailInfo.getTitleName(), 
 					false, 0, 256);
+		}
+	}
+	
+	public static void validateDeleteTemplateSetInfo(String templateSetId) throws InvalidSetting, InvalidRole, HinemosUnknown {
+
+		// レポーティングスケジュールのチェック
+		m_log.debug("validateDeleteTemplateSetInfo() schedule check start");
+
+		ArrayList<ReportingInfo> list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			list = new SelectReportingInfo().getReportingList();
+			
+			for(ReportingInfo info : list){
+				if(templateSetId.equals(info.getTemplateSetId())){
+					// 削除対象のテンプレートセットにスケジュールからの参照がある
+					String[] args = {info.getReportScheduleId(), templateSetId};
+					m_log.info("validateDeleteTemplateSetInfo() : Could not delete. It is being used. "
+							+ "ScheduleID=" + info.getReportScheduleId() 
+							+ ",TemplateSetID=" + templateSetId);
+					throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_REPORTING_TEMPLATESET_REFERENCE.getMessage(args));
+				}
+			}
+		} catch (InvalidRole | ObjectPrivilege_InvalidRole e) {
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("validateDeleteTemplateSetInfo() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
 		}
 	}
 }

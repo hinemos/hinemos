@@ -35,7 +35,8 @@ public class ImageManager {
 	// ログ
 	private static Log m_log = LogFactory.getLog( ImageManager.class );
 
-	private static final int MAX_FILESIZE = 256*1024;
+	private static final int MAX_ICON_FILESIZE = 256*1024;
+	private static final int MAX_BG_FILESIZE = 1024*1024*2;
 
 	public static final int MIN_ICON_WIDTH = 16;
 	public static final int MIN_ICON_HEIGHT = 16;
@@ -64,7 +65,7 @@ public class ImageManager {
 	 */
 	public static void bgUpload (String managerName, String filepath, String filename) throws Exception {
 		// ファイルデータ取得
-		byte[] filedata = getFileData(filepath);
+		byte[] filedata = getFileData(filepath,true);
 
 		// イメージデータ取得
 		ImageData imageData = getImageData(filedata);
@@ -94,7 +95,7 @@ public class ImageManager {
 	 */
 	public static void iconUpload (String managerName, String filepath, String filename) throws Exception {
 		// ファイルデータ取得
-		byte[] filedata = getFileData(filepath);
+		byte[] filedata = getFileData(filepath,false);
 
 		// イメージデータ取得
 		ImageData imageData = getImageData(filedata);
@@ -124,13 +125,19 @@ public class ImageManager {
 	/**
 	 * ファイルデータ取得
 	 * @param filepath
+	 * @param isBgData 背景のデータであるか？
 	 * @throws Exception
 	 */
-	private static byte[] getFileData(String filepath) throws Exception {
+	private static byte[] getFileData(String filepath, boolean isBgData) throws Exception {
 		File file = new File(filepath);
 		String filename = file.getName();
 		int filesize = (int)file.length();
-		if (filesize > MAX_FILESIZE) {
+		int max_size = MAX_ICON_FILESIZE;
+		if(isBgData){
+			max_size = MAX_BG_FILESIZE;
+		}
+			
+		if (filesize > max_size) {
 			m_log.warn("getFileData(), file size is too large");
 			throw new Exception(Messages.getString("file.too.large"));
 		}

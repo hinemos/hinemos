@@ -81,6 +81,7 @@ import com.clustercontrol.xcloud.bean.StorageBackup;
 import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.common.CloudRoleConstants;
 import com.clustercontrol.xcloud.common.ErrorCode;
+import com.clustercontrol.xcloud.factory.ActionMode;
 import com.clustercontrol.xcloud.factory.CloudManager;
 import com.clustercontrol.xcloud.factory.ICloudOption;
 import com.clustercontrol.xcloud.factory.ICloudScopes;
@@ -95,9 +96,9 @@ import com.clustercontrol.xcloud.model.PrivateCloudScopeEntity;
 import com.clustercontrol.xcloud.model.PublicCloudScopeEntity;
 import com.clustercontrol.xcloud.model.StorageBackupEntity;
 import com.clustercontrol.xcloud.model.StorageEntity;
+import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.FacilityIdUtil;
-import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.RepositoryControllerBeanWrapper;
 import com.clustercontrol.xcloud.validation.AuthorizingValidator_admin;
 import com.clustercontrol.xcloud.validation.AuthorizingValidator_facility;
@@ -449,11 +450,16 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 			@ParamId("XCLOUD_CORE_CLOUDSCOPE_ID") @NotNull String cloudScopeId,
 			@ParamId("XCLOUD_CORE_LOCATION_ID") @NotNull String locationId
 			) throws CloudManagerException, InvalidUserPass, InvalidRole {
-		CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getPrimaryCloudLoginUserByCurrent(cloudScopeId);
-		List<InstanceEntity> instanceEntities = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(locationId)).updateInstances(new ArrayList<String>());
 		List<Instance> instances = new ArrayList<>();
-		for (InstanceEntity entity: instanceEntities) {
-			instances.add(new Instance(entity));
+		try {
+			ActionMode.enterAutoDetection();
+			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getPrimaryCloudLoginUserByCurrent(cloudScopeId);
+			List<InstanceEntity> instanceEntities = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(locationId)).updateInstances(new ArrayList<String>());
+			for (InstanceEntity entity: instanceEntities) {
+				instances.add(new Instance(entity));
+			}
+		} finally {
+			ActionMode.leaveAutoDetection();;
 		}
 		return instances;
 	}
@@ -466,11 +472,16 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 			@ParamId("XCLOUD_CORE_LOCATION_ID") @NotNull String locationId,
 			@ParamId("XCLOUD_CORE_INSTANCE_IDS") @NotNullContainer @NotNull List<String> instanceIds
 			) throws CloudManagerException, InvalidUserPass, InvalidRole {
-		CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getPrimaryCloudLoginUserByCurrent(cloudScopeId);
-		List<InstanceEntity> instanceEntities = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(locationId)).updateInstances(instanceIds);
 		List<Instance> instances = new ArrayList<>();
-		for (InstanceEntity entity: instanceEntities) {
-			instances.add(new Instance(entity));
+		try {
+			ActionMode.enterAutoDetection();
+			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getPrimaryCloudLoginUserByCurrent(cloudScopeId);
+			List<InstanceEntity> instanceEntities = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(locationId)).updateInstances(instanceIds);
+			for (InstanceEntity entity: instanceEntities) {
+				instances.add(new Instance(entity));
+			}
+		} finally {
+			ActionMode.leaveAutoDetection();;
 		}
 		return instances;
 	}
@@ -604,11 +615,31 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 			String path = System.getProperty("user.dir");
 			scriptPath = "python.exe " + path + (path.endsWith("\\") ? "": "\\") + "settings\\sbin\\xcloud\\" + scriptName;
 		} else {
-			scriptPath = hinemosHome + (hinemosHome.endsWith("/") ? "": "/") + CloudConstants.PATH_SBIN + "/" + scriptName;
+			if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+				scriptPath = hinemosHome + (hinemosHome.endsWith("\\") ? "": "\\") + CloudConstants.PATH_SBIN.replace('/', '\\') + "\\" + scriptName;
+			} else {
+				scriptPath = hinemosHome + (hinemosHome.endsWith("/") ? "": "/") + CloudConstants.PATH_SBIN + "/" + scriptName;
+			}
+			
+			if (!new File(scriptPath).exists())
+				throw ErrorCode.AUTO_CONTROL_NOT_FOUND_SCRIPT.cloudManagerFault(scriptPath);
+			
+			if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+				scriptPath = "\"" + scriptPath + "\"";
+			} else {
+				scriptPath = scriptPath.replace(" ", "\\ ");
+			}
 		}
 		
 		CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getPrimaryCloudLoginUserByCurrent(cloudScopeId);
-		List<InstanceEntity> instanceEntities = new ArrayList<>(CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(locationId)).updateInstances(instanceIds));
+		
+		List<InstanceEntity> instanceEntities;
+		try {
+			ActionMode.enterAutoDetection();
+			instanceEntities = new ArrayList<>(CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(locationId)).updateInstances(instanceIds));
+		} finally {
+			ActionMode.leaveAutoDetection();
+		}
 		
 		StringBuilder sb = new StringBuilder();
 		for (String instanceId: instanceIds) {
@@ -645,12 +676,20 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 			scriptPath = "python.exe " + path + (path.endsWith("\\") ? "": "\\") + "settings\\sbin\\xcloud\\" + scriptName;
 		} else {
 			String hinemosHome = System.getProperty("hinemos.manager.home.dir");
-			scriptPath = hinemosHome + (hinemosHome.endsWith("/") ? "": "/") + CloudConstants.PATH_SBIN + "/" + scriptName;
-		}
+			if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+				scriptPath = hinemosHome + (hinemosHome.endsWith("\\") ? "": "\\") + CloudConstants.PATH_SBIN.replace('/', '\\') + "\\" + scriptName;
+			} else {
+				scriptPath = hinemosHome + (hinemosHome.endsWith("/") ? "": "/") + CloudConstants.PATH_SBIN + "/" + scriptName;
+			}
 
-		if (!Boolean.valueOf(System.getProperty("CloudDevMode", Boolean.FALSE.toString()))) {
 			if (!new File(scriptPath).exists())
 				throw ErrorCode.AUTO_CONTROL_NOT_FOUND_SCRIPT.cloudManagerFault(scriptPath);
+			
+			if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+				scriptPath = "\"" + scriptPath + "\"";
+			} else {
+				scriptPath = scriptPath.replace(" ", "\\ ");
+			}
 		}
 		
 		CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getPrimaryCloudLoginUserByCurrent(cloudScopeId);
@@ -691,12 +730,20 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 			String path = System.getProperty("user.dir");
 			scriptPath = path + (path.endsWith("\\") ? "": "\\") + "settings\\sbin\\xcloud\\" + "StorageAttach.py";
 		} else {
-			scriptPath = hinemosHome + (hinemosHome.endsWith("/") ? "": "/") + CloudConstants.PATH_SBIN + "/" + scriptName;
-		}
-
-		if (!Boolean.valueOf(System.getProperty("CloudDevMode", Boolean.FALSE.toString()))) {
+			if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+				scriptPath = hinemosHome + (hinemosHome.endsWith("\\") ? "": "\\") + CloudConstants.PATH_SBIN.replace('/', '\\') + "\\" + scriptName;
+			} else {
+				scriptPath = hinemosHome + (hinemosHome.endsWith("/") ? "": "/") + CloudConstants.PATH_SBIN + "/" + scriptName;
+			}
+			
 			if (!new File(scriptPath).exists())
 				throw ErrorCode.AUTO_CONTROL_NOT_FOUND_SCRIPT.cloudManagerFault(scriptPath);
+			
+			if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+				scriptPath = "\"" + scriptPath + "\"";
+			} else {
+				scriptPath = scriptPath.replace(" ", "\\ ");
+			}
 		}
 		
 		return String.format("%s%s -u %s -s %s -f %s",
@@ -976,7 +1023,12 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 			@ParamId("XCLOUD_CORE_CLOUDSCOPE_ID") @NotNull String cloudScopeId,
 			@ParamId("XCLOUD_CORE_LOCATION_ID") @NotNull String locationId
 			) throws CloudManagerException {
-		return CloudManager.singleton().getRepository().updateLocationRepository(cloudScopeId, locationId);
+		try {
+			ActionMode.enterAutoDetection();
+			return CloudManager.singleton().getRepository().updateLocationRepository(cloudScopeId, locationId);
+		} finally {
+			ActionMode.leaveAutoDetection();
+		}
 	}
 
 	@Override
@@ -1080,18 +1132,26 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 			@ParamId("XCLOUD_CORE_INSTANCE_ID") @NotNull String instanceId,
 			@ParamId("XCLOUD_CORE_STORAGE_ID") @NotNull String storageId,
 			@ParamId("XCLOUD_CORE_OPTIONS") List<Option> options) throws CloudManagerException, InvalidUserPass, InvalidRole {
+		String hinemosHome = System.getProperty("hinemos.manager.home.dir");
 		String scriptPath;
 		if (Boolean.valueOf(System.getProperty("CloudDevMode", Boolean.FALSE.toString()))) {
 			String path = System.getProperty("user.dir");
 			scriptPath = "python.exe " + path + (path.endsWith("\\") ? "": "\\") + "settings\\sbin\\xcloud\\" + "StorageAttach.py";
 		} else {
-			String hinemosHome = System.getProperty("hinemos.manager.home.dir");
-			scriptPath = hinemosHome + (hinemosHome.endsWith("/") ? "": "/") + CloudConstants.PATH_SBIN + "/" + "StorageAttach.py";
-		}
-
-		if (!Boolean.valueOf(System.getProperty("CloudDevMode", Boolean.FALSE.toString()))) {
+			if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+				scriptPath = hinemosHome + (hinemosHome.endsWith("\\") ? "": "\\") + CloudConstants.PATH_SBIN.replace('/', '\\') + "\\" + "StorageAttach.py";
+			} else {
+				scriptPath = hinemosHome + (hinemosHome.endsWith("/") ? "": "/") + CloudConstants.PATH_SBIN + "/" + "StorageAttach.py";
+			}
+			
 			if (!new File(scriptPath).exists())
 				throw ErrorCode.AUTO_CONTROL_NOT_FOUND_SCRIPT.cloudManagerFault(scriptPath);
+			
+			if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+				scriptPath = "\"" + scriptPath + "\"";
+			} else {
+				scriptPath = scriptPath.replace(" ", "\\ ");
+			}
 		}
 		
 		CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getPrimaryCloudLoginUserByCurrent(cloudScopeId);
@@ -1391,11 +1451,15 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 			nodeFacilities = RepositoryControllerBeanWrapper.bean().getNodeFacilityIdList(facilityId, roleId, 0);//0は配下すべて
 		}
 		
-		List<CloudLoginUserEntity> users = CloudManager.singleton().getLoginUsers().getCloudLoginUserByRole(roleId);
 		Map<String, CloudScopeEntity> cloudScopes = new HashMap<>();
-		for (CloudLoginUserEntity user: users) {
-			if (!cloudScopes.containsKey(user.getCloudScopeId())) {
-				cloudScopes.put(user.getCloudScopeId(), user.getCloudScope());
+		if ("ADMINISTRATORS".equals(roleId)) {
+			CloudManager.singleton().getCloudScopes().getAllCloudScopes().stream().forEach(s->cloudScopes.put(s.getCloudScopeId(), s));
+		} else {
+			List<CloudLoginUserEntity> users = CloudManager.singleton().getLoginUsers().getCloudLoginUserByRole(roleId);
+			for (CloudLoginUserEntity user: users) {
+				if (!cloudScopes.containsKey(user.getCloudScopeId())) {
+					cloudScopes.put(user.getCloudScopeId(), user.getCloudScope());
+				}
 			}
 		}
 		

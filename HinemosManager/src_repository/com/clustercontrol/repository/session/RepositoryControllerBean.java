@@ -73,6 +73,7 @@ import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.util.FacilityIdCacheInitCallback;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityTreeCacheRefreshCallback;
+import com.clustercontrol.repository.util.JobCacheUpdateCallback;
 import com.clustercontrol.repository.util.JobMultiplicityCacheKickCallback;
 import com.clustercontrol.repository.util.NodeCacheRemoveCallback;
 import com.clustercontrol.repository.util.NodeCacheUpdateCallback;
@@ -1099,6 +1100,7 @@ public class RepositoryControllerBean {
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
+			jtm.addCallback(new JobCacheUpdateCallback());  // FacilityTreeCacheの更新より後に呼び出す必要がある
 			
 			// 変更前後で管理対象フラグの有無が異なる場合、ノードに対して実行すべき監視の情報を持つキャッシュを更新する
 			if (info.getValid().booleanValue() != this.getNode(info.getFacilityId()).getValid().booleanValue()) {
@@ -1475,7 +1477,8 @@ public class RepositoryControllerBean {
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
-
+			jtm.addCallback(new JobCacheUpdateCallback());  // FacilityTreeCacheの更新より後に呼び出す必要がある
+			
 			try {
 				ListenerReadWriteLock.readLock();
 				for (IRepositoryListener listener : _listenerList) {
@@ -2286,10 +2289,10 @@ public class RepositoryControllerBean {
 	 * @throws HinemosUnknown
 	 * @see com.clustercontrol.repository.bean.AgentCommandConstant
 	 */
-	public HashMap<String, String> getAgentLibMap () throws HinemosUnknown {
+	public HashMap<String, String> getAgentLibMap (ArrayList<String> facilityIdList) throws HinemosUnknown {
 		HashMap<String, String> map = null;
 		try {
-			map = AgentLibDownloader.getAgentLibMap();
+			map = AgentLibDownloader.getAgentLibMap(facilityIdList, false);
 		} catch (Exception e) {
 			m_log.warn("getAgentLibMap() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);

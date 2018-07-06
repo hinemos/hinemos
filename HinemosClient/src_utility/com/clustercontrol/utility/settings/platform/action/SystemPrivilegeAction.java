@@ -28,7 +28,6 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
@@ -49,9 +48,12 @@ import com.clustercontrol.utility.settings.platform.xml.SystemPrivilege;
 import com.clustercontrol.utility.settings.platform.xml.SystemPrivilegeInfo;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.access.HinemosUnknown_Exception;
 import com.clustercontrol.ws.access.InvalidRole_Exception;
 import com.clustercontrol.ws.access.InvalidSetting_Exception;
@@ -87,7 +89,7 @@ public class SystemPrivilegeAction {
 		
 		// ロール情報一覧の取得
 		try {
-			roleList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getRoleInfoList();
+			roleList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList();
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -107,7 +109,7 @@ public class SystemPrivilegeAction {
 				info.setSystemFunction(FunctionConstant.REPOSITORY);
 				info.setSystemPrivilege("READ");
 				infos.add(info);
-				AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, infos);
+				AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, infos);
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + roleId);
 			} catch (UnEditableRole_Exception e) {
 				// 編集不可なロールはスキップする
@@ -149,7 +151,7 @@ public class SystemPrivilegeAction {
 		
 		// ロール情報一覧の取得
 		try {
-			roleList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getRoleInfoList();
+			roleList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList();
 			Collections.sort(roleList, new Comparator<com.clustercontrol.ws.access.RoleInfo>() {
 				@Override
 				public int compare(
@@ -173,7 +175,7 @@ public class SystemPrivilegeAction {
 			try {
 				// システム権限情報一覧の取得
 				try {
-					systemPrivilegeList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(roleInfo.getRoleId());
+					systemPrivilegeList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(roleInfo.getRoleId());
 					Collections.sort(systemPrivilegeList, new Comparator<com.clustercontrol.ws.access.SystemPrivilegeInfo>() {
 						@Override
 						public int compare(
@@ -246,7 +248,7 @@ public class SystemPrivilegeAction {
 
 		log.debug("Start Import PlatformSystemPrivilege ");
 
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			getLogger().debug("End Import PlatformSystemPrivilege (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -302,7 +304,7 @@ public class SystemPrivilegeAction {
 		for(Entry<String, Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>>> entryByRole : sysPrivMapXML.entrySet()){
 			String roleId = entryByRole.getKey();
 			try {
-				List<com.clustercontrol.ws.access.SystemPrivilegeInfo> sysPrivLstByRole = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(roleId);
+				List<com.clustercontrol.ws.access.SystemPrivilegeInfo> sysPrivLstByRole = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(roleId);
 
 				if(null == sysPrivLstByRole || 0 == sysPrivLstByRole.size()){
 					// Add if not found
@@ -315,7 +317,7 @@ public class SystemPrivilegeAction {
 
 						fullList.addAll( entry.getValue());
 					}
-					AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, fullList);
+					AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, fullList);
 
 					for(String msg : resultMsgs){
 						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + msg);
@@ -351,18 +353,18 @@ public class SystemPrivilegeAction {
 						}else{
 							// 重複時、インポート処理方法を確認する
 							if(!ImportProcessMode.isSameprocess()){
-								ImportProcessDialog dialog = new ImportProcessDialog(null, Messages.getString("message.import.confirm2", new String[]{roleId + " " + sysFunc}));
+								ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(null, Messages.getString("message.import.confirm2", new String[]{roleId + " " + sysFunc}));
 								ImportProcessMode.setProcesstype(dialog.open());
 								ImportProcessMode.setSameprocess(dialog.getToggleState());
 							}
 			
-							if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+							if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 								subMapDB.put( sysFunc, entry.getValue());
 								updated = true;
 								resultMsgs.add(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + roleId + " " + sysFunc);
-							} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+							} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 								resultMsgs.add(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + roleId + " " + sysFunc);
-							} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+							} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 								resultMsgs.add(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 								ret = SettingConstants.ERROR_INPROCESS;
 								isBorken = true;
@@ -376,7 +378,7 @@ public class SystemPrivilegeAction {
 						for(Entry<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> entry : subMapDB.entrySet()){
 							fullList.addAll( entry.getValue());
 						}
-						AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, fullList);
+						AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, fullList);
 					}
 					for(String msg : resultMsgs){
 						log.info(msg);
@@ -563,8 +565,8 @@ public class SystemPrivilegeAction {
 		// Get システム権限情報 from DB. Key = [roldId > SystemFunction]
 		Map<String, Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>>> sysPrivMapDB = new LinkedHashMap<>();
 		try {
-			for(com.clustercontrol.ws.access.RoleInfo role: AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getRoleInfoList()){
-				for(com.clustercontrol.ws.access.SystemPrivilegeInfo info: AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(role.getRoleId())){
+			for(com.clustercontrol.ws.access.RoleInfo role: AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList()){
+				for(com.clustercontrol.ws.access.SystemPrivilegeInfo info: AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(role.getRoleId())){
 					Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> subMap;
 					subMap = sysPrivMapDB.get(role.getRoleId());
 					if(null == subMap){
@@ -613,12 +615,12 @@ public class SystemPrivilegeAction {
 				if(notFound){
 					// マネージャのみに存在するデータがあった場合の削除方法を確認する
 					if(!DeleteProcessMode.isSameprocess()){
-						DeleteProcessDialog dialog = new DeleteProcessDialog(null, Messages.getString("message.delete.confirm4", new String[]{roleId + " " + sysFunc }));
+						DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(null, Messages.getString("message.delete.confirm4", new String[]{roleId + " " + sysFunc }));
 						DeleteProcessMode.setProcesstype(dialog.open());
 						DeleteProcessMode.setSameprocess(dialog.getToggleState());
 					}
 
-					if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+					if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 						try {
 							// Remove by systemFunction
 							subMap.remove( sysFunc );
@@ -628,14 +630,14 @@ public class SystemPrivilegeAction {
 							for(Entry<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> entry : subMap.entrySet()){
 								fullList.addAll( entry.getValue());
 							}
-							AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, fullList);
+							AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, fullList);
 							getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + roleId + " " + sysFunc);
 						} catch (Exception e1) {
 							getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						}
-					} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+					} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + roleId + " " + sysFunc);
-					} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+					} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 						return;
 					}

@@ -51,6 +51,7 @@ import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.figure.JobMapColor;
 import com.clustercontrol.jobmap.preference.JobMapPreferencePage;
 import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
@@ -155,6 +156,7 @@ public class MapViewController {
 		// 最上位の場合は描画しない。
 		if (m_jobTreeItem.getData() != null &&
 				(m_jobTreeItem.getData().getType() == JobConstant.TYPE_COMPOSITE || m_jobTreeItem.getData().getType() == JobConstant.TYPE_MANAGER)) {
+			m_composite.initialMessageDisplay();
 			return;
 		}
 
@@ -234,6 +236,9 @@ public class MapViewController {
 	 * @throws AccessException
 	 */
 	public void updateMap(String managerName, String sessionId, JobTreeItem jobTreeItem) throws Exception {
+		if( m_log.isDebugEnabled() ){
+			m_log.debug("updateMap(String managerName="+managerName+", String sessionId="+sessionId+", JobTreeItem jobTreeItem="+jobTreeItem+")");
+		}
 		if (managerName != null) {
 			m_managerName = managerName;
 		}
@@ -296,7 +301,7 @@ public class MapViewController {
 					com.clustercontrol.jobmap.messages.Messages.getString("message.jobmapkeyfile.notfound.error"));
 			return;
 		}
-		// マネージャからノード情報を取得
+		// マネージャからジョブのセッション情報を取得
 		if (m_sessionId != null) {
 			try {
 				m_jobTreeItem = JobEndpointWrapper.getWrapper(m_managerName).getJobDetailList(m_sessionId);
@@ -309,6 +314,10 @@ public class MapViewController {
 				m_managerName = null;
 				throw e;
 			}
+			
+			//ビューワー向けのマップ情報更新時、アイコンキャッシュもリフレッシュする。
+			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
+			iconCache.refresh(m_managerName,true);
 		}
 
 		// 描画する。

@@ -16,7 +16,6 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -209,10 +208,6 @@ public class NodeInfoCache {
 								CloudUtil.notifyInternalMessage(
 										CloudUtil.Priority.INFO,
 										CloudMessageUtil.pluginId_cloud,
-										HinemosModuleConstant.SYSYTEM,
-										"",
-										nodeInfo.get(0, NodeInfo.class).getFacilityId(),
-										CloudMessageConstant.AUTODETECTION.getMessage(),
 										msg,
 										"");
 							} catch (Exception e ) {
@@ -222,10 +217,6 @@ public class NodeInfoCache {
 								CloudUtil.notifyInternalMessage(
 										CloudUtil.Priority.WARNING,
 										CloudMessageUtil.pluginId_cloud,
-										HinemosModuleConstant.SYSYTEM,
-										"",
-										nodeInfo.get(0, NodeInfo.class).getFacilityId(),
-										CloudMessageConstant.AUTODETECTION.getMessage(),
 										errorMsg,
 										"");
 							}
@@ -238,10 +229,6 @@ public class NodeInfoCache {
 					CloudUtil.notifyInternalMessage(
 							CloudUtil.Priority.WARNING,
 							CloudMessageUtil.pluginId_cloud,
-							HinemosModuleConstant.SYSYTEM,
-							"",
-							nodeInfo.get(0, NodeInfo.class).getFacilityId(),
-							"Auto detection failed",
 							errorMsg,
 							errorMsg);
 				} catch (HinemosUnknown | InvalidSetting | InvalidRole e) {
@@ -251,10 +238,6 @@ public class NodeInfoCache {
 					CloudUtil.notifyInternalMessage(
 							CloudUtil.Priority.WARNING,
 							CloudMessageUtil.pluginId_cloud,
-							HinemosModuleConstant.SYSYTEM,
-							"",
-							nodeInfo.get(0, NodeInfo.class).getFacilityId(),
-							"Auto detection failed",
 							errorMsg,
 							errorMsg);
 				}

@@ -53,59 +53,60 @@ import com.clustercontrol.fault.InvalidTimezone;
 public class LoginManager {
 	private static Log m_log = LogFactory.getLog( LoginManager.class );
 
-	public static final String KEY_LOGIN_STATUS_NUM = "numOfLoginStatus";
-	public static final String KEY_LOGIN_STATUS_UID = "LoginStatusUid";
-	public static final String KEY_LOGIN_STATUS_URL = "LoginStatusUrl";
-	public static final String KEY_LOGIN_STATUS_MANAGERNAME = "LoginStatusManagerName";
+	// TODO 6.2で全部LoginConstantを参照
+	public static final String KEY_LOGIN_STATUS_NUM = LoginConstant.KEY_LOGIN_STATUS_NUM;
+	public static final String KEY_LOGIN_STATUS_UID = LoginConstant.KEY_LOGIN_STATUS_UID;
+	public static final String KEY_LOGIN_STATUS_URL = LoginConstant.KEY_LOGIN_STATUS_URL;
+	public static final String KEY_LOGIN_STATUS_MANAGERNAME = LoginConstant.KEY_LOGIN_STATUS_MANAGERNAME;
 
-	public static final String KEY_URL = "Url";
-	public static final String KEY_URL_NUM = "numOfUrlHistory";
+	public static final String KEY_URL = LoginConstant.KEY_URL;
+	public static final String KEY_URL_NUM = LoginConstant.KEY_URL_NUM;
 
-	public static final String VALUE_UID = "hinemos";
-	public static final String VALUE_URL = "http://localhost:8080/HinemosWS/";
+	public static final String VALUE_UID = LoginConstant.VALUE_UID;
+	public static final String VALUE_URL = LoginConstant.VALUE_URL;
 
 
-	public static final String KEY_INTERVAL = "managerPollingInterval";
-	public static final int VALUE_INTERVAL = 1; //マネージャへの疎通(Dummy)ポーリング周期（分）
+	public static final String KEY_INTERVAL = LoginConstant.KEY_INTERVAL;
+	public static final int VALUE_INTERVAL = LoginConstant.VALUE_INTERVAL; //マネージャへの疎通(Dummy)ポーリング周期（分）
 
-	public static final String KEY_HTTP_REQUEST_TIMEOUT = "httpRequestTimeout";	// Utilityオプションからも使用されています。
-	public static final int VALUE_HTTP_REQUEST_TIMEOUT = 60000; // ms
+	public static final String KEY_HTTP_REQUEST_TIMEOUT = LoginConstant.KEY_HTTP_REQUEST_TIMEOUT;	// Utilityオプションからも使用されています。
+	public static final int VALUE_HTTP_REQUEST_TIMEOUT = LoginConstant.VALUE_HTTP_REQUEST_TIMEOUT; // ms
 
-	public static final String KEY_PROXY_ENABLE = "proxyEnable";
-	public static final boolean VALUE_PROXY_ENABLE = false;
-	public static final String KEY_PROXY_HOST = "proxyHost";
-	public static final String VALUE_PROXY_HOST = "";
-	public static final String KEY_PROXY_PORT = "proxyPort";
-	public static final int VALUE_PROXY_PORT = 8080;
-	public static final String KEY_PROXY_USER = "proxyUser";
-	public static final String VALUE_PROXY_USER = "";
-	public static final String KEY_PROXY_PASSWORD = "proxyPassword";
-	public static final String VALUE_PROXY_PASSWORD = "";
+	public static final String KEY_PROXY_ENABLE = LoginConstant.KEY_PROXY_ENABLE;
+	public static final boolean VALUE_PROXY_ENABLE = LoginConstant.VALUE_PROXY_ENABLE;
+	public static final String KEY_PROXY_HOST = LoginConstant.KEY_PROXY_HOST;
+	public static final String VALUE_PROXY_HOST = LoginConstant.VALUE_PROXY_HOST;
+	public static final String KEY_PROXY_PORT = LoginConstant.KEY_PROXY_PORT;
+	public static final int VALUE_PROXY_PORT = LoginConstant.VALUE_PROXY_PORT;
+	public static final String KEY_PROXY_USER = LoginConstant.KEY_PROXY_USER;
+	public static final String VALUE_PROXY_USER = LoginConstant.VALUE_PROXY_USER;
+	public static final String KEY_PROXY_PASSWORD = LoginConstant.KEY_PROXY_PASSWORD;
+	public static final String VALUE_PROXY_PASSWORD = LoginConstant.VALUE_PROXY_PASSWORD;
 	
 	/** Auto-login */
-	public static final String ENV_HINEMOS_MANAGER_URL = "HINEMOS_MANAGER_URL";
-	public static final String ENV_HINEMOS_MANAGER_USER = "HINEMOS_USER";
-	public static final String ENV_HINEMOS_MANAGER_PASS = "HINEMOS_PASS";
+	public static final String ENV_HINEMOS_MANAGER_URL = LoginConstant.ENV_HINEMOS_MANAGER_URL;
+	public static final String ENV_HINEMOS_MANAGER_USER = LoginConstant.ENV_HINEMOS_MANAGER_USER;
+	public static final String ENV_HINEMOS_MANAGER_PASS = LoginConstant.ENV_HINEMOS_MANAGER_PASS;
 	
-	public static final String KEY_BASIC_AUTH = "BasicAuth";
-	public static final String KEY_URL_LOGIN_URL = "LoginUrl";
-	public static final String KEY_URL_UID = "Uid";
-	public static final String KEY_URL_MANAGER_NAME = "ManagerName";
+	public static final String KEY_BASIC_AUTH = LoginConstant.KEY_BASIC_AUTH;
+	public static final String KEY_URL_LOGIN_URL = LoginConstant.KEY_URL_LOGIN_URL;
+	public static final String KEY_URL_UID = LoginConstant.KEY_URL_UID;
+	public static final String KEY_URL_MANAGER_NAME = LoginConstant.KEY_URL_MANAGER_NAME;
 
-	public static final String URL_HINEMOS = "hinemos";
-	public static final String URL_ACCOUNT = "account";
-	public static final String URL_CALENDAR = "calendar";
-	public static final String URL_JOB_HISTORY = "job_history";
-	public static final String URL_JOB_SETTING = "job_setting";
-	public static final String URL_STARTUP = "startup";
-	public static final String URL_MAINTENANCE = "maintenance";
-	public static final String URL_REPOSITORY = "repository";
-	public static final String URL_COLLECT = "collect";
-	public static final String URL_APPROVAL = "approval";
-	public static final String URL_INFRA = "infra";
-	public static final String URL_MONITOR_HISTORY = "monitor_history";
-	public static final String URL_MONITOR_SETTING = "monitor_setting";
-	public static final String URL_HUB = "hub";
+	public static final String URL_HINEMOS = LoginConstant.URL_HINEMOS;
+	public static final String URL_ACCOUNT = LoginConstant.URL_ACCOUNT;
+	public static final String URL_CALENDAR = LoginConstant.URL_CALENDAR;
+	public static final String URL_JOB_HISTORY = LoginConstant.URL_JOB_HISTORY;
+	public static final String URL_JOB_SETTING = LoginConstant.URL_JOB_SETTING;
+	public static final String URL_STARTUP = LoginConstant.URL_STARTUP;
+	public static final String URL_MAINTENANCE = LoginConstant.URL_MAINTENANCE;
+	public static final String URL_REPOSITORY = LoginConstant.URL_REPOSITORY;
+	public static final String URL_COLLECT = LoginConstant.URL_COLLECT;
+	public static final String URL_APPROVAL = LoginConstant.URL_APPROVAL;
+	public static final String URL_INFRA = LoginConstant.URL_INFRA;
+	public static final String URL_MONITOR_HISTORY = LoginConstant.URL_MONITOR_HISTORY;
+	public static final String URL_MONITOR_SETTING = LoginConstant.URL_MONITOR_SETTING;
+	public static final String URL_HUB = LoginConstant.URL_HUB;
 
 	// Count login attempts
 	private int loginAttempts = 0;

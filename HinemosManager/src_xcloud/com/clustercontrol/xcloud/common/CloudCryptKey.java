@@ -7,30 +7,41 @@
  */
 package com.clustercontrol.xcloud.common;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.xcloud.util.CloudUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 
 public class CloudCryptKey {
 	static {
 		String key = null;
 		
+		FileReader fileReader = null;
+		BufferedReader bufferedReader = null;
+
+		String filePath = CloudUtil.createAbsoluteFilePath(CloudConstants.cryptkeyFileRelativePath);
 		try {
-			String filePath = CloudUtil.createAbsoluteFilePath(CloudConstants.cryptkeyFileRelativePath);
-			
-			ObjectMapper om = new ObjectMapper();
-			ObjectReader or = om.readerFor(new TypeReference<Map<String,String>>(){});
-			Map<String, String> map = or.readValue(new FileReader(filePath));
-			key = map.get(CloudConstants.cryptkeyName);
-		} catch (IOException e) {
-			Logger.getLogger(CloudCryptKey.class).warn(e.getMessage(), e);
+			fileReader = new FileReader(filePath);
+			bufferedReader = new BufferedReader(fileReader);
+			key = bufferedReader.readLine();
+		} catch (Exception e){
+			Logger.getLogger(CloudCryptKey.class).warn("file not readable. (" + filePath + ") : " + e.getMessage(), e);
+		} finally {
+			try {
+				if (bufferedReader != null) {
+					bufferedReader.close();
+				}
+			} catch (IOException e) {
+			}
+			try {
+				if (fileReader != null) {
+					fileReader.close();
+				}
+			} catch (IOException e) {
+			}
 		}
 		
 		cryptKey = key != null ? key: "hinemos";

@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -27,6 +26,7 @@ import com.clustercontrol.utility.settings.monitor.xml.CloudServiceMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.PluginStringValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.TruthValue;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -99,7 +99,7 @@ public class CloudServiceConv {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
 			monitorInfo = MonitorSettingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			CloudServiceMonitor cloudServiceMonitor = new CloudServiceMonitor();

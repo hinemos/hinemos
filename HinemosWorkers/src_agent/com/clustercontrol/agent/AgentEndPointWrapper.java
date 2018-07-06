@@ -410,13 +410,13 @@ public class AgentEndPointWrapper {
 		throw wse;
 	}
 
-	public static DataHandler downloadModule(String filename)
+	public static DataHandler downloadModule(String filePath)
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, IOException {
 		WebServiceException wse = null;
 		for (EndpointSetting endpointSetting : EndpointManager.getAgentEndpoint()) {
 			try {
 				AgentEndpoint endpoint = (AgentEndpoint) endpointSetting.getEndpoint();
-				return endpoint.downloadModule(filename);
+				return endpoint.downloadModule(filePath);
 			} catch (WebServiceException e) {
 				wse = e;
 				m_log.info("WebServiceException " + e.getMessage());
@@ -432,7 +432,7 @@ public class AgentEndPointWrapper {
 		for (EndpointSetting endpointSetting : EndpointManager.getAgentEndpoint()) {
 			try {
 				AgentEndpoint endpoint = (AgentEndpoint) endpointSetting.getEndpoint();
-				List<String> list = endpoint.getAgentLibMap();
+				List<String> list = endpoint.getAgentLibMap(Agent.getAgentInfo());
 				Iterator<String> itr = list.iterator();
 				HashMap<String, String> ret = new HashMap<String, String>();
 				while (itr.hasNext()) {

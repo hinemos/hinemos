@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
@@ -21,6 +20,7 @@ import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.HttpScenarioConv;
 import com.clustercontrol.utility.settings.monitor.xml.HttpScenarioMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.HttpScenarioMonitors;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -63,7 +63,7 @@ public class HttpScenarioAction extends AbstractMonitorAction<HttpScenarioMonito
 
 	@Override
 	protected List<MonitorInfo> getFilterdMonitorList() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
-		List<MonitorInfo> tmpList = MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getHttpList();
+		List<MonitorInfo> tmpList = MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getHttpList();
 		for(MonitorInfo info: new ArrayList<>(tmpList)){
 			if(info.getMonitorType() != MonitorTypeConstant.TYPE_SCENARIO){
 				tmpList.remove(info);

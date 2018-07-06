@@ -12,13 +12,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.PortConv;
 import com.clustercontrol.utility.settings.monitor.xml.PortMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.PortMonitors;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -59,7 +59,7 @@ public class PortAction extends AbstractMonitorAction<PortMonitors> {
 
 	@Override
 	protected List<MonitorInfo> getFilterdMonitorList() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
-		return MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getPortList();
+		return MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getPortList();
 	}
 
 	@Override

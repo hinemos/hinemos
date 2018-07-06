@@ -15,7 +15,6 @@ import java.util.Objects;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
@@ -29,6 +28,7 @@ import com.clustercontrol.utility.settings.monitor.xml.NumericChangeAmount;
 import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.HttpCheckInfo;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
@@ -95,7 +95,7 @@ public class HttpConv {
 		for (MonitorInfo monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
+			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
 
 			HttpMonitor httpMonitor = new HttpMonitor();
 			httpMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));

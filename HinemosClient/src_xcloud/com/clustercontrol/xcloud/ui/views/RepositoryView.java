@@ -131,6 +131,7 @@ public class RepositoryView extends AbstractCloudViewPart {
 	}
 
 	private class FacilityRootUpdateService {
+		private boolean disposed;
 		private com.clustercontrol.composite.FacilityTreeComposite cacheComposite;
 
 		public FacilityRootUpdateService() {
@@ -140,7 +141,8 @@ public class RepositoryView extends AbstractCloudViewPart {
 					rootCompo.getDisplay().asyncExec(new Runnable() {
 						@Override
 						public void run() {
-							RepositoryView.this.update();
+							if (!disposed)
+								RepositoryView.this.update();
 						}
 					});
 				}
@@ -157,6 +159,7 @@ public class RepositoryView extends AbstractCloudViewPart {
 		}
 
 		public void dispose() {
+			disposed = true;
 			FacilityTreeCache.delComposite(cacheComposite);
 		}
 	}
@@ -173,10 +176,7 @@ public class RepositoryView extends AbstractCloudViewPart {
 				String platformId = ((IScope)element).getCloudScopeScope().getCloudScope().getPlatformId();
 
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getChildren(scope, (Object[])scope.getFacilities());
-
-				return scope.getFacilities();
+				return provider.getChildren(scope, (Object[])scope.getFacilities());
 			}
 			return null;
 		}
@@ -195,10 +195,7 @@ public class RepositoryView extends AbstractCloudViewPart {
 				String platformId = ((IScope)element).getCloudScopeScope().getCloudScope().getPlatformId();
 
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getChildren(scope, scope.getFacilities()).length != 0;
-
-				return scope.getFacilities().length != 0;
+				return provider.getChildren(scope, scope.getFacilities()).length != 0;
 			}
 			return false;	
 		}
@@ -229,9 +226,7 @@ public class RepositoryView extends AbstractCloudViewPart {
 				Image defaultImage = ClusterControlPlugin.getDefault().getImageRegistry().get("cloudscope");
 				String platformId = ((IFacility)element).getCloudScopeScope().getCloudScope().getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getImage(element, defaultImage);
-				return defaultImage;
+				return provider.getImage(element, defaultImage);
 			} else if (element instanceof ILocationScope) {
 				Image defaultImage = ClusterControlPlugin.getDefault().getImageRegistry().get("location");
 				String platformId = ((IFacility)element).getCloudScopeScope().getCloudScope().getPlatformId();
@@ -243,9 +238,7 @@ public class RepositoryView extends AbstractCloudViewPart {
 				Image defaultImage = FacilityImageConstant.typeToImage(FacilityConstant.TYPE_SCOPE, true);
 				String platformId = ((IFacility)element).getCloudScopeScope().getCloudScope().getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getImage(element, defaultImage);
-				return defaultImage;
+				return provider.getImage(element, defaultImage);
 			} else if (element instanceof IInstanceNode) {
 				IInstanceNode instanceNode = (IInstanceNode)element;
 
@@ -281,10 +274,7 @@ public class RepositoryView extends AbstractCloudViewPart {
 				IFacility facility = (IFacility)element;
 				String platformId = facility.getCloudScopeScope().getCloudScope().getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getText(element, HinemosMessage.replace(facility.getName()));
-				else
-					return HinemosMessage.replace(facility.getName()) + "(" + facility.getFacilityId() + ")";
+				return provider.getText(element, HinemosMessage.replace(facility.getName()));
 			}
 			return element.toString();
 		}

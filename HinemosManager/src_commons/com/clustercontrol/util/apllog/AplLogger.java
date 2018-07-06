@@ -85,11 +85,25 @@ public class AplLogger {
 	 *
 	 * @param priority		優先度
 	 * @param pluginId		プラグインID
-	 * @param msgArgs		メッセージ置換項目
+	 * @param message		メッセージ
 	 * @param detailMsg		詳細メッセージ
 	 * @since
 	 */
 	public static void put(Integer priority, String pluginId, MessageConstant msgCode, Object[] msgArgs, String detailMsg) {
+		put(priority, pluginId, msgCode.getMessage((String[]) msgArgs), detailMsg);
+	}
+	
+	/**
+	 *
+	 * ログを出力します。<BR>
+	 *
+	 * @param priority		優先度
+	 * @param pluginId		プラグインID
+	 * @param msgArgs		メッセージ置換項目
+	 * @param detailMsg		詳細メッセージ
+	 * @since
+	 */
+	public static void put(Integer priority, String pluginId, String message, String detailMsg) {
 		// 既にINTERNALモードに入っている場合はこれ以上出力しない
 		Boolean isInternalMode = m_isInternalMode.get(Thread.currentThread().getId());
 		if(isInternalMode != null && isInternalMode){
@@ -111,7 +125,7 @@ public class AplLogger {
 			output.setFacilityId(INTERNAL_SCOPE);
 			output.setScopeText(INTERNAL_SCOPE_TEXT);
 			output.setApplication(Messages.getString(HinemosModuleConstant.nameToMessageCode(pluginId), NotifyUtil.getNotifyLocale()));
-			output.setMessage(msgCode.getMessage((String[]) msgArgs));
+			output.setMessage(message);
 			output.setMessageOrg(detailMsg == null ? "":detailMsg);
 			output.setPriority(priority);
 			if (nowDate != null) {

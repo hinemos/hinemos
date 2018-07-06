@@ -20,7 +20,6 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.PropertyConfigurator;
@@ -31,7 +30,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
-import org.eclipse.rap.rwt.SingletonUtil;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -42,6 +40,8 @@ import com.clustercontrol.monitor.plugin.IMonitorPlugin;
 import com.clustercontrol.monitor.plugin.LoadMonitorPlugin;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.EndpointUnit;
+import com.clustercontrol.utility.settings.ui.dialog.ClientUtilityDialogService;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.xcloud.model.cloud.HinemosManager;
 import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
 import com.clustercontrol.xcloud.util.CollectionComparator;
@@ -202,7 +202,7 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		
 		// 定期的にリロードする処理を開始する
 		String _configFileDir = System.getProperty("hinemos.web.conf.dir");
-		if (StringUtils.isNotEmpty(_configFileDir)) {
+		if (null!=_configFileDir && "".equals(_configFileDir)) {
 			String _configFilePath = _configFileDir + File.separator + "log4j.properties";
 			m_log.info("configFilePath = " + _configFilePath);
 			PropertyConfigurator.configureAndWatch(_configFilePath, _intervalMsec);
@@ -238,6 +238,9 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		for(IMonitorPlugin pluginMonitor: LoadMonitorPlugin.getExtensionMonitorList()){
 			m_log.info("Extension monitorPlugin " + pluginMonitor.getMonitorPluginId() + " plugged in.");
 		}
+
+		// UtilityのDialogServiceを注入
+		UtilityDialogInjector.setService(new ClientUtilityDialogService());
 	}
 
 	private static class Listener implements ILogListener {
@@ -474,62 +477,6 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 			return false;
 		}
 		return true;
-	}
-
-	/******************************** Utility ********************************/
-	private static class ManagerManager {
-		private ManagerManager() {
-		}
-
-		public static ManagerManager getInstance() {
-			return SingletonUtil.getSessionInstance(ManagerManager.class);
-		}
-
-		private String currentManagerName;
-
-		public String getCurrentManagerName() {
-			if (currentManagerName == null && EndpointManager.getActiveManagerNameList() != null) {
-				for (String name : EndpointManager.getActiveManagerNameList()) {
-					currentManagerName = name;
-					break;
-				}
-			}
-			return currentManagerName;
-		}
-
-		public void setCurrentManagerName(String managerName) {
-			String oldManagerName = currentManagerName;
-
-			this.currentManagerName = managerName;
-
-			if (oldManagerName != null && !oldManagerName.equals(currentManagerName)) {
-				for (ManagerChangeListener listener : notifyList) {
-					listener.notifyManagerChanged();
-				}
-			}
-		}
-
-		List<ManagerChangeListener> notifyList = new ArrayList<>();
-
-		public void addManagerChangeListener(ManagerChangeListener listener) {
-			notifyList.add(listener);
-		}
-	}
-
-	public interface ManagerChangeListener{
-		void notifyManagerChanged();
-	}
-
-	public String getCurrentManagerName() {
-		return ManagerManager.getInstance().getCurrentManagerName();
-	}
-
-	public void setCurrentManagerName(String managerName) {
-		ManagerManager.getInstance().setCurrentManagerName(managerName);
-	}
-
-	public void addManagerChangeListener(ManagerChangeListener listener){
-		ManagerManager.getInstance().addManagerChangeListener(listener);
 	}
 
 	/******************************** xCloud ********************************/

@@ -65,6 +65,7 @@ public class TransferView extends CommonViewPart implements ObjectPrivilegeTarge
 	 */
 	@Override
 	public void createPartControl(Composite parent) {
+		super.createPartControl(parent);
 		transferViewParentComposite = parent;
 
 		transferComposite = new TransferComposite(transferViewParentComposite, SWT.NONE);

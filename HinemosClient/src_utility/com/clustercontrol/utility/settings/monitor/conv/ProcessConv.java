@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.util.Messages;
@@ -28,6 +27,7 @@ import com.clustercontrol.utility.settings.monitor.xml.ProcessInfo;
 import com.clustercontrol.utility.settings.monitor.xml.ProcessMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.ProcessMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -171,7 +171,7 @@ public class ProcessConv {
 		for (MonitorInfo monitorInfo : monitorInfoList) {
 
 			monitorInfo = MonitorSettingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			ProcessMonitor processMonitor = new ProcessMonitor();

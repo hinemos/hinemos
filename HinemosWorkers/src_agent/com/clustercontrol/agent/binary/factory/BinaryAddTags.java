@@ -38,7 +38,8 @@ import com.clustercontrol.binary.bean.BinaryTagConstant;
 import com.clustercontrol.util.BinaryUtil;
 import com.clustercontrol.ws.monitor.BinaryCheckInfo;
 import com.clustercontrol.ws.monitor.BinaryPatternInfo;
-
+import com.clustercontrol.util.CommandCreator;
+import com.clustercontrol.util.CommandCreator.PlatformType;
 /**
  * タグ追加用のクラス.<br>
  * <br>
@@ -54,6 +55,12 @@ public class BinaryAddTags {
 	/** ログ出力区切り文字 */
 	private static final String DELIMITER = "() : ";
 
+	// 実行OSがWindowsであるかどうかのフラグ
+	// FIXME
+	// HinemosCommonのCommandCreatorの実装を引用しているが、類似した実装がCloudやinquirtyに散っているので
+	// 統一が望ましい。commons-lang に含まれる SystemUtils.IS_OS_WINDOWS への置換も要検討
+	private static final boolean isWindows = (CommandCreator.sysPlatform ==  PlatformType.WINDOWS) ;
+	
 	/**
 	 * 各ファイルにタグ追加.
 	 * 
@@ -142,64 +149,67 @@ public class BinaryAddTags {
 			// Windows系以外の場合は取れない想定なのでinfo.
 			m_log.info(methodName + DELIMITER + "failed to get file attributes for DOS");
 		}
-
-		// ファイルアクセスメタデータ(ACL)(Windows系のみ).
-		try {
-			AclFileAttributeView aclAttrView;
-			aclAttrView = Files.getFileAttributeView(path, AclFileAttributeView.class);
-			// ファイル所有者.
-			tagValue = aclAttrView.getOwner().toString();
-			fileResult.getTags().put(BinaryTagConstant.CommonFileAttributes.AclFileAttributes.OWNER_TAGNAME, tagValue);
-			// ACLループ用変数.
-			int tagSeaquence = 1;
-			StringBuilder sb = null;
-			String tagname = "";
-			Iterator<AclEntryPermission> aclPermItr = null;
-			AclEntryPermission aclEntPerm = null;
-			Iterator<AclEntryFlag> aclFlgsItr = null;
-			AclEntryFlag aclEntFlg = null;
-			// ACLのtag設定(リスト保持なので複数tag)。
-			for (AclEntry aclEntry : aclAttrView.getAcl()) {
-				sb = new StringBuilder();
-				sb.append("princibal:" + aclEntry.principal() + "\n");
-				sb.append("permissions:");
-				aclPermItr = aclEntry.permissions().iterator();
-				while (aclPermItr.hasNext()) {
-					aclEntPerm = aclPermItr.next();
-					sb.append(aclEntPerm.toString());
-					if (aclPermItr.hasNext()) {
-						sb.append(",");
-					} else {
-						sb.append("\n");
+		
+		if(isWindows){
+			m_log.debug("run to get file attributes of ACL");
+			// ファイルアクセスメタデータ(ACL)(Windows系のみ).
+			try {
+				AclFileAttributeView aclAttrView;
+				aclAttrView = Files.getFileAttributeView(path, AclFileAttributeView.class);
+				// ファイル所有者.
+				tagValue = aclAttrView.getOwner().toString();
+				fileResult.getTags().put(BinaryTagConstant.CommonFileAttributes.AclFileAttributes.OWNER_TAGNAME, tagValue);
+				// ACLループ用変数.
+				int tagSeaquence = 1;
+				StringBuilder sb = null;
+				String tagname = "";
+				Iterator<AclEntryPermission> aclPermItr = null;
+				AclEntryPermission aclEntPerm = null;
+				Iterator<AclEntryFlag> aclFlgsItr = null;
+				AclEntryFlag aclEntFlg = null;
+				// ACLのtag設定(リスト保持なので複数tag)。
+				for (AclEntry aclEntry : aclAttrView.getAcl()) {
+					sb = new StringBuilder();
+					sb.append("princibal:" + aclEntry.principal() + "\n");
+					sb.append("permissions:");
+					aclPermItr = aclEntry.permissions().iterator();
+					while (aclPermItr.hasNext()) {
+						aclEntPerm = aclPermItr.next();
+						sb.append(aclEntPerm.toString());
+						if (aclPermItr.hasNext()) {
+							sb.append(",");
+						} else {
+							sb.append("\n");
+						}
 					}
-				}
-				sb.append("type:" + aclEntry.type().toString() + "\n");
-				sb.append("flags:");
-				aclFlgsItr = aclEntry.flags().iterator();
-				while (aclFlgsItr.hasNext()) {
-					aclEntFlg = aclFlgsItr.next();
-					sb.append(aclEntFlg.toString());
-					if (aclFlgsItr.hasNext()) {
-						sb.append(",");
-					} else {
-						sb.append("\n");
+					sb.append("type:" + aclEntry.type().toString() + "\n");
+					sb.append("flags:");
+					aclFlgsItr = aclEntry.flags().iterator();
+					while (aclFlgsItr.hasNext()) {
+						aclEntFlg = aclFlgsItr.next();
+						sb.append(aclEntFlg.toString());
+						if (aclFlgsItr.hasNext()) {
+							sb.append(",");
+						} else {
+							sb.append("\n");
+						}
 					}
+					// タグ追加.
+					tagValue = sb.toString();
+					tagname = BinaryTagConstant.CommonFileAttributes.AclFileAttributes.ACL_TAGNAME + tagSeaquence;
+					fileResult.getTags().put(tagname, tagValue);
+					tagSeaquence++;
 				}
-				// タグ追加.
-				tagValue = sb.toString();
-				tagname = BinaryTagConstant.CommonFileAttributes.AclFileAttributes.ACL_TAGNAME + tagSeaquence;
-				fileResult.getTags().put(tagname, tagValue);
-				tagSeaquence++;
+			} catch (IOException e) {
+				// Windows系以外の場合は取れない想定
+				m_log.warn(methodName + DELIMITER + "failed to get file attributes of ACL");
+			} catch (Exception e) {
+				// Windows系以外の場合は取れない想定
+				m_log.warn(methodName + DELIMITER + "failed to get file attributes of ACL");
 			}
-		} catch (IOException e) {
-			// Windows系以外の場合は取れない想定なのでinfo.
-			m_log.info(methodName + DELIMITER + "failed to get file attributes of ACL");
-		} catch (Exception e) {
-			// Windows系以外の場合は取れない想定なのでinfo.
-			m_log.info(methodName + DELIMITER + "failed to get file attributes of ACL");
 		}
 
-		// Posix属性ファイルメタデータ(Linux系のみ).
+		// Posix属性ファイルメタデータ(Linux系, Solaris, HP-UX, AIX).
 		try {
 			PosixFileAttributes posixAttr;
 			posixAttr = Files.readAttributes(path, PosixFileAttributes.class);

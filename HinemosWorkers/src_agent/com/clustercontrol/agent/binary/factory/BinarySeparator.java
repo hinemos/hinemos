@@ -36,6 +36,12 @@ public class BinarySeparator {
 	/** ログ出力区切り文字 */
 	private static final String DELIMITER = "() : ";
 
+	// レコード区切り位置調整用フィールド
+	/** 読込開始位置より後ろの半端レコード */
+	private boolean firstRecord = true;
+	/** 読込開始位置より後ろのレコード先頭位置 */
+	private long firstReadPosition = 0;
+
 	/**
 	 * バイナリデータ固定長レコード分割.<br>
 	 * <br>
@@ -155,8 +161,11 @@ public class BinarySeparator {
 				tmpBinRecord.setSequential(sequential);
 				tmpBinRecord.setSize(binaryInfo.getRecordSize());
 				tmpBinRecord.setAlldata(tmpList);
-				// レコード末尾のバイトなのでリストに追加.
-				returnList.add(tmpBinRecord);
+
+				// レコード末尾なのでレコードスキップするか判定の上追加.
+				if (this.checkAddRecord(i, monitorId, fileRs)) {
+					returnList.add(tmpBinRecord);
+				}
 
 				// 次のレコードを取得するため変数を初期化.
 				tmpList = new ArrayList<Byte>();
@@ -169,7 +178,7 @@ public class BinarySeparator {
 			}
 		}
 
-		log.debug(methodName + String.format("separated by a fixed length. record count=%d", returnList.size()));
+		log.debug(methodName + String.format(" separated by a fixed length. record count=%d", returnList.size()));
 		return returnList;
 	}
 
@@ -262,6 +271,13 @@ public class BinarySeparator {
 				// ByteBufferでint値変換するために4byte必要.
 				recordSizeByte = BinaryUtil.paddingByteList(recordSizeByte, Byte.valueOf((byte) 0), 4, false);
 				recordSize = ByteBuffer.wrap(BinaryUtil.listToArray(recordSizeByte)).getInt();
+				if( log.isTraceEnabled() ){
+					log.trace(methodName + DELIMITER
+							+ String.format(
+									"  getRecordSize ."
+											+ " recordSize=%s  recordSizeByte=%s ",
+											recordSize,recordSizeByte));
+				}
 				tmpBinRecord.setSize(recordSize);
 			}
 
@@ -280,6 +296,13 @@ public class BinarySeparator {
 					sequential = FileUtil.paddingZero(count, keta);
 					tmpBinRecord.setKey(fileRs.getMonFileName() + ts.toString() + sequential);
 					setTs = true;
+					if( log.isTraceEnabled() ){
+						log.trace(methodName + DELIMITER
+								+ String.format(
+										"  getTimeStamp ."
+												+ "ts=%s  timeStampByte=%s  setTs=%b ",
+												ts,timeStampByte,setTs));
+					}
 				}
 			}
 
@@ -311,7 +334,12 @@ public class BinarySeparator {
 				tmpBinRecord.setFilePosition(BinaryConstant.FILE_POSISION_END);
 				tmpBinRecord.setSequential(sequential);
 				tmpBinRecord.setAlldata(tmpList);
-				returnList.add(tmpBinRecord);
+
+				// レコード末尾なのでレコードスキップするか判定の上追加.
+				if (this.checkAddRecord(i, monitorId, fileRs)) {
+					returnList.add(tmpBinRecord);
+				}
+
 				// 変数初期化.
 				tmpList = new ArrayList<Byte>();
 				tmpBinRecord = new BinaryRecord();
@@ -414,6 +442,55 @@ public class BinarySeparator {
 		}
 
 		return tsLong;
+	}
+
+	/**
+	 * レコード追加判定.
+	 * 
+	 * @return true:追加する、false:追加スキップ
+	 */
+	private boolean checkAddRecord(int index, String monitorId, FileReadingStatus fileRs) {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+		// スキップ判定.
+		if (fileRs.isToSkipRecord()) {
+			if (index < fileRs.getSkipSize()) {
+				// スキップサイズより前のインデックスなので飛ばす.
+				if( log.isTraceEnabled() ){
+					log.trace(methodName + DELIMITER
+							+ String.format(
+									"  isToSkipRecord ."
+											+ " index=%d  fileRs.getSkipSize()=%d ",
+											index,fileRs.getSkipSize()));
+				}
+				return false;
+			}
+			if (this.firstRecord) {
+				// Manager送信後に、次回監視用にファイルRS更新(updateFileRSで実施)する際の計算用にセット.
+				//（飛ばしたサイズを今回の判定を加味して再セット。
+				int newSkipSize =index + 1;
+				if( log.isTraceEnabled() ){
+					log.trace(methodName + DELIMITER
+							+ String.format(
+									"  isToSkipRecord last ."
+											+ " index=%d  preSkipSize()=%d newSkipSize=%d",
+											index,fileRs.getSkipSize(),newSkipSize));
+				}
+				fileRs.setSkipSize(newSkipSize);
+				// スキップサイズより大きいはじめてのレコードは半端サイズなので飛ばす.
+				this.firstRecord = false;
+				this.firstReadPosition = index + 2; // 次レコードの先頭位置(ログ出力用).
+				return false;
+			}
+			log.info(methodName + DELIMITER
+					+ String.format(
+							"skipped records."
+									+ " monitorId=%s, file=[%s], skipSize(*)=%d, readPosition(*)=%d, *exclude fileHeader",
+							monitorId, fileRs.getMonFileName(), fileRs.getSkipSize(), this.firstReadPosition));
+			// Manager送信後に、次回監視用にファイルRS更新する際の計算用にセット.
+			fileRs.setToSkipRecord(false);
+		}
+		// 送信用レコード追加.
+		return true;
 	}
 
 	/**

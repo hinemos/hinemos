@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.persistence.PersistenceException;
+import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
@@ -133,6 +134,52 @@ public class QueryExecutor {
 			}
 			if (QueryDivergence.isQueryTimeout(e)) {
 				m_log.warn("getDataByJpqlWithTimeout() : Timeout occurred. Please try again after change the condition.", e);
+				throw new HinemosDbTimeout(MessageConstant.MESSAGE_SEARCH_TIMEOUT.getMessage());
+			} else {
+				throw e;
+			}
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+	}
+	
+	public static <T> List<T> getListByNativeQueryWithTimeout(
+			String queryString, Map<Integer, Object> parameters, Integer timeout) 
+			throws HinemosDbTimeout {
+		return getListByNativeQueryWithTimeout(queryString, parameters, timeout, null, null);
+	}
+
+	public static <T> List<T> getListByNativeQueryWithTimeout(
+		String queryString, Map<Integer, Object> parameters, Integer timeout, Integer firstResult, Integer maxResults)
+		throws HinemosDbTimeout {
+
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			setStatementTimeout(timeout);
+			Query query = em.createNativeQuery(queryString);
+			for (Integer key : parameters.keySet()) {
+				query.setParameter(key.intValue(), parameters.get(key));
+			}
+			if (firstResult != null) {
+				query.setFirstResult(firstResult);
+			}
+			if (maxResults != null) {
+				query.setMaxResults(maxResults);
+			}
+			List<T> list = query.getResultList();
+			resetStatementTimeout();
+			return list;
+		} catch (PersistenceException e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			if (QueryDivergence.isQueryTimeout(e)) {
+				m_log.warn("getListByNativeQueryWithTimeout() : Timeout occurred. Please try again after change the condition.", e);
 				throw new HinemosDbTimeout(MessageConstant.MESSAGE_SEARCH_TIMEOUT.getMessage());
 			} else {
 				throw e;

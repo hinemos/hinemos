@@ -16,7 +16,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.layout.TableColumnLayout;
 import org.eclipse.jface.layout.TreeColumnLayout;
-import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnPixelData;
@@ -73,10 +72,6 @@ import com.clustercontrol.xcloud.util.TableViewerSorter;
 /**
  */
 public class ServiceStateView extends AbstractCloudViewPart implements CloudStringConstants {
-	static {
-		JFaceResources.getColorRegistry().put("ServiceStateView_Unknown", new RGB(128, 192, 255));
-	}
-	
 	public static final String Id = "com.clustercontrol.xcloud.ui.views.ServiceStateView";
 	
 	private static final Log logger = LogFactory.getLog(ServiceStateView.class);
@@ -125,16 +120,12 @@ public class ServiceStateView extends AbstractCloudViewPart implements CloudStri
 				Image defaultImage = FacilityImageConstant.typeToImage(FacilityConstant.TYPE_SCOPE, true);
 				String platformId = ((ICloudScope)element).getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getImage(element, defaultImage);
-				return defaultImage;
+				return provider.getImage(element, defaultImage);
 			} else if (element instanceof ILocation) {
 				Image defaultImage = FacilityImageConstant.typeToImage(FacilityConstant.TYPE_SCOPE, true);
 				String platformId = ((ILocation)element).getCloudScope().getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getImage(element, defaultImage);
-				return defaultImage;
+				return provider.getImage(element, defaultImage);
 			}
 			return null;
 		}
@@ -146,9 +137,7 @@ public class ServiceStateView extends AbstractCloudViewPart implements CloudStri
 				ICloudScope cloudScope = (ICloudScope)element;
 				String platformId = cloudScope.getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return HinemosMessage.replace(provider.getText(element, String.format("%s (%s)", cloudScope.getName(), cloudScope.getId())));
-				return HinemosMessage.replace(cloudScope.getName());
+				return HinemosMessage.replace(provider.getText(element, String.format("%s (%s)", cloudScope.getName(), cloudScope.getId())));
 			} else if (element instanceof ILocation) {
 				ILocation location = (ILocation)element;
 				String platformId = location.getCloudScope().getPlatformId();
@@ -173,9 +162,10 @@ public class ServiceStateView extends AbstractCloudViewPart implements CloudStri
 	private TreeViewer treeViewer;
 	private TableViewer tableViewer;
 	private Label lblFooter;
-//	private String footerTitle = bundle_messages.getString("word.view_item_count") + bundle_messages.getString("caption.title_separator");
 	
 	private ICloudScope currentCloudScope;
+	
+	private Color unknown = new Color(Display.getCurrent(), new RGB(128, 192, 255));
 	
 	public ServiceStateView() {
  		super();
@@ -264,16 +254,82 @@ public class ServiceStateView extends AbstractCloudViewPart implements CloudStri
 			}
 		});
 		
-		for(final ViewColumn column: ViewColumn.values()){
+		{
 			TableViewerColumn tableViewerColumn = new TableViewerColumn(tableViewer, SWT.NONE);
 			TableColumn tableColumn = tableViewerColumn.getColumn();
-			tcl_composite_1.setColumnData(tableColumn, column.getPixelData());
-			tableColumn.setText(column.getLabel());
-			tableViewerColumn.setLabelProvider(column.getProvider());
+			tcl_composite_1.setColumnData(tableColumn, new ColumnPixelData(40, true, true));
+			tableColumn.setText(strState);
+			ColumnLabelProvider provider = new ColumnLabelProvider(){
+				@Override
+				public String getText(Object element) {
+					String status = ((IServiceCondition)element).getStatus();
+					if(status.equalsIgnoreCase("normal")){
+						return strNormal;
+					} else if(status.equalsIgnoreCase("warn")){
+						return strWarn;
+					} else if(status.equalsIgnoreCase("abnormal")){
+						return strError;
+					}
+					return strUnknown;
+				}
+				@Override
+				public Color getBackground(Object element) {
+					String status = ((IServiceCondition)element).getStatus();
+					if(status.equalsIgnoreCase("normal")){
+						return Display.getDefault().getSystemColor(SWT.COLOR_GREEN);
+					} else if(status.equalsIgnoreCase("warn")){
+						return Display.getDefault().getSystemColor(SWT.COLOR_YELLOW);
+					} else if(status.equalsIgnoreCase("abnormal")){
+						return Display.getDefault().getSystemColor(SWT.COLOR_RED);
+					}
+					return unknown;
+				}
+			};
+			tableViewerColumn.setLabelProvider(provider);
 			tableColumn.addSelectionListener(new SelectionAdapter(){
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					tableViewer.setSorter(new TableViewerSorter(tableViewer, column.getProvider()));
+					tableViewer.setSorter(new TableViewerSorter(tableViewer, provider));
+				}
+			});
+		}
+		
+		{
+			TableViewerColumn tableViewerColumn = new TableViewerColumn(tableViewer, SWT.NONE);
+			TableColumn tableColumn = tableViewerColumn.getColumn();
+			tcl_composite_1.setColumnData(tableColumn, new ColumnPixelData(300, true, true));
+			tableColumn.setText(strCloudServiceName);
+			ColumnLabelProvider provider = new ColumnLabelProvider(){
+				@Override
+				public String getText(Object element) {
+					return ((IServiceCondition)element).getName();
+				}
+			};
+			tableViewerColumn.setLabelProvider(provider);
+			tableColumn.addSelectionListener(new SelectionAdapter(){
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					tableViewer.setSorter(new TableViewerSorter(tableViewer, provider));
+				}
+			});
+		}
+		
+		{
+			TableViewerColumn tableViewerColumn = new TableViewerColumn(tableViewer, SWT.NONE);
+			TableColumn tableColumn = tableViewerColumn.getColumn();
+			tcl_composite_1.setColumnData(tableColumn, new ColumnPixelData(400, true, true));
+			tableColumn.setText(strDetail);
+			ColumnLabelProvider provider = new ColumnLabelProvider(){
+				@Override
+				public String getText(Object element) {
+					return ((IServiceCondition)element).getDetail();
+				}
+			};
+			tableViewerColumn.setLabelProvider(provider);
+			tableColumn.addSelectionListener(new SelectionAdapter(){
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					tableViewer.setSorter(new TableViewerSorter(tableViewer, provider));
 				}
 			});
 		}
@@ -400,70 +456,6 @@ public class ServiceStateView extends AbstractCloudViewPart implements CloudStri
 		updateTable(treeViewer.getSelection(), false);
 	}
 
-	private enum ViewColumn{
-		status(
-			strState,
-			new ColumnPixelData(40, true, true),
-			new ColumnLabelProvider(){
-				@Override
-				public String getText(Object element) {
-					String status = ((IServiceCondition)element).getStatus();
-					if(status.equalsIgnoreCase("normal")){
-						return strNormal;
-					} else if(status.equalsIgnoreCase("warn")){
-						return strWarn;
-					} else if(status.equalsIgnoreCase("abnormal")){
-						return strError;
-					}
-					return strUnknown;
-				}
-				@Override
-				public Color getBackground(Object element) {
-					String status = ((IServiceCondition)element).getStatus();
-					if(status.equalsIgnoreCase("normal")){
-						return Display.getDefault().getSystemColor(SWT.COLOR_GREEN);
-					} else if(status.equalsIgnoreCase("warn")){
-						return Display.getDefault().getSystemColor(SWT.COLOR_YELLOW);
-					} else if(status.equalsIgnoreCase("abnormal")){
-						return Display.getDefault().getSystemColor(SWT.COLOR_RED);
-					}
-					return JFaceResources.getColorRegistry().get("ServiceStateView_Unknown");
-				}
-			}
-		),
-		service_name(
-			strCloudServiceName,
-			new ColumnPixelData(300, true, true),
-			new ColumnLabelProvider(){
-				@Override
-				public String getText(Object element) {
-					return ((IServiceCondition)element).getName();
-				}
-			}
-		),
-		detail(
-			strDetail,
-			new ColumnPixelData(400, true, true),
-			new ColumnLabelProvider(){
-				@Override
-				public String getText(Object element) {
-					return ((IServiceCondition)element).getDetail();
-				}
-			}
-		);
-		private String label;
-		private transient ColumnLabelProvider provider;
-		private transient ColumnPixelData pixelData;
-		ViewColumn(String label, ColumnPixelData pixelData, ColumnLabelProvider provider){
-			this.label = label;
-			this.pixelData = pixelData;
-			this.provider = provider;
-		}
-		public String getLabel() {return label;}
-		public ColumnPixelData getPixelData() {return pixelData;}
-		public ColumnLabelProvider getProvider() {return provider;}
-	}
-
 	@Override
 	protected StructuredViewer getViewer() {
 		return tableViewer;
@@ -473,6 +465,7 @@ public class ServiceStateView extends AbstractCloudViewPart implements CloudStri
 	public void dispose(){
 		getSite().getPage().removeSelectionListener(LoginUsersView.Id, selectionListener);
 		getSite().setSelectionProvider(null);
+		unknown.dispose();
 		super.dispose();
 	}
 

@@ -24,7 +24,6 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -46,11 +45,14 @@ import com.clustercontrol.utility.settings.nodemap.xml.NodeMapBgImageInfo;
 import com.clustercontrol.utility.settings.nodemap.xml.NodemapIconImage;
 import com.clustercontrol.utility.settings.nodemap.xml.NodemapIconImageInfo;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.settings.ui.util.BackupUtil;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.nodemap.BgFileNotFound_Exception;
 import com.clustercontrol.ws.nodemap.HinemosUnknown_Exception;
 import com.clustercontrol.ws.nodemap.IconFileNotFound_Exception;
@@ -104,7 +106,7 @@ public class NodeMapImageAction {
 		log.debug("imageFile : " + new File(imageFile).getAbsolutePath());
 		log.debug("iconFile : " + new File(iconFile).getAbsolutePath());
 
-		NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+		NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 
 		List<String> bigImageNames = null;
 		List<String> iconNames = null;
@@ -272,7 +274,7 @@ public class NodeMapImageAction {
 		log.debug("Start Import NodeMapImage :" + imageXml);
 		int ret=0;
 		
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			log.debug("End Import Report.Schedule (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -312,7 +314,7 @@ public class NodeMapImageAction {
 			return ret;
 		}
 		
-		NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+		NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		// インポート
 		// BGFile
 		String bgFolderPath = getFolderPath(SettingToolsXMLPreferencePage.VALUE_NODEMAP_BG_FOLDER, false);
@@ -324,17 +326,17 @@ public class NodeMapImageAction {
 				if (wrapper.isBgImage(bgImageInfo.getFileName())){
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {bgImageInfo.getFileName()};
-						ImportProcessDialog dialog = new ImportProcessDialog(
+						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 								null, Messages.getString("message.import.confirm2", args));
 						ImportProcessMode.setProcesstype(dialog.open());
 						ImportProcessMode.setSameprocess(dialog.getToggleState());
 					}
-					if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+					if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 						wrapper.setBgImage(bgImageInfo.getFileName(), filedata);
 						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + bgImageInfo.getFileName());
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + bgImageInfo.getFileName());
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 						return ret;
 					}
@@ -369,17 +371,17 @@ public class NodeMapImageAction {
 				if (wrapper.isIconImage(iconImageInfo.getIconId())){
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {iconImageInfo.getIconId()};
-						ImportProcessDialog dialog = new ImportProcessDialog(
+						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 								null, Messages.getString("message.import.confirm2", args));
 						ImportProcessMode.setProcesstype(dialog.open());
 						ImportProcessMode.setSameprocess(dialog.getToggleState());
 					}
-					if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+					if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 						wrapper.setIconImage(iconImageInfo.getIconId(), filedata);
 						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + iconImageInfo.getIconId());
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + iconImageInfo.getIconId());
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 						return ret;
 					}

@@ -7,29 +7,20 @@
  */
 package com.clustercontrol.xcloud.factory;
 
+import com.clustercontrol.xcloud.Session;
+
 public class ActionMode {
-	public static enum ActionKind {
-		Normal,
-		AutoDetection;
-	}
-
-	private static ThreadLocal<ActionKind> current = new ThreadLocal<ActionKind>() {
-		public ActionKind initialValue() {
-			return ActionKind.Normal;
-		}
-	};
-
 	private ActionMode(){}
 
 	public static void enterAutoDetection() {
-		current.set(ActionKind.AutoDetection);
+		Session.current().setState(ActionMode.class, Boolean.TRUE);
 	}
 
 	public static boolean isAutoDetection() {
-		return current.get().equals(ActionKind.AutoDetection);	
+		return Session.current().isState(ActionMode.class);	
 	}
 
 	public static void leaveAutoDetection() {
-		current.set(ActionKind.Normal);
+		Session.current().setState(ActionMode.class, Boolean.FALSE);
 	}
 }

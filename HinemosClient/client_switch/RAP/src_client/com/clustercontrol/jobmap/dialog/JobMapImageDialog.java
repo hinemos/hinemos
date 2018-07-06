@@ -57,7 +57,7 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmap.util.ImageFileUploadReceiver;
 import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
-import com.clustercontrol.jobmap.util.JobmapIconImageCache;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 
 /**
  * ジョブマップ用イメージファイル作成・変更ダイアログクラス(RAP)<BR>
@@ -479,7 +479,9 @@ public class JobMapImageDialog extends CommonDialog {
 		}
 
 		try {
-			this.m_jobmapIconImage  = JobmapIconImageCache.getJobmapIconImage(this.m_managerName, this.m_iconId);
+			//アイコンキャッシュの取得
+			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
+			this.m_jobmapIconImage  = iconCache.getJobmapIconImage(this.m_managerName, this.m_iconId);
 		} catch (IconFileNotFound_Exception e) {
 			MessageDialog.openInformation(
 					null,
@@ -588,13 +590,14 @@ public class JobMapImageDialog extends CommonDialog {
 		boolean result = false;
 		try {
 			String managerName = this.m_managerComposite.getText();
+			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
 			if (this.m_mode == PropertyDefineConstant.MODE_MODIFY) {
-				JobmapIconImageCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, false);
+				iconCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, false);
 				Object[] arg = {managerName};
 				MessageDialog.openInformation(null, Messages.getString("successful"),
 						Messages.getString("message.job.77", arg));
 			} else {
-				JobmapIconImageCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, true);
+				iconCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, true);
 				Object[] arg = {managerName};
 				MessageDialog.openInformation(null, Messages.getString("successful"),
 						Messages.getString("message.job.79", arg));

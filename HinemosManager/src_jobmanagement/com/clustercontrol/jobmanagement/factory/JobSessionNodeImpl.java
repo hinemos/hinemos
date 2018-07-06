@@ -969,6 +969,11 @@ public class JobSessionNodeImpl {
 		JobSessionNodeEntity sessionNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
 		m_log.debug("checkTimeout() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 
+		// 監視ジョブの場合はタイムアウトチェック対象外とする。
+		if (sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB) {
+			m_log.debug("checkTimeout() : job_type is monitor_job");
+			return;
+		}
 		//待ち条件ジョブ判定
 		if(sessionNode.getStatus() != StatusConstant.TYPE_RUNNING){
 			// 1分に1回のタイムアウトチェック中にエージェントの応答があると、
@@ -1242,6 +1247,10 @@ public class JobSessionNodeImpl {
 				sessionNode.setStartDate(null);
 				return false;
 			} else if (sessionJob.getStatus() != StatusConstant.TYPE_RUNNING) {
+				return false;
+			}
+
+			if(sessionNode.getRetryCount() >= sessionNode.getJobSessionJobEntity().getJobInfoEntity().getMessageRetry()) {
 				return false;
 			}
 

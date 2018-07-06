@@ -146,7 +146,7 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 				m_log.info("log table's size is too high. (tableName=" + tableName + ", size=" + size + ", threshold=" + thresholdOrig + " " + getThresholdUnit(thresholdType) + ")");
 			}
 			if (!isNotify(subKey, warn)) {
-				return;
+				continue;
 			}
 			switch (thresholdType) {
 			case MBYTE :

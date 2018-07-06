@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
@@ -28,6 +27,7 @@ import com.clustercontrol.utility.settings.monitor.xml.SnmpInfo;
 import com.clustercontrol.utility.settings.monitor.xml.SnmpMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.SnmpMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -181,7 +181,7 @@ public class SnmpConv {
 		for (MonitorInfo monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
+			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
 
 			SnmpMonitor snmpMonitor = new SnmpMonitor();
 			snmpMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));

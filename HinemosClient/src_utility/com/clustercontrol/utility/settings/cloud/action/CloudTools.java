@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.Platform;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.util.EndpointUnit;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.xcloud.model.cloud.EndpointManager;
 import com.clustercontrol.xcloud.model.cloud.HinemosManager;
 import com.clustercontrol.xcloud.model.cloud.ICloudScopes;
@@ -37,7 +38,7 @@ public class CloudTools {
 	protected static Logger log = Logger.getLogger(CloudTools.class);
 	
 	public static <T> T getEndpoint(Class<T> clazz) {
-		EndpointManager endpointManager = new EndpointManager(ClusterControlPlugin.getDefault().getCurrentManagerName());
+		EndpointManager endpointManager = new EndpointManager(UtilityManagerUtil.getCurrentManagerName());
 		return endpointManager.getEndpoint(clazz);
 	}
 	

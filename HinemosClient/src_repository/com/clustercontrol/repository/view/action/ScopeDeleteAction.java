@@ -103,10 +103,18 @@ public class ScopeDeleteAction extends AbstractHandler implements IElementUpdate
 				if(map.get(managerName) == null) {
 					map.put(managerName, new ArrayList<String>());
 				}
+			}else if( obj instanceof List<?> ){//一覧からの選択向けの処理
+				List<?> list = (List<?>)obj;
+				String managerName = null;
+				if (list != null) {
+					managerName = (String) list.get(GetScopeListTableDefine.MANAGER_NAME);
+					if(map.get(managerName) == null) {
+						map.put(managerName, new ArrayList<String>());
+					}
+				}
 			}
 		}
 
-		int size = 0;
 		String facilityId = null;
 		for (Object obj : selectionList) {
 			String managerName = null;
@@ -134,18 +142,34 @@ public class ScopeDeleteAction extends AbstractHandler implements IElementUpdate
 				facilityId = null;
 				String facilityName = null;
 				if (sList != null) {
-					managerName = (String) sList.get(GetScopeListTableDefine.MANAGER_NAME);
+					// コンポジット・ノードを選択している場合は、無視
+					boolean isTargetType = false;
 					facilityId = (String) sList.get(GetScopeListTableDefine.FACILITY_ID);
+					for( FacilityTreeItem checkItem :scopeListView.getComposite().getFacilityTreeItem().getChildren()){
+						if(checkItem.getData().getFacilityId().equals(facilityId)  ){
+							if (checkItem.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE
+									|| checkItem.getData().getFacilityType() == FacilityConstant.TYPE_NODE) {
+								isTargetType=false;
+							}else{
+								isTargetType=true;
+							}
+							break;
+						}
+					}
+					if( isTargetType == false ){
+						continue;
+					}
+					managerName = (String) sList.get(GetScopeListTableDefine.MANAGER_NAME);
 					facilityName = (String) sList.get(GetScopeListTableDefine.FACILITY_NAME);
 					facilityNameList.add(facilityName);
 					map.get(managerName).add(facilityId);
 				}
 			}
-			size++;
 		}
+		int size = facilityNameList.size();
 
-		// 確認ダイアログにて変更が選択された場合、削除処理を行う。
-		if (map.isEmpty()) {
+		// スコープがまったく選択されていない場合は処理しない。
+		if ( size == 0 ) {
 			return null;
 		}
 

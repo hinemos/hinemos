@@ -25,7 +25,6 @@ import org.apache.log4j.Logger;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.ValidationException;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.difference.CSVUtil;
@@ -44,9 +43,12 @@ import com.clustercontrol.utility.settings.cloud.xml.ICloudScope;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.xcloud.AddCloudLoginUserRequest;
 import com.clustercontrol.ws.xcloud.AddCloudScopeRequest;
 import com.clustercontrol.ws.xcloud.AddPublicCloudScopeRequest;
@@ -176,7 +178,7 @@ public class CloudUserAction {
 	public int importUser(String xmlFile){
 		log.debug("Start Import Cloud.user ");
 
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			log.debug("End Import Cloud.user (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -202,7 +204,7 @@ public class CloudUserAction {
 		}
 		
 		final IHinemosManager manager =
-				CloudTools.getHinemosManager(ClusterControlPlugin.getDefault().getCurrentManagerName());
+				CloudTools.getHinemosManager(UtilityManagerUtil.getCurrentManagerName());
 		List<String> platformIdList = CloudTools.getValidPlatfomIdList();
 		for (com.clustercontrol.utility.settings.cloud.xml.ICloudScope cloudScopeXML : cloudScope.getICloudScope()) {
 			if (!platformIdList.contains(cloudScopeXML.getCloudPlatformId())) {
@@ -240,12 +242,12 @@ public class CloudUserAction {
 				if ("CLOUDSCOPE_ALREADY_EXIST".equals(e.getFaultInfo().getErrorCode())){
 					//重複時、インポート処理方法を確認する
 					if (!ImportProcessMode.isSameprocess()) {
-						ImportProcessDialog dialog = new ImportProcessDialog(
+						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 								null, Messages.getString("message.import.confirm2", new String[]{cloudScopeXML.getCloudScopeId()}));
 						ImportProcessMode.setProcesstype(dialog.open());
 						ImportProcessMode.setSameprocess(dialog.getToggleState());
 					}
-					if (ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE) {
+					if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE) {
 						try {
 							// スコープ更新
 							ModifyCloudScopeRequest modRequest;
@@ -281,9 +283,9 @@ public class CloudUserAction {
 							log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(t.getMessage()));
 							ret = SettingConstants.ERROR_INPROCESS;
 						}
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + cloudScopeXML.getCloudScopeId());
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 						return ret;
 					}
@@ -294,7 +296,10 @@ public class CloudUserAction {
 			} catch (InvalidRole_Exception e) {
 				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-			}catch (InvalidUserPass_Exception e) {
+			} catch (InvalidUserPass_Exception e) {
+				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
+				ret = SettingConstants.ERROR_INPROCESS;
+			} catch (Exception e) {
 				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 			}
@@ -323,14 +328,11 @@ public class CloudUserAction {
 				sci.getSchemaType(), sci.getSchemaVersion(), sci.getSchemaRevision());
 	}
 	
-	private void importBillingSetting(IHinemosManager manager, ICloudScope info) {
+	private void importBillingSetting(IHinemosManager manager, ICloudScope info) throws CloudManagerException, InvalidRole_Exception, InvalidUserPass_Exception {
 		CloudEndpoint endpoint = manager.getEndpoint(CloudEndpoint.class);
-		try {
-			ModifyBillingSettingRequest output = CloudUserConv.createBillingSettingRequest(info);
-			endpoint.modifyBillingSetting(output);
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
-			log.error(HinemosMessage.replace(e.getMessage()));
-		}
+		ModifyBillingSettingRequest output = CloudUserConv.createBillingSettingRequest(info);
+		endpoint.modifyBillingSetting(output);
+
 	}
 
 	protected void checkDelete(CloudScopeType xmlElements){
@@ -353,13 +355,13 @@ public class CloudUserAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 
-				if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
 						com.clustercontrol.ws.xcloud.CloudEndpoint endpoint = CloudTools.getEndpoint(com.clustercontrol.ws.xcloud.CloudEndpoint.class);
 						endpoint.removeCloudScope(info.getId());
@@ -367,9 +369,9 @@ public class CloudUserAction {
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getId());
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 					return;
 				}

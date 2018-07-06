@@ -14,7 +14,6 @@ import java.util.List;
 
 import javax.xml.ws.WebServiceException;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.EndpointUnit.EndpointSetting;
 import com.clustercontrol.utility.settings.ConvertorException;
@@ -22,6 +21,7 @@ import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.JmxConv;
 import com.clustercontrol.utility.settings.monitor.xml.JmxMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.JmxMonitors;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -88,7 +88,7 @@ public class JmxAction extends AbstractMonitorAction<JmxMonitors> {
 
 	public MonitorSettingEndpoint getEndpoint() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
 		WebServiceException wse = null;
-		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getEndpoint(MonitorSettingEndpointService.class, MonitorSettingEndpoint.class)) {
+		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(MonitorSettingEndpointService.class, MonitorSettingEndpoint.class)) {
 			try {
 				return endpointSetting.getEndpoint();
 			} catch (WebServiceException e) {

@@ -123,8 +123,6 @@ public class StringBinder {
 			str = str.replace("'", "\\'");
 			// escape ` to \`
 			str = str.replace("`", "\\`");
-			// escepe $ to \$
-			str = str.replace("$", "\\$"); // replace時におかしくなるのでエスケープする。replace時に\$は$に戻るのでユーザ動作には影響しない
 			// escape control to \xXX (0 - 1F & 7F)
 			for (byte ascii = 0; ascii < 0x20; ascii++) {
 				byte[] byteCode = { ascii };
@@ -159,20 +157,20 @@ public class StringBinder {
 		int n = 100; // 無限ループを防ぐために、ループ回数を100に制限しておく。
 		try {
 			for(int i = 0; i < n; i++) {
-					StringBuffer sb = new StringBuffer();
-					Matcher m = pattern.matcher(ret);
-					while(m.find()) {
-						log.debug("m.group() : " + m.group());
-						m.appendReplacement(sb, bindParam(m.group()));
-					}
-					m.appendTail(sb);
-	
-					// 前回と置換結果が同じ場合、これ以上置換できないのでループを抜ける
-					if(sb.toString().equals(ret)) {
-							log.debug("no more replaced");
-							break;
-					}
-					ret = sb.toString();
+				StringBuffer sb = new StringBuffer();
+				Matcher m = pattern.matcher(ret);
+				while(m.find()) {
+					log.debug("m.group() : " + m.group());
+					m.appendReplacement(sb, Matcher.quoteReplacement(bindParam(m.group())));
+				}
+				m.appendTail(sb);
+
+				// 前回と置換結果が同じ場合、これ以上置換できないのでループを抜ける
+				if(sb.toString().equals(ret)) {
+					log.debug("no more replaced");
+					break;
+				}
+				ret = sb.toString();
 			}
 		} catch (RuntimeException e) {
 			// 少なくともappendReplacementでIllegalArgumentExceptionが発生する場合がある。
@@ -185,13 +183,13 @@ public class StringBinder {
 
 	public static void main(String[] args) {
 
-		String str = "foo #[PARAM] bar #[ESCAPE] #[NOTFOUND] foo";
+		String str = "foo #[PARAM] bar #[ESCAPE] #[NOTFOUND] foo bar";
 
 		Map<String, String> param = new HashMap<String, String>();
 		param.put("PARAM", "foofoo");
 		byte[] byteCode = { 0x10 };
 
-		param.put("ESCAPE", "foo 'bar' \"foo\" `echo aaa` \\ bar" +
+		param.put("ESCAPE", "foo 'bar' \"foo\" `echo aaa` \\ bar $ bar" +
 				" [" + new String(byteCode) + "], [" + new String(byteCode) + "]");
 
 		StringBinder binder = new StringBinder(param);
@@ -226,6 +224,32 @@ public class StringBinder {
 		System.out.println(binder2.replace(input));
 		input = "#[FOO] AAA#[HOGE:#[UGA]]BBB #[AHE]";
 		System.out.println(binder2.replace(input));
+		
+		
+		System.out.println("Test 4");
+		str = "foo #[PARAM] bar #[ESCAPE] #[NOTFOUND] foo bar";
+		Map<String, String> param4 = new HashMap<String, String>();
+		param4.put("PARAM", "foofoo");
+		byte[] byteCode2 = { 0x10 };
+
+		param4.put("ESCAPE", "foo 'bar' \"foo\" `echo aaa` \\ bar $ bar" +
+				" [" + new String(byteCode2) + "], [" + new String(byteCode2) + "]");
+
+		StringBinder binder4 = new StringBinder(param4);
+		System.out.println("BINDED   : " + binder4.bindParam(str));
+
+		
+		// Test 3
+		str = "echo \"message:#[MESSAGE]; original message:#[ORIGINAL_MESSAGE]\"";
+		StringBinder.setReplace(false);
+		param = new HashMap<String, String>();
+		param.put("MESSAGE", "This's message");
+		param.put("ORIGINAL_MESSAGE", "This is \"message\".(\r\n) (\n) (`) ($) \\ \n(original)");
+
+		StringBinder binder3 = new StringBinder(param);
+		System.out.println(binder3.replace(str));
+		System.out.println(binder3.bindParam(str));
+
 	}
 
 }

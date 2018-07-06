@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 5.6.2.final using JasperReports Library version 5.6.1  -->
+<!-- 2016-02-12T20:08:30 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="performance_node_filesystem" pageWidth="595" pageHeight="842" columnWidth="595" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="b3555393-5ca6-4c3c-a841-04fcb1f6eb87">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="CSV Data Adapter cc_calculated_data"/>
+	<property name="net.sf.jasperreports.awt.ignore.missing.font" value="true"/>
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<subDataset name="Dataset" uuid="5c5236c0-b9d1-4299-8ff9-8e7c8e00fe4f">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="CSV Data Adapter cc_calculated_data"/>
+		<queryString language="CSV">
+			<![CDATA[]]>
+		</queryString>
+		<field name="collectorid" class="java.lang.String"/>
+		<field name="item_code" class="java.lang.String"/>
+		<field name="item_name" class="java.lang.String"/>
+		<field name="display_name" class="java.lang.String"/>
+		<field name="date_time" class="java.sql.Timestamp"/>
+		<field name="facilityid" class="java.lang.String"/>
+		<field name="value" class="java.lang.Float"/>
+	</subDataset>
+	<parameter name="PAGE_OFFSET" class="java.lang.Integer" isForPrompting="false">
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NODE_NAME" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="FACILITY_NAME" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="FACILITY_ID" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="DATASOURCE_1" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_2" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_3" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_4" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="DATASOURCE_5" class="net.sf.jasperreports.engine.data.JRCsvDataSource" isForPrompting="false"/>
+	<parameter name="LOGO_FILENAME" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="START_DATE" class="java.sql.Timestamp" isForPrompting="false"/>
+	<parameter name="END_DATE" class="java.sql.Timestamp" isForPrompting="false"/>
+	<parameter name="SHOW_PAGE" class="java.lang.Boolean" isForPrompting="false">
+		<defaultValueExpression><![CDATA[true]]></defaultValueExpression>
+	</parameter>
+	<parameter name="title.main" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="title.cover" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.1" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.2" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.3" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.4" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="chart.title.5" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.1" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.2" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.3" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.4" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="label.5" class="java.lang.String" isForPrompting="false"/>
+	<queryString language="CSV">
+		<![CDATA[]]>
+	</queryString>
+	<field name="collectorid" class="java.lang.String"/>
+	<field name="item_code" class="java.lang.String"/>
+	<field name="item_name" class="java.lang.String"/>
+	<field name="display_name" class="java.lang.String"/>
+	<field name="date_time" class="java.sql.Timestamp"/>
+	<field name="facilityid" class="java.lang.String"/>
+	<field name="value" class="java.lang.Float"/>
+	<group name="Group1">
+		<groupHeader>
+			<band height="650">
+				<property name="local_mesure_unitheight" value="pixel"/>
+				<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				<timeSeriesChart>
+					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
+						<reportElement x="47" y="20" width="500" height="300" uuid="4e45d3de-c7aa-4664-a6f0-b6b6b80d1c4c">
+							<property name="local_mesure_unity" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.y" value="px"/>
+							<property name="local_mesure_unitheight" value="pixel"/>
+							<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						</reportElement>
+						<chartTitle>
+							<font size="12" pdfEncoding="UniJIS-UCS2-H"/>
+							<titleExpression><![CDATA[$P{chart.title.1}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend>
+							<font size="12" pdfEncoding="UniJIS-UCS2-H"/>
+						</chartLegend>
+					</chart>
+					<timeSeriesDataset timePeriod="Minute">
+						<dataset>
+							<datasetRun subDataset="Dataset" uuid="f563118b-3f77-4b3f-8054-8d238cb98538">
+								<datasetParameter name="net.sf.jasperreports.csv.source">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.source}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_INPUT_STREAM">
+									<datasetParameterExpression><![CDATA[$P{CSV_INPUT_STREAM}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_URL">
+									<datasetParameterExpression><![CDATA[$P{CSV_URL}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_FILE">
+									<datasetParameterExpression><![CDATA[$P{CSV_FILE}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.encoding">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.encoding}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_READER">
+									<datasetParameterExpression><![CDATA[$P{CSV_READER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.column.names">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.column.names}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_COLUMN_NAMES_ARRAY">
+									<datasetParameterExpression><![CDATA[$P{CSV_COLUMN_NAMES_ARRAY}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_DATE_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_DATE_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.date.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.date.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.field.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.field.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_NUMBER_FORMAT">
+									<datasetParameterExpression><![CDATA[$P{CSV_NUMBER_FORMAT}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.number.pattern">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.number.pattern}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.record.delimiter">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.record.delimiter}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="CSV_USE_FIRST_ROW_AS_HEADER">
+									<datasetParameterExpression><![CDATA[$P{CSV_USE_FIRST_ROW_AS_HEADER}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.locale.code">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.locale.code}]]></datasetParameterExpression>
+								</datasetParameter>
+								<datasetParameter name="net.sf.jasperreports.csv.timezone.id">
+									<datasetParameterExpression><![CDATA[$P{net.sf.jasperreports.csv.timezone.id}]]></datasetParameterExpression>
+								</datasetParameter>
+								<dataSourceExpression><![CDATA[$P{DATASOURCE_1}]]></dataSourceExpression>
+							</datasetRun>
+						</dataset>
+						<timeSeries>
+							<seriesExpression><![CDATA[$F{display_name}]]></seriesExpression>
+							<timePeriodExpression><![CDATA[$F{date_time}]]></timePeriodExpression>
+							<valueExpression><![CDATA[$F{value}]]></valueExpression>
+							<labelExpression><![CDATA[$F{item_name}]]></labelExpression>
+						</timeSeries>
+					</timeSeriesDataset>
+					<timeSeriesPlot isShowShapes="false">
+						<plot/>
+						<timeAxisFormat>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<labelFont>
+									<font pdfEncoding="UniJIS-UCS2-H"/>
+								</labelFont>
+							</axisFormat>
+						</timeAxisFormat>
+						<valueAxisLabelExpression><![CDATA[$P{label.1}]]></valueAxisLabelExpression>
+						<valueAxisFormat>
+							<axisFormat>
+								<labelFont>
+									<font size="12" pdfEncoding="UniJIS-UCS2-H"/>
+								</labelFont>
+							</axisFormat>
+						</valueAxisFormat>
+						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
+						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
+						<rangeAxisMinValueExpression><![CDATA[0]]></rangeAxisMinValueExpression>
+						<rangeAxisMaxValueExpression><![CDATA[100]]></rangeAxisMaxValueExpression>
+					</timeSeriesPlot>
+				</timeSeriesChart>
+			</band>
+		</groupHeader>
+	</group>
+	<pageHeader>
+		<band height="100" splitType="Stretch">
+			<image hAlign="Right" onErrorType="Blank">
+				<reportElement x="414" y="1" width="180" height="90" uuid="2128d987-a5e7-4be8-835d-03b3bdcd92a2">
+					<property name="local_mesure_unitheight" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="local_mesure_unitx" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="local_mesure_unity" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA[$P{LOGO_FILENAME}]]></imageExpression>
+			</image>
+			<line>
+				<reportElement x="22" y="99" width="550" height="1" uuid="4421c19b-c096-4cf3-b71f-ffc704936d69"/>
+				<graphicElement>
+					<pen lineWidth="3.0" lineColor="#999999"/>
+				</graphicElement>
+			</line>
+			<textField>
+				<reportElement x="30" y="10" width="380" height="80" uuid="bb464a45-c436-41a6-8b9e-3d6676f6e0d4">
+					<property name="local_mesure_unity" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="local_mesure_unitx" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="local_mesure_unitwidth" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Bottom">
+					<font fontName="SansSerif" size="22" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{title.main}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<pageFooter>
+		<band height="70" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="595" height="70" backcolor="#B9D7FF" uuid="4fad5cf5-56ae-4ab5-9b42-24b3aa678cbb"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="260" y="17" width="75" height="20" uuid="847bd726-0e28-4388-9466-93d22951edeb">
+					<printWhenExpression><![CDATA[$P{SHOW_PAGE}]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["- " + ($V{PAGE_NUMBER} + $P{PAGE_OFFSET}) + " -"]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="0" y="53" width="595" height="17" backcolor="#00204D" uuid="68cb23eb-ab05-4a0b-b747-0a0e8ebd78fd"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="10" y="0" width="250" height="53" forecolor="#000000" uuid="bf93779f-ead5-4462-a328-4ed425ebb837">
+					<property name="local_mesure_unitwidth" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="local_mesure_unitx" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="local_mesure_unitheight" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="15" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{FACILITY_NAME} + 
+"(" + $P{FACILITY_ID} + ")"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="335" y="0" width="250" height="53" forecolor="#000000" uuid="c68925e2-e363-4a8e-80b7-91536318aef8">
+					<property name="local_mesure_unitx" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="local_mesure_unitwidth" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="15" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{title.cover}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

@@ -29,6 +29,7 @@ import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
+import com.clustercontrol.jobmanagement.util.ParameterUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
@@ -121,9 +122,21 @@ public class Notice {
 					|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
 					|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
 				//ファシリティID
-				info.setFacilityId(job.getFacilityId());
+				String facilityId = job.getFacilityId();
+				if(ParameterUtil.isParamFormat(facilityId)){
+					// "#[...]"形式の場合はジョブ変数の置換を試みる。
+					String paramValue = ParameterUtil.getJobSessionParamValue(ParameterUtil.getParamId(facilityId), sessionId, null);
+					if (paramValue != null) {
+						facilityId = paramValue;
+					}
+				}
+				info.setFacilityId(facilityId);
 				//スコープ
 				info.setScopeText(sessionJob.getScopeText());
+				if(m_log.isDebugEnabled()){
+					m_log.debug("Notice.notify  >>>info.setFacilityId() = : " + facilityId);
+					m_log.debug("Notice.notify  >>>info.setScopeText() = : " + info.getScopeText());
+				}
 			} else {
 				//ファシリティID
 				info.setFacilityId("");

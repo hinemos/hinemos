@@ -9,17 +9,13 @@ package com.clustercontrol.xcloud.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Set;
-import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
-import com.clustercontrol.monitor.run.model.MonitorJudgementInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.xcloud.common.CloudMessageConstant;
@@ -46,10 +42,6 @@ public class CloudMessageUtil {
 		CloudUtil.notifyInternalMessage(
 			CloudUtil.Priority.WARNING,
 			pluginId_cloud,
-			cloudScopeId,
-			"CloudScopeId=" + cloudScopeId + " , ComputeId=" + instanceId,
-			InternalScopeText,
-			CloudMessageConstant.AUTODETECTION.getMessage(),
 			CloudMessageConstant.AUTOUPDATE_ERROR.getMessage(),
 			getExceptionStackTrace(exception));
 	}
@@ -63,84 +55,10 @@ public class CloudMessageUtil {
 		CloudUtil.notifyInternalMessage(
 			CloudUtil.Priority.WARNING,
 			pluginId_cloud,
-			cloudScopeId,
-			"CloudScopeId=" + cloudScopeId + " , LocationId=" + locationId,
-			InternalScopeText,
-			CloudMessageConstant.AUTODETECTION.getMessage(),
 			CloudMessageConstant.AUTOUPDATE_ERROR.getMessage(),
 			getExceptionStackTrace(exception));
 	}
 
-	/**
-	 * 課金詳細監視([増分])
-	 * @param ba
-	 * @param judgements
-	 * @param targetDate
-	 * @param cost
-	 * @param resourceIds
-	 */
-	public static void notifyDelta(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, Long targetDate, double cost, Set<String> resourceIds) {
-		StringBuffer sb = new StringBuffer();
-		for (String s: resourceIds) {
-			if (sb.length() > 0)
-				sb.append(',');
-			sb.append(s);
-		}
-		
-		String truncatedPrice = new BigDecimal(cost).setScale(8, BigDecimal.ROUND_UP).toPlainString();
-		Logger.getLogger(CloudMessageUtil.class).debug("facilityId=" + ba.getFacilityId() + " , OriginalPriceData=" +cost+" , TruncatedPrice=" + truncatedPrice);
-		
-		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd H:mm:ss");
-		Date d = new Date();
-		notifyCost(
-				ba,
-				facilityId,
-				judgements,
-				cost,
-				d.getTime(),
-				CloudMessageConstant.BILLINGALARM_NOTIFY_DELTA.getMessage(format.format(targetDate), truncatedPrice),
-				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_DELTA.getMessage(format.format(targetDate), truncatedPrice, format.format(d.getTime())) + (resourceIds.isEmpty() ? "nothing": sb.toString())
-				);
-	}
-	
-	public static void notifySum(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, double cost, Set<String> resourceIds) {
-		StringBuffer sb = new StringBuffer();
-		for (String s: resourceIds) {
-			if (sb.length() > 0)
-				sb.append(',');
-			sb.append(s);
-		}
-		
-		String truncatedPrice = new BigDecimal(cost).setScale(8, BigDecimal.ROUND_UP).toPlainString();
-		Logger.getLogger(CloudMessageUtil.class).debug("facilityId=" + ba.getFacilityId() + " , OriginalPriceData=" +cost+" , TruncatedPrice=" + truncatedPrice);
-		
-		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd H:mm:ss");
-		Date d = new Date();
-		notifyCost(
-				ba,
-				facilityId,
-				judgements,
-				cost,
-				d.getTime(),
-				CloudMessageConstant.BILLINGALARM_NOTIFY_SUM.getMessage(truncatedPrice),
-				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_SUM.getMessage(truncatedPrice, format.format(d.getTime())) + " resourceIds:" + (resourceIds.isEmpty() ? "nothing": sb.toString())
-				);
-	}
-	
-	private static void notifyCost(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, double cost, Long generationDate, String message, String messageOrg) {
-		CloudUtil.Priority priority = CloudUtil.checkPriorityRange(judgements, cost);
-		
-		notifyResult(
-				priority,
-				ba.getMonitorId(),
-				facilityId,
-				ba.getApplication(),
-				ba.getNotifyGroupId(),
-				generationDate,
-				message,
-				messageOrg
-				);
-	}
 	/**
 	 * 失敗時の通知
 	 * @param ba
@@ -176,7 +94,7 @@ public class CloudMessageUtil {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
 			//通知情報作成
-			OutputBasicInfo notice = CloudUtil.createOutputBasicInfo(priority, CloudServiceBillingDetailRunMonitor.monitorTypeId, alarmId, "", application, facilityId, null, message, messageOrg, generationDate);
+			OutputBasicInfo notice = createOutputBasicInfo(priority, alarmId, facilityId, application, notifyGroupId, generationDate, message, messageOrg);
 
 			// 通知処理
 			notice.setNotifyGroupId(notifyGroupId);
@@ -188,15 +106,26 @@ public class CloudMessageUtil {
 		}
 	}
 	
+	// 基本通知処理。
+	public static OutputBasicInfo createOutputBasicInfo(
+			CloudUtil.Priority priority,
+			String alarmId,
+			String facilityId,
+			String application,
+			String notifyGroupId, 
+			Long generationDate, 
+			String message,
+			String messageOrg) {
+		return CloudUtil.createOutputBasicInfo(priority, CloudServiceBillingDetailRunMonitor.monitorTypeId, alarmId, "", application, facilityId, null, message, messageOrg, generationDate);
+	}
 
 	public static String createCloudServiceMonitorMessage(String result, String cloudId, String targetName, String message) {
-		return CloudMessageConstant.CLOUDSERVICE_MESSAGE_FORMAT.getMessage(
+		return CloudMessageConstant.CLOUDSERVICE_MESSAGE_FORMAT2.getMessage(
 				result,
 				CloudMessageConstant.CLOUDSERVICE_CLOUDID.getMessage(),
 				cloudId,
 				CloudMessageConstant.CLOUDSERVICE_TARGETID.getMessage(),
-				targetName,
-				message);
+				targetName) + " " + message;
 	}
 
 	public static String createCloudServiceMonitorMessageOrg(String result, String cloudId, String targetName, String message) {

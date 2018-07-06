@@ -107,9 +107,9 @@ public class CloudScopes extends Element implements ICloudScopes {
 			}
 		});
 		
-		Map<String, InstanceBackup> instanceBackupMap = new HashMap<>();
+		Map<List<String>, InstanceBackup> instanceBackupMap = new HashMap<>();
 		for (InstanceBackup backup: repository.getInstanceBackups()) {
-			instanceBackupMap.put(backup.getInstanceId(), backup);
+			instanceBackupMap.put(Arrays.asList(backup.getCloudScopeId(), backup.getInstanceId()), backup);
 		}
 
 		List<com.clustercontrol.ws.xcloud.Instance> instances = new ArrayList<>(repository.getInstances());
@@ -126,14 +126,14 @@ public class CloudScopes extends Element implements ICloudScopes {
 				}
 				location.getComputeResources().updateInstances(locationInstances);
 				for (Instance i: location.getComputeResources().getInstances()) {
-					i.getBackup().update(instanceBackupMap.get(i.getId()));
+					i.getBackup().update(instanceBackupMap.get(Arrays.asList(i.getCloudScope().getId(), i.getId())));
 				}
 			}
 		}
 		
-		Map<String, com.clustercontrol.ws.xcloud.StorageBackup> storageBackupMap = new HashMap<>();
+		Map<List<String>, com.clustercontrol.ws.xcloud.StorageBackup> storageBackupMap = new HashMap<>();
 		for (com.clustercontrol.ws.xcloud.StorageBackup backup: repository.getStorageBackups()) {
-			storageBackupMap.put(backup.getStorageId(), backup);
+			storageBackupMap.put(Arrays.asList(backup.getCloudScopeId(), backup.getStorageId()), backup);
 		}
 		
 		List<com.clustercontrol.ws.xcloud.Storage> storages = new ArrayList<>(repository.getStorages());
@@ -150,7 +150,7 @@ public class CloudScopes extends Element implements ICloudScopes {
 				}
 				location.getComputeResources().updateStorages(locationStorages);
 				for (Storage s: location.getComputeResources().getStorages()) {
-					s.getBackup().update(storageBackupMap.get(s.getId()));
+					s.getBackup().update(storageBackupMap.get(Arrays.asList(s.getCloudScopeId(), s.getId())));
 				}
 			}
 		}

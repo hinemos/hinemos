@@ -303,8 +303,7 @@ public class BinaryMonitor {
 
 			if (BinaryConstant.COLLECT_TYPE_WHOLE_FILE.equals(collectType)) {
 				// ファイル全体監視の場合、一時ファイルをReadingStatusと同じフォルダに出力.
-				File copyFile = new File(readingStatus.getParentDirRS().getStoreFileRSDir(),
-						TEMPORARY_PREFIX + this.tmpThreadId + "_" + readingStatus.getMonFile().getName());
+				File copyFile = new File(readingStatus.getParentDirRS().getStoreFileRSDir(), this.getTmpFileName());
 				if (copyFile.exists()) {
 					if (copyFile.delete()) {
 						// 本来監視処理終了時に削除してる想定なのでinfoレベルでログ出力しとく.
@@ -469,14 +468,21 @@ public class BinaryMonitor {
 				if (this.readingStatus.getPrefixSize() > 0
 						&& newFileBinary.size() >= this.readingStatus.getPrefixSize()) {
 					// 新しいファイルが比較対象バイナリのサイズより大きい場合、比較対象と同じサイズを格納して比較.
-					newFirstPartOfFile = newFirstPartOfFile.subList(0, this.readingStatus.getPrefixSize());
+					int prefixSize = this.readingStatus.getPrefixSize();
+					if ( this.readingStatus.getPrevSize() < prefixSize ){
+						prefixSize = (int)this.readingStatus.getPrevSize() ;
+					}
+					newFirstPartOfFile = newFirstPartOfFile.subList(0, prefixSize);
 
 					// ログ出力.
-					String firstPartString = BinaryUtil.listToString(newFirstPartOfFile, 1);
 					if (m_log.isDebugEnabled()) {
 						try {
+							String newFirstPartString = BinaryUtil.listToString(newFirstPartOfFile, 1);
+							String preFirstPartString = BinaryUtil.listToString(this.readingStatus.getPrefix().subList(0, prefixSize), 1);
 							m_log.debug("run() : " + this.readingStatus.getMonFile().toPath() + " newFirstPartOfFile : "
-									+ firstPartString);
+									+ newFirstPartString);
+							m_log.debug("run() : " + this.readingStatus.getMonFile().toPath() + " preFirstPartOfFile : "
+									+ preFirstPartString);
 						} catch (Exception e) {
 							m_log.error("run() : " + this.readingStatus.getMonFile().toPath() + " " + e.getMessage(),
 									e);
@@ -484,7 +490,7 @@ public class BinaryMonitor {
 					}
 
 					// readingStatus作成時点のファイルの先頭と現時点のファイルの先頭を比較.
-					if (!BinaryUtil.equals(newFirstPartOfFile, this.readingStatus.getPrefix())) {
+					if (!BinaryUtil.equals(newFirstPartOfFile, this.readingStatus.getPrefix().subList(0, prefixSize))) {
 						// 同一ファイル名なのにreadingStatus作成時点と先頭が異なっているので、ローテーションされてると判定.
 						m_log.debug("run() : " + readingStatus.getMonFile().toPath() + " log rotation detected");
 						this.rotateFlag = true;
@@ -676,8 +682,7 @@ public class BinaryMonitor {
 			this.closeFileChannel();
 		} finally {
 			// ファイル全体監視の場合、一時ファイルをReadingStatusと同じフォルダに出力してるので削除.
-			File copyFile = new File(readingStatus.getParentDirRS().getStoreFileRSDir(),
-					TEMPORARY_PREFIX + this.tmpThreadId + "_" + readingStatus.getMonFile().getName());
+			File copyFile = new File(readingStatus.getParentDirRS().getStoreFileRSDir(), this.getTmpFileName());
 			if (copyFile.exists()) {
 				if (copyFile.delete()) {
 					m_log.debug(methodName + DELIMITER + String.format(
@@ -744,16 +749,35 @@ public class BinaryMonitor {
 				switch (cutType) {
 
 				case FIXED:
+					//スキップサイズの指定があれば範囲内は無視するように考慮しつつレコードを分割
 					sendData = separator.separateFixed(this.m_wrapper.getId(), readedBinary, binaryInfo, readingStatus);
 					break;
 
 				case VARIABLE:
+					//スキップサイズの指定があれば範囲内は無視するように考慮しつつレコードを分割
 					sendData = separator.separateVariable(this.m_wrapper.getId(), readedBinary, binaryInfo,
 							readingStatus);
 					break;
 
 				case INTERVAL:
 					// 時間区切りは取れた分を1レコードとして扱う.
+					if( readingStatus.isToSkipRecord() ){
+						// ただし、スキップサイズの指定があれば範囲内は無視するように考慮(読込み開始位置なども考慮)
+						// 時間区切りにヘッダーはないので考慮しない
+						long frSet = readingStatus.getSkipSize() - readingStatus.getPosition() ;
+						long toSet = readedBinary.size() - readingStatus.getPosition() ;
+						List<Byte> resizeBinary = new ArrayList<Byte>();
+						for (int pos = 0; pos < readedBinary.size(); pos++) {
+							if( frSet <= pos &&  pos<= toSet ){
+								resizeBinary.add(readedBinary.get(pos));
+							}
+						}
+						readedBinary =resizeBinary;
+					}
+					if(readedBinary.size() == 0){//
+						break;
+					}
+
 					String monitorTime = new Timestamp(HinemosTime.getDateInstance().getTime()).toString();
 					// レコードキーにファイル名(絶対パス)＋監視時刻を設定.
 					String key = readingStatus.getMonFileName() + monitorTime;
@@ -819,6 +843,9 @@ public class BinaryMonitor {
 						methodName + DELIMITER + String.format("read the binary log[%s]. sendData size=%d, fileInfo=%s",
 								readingStatus.getMonFileName(), sendData.size(), fileInfo.toString()));
 
+				//以後の処理でsendDataを補正する可能性があるため ここで読み込みサイズを一旦保存（RSの更新に利用予定）
+				long readedSize = separator.getReadedSize(sendData);
+				
 				// wtmpの場合は単純な固定長ではないので、レコード再編成する.
 				String tagType = m_wrapper.monitorInfo.getBinaryCheckInfo().getTagType();
 				if (BinaryConstant.TAG_TYPE_WTMP.equals(tagType)) {
@@ -867,12 +894,7 @@ public class BinaryMonitor {
 				if (m_wrapper.runInstructionInfo != null) {
 					if (topMonitorResult == null) {
 						// マッチした監視結果が存在しない場合は終了(監視自体は実施してるのでファイルRSは更新しとく)
-						if (!onlyRotatedFile) {
-							readedSize = separator.getReadedSize(sendData);
-							fileChannel.position(readingStatus.getPosition() + readedSize);
-							readingStatus.storeRS(currentFilesize, fileChannel.position(), currentFileTimeStamp,
-									currentPrefix);
-						}
+						this.updateFileRS(onlyRotatedFile, fileInfo, readedSize);
 						m_log.info(methodName + DELIMITER
 								+ String.format("match data for monitor job isn't exist. Id=%s, file=[%s]",
 										m_wrapper.getId(), readingStatus.getMonFileName()));
@@ -889,12 +911,7 @@ public class BinaryMonitor {
 				if (!m_wrapper.monitorInfo.isCollectorFlg()) {
 					if (matchData.isEmpty()) {
 						// マッチした監視結果が存在しない場合は終了(監視自体は実施してるのでファイルRSは更新しとく)
-						if (!onlyRotatedFile) {
-							readedSize = separator.getReadedSize(sendData);
-							fileChannel.position(readingStatus.getPosition() + readedSize);
-							readingStatus.storeRS(currentFilesize, fileChannel.position(), currentFileTimeStamp,
-									currentPrefix);
-						}
+						this.updateFileRS(onlyRotatedFile, fileInfo, readedSize);
 						m_log.info(methodName + DELIMITER
 								+ String.format(
 										"match data for only monitoring isn't exist. Id=%s, collectFlg=%b, file=[%s]",
@@ -913,13 +930,7 @@ public class BinaryMonitor {
 				this.sendManager(fileInfo, sendData);
 
 				// ファイルRSの更新.
-				if (!onlyRotatedFile) {
-					// ローテーションで生成された別ファイルだけでなく、監視対象ファイルを読込んだ場合はRSを更新.
-					readedSize = separator.getReadedSize(sendData);
-					fileChannel.position(readingStatus.getPosition() + readedSize);
-					// 読込状態の更新.
-					readingStatus.storeRS(currentFilesize, fileChannel.position(), currentFileTimeStamp, currentPrefix);
-				}
+				this.updateFileRS(onlyRotatedFile, fileInfo, readedSize);
 
 			} else if (currentFileTimeStamp == readingStatus.getMonFileLastModTimeStamp()) {
 				// 更新されてない場合.
@@ -1399,6 +1410,98 @@ public class BinaryMonitor {
 						call, this.currentFilesize, propertyPeriod, interval));
 
 		return call;
+	}
+
+	/**
+	 * 監視処理終了時のファイルRS等更新処理(増分のみ監視向け).
+	 * 
+	 * @throws IOException
+	 */
+	private void updateFileRS(boolean onlyRotated, BinaryFile fileResult, long readedSize )throws IOException {
+		// ローテーションファイルのみを読込んだ場合は飛ばす.
+		if (onlyRotated) {
+			return;
+		}
+
+		this.readedSize = readedSize;
+
+		// 次回監視用に読込開始位置をずらす.（現在のポジションは不完全なレコードも含んでいる場合があるので補正する）
+		// ヘッダーサイズ と レコードスキップサイズ の取り扱いには注意
+		if( m_log.isDebugEnabled() ){
+			m_log.debug("updateFileRS () " + DELIMITER + "  org setPosition="+this.fileChannel.position()  + " startPosition=" +  this.readingStatus.getPosition() + " readedSize= " + readedSize  + "  file="+ readingStatus.getStoreFileRSFile().getName() );
+		}
+		long setPosition = 0;
+		if (this.readingStatus.getSkipSize() > 0) {
+			// 監視設定更新などによる読み飛ばしがあった場合
+			// 次回の読込み開始位置＝ 無視したサイズ（ヘッダサイズ＋レコードスキップサイズ）＋ レコード読込みサイズ とする  
+			if( m_log.isDebugEnabled() ){
+				m_log.debug("updateFileRS () " + DELIMITER + " setPosition is included record skip size . SkipSize="+ this.readingStatus.getSkipSize());
+			}
+			setPosition = fileResult.getFileHeaderSize() + this.readingStatus.getSkipSize() + this.readedSize ;
+		}else{
+			//通常は 次回の読込み開始位置＝ 今回の読込み開始位置 ＋ レコード読込みサイズ とする  
+			// ただし、ヘッダーの読み飛ばしを行っている場合はその分を加味する
+			setPosition = this.readingStatus.getPosition()+ this.readedSize;
+			if (this.readingStatus.getPosition() < fileResult.getFileHeaderSize()) {
+				setPosition = setPosition + fileResult.getFileHeaderSize() - this.readingStatus.getPosition() ;
+			}
+		}
+		if( m_log.isDebugEnabled() ){
+			m_log.debug("updateFileRS () " + DELIMITER + "  upd setPosition="+setPosition + " file="+ readingStatus.getStoreFileRSFile().getName() );
+		}
+		this.fileChannel.position(setPosition);
+
+		// 読込状態の更新.
+		this.readingStatus.storeRS(this.currentFilesize, this.fileChannel.position(), this.currentFileTimeStamp,
+				this.currentPrefix);
+	}
+
+	/** 一時ファイル名取得 */
+	private String getTmpFileName() {
+		return TEMPORARY_PREFIX + this.tmpThreadId + "_" + this.readingStatus.getMonFile().getName();
+	}
+
+	/** 一時ファイルの名前にマッチするか */
+	public static boolean matchTmpFileName(String fileName) {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+		if (fileName.matches(TEMPORARY_PREFIX + ".*_.*")) {
+			m_log.debug(
+					methodName + DELIMITER + String.format("match to name of temporary file. fileName=[%s]", fileName));
+			return true;
+		}
+		m_log.debug(methodName + DELIMITER
+				+ String.format("don't match to name of temporary file. fileName=[%s]", fileName));
+		return false;
+	}
+
+	/** 一時ファイル名から監視ファイル名を取得 */
+	public static String getMonNameFromTmp(String tmpFileName) {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+		if (!matchTmpFileName(tmpFileName)) {
+			m_log.warn(methodName + DELIMITER
+					+ String.format("don't match to name of temporary file. fileName=[%s]", tmpFileName));
+			return null;
+		}
+
+		// 接頭語を除去.
+		int removeSize = TEMPORARY_PREFIX.length();
+		String monitorFileName = tmpFileName.substring(removeSize);
+		// "スレッドID_"を除去.
+		removeSize = monitorFileName.indexOf("_") + 1;
+		monitorFileName = monitorFileName.substring(removeSize);
+
+		// "tmp_thread33_.json"みたいなファイルは対象外
+		if (monitorFileName.isEmpty() || monitorFileName.charAt(0) == '.') {
+			m_log.info(methodName + DELIMITER
+					+ String.format("don't match to name of temporary file. fileName=[%s]", tmpFileName));
+			return null;
+		}
+
+		m_log.debug(methodName + DELIMITER + String.format(
+				"get name of file to monitor from temporary file name." + " name(monitor)=[%s], name(temporary)=[%s]",
+				monitorFileName, tmpFileName));
+
+		return monitorFileName;
 	}
 
 	// 以下各フィールドsetter.

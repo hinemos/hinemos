@@ -13,7 +13,6 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -26,11 +25,12 @@ import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.ws.xcloud.Instance;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
+import com.clustercontrol.xcloud.extensions.ICloudOptionHandler;
 import com.clustercontrol.xcloud.model.cloud.IInstance;
 import com.clustercontrol.xcloud.ui.dialogs.ModifyInstanceTagDialog;
 import com.clustercontrol.xcloud.util.ControlUtil;
 
-public class ModifyInstanceTagsHandler extends AbstractHandler implements CloudStringConstants {
+public class ModifyInstanceTagsHandler implements ICloudOptionHandler, CloudStringConstants {
 	
 	private static final Log logger = LogFactory.getLog(ModifyInstanceTagsHandler.class);
 	

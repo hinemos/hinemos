@@ -48,6 +48,7 @@ import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.HinemosCredential;
 import com.clustercontrol.xcloud.Session;
@@ -99,7 +100,7 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 		logger.debug("runMonitorInfo()");
 
 		List<OutputBasicInfo> ret = new ArrayList<>();
-		m_now = new Date(System.currentTimeMillis());
+		m_now = HinemosTime.getDateInstance();
 
 		// 監視基本情報を設定
 		if (!setMonitorInfo(m_monitorTypeId, m_monitorId)) {
@@ -140,6 +141,7 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 			} catch(Exception e) {
 				notifyException("", e);
 				collectErrorSample("", CloudUtil.Priority.FAILURE.type);
+				throw new HinemosUnknown(e);
 			}
 			
 			String platform = null;
@@ -196,9 +198,9 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 					IBillings.PlatformServiceBilling billing = cManager.getBillings().getPlatformServiceBilling(cloudScope, service);
 					billings.put(facilityId, billing);
 				}
-				notifyBilling(target, billings);
+				ret.addAll(createBillingOutputBasicInfo(target, billings));
 				
-				if (m_monitor.getPredictionFlg() || m_monitor.getChangeFlg()) {
+				if (m_monitor.getCollectorFlg() || m_monitor.getPredictionFlg() || m_monitor.getChangeFlg()) {
 					for (Map.Entry<String, IBillings.PlatformServiceBilling> entry: billings.entrySet()) {
 
 						// 将来予測監視、変化量監視の処理を行う
@@ -226,6 +228,13 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 							standardDeviation = collectMonitorDataInfo.getStandardDeviation();
 						}
 						logger.debug("average=" + average+ ", standardDeviation=" + standardDeviation);
+						
+						if (m_monitor.getCollectorFlg()) {
+							Sample sample = new Sample(new Date(entry.getValue().getUpdateDate()), m_monitorId);
+							sample.set(m_facilityId, m_monitor.getItemName(), entry.getValue().getPrice(), 
+									average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
+							CollectDataUtil.put(Arrays.asList(sample));
+						}
 					}
 				}
 				
@@ -328,16 +337,54 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 	}
 	
 	protected void notifyException(String target, Exception exception) {
-		Date d = new Date();
 		String message = CloudMessageConstant.MONITOR_PLATFORM_BILLING_SERVICE_NOTIFY_UNKNOWN.getMessage(exception.getMessage());
 		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		String messageOrg = CloudMessageConstant.MONITOR_PLATFORM_BILLING_SERVICE_NOTIFY_ORG_UNKNOWN.getMessage(format.format(d.getTime()), CloudMessageUtil.getExceptionStackTrace(exception));
+		String messageOrg = CloudMessageConstant.MONITOR_PLATFORM_BILLING_SERVICE_NOTIFY_ORG_UNKNOWN.getMessage(format.format(m_now.getTime()), CloudMessageUtil.getExceptionStackTrace(exception));
 		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(CloudUtil.Priority.UNKNOWN, monitorTypeId, m_monitorId,
-				target, m_monitor.getApplication(), m_facilityId, message, messageOrg, d.getTime());
+				target, m_monitor.getApplication(), m_facilityId, message, messageOrg, m_now.getTime());
 		notify(output);
 	}
 	
-	protected void collect(Sample sample) {
+	protected List<OutputBasicInfo> createBillingOutputBasicInfo(String target, Map<String,IBillings.PlatformServiceBilling> billings) {
+		List<OutputBasicInfo> ret =  new ArrayList<>();
+		for (Entry<String, PlatformServiceBilling> entry : billings.entrySet()) {
+			
+			String facilityId = entry.getKey();
+			PlatformServiceBilling billing = entry.getValue();
+			CloudUtil.Priority priority = checkPriorityRange(billing);
+			OutputBasicInfo output;
+			switch(priority.type) {
+			case PriorityConstant.TYPE_INFO:
+			case PriorityConstant.TYPE_WARNING:
+			case PriorityConstant.TYPE_CRITICAL:
+			{
+				String message = String.format("%s : %f", target, billing.getPrice());
+				output = CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId,
+						target, m_monitor.getApplication(), facilityId, message, message, billing.getUpdateDate() == null ? Long.valueOf(m_now.getTime()): billing.getUpdateDate());
+				break;
+			}
+			default:
+			{
+				String message = String.format("%s : NaN", target);
+				output = CloudUtil.createOutputBasicInfoEx(CloudUtil.Priority.UNKNOWN, monitorTypeId, m_monitorId,
+						target, m_monitor.getApplication(), facilityId, message, message, billing.getUpdateDate() == null ? Long.valueOf(m_now.getTime()): billing.getUpdateDate());
+				break;
+			}}
+			output.setNotifyGroupId(m_monitor.getNotifyGroupId());
+			ret.add(output);
+		}
+		return ret;
+	}
+	
+	protected void notifyError(CloudUtil.Priority priority, String subKey, String message) {
+		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId, subKey, m_monitor.getApplication(), m_facilityId, message, message, m_now.getTime());
+		notify(output);
+	}
+	
+	protected void collectErrorSample(String target, int errorType) {
+		Sample sample = new Sample(HinemosTime.getDateInstance(), m_monitorId);
+		sample.set(m_facilityId, target, 0.0, errorType);
+		
 		if (logger.isDebugEnabled()) {
 			ObjectMapper objectMapper = new ObjectMapper();
 			ObjectWriter writer = objectMapper.writerFor(Sample.class);
@@ -354,50 +401,5 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 		if (m_monitor.getCollectorFlg()) {
 			CollectDataUtil.put(Arrays.asList(sample));
 		}
-	}
-	
-	protected void notifyBilling(String target, Map<String,IBillings.PlatformServiceBilling> billings) {
-		for (Entry<String, PlatformServiceBilling> entry : billings.entrySet()) {
-			
-			String facilityId = entry.getKey();
-			PlatformServiceBilling billing = entry.getValue();
-			CloudUtil.Priority priority = checkPriorityRange(billing);
-			OutputBasicInfo output;
-			Sample sample;
-			switch(priority.type) {
-			case PriorityConstant.TYPE_INFO:
-			case PriorityConstant.TYPE_WARNING:
-			case PriorityConstant.TYPE_CRITICAL:
-			{
-				String message = String.format("%s : %f", target, billing.getPrice());
-				output = CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId,
-						target, m_monitor.getApplication(), facilityId, message, message, billing.getUpdateDate() == null ? Long.valueOf(new Date().getTime()): billing.getUpdateDate());
-				sample = new Sample(new Date(),m_monitorId);
-				sample.set(facilityId, target, billing.getPrice(), CollectedDataErrorTypeConstant.NOT_ERROR);
-				break;
-			}
-			default:
-			{
-				String message = String.format("%s : NaN", target);
-				output = CloudUtil.createOutputBasicInfoEx(CloudUtil.Priority.UNKNOWN, monitorTypeId, m_monitorId,
-						target, m_monitor.getApplication(), facilityId, message, message, billing.getUpdateDate() == null ? Long.valueOf(new Date().getTime()): billing.getUpdateDate());
-				sample = new Sample(new Date(),m_monitorId);
-				sample.set(facilityId, target, billing.getPrice(), CollectedDataErrorTypeConstant.UNKNOWN);
-				break;
-			}}
-			notify(output);
-			collect(sample);
-		}
-	}
-	
-	protected void notifyError(CloudUtil.Priority priority, String subKey, String message) {
-		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId, subKey, m_monitor.getApplication(), m_facilityId, message, message, new Date().getTime());
-		notify(output);
-	}
-	
-	protected void collectErrorSample(String target, int errorType) {
-		Sample sample = new Sample(new Date(),m_monitorId);
-		sample.set(m_facilityId, target, 0.0, errorType);
-		collect(sample);
 	}
 }

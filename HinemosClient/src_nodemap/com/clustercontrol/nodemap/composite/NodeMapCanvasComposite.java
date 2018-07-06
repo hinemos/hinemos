@@ -559,7 +559,9 @@ public class NodeMapCanvasComposite extends Composite{
 							// アイコン選択ダイアログを開く
 							RegisterImageDialog dialog = new RegisterImageDialog(
 									shell, m_controller, focusFigure);
-							dialog.open();
+							if (dialog.open() == IDialogConstants.OK_ID) {
+								_view.setEditing(true);
+							}
 						}
 					});
 					// 編集不可モードの場合は、メニューを選択できなくする
@@ -758,6 +760,8 @@ public class NodeMapCanvasComposite extends Composite{
 										Messages.getString("failed"),
 										Messages.getString("message.repository.7") + errMessage);
 							}
+						}else{
+							_view.reload();
 						}
 					}
 				}
@@ -895,6 +899,8 @@ public class NodeMapCanvasComposite extends Composite{
 											Messages.getString("failed"),
 											Messages.getString("message.repository.7") + errMessage);
 								}
+							}else{
+								_view.reload();
 							}
 						}
 					}

@@ -27,12 +27,12 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ui.action.BuildFunctionTreeAction;
 import com.clustercontrol.utility.settings.ui.bean.FuncInfo;
 import com.clustercontrol.utility.settings.ui.bean.FuncTreeItem;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 
 /**
  * 機能ツリー用のコンポジットクラスです。
@@ -156,8 +156,8 @@ public class HinemosFuncTreeComposite extends Composite {
 		gridData.horizontalSpan = 1;
 		combo.setLayoutData(gridData);
 		
-		if(ClusterControlPlugin.getDefault().getCurrentManagerName() != null){
-			String name = ClusterControlPlugin.getDefault().getCurrentManagerName();
+		if(UtilityManagerUtil.getCurrentManagerName() != null){
+			String name = UtilityManagerUtil.getCurrentManagerName();
 			combo.add(name);
 			combo.setText(name);
 		}
@@ -170,8 +170,8 @@ public class HinemosFuncTreeComposite extends Composite {
 				for(String mngName: EndpointManager.getActiveManagerNameList()){
 					combo.add(mngName);
 				};
-				if(combo.indexOf(ClusterControlPlugin.getDefault().getCurrentManagerName()) != -1){
-					combo.select(combo.indexOf(ClusterControlPlugin.getDefault().getCurrentManagerName()));
+				if(combo.indexOf(UtilityManagerUtil.getCurrentManagerName()) != -1){
+					combo.select(combo.indexOf(UtilityManagerUtil.getCurrentManagerName()));
 				}
 			}
 		});
@@ -180,7 +180,7 @@ public class HinemosFuncTreeComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Combo combo = (Combo)e.getSource();
-				ClusterControlPlugin.getDefault().setCurrentManagerName(combo.getText());
+				UtilityManagerUtil.setCurrentManagerName(combo.getText());
 			}
 		});
 		

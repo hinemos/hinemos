@@ -27,7 +27,6 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
@@ -52,8 +51,11 @@ import com.clustercontrol.utility.settings.platform.xml.ScopeInfo;
 import com.clustercontrol.utility.settings.platform.xml.ScopeNodeInfo;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.repository.FacilityDuplicate_Exception;
 import com.clustercontrol.ws.repository.FacilityInfo;
 import com.clustercontrol.ws.repository.FacilityTreeItem;
@@ -92,7 +94,7 @@ public class RepositoryScopeAction {
 		// スコープ情報、スコープ内ノード情報の取得
 		List<com.clustercontrol.ws.repository.FacilityInfo> scopeList;
 		try {
-			scopeList = RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getFacilityList("");
+			scopeList = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityList("");
 		}
 		catch (Exception e) {
 			handleDTOException(e, Messages.getString("SettingTools.FailToGetList"), HinemosMessage.replace(e.getMessage()));
@@ -110,7 +112,7 @@ public class RepositoryScopeAction {
 		}
 
 		try {
-			RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteScope(ids);
+			RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteScope(ids);
 			logger.info(Messages.getString("SettingTools.ClearSucceeded") + "(Scope) : " + ids.toString());
 		} catch (WebServiceException e) {
 			logger.error(Messages.getString("SettingTools.ClearFailed") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
@@ -139,7 +141,7 @@ public class RepositoryScopeAction {
 	public int importRepositoryScope(String xmlScope, String xmlScopeNode) {
 		logger.debug("Start Import RepositoryScope and RepositoryScopeNode");
 
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 	    	logger.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 	    	logger.debug("End Import RepositoryScope and RepositoryScopeNode (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -170,7 +172,7 @@ public class RepositoryScopeAction {
 		int resultNumber_Scope = SettingConstants.SUCCESS;
 		for (com.clustercontrol.utility.settings.platform.xml.ScopeInfo childScope : scope.getScopeInfo()) {
 			resultNumber_Scope = recursiveRegistScopeInfo(null, childScope, objectIdList);
-			if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+			if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 				return SettingConstants.ERROR_INPROCESS;
 		    }
 		}
@@ -186,7 +188,7 @@ public class RepositoryScopeAction {
 			ArrayList<String> facilityIdList = new ArrayList<String>();
 			facilityIdList.add(scopeNodeInfo.getNodeFacilityId());
 			try {
-				RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).assignNodeScope(scopeNodeInfo.getScopeFacilityId(), facilityIdList);
+				RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).assignNodeScope(scopeNodeInfo.getScopeFacilityId(), facilityIdList);
 				logger.info(
 						Messages.getString("SettingTools.ImportSucceeded") + "(ScopeNode) : " + scopeNodeInfo.getNodeFacilityId() + "@" + scopeNodeInfo.getScopeFacilityId()
 						);
@@ -296,7 +298,7 @@ public class RepositoryScopeAction {
 		try {
 			childScope_ws.setFacilityType(FacilityConstant.TYPE_SCOPE);
 			// parentFacilityId が null の場合、ルートのスコープに接続。
-			RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).addScope(parentFacilityId == null ? "" : parentFacilityId, childScope_ws);
+			RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addScope(parentFacilityId == null ? "" : parentFacilityId, childScope_ws);
 			objectIdList.add(childScope_ws.getFacilityId());
 			logger.info(Messages.getString("SettingTools.ImportSucceeded") + "(Scope) : " + childScope_ca.getFacilityId());
 		}
@@ -304,15 +306,15 @@ public class RepositoryScopeAction {
 			//重複時、インポート処理方法を確認する
 			if(!ImportProcessMode.isSameprocess()){
 				String[] args = {childScope_ca.getFacilityId()};
-				ImportProcessDialog dialog = new ImportProcessDialog(
+				ImportProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 						null, Messages.getString("message.import.confirm2", args));
 			    ImportProcessMode.setProcesstype(dialog.open());
 			    ImportProcessMode.setSameprocess(dialog.getToggleState());
 			}
 
-			if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+			if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 				try {
-					RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).modifyScope(childScope_ws);
+					RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyScope(childScope_ws);
 
 					objectIdList.add(childScope_ws.getFacilityId());
 					logger.info(Messages.getString("SettingTools.ImportSucceeded.Update") + "(Scope) : " + childScope_ca.getFacilityId());
@@ -332,9 +334,9 @@ public class RepositoryScopeAction {
 					logger.warn(Messages.getString("SettingTools.ImportFailed") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
 					resultNumber = SettingConstants.ERROR_INPROCESS;
 				}
-			} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+			} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 				logger.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + "(Scope) : " + childScope_ca.getFacilityId());
-			} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+			} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 				logger.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 				return SettingConstants.ERROR_INPROCESS;
 			}
@@ -350,7 +352,7 @@ public class RepositoryScopeAction {
 		// 途中、例外が発生しても継続する。
 		for (com.clustercontrol.utility.settings.platform.xml.ScopeInfo gchildInfo_ca : childScope_ca.getScopeInfo()) {
 			recursiveRegistScopeInfo(childScope_ca.getFacilityId(), gchildInfo_ca, objectIdList);
-			if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+			if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 				break;
 		    }
 		}
@@ -407,11 +409,11 @@ public class RepositoryScopeAction {
 	    	if (data == null) {
 	    		switch (facilityTreeItem.getData().getFacilityType()) {
 	    		case FacilityConstant.TYPE_SCOPE:
-			    	data = RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getScope(facilityTreeItem.getData().getFacilityId());
+			    	data = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getScope(facilityTreeItem.getData().getFacilityId());
 			    	data.setFacilityType(FacilityConstant.TYPE_SCOPE);//Manager側のバグ対応
 			    	break;
 	    		case FacilityConstant.TYPE_NODE:
-			    	data = RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getNode(facilityTreeItem.getData().getFacilityId());
+			    	data = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNode(facilityTreeItem.getData().getFacilityId());
 			    	break;
 	    		default:
 	    			data = facilityTreeItem.getData();
@@ -441,7 +443,7 @@ public class RepositoryScopeAction {
 		RepositoryScope rs = null;
 		RepositoryScopeNode rsn = null;
 		try {
-			FacilityTreeItem facilityTreeItem = RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getFacilityTree(null);
+			FacilityTreeItem facilityTreeItem = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityTree(null);
 			WrappedFacilityTreeItem treeItem = new WrappedFacilityTreeItem(null, facilityTreeItem);
 
 			// Caster のデータ構造に変換。
@@ -668,7 +670,7 @@ public class RepositoryScopeAction {
 	protected void checkDelete(RepositoryScope xmlElements){
 		List<com.clustercontrol.ws.repository.FacilityInfo> subList = null;
 		try {
-			subList = RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getFacilityList("");
+			subList = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityList("");
 		}
 		catch (Exception e) {
 			logger.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -699,24 +701,24 @@ public class RepositoryScopeAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getFacilityId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 			    
-			    if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+			    if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 			    	try {
 			    		List<String> args = new ArrayList<>();
 			    		args.add(info.getFacilityId());
-			    		RepositoryEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteScope(args);
+			    		RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteScope(args);
 			    		logger.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getFacilityId());
 					} catch (Exception e1) {
 						logger.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 			    	logger.info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getFacilityId());
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			    	logger.info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 			    	return;
 			    }

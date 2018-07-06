@@ -36,35 +36,41 @@ public class SnapshotInstanceHandler extends AbstractCloudOptionHandler implemen
 		final IInstance instance = (IInstance)selection.getFirstElement();
 
 		SnapshotDialog dialog = new SnapshotDialog(HandlerUtil.getActiveShell(event), MessageFormat.format(dlgComputeSnapshot, CloudOptionExtension.getOptions().get(instance.getCloudScope().getCloudPlatform().getId())));
-		if (dialog.open() != Window.OK)
-			return null;
+		
+		while (true) {
+			if (dialog.open() != Window.OK) {
+				break;
+			}
 
-		if (MessageDialog.openConfirm(
-				null,
-				Messages.getString("confirmed"),
-				MessageFormat.format(msgConfirmSnapshotCreateComputeNode, instance.getName(), instance.getId()))) {
-
-			CreateInstanceSnapshotRequest request = new CreateInstanceSnapshotRequest();
-			request.setInstanceId(instance.getId());
-			request.setName(dialog.getSnapshotName());
-			request.setDescription(dialog.getDescription());
-
-			CloudEndpoint endpoint = instance.getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-			endpoint.snapshotInstance(instance.getCloudScope().getId(), instance.getLocation().getId(), request);
-
-			// 成功報告ダイアログを生成
-			MessageDialog.openInformation(
+			if (MessageDialog.openConfirm(
 					null,
-					Messages.getString("successful"),
-					MessageFormat.format(msgFinishSnapshotCreateComputeNode, instance.getName(), instance.getId()));
+					Messages.getString("confirmed"),
+					MessageFormat.format(msgConfirmSnapshotCreateComputeNode, instance.getName(), instance.getId()))) {
 
-			Display.getCurrent().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					instance.getBackup().update();
-				}
-			});
+				CreateInstanceSnapshotRequest request = new CreateInstanceSnapshotRequest();
+				request.setInstanceId(instance.getId());
+				request.setName(dialog.getSnapshotName());
+				request.setDescription(dialog.getDescription());
+
+				CloudEndpoint endpoint = instance.getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
+				endpoint.snapshotInstance(instance.getCloudScope().getId(), instance.getLocation().getId(), request);
+
+				// 成功報告ダイアログを生成
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("successful"),
+						MessageFormat.format(msgFinishSnapshotCreateComputeNode, instance.getName(), instance.getId()));
+
+				Display.getCurrent().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						instance.getBackup().update();
+					}
+				});
+				break;
+			}
 		}
+		
 		return null;
 	}
 

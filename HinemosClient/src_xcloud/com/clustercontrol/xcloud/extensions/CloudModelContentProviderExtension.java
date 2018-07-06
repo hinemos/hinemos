@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.xcloud.model.CloudModelException;
 
 public class CloudModelContentProviderExtension {
 	private static final String pointId = "cloudModelContentProvider";
@@ -58,6 +59,10 @@ public class CloudModelContentProviderExtension {
 		if (singleton == null) {
 			singleton = new CloudModelContentProviderExtension();
 		}
-		return singleton.providerMap.get(platformId);
+		ICloudModelContentProvider provider = singleton.providerMap.get(platformId);
+		if (provider == null) {
+			throw new CloudModelException("Not found a provider. platformid=" + platformId);
+		}
+		return provider;
 	}
 }

@@ -39,6 +39,7 @@ import com.clustercontrol.utility.jobutil.util.JobConvert;
 import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.UtilityEndpointWrapper;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
 import com.clustercontrol.ws.utility.InvalidRole_Exception;
@@ -73,7 +74,7 @@ public class ExportJobCommand extends AbstractHandler implements IElementUpdater
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// keyチェック
 		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 			String version = wrapper.getVersion();
 			if (version.length() > 7) {
 				boolean result = Boolean.valueOf(version.substring(7, version.length()));

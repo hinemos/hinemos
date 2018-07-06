@@ -9,5 +9,5 @@
 package com.clustercontrol.systemlog.util;
 
 public interface ResponseHandler<T> {
-	void accept(T message);
+	void accept(T message , String senderAddress);
 }

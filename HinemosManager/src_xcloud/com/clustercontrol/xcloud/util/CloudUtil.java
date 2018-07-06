@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -53,8 +52,6 @@ import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.bean.ProcessingMethodConstant;
 import com.clustercontrol.monitor.run.model.MonitorJudgementInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.factory.NotifyEventTaskFactory;
-import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilityTreeItem;
 import com.clustercontrol.repository.model.NodeDiskInfo;
@@ -64,6 +61,7 @@ import com.clustercontrol.repository.model.NodeVariableInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.apllog.AplLogger;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 public class CloudUtil {
@@ -88,7 +86,6 @@ public class CloudUtil {
 		scope.setValid(true);
 		scope.setCreateDatetime(now);
 		scope.setModifyDatetime(now);
-		scope.setBuiltInFlg(false);
 		scope.setOwnerRoleId(roleId);
 
 		return scope;
@@ -477,64 +474,19 @@ public class CloudUtil {
 				messageOrg,
 				generationDate);
 	}
-
-	public static OutputBasicInfo createInternalOutputBasicInfo(
-			Priority priority,
-			String pluginId,
-			String monitorId,
-			String subKey,
-			String scopeText,
-			String application,
-			String message,
-			String messageOrg) {
-		return createOutputBasicInfo(
-				priority,
-				pluginId,
-				monitorId,
-				subKey,
-				application,
-				"INTERNAL",
-				scopeText,
-				message,
-				messageOrg,
-				new Date().getTime());
-	}
-
+	
 	public static void notifyInternalMessage (
 			Priority priority,
 			String pluginId,
-			String monitorId,
-			String subKey,
-			String scopeText,
-			String application,
 			String message,
-			String messageOrg) {
-
-		final OutputBasicInfo output = createInternalOutputBasicInfo(
-				priority,
-				pluginId,
-				monitorId,
-				subKey,
-				scopeText,
-				application,
-				message,
-				messageOrg);
-
-		try {
-			AsyncWorkerPlugin.addTask(NotifyEventTaskFactory.class.getSimpleName(), output, false);
-		} catch (HinemosUnknown e) {
-			Logger.getLogger(CloudUtil.class).warn(e.getMessage(), e);
-		}
+			String detailMsg) {
+		AplLogger.put(priority.type, pluginId, message, detailMsg);
 	}
 	
 
 	public static void notifyInternalMessage (
 			Priority priority,
 			String pluginId,
-			String monitorId,
-			String subKey,
-			String scopeText,
-			String application,
 			Exception exception) {
 		
 		StringWriter sw = new StringWriter();
@@ -543,21 +495,7 @@ public class CloudUtil {
 		pw.flush();
 		String messageOrg = sw.toString();
 		
-		OutputBasicInfo output = createInternalOutputBasicInfo(
-				priority,
-				pluginId,
-				monitorId,
-				subKey,
-				scopeText,
-				application,
-				exception.getMessage(),
-				messageOrg);
-		
-		try {
-			AsyncWorkerPlugin.addTask(NotifyEventTaskFactory.class.getSimpleName(), output, false);
-		} catch (HinemosUnknown e) {
-			Logger.getLogger(CloudUtil.class).warn(e.getMessage(), e);
-		}
+		AplLogger.put(priority.type, pluginId, exception.getMessage(), messageOrg);
 	}
 	
 	public static class ObjectPriviledgeOperator {

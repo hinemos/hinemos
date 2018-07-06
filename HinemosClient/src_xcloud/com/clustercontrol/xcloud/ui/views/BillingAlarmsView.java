@@ -36,12 +36,15 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.ui.ISelectionListener;
+import org.eclipse.ui.IViewPart;
+import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPart;
 
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.monitor.MonitorInfo;
+import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
 import com.clustercontrol.xcloud.model.base.IElement;
@@ -57,7 +60,7 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 	
 	private static final Log logger = LogFactory.getLog(BillingAlarmsView.class);
 	
-	protected ElementBaseModeWatch.AnyPropertyWatcher watcher = new Watcher<MonitorInfo>(){
+	protected ElementBaseModeWatch.AnyPropertyWatcher watcher = new Watcher<BillingMonitor>(){
 		@Override protected void asyncRefresh() {
 			BillingAlarmsView.this.refresh();
 		}
@@ -241,7 +244,7 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 			}
 		),
 		collector_valid_name(
-			Messages.getString("calendar",Locale.getDefault()),
+			Messages.getString("collect",Locale.getDefault()),
 			new ColumnPixelData(100, true, true),
 			new ColumnLabelProvider(){
 				@Override
@@ -438,7 +441,15 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 	}
 
 	protected void refresh() {
-		refresh(getSite().getPage().getSelection(CloudScopesView.Id));
+		for (IViewReference ref: getSite().getPage().getViewReferences()) {
+			if (CloudScopesView.Id.equals(ref.getId())) {
+				IViewPart part = ref.getView(false);
+				if (part != null) {
+					refresh(part.getViewSite().getSelectionProvider().getSelection());
+				}
+				break;
+			}
+		}
 	}
 
 	protected void refresh(ISelection selection) {
@@ -478,6 +489,6 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 		tableViewer.setInput(alarms);
 		getViewSite().getActionBars().updateActionBars();
 		getViewSite().getActionBars().getToolBarManager().update(false);
-//		lblFooder.setText(footerTitle + billingAlarms.size());
+		lblFooder.setText(CloudStringConstants.strFooterTitle + currentBillingAlarms.getBillingMonitors().length);
 	}
 }

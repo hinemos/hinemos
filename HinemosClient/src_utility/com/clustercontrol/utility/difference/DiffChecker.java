@@ -68,6 +68,9 @@ public class DiffChecker {
 	// 項目毎の比較結果。
 	private ResultC currentResultC;
 
+	// 比較結果オブジェクト数
+	private long resultCnt = 0L;
+	
 	// ネームスペースのスタック。
 	private Stack<String> stackNameSpace = new Stack<String>();
 
@@ -371,7 +374,7 @@ public class DiffChecker {
 						}
 						
 						// 作成された差分情報が10万を超える場合、継続するか確認
-						if(!continueFlg && currentResultC.getResultDs().size() > 100000){
+						if(!continueFlg && resultCnt > 100000){
 							continueFlg = MessageDialog.openConfirm(null,
 									Messages.getString("warning"),
 									Messages.getString("message.traputil.26"));
@@ -478,6 +481,7 @@ public class DiffChecker {
 							resultD.setValue2(temp2.toArray(new String[0]));
 							
 							currentResultC.getResultDs().add(resultD);
+							resultCnt++;
 						}
 						
 						// 比較対象としてマークされていない場合は、配列の差分結果は反映しない。
@@ -574,6 +578,7 @@ public class DiffChecker {
 						resultD.setValue2(new String[]{prop2 == null ? "": prop2.toString()});
 
 						currentResultC.getResultDs().add(resultD);
+						resultCnt++;
 					}
 				}
 			}

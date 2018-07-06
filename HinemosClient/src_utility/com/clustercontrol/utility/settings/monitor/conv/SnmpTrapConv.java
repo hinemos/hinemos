@@ -18,7 +18,6 @@ import java.util.Objects;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -28,6 +27,7 @@ import com.clustercontrol.utility.settings.monitor.xml.SnmpTrapMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.TrapMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.TrapValueInfos;
 import com.clustercontrol.utility.settings.monitor.xml.VarBindPatterns;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -118,7 +118,7 @@ public class SnmpTrapConv {
 		for (MonitorInfo monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
+			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
 
 			TrapMonitor trapMonitor = new TrapMonitor();
 			trapMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));

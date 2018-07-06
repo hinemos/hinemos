@@ -21,6 +21,7 @@ import java.util.StringJoiner;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -31,7 +32,9 @@ import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.factory.Notice;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.CommandExecutor.CommandResult;
+import com.clustercontrol.util.apllog.AplLogger;
 
 /**
  * 
@@ -138,6 +141,8 @@ public class ExecReportingProcess {
 			StringJoiner pathJoiner = new StringJoiner(File.pathSeparator);
 			// First, add etc folder
 			pathJoiner.add(Paths.get(System.getProperty("hinemos.manager.home.dir", "/opt/hinemos"), "etc").toString());
+			// Second, add lib folder
+			pathJoiner.add(Paths.get(System.getProperty("hinemos.manager.home.dir", "/opt/hinemos"), "lib").toString());
 
 			// レポーティング用のライブラリーファイルのパスを動的に作成
 			// Managerと共通のものは全部linkとして、libDirにおいておくことが前提(installerで対応)
@@ -148,19 +153,31 @@ public class ExecReportingProcess {
 				}
 			});
 
-			// TODO 6.1に同名クラス(com.clustercontrol.reporting.util.QueryUtil)をなくす
-			// HinemosReporting.jarは必ずHinemosManagerReporting.jarより前におく必要がある。
-			// ではないと、NoSuchMethodError(QueryUtil.getChildFacilityRelationEntity)となる。
 			if (libFileList != null) {
 				for(String libFile: libFileList) {
-					if(libFile.startsWith("HinemosReporting")){
-						pathJoiner.add(libDir.resolve(libFile).toString());
+					pathJoiner.add(libDir.resolve(libFile).toString());
+				}
+			}
+			
+			//レポート作成に必要なjarファイルが配置されているか確認
+			String[] jarFileList = {"commons-beanutils-", "commons-collections-", "commons-digester-", 
+					"ecj-", "iText-", "iTextAsian", "iTextAsianCmaps", "jasperreports-functions-",
+					"jasperreports-fonts-", "jasperreports-", "jcommon-", "jfreechart-", "poi-"};
+			int countJars = 0;
+			if (libFileList != null) {
+				for(String libFile: libFileList) {
+					for(String jarFile: jarFileList){
+						if(libFile.startsWith(jarFile)){
+							countJars++;
+							break;
+						}
 					}
 				}
-				for(String libFile: libFileList) {
-					if(!libFile.startsWith("HinemosReporting")){
-						pathJoiner.add(libDir.resolve(libFile).toString());
-					}
+				if(countJars != jarFileList.length){
+					AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.REPORTING,
+							MessageConstant.MESSAGE_REPORTING_JARFILES_NOT_FOUND, 
+							new String[] {info.getReportScheduleId()});
+					return fileList;
 				}
 			}
 

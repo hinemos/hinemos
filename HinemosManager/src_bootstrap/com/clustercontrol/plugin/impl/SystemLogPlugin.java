@@ -18,6 +18,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.HinemosManagerMain;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.plugin.api.HinemosPlugin;
@@ -94,8 +95,8 @@ public class SystemLogPlugin implements HinemosPlugin {
 	 * 
 	 * @see com.clustercontrol.ws.HinemosHAEndpoint#syslog()
 	 */
-	public static SyslogMessage byteToSyslog(byte[] syslogRaw) throws ParseException, HinemosUnknown {
-		return _handler.byteToSyslog(syslogRaw);
+	public static SyslogMessage byteToSyslog(byte[] syslogRaw, String senderAddress) throws ParseException, HinemosUnknown {
+		return _handler.byteToSyslog(syslogRaw,senderAddress);
 	}
 
 	@Override
@@ -125,7 +126,9 @@ public class SystemLogPlugin implements HinemosPlugin {
 				_handler.start();
 				
 				final SyslogService syslog = new SyslogService();
-				syslog.start(_handler);
+				if(!HinemosManagerMain._isClustered){
+					syslog.start(_handler);
+				}
 				
 				final CountDownLatch sync = new CountDownLatch(1);
 				

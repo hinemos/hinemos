@@ -16,6 +16,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,10 @@ import com.clustercontrol.hinemosagent.bean.AgentInfo;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.repository.bean.AgentStatusInfo;
+import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
+import com.clustercontrol.repository.model.NodeInfo;
+import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.repository.util.QueryUtil;
 
 /**
  * マネージャが保持しているエージェントライブラリを管理するクラス<BR>
@@ -36,29 +41,89 @@ import com.clustercontrol.repository.bean.AgentStatusInfo;
 public class AgentLibDownloader {
 
 	private static Log m_log = LogFactory.getLog(AgentLibDownloader.class);
-
+	
+	private static final String Agent_Lib_Dir = System.getProperty("hinemos.manager.home.dir", "/opt/hinemos/") + "/lib/agent";
+	
+	
 	/**
 	 * マネージャが保持しているエージェントライブラリのリストを返す。
 	 * @return
 	 * @throws HinemosUnknown 
 	 */
-	public static HashMap<String, String> getAgentLibMap() throws HinemosUnknown {
+	public static HashMap<String, String> getAgentLibMap(ArrayList<String> facilityIdList, boolean isGetAll) throws HinemosUnknown {
 		HashMap<String, String> fileMap = new HashMap<String, String>();
-
-		String agentLibDir = System.getProperty("hinemos.manager.home.dir", "/opt/hinemos/") + "/lib/agent";
-		File dir = new File(agentLibDir);
+		
+		File dir = new File(Agent_Lib_Dir);
+		String facilityId = facilityIdList == null ? null : facilityIdList.get(0);
+		return putAgentLibMap(fileMap, dir, facilityId, isGetAll);
+	}
+	
+	private static HashMap<String, String> putAgentLibMap(HashMap<String, String> fileMap, File dir, String facilityId, boolean isGetAll) throws HinemosUnknown {
 		File[] files = dir.listFiles();
-		if (files != null) {
-			for (File file : files) {
-				if (file.isFile()) {
-					fileMap.put(file.getName(), getMD5(file.getAbsolutePath()));
+		if (files == null) {
+			m_log.info(String.format("files is null, %s=%s",dir.getName(), dir.getAbsolutePath()));
+			return fileMap;
+		}
+		
+		for (File file : files) {
+			if (file.isDirectory()) {
+				if (isTargetDir(file.getName(), facilityId, isGetAll)) {
+					putAgentLibMap(fileMap, file, facilityId, isGetAll);
+				}
+			} else {
+				if(file.isFile()) {
+					String libPath = file.getAbsolutePath().replace(new File(Agent_Lib_Dir).getAbsolutePath() + File.separator, "");
+					fileMap.put(libPath, getMD5(file.getAbsolutePath()));
 				}
 			}
-		} else {
-			m_log.info("files is null, agentLibDir=" + agentLibDir);
 		}
 		return fileMap;
 	}
+	
+	/**
+	 * 取得対象のフォルダか判定
+	 */
+	private static boolean isTargetDir(String dir, String facilityId, boolean isGetAll) {
+		if(isGetAll) {
+			return true;
+		}
+		if(facilityId == null || facilityId.isEmpty()) {
+			return false;
+		}
+
+		HashSet<String> platformIdSet = new HashSet<>();
+		for (CollectorPlatformMstEntity platformMstEntity : QueryUtil.getAllCollectorPlatformMst()) {
+			String platformId = platformMstEntity.getPlatformId();
+			platformIdSet.add(platformId);
+		}
+		
+		if(!platformIdSet.contains(dir)) {
+			return true;
+		}
+		
+		try {
+			NodeInfo nodeInfo = new RepositoryControllerBean().getNode(facilityId);
+			if (nodeInfo == null) {
+				return false;
+			}
+			String platformFamily = nodeInfo.getPlatformFamily();
+			if(platformFamily == null || platformFamily.isEmpty()) {
+				return false;
+			}
+			return dir.equals(platformFamily);
+		} catch (FacilityNotFound | HinemosUnknown e) {
+			m_log.info("NOT FOUND NODE facilityId=" + facilityId);
+			return false;
+		}
+	}
+	
+	private static boolean isTargetDirPath(String dirPath, String facilityId) {
+		if (!dirPath.contains(File.separator)) {
+			return true;
+		}
+		return isTargetDir(dirPath.substring(0, dirPath.indexOf(File.separator)), facilityId, false);
+	}
+	
 
 	/**
 	 * エージェントの状態を返します。<BR>
@@ -70,7 +135,7 @@ public class AgentLibDownloader {
 		// ユーザが所属するロールを取得する
 		List<String> ownerRoleIdList = new AccessControllerBean().getOwnerRoleIdList();
 
-		HashMap<String, String> managerMap = getAgentLibMap();
+		HashMap<String, String> managerMap = getAgentLibMap(null, true);
 		ArrayList<AgentStatusInfo> ret = new ArrayList<AgentStatusInfo>();
 		for (AgentInfo agentInfo : AgentConnectUtil.getAgentList()) {
 			// ファシリティID
@@ -134,6 +199,9 @@ public class AgentLibDownloader {
 				// マネージャが保持しているのに、エージェントが保持していない場合は、
 				// エージェントが最新でない。
 				if (agentMd5 == null) {
+					if(!isTargetDirPath(filenameEntry.getKey(), facilityId)) {
+						continue;
+					}
 					m_log.info("getAgentStatusList() agentMd5 is null + [" + facilityId +
 							"] filename=" + filenameEntry.getKey());
 					flag = false;

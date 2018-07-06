@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 5.6.2.final using JasperReports Library version 5.6.1  -->
+<!-- 2015-07-22T18:59:00 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="indexpage" pageWidth="595" pageHeight="842" columnWidth="595" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="8ff636e6-b327-430f-b810-96d7af4829c1">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<property name="net.sf.jasperreports.awt.ignore.missing.font" value="true"/>
+	<property name="ireport.zoom" value="1.0000000000000024"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="142"/>
+	<parameter name="COVER_TITLE" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="PAGE_OFFSET" class="java.lang.Integer" isForPrompting="false">
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<parameter name="COVER_DATE" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="LOGO_FILENAME" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="REPORT_CONTENTS" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="REPORT_PERIOD" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="REPORT_TARGET_NODES" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="SHOW_PAGE" class="java.lang.Boolean" isForPrompting="false">
+		<defaultValueExpression><![CDATA[true]]></defaultValueExpression>
+	</parameter>
+	<parameter name="contents.item" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="period.item" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="target.nodes.item" class="java.lang.String" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<title>
+		<band height="713" splitType="Stretch">
+			<rectangle radius="10">
+				<reportElement positionType="Float" x="25" y="430" width="200" height="33" backcolor="#B4D4FF" uuid="ec0e62b5-34a1-41fb-8124-db989fba414b"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="10">
+				<reportElement positionType="Float" x="25" y="330" width="200" height="33" backcolor="#B4D4FF" uuid="8a36324b-e002-4b3d-9c62-f1a4a05d7502">
+					<property name="local_mesure_unitheight" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="10">
+				<reportElement positionType="Float" x="25" y="115" width="200" height="33" backcolor="#B4D4FF" uuid="0b15080d-8972-4869-8f4f-fa4a7fd297f0"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<textField isStretchWithOverflow="true">
+				<reportElement positionType="Float" x="67" y="158" width="460" height="162" uuid="e6233e99-4075-435e-9e63-aa84a7982906"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font fontName="SansSerif" size="12" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+					<paragraph lineSpacing="Single" lineSpacingSize="1.0"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{REPORT_CONTENTS}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement positionType="Float" x="67" y="374" width="460" height="44" uuid="822dca91-14cf-426b-896b-a53ab9e86df3"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font fontName="SansSerif" size="12" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{REPORT_PERIOD}]]></textFieldExpression>
+			</textField>
+			<image hAlign="Right" onErrorType="Blank">
+				<reportElement x="380" y="10" width="200" height="100" uuid="ebad7c3c-ff53-4ca6-8d4a-000bfd41c3f5">
+					<property name="local_mesure_unitheight" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="local_mesure_unitx" value="pixel"/>
+				</reportElement>
+				<imageExpression><![CDATA[$P{LOGO_FILENAME}]]></imageExpression>
+			</image>
+			<textField isStretchWithOverflow="true">
+				<reportElement positionType="Float" x="67" y="473" width="460" height="240" uuid="9f600e2e-38f6-44c3-b20e-c113fe01f61c">
+					<property name="local_mesure_unity" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font fontName="SansSerif" size="12" isStrikeThrough="false" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{REPORT_TARGET_NODES}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement positionType="Float" x="47" y="148" width="500" height="1" forecolor="#B4D4FF" uuid="63b53d40-6ae7-44ff-a0cf-a271464f79d1"/>
+				<graphicElement>
+					<pen lineWidth="3.0" lineColor="#B4D4FF"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement positionType="Float" x="47" y="364" width="500" height="1" forecolor="#B4D4FF" uuid="88989fb7-f8db-4f25-b7bb-268868e04b08"/>
+				<graphicElement>
+					<pen lineWidth="3.0" lineColor="#B4D4FF"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement positionType="Float" x="50" y="463" width="500" height="1" forecolor="#B4D4FF" uuid="5818e41e-333c-40c5-8ee9-399ffbfc09ec"/>
+				<graphicElement>
+					<pen lineWidth="3.0" lineColor="#B4D4FF"/>
+				</graphicElement>
+			</line>
+			<textField>
+				<reportElement positionType="Float" x="25" y="115" width="200" height="33" forecolor="#000000" uuid="f72651f5-48de-4922-92f6-45ccaec35a69">
+					<property name="local_mesure_unitwidth" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="local_mesure_unitx" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="local_mesure_unitheight" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="18" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{contents.item}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement positionType="Float" x="25" y="330" width="200" height="33" forecolor="#000000" uuid="7eca36a1-dd49-40ac-9ce2-661fd621fa6a">
+					<property name="local_mesure_unitwidth" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="local_mesure_unitheight" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="18" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{period.item}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement positionType="Float" x="25" y="430" width="200" height="33" forecolor="#000000" uuid="a3a8a3e2-1c07-4066-88ba-ebf3cb884f34">
+					<property name="local_mesure_unitwidth" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="18" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{target.nodes.item}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageFooter>
+		<band height="70" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="595" height="70" backcolor="#B9D7FF" uuid="747842af-f09d-4e7f-a4b9-feae5a4c3318"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="247" y="17" width="100" height="20" uuid="a51dad04-bccf-4e3b-8aed-9ba767652916">
+					<printWhenExpression><![CDATA[$P{SHOW_PAGE}]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["- " + ($V{PAGE_NUMBER} + $P{PAGE_OFFSET}) + " -"]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="0" y="53" width="595" height="17" backcolor="#00204D" uuid="bbe80004-6fbb-4796-b001-47eed0f1b834"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+		</band>
+	</pageFooter>
+</jasperReport>

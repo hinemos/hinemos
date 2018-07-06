@@ -18,7 +18,6 @@ public interface CloudConstants {
 	public static final String TREE_ID_SUFFIX = "]";
 	
 	public static final MessageManager bundle_messages = MessageManager.getInstance("messages_client");
-	public static final MessageManager bundle_plugin = MessageManager.getInstance("plugin");
 	
 	public final static String backup_instanceName = "instanceName";
 	public final static String backup_memo = "memo";

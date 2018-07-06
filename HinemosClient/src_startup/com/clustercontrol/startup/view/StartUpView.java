@@ -16,25 +16,22 @@ import java.util.List;
 import org.eclipse.draw2d.ColorConstantsWrapper;
 import org.eclipse.draw2d.ImageFigure;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.startup.bean.StartUpItem;
 import com.clustercontrol.startup.composite.StartUpComposite;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 
 public class StartUpView extends CommonViewPart {
-	static {
-		JFaceResources.getColorRegistry().put("StartUpView_Background", new RGB(224, 226, 237));
-	}
-	
 	/** ビューID */
 	public static final String ID = StartUpView.class.getName();
 
@@ -43,7 +40,9 @@ public class StartUpView extends CommonViewPart {
 
 	// 描画対象のマップの情報を保持したモデル
 	private List<StartUpItem> m_startUpItem = null;
-
+	
+	private Color background = new Color(Display.getCurrent(), new RGB(224, 226, 237));
+	
 	protected String getViewName() {
 		return this.getClass().getName();
 	}
@@ -55,7 +54,8 @@ public class StartUpView extends CommonViewPart {
 		parent.setLayout(new GridLayout());
 
 		// 背景色を合わせておく
-		parent.setBackground(JFaceResources.getColorRegistry().get("StartUpView_Background"));
+//		parent.setBackground(JFaceResources.getColorRegistry().get("StartUpView_Background"));
+		parent.setBackground(background);
 		// SWT.INHERIT_DEFAULTにしないと、RAP版だけ白い枠が表示される
 		parent.setBackgroundMode(SWT.INHERIT_DEFAULT);
 
@@ -268,5 +268,10 @@ public class StartUpView extends CommonViewPart {
 		}
 		image = desc.createImage();
 		return image;
+	}
+	
+	public void dispose() {
+		super.dispose();
+		background.dispose();
 	}
 }

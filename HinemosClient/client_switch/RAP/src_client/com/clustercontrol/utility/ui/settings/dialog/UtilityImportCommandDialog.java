@@ -22,7 +22,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.EndpointManager;
@@ -33,6 +32,7 @@ import com.clustercontrol.utility.ui.settings.composite.UtilityUploadComponent;
 import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.FileUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.utility.util.ZipUtil;
 
 public class UtilityImportCommandDialog extends CommonDialog {
@@ -115,7 +115,7 @@ public class UtilityImportCommandDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		text.setLayoutData(gridData);
-		text.setText(ClusterControlPlugin.getDefault().getCurrentManagerName() + " ( " + EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getUrlListStr() + " )");
+		text.setText(UtilityManagerUtil.getCurrentManagerName() + " ( " + EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() + " )");
 
 		uploadComponent = new UtilityUploadComponent( infoComposite, Messages.getString("string.import") + Messages.getString("file.name") + " : ", TITLE_WIDTH, FORM_WIDTH);
 

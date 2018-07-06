@@ -22,6 +22,8 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+
 /**
  * 監視対象ディレクトリ読込状態管理クラス<br>
  * <br>
@@ -136,20 +138,36 @@ public class DirectoryReadingStatus {
 		this.storeDirRSFile = rstatus;
 
 		Properties props = new Properties();
+		boolean toCreate = false;
 
 		if (rstatus.exists()) {
 			// 前回ファイル出力した読込情報が存在する場合.
 			try (FileInputStream fi = new FileInputStream(rstatus)) {
 				// ファイルを読み込む
 				props.load(fi);
-				this.readingStatus = props.getProperty(RootReadingStatus.readingStatus);
+				this.readingStatus = RootReadingStatus.getPropertyValue(props, RootReadingStatus.readingStatus);
 			} catch (FileNotFoundException e) {
 				log.warn(methodName + DELIMITER + e.getMessage(), e);
-			} catch (IOException | NumberFormatException e) {
+			} catch (IOException e) {
 				log.warn(methodName + DELIMITER + e.getMessage(), e);
+			} catch (InvalidSetting | NumberFormatException e) {
+				log.warn(methodName + DELIMITER + e.getMessage(), e);
+				// RSファイルが壊れてるので削除.
+				if (!rstatus.delete()) {
+					log.warn(methodName + DELIMITER + "failed to delete file = [" + rstatus.getAbsolutePath() + "]");
+				} else {
+					log.info(methodName + DELIMITER + "deleted file = [" + rstatus.getAbsolutePath() + "]");
+					// 削除したので作成.
+					toCreate = true;
+				}
 			}
 		} else {
 			// ファイル出力された読込情報が存在しない場合は、読込中として読込状態保存.
+			toCreate = true;
+		}
+
+		// RS新規作成.
+		if (toCreate) {
 			try (FileOutputStream fo = new FileOutputStream(rstatus)) {
 				this.readingStatus = RootReadingStatus.RS_OPEN_STRING;
 				this.outputRS();

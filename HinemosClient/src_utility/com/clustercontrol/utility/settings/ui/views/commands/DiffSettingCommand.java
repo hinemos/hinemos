@@ -40,7 +40,6 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.client.ui.util.FileDownloader;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
@@ -54,6 +53,7 @@ import com.clustercontrol.utility.ui.settings.dialog.UtilityDiffCommandDialog;
 import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
 import com.clustercontrol.utility.util.UtilityEndpointWrapper;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.utility.util.ZipUtil;
 import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
 import com.clustercontrol.ws.utility.InvalidRole_Exception;
@@ -118,7 +118,7 @@ public class DiffSettingCommand extends AbstractHandler implements IElementUpdat
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// keyチェック
 		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 			String version = wrapper.getVersion();
 			if (version.length() > 7) {
 				boolean result = Boolean.valueOf(version.substring(7, version.length()));

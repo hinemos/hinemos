@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
@@ -23,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.agent.Agent;
 import com.clustercontrol.agent.log.MonitorInfoWrapper;
+import com.clustercontrol.fault.InvalidSetting;
 
 /**
  * 読込状態管理クラス<br>
@@ -118,9 +120,7 @@ public class RootReadingStatus {
 	 *            ファイルの読込状態を格納するディレクトリパス
 	 */
 	public RootReadingStatus(List<MonitorInfoWrapper> miList, int runInterval) {
-		String home = Agent.getAgentHome();
-		String storepath = new File(new File(home), "readingstatus").getAbsolutePath();
-		this.storePath = new File(storepath);
+		this.storePath = getRootStoreDirectory();
 		this.init(miList, null);
 		this.runInterval = runInterval;
 	}
@@ -278,6 +278,36 @@ public class RootReadingStatus {
 		} else {
 			return RS_OPEN_FLAG;
 		}
+	}
+
+	/**
+	 * プロパティ取得.<br>
+	 * 
+	 * @param props
+	 *            読込元
+	 * @param propertyName
+	 *            読込対象のプロパティ名
+	 * @return プロパティ値、取得不可の場合はInvalidSettingをthrow
+	 */
+	protected static String getPropertyValue(Properties props, String propertyName) throws InvalidSetting {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+		String propertyValue = props.getProperty(propertyName);
+		if (propertyValue != null) {
+			log.debug(methodName + DELIMITER
+					+ String.format("success to get the property. name=%s, value=%s", propertyName, propertyValue));
+			return propertyValue;
+		}
+		InvalidSetting e = new InvalidSetting(String.format("propety is not defined. property=[%s]", propertyName));
+		throw e;
+	}
+
+	/**
+	 * RS保存ディレクトリ取得.
+	 */
+	public static File getRootStoreDirectory() {
+		String home = Agent.getAgentHome();
+		String storepath = new File(new File(home), "readingstatus").getAbsolutePath();
+		return new File(storepath);
 	}
 
 	// 以下各フィールドのgetter.

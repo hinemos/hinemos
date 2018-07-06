@@ -12,13 +12,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.BinaryfileConv;
 import com.clustercontrol.utility.settings.monitor.xml.BinaryfileMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.BinaryfileMonitors;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -62,7 +62,7 @@ public class BinaryfileAction extends AbstractMonitorAction<BinaryfileMonitors> 
 		monitorFilterInfo.setMonitorTypeId(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_BINARYFILE_BIN);
 		
 		List<MonitorInfo> list = MonitorSettingEndpointWrapper
-				.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMonitorListByCondition(monitorFilterInfo);
+				.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitorListByCondition(monitorFilterInfo);
 		
 		return list;
 	}

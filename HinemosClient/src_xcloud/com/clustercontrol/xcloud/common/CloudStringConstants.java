@@ -8,7 +8,6 @@
 package com.clustercontrol.xcloud.common;
 
 import static com.clustercontrol.xcloud.common.CloudConstants.bundle_messages;
-import static com.clustercontrol.xcloud.common.CloudConstants.bundle_plugin;
 
 public interface CloudStringConstants {
 	static final String strSeparator = bundle_messages.getString("caption.title_separator");
@@ -91,32 +90,32 @@ public interface CloudStringConstants {
 	
 	static final String strDetail = bundle_messages.getString("word.detail");
 	
-	static final String strCreate = bundle_plugin.getString("command.create");
-	static final String strClone = bundle_plugin.getString("command.clone");
-	static final String strAttach = bundle_plugin.getString("command.attach");
-	static final String strDetach = bundle_plugin.getString("command.detach");
-	static final String strModify = bundle_plugin.getString("command.edit");
-	static final String strEditConfiguration = bundle_plugin.getString("command.edit_configuration");
-	static final String strMigration = bundle_plugin.getString("command.migration");
-	static final String strSnapshot = bundle_plugin.getString("command.snapshot");
-	static final String strAssignScopeRule = bundle_plugin.getString("command.assign_scope_rule");
-	static final String strShowDetail = bundle_plugin.getString("command.show_detail");
-	static final String strPowerOn = bundle_plugin.getString("command.poweron");
-	static final String strPowerOff = bundle_plugin.getString("command.poweroff");
-	static final String strReboot = bundle_plugin.getString("command.reboot");
-	static final String strSuspend = bundle_plugin.getString("command.suspend");
+	static final String strCreate = bundle_messages.getString("command.create");
+	static final String strClone = bundle_messages.getString("command.clone");
+	static final String strAttach = bundle_messages.getString("command.attach");
+	static final String strDetach = bundle_messages.getString("command.detach");
+	static final String strModify = bundle_messages.getString("command.edit");
+	static final String strEditConfiguration = bundle_messages.getString("command.edit_configuration");
+	static final String strMigration = bundle_messages.getString("command.migration");
+	static final String strSnapshot = bundle_messages.getString("command.snapshot");
+	static final String strAssignScopeRule = bundle_messages.getString("command.assign_scope_rule");
+	static final String strShowDetail = bundle_messages.getString("command.show_detail");
+	static final String strPowerOn = bundle_messages.getString("command.poweron");
+	static final String strPowerOff = bundle_messages.getString("command.poweroff");
+	static final String strReboot = bundle_messages.getString("command.reboot");
+	static final String strSuspend = bundle_messages.getString("command.suspend");
 	static final String strSubAccountSetting = bundle_messages.getString("word.account.sub.setting");
 	static final String strSubAccountAutoInput = bundle_messages.getString("word.account.sub.auto_input");
 	
 	static final String strResigtModify = bundle_messages.getString("word.resigt_modify");
 
-	static final String dlgLoginUser = bundle_plugin.getString("view.login_user");
+	static final String dlgLoginUser = bundle_messages.getString("view.login_user");
 	static final String dlgLoginuserRegistModify = String.format("%s - %s ({0})", dlgLoginUser, strResigtModify);
 	static final String dlgLoginuserDelete = String.format("%s - %s ({0})", dlgLoginUser, strDelete);
 	static final String dlgLoginuserSubAccountSetting = String.format("%s - %s ({0})", dlgLoginUser, strSubAccountSetting);
 	static final String dlgLoginuserSubAccountAutoInput = String.format("%s - %s ({0})", dlgLoginUser, strSubAccountAutoInput);
 	
-	static final String dlgCompute = bundle_plugin.getString("view.compute");
+	static final String dlgCompute = bundle_messages.getString("view.compute");
 	static final String dlgComputeCreate = String.format("%s - %s ({0})", dlgCompute, strCreate);
 	static final String dlgComputeClone = String.format("%s - %s ({0})", dlgCompute, strClone);
 	static final String dlgComputeEditCofiguration = String.format("%s - %s ({0})", dlgCompute, strEditConfiguration);
@@ -129,7 +128,7 @@ public interface CloudStringConstants {
 	static final String dlgComputeReboot = String.format("%s - %s", dlgCompute, strReboot);
 	static final String dlgComputeSuspend = String.format("%s - %s", dlgCompute, strSuspend);
 	
-	static final String dlgStorage = bundle_plugin.getString("view.storage");
+	static final String dlgStorage = bundle_messages.getString("view.storage");
 	static final String dlgStorageCreate = String.format("%s - %s ({0})", dlgStorage, strCreate);
 	static final String dlgStorageClone = String.format("%s - %s ({0})", dlgStorage, strClone);
 	static final String dlgStorageAttach = String.format("%s - %s ({0})", dlgStorage, strAttach);
@@ -137,18 +136,18 @@ public interface CloudStringConstants {
 	static final String dlgStrageMigrate = String.format("%s - %s ({0})", dlgStorage, strMigration);
 	static final String dlgStorageSnapshot = String.format("%s - %s ({0})", dlgStorage, strSnapshot);
 	
-	static final String dlgComputeHistry = bundle_plugin.getString("view.compute.history");
+	static final String dlgComputeHistry = bundle_messages.getString("view.compute.history");
 	static final String dlgComputeHistryClone = String.format("%s - %s ({0})", dlgComputeHistry, strClone);
 
-	static final String dlgStorageHistry = bundle_plugin.getString("view.storage.history");
+	static final String dlgStorageHistry = bundle_messages.getString("view.storage.history");
 	static final String dlgStorageHistryClone = String.format("%s - %s ({0})", dlgStorageHistry, strClone);
 
-	static final String dlgServiceState = bundle_plugin.getString("view.service.state");
+	static final String dlgServiceState = bundle_messages.getString("view.service.state");
 	
-	static final String dlgRole = bundle_plugin.getString("view.role");
+	static final String dlgRole = bundle_messages.getString("view.role");
 	static final String dlgRoleAddModify = String.format("%s - %s", dlgRole, strResigtModify);
 
-	static final String dlgNetwork = bundle_plugin.getString("view.network");
+	static final String dlgNetwork = bundle_messages.getString("view.network");
 	static final String dlgNetworkAttach = String.format("%s - %s ({0})", dlgNetwork, strAttach);
 	static final String dlgNetworkDetach = String.format("%s - %s ({0})", dlgNetwork, strDetach);
 	
@@ -178,9 +177,9 @@ public interface CloudStringConstants {
 	static final String strError = bundle_messages.getString("word.error");
 	static final String strUnknown = bundle_messages.getString("word.unknown");
 	
-	static final String strMonitorCloudServiceCondition = bundle_plugin.getString("monitor.cloudservice.condition.monitor");
-	static final String strMonitorCloudServiceBilling = bundle_plugin.getString("monitor.cloudservice.billing.monitor");
-	static final String strMonitorCloudServiceBillingDetail = bundle_plugin.getString("monitor.cloudservice.billing.detail.monitor");
+	static final String strMonitorCloudServiceCondition = bundle_messages.getString("monitor.cloudservice.condition.monitor");
+	static final String strMonitorCloudServiceBilling = bundle_messages.getString("monitor.cloudservice.billing.monitor");
+	static final String strMonitorCloudServiceBillingDetail = bundle_messages.getString("monitor.cloudservice.billing.detail.monitor");
 	
 	static final String msgTagKeyFromOneChar = bundle_messages.getString("message.tag.key.from_one_char");
 	static final String msgTagKeyDuplicate = bundle_messages.getString("message.tag.key.duplicate");

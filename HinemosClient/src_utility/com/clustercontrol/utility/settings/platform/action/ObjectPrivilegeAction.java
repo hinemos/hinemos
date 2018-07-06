@@ -28,7 +28,6 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -48,9 +47,12 @@ import com.clustercontrol.utility.settings.platform.xml.ObjectPrivilege;
 import com.clustercontrol.utility.settings.platform.xml.ObjectPrivilegeInfo;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.access.HinemosUnknown_Exception;
 import com.clustercontrol.ws.access.InvalidRole_Exception;
 import com.clustercontrol.ws.access.InvalidSetting_Exception;
@@ -86,7 +88,7 @@ public class ObjectPrivilegeAction {
 		
 		// オブジェクト権限情報一覧の取得
 		try {
-			objectPrivilegeList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getObjectPrivilegeInfoList(null);
+			objectPrivilegeList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null);
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -110,7 +112,7 @@ public class ObjectPrivilegeAction {
 		for(Entry<String, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>> entry : mapObjectPrivilege.entrySet()){
 			String[] object = entry.getKey().split(";");
 			try {
-				AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).replaceObjectPrivilegeInfo(
+				AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(
 						object[0],
 						object[1],
 						new ArrayList<com.clustercontrol.ws.access.ObjectPrivilegeInfo>());
@@ -165,7 +167,7 @@ public class ObjectPrivilegeAction {
 
 		// オブジェクト権限情報一覧の取得
 		try {
-			objectPrivilegeList = AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getObjectPrivilegeInfoList(null);
+			objectPrivilegeList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null);
 			Collections.sort(objectPrivilegeList, new Comparator<com.clustercontrol.ws.access.ObjectPrivilegeInfo>() {
 				@Override
 				public int compare(
@@ -246,7 +248,7 @@ public class ObjectPrivilegeAction {
 
 		log.debug("Start Import PlatformObjectPrivilege ");
 		
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			log.debug("End Import PlatformObjectPrivilege (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -292,7 +294,7 @@ public class ObjectPrivilegeAction {
 		Map<List<String>, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>> objPrivilMap = new HashMap<>();
 		try {
 			List<com.clustercontrol.ws.access.ObjectPrivilegeInfo> tmpObjList = null;
-			for(com.clustercontrol.ws.access.ObjectPrivilegeInfo objPrivil : AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getObjectPrivilegeInfoList(null)){
+			for(com.clustercontrol.ws.access.ObjectPrivilegeInfo objPrivil : AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null)){
 				// Arrange
 				List<String> key = new ArrayList<String>(3);
 				key.add(objPrivil.getObjectId());
@@ -317,23 +319,23 @@ public class ObjectPrivilegeAction {
 			try {
 				if(!objPrivilMap.containsKey( entry.getKey())){
 					// Insert as new
-					AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).replaceObjectPrivilegeInfo(objectType, objectId, entry.getValue());
+					AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(objectType, objectId, entry.getValue());
 					log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + key);
 				}else{
 					// 重複時、インポート処理方法を確認する
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {key};
-						ImportProcessDialog dialog = new ImportProcessDialog(null, Messages.getString("message.import.confirm2", args));
+						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(null, Messages.getString("message.import.confirm2", args));
 						ImportProcessMode.setProcesstype(dialog.open());
 						ImportProcessMode.setSameprocess(dialog.getToggleState());
 					}
 
-					if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
-						AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).replaceObjectPrivilegeInfo(objectType, objectId, entry.getValue());
+					if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
+						AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(objectType, objectId, entry.getValue());
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + key + " :"  + entry.getValue().get(0).getRoleId());
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + key + " :"  + entry.getValue().get(0).getRoleId());
-					} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 						ret = SettingConstants.ERROR_INPROCESS;
 						break;
@@ -395,7 +397,7 @@ public class ObjectPrivilegeAction {
 	public static int importAccessExtraction(String xmlObjectPrivilege, String objectType, List<String> objectIdList, Logger log) {
 		log.debug("Start Import PlatformObjectPrivilege ");
 
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			log.debug("End Import PlatformObjectPrivilege (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
 		}
@@ -443,7 +445,7 @@ public class ObjectPrivilegeAction {
 
 			try {
 				AccessEndpointWrapper.getWrapper(
-						ClusterControlPlugin.getDefault().getCurrentManagerName()).replaceObjectPrivilegeInfo(
+						UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(
 								targetObjectType, targetObjectId, entry.getValue());
 				log.info(Messages.getString("message.import.succeeded.object.privilege") + " : " + key);
 			} catch (HinemosUnknown_Exception e) {
@@ -599,7 +601,7 @@ public class ObjectPrivilegeAction {
 		// Get key list from DB. Use list to keep the sorting order
 		List<List<String>> keysInDB = new ArrayList<>();
 		try {
-			for(com.clustercontrol.ws.access.ObjectPrivilegeInfo objPrivil : AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getObjectPrivilegeInfoList(null)){
+			for(com.clustercontrol.ws.access.ObjectPrivilegeInfo objPrivil : AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null)){
 				// Array key pair
 				List<String> key = new ArrayList<String>(2);
 				key.add(objPrivil.getObjectId());   // [0]: objectId
@@ -640,23 +642,23 @@ public class ObjectPrivilegeAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {objType + " " + objId};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 
-				if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
 						// Replace with an empty one
-						AccessEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).replaceObjectPrivilegeInfo(objType, objId, new ArrayList<com.clustercontrol.ws.access.ObjectPrivilegeInfo>());
+						AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(objType, objId, new ArrayList<com.clustercontrol.ws.access.ObjectPrivilegeInfo>());
 						log.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + objType + " " + objId);
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + objType + " " + objId);
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 					return;
 				}

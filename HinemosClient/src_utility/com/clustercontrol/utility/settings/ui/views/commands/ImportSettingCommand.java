@@ -41,7 +41,6 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.client.ui.util.FileDownloader;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
@@ -49,7 +48,6 @@ import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.settings.ui.action.CommandAction;
 import com.clustercontrol.utility.settings.ui.action.ReadXMLAction;
 import com.clustercontrol.utility.settings.ui.bean.FuncInfo;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.JobunitListDialog;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.settings.ui.util.BackupUtil;
@@ -61,7 +59,9 @@ import com.clustercontrol.utility.ui.settings.dialog.UtilityImportCommandDialog;
 import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.FileUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityEndpointWrapper;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.utility.util.ZipUtil;
 import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
 import com.clustercontrol.ws.utility.InvalidRole_Exception;
@@ -106,7 +106,7 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// keyチェック
 		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName());
+			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 			String version = wrapper.getVersion();
 			if (version.length() > 7) {
 				boolean result = Boolean.valueOf(version.substring(7, version.length()));
@@ -418,7 +418,7 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 								monitor.worked(100/importOrderList.size());
 							}
 							if(doJob && doNotify){
-								ImportProcessMode.setProcesstype(ImportProcessDialog.SKIP);
+								ImportProcessMode.setProcesstype(UtilityDialogConstant.SKIP);
 								ImportProcessMode.setSameprocess(true);
 								m_action.importCommand(notifyFuncInfo, notifyFileList, notifyFuncInfo.getTargetIdList());
 							}
@@ -550,9 +550,9 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 	 */
 	private int showComfirmWithObjectPrivilege(String funcNameList){
 		String msg = Messages.getString("string.manager") + " :  " +
-				ClusterControlPlugin.getDefault().getCurrentManagerName() +
+				UtilityManagerUtil.getCurrentManagerName() +
 				" ( " +
-				EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getUrlListStr() +
+				EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() +
 				" )\n\n" +
 				Messages.getString("message.import.confirm1") +
 				"\n\n" +
@@ -577,7 +577,7 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 		return MessageDialog.openQuestion(
 				null,
 				Messages.getString("message.confirm"),
-				Messages.getString("string.manager") + " :  " + ClusterControlPlugin.getDefault().getCurrentManagerName() + " ( " + EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getUrlListStr() + " )\n\n" +
+				Messages.getString("string.manager") + " :  " + UtilityManagerUtil.getCurrentManagerName() + " ( " + EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() + " )\n\n" +
 				Messages.getString("message.import.confirm1") + "\n\n" + funcNameList);
 	}
 }

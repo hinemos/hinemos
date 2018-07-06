@@ -15,12 +15,12 @@ import javax.xml.ws.WebServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.EndpointUnit.EndpointSetting;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.collectmaster.CollectMasterInfo;
 import com.clustercontrol.ws.collectmaster.CollectorPlatformMstData;
 import com.clustercontrol.ws.collectmaster.HinemosUnknown_Exception;
@@ -53,7 +53,7 @@ public class PerformanceCollectMasterEndpointWrapper {
 	public static boolean addCollectMaster(CollectMasterInfo collectMasterInfo)
 	throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
 		WebServiceException wse = null;
-		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
+		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
 			try {
 				PerformanceCollectMasterEndpoint endpoint = endpointSetting.getEndpoint();
 				return endpoint.addCollectMaster(collectMasterInfo);
@@ -78,7 +78,7 @@ public class PerformanceCollectMasterEndpointWrapper {
 	public static boolean deleteCollectMasterAll()
 	throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
 		WebServiceException wse = null;
-		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
+		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
 			try {
 				PerformanceCollectMasterEndpoint endpoint = endpointSetting.getEndpoint();
 				return endpoint.deleteCollectMasterAll();
@@ -101,7 +101,7 @@ public class PerformanceCollectMasterEndpointWrapper {
 	public static CollectMasterInfo getCollectMasterInfo()
 	throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
 		WebServiceException wse = null;
-		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
+		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
 			try {
 				PerformanceCollectMasterEndpoint endpoint = endpointSetting.getEndpoint();
 				CollectMasterInfo collectMasterInfo = endpoint.getCollectMasterInfo();
@@ -127,7 +127,7 @@ public class PerformanceCollectMasterEndpointWrapper {
 	public static boolean addCollectPlatformMaster(CollectorPlatformMstData collectPlatformMstData)
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
 		WebServiceException wse = null;
-		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
+		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
 			try {
 				PerformanceCollectMasterEndpoint endpoint = endpointSetting.getEndpoint();
 				return endpoint.addCollectPlatformMaster(collectPlatformMstData);
@@ -150,7 +150,7 @@ public class PerformanceCollectMasterEndpointWrapper {
 	public static List<CollectorPlatformMstData> getCollectPlatformMaster()
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
 		WebServiceException wse = null;
-		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
+		for (EndpointSetting<PerformanceCollectMasterEndpoint> endpointSetting : EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(PerformanceCollectMasterEndpointService.class, PerformanceCollectMasterEndpoint.class)) {
 			try {
 				PerformanceCollectMasterEndpoint endpoint = endpointSetting.getEndpoint();
 				return endpoint.getCollectPlatformMaster();

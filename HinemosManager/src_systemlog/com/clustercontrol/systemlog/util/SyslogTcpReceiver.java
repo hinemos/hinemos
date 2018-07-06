@@ -373,7 +373,7 @@ public class SyslogTcpReceiver {
 //						}
 					} catch(SocketTimeoutException e) {
 						if (exceptionHandler != null) {
-							exceptionHandler.accept(e);
+							exceptionHandler.accept(e,client.getInetAddress().toString());
 						}
 						// 読み込み時にタイムアウト発生。
 						logger.debug(e.getMessage() + " : " + client.toString());
@@ -390,6 +390,7 @@ public class SyslogTcpReceiver {
 					}
 					
 					// 送信処理
+					final String sendrIp = client.getInetAddress().toString();
 					for (byte[] message: messages) {
 						if (parser.containsHeader(message)) {
 							if (logger.isTraceEnabled()) {
@@ -408,24 +409,14 @@ public class SyslogTcpReceiver {
 							if (logger.isTraceEnabled()) {
 								logger.trace(String.format("read() : Not found a header. %s, message=%s", client.getInetAddress().getHostAddress(), Arrays.toString(message)));
 							}
-							byte[] header = parser.createSyslogHeaderArray(new Date(), client.getInetAddress().getHostAddress());
-							
-							byte[] temp = new byte[Math.min(header.length + message.length, sendBuffer.getBufferSize())];
-							System.arraycopy(header, 0, temp, 0, Math.min(header.length, sendBuffer.getBufferSize()));
-							
-							if (sendBuffer.getBufferSize() > header.length) {
-								System.arraycopy(message, 0, temp, header.length, Math.min(message.length, sendBuffer.getBufferSize() - header.length));
-							}
-							
-							message = temp;
 						}
 						
-						handler.accept(message);
+						handler.accept(message,sendrIp);
 					}
 				}
 			} catch(RuntimeException | IOException e) {
 				if (exceptionHandler != null) {
-					exceptionHandler.accept(e);
+					exceptionHandler.accept(e,client.getInetAddress().toString());
 				}
 				counter.incrementFailed();
 				logger.warn(e.getMessage() + " : " + client.toString(), e);

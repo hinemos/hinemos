@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- 
+   Hinemos (http://www.hinemos.info/)
+   
+   Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ -->
+<project default="all" name="Create Jars for Project HinemosReporting and export templates">
+	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<import file="../HinemosCommon/ant_config/build_common.xml" />
+
+	<property name="HinemosCommon.location" value="../HinemosCommon"/>
+	<property name="HinemosManager.location" value="../HinemosManager"/>
+	<property name="debuglevel" value="source,lines,vars"/>
+	<property name="build.dir" value="build/reporting/META-INF" />
+	<property name="package.template.dir" value="../HinemosPackageBuilder/hinemos_manager/common_rhel/hinemos/etc.template/reporting/template" />
+	<property name="build.template.dir" value="./build/reporting/template" />
+	<path id="HinemosWorkers.classpath">
+		<pathelement location="bin"/>
+		<pathelement location="${HinemosCommon.location}/commonlib/commons-logging-1.2.jar"/>
+		<pathelement location="${HinemosCommon.location}/commonlib/log4j-1.2.17.jar"/>
+		<pathelement location="${HinemosCommon.location}/commonlib/commons-codec-1.10.jar"/>
+		<pathelement location="${HinemosCommon.location}/build/jar/HinemosCommon.jar"/>
+		<pathelement location="${HinemosManager.location}/lib/eclipselink.jar"/>
+		<pathelement location="${HinemosManager.location}/lib/jpasecurity-core-0.4.0.jar"/>
+		<pathelement location="${HinemosManager.location}/lib/javax.persistence_2.1.1.v201509150925.jar"/>
+		<pathelement location="${HinemosManager.location}/lib/postgresql-9.4.1209.jar"/>
+		<pathelement location="${HinemosManager.location}/build/jar/HinemosModel.jar" />
+		<pathelement location="${HinemosManager.location}/build/jar/HinemosManager.jar"/>
+		<pathelement location="${HinemosManager.location}/build/jar/HinemosManagerRhel.jar"/>
+		<pathelement location="${HinemosManager.location}/build/jar/HinemosManagerWin.jar"/>
+		<pathelement location="lib_reporting/commons-beanutils-1.9.3.jar" />
+		<pathelement location="lib_reporting/commons-collections-3.2.1.jar" />
+		<pathelement location="lib_reporting/commons-digester-2.1.jar" />
+		<pathelement location="lib_reporting/iText-2.1.7.js2.jar" />
+		<pathelement location="lib_reporting/iTextAsian.jar" />
+		<pathelement location="lib_reporting/iTextAsianCmaps.jar" />
+		<pathelement location="lib_reporting/jasperreports-6.3.1.jar" />
+		<pathelement location="lib_reporting/jasperreports-fonts-6.3.1.jar" />
+		<pathelement location="lib_reporting/jasperreports-functions-6.3.1.jar" />
+		<pathelement location="lib_reporting/jcommon-1.0.15.jar" />
+		<pathelement location="lib_reporting/ecj-4.6.1.jar" />
+		<pathelement location="lib_reporting/jfreechart-1.0.12.jar" />
+		<pathelement location="lib_reporting/poi-3.12-20150511.jar" />
+	</path>
+
+	<target name="init">
+		<mkdir dir="./build/reporting/bin" />
+	</target>
+
+	<target name="clean">
+		<delete dir="./build/reporting" />
+		<delete dir="${build.template.dir}" />
+		<delete dir="${package.template.dir}" />
+	</target>
+
+	<target depends="init" name="build">
+		<echo message="${ant.project.name}: ${ant.file}"/>
+
+		<delete dir="./build/reporting/bin" />
+		<mkdir dir="./build/reporting/bin" />
+		<copy includeemptydirs="false" todir="./build/reporting/bin">
+			<fileset dir="./src_reporting">
+				<exclude name="**/*.java"/>
+			</fileset>
+			<fileset dir="./build/tmp/src_reporting">
+				<exclude name="**/*.java"/>
+			</fileset>
+		</copy>
+
+		<javac
+			debug="true" debuglevel="${debuglevel}"
+			destdir="./build/reporting/bin"
+			failonerror="true"
+			includeantruntime="false"
+			source="${compile.version}" target="${compile.version}" encoding="${compile.encode}">
+			<src path="src_reporting" />
+			<src path="./build/tmp/src_reporting" />
+			<classpath refid="HinemosWorkers.classpath" />
+		</javac>
+	</target>
+	<target name="jar_main">
+		<jar destfile="build/jar/HinemosReporting.jar" manifest="${build.dir}/MANIFEST.MF">
+			<fileset dir="./build/reporting/bin">
+				<include name="**/*.*" />
+				<include name="**/ent/**/*.*" />
+				<exclude name="**/platform/**" />
+				<exclude name="**/orm_reporting_data_diff.xml" />
+			</fileset>
+		</jar>
+	</target>
+
+	<target name="jar_platform">
+		<jar destfile="build/jar/HinemosReporting${jar.platform}.jar" manifest="${build.dir}/MANIFEST.MF">
+			<fileset dir="./build/reporting/bin">
+				<include name="**/platform/**"/>
+				<include name="**/orm_reporting_data_diff.xml"/>
+				<exclude name="**/ent/**"/>
+			</fileset>
+		</jar>
+	</target>
+
+	<!-- jpa configuration (EclipseLink) -->
+	<target name="jpa_config" description="generate jpa configuration">
+		<property name="jpa.jar-file.package" value="&lt;jar-file&gt;%%HINEMOS_HOME%%/lib/HinemosReporting.jar&lt;/jar-file&gt;" />
+		<copy todir="build/reporting/META-INF" overwrite="true">
+			<fileset dir="resources/reporting/META-INF">
+				<include name="**/*.xml" />
+			</fileset>
+		</copy>
+		<replace file="build/reporting/META-INF/persistence.xml" token="${jpa.comment.start}add jar-file here${jpa.comment.end}" value="${jpa.jar-file}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add jar-file here${jpa.comment.end}" />
+		<loadfile property="jpa.mapping-file" srcfile="resources/reporting/mapping-file" />
+		<replace file="build/reporting/META-INF/persistence.xml" token="&#x09;&#x09;${jpa.comment.start}add mapping-file here${jpa.comment.end}" value="${jpa.mapping-file}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add mapping-file here${jpa.comment.end}" />
+	</target>
+
+	<target name="manifest">
+		<tstamp>
+			<format property="build.date" pattern="yyyy-MM-dd HH:mm:ss" />
+		</tstamp>
+		<copy file="${jar.manifest}" tofile="${build.dir}/MANIFEST.MF" overwrite="true" />
+		<replace file="${build.dir}/MANIFEST.MF">
+			<replacefilter token="@BUILD_DATE@" value="${build.date}" />
+			<replacefilter token="@VERSION@" value="${version}" />
+		</replace>
+	</target>
+
+	<target name="switch_os">
+		<ant antfile="platform_switch/switch.xml" dir="." target="switch_to_${jar.platform}" inheritall="false" />
+	</target>
+
+	<target name="jar_common">
+		<!-- Common -->
+		<antcall target="jpa_config" />
+		<antcall target="manifest"/>
+	</target>
+
+	<target name="jar_rhel" depends="jar_common">
+		<property name="jar.platform" value="Rhel"/>
+
+		<antcall target="switch_os" />
+		<antcall target="build"/>
+		<antcall target="jar_platform"/>
+	</target>
+
+	<target name="jar_win" depends="jar_common">
+		<property name="jar.platform" value="Win"/>
+
+		<antcall target="switch_os" />
+		<antcall target="build"/>
+		<antcall target="jar_platform"/>
+	</target>
+	
+	<target name="archive_template">
+		<mkdir dir="${build.template.dir}" />
+
+		<!-- export template of Standard -->
+		<copy todir="${build.template.dir}" failonerror="true">
+			<fileset dir="./reporting_template/std/properties/ja/"/>
+			<mapper type="regexp" from="(.*)\.properties$$" to="\1_ja.properties" />
+		</copy>
+		<copy todir="${build.template.dir}" failonerror="true">
+			<fileset dir="./reporting_template/std/jrxml/"/>
+		</copy>
+		<copy todir="${build.template.dir}" failonerror="true">
+			<fileset dir="./reporting_template/std/properties/en/"/>
+		</copy>
+
+		<!-- export template of Enterprise -->
+		<copy todir="${build.template.dir}" failonerror="true">
+			<fileset dir="./reporting_template/ent/properties/ja/"/>
+			<mapper type="regexp" from="(.*)\.properties$$" to="\1_ja.properties" />
+		</copy>
+		<copy todir="${build.template.dir}" failonerror="true">
+			<fileset dir="./reporting_template/ent/jrxml/"/>
+		</copy>
+		<copy todir="${build.template.dir}" failonerror="true">
+			<fileset dir="./reporting_template/ent/properties/en/"/>
+		</copy>
+		
+		<!-- export template of 4xCloud -->
+		<copy todir="${build.template.dir}" failonerror="true">
+			<fileset dir="./reporting_template/xcloud/properties/ja/"/>
+			<mapper type="regexp" from="(.*)\.properties$$" to="\1_ja.properties" />
+		</copy>
+		<copy todir="${build.template.dir}" failonerror="true">
+			<fileset dir="./reporting_template/xcloud/jrxml/"/>
+		</copy>
+		<copy todir="${build.template.dir}" failonerror="true">
+			<fileset dir="./reporting_template/xcloud/properties/en/"/>
+		</copy>
+		
+		<!-- Prepare reporting_template.zip for PackageBuilder -->
+		<zip destfile="build/reporting_template.zip" update="false">
+			<fileset dir="./build/reporting" includes="template/**/*.jrxml"/>
+			<fileset dir="./build/reporting" includes="template/**/*.properties"/>
+		</zip>
+	</target>
+
+	<target name="all" depends="clean">
+		<!-- RHEL -->
+		<antcall target="jar_rhel"/>
+
+		<!-- Win -->
+		<antcall target="jar_win"/>
+
+		<!-- Common:After -->
+		<antcall target="jar_main"/>
+
+		<!-- archive template -->
+		<antcall target="archive_template" />
+	</target>
+
+</project>

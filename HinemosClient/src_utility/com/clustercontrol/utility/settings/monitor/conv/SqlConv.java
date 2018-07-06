@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
@@ -28,6 +27,7 @@ import com.clustercontrol.utility.settings.monitor.xml.SqlInfo;
 import com.clustercontrol.utility.settings.monitor.xml.SqlMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.SqlMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
@@ -182,7 +182,7 @@ public class SqlConv {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
 			monitorInfo = MonitorSettingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			SqlMonitor sqlMonitor = new SqlMonitor();

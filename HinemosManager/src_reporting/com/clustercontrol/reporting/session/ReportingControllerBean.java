@@ -9,6 +9,7 @@
 package com.clustercontrol.reporting.session;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -381,7 +382,7 @@ public class ReportingControllerBean {
 	 */
 	public void scheduleRunReporting(String reportId, String calendarId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("scheduleRunReporting() : reportId=" + reportId + ", calendarId=" + calendarId);
-		if (OptionManager.checkEnterprise()) {
+		if (!OptionManager.checkEnterprise()) {
 			m_log.warn("ReportingPlugin is not activated. Skip running reporting.");
 			return;
 		}
@@ -627,6 +628,8 @@ public class ReportingControllerBean {
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
+			
+			ReportingValidator.validateDeleteTemplateSetInfo(templateSetId);
 
 			// テンプレートセット情報を削除
 			DeleteTemplateSet delete = new DeleteTemplateSet();
@@ -798,10 +801,25 @@ public class ReportingControllerBean {
 
 		if (templates != null) {
 			for(File template : templates) {
-				if(template.isDirectory()) {
-					list.add(template.getName());
-					
-					m_log.debug("template = " + template.getName());
+				// テンプレートディレクトリ内の.propertiesファイルを取得
+				File[] templatesProperties = new File(template.getPath()).listFiles(new FilenameFilter() {
+					@Override
+					public boolean accept(File dir, String name){
+						return name.endsWith(".properties");
+					}
+				});
+				
+				if (templatesProperties != null) {
+					for(File templatesPropertie : templatesProperties) {
+						
+						// 拡張子を除いたファイル名をtemplateIdとして取得
+						String fileName = templatesPropertie.getName();
+						int index = fileName.lastIndexOf(".");
+						
+						list.add(fileName.substring(0, index));
+						
+						m_log.debug("template = " + fileName.substring(0, index));
+					}
 				}
 			}
 			Collections.sort(list);

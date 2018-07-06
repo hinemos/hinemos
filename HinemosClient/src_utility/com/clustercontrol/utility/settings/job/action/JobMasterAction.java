@@ -30,7 +30,6 @@ import javax.xml.ws.WebServiceException;
 import org.apache.log4j.Logger;
 import org.eclipse.jface.dialogs.MessageDialog;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
@@ -52,8 +51,11 @@ import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.platform.conv.CommonConv;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
 import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 import com.clustercontrol.ws.jobmanagement.InvalidSetting_Exception;
@@ -105,7 +107,7 @@ public class JobMasterAction {
 		while(itr.hasNext()) {
 			try {
 				jobunitId = itr.next();
-				JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteJobunit(jobunitId);
+				JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteJobunit(jobunitId);
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + jobunitId);
 			} catch (HinemosUnknown_Exception e) {
 				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -158,7 +160,7 @@ public class JobMasterAction {
 		
 		log.debug("Start Import JobMaster :" + fileName);
 		
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			getLogger().debug("End Import JobMaster (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -214,7 +216,7 @@ public class JobMasterAction {
 		List<String> objectIdList = new ArrayList<String>();
 		for (JobTreeItem xmlJobunit : xmlJobunitList) {
 			try {
-				JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).registerJobunit(xmlJobunit);
+				JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).registerJobunit(xmlJobunit);
 				objectIdList.add(xmlJobunit.getData().getJobunitId());
 				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + xmlJobunit.getData().getJobunitId());
 			} catch (HinemosUnknown_Exception e) {
@@ -333,7 +335,7 @@ public class JobMasterAction {
 		JobTreeItem jti =null ;
 		try {
 			//マネージャからジョブの一覧（ツリー）を取得
-			jti = JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getJobTree(null, treeOnly);
+			jti = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTree(null, treeOnly);
 			if (null != jti){
 				sortJobMaster(jti);
 			}
@@ -428,7 +430,7 @@ public class JobMasterAction {
 			// ログインユーザで参照可能なジョブユニットを取得するメソッドをマネージャ側に用意し、
 			// この部分の実装は修正する
 			// treeOnly = trueの場合は、ログインユーザで参照可能なジョブユニットと 配下のジョブが取れる
-			JobTreeItem jobTreeItem = JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getJobTree(null, true);
+			JobTreeItem jobTreeItem = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTree(null, true);
 			List<JobTreeItem> jobunitList = jobTreeItem.getChildren().get(0).getChildren();
 			
 			for (JobTreeItem jobunit : jobunitList) {
@@ -556,7 +558,7 @@ public class JobMasterAction {
 		List<JobInfo> fullJobList = null;
 		try {
 			//マネージャからジョブ情報Listを取得
-			fullJobList = JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getJobFullList(jobList);
+			fullJobList = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobFullList(jobList);
 		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | UserNotFound_Exception e) {
 			log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 		}
@@ -727,7 +729,7 @@ public class JobMasterAction {
 	private int checkUpdate(List<JobTreeItem> jobUnitList){
 		JobTreeItem tree = null;
 		try {
-			tree = JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getJobTree(null, false);
+			tree = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTree(null, false);
 		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | JobMasterNotFound_Exception | NotifyNotFound_Exception | UserNotFound_Exception e) {
 			log.error(HinemosMessage.replace(e.getMessage()));
 		}
@@ -749,7 +751,7 @@ public class JobMasterAction {
 			Long updateTime = jobUnit.getData().getUpdateTime();
 			Long mgrUpdTime = null;
 			try {
-				JobInfo info = JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getJobFull(jobMap.get(createKey(jobUnit)));
+				JobInfo info = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobFull(jobMap.get(createKey(jobUnit)));
 				SimpleDateFormat dateFormat = new SimpleDateFormat(DATA_FORMAT);
 				mgrUpdTime = dateFormat.parse(dateFormat.format(info.getUpdateTime())).getTime();
 			} catch (ParseException e) {
@@ -763,14 +765,14 @@ public class JobMasterAction {
 			if (updateTime < mgrUpdTime) {
 				if (!sameProcess) {
 					String[] args = {jobUnit.getData().getJobunitId()};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.import.confirm4", args));
 					processType = dialog.open();
 					sameProcess = dialog.getToggleState();
 				}
-				if (processType == ImportProcessDialog.SKIP){
+				if (processType == UtilityDialogConstant.SKIP){
 					jobUnitList.remove(jobUnit);
-				} else if (processType == ImportProcessDialog.CANCEL){
+				} else if (processType == UtilityDialogConstant.CANCEL){
 					return -1;
 				}
 			}

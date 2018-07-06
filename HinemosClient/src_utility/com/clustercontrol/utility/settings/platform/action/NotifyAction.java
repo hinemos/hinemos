@@ -24,7 +24,6 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.notify.util.NotifyEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -46,9 +45,12 @@ import com.clustercontrol.utility.settings.platform.xml.NotifyInfo;
 import com.clustercontrol.utility.settings.platform.xml.NotifyType;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.notify.HinemosUnknown_Exception;
 import com.clustercontrol.ws.notify.InvalidRole_Exception;
 import com.clustercontrol.ws.notify.InvalidSetting_Exception;
@@ -84,7 +86,7 @@ public class NotifyAction {
 		// 通知定義一覧の取得
 		List<com.clustercontrol.ws.notify.NotifyInfo> notifyInfoList = null;
 		try {
-			notifyInfoList = NotifyEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getNotifyList();
+			notifyInfoList = NotifyEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNotifyList();
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -99,7 +101,7 @@ public class NotifyAction {
 		}
 
 		try {
-			NotifyEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteNotify(ids);
+			NotifyEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteNotify(ids);
 			log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + ids.toString());
 		} catch (WebServiceException e) {
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -135,7 +137,7 @@ public class NotifyAction {
 		// 通知定義一覧の取得
 		List<com.clustercontrol.ws.notify.NotifyInfo> notifyInfoList = null;
 		try {
-			notifyInfoList = NotifyEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getNotifyList();
+			notifyInfoList = NotifyEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNotifyList();
 			Collections.sort(notifyInfoList, new Comparator<com.clustercontrol.ws.notify.NotifyInfo>() {
 				@Override
 				public int compare(
@@ -200,7 +202,7 @@ public class NotifyAction {
 
 		log.debug("Start Import PlatformNotify ");
 
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 	    	getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 	    	getLogger().debug("End Import PlatformNotify (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -232,31 +234,31 @@ public class NotifyAction {
 		for (int i = 0; i < notifyInfoList.getNotifyInfoCount(); i++) {
 			notifyInfo = NotifyInfoConv.convXml2DtoNotify(notifyInfoList.getNotifyInfo(i));
 			try {
-				NotifyEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).addNotify(notifyInfo);
+				NotifyEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addNotify(notifyInfo);
 				objectIdList.add(notifyInfo.getNotifyId());
 				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + notifyInfo.getNotifyId());
 			} catch (NotifyDuplicate_Exception e) {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {notifyInfo.getNotifyId()};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 				    ImportProcessMode.setProcesstype(dialog.open());
 				    ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 			    
-			    if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+			    if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 			    	try {
-						NotifyEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).modifyNotify(notifyInfo);
+						NotifyEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyNotify(notifyInfo);
 						objectIdList.add(notifyInfo.getNotifyId());
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + notifyInfo.getNotifyId());
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						ret = SettingConstants.ERROR_INPROCESS;
 					}
-			    } else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 			    	log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + notifyInfo.getNotifyId());
-			    } else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			    	log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			    	ret = SettingConstants.ERROR_INPROCESS;
 			    	break;
@@ -430,7 +432,7 @@ public class NotifyAction {
 	protected void checkDelete(NotifyType xmlElements){
 		List<com.clustercontrol.ws.notify.NotifyInfo> subList = null;
 		try {
-			subList = NotifyEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getNotifyList();
+			subList = NotifyEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNotifyList();
 		}
 		catch (Exception e) {
 			getLogger().error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -457,24 +459,24 @@ public class NotifyAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getNotifyId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 			    
-			    if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+			    if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 			    	try {
 			    		List<String> args = new ArrayList<>();
 			    		args.add(info.getNotifyId());
-			    		NotifyEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteNotify(args);
+			    		NotifyEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteNotify(args);
 			    		getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getNotifyId());
 					} catch (Exception e1) {
 						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getNotifyId());
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 			    	return;
 			    }

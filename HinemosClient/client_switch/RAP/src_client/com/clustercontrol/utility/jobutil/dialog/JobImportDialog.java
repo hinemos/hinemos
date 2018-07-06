@@ -24,7 +24,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
@@ -36,6 +35,7 @@ import com.clustercontrol.utility.ui.settings.composite.UtilityUploadComponent;
 import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.FileUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.utility.util.ZipUtil;
 import com.clustercontrol.ws.jobmanagement.JobInfo;
 import com.clustercontrol.ws.jobmanagement.JobTreeItem;
@@ -227,6 +227,6 @@ public class JobImportDialog extends CommonDialog {
 
 	public void setSelectJob(JobTreeItem item) {
 		this.item = item.getData();
-		ClusterControlPlugin.getDefault().setCurrentManagerName(JobTreeItemUtil.getManager(item).getData().getName());
+		UtilityManagerUtil.setCurrentManagerName(JobTreeItemUtil.getManager(item).getData().getName());
 	}
 }

@@ -24,7 +24,6 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.maintenance.util.MaintenanceEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -46,9 +45,12 @@ import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction
 import com.clustercontrol.utility.settings.system.conv.MaintenanceConv;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.maintenance.HinemosUnknown_Exception;
 import com.clustercontrol.ws.maintenance.InvalidRole_Exception;
 import com.clustercontrol.ws.maintenance.InvalidSetting_Exception;
@@ -86,7 +88,7 @@ public class MaintenanceAction {
 		// メンテナンス定義一覧の取得
 		List<com.clustercontrol.ws.maintenance.MaintenanceInfo> maintenanceInfoList = null;
 		try {
-			maintenanceInfoList = MaintenanceEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMaintenanceList();
+			maintenanceInfoList = MaintenanceEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMaintenanceList();
 			Collections.sort(maintenanceInfoList, new Comparator<com.clustercontrol.ws.maintenance.MaintenanceInfo>() {
 				@Override
 				public int compare(
@@ -105,7 +107,7 @@ public class MaintenanceAction {
 		// メンテナンス定義の削除
 		for (com.clustercontrol.ws.maintenance.MaintenanceInfo maintenanceInfo : maintenanceInfoList) {
 			try {
-				MaintenanceEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteMaintenance(maintenanceInfo.getMaintenanceId());
+				MaintenanceEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteMaintenance(maintenanceInfo.getMaintenanceId());
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + maintenanceInfo.getMaintenanceId());
 			} catch (WebServiceException e) {
 				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -145,7 +147,7 @@ public class MaintenanceAction {
 		// メンテナンス定義一覧の取得
 		List<com.clustercontrol.ws.maintenance.MaintenanceInfo> maintenanceInfoList = null;
 		try {
-			maintenanceInfoList = MaintenanceEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMaintenanceList();
+			maintenanceInfoList = MaintenanceEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMaintenanceList();
 			Collections.sort(maintenanceInfoList, new Comparator<com.clustercontrol.ws.maintenance.MaintenanceInfo>() {
 				@Override
 				public int compare(
@@ -207,7 +209,7 @@ public class MaintenanceAction {
 
 		log.debug("Start Import PlatformMaintenance ");
 		
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 	    	getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 	    	getLogger().debug("End Import PlatformMaintenance (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -238,31 +240,31 @@ public class MaintenanceAction {
 			com.clustercontrol.ws.maintenance.MaintenanceInfo dto = null;
 			try {
 				dto = MaintenanceConv.getMaintenanceInfoData(info);
-				MaintenanceEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).addMaintenance(dto);
+				MaintenanceEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addMaintenance(dto);
 				objectIdList.add(info.getMaintenanceId());
 				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + info.getMaintenanceId());
 			} catch (MaintenanceDuplicate_Exception e) {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {info.getMaintenanceId()};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 				    ImportProcessMode.setProcesstype(dialog.open());
 				    ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 			    
-			    if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+			    if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 			    	try {
-			    		MaintenanceEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).modifyMaintenance(dto);
+			    		MaintenanceEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyMaintenance(dto);
 			    		objectIdList.add(info.getMaintenanceId());
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + info.getMaintenanceId());
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						ret = SettingConstants.ERROR_INPROCESS;
 					}
-			    } else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 			    	log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + info.getMaintenanceId());
-			    } else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			    	log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			    	ret = SettingConstants.ERROR_INPROCESS;
 			    	break;
@@ -434,7 +436,7 @@ public class MaintenanceAction {
 	protected void checkDelete(MaintenanceType xmlElements){
 		List<com.clustercontrol.ws.maintenance.MaintenanceInfo> subList = null;
 		try {
-			subList = MaintenanceEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getMaintenanceList();
+			subList = MaintenanceEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMaintenanceList();
 		}
 		catch (Exception e) {
 			getLogger().error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -461,22 +463,22 @@ public class MaintenanceAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getMaintenanceId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 			    
-			    if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+			    if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 			    	try {
-			    		MaintenanceEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteMaintenance(info.getMaintenanceId());
+			    		MaintenanceEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteMaintenance(info.getMaintenanceId());
 			    		getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getMaintenanceId());
 					} catch (Exception e1) {
 						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getMaintenanceId());
-			    } else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 			    	return;
 			    }

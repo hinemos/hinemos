@@ -14,7 +14,6 @@ import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.HinemosCredential;
 import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.Session.SessionScope;
-import com.clustercontrol.xcloud.factory.ActionMode;
 
 public abstract class CloudManagerJob {
 
@@ -29,7 +28,6 @@ public abstract class CloudManagerJob {
 		} catch (Exception e) {
 			throw new CloudManagerException(e);
 		} finally {
-			ActionMode.leaveAutoDetection();
 		}
 	}
 

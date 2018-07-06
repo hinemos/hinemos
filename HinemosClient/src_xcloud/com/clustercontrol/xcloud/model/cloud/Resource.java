@@ -7,6 +7,7 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.util.CollectionComparator;
-import com.clustercontrol.xcloud.util.csv.CSVReader;
+import com.clustercontrol.xcloud.util.CsvUtil;
 
 public abstract class Resource extends Element implements IResource {
 	
@@ -59,9 +60,8 @@ public abstract class Resource extends Element implements IResource {
 		if (prop == null)
 			return Collections.emptyList();
 		
-		StringReader reader = new StringReader(prop);
-		try (CSVReader csvReader = new CSVReader(reader)) {
-			return Arrays.asList(csvReader.readNext());
+		try (BufferedReader reader = new BufferedReader(new StringReader(prop))) {
+			return Arrays.asList(CsvUtil.parseNextCsvLine(reader));
 		} catch(IOException e) {
 			logger.warn(e.getMessage(), e);
 		}

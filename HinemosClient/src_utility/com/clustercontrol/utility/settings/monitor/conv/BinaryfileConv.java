@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.binary.bean.BinaryConstant;
 import com.clustercontrol.binary.util.BinaryBeanUtil;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
@@ -26,6 +25,7 @@ import com.clustercontrol.utility.settings.monitor.xml.BinaryfileMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.BinaryfileMonitorList;
 import com.clustercontrol.utility.settings.monitor.xml.BinaryfileMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.BinaryCheckInfo;
 import com.clustercontrol.ws.monitor.BinaryPatternInfo;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
@@ -126,7 +126,7 @@ public class BinaryfileConv {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
 			monitorInfo = MonitorSettingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			BinaryfileMonitor binaryfileMonitor = new BinaryfileMonitor();

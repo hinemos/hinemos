@@ -68,5 +68,7 @@
 	<classpathentry kind="lib" path="lib/jackson-databind-2.8.2.jar"/>
 	<classpathentry kind="lib" path="lib/mssql-jdbc-6.2.2.jre8.jar"/>
 	<classpathentry kind="lib" path="lib/commons-math3-3.6.1.jar"/>
+	<classpathentry kind="lib" path="platform_switch/lib_platform_win/jna-platform.jar"/>
+	<classpathentry kind="lib" path="platform_switch/lib_platform_win/jna.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

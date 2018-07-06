@@ -120,6 +120,7 @@ public class CreateGroupJobWizard extends Wizard {
 		item.getData().getCommand().setScope("");
 		item.getData().getCommand().setSpecifyUser(false);
 		item.getData().getCommand().setStopType(1);
+		item.getData().getCommand().setCommandRetryFlg(false);
 
 		JobEndStatusInfo normalEndStatus = new JobEndStatusInfo();
 		normalEndStatus.setType(EndStatusConstant.TYPE_NORMAL);
@@ -141,10 +142,13 @@ public class CreateGroupJobWizard extends Wizard {
 		item.getData().setPropertyFull(true);
 		item.getData().setWarnPriority(PriorityConstant.TYPE_WARNING);
 
+		item.getData().setWaitRule(JobTreeItemUtil.getNewJobWaitRuleInfo());
+
 		item.getData().setOwnerRoleId(parent.getData().getOwnerRoleId());
 		item.getData().setId(detailPage.getJobId());
 		item.getData().setName(detailPage.getJobName());
 		item.getData().getCommand().setFacilityID(facilities.get(0));
+		item.getData().setBeginPriority(PriorityConstant.TYPE_INFO);
 		
 		try {
 			item.getData().getCommand().setStartCommand(provider.getCommand(endpoint, facilityId));

@@ -18,7 +18,6 @@ import java.util.List;
 
 import javax.xml.ws.WebServiceException;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ConvertorException;
@@ -28,6 +27,7 @@ import com.clustercontrol.utility.settings.master.xml.JmxMasterInfo;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.JmxMasterConv;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.jmxmaster.HinemosUnknown_Exception;
 import com.clustercontrol.ws.jmxmaster.InvalidRole_Exception;
 import com.clustercontrol.ws.jmxmaster.InvalidSetting_Exception;
@@ -56,14 +56,14 @@ public class JmxMasterAction extends BaseAction<com.clustercontrol.ws.monitor.Jm
 
 	@Override
 	protected List<com.clustercontrol.ws.monitor.JmxMasterInfo> getList() throws Exception {
-		return EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getEndpoint(JmxMasterEndpointService.class, JmxMasterEndpoint.class).get(0).getEndpoint().getJmxMasterInfoList();
+		return EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(JmxMasterEndpointService.class, JmxMasterEndpoint.class).get(0).getEndpoint().getJmxMasterInfoList();
 	}
 
 	@Override
 	protected void deleteInfo(com.clustercontrol.ws.monitor.JmxMasterInfo info) throws WebServiceException, Exception {
 		List<String> args = new ArrayList<>();
 		args.add(info.getId());
-		EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getEndpoint(JmxMasterEndpointService.class, JmxMasterEndpoint.class).get(0).getEndpoint().deleteJmxMasterList(args);
+		EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(JmxMasterEndpointService.class, JmxMasterEndpoint.class).get(0).getEndpoint().deleteJmxMasterList(args);
 	}
 
 	@Override
@@ -98,7 +98,7 @@ public class JmxMasterAction extends BaseAction<com.clustercontrol.ws.monitor.Jm
 
 	@Override
 	protected int registElement(JmxMasterInfo element) throws Exception {
-		JmxMasterEndpoint endpoint = EndpointManager.get(ClusterControlPlugin.getDefault().getCurrentManagerName()).getEndpoint(JmxMasterEndpointService.class, JmxMasterEndpoint.class).get(0).getEndpoint();
+		JmxMasterEndpoint endpoint = EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(JmxMasterEndpointService.class, JmxMasterEndpoint.class).get(0).getEndpoint();
 		com.clustercontrol.ws.monitor.JmxMasterInfo dto = conv.getDTO(element);
 		int ret = 0;
 		try {

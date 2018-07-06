@@ -14,7 +14,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -23,6 +22,7 @@ import com.clustercontrol.utility.settings.monitor.xml.PacketCapInfo;
 import com.clustercontrol.utility.settings.monitor.xml.PacketCapMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.PacketCapMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.BinaryPatternInfo;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
@@ -123,7 +123,7 @@ public class PacketCapConv {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
 			monitorInfo = MonitorSettingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			PacketCapMonitor packetCapMonitor = new PacketCapMonitor();

@@ -41,6 +41,9 @@
 			<include name="**/*.jar" />
 			<exclude name="**/eclipselink-src.jar" />
 		</fileset>
+		<fileset dir="./platform_switch/lib_platform_win">
+			<include name="**/*.jar" />
+		</fileset>
 		<path refid="id.compile.classpath" />
 	</path>
 

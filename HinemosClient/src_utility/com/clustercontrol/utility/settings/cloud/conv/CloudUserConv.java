@@ -16,6 +16,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
@@ -207,7 +209,7 @@ public class CloudUserConv {
 			// 接続先設定
 			try {
 				URL url = new URL(cloudScopeEndpoint.getLocation(cloudScopeEndpoint.getPlatformId()).getEndpoints()[0].getUrl());
-				hyperv.setIpAddress(url.getHost());
+				hyperv.setIpAddress(url.getPort()!= -1 ? url.getHost() + ":"  + url.getPort() : url.getHost());
 				hyperv.setProtocol(url.getProtocol());
 			} catch (MalformedURLException e) {
 				log.error(e);
@@ -541,7 +543,11 @@ public class CloudUserConv {
 		} else if (info.getAzure() != null) {
 			req.setRetentionPeriod(info.getAzure().getTerm());
 			req.setBillingDetailCollectorFlg(info.getAzure().getValidCollect());
-			req.getOptions().add(createOption(CloudConstant.eprop_azureBeginDate, info.getAzure().getBeginDate().replace("/", "-")));
+			req.getOptions().add(createOption(CloudConstant.eprop_azureBeginDate, 
+					info.getAzure().getBeginDate()!= null 
+					? info.getAzure().getBeginDate().replace("/", "-")
+					: ""
+			));
 			req.getOptions().add(createOption(CloudConstant.eprop_azureRegion, info.getAzure().getBillingRegion()));
 			req.getOptions().add(createOption(CloudConstant.eprop_azurePlanId, info.getAzure().getPlanId()));
 			req.getOptions().add(createOption(CloudConstant.eprop_azureCurrency, info.getAzure().getCurrency()));
@@ -574,15 +580,22 @@ public class CloudUserConv {
 		
 		PrivateEndpoint e = new PrivateEndpoint();
 		e.setEndpointId(info.getCloudPlatformId());
+		
+		Matcher m = Pattern.compile("(.*):([0-9]*)").matcher(info.getHyperv().getIpAddress());
+		String url = null;
 		try {
-			e.setUrl(new URL(
-					info.getHyperv().getProtocol(),
-					info.getHyperv().getIpAddress(),
-					CloudConstant.filename_hyperv).toString()
-					);
+			if (m.matches()) {
+				String iphost = m.group(1);
+				Integer port = Integer.valueOf(m.group(2));
+				url = new URL(info.getHyperv().getProtocol(), iphost ,port, CloudConstant.filename_hyperv.toString()).toString();
+			} else {
+				url = new URL(info.getHyperv().getProtocol(), info.getHyperv().getIpAddress() ,CloudConstant.filename_hyperv.toString()).toString();
+			}
 		} catch (MalformedURLException e1) {
 			throw new CloudModelException(e1);
 		}
+		e.setUrl(url);
+		
 		PrivateLocation location =
 				new PrivateLocation();
 		location.setLocationId(CloudConstant.location_HyperV);
@@ -602,15 +615,20 @@ public class CloudUserConv {
 		
 		PrivateEndpoint e = new PrivateEndpoint();
 		e.setEndpointId(info.getCloudPlatformId());
+		Matcher m = Pattern.compile("(.*):([0-9]*)").matcher(info.getHyperv().getIpAddress());
+		String url = null;
 		try {
-			e.setUrl(new URL(
-					info.getHyperv().getProtocol(),
-					info.getHyperv().getIpAddress(),
-					CloudConstant.filename_hyperv).toString()
-					);
+			if (m.matches()) {
+				String iphost = m.group(1);
+				Integer port = Integer.valueOf(m.group(2));
+				url = new URL(info.getHyperv().getProtocol(), iphost ,port, CloudConstant.filename_hyperv.toString()).toString();
+			} else {
+				url = new URL(info.getHyperv().getProtocol(), info.getHyperv().getIpAddress() ,CloudConstant.filename_hyperv.toString()).toString();
+			}
 		} catch (MalformedURLException e1) {
 			throw new CloudModelException(e1);
 		}
+		e.setUrl(url);
 		PrivateLocation location = new PrivateLocation();
 		location.setLocationId(info.getCloudPlatformId());
 		location.setName(info.getCloudPlatformId());

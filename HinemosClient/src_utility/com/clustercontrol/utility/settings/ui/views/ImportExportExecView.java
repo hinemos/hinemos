@@ -70,6 +70,7 @@ public class ImportExportExecView extends CommonViewPart {
  	*/
 	@Override
 	public void createPartControl(Composite parent) {
+		super.createPartControl(parent);
 		GridLayout layout = new GridLayout(1, true);
 		parent.setLayout(layout);
 		layout.marginHeight = 0;

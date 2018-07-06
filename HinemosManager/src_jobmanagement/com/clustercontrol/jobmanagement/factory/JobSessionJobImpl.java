@@ -1593,7 +1593,8 @@ public class JobSessionJobImpl {
 
 			////////// 繰り返し実行を判定 //////////
 			Boolean jobRetryFlg = sessionJob.getJobInfoEntity().getJobRetryFlg();
-			if (jobRetryFlg != null && jobRetryFlg && JobSessionJobUtil.checkRetryContinueCondition(sessionJob)) {
+			if (jobRetryFlg != null && jobRetryFlg && JobSessionJobUtil.checkRetryContinueCondition(sessionJob)
+						&& sessionJob.getStatus() == StatusConstant.TYPE_END) {
 				//ジョブの状態等をリセットする
 				JobSessionJobUtil.resetJobStatusRecursive(sessionJob, false /* resetRunCount=false */);
 				//自身を再実行する
@@ -1658,6 +1659,18 @@ public class JobSessionJobImpl {
 			//同一階層のジョブが全て完了したかチェック
 			boolean endAll = true;
 			for (JobSessionJobEntity sessionJob1 : QueryUtil.getChildJobSessionJob(sessionId, parentJobunitId, parentJobId)) {
+				// 待ち条件を設定していないジョブのみを対象とする
+				if (HinemosPropertyCommon.job_end_criteria.getBooleanValue()) {
+					//待ち条件に指定されているかチェック
+					Collection<JobStartJobInfoEntity> targetJobWaitList = null;
+					targetJobWaitList = em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
+							.setParameter("sessionId", sessionId)
+							.setParameter("targetJobId", sessionJob1.getId().getJobId())
+							.getResultList();
+					if(targetJobWaitList.size() > 0){
+						continue;
+					}
+				}
 				//実行状態が終了または変更済以外の場合、同一階層のジョブは未完了
 				if(!StatusConstant.isEndGroup(sessionJob1.getStatus())){
 					endAll = false;

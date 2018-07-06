@@ -12,12 +12,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
-import java.util.TimeZone;
 
 import org.apache.log4j.Logger;
 
@@ -48,22 +44,6 @@ public class SyslogPacketHelper {
 		} catch(RuntimeException e) {
 			Logger.getLogger(SyslogPacketHelper.class).warn(e.getMessage(), e);
 		}
-	}
-	
-	/*
-	 * Syslog ヘッダを作成する。
-	 */
-	public static String createSyslogHeader(Date date, String host) {
-		// シスログヘッダー用データフォーマット。
-		SimpleDateFormat dateFormat = new SimpleDateFormat(timestampPattern, Locale.ENGLISH);
-		dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-		
-		String header =  String.format("%s%s %s ", priority, dateFormat.format(date), host);
-		// 日付が一桁の場合の対処。
-		if (header.charAt(priority.length() + 3 + 1) == '0') {
-			header = header.substring(0, priority.length() + 3 + 1) + ' ' + header.substring(priority.length() + 3 + 1 + 1);
-		}
-		return header;
 	}
 	
 	public SyslogPacketHelper(Charset hdrCharset, Charset msgCharset) {
@@ -216,13 +196,6 @@ public class SyslogPacketHelper {
 			m_log.warn(e.getMessage(), e);
 			return false;
 		}
-	}
-	
-	/*
-	 * Syslog ヘッダを作成する。
-	 */
-	public byte[] createSyslogHeaderArray(Date date, String host) {
-		return createSyslogHeader(date, host).getBytes(hdrCharset);
 	}
 	
 	public Charset getHdrCharset() {

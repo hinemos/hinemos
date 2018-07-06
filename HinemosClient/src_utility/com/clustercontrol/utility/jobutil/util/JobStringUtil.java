@@ -16,6 +16,7 @@ import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.repository.FacilityPath;
 import com.clustercontrol.util.FacilityTreeCache;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 public class JobStringUtil {
@@ -45,7 +46,7 @@ public class JobStringUtil {
 	
 	public static Map<String, String> getScopeMap() {
 		Map<String, String> map = new HashMap<>();
-		FacilityTreeItem tree = FacilityTreeCache.getTreeItem(ClusterControlPlugin.getDefault().getCurrentManagerName());
+		FacilityTreeItem tree = FacilityTreeCache.getTreeItem(UtilityManagerUtil.getCurrentManagerName());
 		FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
 
 		for (FacilityTreeItem item : tree.getChildren()) {

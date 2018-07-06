@@ -227,6 +227,7 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 		
 			List<Serializable> params = AsyncTask.getRemainedParams(worker);
 			log.info("running remained task : num = " + params.size());
+			tm.flush();
 	
 			for (Serializable param : params) {
 				try {
@@ -377,6 +378,12 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 		@Override
 		public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
 			log.warn("too many tasks are assigned to " + _worker + ". rejecting new task. : " + r + ".");
+			try {
+				AsyncTask task = (AsyncTask) r;
+				task.remove();
+			} catch (Throwable t) {
+				log.warn(t.getMessage()); // ここは通らないはず
+			}
 		}
 	}
 

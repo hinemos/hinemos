@@ -28,7 +28,6 @@ import org.apache.log4j.Logger;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.ValidationException;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.jobmanagement.bean.JobKickConstant;
 import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
@@ -55,9 +54,12 @@ import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction
 import com.clustercontrol.utility.settings.platform.conv.CommonConv;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
 import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 import com.clustercontrol.ws.jobmanagement.InvalidSetting_Exception;
@@ -101,7 +103,7 @@ public class JobKickAction {
 
 		log.debug("Start Import JobKick");
 
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			log.debug("End Import JobKick (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -175,7 +177,7 @@ public class JobKickAction {
 		// treeOnly = trueの場合は、ログインユーザで参照可能なジョブユニットと 配下のジョブが取れる
 		JobTreeItem jobTreeItem = null;
 		try {
-			jobTreeItem = JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getJobTree(null, true);
+			jobTreeItem = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTree(null, true);
 		} catch (Exception e) {
 			log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -203,7 +205,7 @@ public class JobKickAction {
 					// スケジュールに設定されたjobunitIdとマッチした場合、
 					// ログインユーザで参照可能なスケジュール設定ということなので、登録する
 					if (jobunitId.equals(jobinfo.getJobunitId())) {
-						JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).addSchedule(schedule);
+						JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addSchedule(schedule);
 						objectIdList.add(kickId);
 						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + kickId);
 						retImport = true;
@@ -218,24 +220,24 @@ public class JobKickAction {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {kickId};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 					ImportProcessMode.setProcesstype(dialog.open());
 					ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 				
-				if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 					try {
-						JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).modifySchedule(schedule);
+						JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifySchedule(schedule);
 						objectIdList.add(kickId);
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + kickId);
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						ret = SettingConstants.ERROR_INPROCESS;
 					}
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + kickId);
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 					ret = SettingConstants.ERROR_INPROCESS;
 					return ret;
@@ -280,7 +282,7 @@ public class JobKickAction {
 					// ファイルチェックに設定されたjobunitIdとマッチした場合、
 					// ログインユーザで参照可能なファイルチェック設定ということなので、登録する
 					if (jobunitId.equals(jobinfo.getJobunitId())) {
-						JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).addFileCheck(fileCheck);
+						JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addFileCheck(fileCheck);
 						objectIdList.add(kickId);
 						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + kickId);
 						retImport = true;
@@ -295,24 +297,24 @@ public class JobKickAction {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {kickId};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 					ImportProcessMode.setProcesstype(dialog.open());
 					ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 				
-				if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 					try {
-						JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).modifyFileCheck(fileCheck);
+						JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyFileCheck(fileCheck);
 						objectIdList.add(kickId);
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + kickId);
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						ret = SettingConstants.ERROR_INPROCESS;
 					}
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + kickId);
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 					ret = SettingConstants.ERROR_INPROCESS;
 					return ret;
@@ -361,7 +363,7 @@ public class JobKickAction {
 					// マニュアルに設定されたjobunitIdとマッチした場合、
 					// ログインユーザで参照可能なマニュアル設定ということなので、登録する
 					if (jobunitId.equals(jobinfo.getJobunitId())) {
-						JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+						JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 								.addJobManual(manual);
 						objectIdList.add(kickId);
 						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + kickId);
@@ -377,15 +379,15 @@ public class JobKickAction {
 				// 重複時、インポート処理方法を確認する
 				if (!ImportProcessMode.isSameprocess()) {
 					String[] args = { kickId };
-					ImportProcessDialog dialog = new ImportProcessDialog(null,
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(null,
 							Messages.getString("message.import.confirm2", args));
 					ImportProcessMode.setProcesstype(dialog.open());
 					ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 
-				if (ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE) {
+				if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE) {
 					try {
-						JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+						JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 								.modifyJobManual(manual);
 						objectIdList.add(kickId);
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + kickId);
@@ -393,9 +395,9 @@ public class JobKickAction {
 						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						ret = SettingConstants.ERROR_INPROCESS;
 					}
-				} else if (ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP) {
+				} else if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP) {
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + kickId);
-				} else if (ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL) {
+				} else if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 					ret = SettingConstants.ERROR_INPROCESS;
 					return ret;
@@ -471,7 +473,7 @@ public class JobKickAction {
 		//List<JobKick> kickList = new ArrayList<JobKick>() ;
 		List<JobKick> kickList = null;
 		try {
-			kickList = JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getJobKickList();
+			kickList = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobKickList();
 			if (null == kickList){
 				log.error(Messages.getString("SettingTools.EndWithErrorCode") );
 				return SettingConstants.ERROR_INPROCESS;
@@ -566,7 +568,7 @@ public class JobKickAction {
 		//	マネージャから実行契機のリストを取得する。
 		List<JobKick> kickList =null;
 		try {
-			kickList = JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getJobKickList();
+			kickList = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobKickList();
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -597,15 +599,15 @@ public class JobKickAction {
 			List<String> currentList = Collections.emptyList();
 			try {
 				currentList = scheduleList;
-				JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteSchedule(currentList);
+				JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteSchedule(currentList);
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + currentList.toString());
 
 				currentList = fileCheckList;
-				JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteFileCheck(currentList);
+				JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteFileCheck(currentList);
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + currentList.toString());
 
 				currentList = manualList;
-				JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteJobManual(currentList);
+				JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteJobManual(currentList);
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + currentList.toString());
 			} catch (WebServiceException e) {
 				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -864,7 +866,7 @@ public class JobKickAction {
 		
 		List<com.clustercontrol.ws.jobmanagement.JobKick> subList = null;
 		try {
-			subList = JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).getJobKickList();
+			subList = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobKickList();
 		}
 		catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -890,30 +892,30 @@ public class JobKickAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 				
-				if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
 						List<String> args = new ArrayList<>();
 						args.add(info.getId());
 						if(info.getType() == JobKickConstant.TYPE_SCHEDULE){
-							JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteSchedule(args);
+							JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteSchedule(args);
 						} else if (info.getType() == JobKickConstant.TYPE_FILECHECK){
-							JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteFileCheck(args);
+							JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteFileCheck(args);
 						} else if (info.getType() == JobKickConstant.TYPE_MANUAL){
-							JobEndpointWrapper.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName()).deleteJobManual(args);
+							JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteJobManual(args);
 						}
 						log.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getId());
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getId());
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 					return;
 				}

@@ -8081,7 +8081,7 @@
 			</enabledWhen>
 		</handler>
 		<handler
-			class="com.clustercontrol.xcloud.ui.handlers.ModifyInstanceTagsHandler"
+			class="com.clustercontrol.xcloud.ui.handlers.CloudOptionHandler"
 			commandId="com.clustercontrol.xcloud.ui.instance.modify.tags">
 			<enabledWhen>
 				<with variable="selection">
@@ -8266,13 +8266,18 @@
 			</enabledWhen>
 		</handler>
 		<handler
-			class="com.clustercontrol.xcloud.ui.handlers.ModifyInstanceTagsHandler"
+			class="com.clustercontrol.xcloud.ui.handlers.CloudOptionHandler"
 			commandId="com.clustercontrol.xcloud.ui.instance.showdetail">
 			<enabledWhen>
 				<with variable="selection">
 					<iterate ifEmpty="false" operator="and">
-						<instanceof value="com.clustercontrol.xcloud.model.cloud.IInstance">
-						</instanceof>
+						<adapt
+							type="com.clustercontrol.xcloud.model.cloud.IInstance">
+							<test
+								property="com.clustercontrol.xcloud.model.IInstance.handler"
+								value="instance.showdetail">
+							</test>
+						</adapt>
 					</iterate>
 					<count value="1">
 					</count>
@@ -8306,6 +8311,8 @@
 							</test>
 						</adapt>
 					</iterate>
+					<count value="1">
+					</count>
 				</with>
 			</enabledWhen>
 		</handler>
@@ -8320,6 +8327,8 @@
 							</test>
 						</adapt>
 					</iterate>
+					<count value="1">
+					</count>
 				</with>
 			</enabledWhen>
 		</handler>
@@ -8882,7 +8891,9 @@
 		<cloudOptionCommand id="instance.delete"
 			defaultHandlerClass="com.clustercontrol.xcloud.ui.handlers.DeleteInstanceHandler">
 		</cloudOptionCommand>
-		<cloudOptionCommand id="instance.showdetail">
+		<cloudOptionCommand
+			defaultHandlerClass="com.clustercontrol.xcloud.ui.handlers.ModifyInstanceTagsHandler"
+			id="instance.showdetail">
 		</cloudOptionCommand>
 		<cloudOptionCommand id="instance.migrate">
 		</cloudOptionCommand>

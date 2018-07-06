@@ -182,7 +182,9 @@ public class SyslogService {
 			udpReceiver.stop();
 		}
 		
-		worker.shutdown();
+		if(worker != null){
+			worker.shutdown();
+		}
 	}
 	
 	public void join() {
@@ -204,11 +206,14 @@ public class SyslogService {
 			}
 		}
 		
-		try {
-			worker.awaitTermination(waitForTermination, TimeUnit.MILLISECONDS);
-			log.info("terminated thread-pool.");
-		} catch(InterruptedException e) {
-			log.warn(e.getMessage(), e);
+
+		if(worker != null){
+			try {
+				worker.awaitTermination(waitForTermination, TimeUnit.MILLISECONDS);
+				log.info("terminated thread-pool.");
+			} catch(InterruptedException e) {
+				log.warn(e.getMessage(), e);
+			}
 		}
 	}
 }

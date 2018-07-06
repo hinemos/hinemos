@@ -36,7 +36,7 @@ import org.eclipse.ui.PlatformUI;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.jobmap.action.GetJobMapImageListTableDefine;
 import com.clustercontrol.jobmap.dialog.JobMapImageDialog;
-import com.clustercontrol.jobmap.util.JobmapIconImageCache;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.jobmap.view.JobMapImageListView;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.HinemosMessage;
@@ -220,7 +220,7 @@ public class JobMapImageListComposite extends Composite {
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 		for(String managerName : EndpointManager.getActiveManagerSet()) {
 			try {
-				list = JobmapIconImageCache.getJobmapIconImageList(managerName);
+				list = JobmapImageCacheUtil.getJobmapIconImageList(managerName);
 			} catch (InvalidRole_Exception e) {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );

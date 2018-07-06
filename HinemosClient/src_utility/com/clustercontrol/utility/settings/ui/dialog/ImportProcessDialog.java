@@ -8,41 +8,25 @@
 
 package com.clustercontrol.utility.settings.ui.dialog;
 
-import org.eclipse.jface.dialogs.MessageDialogWithToggle;
-import org.eclipse.swt.widgets.Shell;
-
-import com.clustercontrol.util.Messages;
-
 /**
- * インポート処理方法の確認ダイアログ
+ * Utility用確認ダイアログのWrapper
+ * 
+ * TODO クラス名がわかりにくいため、次期でUtilityProcessDialogなどにリネームする
  * 
  * @version 6.1.0
- * @since 2.2.0
- * 
- *
+ * @since 6.1.0
  */
-public class ImportProcessDialog extends MessageDialogWithToggle {
-	public static final int UPDATE = 256;
-	public static final int SKIP = 257;
-	public static final int CANCEL = 258;
+public interface ImportProcessDialog {
 
 	/**
-	 * コンストラクタ
 	 * 
-	 * @param parent 親シェル
-	 * @param message メッセージ
+	 * @see org.eclipse.jface.dialogs.MessageDialogWithToggle#open()
 	 */
-	public ImportProcessDialog(Shell parent, String message) {
-		super(parent, 
-			  Messages.getString("message.confirm"), 
-			  null, 
-			  message, 
-			  QUESTION, 
-			  new String[]{Messages.getString("string.update"),
-						   Messages.getString("string.skip"),
-						   Messages.getString("string.cancel")}, 
-			  0,
-			  Messages.getString("message.import.confirm3"), 
-			  false);
-	}
+	public int open();
+
+	/**
+	 * 
+	 * @see org.eclipse.jface.dialogs.MessageDialogWithToggle#getToggleState()
+	 */
+	public boolean getToggleState();
 }

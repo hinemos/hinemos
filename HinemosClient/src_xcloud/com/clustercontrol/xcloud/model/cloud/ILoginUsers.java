@@ -14,7 +14,7 @@ import com.clustercontrol.xcloud.model.base.PropertyId;
 
 public interface ILoginUsers extends IElement {
 	public interface p {
-		static final PropertyId<CollectionObserver<ILoginUser>> loginUsers = new PropertyId<CollectionObserver<ILoginUser>>("loginUsers"){};
+		static final PropertyId<CollectionObserver<ILoginUser>> loginUsers = new PropertyId<CollectionObserver<ILoginUser>>("loginUsers", true){};
 	}
 	
 	ILoginUser[] getLoginUsers();

@@ -43,7 +43,7 @@ import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
-import com.clustercontrol.jobmap.util.JobmapIconImageCache;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
@@ -386,7 +386,8 @@ public class JobMapImageDialog extends CommonDialog {
 		}
 
 		try {
-			this.m_jobmapIconImage  = JobmapIconImageCache.getJobmapIconImage(this.m_managerName, this.m_iconId);
+			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
+			this.m_jobmapIconImage  = iconCache.getJobmapIconImage(this.m_managerName, this.m_iconId);
 		} catch (IconFileNotFound_Exception e) {
 			MessageDialog.openInformation(
 					null,
@@ -493,15 +494,16 @@ public class JobMapImageDialog extends CommonDialog {
 	@Override
 	protected boolean action() {
 		boolean result = false;
+		JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
 		try {
 			String managerName = this.m_managerComposite.getText();
 			if (this.m_mode == PropertyDefineConstant.MODE_MODIFY) {
-				JobmapIconImageCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, false);
+				iconCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, false);
 				Object[] arg = {managerName};
 				MessageDialog.openInformation(null, Messages.getString("successful"),
 						Messages.getString("message.job.77", arg));
 			} else {
-				JobmapIconImageCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, true);
+				iconCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, true);
 				Object[] arg = {managerName};
 				MessageDialog.openInformation(null, Messages.getString("successful"),
 						Messages.getString("message.job.79", arg));

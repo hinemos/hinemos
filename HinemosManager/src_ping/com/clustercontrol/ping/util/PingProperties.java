@@ -12,12 +12,13 @@ import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 
 /**
- * プロセス監視プロパティ情報取得クラス
+ * PING監視プロパティ情報取得クラス
  *
  * @version 2.3.0 bata
  * @since 2.3.0
  */
 public class PingProperties {
+	
 	private static PingProperties m_instance = null;
 
 	/**
@@ -27,7 +28,7 @@ public class PingProperties {
 	 * @version 2.0.0
 	 * @since 2.0.0
 	 *
-	 * @return ConnectionManager コネクションマネージャ
+	 * @return PingProperties Pingプロパティ
 	 */
 	public synchronized static PingProperties getProperties() {
 		if (m_instance==null) {
@@ -36,7 +37,7 @@ public class PingProperties {
 		return m_instance;
 	}
 
-	protected static int getFpingCount() {
+	public static int getFpingCount() {
 		/** fping利用時のデフォルトの　ping回数 */
 		return HinemosPropertyCommon.monitor_ping_fping_count.getIntegerValue();
 	}
@@ -46,27 +47,27 @@ public class PingProperties {
 		return HinemosPropertyCommon.monitor_ping_fping_enable.getBooleanValue();
 	}
 
-	protected static int getFpingInterval() {
+	public static int getFpingInterval() {
 		/** fping利用時のデフォルトの　pingインターバル msec*/
 		return HinemosPropertyCommon.monitor_ping_fping_interval.getIntegerValue();
 	}
 
-	protected static int getFpingTimeout() {
+	public static int getFpingTimeout() {
 		/** fping利用時のデフォルトの　pingタイムアウト msec*/
 		return HinemosPropertyCommon.monitor_ping_fping_timeout.getIntegerValue();
 	}
 
-	protected static int getFpingBytes() {
+	public static int getFpingBytes() {
 		/** fping利用時のデフォルトの　ping送信データサイズ byte*/
 		return HinemosPropertyCommon.monitor_ping_fping_bytes.getIntegerValue();
 	}
 
-	protected static String getFpingPath() {
+	public static String getFpingPath() {
 		/** fping のパス **/
 		return HinemosPropertyDefault.monitor_ping_fping_path.getStringValue();
 	}
 
-	protected static String getFping6Path() {
+	public static String getFping6Path() {
 		/** fping6 のパス **/
 		return HinemosPropertyDefault.monitor_ping_fping6_path.getStringValue();
 	}

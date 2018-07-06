@@ -60,7 +60,7 @@ import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
 import com.clustercontrol.jobmap.composite.JobMapComposite;
 import com.clustercontrol.jobmap.editpart.MapViewController;
-import com.clustercontrol.jobmap.util.JobmapIconImageCache;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -88,7 +88,10 @@ public class JobFigure extends Figure implements ISelection {
 	public static final int jobnetBorder = 10;
 	public static final int lineWidth = 2;
 	private final static String fontStr = "MS UI Gothic";
-	
+	// フォント
+	private final static Font jobNetFont = new Font(
+			Display.getCurrent(), fontStr, 10,  SWT.BOLD);
+
 	// 3つのレイヤーで構成する。
 	// layerStackの上にlayerToolbar。その上にlayerXY。
 	private ScalableLayeredPane m_layerXY; //背景(ジョブネットで利用)
@@ -126,6 +129,8 @@ public class JobFigure extends Figure implements ISelection {
 
 	private ImageFigure m_iconImageFigure;
 
+	private JobmapImageCacheUtil m_iconCache;
+
 	public JobFigure(String managerName, JobTreeItem item, JobMapEditorView editorView, JobMapComposite jobMapComposite, boolean collapse){
 		this.setFocusTraversable(true);
 		this.setRequestFocusEnabled(true);
@@ -141,6 +146,9 @@ public class JobFigure extends Figure implements ISelection {
 
 		// 設定情報の取得
 		this.m_controller.applySetting();
+		
+		//アイコンキャッシュの取得
+		m_iconCache = JobmapImageCacheUtil.getInstance();
 
 		// アイコンイメージの更新
 		updateIconImage();
@@ -161,7 +169,7 @@ public class JobFigure extends Figure implements ISelection {
 					&& !this.m_jobTreeItem.getData().getIconId().equals("")) {
 				try {
 					jobmapIconImage
-						= JobmapIconImageCache.getJobmapIconImage(this.m_managerName, this.m_jobTreeItem.getData().getIconId());
+						= m_iconCache.getJobmapIconImage(this.m_managerName, this.m_jobTreeItem.getData().getIconId());
 				} catch (IconFileNotFound_Exception e) {
 					jobmapIconImage = null;
 				} catch (InvalidRole_Exception e) {
@@ -198,16 +206,16 @@ public class JobFigure extends Figure implements ISelection {
 				if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_JOBNET
 						|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_REFERJOBNET) {
 					jobmapIconImage 
-						= JobmapIconImageCache.getJobmapIconImageDefaultJobnet(this.m_managerName);
+						= m_iconCache.getJobmapIconImageDefaultJobnet(this.m_managerName);
 				} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_APPROVALJOB) {
-					jobmapIconImage = JobmapIconImageCache.getJobmapIconImageDefaultApproval(this.m_managerName);
+					jobmapIconImage = m_iconCache.getJobmapIconImageDefaultApproval(this.m_managerName);
 				} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_MONITORJOB) {
-					jobmapIconImage = JobmapIconImageCache.getJobmapIconImageDefaultMonitor(this.m_managerName);
+					jobmapIconImage = m_iconCache.getJobmapIconImageDefaultMonitor(this.m_managerName);
 				} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_FILEJOB) {
-					jobmapIconImage = JobmapIconImageCache.getJobmapIconImageDefaultFile(this.m_managerName);
+					jobmapIconImage = m_iconCache.getJobmapIconImageDefaultFile(this.m_managerName);
 				} else {
 					jobmapIconImage 
-						= JobmapIconImageCache.getJobmapIconImageDefaultJob(this.m_managerName);
+						= m_iconCache.getJobmapIconImageDefaultJob(this.m_managerName);
 				}
 			}
 			if (jobmapIconImage == null) {
@@ -216,16 +224,16 @@ public class JobFigure extends Figure implements ISelection {
 						|| this.m_jobTreeItem.getData().getIconId().equals("")) {
 					if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_JOBNET
 							|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_REFERJOBNET) {
-						iconId = JobmapIconImageCache.getJobmapIconIdDefaultJobnet(this.m_managerName);
+						iconId = m_iconCache.getJobmapIconIdDefaultJobnet(this.m_managerName);
 					} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_APPROVALJOB) {
-						iconId = JobmapIconImageCache.getJobmapIconIdDefaultApproval(this.m_managerName);
+						iconId = m_iconCache.getJobmapIconIdDefaultApproval(this.m_managerName);
 					} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_MONITORJOB) {
-						iconId = JobmapIconImageCache.getJobmapIconIdDefaultMonitor(this.m_managerName);
+						iconId = m_iconCache.getJobmapIconIdDefaultMonitor(this.m_managerName);
 					} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_FILEJOB) {
-						iconId = JobmapIconImageCache.getJobmapIconIdDefaultFile(this.m_managerName);
+						iconId = m_iconCache.getJobmapIconIdDefaultFile(this.m_managerName);
 					} else {
 						iconId
-							= JobmapIconImageCache.getJobmapIconIdDefaultJob(this.m_managerName);
+							= m_iconCache.getJobmapIconIdDefaultJob(this.m_managerName);
 					}
 				} else {
 					iconId = this.m_jobTreeItem.getData().getIconId();
@@ -236,7 +244,7 @@ public class JobFigure extends Figure implements ISelection {
 						Messages.getString("message.job.148", new String[]{iconId}));
 				return;
 			}
-			m_iconImageFigure = new ImageFigure(JobmapIconImageUtil.getIconImage(jobmapIconImage.getFiledata()));
+			m_iconImageFigure = new ImageFigure(m_iconCache.loadGraphicImage(jobmapIconImage));
 		}
 	}
 
@@ -378,7 +386,7 @@ public class JobFigure extends Figure implements ISelection {
 				label.setText(m_jobTreeItem.getData().getName());
 			}
 			label.setForegroundColor(JobMapColor.darkgray);
-			label.setFont(new Font(Display.getCurrent(), fontStr, 10, SWT.BOLD));
+			label.setFont(jobNetFont);
 			label.setSize(this.m_controller.getTextWidth() - 8, textHeight + 8);
 			label.setBorder(new MarginBorder(0, 4, 0, 4));
 			
@@ -749,7 +757,7 @@ public class JobFigure extends Figure implements ISelection {
 				if(m_jobTreeItem.getData().getWaitRule().isJobRetryFlg()){
 					StringBuilder messageBuilder = new StringBuilder();
 					messageBuilder.append (Messages.getString("job.retry.count") + ":" + m_jobTreeItem.getData().getWaitRule().getJobRetry());
-					if( m_jobTreeItem.getData().getWaitRule().getSkipEndValue() != null ){
+					if( m_jobTreeItem.getData().getWaitRule().getJobRetryEndStatus() != null ){
 						messageBuilder.append("\n");
 						messageBuilder.append(Messages.getString("job.retry.end.status")  + ":" +  EndStatusMessage.typeToString(m_jobTreeItem.getData().getWaitRule().getJobRetryEndStatus()));
 					}

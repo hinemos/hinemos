@@ -408,7 +408,7 @@ public class JobControllerBean implements CheckFacility {
 			jtm.commit();
 			m_log.debug(String.format("jtm.commit: %d ms", HinemosTime.currentTimeMillis() - beforeCommit));
 			
-			FullJob.updateCache(jobunitId, tree2List(jobunit));
+			FullJob.updateCache(jobunitId);
 		} catch (HinemosUnknown | JobInvalid | InvalidRole | InvalidSetting e) {
 			if (jtm != null){
 				jtm.rollback();

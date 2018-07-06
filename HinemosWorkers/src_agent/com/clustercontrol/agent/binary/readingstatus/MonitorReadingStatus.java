@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.agent.binary.BinaryMonitorConfig;
 import com.clustercontrol.agent.log.MonitorInfoWrapper;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -174,6 +175,7 @@ public class MonitorReadingStatus {
 		File rstatus = new File(new File(this.parentRootRS.getStorePath(), this.storeDirName),
 				RootReadingStatus.file_rstatus);
 		this.storeMonRSFile = rstatus;
+		boolean toCreate = false;
 
 		if (rstatus.exists()) {
 			// 前回ファイル出力した読込情報が存在する場合.
@@ -183,25 +185,43 @@ public class MonitorReadingStatus {
 				props.load(fi);
 
 				// 監視対象ディレクトリ名と登録日(監視設定更新されていた場合ファイル削除されてるためelseに入る).
-				this.monRootDirectoryName = props.getProperty(RootReadingStatus.monRootDirectoryName);
-				this.updateDate = Long.valueOf(props.getProperty(RootReadingStatus.updatedate));
-				this.lastUpdateRs = Long.parseLong(props.getProperty(RootReadingStatus.lastUpdateRs));
+				this.monRootDirectoryName = RootReadingStatus.getPropertyValue(props,
+						RootReadingStatus.monRootDirectoryName);
+				this.updateDate = Long.valueOf(RootReadingStatus.getPropertyValue(props, RootReadingStatus.updatedate));
+				this.lastUpdateRs = Long
+						.parseLong(RootReadingStatus.getPropertyValue(props, RootReadingStatus.lastUpdateRs));
 
 				// ファイル名は監視設定更新されていた場合、監視設定から取得してファイル内容更新.
-				if (refreshStatus == REFRESH_MONINF_FILENAME) {
+				if (this.refreshStatus == REFRESH_MONINF_FILENAME) {
 					this.filename = this.monInfoWrapper.monitorInfo.getBinaryCheckInfo().getFileName();
 					this.outputRS();
 				} else {
-					this.filename = props.getProperty(RootReadingStatus.filename);
+					this.filename = RootReadingStatus.getPropertyValue(props, RootReadingStatus.filename);
 				}
 
 			} catch (FileNotFoundException e) {
 				log.debug(e.getMessage(), e);
-			} catch (IOException | NumberFormatException e) {
+			} catch (IOException e) {
 				log.warn(methodName + DELIMITER + e.getMessage(), e);
+			} catch (InvalidSetting | NumberFormatException e) {
+				log.warn(methodName + DELIMITER + e.getMessage(), e);
+				// RSファイルが壊れてるので削除.
+				if (!rstatus.delete()) {
+					log.warn(methodName + DELIMITER + "failed to delete file = [" + rstatus.getAbsolutePath() + "]");
+				} else {
+					log.info(methodName + DELIMITER + "deleted file = [" + rstatus.getAbsolutePath() + "]");
+					// 削除成功したので作成.
+					toCreate = true;
+				}
 			}
+
 		} else {
 			// ファイル出力された読込情報が存在しない場合は、foでrstatus.json作成して監視設定から読込む.
+			toCreate = true;
+		}
+
+		// RSファイル新規作成.
+		if (toCreate) {
 			try (FileOutputStream fo = new FileOutputStream(rstatus)) {
 				this.monRootDirectoryName = this.monInfoWrapper.monitorInfo.getBinaryCheckInfo().getDirectory();
 				this.filename = this.monInfoWrapper.monitorInfo.getBinaryCheckInfo().getFileName();

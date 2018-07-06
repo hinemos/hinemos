@@ -23,7 +23,6 @@ import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -43,9 +42,12 @@ import com.clustercontrol.utility.settings.report.xml.ReportingInfo;
 import com.clustercontrol.utility.settings.report.xml.ReportingType;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.UtilityDialogConstant;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.reporting.HinemosUnknown_Exception;
 import com.clustercontrol.ws.reporting.InvalidRole_Exception;
 import com.clustercontrol.ws.reporting.InvalidUserPass_Exception;
@@ -87,7 +89,7 @@ public class ReportScheduleAction {
 
 		try {
 			reportingInfoList = ReportingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getReportingList();
 		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
 				| ReportingNotFound_Exception e) {
@@ -99,7 +101,7 @@ public class ReportScheduleAction {
 		for (com.clustercontrol.ws.reporting.ReportingInfo reportingInfo:reportingInfoList){
 			try {
 				ReportingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.deleteReporting(reportingInfo.getReportScheduleId());
 			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
 					| ReportingNotFound_Exception e) {
@@ -130,7 +132,7 @@ public class ReportScheduleAction {
 
 		try {
 			reportingInfoList = ReportingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getReportingList();
 		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
 				| ReportingNotFound_Exception e) {
@@ -187,7 +189,7 @@ public class ReportScheduleAction {
 	public int importReportSchedule(String xmlFile){
 		log.debug("Start Import Report Schedule ");
 
-		if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			getLogger().debug("End Import Report.Schedule (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
@@ -216,32 +218,32 @@ public class ReportScheduleAction {
 			try {
 				reportingInfo = ReportScheduleConv.getReportingInfoDto(info);
 				ReportingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.addReporting(reportingInfo);
 				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + info.getReportScheduleId());
 			} catch (ReportingDuplicate_Exception e) {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {info.getReportScheduleId()};
-					ImportProcessDialog dialog = new ImportProcessDialog(
+					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 					ImportProcessMode.setProcesstype(dialog.open());
 					ImportProcessMode.setSameprocess(dialog.getToggleState());
 				}
 				
-				if(ImportProcessMode.getProcesstype() == ImportProcessDialog.UPDATE){
+				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
 					try {
 						ReportingEndpointWrapper
-							.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 							.modifyReporting(reportingInfo);
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + info.getReportScheduleId());
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 						ret = SettingConstants.ERROR_INPROCESS;
 					}
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.SKIP){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + info.getReportScheduleId());
-				} else if(ImportProcessMode.getProcesstype() == ImportProcessDialog.CANCEL){
+				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 					ret = SettingConstants.ERROR_INPROCESS;
 					return ret;
@@ -299,7 +301,7 @@ public class ReportScheduleAction {
 
 		try {
 			subList = ReportingEndpointWrapper
-					.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getReportingList();
 		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
 				| ReportingNotFound_Exception e) {
@@ -326,24 +328,24 @@ public class ReportScheduleAction {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getReportScheduleId()};
-					DeleteProcessDialog dialog = new DeleteProcessDialog(
+					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 				
-				if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.DELETE){
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
 						ReportingEndpointWrapper
-							.getWrapper(ClusterControlPlugin.getDefault().getCurrentManagerName())
+							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 							.deleteReporting(info.getReportScheduleId());
 						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getReportScheduleId());
 					} catch (Exception e1) {
 						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.SKIP){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getReportScheduleId());
-				} else if(DeleteProcessMode.getProcesstype() == DeleteProcessDialog.CANCEL){
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 					return;
 				}

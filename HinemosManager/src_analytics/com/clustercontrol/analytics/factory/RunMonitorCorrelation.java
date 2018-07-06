@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -189,29 +190,27 @@ public class RunMonitorCorrelation extends RunMonitorNumericValueType {
 				// データが不足している場合は処理対象外
 				continue;
 			}
-			boolean ret = false;
+
+			// 計算エラー時はnullに正規化
+			if (tmpValue != null && (tmpValue.isNaN() || tmpValue.isInfinite())) {
+				tmpValue = null;
+			}
+
+			// 算出した値を元に各種変数を設定
+			m_value = tmpValue;
+			m_curData = tmpValue;
+			m_message = String.format("%s : %s", m_monitor.getItemName(),
+					Objects.toString(tmpValue, MessageConstant.MESSAGE_COULD_NOT_GET_VALUE_ANALYTICS.getMessage()));
+			boolean success = (tmpValue != null);
+			Integer checkResult = getCheckResult(success);
+
+			// 監視結果を生成
 			MonitorRunResultInfo info = new MonitorRunResultInfo();
-			if (tmpValue != null && !tmpValue.isNaN()) {
-				// 正常にデータが取得された場合
-				ret = true;
-				m_value = tmpValue;
-				m_curData = tmpValue;
-				info.setValue(getValue());
-				info.setCurData(getCurData());
-			} else {
-				// データが取得されない場合
-				info.setValue(null);
-				info.setCurData(null);
-			}
-			String valueStr = MessageConstant.MESSAGE_COULD_NOT_GET_VALUE_ANALYTICS.getMessage();
-			if (m_value != null && !m_value.isNaN()) {
-				valueStr = m_value.toString();
-			}
-			m_message = String.format("%s : %s", m_monitor.getItemName(), valueStr);
-			Integer checkResult = getCheckResult(ret);
+			info.setValue(m_value);
+			info.setCurData(m_curData);
 			info.setFacilityId(facilityId);
-			info.setMonitorFlg(ret);
-			info.setCollectorResult(ret);
+			info.setMonitorFlg(success);
+			info.setCollectorResult(success);
 			info.setCheckResult(checkResult);
 			info.setMessage(getMessage(checkResult));
 			info.setMessageOrg(getMessageOrg(checkResult));

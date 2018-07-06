@@ -60,6 +60,7 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 	private FacilityRootUpdateService service;
 	
 	private class FacilityRootUpdateService {
+		private boolean disposed;
 		private com.clustercontrol.composite.FacilityTreeComposite listener;
 
 		public FacilityRootUpdateService() {
@@ -69,7 +70,8 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 					composite.getDisplay().asyncExec(new Runnable() {
 						@Override
 						public void run() {
-							LoginUsersView.this.update();
+							if (!disposed)
+								LoginUsersView.this.update();
 						}
 					});
 				}
@@ -86,6 +88,7 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 		}
 
 		public void dispose() {
+			disposed = true;
 			FacilityTreeCache.delComposite(listener);
 		}
 	}
@@ -118,19 +121,7 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 		}
 		
 		public void refreshView() {
-			if (refreshTask == null) {
-				refreshTask = new Runnable() {
-					@Override
-					public void run() {
-						try {
-							refresh();
-						} finally {
-							refreshTask = null;
-						}
-					}
-				};
-				Display.getCurrent().asyncExec(refreshTask);
-			}
+			registerRefreshTask();
 		}
 	};
 	
@@ -218,7 +209,30 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 				if (!manager.isInitialized())
 					manager.update();
 			}
-
+			
+			List<ICloudScopes> newCloudScopes = new ArrayList<>();
+			for (IHinemosManager manager: ClusterControlPlugin.getDefault().getHinemosManagers()) {
+				newCloudScopes.add(manager.getCloudScopes());
+			}
+			
+			CollectionComparator.compareCollection(cloudScopeRoots, newCloudScopes,
+				new CollectionComparator.Comparator<ICloudScopes, ICloudScopes>() {
+					@Override
+					public boolean match(ICloudScopes o1, ICloudScopes o2) {
+						return o1.getHinemosManager().getManagerName().equals(o1.getHinemosManager().getManagerName());
+					}
+					@Override
+					public void afterO1(ICloudScopes o1) {
+						cloudScopeRoots.remove(o1);
+						o1.getHinemosManager().getModelWatch().removeWatcher(o1, watcher);
+					}
+					@Override
+					public void afterO2(ICloudScopes o2) {
+						cloudScopeRoots.add(o2);
+						o2.getHinemosManager().getModelWatch().addWatcher(o2, watcher);
+					}
+				});
+			
 			refresh();
 		} catch(Exception e) {
 			logger.error(e.getMessage(), e);
@@ -229,8 +243,34 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
  	
 	public void update() {
 		try {
-			refresh();
-
+			List<ICloudScopes> newCloudScopes = new ArrayList<>();
+			for (IHinemosManager manager: ClusterControlPlugin.getDefault().getHinemosManagers()) {
+				newCloudScopes.add(manager.getCloudScopes());
+			}
+			
+			CollectionComparator.compareCollection(cloudScopeRoots, newCloudScopes,
+				new CollectionComparator.Comparator<ICloudScopes, ICloudScopes>() {
+					@Override
+					public boolean match(ICloudScopes o1, ICloudScopes o2) {
+						return o1.getHinemosManager().getManagerName().equals(o2.getHinemosManager().getManagerName());
+					}
+					@Override
+					public void afterO1(ICloudScopes o1) {
+						cloudScopeRoots.remove(o1);
+						o1.getHinemosManager().getModelWatch().removeWatcher(o1, watcher);
+						registerRefreshTask();
+					}
+					@Override
+					public void afterO2(ICloudScopes o2) {
+						cloudScopeRoots.add(o2);
+						o2.getHinemosManager().getModelWatch().addWatcher(o2, watcher);
+						registerRefreshTask();
+					}
+				});
+			
+			for (IHinemosManager manager: ClusterControlPlugin.getDefault().getHinemosManagers()) {
+				manager.update();
+			}
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 
@@ -245,30 +285,6 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 	}
 	
 	protected void refresh() {
-		List<ICloudScopes> newCloudScopes = new ArrayList<>();
-		for (IHinemosManager manager: ClusterControlPlugin.getDefault().getHinemosManagers()) {
-			manager.update();
-			newCloudScopes.add(manager.getCloudScopes());
-		}
-		
-		CollectionComparator.compareCollection(cloudScopeRoots, newCloudScopes,
-			new CollectionComparator.Comparator<ICloudScopes, ICloudScopes>() {
-				@Override
-				public boolean match(ICloudScopes o1, ICloudScopes o2) {
-					return o1.getHinemosManager().getManagerName().equals(o1.getHinemosManager().getManagerName());
-				}
-				@Override
-				public void afterO1(ICloudScopes o1) {
-					cloudScopeRoots.remove(o1);
-					o1.getHinemosManager().getModelWatch().removeWatcher(o1, watcher);
-				}
-				@Override
-				public void afterO2(ICloudScopes o2) {
-					cloudScopeRoots.add(o2);
-					o2.getHinemosManager().getModelWatch().addWatcher(o2, watcher);
-				}
-			});
-		
 		List<ICloudScope> roots = new ArrayList<>();
 		for (ICloudScopes cloudScopes: cloudScopeRoots) {
 			roots.addAll(Arrays.asList(cloudScopes.getCloudScopes()));
@@ -429,6 +445,7 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 		for (ICloudScopes root: cloudScopeRoots) {
 			root.getHinemosManager().getModelWatch().removeWatcher(root, watcher);
 		}
+		cloudScopeRoots.clear();
 		
 		if (service != null)
 			service.dispose();
@@ -444,5 +461,21 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 		
 		if (service == null)
 			service = new FacilityRootUpdateService();
+	}
+
+	protected void registerRefreshTask() {
+		if (refreshTask == null) {
+			refreshTask = new Runnable() {
+				@Override
+				public void run() {
+					try {
+						refresh();
+					} finally {
+						refreshTask = null;
+					}
+				}
+			};
+			Display.getCurrent().asyncExec(refreshTask);
+		}
 	}
 }

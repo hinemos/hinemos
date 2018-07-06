@@ -26,7 +26,7 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.jobmap.util.JobmapIconImageCache;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.jobmap.view.JobMapImageListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -110,7 +110,8 @@ public class JobMapImageDeleteAction extends AbstractHandler implements IElement
 					}
 					messageArg.append(managerName);
 					try {
-						JobmapIconImageCache.deleteJobmapIconImage(managerName, entry.getValue());
+						JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
+						iconCache.deleteJobmapIconImage(managerName, entry.getValue());
 					} catch (Exception e) {
 						if (e instanceof InvalidRole_Exception) {
 							// 権限なし

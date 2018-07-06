@@ -128,6 +128,8 @@ public class CreateJobWizard extends Wizard {
 		item.getData().getCommand().setScope("");
 		item.getData().getCommand().setSpecifyUser(false);
 		item.getData().getCommand().setStopType(1);
+		item.getData().getCommand().setFacilityID(facilities.get(0));
+		item.getData().getCommand().setCommandRetryFlg(false);
 
 		JobEndStatusInfo normalEndStatus = new JobEndStatusInfo();
 		normalEndStatus.setType(EndStatusConstant.TYPE_NORMAL);
@@ -148,6 +150,8 @@ public class CreateJobWizard extends Wizard {
 		abnormalEndStatus.setValue(EndStatusConstant.INITIAL_VALUE_ABNORMAL);
 		item.getData().getEndStatus().add(abnormalEndStatus);
 
+		item.getData().setWaitRule(JobTreeItemUtil.getNewJobWaitRuleInfo());
+
 		item.getData().setNormalPriority(PriorityConstant.TYPE_INFO);
 		item.getData().setPropertyFull(true);
 		item.getData().setWarnPriority(PriorityConstant.TYPE_WARNING);
@@ -157,8 +161,8 @@ public class CreateJobWizard extends Wizard {
 		item.getData().setId(detailPage.getJobId());
 		item.getData().setJobunitId(parent.getData().getJobunitId());
 		item.getData().setName(detailPage.getJobName());
-		item.getData().getCommand().setFacilityID(facilities.get(0));
-		
+		item.getData().setBeginPriority(PriorityConstant.TYPE_INFO);
+
 		try {
 			item.getData().getCommand().setStartCommand(provider.getCommand(endpoint));
 			
