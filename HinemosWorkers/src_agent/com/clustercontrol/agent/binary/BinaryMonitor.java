@@ -333,6 +333,8 @@ public class BinaryMonitor {
 				Files.copy(monitorFilePath, copyFile.toPath());
 				copyFc = FileChannel.open(monitorFilePath, StandardOpenOption.READ);
 				copyFc.position(0);
+				//コピー元ファイルのチャネルは全体監視では利用しないのでクローズ（閉じないとＯＳ側でハンドルリークする）
+				fc.close();
 				this.fileChannel = copyFc;
 				m_log.debug(methodName + DELIMITER
 						+ String.format("copied monitor file. copy file=[%s], size=%dbytes, last modified time=%s",

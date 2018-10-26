@@ -320,6 +320,74 @@ public class JpaTransactionManager implements AutoCloseable {
 	}
 
 	/**
+	 * クローズ処理
+	 * エージェントを利用する、または、システムログ監視を利用する場合のみ利用する
+	 */
+	public void close(String monitor) {
+		if(!nestedEm && em != null) {
+			if(em.isOpen()) {
+				try {
+					List<JpaTransactionCallback> callbacks = getCallbacks();
+					
+					if (! isCallbacked()) {
+						for (JpaTransactionCallback callback : callbacks) {
+							if (m_log.isDebugEnabled()) {
+								m_log.debug("executing callback preClose : " + callback.getClass().getName());
+							}
+							try {
+								setCallbacked();
+								
+								callback.preClose();
+							} catch (Throwable t) {
+								m_log.warn("callback execution failure : " + callback.getClass().getName(), t);
+							} finally {
+								unsetCallbacked();
+							}
+						}
+					}
+					
+					// commit or rollbackを発行せずにcloseに到達した悪しき実装は喝(rollback)！
+					// （中途半端な状態のconnectionをプールに戻してはいけません）
+					EntityTransaction tx = em.getTransaction();
+					if (tx.isActive()) {
+						if (m_log.isDebugEnabled()) {
+							StackTraceElement[] eList = Thread.currentThread().getStackTrace();
+							StringBuilder trace = new StringBuilder();
+							for (StackTraceElement e : eList) {
+								if (trace.length() > 0) {
+									trace.append("\n");
+								}
+								trace.append(String.format("%s.%s(%s:%d)", e.getClassName(), e.getMethodName(), e.getFileName(), e.getLineNumber()));
+							}
+							m_log.debug("closing uncompleted transaction. this transaction will be rollbacked before closing : " + trace);
+						}
+						tx.rollback();
+					}
+					
+					em.close();
+					HinemosSessionContext.instance().setProperty(JpaTransactionManager.EM, null);
+					
+					// postCloseのみはinnerTransactionとならないため、例外的にcallbackを実行可能とする
+					for (JpaTransactionCallback callback : callbacks) {
+						if (m_log.isDebugEnabled()) {
+							m_log.debug("executing callback postClose : " + callback.getClass().getName());
+						}
+						try {
+							callback.postClose();
+						} catch (Throwable t) {
+							m_log.warn("callback execution failure : " + callback.getClass().getName() + ", monitor name : " + monitor, t);
+							throw new RuntimeException(t.getMessage(), t);
+						}
+					}
+				} finally {
+					HinemosSessionContext.instance().setProperty(JpaTransactionManager.EM, null);
+				}
+			}
+			HinemosSessionContext.instance().setProperty(EM, null);
+		}
+	}
+
+	/**
 	 * EntityManager取得
 	 */
 	public HinemosEntityManager getEntityManager() {

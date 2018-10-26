@@ -136,7 +136,7 @@ public class MonitorCustomControllerBean {
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
 			if (jtm != null)
-				jtm.close();
+				jtm.close(this.getClass().getName());
 		}
 
 		// 監視ジョブEndNode処理

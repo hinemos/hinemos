@@ -8,7 +8,6 @@
 
 package com.clustercontrol.agent.log;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -19,7 +18,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -28,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.agent.util.MonitorStringUtil;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.util.BinaryUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -72,7 +72,7 @@ public class LogfileMonitor {
 	}
 	
 	
-	private String getFilePath() {
+	protected String getFilePath() {
 		return status.filePath.getPath();
 	}
 	
@@ -81,7 +81,7 @@ public class LogfileMonitor {
 	 * 
 	 */
 	public void run() {
-		m_log.debug("monitor start.  logfile : " + getFilePath() + "  file encoding : " + System.getProperty("file.encoding"));
+		m_log.debug("monitor start.  logfile : " + getFilePath() + "  file encoding（System.getProperty） : " + System.getProperty("file.encoding"));
 		
 		if (!status.isInitialized())
 			return;
@@ -162,11 +162,15 @@ public class LogfileMonitor {
 			}
 
 			m_unchanged_stats = 0;
-
+			// FIXME
+			// ログファイルの読込処理の途中で再起動された場合（positionがprevsize未満）、
+			// 再起動後に即処理が再開されることが望ましいが
+			// 現状の実装では対象ファイルのサイズが変わるまで 行われない。
+			// status.positon が読込みの開始条件として考慮されていない
 			if (status.prevSize < currentFilesize) {
 				// デバッグログ
-				m_log.debug("run() : " + getFilePath() +
-						" filesize " + status.prevSize + " tmp_filesize " + currentFilesize);
+				m_log.debug("run() read start: " + getFilePath() +
+						",prevsize=" + status.prevSize + ",currentFilesize=" + currentFilesize +",FilePointer=" + status.position);
 				
 				char[] cbuf = new char[1024];
 				try (Reader fr = new InputStreamReader(Channels.newInputStream(fileChannel), m_wrapper.monitorInfo.getLogfileCheckInfo().getFileEncoding()) {
@@ -191,6 +195,9 @@ public class LogfileMonitor {
 						if (read == -1)
 							break;
 						
+						if(m_log.isTraceEnabled()){
+							m_log.trace("run() : " + getFilePath() + " . fr.read is success . read=" + read + ",fileChannel.position()=" + fileChannel.position() );
+						}
 						// 今回出力処理する分のバッファを作成
 						// 前回の繰越分と今回ファイルから読み出したデータのうち
 						// 最後の改行までのデータをマージする。
@@ -209,10 +216,13 @@ public class LogfileMonitor {
 						if (!appendedBuf.isEmpty()) {
 							status.carryover = appendedBuf;
 							
-							// 繰越データが非常に長い場合はバッファをカットする
-							if(status.carryover.length() > LogfileMonitorConfig.logfilMessageLength){
+							// 繰越データが非常に長い場合（規定の繰越データ長超え）は繰越バッファをカットする
+							// FIXME
+							// 改行コード（2byte以上）が繰越バッファ＋読取バッファをまたぐ場合、考慮不足でログがロストするケースあり。
+							// 現状は繰越バッファに余裕があるために、ほぼ発現しない。
+							if(status.carryover.length() > LogfileMonitorConfig.logfileReadCarryOverLength){
 								String message = "run() : " + getFilePath() + " carryOverBuf size = " + status.carryover.length() + 
-										". carryOverBuf is too long. it cut down .(see monitor.logfile.message.length)";
+										". carryOverBuf is too long. it cut down .(see monitor.logfile.read.carryover.length)";
 								if (logFlag) {
 									m_log.info(message);
 									logFlag = false;
@@ -220,7 +230,7 @@ public class LogfileMonitor {
 									m_log.debug(message);
 								}
 								
-								status.carryover = status.carryover.substring(0, LogfileMonitorConfig.logfilMessageLength);
+								status.carryover = status.carryover.substring(0, LogfileMonitorConfig.logfileReadCarryOverLength);
 							}
 							
 							// デバッグログ
@@ -243,6 +253,11 @@ public class LogfileMonitor {
 								m_syslog.log(logPrefix + line);
 							} else {
 								// v4.0 mode
+								//FIXME 
+								//ver6.1.1時点では
+								//formatLineで必ず monitor.logfile.message.length 以下に丸められて
+								//patternMatchへ渡されてしまう。 
+								//lineで monitor.logfile.message.length を超える部分がマッチの対象にならずロストする。
 								MonitorStringUtil.patternMatch(LogfileMonitorConfig.formatLine(line, m_wrapper.monitorInfo), m_wrapper.monitorInfo, m_wrapper.runInstructionInfo, getFilePath());
 							}
 						}
@@ -252,26 +267,68 @@ public class LogfileMonitor {
 						//ファイルチャネルのサイズが小さい場合、ローテートしたとみなす。
 						currentFilesize =  fileChannel.size();
 						if (status.prevSize <= currentFilesize) {
+							//直近のポジションを控えておく（差分のバイトデータ取得用）
+							long prePosition = status.position;
 							// ファイルの読込情報を保存
+							// FIXME
+							// 読込み途中にReadingStatusファイルに中間保存してるpositionが実際の処理状況と合致しない場合あり
+							// 処理用データを取得しているInputStreamReader での読込み位置と 
+							// positionを取得してるfileChannel側でのposition管理が合致していない模様
 							status.position = fileChannel.position();
 							status.prevSize = currentFilesize;
+
+							// FIXME
+							// prefixは prefixBinaryにて代替となった為、判定上は不使用である
+							// ただし、r21858以前への切り戻し向けにprefixプロパティの更新は残す
+							// ver6.2 以降では この変数は不要なはずなので除去すること
 							if (status.prefix == null || status.prefix.isEmpty()) {
 								status.prefix = new String(cbuf, 0, Math.min(read, LogfileMonitorConfig.firstPartDataCheckSize));
 							} else if (status.prefix.length() < LogfileMonitorConfig.firstPartDataCheckSize) {
 								status.prefix = status.prefix + new String(cbuf, 0, Math.min(read, LogfileMonitorConfig.firstPartDataCheckSize - status.prefix.length()));
 							}
+							
+							//prefixBinary は必要な場合（未設定or長さが最大に達していない）のみ更新
+							if (status.prefixBinary == null || status.prefixBinary.isEmpty()) {
+								//ローテーション検出などにより 未設定なら先頭から今回の読込み部分までのPrefixを取得
+								status.prefixBinary = status.getCurrentPrefix();
+								int setListMax =Math.min((int)status.position, LogfileMonitorConfig.firstPartDataCheckSize);
+								if(status.prefixBinary.size() > setListMax ){
+									status.prefixBinary = status.prefixBinary.subList(0, setListMax);
+								}
+								status.prefixBinString = BinaryUtil.listToString(status.prefixBinary, 1);
+								if(m_log.isTraceEnabled()){
+									m_log.trace("run() : " + getFilePath() + " prefixBinary initial set .status.prefixBinary .size " + status.prefixBinary.size() + ", FilePointer = " + fileChannel.position());
+								}
+							} else if (status.prefixBinary.size() < LogfileMonitorConfig.firstPartDataCheckSize) {
+								//設定済みだが最大長で無いなら今回の読込み部分をPREFIXに継ぎ足し
+								List<Byte> addPreFix = getMonFileByteData(prePosition,status.position);
+								int addListMax = Math.min(addPreFix.size(), LogfileMonitorConfig.firstPartDataCheckSize - status.prefixBinary.size());
+								if(addPreFix.size() > addListMax ){
+									addPreFix = addPreFix.subList(0, addListMax);
+								}
+								status.prefixBinary.addAll(addPreFix);
+								status.prefixBinString = BinaryUtil.listToString(status.prefixBinary, 1);
+								if(m_log.isTraceEnabled()){
+									m_log.trace("run() : " + getFilePath() + " prefixBinary add set .status.prefixBinary .size " + status.prefixBinary.size() + ", FilePointer = " + fileChannel.position());
+								}
+							}
 							status.store();
+							if(m_log.isTraceEnabled()){
+								m_log.trace("run() : " + getFilePath() + " . status is stored . status.prevSize=" + status.prevSize + ",status.position=" + status.position + ", fileChannel.size() = " + fileChannel.size() );
+							}
 						} else {
 							fileChannel.position(0);
 							status.rotate();
+							if(m_log.isTraceEnabled()){
+								m_log.trace("run() : " + getFilePath() + " . status is rotate . status.prevSize=" + status.prevSize + ",status.position=" + status.position );
+							}
 						}
 					}
-					
-					m_log.info(String.format("run() : elapsed=%d ms.", System.currentTimeMillis() - start));
+					m_log.info(String.format("run() :" + getFilePath() + " , MonitorId "+ m_wrapper.monitorInfo.getMonitorId() + " , elapsed=%d ms.", System.currentTimeMillis() - start));
 				}
 
 				if(m_log.isDebugEnabled()){
-					m_log.debug("run() : " + getFilePath() + " filesize = " + status.prevSize + ", FilePointer = " + fileChannel.position());
+					m_log.debug("run() read end: " + getFilePath() + " filesize = " + status.prevSize + ", FilePointer = " + fileChannel.position());
 				}
 			} else if (status.prevSize > currentFilesize) {
 				// 最初から読み込み
@@ -428,39 +485,83 @@ public class LogfileMonitor {
 			m_initFlag = false;
 		}
 	}
+
+	/**
+	 * 監視対象ファイルから指定箇所のデータをList<byte>で取得.<br>
+	 * 
+	 * @return 取得できなかった場合は空のListを返却
+	 * 
+	 */
+	private List<Byte> getMonFileByteData(long fromPos ,long toPos ) {
+		if(m_log.isTraceEnabled()){
+			m_log.trace( "getMonFileByteData() :start. fromPos="+fromPos +" toPos="+toPos);
+		}
+		List<Byte> partOfFile = new ArrayList<Byte>();
+		long getLen =toPos - fromPos;
+		if(getLen == 0 ){// 読込み不要なら、空のリストを返す
+			return partOfFile;
+		}
+		File monFile = status.filePath;
+		// 指定バイト数だけ読込むため配列長を指定.
+		byte[] monFileByteArray = new byte[(int)getLen];
+		try (FileInputStream fi = new FileInputStream(monFile)) {
+			// 監視対象ファイルの指定部分だけ読込む
+			long skipbyte= fi.skip(fromPos);
+			if(skipbyte < fromPos){
+				m_log.warn("getMonFileByteData() : FileInputStream.skip result is a shortage of length. require:" + fromPos + " result:" + skipbyte );
+			}
+			int readed = fi.read(monFileByteArray);
+			partOfFile = BinaryUtil.arrayToList(monFileByteArray);
+			if(getLen > readed && partOfFile.size() > readed){
+				partOfFile = partOfFile.subList(0, readed);
+			}
+			fi.close();
+		} catch (IOException e) {
+			m_log.warn("getMonFileByteData() :"+ e.getMessage(), e);
+		}
+		if(m_log.isTraceEnabled()){
+			m_log.trace("getMonFileByteData() :partOfFile size = " + partOfFile.size());
+		}
+		
+		return partOfFile;
+	}
 	
 	private boolean checkPrefix() throws IOException {
 		boolean logrotateFlag = false;
 
 		try {
-			char[] newFirstPartOfFile = new char[LogfileMonitorConfig.firstPartDataCheckSize];
-			Arrays.fill(newFirstPartOfFile, '\0');  // 全ての要素を0で初期化
-
-			if (status.prefix.length() > 0) {
-				// ファイル名指定で新たにオープンするファイル
-				try (BufferedReader newFile = new BufferedReader(new InputStreamReader(new FileInputStream(getFilePath()), this.m_wrapper.monitorInfo.getLogfileCheckInfo().getFileEncoding()))) {
-					if (newFile.read(newFirstPartOfFile) >= status.prefix.length()) {
-						String firstPart = new String(newFirstPartOfFile, 0, status.prefix.length());
-						
-						if(m_log.isDebugEnabled()){
-							try {
-								m_log.debug("run() : " + getFilePath() + " newFirstPartOfFile : " + firstPart);
-							} catch (Exception e) {
-								m_log.error("run() : " + getFilePath() + " " + e.getMessage(), e);
-							}
-						}
-						
-						// ファイルの冒頭部分が異なれば別ファイルと判定
-						if (!firstPart.equals(status.prefix)) {
-							m_log.debug("run() : " + getFilePath() + " log rotation detected");
-							logrotateFlag = true;
-							m_log.debug("run() : m_logrotate set true .2");
-						}
+			if (status.prefixBinary.size() > 0 ) {
+				List<Byte> newFileBinary = status.getCurrentPrefix();
+				
+				//前回に保存したPrefix長にListをそろえてから比較処理へ渡す(でないと比較がうまくできない)
+				int prefixBinarySize = status.prefixBinary.size();
+				List<Byte> newFirstPartOfFile = new ArrayList<Byte>(newFileBinary);
+				if (newFirstPartOfFile.size() > prefixBinarySize){
+					newFirstPartOfFile = newFirstPartOfFile.subList(0, prefixBinarySize);
+				} 
+				List<Byte> oldFirstPartOfFile = status.prefixBinary;
+				// ログ出力.
+				if (m_log.isDebugEnabled()) {
+					try {
+						String newFirstPartString = BinaryUtil.listToString(newFirstPartOfFile, 1);
+						String preFirstPartString = BinaryUtil.listToString(oldFirstPartOfFile, 1);
+						m_log.debug("checkPrefix() : " + getFilePath() + " newFirstPartOfFile : "+ newFirstPartString);
+						m_log.debug("checkPrefix() : " + getFilePath() + " preFirstPartOfFile : "+ preFirstPartString);
+					} catch (Exception e) {
+						m_log.error("checkPrefix() : " + getFilePath() + " " + e.getMessage(),e);
 					}
+				}
+				
+				// readingStatus作成時点のファイルの先頭と現時点のファイルの先頭を比較.
+				if (!BinaryUtil.equals(newFirstPartOfFile, oldFirstPartOfFile)) {
+					// readingStatus作成時点と先頭が異なっているので、ローテーションされてると判定.
+					m_log.debug("checkPrefix() : " +getFilePath()  + " log rotation detected");
+					logrotateFlag = true;
+					m_log.debug("checkPrefix() : m_logrotate set true .2");
 				}
 			}
 		} catch (RuntimeException e) {
-			m_log.error("run() : " + getFilePath() + " " + e.getMessage(), e);
+			m_log.error("checkPrefix() : " + getFilePath() + " " + e.getMessage(), e);
 		}
 		
 		return logrotateFlag;

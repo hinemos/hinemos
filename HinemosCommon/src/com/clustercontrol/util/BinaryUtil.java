@@ -470,6 +470,71 @@ public class BinaryUtil {
 	}
 
 	/**
+	 * List<Byte>版のindexOfメソッド<br>
+	 * <br>
+	 * srcListの一部がtagListに一致するかチェック.<br>
+	 * ロジックの内容は 
+	 * java.lang.String#indexOf 
+	 * の実装内容を List<Byte>向けに微調整したもの
+	 * 
+	 * @param srcList
+	 *            走査対象バイナリ
+	 * @param tagList
+	 *            部分一致条件バイナリ
+	 * @return 一致なしなら -1 , 一致ありなら 一致した箇所の先頭
+	 */
+	public static int byteListIndexOf(List<Byte> srcList, 
+			List<Byte> tagList) {
+		if (existList(srcList) == null || existList(tagList) == null) {
+			return -1;
+		}
+		int fromIndex = 0 ;
+		int sourceOffset = 0 ;
+		int targetOffset = 0 ;
+		int sourceCount = srcList.size();
+		int targetCount = tagList.size();
+		
+		if (fromIndex >= sourceCount) {
+			if(targetCount == 0){
+				return	sourceCount;
+			}else{
+				return	-1;
+			}
+		}
+		if (fromIndex < 0) {
+			fromIndex = 0;
+		}
+		if (targetCount == 0) {
+			return fromIndex;
+		}
+
+		Byte first = tagList.get(0);
+		int max = sourceOffset + (sourceCount - targetCount);
+
+		for (int i = sourceOffset + fromIndex; i <= max; i++) {
+			/* Look for first character. */
+			if (srcList.get(i) != first) {
+				while (++i <= max && srcList.get(i) != first);
+			}
+
+			/* Found first character, now look at the rest of v2 */
+			if (i <= max) {
+				int j = i + 1;
+				int end = j + targetCount - 1;
+				for (int k = targetOffset + 1; j < end && srcList.get(j)
+						== tagList.get(k); j++, k++);
+
+				if (j == end) {
+					/* Found whole string. */
+					return i - sourceOffset;
+				}
+			}
+		}
+		return -1;
+	}
+
+	
+	/**
 	 * long値のint値変換.<br>
 	 * <br>
 	 * リストの要素数はintの最大値までしか扱えないため<br>

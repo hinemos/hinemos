@@ -64,6 +64,7 @@ public class TemplateIndexPage extends TemplateBase {
 			sb.append(m_nodes.get(i)[0]);
 			sb.append(")\n");
 		}
+		sb.deleteCharAt(sb.length() - 1);
 		String nodesStr = sb.toString();
 		
 		try {

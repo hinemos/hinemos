@@ -44,6 +44,7 @@ import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.ws.monitor.HttpScenarioCheckInfo;
 import com.clustercontrol.ws.monitor.MonitorInfo;
 import com.clustercontrol.ws.monitor.Page;
+import com.clustercontrol.ws.monitor.PagePK;
 
 /**
  * Http監視（シナリオ）作成・変更ダイアログクラス<BR>
@@ -1006,6 +1007,15 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 
 		List<Page> pages = httpScenarioCheckInfo.getPages();
 		pages.clear();
+		int count = 0;
+		for (Page page : this.m_pageInfoComposite.getItems()) {
+			PagePK pagePK = new PagePK();
+			pagePK.setMonitorId(monitorInfo.getMonitorId());
+			pagePK.setPageOrderNo(count);
+			page.setId(pagePK);
+			count++;
+			// Patternにはクライアント側ではkeyがないので設定なし
+		}
 		pages.addAll(this.m_pageInfoComposite.getItems());
 
 		monitorInfo.setHttpScenarioCheckInfo(httpScenarioCheckInfo);

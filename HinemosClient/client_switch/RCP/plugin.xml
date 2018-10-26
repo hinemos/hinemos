@@ -655,6 +655,11 @@
 						label="%view.jobmap.history"
 						style="push">
 					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobMapImageListAction"
+						label="%view.jobmap.icon"
+						style="push">
+					</command>
 				</menu>
 				<!-- NodeMap -->
 				<menu id="com.clustercontrol.enterprise.nodemap.viewMenu" label="%nodemap">
@@ -5651,6 +5656,12 @@
 			defaultHandler="com.clustercontrol.jobmap.etc.action.JobMapHistoryAction"
 			id="com.clustercontrol.enterprise.jobmap.etc.action.JobMapHistoryAction"
 			name="jobMapHistoryAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmap.etc.action.JobMapImageListAction"
+			id="com.clustercontrol.enterprise.jobmap.etc.action.JobMapImageListAction"
+			name="jobMapImageListAction">
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.JobMap"

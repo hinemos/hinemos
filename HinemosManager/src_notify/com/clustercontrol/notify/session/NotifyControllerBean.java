@@ -1064,6 +1064,7 @@ public class NotifyControllerBean implements CheckFacility {
 				if (jtm != null) {
 					jtm.rollback();
 				}
+				throw new RuntimeException(e.getMessage(), e);
 			} finally {
 				if (jtm != null)
 					jtm.close();

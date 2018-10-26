@@ -9,7 +9,6 @@
 package com.clustercontrol.jobmap.figure;
 
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -64,6 +63,7 @@ import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.TimeStringConverter;
 import com.clustercontrol.ws.jobmanagement.IconFileNotFound_Exception;
 import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 import com.clustercontrol.ws.jobmanagement.InvalidSetting_Exception;
@@ -521,9 +521,7 @@ public class JobFigure extends Figure implements ISelection {
 		//ツールチップメッセージ作成（RAPでの初回描画のみ、表示ラベル横幅不足となるケースあり。調整用空白パディングを設定）
 		ArrayList<String> messageArray = new ArrayList<String>();
 		if (date != null) {
-			// DateFormat df = new SimpleDateFormat("yyyy-MM-dd (EE) HH:mm:ss.SSS zz");
-			DateFormat df = new SimpleDateFormat("HH:mm:ss");
-			messageArray.add(Messages.getString("timestamp") + ":" + df.format(date) + "   ");
+			messageArray.add(Messages.getString("timestamp") + ":" + TimeStringConverter.formatTime(date) + "   ");
 		}
 		if (minute != null) {
 			messageArray.add((Messages.getString("time.after.session.start") + ":" + minute) + "   ");

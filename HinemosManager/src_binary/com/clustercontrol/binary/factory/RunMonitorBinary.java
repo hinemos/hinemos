@@ -472,7 +472,13 @@ public class RunMonitorBinary {
 
 		// 重要度・生成日時・ジョブ設定情報の設定.
 		output.setPriority(record.getMatchBinaryProvision().getPriority());
-		output.setGenerationDate(result.msgInfo.getGenerationDate());
+		//レコードに付与されたタイムスタンプがあれば、それを生成日時とする
+		if( record.getRecTime() != null && record.getRecTime().longValue() > 0 ){
+			output.setGenerationDate(record.getRecTime());
+		}else{
+			output.setGenerationDate(result.msgInfo.getGenerationDate());
+		}
+		
 		output.setRunInstructionInfo(result.runInstructionInfo);
 
 		// 多重化IDの設定.

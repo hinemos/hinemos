@@ -489,6 +489,11 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 		tableViewer.setInput(alarms);
 		getViewSite().getActionBars().updateActionBars();
 		getViewSite().getActionBars().getToolBarManager().update(false);
-		lblFooder.setText(CloudStringConstants.strFooterTitle + currentBillingAlarms.getBillingMonitors().length);
+		if (currentBillingAlarms == null) {
+			lblFooder.setText(CloudStringConstants.strFooterTitle + 0);
+		} else {
+			lblFooder.setText(CloudStringConstants.strFooterTitle + currentBillingAlarms.getBillingMonitors().length);
+		}
+
 	}
 }

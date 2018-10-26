@@ -25,44 +25,8 @@
 	<queryString>
 		<![CDATA[]]>
 	</queryString>
-	<title>
-		<band height="713" splitType="Stretch">
-			<rectangle radius="10">
-				<reportElement positionType="Float" x="25" y="430" width="200" height="33" backcolor="#B4D4FF" uuid="ec0e62b5-34a1-41fb-8124-db989fba414b"/>
-				<graphicElement>
-					<pen lineWidth="0.0"/>
-				</graphicElement>
-			</rectangle>
-			<rectangle radius="10">
-				<reportElement positionType="Float" x="25" y="330" width="200" height="33" backcolor="#B4D4FF" uuid="8a36324b-e002-4b3d-9c62-f1a4a05d7502">
-					<property name="local_mesure_unitheight" value="pixel"/>
-					<property name="com.jaspersoft.studio.unit.height" value="px"/>
-				</reportElement>
-				<graphicElement>
-					<pen lineWidth="0.0"/>
-				</graphicElement>
-			</rectangle>
-			<rectangle radius="10">
-				<reportElement positionType="Float" x="25" y="115" width="200" height="33" backcolor="#B4D4FF" uuid="0b15080d-8972-4869-8f4f-fa4a7fd297f0"/>
-				<graphicElement>
-					<pen lineWidth="0.0"/>
-				</graphicElement>
-			</rectangle>
-			<textField isStretchWithOverflow="true">
-				<reportElement positionType="Float" x="67" y="158" width="460" height="162" uuid="e6233e99-4075-435e-9e63-aa84a7982906"/>
-				<textElement textAlignment="Left" verticalAlignment="Top">
-					<font fontName="SansSerif" size="12" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
-					<paragraph lineSpacing="Single" lineSpacingSize="1.0"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{REPORT_CONTENTS}]]></textFieldExpression>
-			</textField>
-			<textField isStretchWithOverflow="true">
-				<reportElement positionType="Float" x="67" y="374" width="460" height="44" uuid="822dca91-14cf-426b-896b-a53ab9e86df3"/>
-				<textElement textAlignment="Left" verticalAlignment="Top">
-					<font fontName="SansSerif" size="12" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$P{REPORT_PERIOD}]]></textFieldExpression>
-			</textField>
+	<pageHeader>
+		<band height="110">
 			<image hAlign="Right" onErrorType="Blank">
 				<reportElement x="380" y="10" width="200" height="100" uuid="ebad7c3c-ff53-4ca6-8d4a-000bfd41c3f5">
 					<property name="local_mesure_unitheight" value="pixel"/>
@@ -71,10 +35,52 @@
 				</reportElement>
 				<imageExpression><![CDATA[$P{LOGO_FILENAME}]]></imageExpression>
 			</image>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="603" splitType="Stretch">
+			<rectangle radius="10">
+				<reportElement positionType="Float" x="25" y="349" width="200" height="33" backcolor="#B4D4FF" uuid="ec0e62b5-34a1-41fb-8124-db989fba414b"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="10">
+				<reportElement positionType="Float" x="25" y="250" width="200" height="33" backcolor="#B4D4FF" uuid="8a36324b-e002-4b3d-9c62-f1a4a05d7502">
+					<property name="local_mesure_unitheight" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle radius="10">
+				<reportElement positionType="Float" x="25" y="36" width="200" height="33" backcolor="#B4D4FF" uuid="0b15080d-8972-4869-8f4f-fa4a7fd297f0"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
 			<textField isStretchWithOverflow="true">
-				<reportElement positionType="Float" x="67" y="473" width="460" height="240" uuid="9f600e2e-38f6-44c3-b20e-c113fe01f61c">
+				<reportElement positionType="Float" x="67" y="75" width="460" height="162" uuid="e6233e99-4075-435e-9e63-aa84a7982906"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font fontName="SansSerif" size="12" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+					<paragraph lineSpacing="Single" lineSpacingSize="1.0"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{REPORT_CONTENTS}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement positionType="Float" x="67" y="291" width="460" height="44" uuid="822dca91-14cf-426b-896b-a53ab9e86df3"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font fontName="SansSerif" size="12" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{REPORT_PERIOD}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement positionType="Float" x="67" y="390" width="460" height="200" uuid="9f600e2e-38f6-44c3-b20e-c113fe01f61c">
 					<property name="local_mesure_unity" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="local_mesure_unitheight" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
 				<textElement textAlignment="Left" verticalAlignment="Top">
 					<font fontName="SansSerif" size="12" isStrikeThrough="false" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
@@ -82,25 +88,25 @@
 				<textFieldExpression><![CDATA[$P{REPORT_TARGET_NODES}]]></textFieldExpression>
 			</textField>
 			<line>
-				<reportElement positionType="Float" x="47" y="148" width="500" height="1" forecolor="#B4D4FF" uuid="63b53d40-6ae7-44ff-a0cf-a271464f79d1"/>
+				<reportElement positionType="Float" x="47" y="65" width="500" height="1" forecolor="#B4D4FF" uuid="63b53d40-6ae7-44ff-a0cf-a271464f79d1"/>
 				<graphicElement>
 					<pen lineWidth="3.0" lineColor="#B4D4FF"/>
 				</graphicElement>
 			</line>
 			<line>
-				<reportElement positionType="Float" x="47" y="364" width="500" height="1" forecolor="#B4D4FF" uuid="88989fb7-f8db-4f25-b7bb-268868e04b08"/>
+				<reportElement positionType="Float" x="47" y="281" width="500" height="1" forecolor="#B4D4FF" uuid="88989fb7-f8db-4f25-b7bb-268868e04b08"/>
 				<graphicElement>
 					<pen lineWidth="3.0" lineColor="#B4D4FF"/>
 				</graphicElement>
 			</line>
 			<line>
-				<reportElement positionType="Float" x="50" y="463" width="500" height="1" forecolor="#B4D4FF" uuid="5818e41e-333c-40c5-8ee9-399ffbfc09ec"/>
+				<reportElement positionType="Float" x="50" y="380" width="500" height="1" forecolor="#B4D4FF" uuid="5818e41e-333c-40c5-8ee9-399ffbfc09ec"/>
 				<graphicElement>
 					<pen lineWidth="3.0" lineColor="#B4D4FF"/>
 				</graphicElement>
 			</line>
 			<textField>
-				<reportElement positionType="Float" x="25" y="115" width="200" height="33" forecolor="#000000" uuid="f72651f5-48de-4922-92f6-45ccaec35a69">
+				<reportElement positionType="Float" x="25" y="37" width="200" height="33" forecolor="#000000" uuid="f72651f5-48de-4922-92f6-45ccaec35a69">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="local_mesure_unitx" value="pixel"/>
@@ -114,7 +120,7 @@
 				<textFieldExpression><![CDATA[$P{contents.item}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement positionType="Float" x="25" y="330" width="200" height="33" forecolor="#000000" uuid="7eca36a1-dd49-40ac-9ce2-661fd621fa6a">
+				<reportElement positionType="Float" x="25" y="250" width="200" height="33" forecolor="#000000" uuid="7eca36a1-dd49-40ac-9ce2-661fd621fa6a">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="local_mesure_unitheight" value="pixel"/>
@@ -126,7 +132,7 @@
 				<textFieldExpression><![CDATA[$P{period.item}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement positionType="Float" x="25" y="430" width="200" height="33" forecolor="#000000" uuid="a3a8a3e2-1c07-4066-88ba-ebf3cb884f34">
+				<reportElement positionType="Float" x="25" y="350" width="200" height="33" forecolor="#000000" uuid="a3a8a3e2-1c07-4066-88ba-ebf3cb884f34">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -136,7 +142,7 @@
 				<textFieldExpression><![CDATA[$P{target.nodes.item}]]></textFieldExpression>
 			</textField>
 		</band>
-	</title>
+	</detail>
 	<pageFooter>
 		<band height="70" splitType="Stretch">
 			<rectangle>

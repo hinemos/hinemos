@@ -656,7 +656,10 @@ public class SchedulerPlugin implements HinemosPlugin {
 					} else {
 						triggerBuilder.withMisfireHandlingInstructionIgnoreMisfires();
 					}
-					trigger = triggerBuilder.cronSchedule(entity.getCronExpression()).startNow().endAt(entity.getEndTime()).build();
+					// 現在時刻を一度ミリ秒単位を落として取得する
+					long nowTime = (HinemosTime.currentTimeMillis() / 1000) * 1000;
+					log.debug("start_time : " + nowTime);
+					trigger = triggerBuilder.cronSchedule(entity.getCronExpression()).startAt(nowTime).endAt(entity.getEndTime()).build();
 					((AbstractTrigger)trigger).setNextFireTime(entity.getNextFireTime());
 					((AbstractTrigger)trigger).setPreviousFireTime(entity.getPrevFireTime());
 					

@@ -219,20 +219,20 @@ public class WinEventMonitor {
 		long start = HinemosTime.currentTimeMillis(); // 計測開始
 			
 		// 監視設定無効時はイベントログを取得しない
-//		if (runInstructionInfo == null && !monitorInfo.isMonitorFlg()) {
-//			m_log.debug("WinEventMonitorThread run is skipped because of monitor flg");
-//			for(Map.Entry<String, String> entry : bookmarkFileNameMap.entrySet()) {
-//				String logName = entry.getKey();
-//				try {
-//					winEventReader.updateBookmark(entry.getValue(), logName);
-//				} catch (Win32Exception e) {
-//					m_log.warn("Failed to update bookmark file (monitor disabled)" + bookmarkFileNameMap.get(logName) + ", " + e.getMessage());
-//				} catch (IOException e) {
-//					m_log.warn("Failed to update bookmark file (monitor disabled)" + bookmarkFileNameMap.get(logName) + ", " + e.getMessage());
-//				}
-//			}
-//			return;
-//		}
+		if (runInstructionInfo == null && !monitorInfo.isMonitorFlg() && !monitorInfo.isCollectorFlg()) {
+			m_log.debug("WinEventMonitorThread run is skipped because of monitor flg");
+			for(Map.Entry<String, String> entry : bookmarkFileNameMap.entrySet()) {
+				String logName = entry.getKey();
+				try {
+					winEventReader.updateBookmark(entry.getValue(), logName);
+				} catch (Win32Exception e) {
+					m_log.warn("Failed to update bookmark file (monitor disabled)" + bookmarkFileNameMap.get(logName) + ", " + e.getMessage());
+				} catch (IOException e) {
+					m_log.warn("Failed to update bookmark file (monitor disabled)" + bookmarkFileNameMap.get(logName) + ", " + e.getMessage());
+				}
+			}
+			return;
+		}
 		// カレンダによる非稼動時はイベントログを取得しない
 		if (runInstructionInfo == null && monitorInfo.getCalendar() != null && ! CalendarWSUtil.isRun(monitorInfo.getCalendar())) {
 			m_log.debug("WinEventMonitorThread run is skipped because of calendar settings");

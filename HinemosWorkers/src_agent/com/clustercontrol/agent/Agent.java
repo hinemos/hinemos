@@ -78,6 +78,9 @@ public class Agent {
 	/** AgentInfoの前回更新時間 */
 	private static long lastAgentInfoUpdateTime = 0;
 	
+	/** シャットダウン待ち時間 [sec] */
+	private static int m_shutdownWaitTime = 120;
+	
 	private static AgentInfo agentInfo = new AgentInfo();
 
 	public static final Integer DEFAULT_CONNECT_TIMEOUT = 10000;
@@ -584,10 +587,37 @@ public class Agent {
 				m_log.error("agent.info.update.time",e);
 			}
 		}
-
+		
+		// シャットダウン待ち時間の更新
+		String shutdownWaitTime = AgentProperties.getProperty("agent.shutdown.wait.time");
+		if (shutdownWaitTime != null) {
+			try {
+				m_shutdownWaitTime = Integer.parseInt(shutdownWaitTime);
+				m_log.info("agent.shutdown.wait.time = " + m_shutdownWaitTime + " sec");
+			} catch (NumberFormatException e) {
+				m_log.error("agent.shutdown.wait.time", e);
+			}
+		}
+		
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
+				// ログファイル監視の実行中は停止を待つ
+				LogfileMonitorManager.terminate();
+				for(int i = 0 ; i < m_shutdownWaitTime / 2; i++) {
+					try {
+						if(LogfileMonitorManager.isRunning()) {
+							m_log.info("Logfile monitor is running.");
+							Thread.sleep(2 * 1000);
+						} else {
+							m_log.info("Logfile monitor is stopping.");
+							break;
+						}
+					} catch (InterruptedException e) {
+						m_log.warn(e.getMessage(), e);
+					}
+				}
+				
 				terminate();
 				m_log.info("Hinemos agent stopped");
 			}

@@ -340,7 +340,9 @@ public class BinaryFiltering {
 	 */
 	private boolean matchPattern(List<Byte> searchBinary) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
-		log.debug(methodName + DELIMITER + "start.");
+		if(log.isDebugEnabled()){
+			log.debug(methodName + DELIMITER + "start.");
+		}
 
 		// ループ用変数初期化.
 		BinaryPatternInfo binaryProvision = null;
@@ -352,13 +354,17 @@ public class BinaryFiltering {
 
 			// マッチキーをセット.
 			this.matchKey = matchInfoEntry.getKey();
-			log.debug(methodName + DELIMITER + "checked match with matchKey = " + this.matchKey.toString());
+			if(log.isDebugEnabled()){
+				log.debug(methodName + DELIMITER + "checked match with matchKey = " + this.matchKey.toString());
+			}
 
 			// パターンとセットのバイナリ検索条件を取得.
 			binaryProvision = matchInfoEntry.getValue();
 			patternBinary = patternBinaryMap.get(matchInfoEntry.getKey());
-			log.debug(methodName + DELIMITER + "binary provision to match : searchText = "
-					+ binaryProvision.getGrepString() + ", processType = " + binaryProvision.isProcessType());
+			if(log.isDebugEnabled()){
+				log.debug(methodName + DELIMITER + "binary provision to match : searchText = "
+						+ binaryProvision.getGrepString() + ", processType = " + binaryProvision.isProcessType());
+			}
 
 			// 引数不正等で検索対象文字列がバイナリ変換できていない場合(変換時にログ出力済).
 			if (patternBinary == null) {
@@ -392,20 +398,26 @@ public class BinaryFiltering {
 			}
 
 			// 検索対象のバイナリが含まれてるかチェック.
-			if (searchBinary.containsAll(patternBinary)) {
+			if ( BinaryUtil.byteListIndexOf(searchBinary,patternBinary) > -1 ) {
 				// 優先順位を返却値として格納.
 				this.priority = matchInfoEntry.getKey().intValue();
 				if (binaryProvision.isProcessType()) {
 					// 条件に一致したら処理するの場合は含まれてるので処理対象としてtrue返却.
-					log.debug(methodName + DELIMITER + "matched and process(binary)");
+					if(log.isDebugEnabled()){
+						log.debug(methodName + DELIMITER + "matched and process(binary) with matchKey = " + this.matchKey.toString());
+					}
 					return true;
 				} else {
 					// 条件に一致したら処理しないの場合は処理対象外としてfalse返却.
-					log.debug(methodName + DELIMITER + "matched and unprocess(binary)");
+					if(log.isDebugEnabled()){
+						log.debug(methodName + DELIMITER + "matched and unprocess(binary) with matchKey = " + this.matchKey.toString());
+					}
 					return false;
 				}
 			}
-			log.debug(methodName + DELIMITER + "unmatched. ");
+			if(log.isDebugEnabled()){
+				log.debug(methodName + DELIMITER + "unmatched. ");
+			}
 
 		}
 

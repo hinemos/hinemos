@@ -162,7 +162,9 @@ public class TemplateGeneralPageEachResourceGroupeByScope extends TemplateBase {
 
 					for (OutputNodeInfo node: rootScope.getNodes()) {
 						for (DataKey dataKey : ds.getKeys(node.getFacilityId())) {
-							pageHolder.appendItem(dataKey, null);
+							// Sub title for this chart
+							String chartSubTitle = rootScope.getFacilityName() + "(" + rootScope.getFacilityId() + ")";
+							pageHolder.appendItem(dataKey, chartSubTitle);
 						}
 					}
 				}
@@ -553,7 +555,9 @@ public class TemplateGeneralPageEachResourceGroupeByScope extends TemplateBase {
 
 							for (OutputNodeInfo node: rootScope.getNodes()) {
 								for (DataKey dataKey : ds.getKeys(node.getFacilityId())) {
-									pageHolder.appendItem(dataKey, null);
+									// Sub title for this chart
+									String chartSubTitle = rootScope.getFacilityName() + "(" + rootScope.getFacilityId() + ")";
+									pageHolder.appendItem(dataKey, chartSubTitle);
 								}
 							}
 						}

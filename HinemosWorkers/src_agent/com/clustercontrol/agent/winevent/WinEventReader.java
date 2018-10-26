@@ -280,34 +280,40 @@ public class WinEventReader {
 
 			HANDLE[] saveHandles = new HANDLE[1];
 			IntByReference returnedHandleSize = new IntByReference(0);
-			if (!wevtapi.INSTANCE.EvtNext(hResult, 1, saveHandles, new DWORD(wevtapi.INFINITE), 0, returnedHandleSize)) {
-				if (WinError.ERROR_NO_MORE_ITEMS == getLastError()) {
-					// ERROR_NO_MORE_ITEMS の場合、引数チャネルのイベント数が0件である。
-					// ブックマークファイルが存在しなければ、RecordId を 0 としてブックマークファイルを作成する。
-					if(!new File(bookmarkFileName).exists()) {
-						String bookmarkString = "<BookmarkList><Bookmark Channel='" + WinEventMonitor.pergeEventLogNameEnclosure(logName) +
-								"' RecordId='0' IsCurrent='true'/></BookmarkList>";
-						saveBookmarkFile(bookmarkFileName, bookmarkString);
-						m_log.info("updateBookmark() create " + bookmarkFileName + " with RecordId 0");
+			try {
+				if (!wevtapi.INSTANCE.EvtNext(hResult, 1, saveHandles, new DWORD(wevtapi.INFINITE), 0, returnedHandleSize)) {
+					if (WinError.ERROR_NO_MORE_ITEMS == getLastError()) {
+						// ERROR_NO_MORE_ITEMS の場合、引数チャネルのイベント数が0件である。
+						// ブックマークファイルが存在しなければ、RecordId を 0 としてブックマークファイルを作成する。
+						if(!new File(bookmarkFileName).exists()) {
+							String bookmarkString = "<BookmarkList><Bookmark Channel='" + WinEventMonitor.pergeEventLogNameEnclosure(logName) +
+									"' RecordId='0' IsCurrent='true'/></BookmarkList>";
+							saveBookmarkFile(bookmarkFileName, bookmarkString);
+							m_log.info("updateBookmark() create " + bookmarkFileName + " with RecordId 0");
+						}
+						return;
 					}
-					return;
+					m_log.warn("updateBookmark() EvtNext error=" + Win32Error.getMessage(getLastError()));
+					throw new Win32Exception(getLastError());
 				}
-				m_log.warn("updateBookmark() EvtNext error=" + Win32Error.getMessage(getLastError()));
-				throw new Win32Exception(getLastError());
+				
+				hBookmark = wevtapi.INSTANCE.EvtCreateBookmark(null);
+				if (hBookmark == null) {
+					m_log.warn("updateBookmark() EvtCreateBookmark error=" + Win32Error.getMessage(getLastError()));
+					throw new Win32Exception(getLastError());
+				}
+				
+				if (!wevtapi.INSTANCE.EvtUpdateBookmark(hBookmark, saveHandles[0])) {
+					m_log.warn("updateBookmark() EvtUpdateBookmark error=" + Win32Error.getMessage(getLastError()));
+					throw new Win32Exception(getLastError());
+				}
+			} finally {
+				// EvtNext から取得したイベントハンドルは、削除。
+				// https://docs.microsoft.com/ja-jp/windows/desktop/api/winevt/nf-winevt-evtnext
+				for (int i = 0; i < returnedHandleSize.getValue(); ++i) {
+					wevtapi.INSTANCE.EvtClose(saveHandles[i]);
+				}
 			}
-
-			hBookmark = wevtapi.INSTANCE.EvtCreateBookmark(null);
-			if (hBookmark == null) {
-				m_log.warn("updateBookmark() EvtCreateBookmark error=" + Win32Error.getMessage(getLastError()));
-				throw new Win32Exception(getLastError());
-			}
-
-			if (!wevtapi.INSTANCE.EvtUpdateBookmark(hBookmark, saveHandles[0])) {
-				m_log.warn("updateBookmark() EvtUpdateBookmark error=" + Win32Error.getMessage(getLastError()));
-				throw new Win32Exception(getLastError());
-			}
-			wevtapi.INSTANCE.EvtClose(saveHandles[0]);
-			saveHandles[0] = null;
 
 			String saveBookmarkString = renderEvent(hBookmark, wevtapi.EvtRenderBookmark);
 			saveBookmarkFile(bookmarkFileName, saveBookmarkString);
@@ -342,58 +348,62 @@ public class WinEventReader {
 	 *          (インデックス 0：イベントログ、インデックス 1：レンダリングに失敗したかどうか)
 	 */
 	public String[] readEventLog(String bookmarkFileName, String query, int maxEvents, long timeout, String logName, Date lastMonitorDate) throws Win32Exception, IOException {
-		HANDLE hResults = null;
+		String bookmarkString = getBookmartString(bookmarkFileName);
+		if (bookmarkString.isEmpty()) {
+			// ブックマークが取得できない場合はブックマークファイルを作成する
+			updateBookmark(bookmarkFileName, logName);
+			return null;
+		}
+
 		HANDLE hBookmark = null;
-		String[] ret = new String[2];
 		try {
-			StringBuffer eventLog = new StringBuffer();
-			String bookmarkString = getBookmartString(bookmarkFileName);
-			if (bookmarkString.isEmpty()) {
-				// ブックマークが取得できない場合はブックマークファイルを作成する
-				updateBookmark(bookmarkFileName, logName);
-				return null;
-			} else {
-				m_log.debug("bookmarkString is " + bookmarkString);
-				hBookmark = wevtapi.INSTANCE.EvtCreateBookmark(new WString(bookmarkString));
-				if (hBookmark == null) {
-					m_log.warn("readEventLog() EvtCreateBookmark error=" + Win32Error.getMessage(getLastError()) + ", bookmarkString=" + bookmarkString);
-					throw new Win32Exception(getLastError());
-				}
-				
-				//bookmarkに記載されているrecordIDを取得
-				Long id = getRecordId(bookmarkString);
-				if (id != null) {
-					//bookmarkに記載されているレコードIDから現行のイベントログ対象に対して存在するか確認
-					if (!existRecordId(hBookmark, WinEventMonitor.pergeEventLogNameEnclosure(logName), id, timeout)) {
-						// bookmark記載のレコードIDがない場合はローテートされている可能性があるのでアーカイブファイルを取得する
-						File latestArchiveFiles[] = getLatestArchive(WinEventMonitor.pergeEventLogNameEnclosure(logName), lastMonitorDate);
-						//ローテート設定があり、ローテートされたファイルが存在する場合
-						if (latestArchiveFiles != null) {
-							for(File f : latestArchiveFiles) {
-								String latestArchiveFileName = f.getAbsolutePath();
-								//ローテートされたファイルに対してbookmarkに記載されているレコードID+1が最新のアーカイブされたログファイルに存在するか確認
-								String archiveFilePath = "file://" + latestArchiveFileName;
-								if (existRecordId(hBookmark, archiveFilePath, id + 1, timeout)) {
-									//queryのパスをアーカイブファイルに変更する
-									query = query.replace("Path='" +WinEventMonitor.pergeEventLogNameEnclosure(logName), "Path='" + archiveFilePath);
-									//bookmarkのチャンネル文字列をアーカイブファイルに変更する
-									bookmarkString = bookmarkString.replace("Channel='"+WinEventMonitor.pergeEventLogNameEnclosure(logName), "Channel='"+latestArchiveFileName);
-									break;
-								} else if (existRecordId(hBookmark, archiveFilePath, id, timeout)) {
-									//ローテートされたファイルに対してbookmarkに記載されているレコードIDが最新のアーカイブされたログファイルに存在するか確認
-									//アーカイブ後、更新がない場合
-									m_log.debug("no new write since latest check record(recordId=" + id + ")");
-								} else {
-									//最新のローテートされたファイルにブックマークファイルに記載されているレコードID+1がない場合はログを出力する
-									m_log.info(String.format("not found out record(RecordID=%s) in logs current and archive(FileName=%s). may be bookmark file is broken, or too many record archived.",
-											id+1, latestArchiveFileName));
-								}
+			m_log.debug("bookmarkString is " + bookmarkString);
+			hBookmark = wevtapi.INSTANCE.EvtCreateBookmark(new WString(bookmarkString));
+			if (hBookmark == null) {
+				m_log.warn("readEventLog() EvtCreateBookmark error=" + Win32Error.getMessage(getLastError()) + ", bookmarkString=" + bookmarkString);
+				throw new Win32Exception(getLastError());
+			}
+			
+			//bookmarkに記載されているrecordIDを取得
+			Long id = getRecordId(bookmarkString);
+			if (id != null) {
+				//bookmarkに記載されているレコードIDから現行のイベントログ対象に対して存在するか確認
+				if (!existRecordId(hBookmark, WinEventMonitor.pergeEventLogNameEnclosure(logName), id, timeout)) {
+					// bookmark記載のレコードIDがない場合はローテートされている可能性があるのでアーカイブファイルを取得する
+					File latestArchiveFiles[] = getLatestArchive(WinEventMonitor.pergeEventLogNameEnclosure(logName), lastMonitorDate);
+					//ローテート設定があり、ローテートされたファイルが存在する場合
+					if (latestArchiveFiles != null) {
+						for(File f : latestArchiveFiles) {
+							String latestArchiveFileName = f.getAbsolutePath();
+							//ローテートされたファイルに対してbookmarkに記載されているレコードID+1が最新のアーカイブされたログファイルに存在するか確認
+							String archiveFilePath = "file://" + latestArchiveFileName;
+							if (existRecordId(hBookmark, archiveFilePath, id + 1, timeout)) {
+								//queryのパスをアーカイブファイルに変更する
+								query = query.replace("Path='" +WinEventMonitor.pergeEventLogNameEnclosure(logName), "Path='" + archiveFilePath);
+								//bookmarkのチャンネル文字列をアーカイブファイルに変更する
+								bookmarkString = bookmarkString.replace("Channel='"+WinEventMonitor.pergeEventLogNameEnclosure(logName), "Channel='"+latestArchiveFileName);
+								break;
+							} else if (existRecordId(hBookmark, archiveFilePath, id, timeout)) {
+								//ローテートされたファイルに対してbookmarkに記載されているレコードIDが最新のアーカイブされたログファイルに存在するか確認
+								//アーカイブ後、更新がない場合
+								m_log.debug("no new write since latest check record(recordId=" + id + ")");
+							} else {
+								//最新のローテートされたファイルにブックマークファイルに記載されているレコードID+1がない場合はログを出力する
+								m_log.info(String.format("not found out record(RecordID=%s) in logs current and archive(FileName=%s). may be bookmark file is broken, or too many record archived.",
+										id+1, latestArchiveFileName));
 							}
 						}
 					}
 				}
 			}
-			
+		} finally {
+			if (hBookmark != null) {
+				wevtapi.INSTANCE.EvtClose(hBookmark);
+			}
+		}
+		
+		HANDLE hResults = null;
+		try {
 			WString wQuery = new WString(query);
 			hResults = wevtapi.INSTANCE.EvtQuery(null, null, wQuery, wevtapi.EvtQueryChannelPath | wevtapi.EvtQueryTolerateQueryErrors);
 			if (hResults == null) {
@@ -423,11 +433,16 @@ public class WinEventReader {
 					m_log.warn("readEventLog() EvtNext error=" + Win32Error.getMessage(getLastError()));
 					throw new Win32Exception(getLastError());
 				}
-			} else {
+			}
+			
+			StringBuffer eventLog = new StringBuffer();
+			String[] ret = new String[2];
+			
+			//最後のインデックスのハンドルはブックマークの更新に必要なためループ内では処理しない
+			int lastIndex = returnedHandleSize.getValue() - 1;
+			try {
 				//レンダリングに失敗したイベントログがあるかどうか
 				boolean renderFailed = false;
-				//最後のインデックスのハンドルはブックマークの更新に必要なためループ内では処理しない
-				int lastIndex = returnedHandleSize.getValue() - 1;
 				for (int i = 0; i < lastIndex; i++) {
 					try {
 						eventLog.append(formatEvent(handles[i]));
@@ -452,11 +467,14 @@ public class WinEventReader {
 					m_log.warn("readEventLog() EvtUpdateBookmark error=" + Win32Error.getMessage(getLastError()));
 					throw new Win32Exception(getLastError());
 				}
+			} finally {
+				// EvtNext から取得したイベントハンドルは、削除。
+				// https://docs.microsoft.com/ja-jp/windows/desktop/api/winevt/nf-winevt-evtnext
 				wevtapi.INSTANCE.EvtClose(handles[lastIndex]);
-				handles[returnedHandleSize.getValue() - 1] = null;
-				String saveBookmarkString = renderEvent(hBookmark, wevtapi.EvtRenderBookmark);
-				saveBookmarkFile(bookmarkFileName, saveBookmarkString);
 			}
+			
+			String saveBookmarkString = renderEvent(hBookmark, wevtapi.EvtRenderBookmark);
+			saveBookmarkFile(bookmarkFileName, saveBookmarkString);
 			
 			ret[0] = eventLog.toString();
 			return ret;
@@ -738,7 +756,7 @@ public class WinEventReader {
 				throw new Win32Exception(getLastError());
 			}
 
-			if (!wevtapi.INSTANCE.EvtSeek(hResults, new LONGLONG(1), hBookmark, 0, wevtapi.EvtSeekRelativeToBookmark)) {
+			if (!wevtapi.INSTANCE.EvtSeek(hResults, new LONGLONG(0), hBookmark, 0, wevtapi.EvtSeekRelativeToBookmark)) {
 				m_log.warn("existRecordId() EvtSeek error=" + Win32Error.getMessage(getLastError()));
 				throw new Win32Exception(getLastError());
 			}
@@ -753,6 +771,11 @@ public class WinEventReader {
 					throw new Win32Exception(getLastError());
 				}
 			} else {
+				// EvtNext から取得したイベントハンドルは、削除。
+				// https://docs.microsoft.com/ja-jp/windows/desktop/api/winevt/nf-winevt-evtnext
+				for (int i = 0; i < returnedHandleSize.getValue(); ++i) {
+					wevtapi.INSTANCE.EvtClose(handles[i]);
+				}
 				m_log.debug("existRecordId : recordId " + recordId + " existed " + channel);
 				return true;
 			}

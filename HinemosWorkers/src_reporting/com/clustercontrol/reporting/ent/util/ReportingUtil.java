@@ -74,11 +74,13 @@ public final class ReportingUtil{
 	 * @return trimmed legend name
 	 */
 	public static String trimLegend(String label, int headLength, int tailLength, String conjunction){
-		StringBuffer trimmed = new StringBuffer(label);
+		StringBuffer trimmed = new StringBuffer();
 		if (label.length()-1 > headLength + tailLength) {
 			trimmed.append(label.substring(0, headLength));
 			trimmed.append(conjunction);
 			trimmed.append(label.substring(label.length()-tailLength, label.length()));
+		} else {
+			trimmed.append(label);
 		}
 		return trimmed.toString();
 	}

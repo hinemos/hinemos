@@ -12,9 +12,15 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.TimeZone;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.clustercontrol.util.HinemosTime;
 
 public class CronTrigger extends AbstractTrigger {
+
+	public static final Log log = LogFactory.getLog(CronTrigger.class);
+
 	private CronExpression cronEx = null;
 	private TimeZone timeZone;
 
@@ -39,6 +45,7 @@ public class CronTrigger extends AbstractTrigger {
 		} else {
 			setPreviousFireTime(getNextFireTime());
 			setNextFireTime(getFireTimeAfter(getNextFireTime()));
+			log.debug("triggered getPreviousFireTime : " + getPreviousFireTime() + ", getNextFireTime : " + getNextFireTime());
 		}
 	}
 

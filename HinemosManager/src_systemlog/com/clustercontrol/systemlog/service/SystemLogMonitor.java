@@ -275,7 +275,7 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 				throw new RuntimeException("unexpected internal error. : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			} finally {
 				if (tm != null) {
-					tm.close();
+					tm.close(this.getClass().getName());
 				}
 			}
 		}

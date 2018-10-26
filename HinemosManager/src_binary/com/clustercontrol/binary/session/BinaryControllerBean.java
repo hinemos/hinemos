@@ -404,7 +404,7 @@ public class BinaryControllerBean {
 		} finally {
 			if (jtm != null)
 				// トランザクション終了.
-				jtm.close();
+				jtm.close(this.getClass().getName());
 		}
 
 		// 監視ジョブEndNode処理.
