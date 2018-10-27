@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.snmptrap.composite;
@@ -379,31 +372,7 @@ public class TrapDefineListComposite extends Composite{
 			this.btnModify.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					TrapValueInfo item = getSelectedItem();
-					if (item != null) {
-
-						// シェルを取得
-						Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-
-						CommonDialog dialog = define.createDialog(shell, item);
-						if (dialog.open() == IDialogConstants.OK_ID) {
-							Table table = infoList.getTableViewer().getTable();
-							WidgetTestUtil.setTestId(this, "modify", table);
-							int selectIndex = table.getSelectionIndex();
-							define.getTableItemInfoManager().modify(item, define.getCurrentCreatedItem());
-							table.setSelection(selectIndex);
-							removeItem(item);
-							addItem(define.getCurrentCreatedItem());
-							updateMibList();
-							update();
-						}
-					}
-					else{
-						MessageDialog.openWarning(
-								null,
-								Messages.getString("warning"),
-								Messages.getString("message.monitor.30"));
-					}
+					modifyEvent();
 				}
 			});
 		}
@@ -668,5 +637,33 @@ public class TrapDefineListComposite extends Composite{
 		int displayNumber = Math.min(totalNumber, maxTrapOids);
 		updateRecordNumber(displayNumber, totalNumber);
 		return infoList.subList(0, displayNumber);
+	}
+
+	public void modifyEvent() {
+		TrapValueInfo item = getSelectedItem();
+		if (item != null) {
+
+			// シェルを取得
+			Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+
+			CommonDialog dialog = define.createDialog(shell, item);
+			if (dialog.open() == IDialogConstants.OK_ID) {
+				Table table = infoList.getTableViewer().getTable();
+				WidgetTestUtil.setTestId(this, "modify", table);
+				int selectIndex = table.getSelectionIndex();
+				define.getTableItemInfoManager().modify(item, define.getCurrentCreatedItem());
+				table.setSelection(selectIndex);
+				removeItem(item);
+				addItem(define.getCurrentCreatedItem());
+				updateMibList();
+				update();
+			}
+		}
+		else{
+			MessageDialog.openWarning(
+				null,
+				Messages.getString("warning"),
+				Messages.getString("message.monitor.30"));
+		}
 	}
 }

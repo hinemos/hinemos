@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.collect.util;
 
 import java.util.ArrayList;
@@ -22,6 +30,7 @@ import com.clustercontrol.ws.collect.CollectorItemCodeMstData;
 import com.clustercontrol.ws.collect.HashMapInfo;
 import com.clustercontrol.ws.collect.HashMapInfo.Map6;
 import com.clustercontrol.ws.collect.HashMapInfo.Map7;
+import com.clustercontrol.ws.collect.HinemosDbTimeout_Exception;
 import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
 import com.clustercontrol.ws.collect.InvalidRole_Exception;
 import com.clustercontrol.ws.collect.InvalidUserPass_Exception;
@@ -70,7 +79,8 @@ public class CollectEndpointWrapper {
 		throw wse;
 	}
 	
-	public HashMapInfo getCollectData(List<Integer> idList, Integer summaryType, Long fromTime, Long toTime) throws InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+	public HashMapInfo getCollectData(List<Integer> idList, Integer summaryType, Long fromTime, Long toTime) 
+			throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
 		WebServiceException wse = null;
 		for (EndpointSetting<CollectEndpoint> endpointSetting : getCollectEndpoint(endpointUnit)) {
 			try {
@@ -219,4 +229,43 @@ public class CollectEndpointWrapper {
 		throw wse;
 	}
 
+	public HashMapInfo getCollectKeyMapForAnalytics(String facilityId, String ownerRoleId)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<CollectEndpoint> endpointSetting : getCollectEndpoint(endpointUnit)) {
+			try {
+				CollectEndpoint endpoint = (CollectEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getCollectKeyMapForAnalytics(facilityId, ownerRoleId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getCollectKeyMapForAnalytics(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	/**
+	 * 将来予測の係数を取得します。
+	 * @return
+	 * @throws HinemosUnknown_Exception
+	 * @throws InvalidRole_Exception
+	 * @throws InvalidUserPass_Exception
+	 */
+	public List<Double> getCoefficients(String monitorId, String facilityId, String displayName, String itemName)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<CollectEndpoint> endpointSetting : getCollectEndpoint(endpointUnit)) {
+			try {
+				CollectEndpoint endpoint = (CollectEndpoint) endpointSetting.getEndpoint();
+				List<Double> coefficientsList = endpoint.getCoefficients(monitorId, facilityId, displayName, itemName);
+				return coefficientsList;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getCollectItemCodeMasterList(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
 }

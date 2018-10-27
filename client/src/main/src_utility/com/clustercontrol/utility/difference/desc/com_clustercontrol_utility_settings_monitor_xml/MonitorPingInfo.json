@@ -1,0 +1,26 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"runCount",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPingInfo_runCount"},
+		{"type":"Translate", "values":[{"value":"1", "name":"value_once"}, {"value":"2", "name":"value_twice"}]}
+	]},
+
+	{
+	"propName":"runInterval",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPingInfo_runInterval"},
+		{"type":"Translate", "values":[{"value":"1000", "name":"value_second"}, {"value":"2000", "name":"value_twoSeconds"}, {"value":"5000", "name":"value_fiveSeconds"}]}
+	]},
+
+	{
+	"propName":"timeout",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPingInfo_timeout"}
+	]}
+]
+}

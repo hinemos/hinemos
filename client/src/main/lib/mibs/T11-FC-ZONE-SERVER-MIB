@@ -1,0 +1,1386 @@
+T11-FC-ZONE-SERVER-MIB  DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    NOTIFICATION-TYPE, mib-2,
+    Counter32, Unsigned32
+                        FROM SNMPv2-SMI                  -- [RFC2578]
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP
+                        FROM SNMPv2-CONF                 -- [RFC2580]
+    TEXTUAL-CONVENTION, RowStatus,
+    StorageType,
+    TruthValue, TimeStamp
+                        FROM SNMPv2-TC                   -- [RFC2579]
+    SnmpAdminString
+                        FROM SNMP-FRAMEWORK-MIB          -- [RFC3411]
+    ifIndex             FROM IF-MIB                      -- [RFC2863]
+    fcmInstanceIndex, fcmSwitchIndex,
+    FcNameIdOrZero,
+    FcDomainIdOrZero    FROM FC-MGMT-MIB                 -- [RFC4044]
+    T11NsGs4RejectReasonCode
+                        FROM T11-FC-NAME-SERVER-MIB      -- [RFC4438]
+    T11FabricIndex      FROM T11-TC-MIB                  -- [RFC4439]
+    t11FamLocalSwitchWwn
+                        FROM T11-FC-FABRIC-ADDR-MGR-MIB; -- [RFC4439]
+
+t11ZoneServerMIB  MODULE-IDENTITY
+    LAST-UPDATED  "200706270000Z"
+    ORGANIZATION  "For the initial versions, T11.
+                   For later versions, the IETF's IMSS Working Group."
+
+    ::= { mib-2 160 }
+
+t11ZsMIBObjects        OBJECT IDENTIFIER ::= { t11ZoneServerMIB 1 }
+t11ZsMIBConformance    OBJECT IDENTIFIER ::= { t11ZoneServerMIB 2 }
+t11ZsMIBNotifications  OBJECT IDENTIFIER ::= { t11ZoneServerMIB 0 }
+t11ZsConfiguration     OBJECT IDENTIFIER ::= { t11ZsMIBObjects 1 }
+t11ZsStatistics        OBJECT IDENTIFIER ::= { t11ZsMIBObjects 2 }
+
+
+T11ZsZoneMemberType ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT  "x"
+    STATUS        current
+
+
+
+
+
+    SYNTAX        Unsigned32 (0..255)
+
+T11ZsRejectReasonExplanation ::= TEXTUAL-CONVENTION
+    STATUS        current
+    SYNTAX        INTEGER {
+                      other(1),
+                      noAdditionalExplanation(2),
+                      zonesNotSupported(3),
+                      zoneSetNameUnknown(4),
+                      noZoneSetActive(5),
+                      zoneNameUnknown(6),
+                      zoneStateUnknown(7),
+                      incorrectPayloadLen(8),
+                      tooLargeZoneSet(9),
+                      deactivateZoneSetFailed(10),
+                      reqNotSupported(11),
+                      capabilityNotSupported(12),
+                      zoneMemberIDTypeNotSupp(13),
+                      invalidZoneSetDefinition(14),
+                      enhancedZoningCmdsNotSupported(15),
+                      zoneSetExists(16),
+                      zoneExists(17),
+                      aliasExists(18),
+
+
+
+
+
+                      zoneSetUnknown(19),
+                      zoneUnknown(20),
+                      aliasUnknown(21),
+                      zoneAliasTypeUnknown(22),
+                      unableEnhancedMode(23),
+                      basicZoningCmdsNotSupported(24),
+                      zoneAttribObjectExists(25),
+                      zoneAttribObjectUnknown(26),
+                      requestInProcess(27),
+                      cmitInProcess(28),
+                      hardEnforcementFailed(29),
+                      unresolvedReferences(30),
+                      consistencyChecksFailed(31)
+                  }
+
+T11ZoningName ::= TEXTUAL-CONVENTION
+    STATUS        current
+    SYNTAX       OCTET STRING (SIZE (1..64))
+
+
+t11ZsServerTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsServerEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 1 }
+
+
+
+
+
+
+t11ZsServerEntry OBJECT-TYPE
+    SYNTAX       T11ZsServerEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex }
+    ::= { t11ZsServerTable 1 }
+
+T11ZsServerEntry ::= SEQUENCE {
+    t11ZsServerFabricIndex           T11FabricIndex,
+    t11ZsServerCapabilityObject      BITS,
+    t11ZsServerDatabaseStorageType   StorageType,
+    t11ZsServerDistribute            INTEGER,
+    t11ZsServerCommit                INTEGER,
+    t11ZsServerResult                INTEGER,
+    t11ZsServerReasonCode            T11NsGs4RejectReasonCode,
+    t11ZsServerReasonCodeExp         OCTET STRING,
+    t11ZsServerReasonVendorCode      OCTET STRING,
+    t11ZsServerLastChange            TimeStamp,
+    t11ZsServerHardZoning            TruthValue,
+    t11ZsServerReadFromDatabase      INTEGER,
+    t11ZsServerOperationMode         INTEGER,
+    t11ZsServerChangeModeResult      INTEGER,
+    t11ZsServerDefaultZoneSetting    INTEGER,
+    t11ZsServerMergeControlSetting   INTEGER,
+    t11ZsServerDefZoneBroadcast      TruthValue
+}
+
+t11ZsServerFabricIndex OBJECT-TYPE
+    SYNTAX       T11FabricIndex
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsServerEntry 1 }
+
+t11ZsServerCapabilityObject OBJECT-TYPE
+
+
+
+
+
+    SYNTAX        BITS {
+                      enhancedMode(0),
+                      zoneSetDb(1),
+                      activateDirect(2),
+                      hardZoning(3)
+                  }
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11ZsServerEntry 2 }
+
+t11ZsServerDatabaseStorageType OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { t11ZsServerEntry 3 }
+
+t11ZsServerDistribute OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     noop(1),
+                     zoneSetDb(2)
+                 }
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11ZsServerEntry 4 }
+
+t11ZsServerCommit OBJECT-TYPE
+    SYNTAX        INTEGER {
+                      commitZoneChanges(1),
+                      noop(2)
+                  }
+    MAX-ACCESS    read-write
+    STATUS        current
+
+
+
+
+
+    ::= { t11ZsServerEntry 5 }
+
+t11ZsServerResult OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     none(1),
+                     inProgress(2),
+                     success(3),
+                     rejectFailure(4),
+                     otherFailure(5)
+                 }
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsServerEntry 6 }
+
+t11ZsServerReasonCode OBJECT-TYPE
+    SYNTAX       T11NsGs4RejectReasonCode
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsServerEntry 7 }
+
+t11ZsServerReasonCodeExp OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (0 | 1))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsServerEntry 8 }
+
+t11ZsServerReasonVendorCode OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (0 | 1))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsServerEntry 9 }
+
+t11ZsServerLastChange OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsServerEntry 10 }
+
+t11ZsServerHardZoning OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    ::= { t11ZsServerEntry 11 }
+
+t11ZsServerReadFromDatabase OBJECT-TYPE
+    SYNTAX        INTEGER {
+                      committedDB(1),
+                      copyDB(2)
+                  }
+    MAX-ACCESS    read-write
+    STATUS        current
+    DEFVAL { committedDB }
+    ::= { t11ZsServerEntry 12 }
+
+t11ZsServerOperationMode OBJECT-TYPE
+    SYNTAX        INTEGER {
+                      basic(1),
+                      enhanced(2)
+                  }
+    MAX-ACCESS    read-write
+    STATUS        current
+    DEFVAL { basic }
+    ::= { t11ZsServerEntry 13 }
+
+t11ZsServerChangeModeResult OBJECT-TYPE
+    SYNTAX        INTEGER {
+                      success(1),
+                      failure(2),
+                      inProgress(3),
+                      none(4)
+                  }
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11ZsServerEntry 14 }
+
+t11ZsServerDefaultZoneSetting OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     permit(1),
+                     deny(2)
+                 }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL  { deny }
+    ::= { t11ZsServerEntry 15 }
+
+t11ZsServerMergeControlSetting OBJECT-TYPE
+    SYNTAX        INTEGER {
+                      allow(1),
+                      restrict(2)
+                  }
+    MAX-ACCESS    read-write
+    STATUS        current
+    DEFVAL { allow }
+    ::= { t11ZsServerEntry 16 }
+
+t11ZsServerDefZoneBroadcast OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11ZsServerEntry 17 }
+
+
+t11ZsSetTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsSetEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 2 }
+
+t11ZsSetEntry  OBJECT-TYPE
+    SYNTAX       T11ZsSetEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex, t11ZsSetIndex }
+    ::= { t11ZsSetTable 1 }
+
+T11ZsSetEntry ::= SEQUENCE {
+    t11ZsSetIndex          Unsigned32,
+    t11ZsSetName           T11ZoningName,
+    t11ZsSetRowStatus      RowStatus
+}
+
+t11ZsSetIndex  OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsSetEntry 1 }
+
+t11ZsSetName OBJECT-TYPE
+    SYNTAX       T11ZoningName
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsSetEntry 2 }
+
+t11ZsSetRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsSetEntry 3 }
+
+
+
+
+
+
+
+
+t11ZsZoneTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsZoneEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 3 }
+
+t11ZsZoneEntry OBJECT-TYPE
+    SYNTAX       T11ZsZoneEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex, t11ZsZoneIndex }
+    ::= { t11ZsZoneTable 1 }
+
+T11ZsZoneEntry ::= SEQUENCE {
+    t11ZsZoneIndex             Unsigned32,
+    t11ZsZoneName              T11ZoningName,
+
+
+
+
+
+    t11ZsZoneAttribBlock       Unsigned32,
+    t11ZsZoneRowStatus         RowStatus
+}
+
+t11ZsZoneIndex  OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsZoneEntry 1 }
+
+t11ZsZoneName OBJECT-TYPE
+    SYNTAX       T11ZoningName
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsZoneEntry 2 }
+
+t11ZsZoneAttribBlock OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..4294967295)
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsZoneEntry 3 }
+
+t11ZsZoneRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsZoneEntry 4 }
+
+
+t11ZsSetZoneTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsSetZoneEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 4 }
+
+t11ZsSetZoneEntry  OBJECT-TYPE
+    SYNTAX       T11ZsSetZoneEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex,
+              t11ZsSetIndex, t11ZsZoneIndex }
+    ::= { t11ZsSetZoneTable 1 }
+
+T11ZsSetZoneEntry ::= SEQUENCE {
+    t11ZsSetZoneRowStatus      RowStatus
+}
+
+t11ZsSetZoneRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsSetZoneEntry 1 }
+
+
+t11ZsAliasTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsAliasEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 5 }
+
+t11ZsAliasEntry OBJECT-TYPE
+    SYNTAX       T11ZsAliasEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex, t11ZsAliasIndex }
+    ::= { t11ZsAliasTable 1 }
+
+T11ZsAliasEntry ::= SEQUENCE {
+    t11ZsAliasIndex            Unsigned32,
+    t11ZsAliasName             T11ZoningName,
+    t11ZsAliasRowStatus        RowStatus
+}
+
+t11ZsAliasIndex OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsAliasEntry 1 }
+
+t11ZsAliasName OBJECT-TYPE
+    SYNTAX       T11ZoningName
+    MAX-ACCESS   read-create
+
+
+
+
+
+    STATUS       current
+    ::= { t11ZsAliasEntry 2 }
+
+t11ZsAliasRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsAliasEntry 3 }
+
+
+t11ZsZoneMemberTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsZoneMemberEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 6 }
+
+t11ZsZoneMemberEntry OBJECT-TYPE
+    SYNTAX       T11ZsZoneMemberEntry
+    MAX-ACCESS   not-accessible
+
+
+
+
+
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex, t11ZsZoneMemberParentType,
+              t11ZsZoneMemberParentIndex, t11ZsZoneMemberIndex }
+    ::= { t11ZsZoneMemberTable 1 }
+
+T11ZsZoneMemberEntry ::= SEQUENCE {
+    t11ZsZoneMemberParentType        INTEGER,
+    t11ZsZoneMemberParentIndex       Unsigned32,
+    t11ZsZoneMemberIndex             Unsigned32,
+    t11ZsZoneMemberFormat            T11ZsZoneMemberType,
+    t11ZsZoneMemberID                OCTET STRING,
+    t11ZsZoneMemberRowStatus         RowStatus
+}
+
+t11ZsZoneMemberParentType  OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     zone(1), -- member belongs to a Zone
+                     alias(2) -- member belongs to a Zone Alias
+                 }
+
+
+
+
+
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsZoneMemberEntry 1 }
+
+t11ZsZoneMemberParentIndex  OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsZoneMemberEntry 2 }
+
+t11ZsZoneMemberIndex  OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsZoneMemberEntry 3 }
+
+t11ZsZoneMemberFormat OBJECT-TYPE
+    SYNTAX       T11ZsZoneMemberType
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsZoneMemberEntry 4 }
+
+
+
+
+
+t11ZsZoneMemberID OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (1..255))
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsZoneMemberEntry 5 }
+
+t11ZsZoneMemberRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsZoneMemberEntry 6 }
+
+
+t11ZsAttribBlockTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsAttribBlockEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 7 }
+
+t11ZsAttribBlockEntry OBJECT-TYPE
+    SYNTAX       T11ZsAttribBlockEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex, t11ZsAttribBlockIndex }
+    ::= { t11ZsAttribBlockTable 1 }
+
+T11ZsAttribBlockEntry ::= SEQUENCE {
+    t11ZsAttribBlockIndex         Unsigned32,
+    t11ZsAttribBlockName          T11ZoningName,
+    t11ZsAttribBlockRowStatus     RowStatus
+}
+
+t11ZsAttribBlockIndex OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsAttribBlockEntry 1 }
+
+t11ZsAttribBlockName OBJECT-TYPE
+    SYNTAX       T11ZoningName
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsAttribBlockEntry 2 }
+
+t11ZsAttribBlockRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsAttribBlockEntry 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+t11ZsAttribTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsAttribEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 8 }
+
+t11ZsAttribEntry OBJECT-TYPE
+    SYNTAX       T11ZsAttribEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex,
+              t11ZsAttribBlockIndex, t11ZsAttribIndex }
+    ::= { t11ZsAttribTable 1 }
+
+T11ZsAttribEntry ::= SEQUENCE {
+
+
+
+
+
+    t11ZsAttribIndex            Unsigned32,
+    t11ZsAttribType             Unsigned32,
+    t11ZsAttribValue            OCTET STRING,
+    t11ZsAttribRowStatus        RowStatus
+}
+
+t11ZsAttribIndex OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsAttribEntry 1 }
+
+t11ZsAttribType  OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..65535)
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsAttribEntry 2 }
+
+t11ZsAttribValue  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (4..252))
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsAttribEntry 3 }
+
+
+
+
+
+t11ZsAttribRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { t11ZsAttribEntry 4 }
+
+
+t11ZsActivateTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsActivateEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 9 }
+
+t11ZsActivateEntry OBJECT-TYPE
+    SYNTAX       T11ZsActivateEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex }
+    ::= { t11ZsActivateTable 1 }
+
+T11ZsActivateEntry ::= SEQUENCE {
+    t11ZsActivateRequest       Unsigned32,
+    t11ZsActivateDeactivate    INTEGER,
+    t11ZsActivateResult        INTEGER,
+    t11ZsActivateFailCause     SnmpAdminString,
+    t11ZsActivateFailDomainId  FcDomainIdOrZero
+}
+
+t11ZsActivateRequest OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..4294967295)
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11ZsActivateEntry 1 }
+
+t11ZsActivateDeactivate OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     deactivate(1),
+                     noop(2)
+                 }
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11ZsActivateEntry 2 }
+
+t11ZsActivateResult OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     activateSuccess(1),
+                     activateFailure(2),
+                     deactivateSuccess(3),
+                     deactivateFailure(4),
+                     inProgress(5),
+                     none(6)
+                 }
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActivateEntry 3 }
+
+t11ZsActivateFailCause OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE (0..64))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActivateEntry 4 }
+
+t11ZsActivateFailDomainId OBJECT-TYPE
+    SYNTAX       FcDomainIdOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActivateEntry 5 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+t11ZsActiveTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsActiveEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 10 }
+
+t11ZsActiveEntry OBJECT-TYPE
+    SYNTAX       T11ZsActiveEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex }
+    ::= { t11ZsActiveTable 1 }
+
+T11ZsActiveEntry ::= SEQUENCE {
+    t11ZsActiveZoneSetName    T11ZoningName,
+    t11ZsActiveActivateTime   TimeStamp
+}
+
+t11ZsActiveZoneSetName OBJECT-TYPE
+    SYNTAX       T11ZoningName
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActiveEntry 1 }
+
+t11ZsActiveActivateTime OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActiveEntry 2 }
+
+
+t11ZsActiveZoneTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsActiveZoneEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 11 }
+
+t11ZsActiveZoneEntry OBJECT-TYPE
+    SYNTAX       T11ZsActiveZoneEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex, t11ZsActiveZoneIndex }
+    ::= { t11ZsActiveZoneTable 1 }
+
+T11ZsActiveZoneEntry ::= SEQUENCE {
+    t11ZsActiveZoneIndex           Unsigned32,
+    t11ZsActiveZoneName            T11ZoningName,
+    t11ZsActiveZoneBroadcastZoning TruthValue,
+    t11ZsActiveZoneHardZoning      TruthValue
+}
+
+t11ZsActiveZoneIndex  OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsActiveZoneEntry 1 }
+
+
+
+
+
+t11ZsActiveZoneName OBJECT-TYPE
+    SYNTAX       T11ZoningName
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActiveZoneEntry 2 }
+
+t11ZsActiveZoneBroadcastZoning OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActiveZoneEntry 3 }
+
+t11ZsActiveZoneHardZoning OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActiveZoneEntry 4 }
+
+
+t11ZsActiveZoneMemberTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsActiveZoneMemberEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 12 }
+
+t11ZsActiveZoneMemberEntry OBJECT-TYPE
+    SYNTAX       T11ZsActiveZoneMemberEntry
+    MAX-ACCESS   not-accessible
+
+
+
+
+
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex,
+              t11ZsActiveZoneIndex, t11ZsActiveZoneMemberIndex }
+    ::= { t11ZsActiveZoneMemberTable 1 }
+
+T11ZsActiveZoneMemberEntry ::= SEQUENCE {
+    t11ZsActiveZoneMemberIndex      Unsigned32,
+    t11ZsActiveZoneMemberFormat     T11ZsZoneMemberType,
+    t11ZsActiveZoneMemberID         OCTET STRING
+}
+
+t11ZsActiveZoneMemberIndex  OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsActiveZoneMemberEntry 1 }
+
+t11ZsActiveZoneMemberFormat OBJECT-TYPE
+    SYNTAX       T11ZsZoneMemberType
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActiveZoneMemberEntry 2 }
+
+t11ZsActiveZoneMemberID OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (1..255))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActiveZoneMemberEntry 3 }
+
+
+
+
+
+
+
+
+t11ZsActiveAttribTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsActiveAttribEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 13 }
+
+t11ZsActiveAttribEntry OBJECT-TYPE
+    SYNTAX       T11ZsActiveAttribEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex,
+              t11ZsActiveZoneIndex, t11ZsActiveAttribIndex }
+    ::= { t11ZsActiveAttribTable 1 }
+
+T11ZsActiveAttribEntry ::= SEQUENCE {
+    t11ZsActiveAttribIndex        Unsigned32,
+    t11ZsActiveAttribType         Unsigned32,
+    t11ZsActiveAttribValue        OCTET STRING
+}
+
+t11ZsActiveAttribIndex  OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+
+
+
+
+
+    STATUS       current
+    ::= { t11ZsActiveAttribEntry 1 }
+
+t11ZsActiveAttribType  OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..65535)
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActiveAttribEntry 2 }
+
+t11ZsActiveAttribValue  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (0..252))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsActiveAttribEntry 3 }
+
+
+
+
+
+
+
+
+t11ZsStatsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsStatistics 1 }
+
+t11ZsStatsEntry OBJECT-TYPE
+    SYNTAX       T11ZsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex }
+    ::= { t11ZsStatsTable 1 }
+
+T11ZsStatsEntry ::= SEQUENCE {
+    t11ZsOutMergeRequests     Counter32,
+    t11ZsInMergeAccepts       Counter32,
+    t11ZsInMergeRequests      Counter32,
+    t11ZsOutMergeAccepts      Counter32,
+    t11ZsOutChangeRequests    Counter32,
+    t11ZsInChangeAccepts      Counter32,
+    t11ZsInChangeRequests     Counter32,
+    t11ZsOutChangeAccepts     Counter32,
+    t11ZsInZsRequests         Counter32,
+    t11ZsOutZsRejects         Counter32
+}
+
+t11ZsOutMergeRequests OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 1 }
+
+t11ZsInMergeAccepts OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 2 }
+
+t11ZsInMergeRequests OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 3 }
+
+t11ZsOutMergeAccepts OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 4 }
+
+t11ZsOutChangeRequests OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 5 }
+
+t11ZsInChangeAccepts OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 6 }
+
+t11ZsInChangeRequests OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 7 }
+
+t11ZsOutChangeAccepts OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 8 }
+
+t11ZsInZsRequests OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 9 }
+
+
+
+
+
+
+t11ZsOutZsRejects OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsStatsEntry 10 }
+
+
+t11ZsNotifyControlTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11ZsNotifyControlEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11ZsConfiguration 14 }
+
+t11ZsNotifyControlEntry OBJECT-TYPE
+    SYNTAX       T11ZsNotifyControlEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11ZsServerFabricIndex }
+    ::= { t11ZsNotifyControlTable 1 }
+
+T11ZsNotifyControlEntry ::= SEQUENCE {
+     t11ZsNotifyRequestRejectEnable    TruthValue,
+
+
+
+
+
+     t11ZsNotifyMergeFailureEnable     TruthValue,
+     t11ZsNotifyMergeSuccessEnable     TruthValue,
+     t11ZsNotifyDefZoneChangeEnable    TruthValue,
+     t11ZsNotifyActivateEnable         TruthValue,
+     t11ZsRejectCtCommandString        OCTET STRING,
+     t11ZsRejectRequestSource          FcNameIdOrZero,
+     t11ZsRejectReasonCode             T11NsGs4RejectReasonCode,
+     t11ZsRejectReasonCodeExp          T11ZsRejectReasonExplanation,
+     t11ZsRejectReasonVendorCode       OCTET STRING
+}
+
+t11ZsNotifyRequestRejectEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11ZsNotifyControlEntry 1 }
+
+t11ZsNotifyMergeFailureEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11ZsNotifyControlEntry 2 }
+
+t11ZsNotifyMergeSuccessEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11ZsNotifyControlEntry 3 }
+
+t11ZsNotifyDefZoneChangeEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11ZsNotifyControlEntry 4 }
+
+t11ZsNotifyActivateEnable OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11ZsNotifyControlEntry 5 }
+
+t11ZsRejectCtCommandString OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0..255))
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11ZsNotifyControlEntry 6 }
+
+t11ZsRejectRequestSource OBJECT-TYPE
+    SYNTAX       FcNameIdOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsNotifyControlEntry 7 }
+
+t11ZsRejectReasonCode OBJECT-TYPE
+    SYNTAX       T11NsGs4RejectReasonCode
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsNotifyControlEntry 8 }
+
+t11ZsRejectReasonCodeExp OBJECT-TYPE
+    SYNTAX       T11ZsRejectReasonExplanation
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsNotifyControlEntry 9 }
+
+t11ZsRejectReasonVendorCode       OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (1))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11ZsNotifyControlEntry 10 }
+
+t11ZsFabricIndex OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..4096)
+    MAX-ACCESS   accessible-for-notify
+    STATUS       current
+    ::= { t11ZsConfiguration 15 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+t11ZsRequestRejectNotify NOTIFICATION-TYPE
+    OBJECTS      { t11FamLocalSwitchWwn,
+                   t11ZsRejectRequestSource,
+                   t11ZsRejectCtCommandString,
+                   t11ZsRejectReasonCode,
+                   t11ZsRejectReasonCodeExp,
+                   t11ZsRejectReasonVendorCode }
+    STATUS       current
+    ::= { t11ZsMIBNotifications 1 }
+
+t11ZsMergeFailureNotify NOTIFICATION-TYPE
+    OBJECTS      { ifIndex, t11ZsFabricIndex }
+    STATUS       current
+    ::= { t11ZsMIBNotifications 2 }
+
+t11ZsMergeSuccessNotify NOTIFICATION-TYPE
+    OBJECTS      { ifIndex, t11ZsFabricIndex }
+    STATUS       current
+    ::= { t11ZsMIBNotifications 3 }
+
+t11ZsDefZoneChangeNotify NOTIFICATION-TYPE
+    OBJECTS      { t11ZsServerDefaultZoneSetting }
+    STATUS       current
+    ::= { t11ZsMIBNotifications 4 }
+
+t11ZsActivateNotify NOTIFICATION-TYPE
+    OBJECTS      { t11FamLocalSwitchWwn, t11ZsActivateResult }
+    STATUS       current
+    ::= { t11ZsMIBNotifications 5 }
+
+
+t11ZsMIBCompliances OBJECT IDENTIFIER ::= { t11ZsMIBConformance 1 }
+t11ZsMIBGroups      OBJECT IDENTIFIER ::= { t11ZsMIBConformance 2 }
+
+t11ZsMIBCompliance MODULE-COMPLIANCE
+    STATUS       current
+    MODULE MANDATORY-GROUPS {t11ZsBasicGroup,
+                             t11ZsNotificationControlGroup,
+                             t11ZsNotificationGroup }
+
+    GROUP        t11ZsEnhancedModeGroup
+
+    GROUP        t11ZsActivateGroup
+
+    GROUP        t11ZsStatisticsGroup
+
+    OBJECT       t11ZsSetRowStatus
+    SYNTAX       INTEGER { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsZoneRowStatus
+    SYNTAX       INTEGER { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsSetZoneRowStatus
+    SYNTAX       INTEGER { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsAliasRowStatus
+    SYNTAX       INTEGER { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsZoneMemberRowStatus
+    SYNTAX       INTEGER { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsAttribBlockRowStatus
+    SYNTAX       INTEGER { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsAttribRowStatus
+    SYNTAX       INTEGER { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsServerDatabaseStorageType
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsServerDistribute
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsServerCommit
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsServerReadFromDatabase
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsServerOperationMode
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsServerDefaultZoneSetting
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsServerMergeControlSetting
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsServerDefZoneBroadcast
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsSetName
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsZoneName
+
+
+
+
+
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsZoneAttribBlock
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsAliasName
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsZoneMemberFormat
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsZoneMemberID
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsAttribBlockName
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsAttribType
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsAttribValue
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsActivateRequest
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsActivateDeactivate
+    MIN-ACCESS   read-only
+
+
+
+
+
+    OBJECT       t11ZsNotifyRequestRejectEnable
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsNotifyMergeFailureEnable
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsNotifyMergeSuccessEnable
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsNotifyDefZoneChangeEnable
+    MIN-ACCESS   read-only
+
+    OBJECT       t11ZsNotifyActivateEnable
+    MIN-ACCESS   read-only
+
+    ::= { t11ZsMIBCompliances 1 }
+
+
+t11ZsBasicGroup OBJECT-GROUP
+    OBJECTS  { t11ZsServerCapabilityObject,
+               t11ZsServerDatabaseStorageType,
+               t11ZsServerDistribute,
+               t11ZsServerResult,
+               t11ZsServerReasonCode,
+               t11ZsServerReasonCodeExp,
+               t11ZsServerReasonVendorCode,
+               t11ZsServerLastChange,
+               t11ZsServerHardZoning,
+               t11ZsServerReadFromDatabase,
+               t11ZsServerOperationMode,
+               t11ZsSetName,
+               t11ZsSetRowStatus,
+               t11ZsZoneName,
+               t11ZsZoneAttribBlock,
+               t11ZsZoneRowStatus,
+               t11ZsSetZoneRowStatus,
+               t11ZsZoneMemberFormat,
+
+
+
+
+
+               t11ZsZoneMemberID,
+               t11ZsZoneMemberRowStatus,
+               t11ZsActiveZoneSetName,
+               t11ZsActiveActivateTime,
+               t11ZsActiveZoneName,
+               t11ZsActiveZoneMemberFormat,
+               t11ZsActiveZoneMemberID
+             }
+    STATUS   current
+    ::= { t11ZsMIBGroups 1 }
+
+t11ZsEnhancedModeGroup OBJECT-GROUP
+    OBJECTS  { t11ZsServerCommit,
+               t11ZsServerChangeModeResult,
+               t11ZsServerDefaultZoneSetting,
+               t11ZsServerMergeControlSetting,
+               t11ZsServerDefZoneBroadcast,
+               t11ZsAliasName,
+               t11ZsAliasRowStatus,
+               t11ZsAttribBlockName,
+               t11ZsAttribBlockRowStatus,
+               t11ZsAttribType,
+               t11ZsAttribValue,
+               t11ZsAttribRowStatus,
+               t11ZsActiveZoneBroadcastZoning,
+               t11ZsActiveZoneHardZoning,
+               t11ZsActiveAttribType,
+               t11ZsActiveAttribValue
+             }
+    STATUS   current
+    ::= { t11ZsMIBGroups 2 }
+
+t11ZsStatisticsGroup OBJECT-GROUP
+    OBJECTS  { t11ZsOutMergeRequests,
+               t11ZsInMergeAccepts,
+               t11ZsInMergeRequests,
+               t11ZsOutMergeAccepts,
+               t11ZsOutChangeRequests,
+               t11ZsInChangeAccepts,
+               t11ZsInChangeRequests,
+
+
+
+
+
+               t11ZsOutChangeAccepts,
+               t11ZsInZsRequests,
+               t11ZsOutZsRejects
+             }
+    STATUS   current
+    ::= { t11ZsMIBGroups 3 }
+
+t11ZsNotificationControlGroup OBJECT-GROUP
+    OBJECTS  { t11ZsNotifyRequestRejectEnable,
+               t11ZsNotifyMergeFailureEnable,
+               t11ZsNotifyMergeSuccessEnable,
+               t11ZsNotifyDefZoneChangeEnable,
+               t11ZsNotifyActivateEnable,
+               t11ZsRejectCtCommandString,
+               t11ZsRejectRequestSource,
+               t11ZsRejectReasonCode,
+               t11ZsRejectReasonCodeExp,
+               t11ZsRejectReasonVendorCode,
+               t11ZsFabricIndex
+             }
+    STATUS   current
+    ::= { t11ZsMIBGroups 4 }
+
+t11ZsActivateGroup OBJECT-GROUP
+    OBJECTS  { t11ZsActivateRequest,
+               t11ZsActivateDeactivate,
+               t11ZsActivateResult,
+               t11ZsActivateFailCause,
+               t11ZsActivateFailDomainId
+             }
+    STATUS   current
+    ::= { t11ZsMIBGroups 5 }
+
+t11ZsNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { t11ZsRequestRejectNotify,
+                    t11ZsMergeFailureNotify,
+
+
+
+
+
+                    t11ZsMergeSuccessNotify,
+                    t11ZsDefZoneChangeNotify,
+                    t11ZsActivateNotify }
+    STATUS        current
+    ::= { t11ZsMIBGroups 6 }
+
+END

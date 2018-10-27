@@ -1,0 +1,245 @@
+          RFC1229-MIB DEFINITIONS ::= BEGIN
+
+
+
+          IMPORTS
+                  experimental, Counter         FROM RFC1155-SMI
+                  DisplayString, PhysAddress    FROM RFC1213-MIB
+                  OBJECT-TYPE                   FROM RFC-1212;
+
+
+
+          ifExtensions  OBJECT IDENTIFIER ::= { experimental 6 }
+
+
+
+          ifExtnsTable  OBJECT-TYPE
+                  SYNTAX SEQUENCE OF IfExtnsEntry
+                  ACCESS not-accessible
+                  STATUS mandatory
+                  ::= { ifExtensions 1 }
+
+          ifExtnsEntry  OBJECT-TYPE
+                  SYNTAX IfExtnsEntry
+                  ACCESS not-accessible
+                  STATUS mandatory
+                  INDEX  { ifExtnsIfIndex }
+                  ::= { ifExtnsTable 1 }
+
+          IfExtnsEntry ::=
+                  SEQUENCE {
+                      ifExtnsIfIndex
+
+
+
+
+
+                          INTEGER,
+                      ifExtnsChipSet
+                          OBJECT IDENTIFIER,
+                      ifExtnsRevWare
+                          DisplayString,
+                      ifExtnsMulticastsTransmittedOks
+                          Counter,
+                      ifExtnsBroadcastsTransmittedOks
+                          Counter,
+                      ifExtnsMulticastsReceivedOks
+                          Counter,
+                      ifExtnsBroadcastsReceivedOks
+                          Counter,
+                      ifExtnsPromiscuous
+                          INTEGER
+                  }
+
+          ifExtnsIfIndex  OBJECT-TYPE
+                  SYNTAX INTEGER
+                  ACCESS read-only
+                  STATUS mandatory
+                  ::= { ifExtnsEntry 1 }
+
+          ifExtnsChipSet  OBJECT-TYPE
+                  SYNTAX OBJECT IDENTIFIER
+                  ACCESS read-only
+                  STATUS mandatory
+                  ::= { ifExtnsEntry 2 }
+
+          ifExtnsRevWare  OBJECT-TYPE
+                  SYNTAX DisplayString (SIZE (0..255))
+                  ACCESS read-only
+                  STATUS mandatory
+                  ::= { ifExtnsEntry 3 }
+
+          ifExtnsMulticastsTransmittedOks OBJECT-TYPE
+                  SYNTAX Counter
+                  ACCESS read-only
+                  STATUS mandatory
+                  ::= { ifExtnsEntry 4 }
+
+          ifExtnsBroadcastsTransmittedOks OBJECT-TYPE
+                  SYNTAX Counter
+                  ACCESS read-only
+                  STATUS mandatory
+                  ::= { ifExtnsEntry 5 }
+
+          ifExtnsMulticastsReceivedOks OBJECT-TYPE
+                  SYNTAX Counter
+                  ACCESS read-only
+                  STATUS mandatory
+                  ::= { ifExtnsEntry 6 }
+
+          ifExtnsBroadcastsReceivedOks OBJECT-TYPE
+                  SYNTAX Counter
+                  ACCESS read-only
+                  STATUS mandatory
+                  ::= { ifExtnsEntry 7 }
+
+          ifExtnsPromiscuous  OBJECT-TYPE
+                  SYNTAX INTEGER {
+                              true(1),
+                              false(2)
+                         }
+                  ACCESS read-only  -- Note: agent implementors are
+                  STATUS mandatory
+                  ::= { ifExtnsEntry 8 }
+
+
+
+
+
+
+
+
+          ifExtnsTestTable   OBJECT-TYPE
+
+                  SYNTAX  SEQUENCE OF IfExtnsTestEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  ::= { ifExtensions 2 }
+
+          ifExtnsTestEntry OBJECT-TYPE
+                  SYNTAX  IfExtnsTestEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  INDEX   { ifExtnsTestIfIndex }
+                  ::= { ifExtnsTestTable 1 }
+
+          IfExtnsTestEntry ::=
+                  SEQUENCE {
+                      ifExtnsTestIfIndex
+                          INTEGER,
+                      ifExtnsTestCommunity
+                          OCTET STRING,
+                      ifExtnsTestRequestId
+                          INTEGER,
+                      ifExtnsTestType
+                          OBJECT IDENTIFIER,
+                      ifExtnsTestResult
+                          INTEGER,
+                      ifExtnsTestCode
+                          OBJECT IDENTIFIER
+                  }
+
+          ifExtnsTestIfIndex  OBJECT-TYPE
+                  SYNTAX  INTEGER
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { ifExtnsTestEntry 1 }
+
+
+
+
+
+
+          ifExtnsTestCommunity  OBJECT-TYPE
+                  SYNTAX  OCTET STRING
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { ifExtnsTestEntry 2 }
+
+          ifExtnsTestRequestId  OBJECT-TYPE
+                  SYNTAX  INTEGER
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { ifExtnsTestEntry 3 }
+
+          ifExtnsTestType  OBJECT-TYPE
+                  SYNTAX  OBJECT IDENTIFIER
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  ::= { ifExtnsTestEntry 4 }
+
+          wellKnownTests OBJECT IDENTIFIER ::= { ifExtensions 4 }
+
+          testFullDuplexLoopBack OBJECT IDENTIFIER ::=
+                                                  { wellKnownTests 1 }
+
+          ifExtnsTestResult  OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                              none(1),        -- no test yet requested
+                              success(2),
+                              inProgress(3),
+                              notSupported(4),
+                              unAbleToRun(5), -- due to state of system
+                              aborted(6),
+                              failed(7)
+                          }
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { ifExtnsTestEntry 5 }
+
+          ifExtnsTestCode  OBJECT-TYPE
+                  SYNTAX  OBJECT IDENTIFIER
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { ifExtnsTestEntry 6 }
+
+
+
+          ifExtnsRcvAddrTable  OBJECT-TYPE
+                  SYNTAX SEQUENCE OF IfExtnsRcvAddrEntry
+                  ACCESS not-accessible
+                  STATUS mandatory
+                  ::= { ifExtensions 3 }
+
+          ifExtnsRcvAddrEntry  OBJECT-TYPE
+                  SYNTAX IfExtnsRcvAddrEntry
+                  ACCESS not-accessible
+                  STATUS mandatory
+                  INDEX  { ifExtnsRcvAddrIfIndex, ifExtnsRcvAddress }
+                  ::= { ifExtnsRcvAddrTable 1 }
+
+          IfExtnsRcvAddrEntry ::=
+                  SEQUENCE {
+                      ifExtnsRcvAddrIfIndex
+                          INTEGER,
+                      ifExtnsRcvAddress
+                          PhysAddress,
+                      ifExtnsRcvAddrStatus
+                          INTEGER
+                  }
+
+          ifExtnsRcvAddrIfIndex  OBJECT-TYPE
+                  SYNTAX INTEGER
+                  ACCESS read-only
+                  STATUS mandatory
+                  ::= { ifExtnsRcvAddrEntry 1 }
+
+          ifExtnsRcvAddress OBJECT-TYPE
+                  SYNTAX PhysAddress
+                  ACCESS read-only
+                  STATUS mandatory
+                  ::= { ifExtnsRcvAddrEntry 2 }
+
+          ifExtnsRcvAddrStatus OBJECT-TYPE
+                  SYNTAX INTEGER {
+                             other(1),
+                             invalid(2),
+                             volatile(3),
+                             nonVolatile(4)
+                         }
+                  ACCESS read-write
+                  STATUS mandatory
+                  DEFVAL  { volatile }
+                  ::= { ifExtnsRcvAddrEntry 3 }
+
+          END

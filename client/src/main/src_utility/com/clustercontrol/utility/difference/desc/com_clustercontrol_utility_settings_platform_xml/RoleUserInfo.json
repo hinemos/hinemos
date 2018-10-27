@@ -1,0 +1,20 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"roleId",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"RoleUserInfo_roleId"}
+	]},
+
+	{
+	"propName":"userId",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"RoleUserInfo_userId"}
+	]}
+]
+}

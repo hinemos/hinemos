@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.plugin.impl;
@@ -28,7 +21,9 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -43,10 +38,12 @@ import javax.xml.ws.Endpoint;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.platform.HinemosPropertyDefault;
+import com.clustercontrol.plugin.HinemosPluginService;
 import com.clustercontrol.plugin.api.HinemosPlugin;
+import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.util.StringBinder;
 import com.clustercontrol.util.XMLUtil;
 import com.sun.net.httpserver.HttpsConfigurator;
@@ -63,19 +60,23 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 	private static final ThreadPoolExecutor _threadPool;
 	private static final ArrayList<Endpoint> endpointList = new ArrayList<Endpoint>();
 
+	private static PluginStatus status = PluginStatus.NULL;
+
+	public static PluginStatus getStatus() {
+		return status;
+	}
+
+	public static void setStatus(PluginStatus status) {
+		WebServicePlugin.status = status;
+	}
+
 	/** HTTPS通信時に利用 */
 	private static ConcurrentHashMap<String, HttpsServer> httpsServerMap =
 			new ConcurrentHashMap<String, HttpsServer>();
 
-	/** Invalidな文字を置換する場合の置換文字のキー */
-	private static final String MESSAGE_REPLACE_METHOD_KEY = "common.invalid.char.replace";
-
-	/** Invalidな文字を置換する場合の置換文字のキー */
-	private static final String MESSAGE_REPLACE_CHAR_KEY = "common.invalid.char.replace.to";
-
 	static {
-		int _threadPoolSize = HinemosPropertyUtil.getHinemosPropertyNum("ws.client.threadpool.size" , Long.valueOf(8)).intValue();
-		int _queueSize = HinemosPropertyUtil.getHinemosPropertyNum("ws.queue.size" , Long.valueOf(300)).intValue();
+		int _threadPoolSize = HinemosPropertyCommon.ws_client_threadpool_size.getIntegerValue();
+		int _queueSize = HinemosPropertyCommon.ws_queue_size.getIntegerValue();
 
 		_threadPool = new MonitoredThreadPoolExecutor(_threadPoolSize, _threadPoolSize, 0L, TimeUnit.MICROSECONDS,
 				new LinkedBlockingQueue<Runnable>(_queueSize),
@@ -88,11 +89,11 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 		}, new ThreadPoolExecutor.AbortPolicy());
 
 
-		boolean invalidCharReplace = HinemosPropertyUtil.getHinemosPropertyBool(MESSAGE_REPLACE_METHOD_KEY, false);
+		boolean invalidCharReplace = HinemosPropertyCommon.common_invalid_char_replace.getBooleanValue();
 		XMLUtil.setReplace(invalidCharReplace);
 		StringBinder.setReplace(invalidCharReplace);
 
-		String replaceChar = HinemosPropertyUtil.getHinemosPropertyStr(MESSAGE_REPLACE_CHAR_KEY, "?");
+		String replaceChar = HinemosPropertyCommon.common_invalid_char_replace_to.getStringValue();
 		if(replaceChar != null){
 			XMLUtil.setReplaceChar(replaceChar);
 			StringBinder.setReplaceChar(replaceChar);
@@ -123,10 +124,10 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 				httpsServer = httpsServerMap.get(addressPrefix);
 				if (httpsServer == null) {
 					// HTTPS Serverの作成（HTTPSサーバの開始は、後で一括して行うため、ここではインスタンスの生成のみに留める
-					String protocol = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.protocol", "TLS");
-					String keystorePath = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.path", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.WS_HTTPS_KEYSTORE_PATH));
-					String keystorePassword = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.password", "hinemos");
-					String keystoreType = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.type", "PKCS12");
+					String protocol = HinemosPropertyCommon.ws_https_protocol.getStringValue();
+					String keystorePath = HinemosPropertyDefault.ws_https_keystore_path.getStringValue();
+					String keystorePassword = HinemosPropertyCommon.ws_https_keystore_password.getStringValue();
+					String keystoreType = HinemosPropertyCommon.ws_https_keystore_type.getStringValue();
 					log.info("Starting HTTPS Server...");
 					log.info("SSLContext: " + protocol + ", KeyStore: " + keystoreType);
 					SSLContext ssl = SSLContext.getInstance(protocol);
@@ -183,7 +184,7 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 		// 許容時間まで待ちリクエストを処理する
 		_threadPool.shutdown();
 		try {
-			long _shutdownTimeout = HinemosPropertyUtil.getHinemosPropertyNum("ws.client.shutdown.timeout" , Long.valueOf(10000));
+			long _shutdownTimeout = HinemosPropertyCommon.ws_client_shutdown_timeout.getNumericValue();
 
 			if (! _threadPool.awaitTermination(_shutdownTimeout, TimeUnit.MILLISECONDS)) {
 				List<Runnable> remained = _threadPool.shutdownNow();
@@ -224,5 +225,32 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 		for(final HttpsServer server : httpsServerMap.values()) {
 			server.start();
 		}
+	}
+
+	@Override
+	public Set<String> getRequiredKeys() {
+		Set<String> requiredKeys = new HashSet<>();
+
+		// EnterprisePluginが既に活性化された場合、TYPE_ENTERPRISEキーが必要となる
+		if(HinemosPluginService.isActive(EnterprisePlugin.class)){
+			requiredKeys.add(KeyCheck.TYPE_ENTERPRISE);
+		}
+		return requiredKeys;
+	}
+
+	/**
+	 * 必要なキーが存在するかどうかをチェックする
+	 */
+	protected boolean checkRequiredKeys() {
+		// nullの場合はチェック不要
+		if(null == getRequiredKeys())
+			return true;
+
+		for(String key: getRequiredKeys()){
+			if(!KeyCheck.checkKey(key)){
+				return false;
+			}
+		}
+		return true;
 	}
 }

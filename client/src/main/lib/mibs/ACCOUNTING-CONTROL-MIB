@@ -1,0 +1,427 @@
+ACCOUNTING-CONTROL-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+    mib-2, Integer32                              FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION, RowStatus, TestAndIncr,
+    DisplayString, TruthValue                     FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                                                  FROM SNMPv2-CONF
+    ifIndex                                       FROM IF-MIB;
+
+
+accountingControlMIB MODULE-IDENTITY
+    LAST-UPDATED "9809281000Z"
+    ORGANIZATION "IETF AToM MIB Working Group"
+    ::= { mib-2 60 }
+
+
+acctngMIBObjects       OBJECT IDENTIFIER ::= { accountingControlMIB 1 }
+
+acctngSelectionControl OBJECT IDENTIFIER ::= { acctngMIBObjects 1 }
+acctngFileControl      OBJECT IDENTIFIER ::= { acctngMIBObjects 2 }
+acctngInterfaceControl OBJECT IDENTIFIER ::= { acctngMIBObjects 3 }
+acctngTrapControl      OBJECT IDENTIFIER ::= { acctngMIBObjects 4 }
+
+
+
+DataCollectionSubtree ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       OBJECT IDENTIFIER
+
+DataCollectionList ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       OCTET STRING (SIZE(0..8))
+
+FileIndex ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       Integer32 (1..65535)
+
+
+
+
+
+
+
+
+acctngSelectionTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF AcctngSelectionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { acctngSelectionControl 1 }
+
+acctngSelectionEntry OBJECT-TYPE
+    SYNTAX      AcctngSelectionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { acctngSelectionIndex }
+    ::= { acctngSelectionTable 1 }
+
+AcctngSelectionEntry ::=
+    SEQUENCE {
+        acctngSelectionIndex     Integer32,
+        acctngSelectionSubtree   DataCollectionSubtree,
+        acctngSelectionList      DataCollectionList,
+        acctngSelectionFile      FileIndex,
+        acctngSelectionType      BITS,
+        acctngSelectionRowStatus RowStatus
+    }
+
+acctngSelectionIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { acctngSelectionEntry 1 }
+
+
+
+
+
+
+acctngSelectionSubtree OBJECT-TYPE
+    SYNTAX      DataCollectionSubtree
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { acctngSelectionEntry 2 }
+
+acctngSelectionList OBJECT-TYPE
+    SYNTAX      DataCollectionList
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { acctngSelectionEntry 3 }
+
+acctngSelectionFile OBJECT-TYPE
+    SYNTAX      FileIndex
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { acctngSelectionEntry 4 }
+
+acctngSelectionType OBJECT-TYPE
+    SYNTAX      BITS { svcIncoming(0),
+                       svcOutgoing(1),
+                       svpIncoming(2),
+                       svpOutgoing(3),
+                       pvc(4),
+                       pvp(5),
+                       spvcOriginator(6),
+                       spvcTarget(7),
+                       spvpOriginator(8),
+                       spvpTarget(9) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { { svcIncoming, svcOutgoing,
+                    svpIncoming, svpOutgoing } }
+    ::= { acctngSelectionEntry 5 }
+
+acctngSelectionRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { acctngSelectionEntry 6 }
+
+
+acctngFileTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF AcctngFileEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { acctngFileControl 1 }
+
+acctngFileEntry OBJECT-TYPE
+    SYNTAX      AcctngFileEntry
+    MAX-ACCESS  not-accessible
+
+
+
+
+
+    STATUS      current
+    INDEX   { acctngFileIndex }
+    ::= { acctngFileTable 1 }
+
+AcctngFileEntry ::=
+    SEQUENCE {
+        acctngFileIndex                 FileIndex,
+        acctngFileName                  DisplayString,
+        acctngFileNameSuffix            DisplayString,
+        acctngFileDescription           DisplayString,
+        acctngFileCommand               INTEGER,
+        acctngFileMaximumSize           Integer32,
+        acctngFileCurrentSize           Integer32,
+        acctngFileFormat                INTEGER,
+        acctngFileCollectMode           BITS,
+        acctngFileCollectFailedAttempts BITS,
+        acctngFileInterval              Integer32,
+        acctngFileMinAge                Integer32,
+        acctngFileRowStatus             RowStatus
+    }
+
+acctngFileIndex OBJECT-TYPE
+    SYNTAX      FileIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { acctngFileEntry 1 }
+
+acctngFileName OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE(1..32))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { acctngFileEntry 2 }
+
+acctngFileNameSuffix OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE(0..8))
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { acctngFileEntry 3 }
+
+acctngFileDescription OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { "" }
+    ::= { acctngFileEntry 4 }
+
+acctngFileCommand OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    idle(1),
+                    cmdInProgress(2),
+                    swapToNewFile(3),
+                    collectNow(4)
+                }
+    MAX-ACCESS  read-create
+
+
+
+
+
+    STATUS      current
+    DEFVAL      { idle }
+    ::= { acctngFileEntry 5 }
+
+acctngFileMaximumSize OBJECT-TYPE
+    SYNTAX      Integer32 (100..2147483647)
+    UNITS       "bytes"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { 5000000 }
+    ::= { acctngFileEntry 6 }
+
+acctngFileCurrentSize OBJECT-TYPE
+    SYNTAX      Integer32 (0..2147483647)
+    UNITS       "bytes"
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { acctngFileEntry 7 }
+
+acctngFileFormat OBJECT-TYPE
+    SYNTAX      INTEGER { other(1), ber(2) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { ber }
+    ::= { acctngFileEntry 8 }
+
+acctngFileCollectMode OBJECT-TYPE
+    SYNTAX      BITS { onRelease(0), periodically(1) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { { onRelease } }
+    ::= { acctngFileEntry 9 }
+
+acctngFileCollectFailedAttempts OBJECT-TYPE
+    SYNTAX      BITS { soft(0), regular(1) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { { soft, regular } }
+    ::= { acctngFileEntry 10 }
+
+acctngFileInterval OBJECT-TYPE
+    SYNTAX      Integer32 (60..86400)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL     { 3600 }
+    ::= { acctngFileEntry 11 }
+
+acctngFileMinAge OBJECT-TYPE
+    SYNTAX      Integer32 (60..86400)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL     { 3600 }
+    ::= { acctngFileEntry 12 }
+
+acctngFileRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { acctngFileEntry 13 }
+
+
+acctngAdminStatus OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { acctngInterfaceControl 1 }
+
+acctngOperStatus OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { acctngInterfaceControl 2 }
+
+acctngProtection OBJECT-TYPE
+    SYNTAX      TestAndIncr
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { acctngInterfaceControl 3 }
+
+acctngAgentMode OBJECT-TYPE
+    SYNTAX      INTEGER { swapOnCommand(1), swapOnFull(2) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { acctngInterfaceControl 4 }
+
+
+
+acctngInterfaceTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF AcctngInterfaceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { acctngInterfaceControl 5 }
+
+acctngInterfaceEntry OBJECT-TYPE
+    SYNTAX      AcctngInterfaceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { ifIndex }
+    ::= { acctngInterfaceTable 1 }
+
+AcctngInterfaceEntry ::=
+    SEQUENCE {
+        acctngInterfaceEnable     TruthValue
+    }
+
+acctngInterfaceEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { acctngInterfaceEntry 1 }
+
+
+acctngControlTrapThreshold OBJECT-TYPE
+    SYNTAX      INTEGER (0..99)
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { acctngTrapControl 1 }
+
+acctngControlTrapEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { acctngTrapControl 2 }
+
+
+acctngNotifications OBJECT IDENTIFIER ::= { accountingControlMIB 2 }
+
+acctngNotifyPrefix OBJECT IDENTIFIER ::= { acctngNotifications 0 }
+
+
+acctngFileNearlyFull NOTIFICATION-TYPE
+    OBJECTS     { acctngFileName,
+                  acctngFileMaximumSize,
+                  acctngControlTrapThreshold,
+                  acctngFileNameSuffix }
+    STATUS      current
+    ::= { acctngNotifyPrefix 1 }
+
+
+acctngFileFull NOTIFICATION-TYPE
+    OBJECTS     { acctngFileName,
+                  acctngFileMaximumSize,
+                  acctngFileNameSuffix }
+    STATUS      current
+    ::= { acctngNotifyPrefix 2 }
+
+
+
+acctngConformance OBJECT IDENTIFIER ::= { accountingControlMIB 3 }
+acctngGroups      OBJECT IDENTIFIER ::= { acctngConformance 1 }
+acctngCompliances OBJECT IDENTIFIER ::= { acctngConformance 2 }
+
+acctngCompliance MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { acctngBasicGroup,
+                           acctngNotificationsGroup }
+
+        OBJECT      acctngSelectionType
+        SYNTAX      BITS { svcIncoming(0), svcOutgoing(1) }
+
+        OBJECT      acctngSelectionRowStatus
+        MIN-ACCESS  read-only
+
+        OBJECT      acctngFileName
+        MIN-ACCESS  read-only
+
+        OBJECT      acctngFileCommand
+        MIN-ACCESS  read-only
+
+        OBJECT      acctngFileFormat
+        SYNTAX      INTEGER { ber(2) }
+        MIN-ACCESS  read-only
+
+        OBJECT      acctngFileMaximumSize
+        MIN-ACCESS  read-only
+
+        OBJECT      acctngFileCollectMode
+        SYNTAX      BITS { onRelease(0) }
+
+
+
+
+
+        MIN-ACCESS  read-only
+
+        OBJECT      acctngFileInterval
+        MIN-ACCESS  read-only
+
+        OBJECT      acctngFileCollectFailedAttempts
+        MIN-ACCESS  read-only
+
+        OBJECT      acctngFileRowStatus
+        MIN-ACCESS  read-only
+
+    ::= { acctngCompliances 1 }
+
+
+
+acctngBasicGroup    OBJECT-GROUP
+    OBJECTS { acctngSelectionSubtree, acctngSelectionList,
+              acctngSelectionFile, acctngSelectionType,
+              acctngSelectionRowStatus, acctngFileName,
+              acctngFileNameSuffix, acctngFileDescription,
+              acctngFileCommand, acctngFileMaximumSize,
+              acctngFileCurrentSize, acctngFileRowStatus,
+              acctngFileFormat, acctngFileCollectMode,
+              acctngFileCollectFailedAttempts, acctngFileInterval,
+              acctngFileMinAge,
+              acctngAdminStatus, acctngOperStatus,
+              acctngProtection, acctngAgentMode,
+              acctngInterfaceEnable,
+              acctngControlTrapThreshold,
+              acctngControlTrapEnable
+            }
+    STATUS  current
+    ::= { acctngGroups 1 }
+
+acctngNotificationsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { acctngFileNearlyFull, acctngFileFull }
+    STATUS        current
+    ::= { acctngGroups 2 }
+
+END

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.plugin.impl;
@@ -31,12 +24,12 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.quartz.job.ReflectionInvokerJob;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosException;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.LogTransferNotFound;
-import com.clustercontrol.hub.bean.PropertyConstants;
 import com.clustercontrol.hub.model.TransferInfo;
 import com.clustercontrol.hub.model.TransferInfo.TransferType;
 import com.clustercontrol.HinemosManagerMain;
@@ -44,7 +37,6 @@ import com.clustercontrol.HinemosManagerMain.StartupMode;
 import com.clustercontrol.HinemosManagerMain.StartupTask;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.factory.ModifySchedule;
 import com.clustercontrol.monitor.run.util.NodeMonitorPollerController;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCache;
@@ -79,14 +71,14 @@ public class SchedulerPlugin implements HinemosPlugin {
 
 	// スケジューラ情報の保持種別(RAM : オンメモリで管理、DBMS : DBで永続化管理)
 	public static enum SchedulerType {
-		RAM( "ram",  "scheduler.ram.threadPool.size", 32, "scheduler.ram.misfireThreshold",  3600000),
-		DBMS("dbms", "scheduler.dbms.threadPool.size", 8, "scheduler.dbms.misfireThreshold", 3600000);
-		
-		SchedulerType(String name, String poolSizeKey, int defaultPoolSize, String misfireThresholdKey, int defaultMisfireThreashold) {
+		RAM( "ram",  HinemosPropertyCommon.scheduler_ram_threadPool_size, HinemosPropertyCommon.scheduler_ram_misfireThreshold),
+		DBMS("dbms", HinemosPropertyCommon.scheduler_dbms_threadPool_size, HinemosPropertyCommon.scheduler_dbms_misfireThreshold);
+
+		SchedulerType(String name, HinemosPropertyCommon HinemosPropertySize, HinemosPropertyCommon HinemosPropertyMisfireThreashold) {
 			mainThreadName = "HinemosScheduler-" + name + "-dispatcher";
 			workerThreadNameBase = "HinemosScheduler-" + name + "-worker-";
-			poolSize = HinemosPropertyUtil.getHinemosPropertyNum(poolSizeKey, Long.valueOf(defaultPoolSize)).intValue();
-			misfireThreshold = HinemosPropertyUtil.getHinemosPropertyNum(misfireThresholdKey, Long.valueOf(defaultMisfireThreashold)).intValue();
+			poolSize = HinemosPropertySize.getIntegerValue();
+			misfireThreshold = HinemosPropertyMisfireThreashold.getIntegerValue();
 		}
 		private final String mainThreadName;
 		public String getMainThreadName() {
@@ -118,10 +110,15 @@ public class SchedulerPlugin implements HinemosPlugin {
 	}
 
 	@Override
+	public Set<String> getRequiredKeys() {
+		return null;
+	}
+
+	@Override
 	public void create() {
 		try {
 			synchronized (_schedulerLock) {
-				int delaySec = HinemosPropertyUtil.getHinemosPropertyNum("common.scheduler.startup.delay", Long.valueOf(60)).intValue();
+				int delaySec = HinemosPropertyCommon.common_scheduler_startup_delay.getIntegerValue();
 				log.info("initializing SchedulerPlugin : properties (delaySec = " + delaySec + ")");
 				
 				HinemosScheduler ram = new HinemosScheduler(SchedulerType.RAM);
@@ -159,7 +156,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 		for (Entry<SchedulerType, HinemosScheduler> entry : _scheduler.entrySet()) {
 			try {
 				log.debug("activate scheduler name=" + entry.getValue().getSchedulerName());
-				int delaySec = HinemosPropertyUtil.getHinemosPropertyNum("common.scheduler.startup.delay", Long.valueOf(60)).intValue();
+				int delaySec = HinemosPropertyCommon.common_scheduler_startup_delay.getIntegerValue();
 				entry.getValue().start(delaySec * 1000);
 			} catch (SchedulerException e) {
 				log.error("activation failure : SchedulerPlugin", e);
@@ -472,8 +469,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 		try {
 			if (! _scheduler.get(SchedulerType.RAM).checkExists(new JobKey("MonitorController", "MON"))) {
 				scheduleCronJob(SchedulerType.RAM, "MonitorController", "MON",
-						HinemosTime.currentTimeMillis(), HinemosPropertyUtil.getHinemosPropertyStr(
-								"scheduler.monitor.cron", "0 */5 * * * ? *"),
+						HinemosTime.currentTimeMillis(), HinemosPropertyCommon.scheduler_monitor_cron.getStringValue(),
 						true, MonitorControllerBean.class.getName(),
 						"manageStatus", new Class[0], new Serializable[0]);
 			}
@@ -486,8 +482,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 			if (! _scheduler.get(SchedulerType.RAM).checkExists(new JobKey("JobRunManagement", "JOB_MANAGEMENT"))) {
 				scheduleCronJob(SchedulerType.RAM, "JobRunManagement",
 						"JOB_MANAGEMENT", HinemosTime.currentTimeMillis(),
-						HinemosPropertyUtil.getHinemosPropertyStr("scheduler.job.cron",
-								"0 */1 * * * ? *"), true,
+						HinemosPropertyCommon.scheduler_job_cron.getStringValue(), true,
 						JobRunManagementBean.class.getName(), "run",
 						new Class[0], new Serializable[0]);
 			}
@@ -500,8 +495,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 			if (! _scheduler.get(SchedulerType.RAM).checkExists(new JobKey("RepositoryRunManagement", "REPOSITORY_MANAGEMENT"))) {
 				scheduleCronJob(SchedulerType.RAM, "RepositoryRunManagement",
 						"REPOSITORY_MANAGEMENT", HinemosTime.currentTimeMillis(),
-						HinemosPropertyUtil.getHinemosPropertyStr("scheduler.repository.cron",
-								"40 */1 * * * ? *"), true,
+						HinemosPropertyCommon.scheduler_repository_cron.getStringValue(), true,
 						RepositoryRunManagementBean.class.getName(), "run",
 						new Class[0], new Serializable[0]);
 			}
@@ -514,9 +508,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 			if (! _scheduler.get(SchedulerType.RAM).checkExists(new JobKey("MonitorStatusManagement", "MONITOR_STATUS_MANAGEMENT"))) {
 				scheduleCronJob(SchedulerType.RAM, "MonitorStatusManagement",
 						"MONITOR_STATUS_MANAGEMENT", HinemosTime.currentTimeMillis(),
-						HinemosPropertyUtil.getHinemosPropertyStr(
-								"scheduler.monitor.status.cron",
-								"50 3/10 * * * ? *"), true,
+						HinemosPropertyCommon.scheduler_monitor_status_cron.getStringValue(), true,
 						MonitorControllerBean.class.getName(),
 						"persistMonitorStatusCache", new Class[0],
 						new Serializable[0]);
@@ -559,16 +551,16 @@ public class SchedulerPlugin implements HinemosPlugin {
 		//収集蓄積機能の対応(転送設定に関するHinemosプロパティの最新値を取得)
 		String propCron = null;
 		String propBaseTime= null;
-		propCron = PropertyConstants.hub_transfer_delay_interval.string();
+		propCron = HinemosPropertyCommon.hub_transfer_delay_interval.getStringValue();
 		log.debug("propCron:" + propCron);
 		try {
 			CronExpression.validateExpression(propCron);
 		} catch (ParseException e){
-			log.warn(PropertyConstants.hub_transfer_delay_interval.message_invalid(propCron));
+			log.warn(HinemosPropertyCommon.hub_transfer_delay_interval.message_invalid(propCron));
 			//書式不正の場合、DB情報更新しない
 			propCron = null;
 		}
-		propBaseTime = PropertyConstants.hub_transfer_batch_basetime.string();
+		propBaseTime = HinemosPropertyCommon.hub_transfer_batch_basetime.getStringValue();
 		log.debug("propBaseTime:" + propBaseTime);
 		
 		
@@ -664,7 +656,10 @@ public class SchedulerPlugin implements HinemosPlugin {
 					} else {
 						triggerBuilder.withMisfireHandlingInstructionIgnoreMisfires();
 					}
-					trigger = triggerBuilder.cronSchedule(entity.getCronExpression()).startNow().endAt(entity.getEndTime()).build();
+					// 現在時刻を一度ミリ秒単位を落として取得する
+					long nowTime = (HinemosTime.currentTimeMillis() / 1000) * 1000;
+					log.debug("start_time : " + nowTime);
+					trigger = triggerBuilder.cronSchedule(entity.getCronExpression()).startAt(nowTime).endAt(entity.getEndTime()).build();
 					((AbstractTrigger)trigger).setNextFireTime(entity.getNextFireTime());
 					((AbstractTrigger)trigger).setPreviousFireTime(entity.getPrevFireTime());
 					

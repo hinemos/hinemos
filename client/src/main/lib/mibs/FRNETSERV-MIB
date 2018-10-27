@@ -1,0 +1,1349 @@
+FRNETSERV-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+              MODULE-IDENTITY, OBJECT-TYPE,
+              NOTIFICATION-TYPE, transmission,
+              Counter32, Integer32             FROM SNMPv2-SMI
+              TimeStamp, RowStatus             FROM SNMPv2-TC
+              MODULE-COMPLIANCE, OBJECT-GROUP,
+              NOTIFICATION-GROUP               FROM SNMPv2-CONF
+              InterfaceIndex, ifIndex          FROM IF-MIB
+              SnmpAdminString                  FROM SNMP-FRAMEWORK-MIB;
+
+        frnetservMIB MODULE-IDENTITY
+            LAST-UPDATED "200009280000Z" -- September 28, 2000
+            ORGANIZATION "IETF Frame Relay Service MIB Working Group"
+
+
+
+            ::= { transmission 44 }
+
+
+
+
+
+            frnetservObjects
+                OBJECT IDENTIFIER ::= { frnetservMIB 1 }
+
+            frnetservTraps
+                OBJECT IDENTIFIER ::= { frnetservMIB 2 }
+
+            frnetservTrapsPrefix
+                OBJECT IDENTIFIER ::= { frnetservTraps 0 }
+
+        frLportTable OBJECT-TYPE
+            SYNTAX      SEQUENCE OF FrLportEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frnetservObjects 1 }
+
+        frLportEntry OBJECT-TYPE
+            SYNTAX      FrLportEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            INDEX   {   ifIndex }
+            ::= { frLportTable 1 }
+
+        FrLportEntry ::=
+            SEQUENCE {
+                frLportNumPlan            INTEGER,
+                frLportContact            SnmpAdminString,
+                frLportLocation           SnmpAdminString,
+                frLportType               INTEGER,
+                frLportAddrDLCILen        INTEGER,
+                frLportVCSigProtocol      INTEGER,
+                frLportVCSigPointer       OBJECT IDENTIFIER,
+                frLportDLCIIndexValue     Integer32,
+                frLportTypeAdmin          INTEGER,
+                frLportVCSigProtocolAdmin INTEGER,
+                frLportFragControl        INTEGER,
+                frLportFragSize           Integer32
+        }
+
+
+
+
+
+
+        frLportNumPlan OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        other(1),
+                        e164(2),
+                        x121(3),
+                        none(4)
+                        }
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frLportEntry 1 }
+
+        frLportContact  OBJECT-TYPE
+            SYNTAX      SnmpAdminString
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frLportEntry 2 }
+
+        frLportLocation OBJECT-TYPE
+            SYNTAX      SnmpAdminString
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frLportEntry 3 }
+
+        frLportType     OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        uni(1),
+                        nni(2)
+                        }
+            MAX-ACCESS  read-only
+
+
+
+
+
+            STATUS      current
+            ::= { frLportEntry 4 }
+
+        frLportAddrDLCILen OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        twoOctets10Bits(1),
+                        threeOctets10Bits(2),
+                        threeOctets16Bits(3),
+                        fourOctets17Bits(4),
+                        fourOctets23Bits(5)
+                        }
+            UNITS       "Octets"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frLportEntry 5 }
+
+        frLportVCSigProtocol OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        none(1),
+                        lmi(2),
+                        ansiT1617D(3),
+                        ansiT1617B(4),
+                        ccittQ933A(5)
+                        }
+            MAX-ACCESS  read-only
+            STATUS      current
+              ::= { frLportEntry 6 }
+
+        frLportVCSigPointer OBJECT-TYPE
+            SYNTAX      OBJECT IDENTIFIER
+            MAX-ACCESS  read-only
+            STATUS      deprecated
+            ::= { frLportEntry 7 }
+
+        frLportDLCIIndexValue OBJECT-TYPE
+            SYNTAX      Integer32 (16..4194303)
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frLportEntry 8 }
+
+        frLportTypeAdmin   OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        uni(1),
+                        nni(2)
+                        }
+            MAX-ACCESS  read-write
+            STATUS      current
+              ::= { frLportEntry 9 }
+
+        frLportVCSigProtocolAdmin OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        none(1),
+                        lmi(2),
+                        ansiT1617D(3),
+                        ansiT1617B(4),
+                        ccittQ933A(5)
+                        }
+            MAX-ACCESS  read-write
+            STATUS      current
+            ::= { frLportEntry 10 }
+
+        frLportFragControl OBJECT-TYPE
+
+
+
+
+
+            SYNTAX      INTEGER {
+                        on(1),
+                        off(2)
+                        }
+            MAX-ACCESS  read-write
+            STATUS      current
+            DEFVAL { off }
+            ::= { frLportEntry 11 }
+
+        frLportFragSize OBJECT-TYPE
+            SYNTAX      Integer32 (0..4096)
+            UNITS       "Octets"
+            MAX-ACCESS  read-write
+            STATUS      current
+            DEFVAL { 0 }
+            ::= { frLportEntry 12 }
+
+
+        frMgtVCSigTable OBJECT-TYPE
+            SYNTAX      SEQUENCE OF FrMgtVCSigEntry
+
+
+
+
+
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frnetservObjects 2 }
+
+        frMgtVCSigEntry OBJECT-TYPE
+            SYNTAX      FrMgtVCSigEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            INDEX       { ifIndex }
+            ::= { frMgtVCSigTable 1 }
+
+        FrMgtVCSigEntry ::=
+            SEQUENCE {
+                frMgtVCSigProced             INTEGER,
+                frMgtVCSigUserN391           INTEGER,
+                frMgtVCSigUserN392           INTEGER,
+                frMgtVCSigUserN393           INTEGER,
+                frMgtVCSigUserT391           INTEGER,
+                frMgtVCSigNetN392            INTEGER,
+                frMgtVCSigNetN393            INTEGER,
+                frMgtVCSigNetT392            INTEGER,
+                frMgtVCSigNetnN4             INTEGER,
+                frMgtVCSigNetnT3             INTEGER,
+                frMgtVCSigUserLinkRelErrors  Counter32,
+                frMgtVCSigUserProtErrors     Counter32,
+                frMgtVCSigUserChanInactive   Counter32,
+                frMgtVCSigNetLinkRelErrors   Counter32,
+                frMgtVCSigNetProtErrors      Counter32,
+                frMgtVCSigNetChanInactive    Counter32,
+                frMgtVCSigProcedAdmin        INTEGER,
+                frMgtVCSigUserN391Admin      INTEGER,
+                frMgtVCSigUserN392Admin      INTEGER,
+                frMgtVCSigUserN393Admin      INTEGER,
+                frMgtVCSigUserT391Admin      INTEGER,
+                frMgtVCSigNetN392Admin       INTEGER,
+                frMgtVCSigNetN393Admin       INTEGER,
+                frMgtVCSigNetT392Admin       INTEGER,
+                frMgtVCSigNetnT3Admin        INTEGER
+        }
+
+        frMgtVCSigProced OBJECT-TYPE
+            SYNTAX      INTEGER {
+
+
+
+
+
+                        u2nnet(1),
+                        bidirect(2),
+                        u2nuser(3)
+                        }
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frMgtVCSigEntry 1 }
+
+        frMgtVCSigUserN391 OBJECT-TYPE
+            SYNTAX      INTEGER (1..255)
+            UNITS       "Polls"
+            MAX-ACCESS  read-only
+            STATUS      current
+            DEFVAL { 6 }
+            ::= { frMgtVCSigEntry 2 }
+
+        frMgtVCSigUserN392 OBJECT-TYPE
+            SYNTAX      INTEGER (1..10)
+
+
+
+
+
+            UNITS       "Events"
+            MAX-ACCESS  read-only
+            STATUS      current
+            DEFVAL { 3 }
+            ::= { frMgtVCSigEntry 3 }
+
+        frMgtVCSigUserN393 OBJECT-TYPE
+            SYNTAX      INTEGER (1..10)
+            UNITS       "Events"
+            MAX-ACCESS  read-only
+            STATUS      current
+            DEFVAL { 4 }
+            ::= { frMgtVCSigEntry 4 }
+
+        frMgtVCSigUserT391 OBJECT-TYPE
+            SYNTAX      INTEGER (5..30)
+            UNITS       "Seconds"
+            MAX-ACCESS  read-only
+            STATUS      current
+            DEFVAL { 10 }
+            ::= { frMgtVCSigEntry 5 }
+
+        frMgtVCSigNetN392 OBJECT-TYPE
+            SYNTAX      INTEGER (1..10)
+
+
+
+
+
+            UNITS       "Events"
+            MAX-ACCESS  read-only
+            STATUS      current
+            DEFVAL { 3 }
+            ::= { frMgtVCSigEntry 6 }
+
+        frMgtVCSigNetN393 OBJECT-TYPE
+            SYNTAX      INTEGER (1..10)
+            UNITS       "Events"
+            MAX-ACCESS  read-only
+            STATUS      current
+            DEFVAL { 4 }
+            ::= { frMgtVCSigEntry 7 }
+
+        frMgtVCSigNetT392 OBJECT-TYPE
+            SYNTAX      INTEGER (5..30)
+            UNITS       "Seconds"
+            MAX-ACCESS  read-only
+            STATUS      current
+            DEFVAL { 15 }
+            ::= { frMgtVCSigEntry 8 }
+
+
+
+
+
+        frMgtVCSigNetnN4 OBJECT-TYPE
+            SYNTAX      INTEGER (5..5)
+            UNITS       "Events"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frMgtVCSigEntry 9 }
+
+        frMgtVCSigNetnT3 OBJECT-TYPE
+            SYNTAX      INTEGER (5 | 10 | 15 | 20 | 25 | 30)
+            UNITS       "Seconds"
+            MAX-ACCESS  read-only
+            STATUS      current
+              DEFVAL { 20 }
+              ::= { frMgtVCSigEntry 10 }
+
+        frMgtVCSigUserLinkRelErrors OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Errors"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frMgtVCSigEntry 11 }
+
+        frMgtVCSigUserProtErrors OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Errors"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frMgtVCSigEntry 12 }
+
+      frMgtVCSigUserChanInactive OBJECT-TYPE
+          SYNTAX      Counter32
+          UNITS       "Events"
+          MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frMgtVCSigEntry 13 }
+
+        frMgtVCSigNetLinkRelErrors OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Errors"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frMgtVCSigEntry 14 }
+
+        frMgtVCSigNetProtErrors OBJECT-TYPE
+            SYNTAX      Counter32
+
+
+
+
+
+            UNITS       "Errors"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frMgtVCSigEntry 15 }
+
+        frMgtVCSigNetChanInactive OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Events"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frMgtVCSigEntry 16 }
+
+        frMgtVCSigProcedAdmin OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        u2nnet(1),
+                        bidirect(2),
+                        u2nuser(3)
+                        }
+            MAX-ACCESS  read-write
+            STATUS      current
+
+
+
+
+
+            DEFVAL { u2nnet }
+            ::= { frMgtVCSigEntry 17 }
+
+        frMgtVCSigUserN391Admin OBJECT-TYPE
+            SYNTAX      INTEGER (1..255)
+            UNITS       "Polls"
+            MAX-ACCESS  read-write
+            STATUS      current
+            ::= { frMgtVCSigEntry 18 }
+
+        frMgtVCSigUserN392Admin OBJECT-TYPE
+            SYNTAX      INTEGER (1..10)
+            UNITS       "Events"
+            MAX-ACCESS  read-write
+            STATUS      current
+            ::= { frMgtVCSigEntry 19 }
+
+        frMgtVCSigUserN393Admin OBJECT-TYPE
+            SYNTAX      INTEGER (1..10)
+            UNITS       "Events"
+            MAX-ACCESS  read-write
+            STATUS      current
+
+
+
+
+
+            ::= { frMgtVCSigEntry 20 }
+
+        frMgtVCSigUserT391Admin OBJECT-TYPE
+            SYNTAX      INTEGER (5..30)
+            UNITS       "Seconds"
+            MAX-ACCESS  read-write
+            STATUS      current
+            ::= { frMgtVCSigEntry 21 }
+
+        frMgtVCSigNetN392Admin OBJECT-TYPE
+            SYNTAX      INTEGER (1..10)
+            UNITS       "Events"
+            MAX-ACCESS  read-write
+            STATUS      current
+            ::= { frMgtVCSigEntry 22 }
+
+        frMgtVCSigNetN393Admin OBJECT-TYPE
+            SYNTAX      INTEGER (1..10)
+            UNITS       "Events"
+            MAX-ACCESS  read-write
+            STATUS      current
+            ::= { frMgtVCSigEntry 23 }
+
+
+
+
+
+        frMgtVCSigNetT392Admin OBJECT-TYPE
+            SYNTAX      INTEGER (5..30)
+            UNITS       "Seconds"
+            MAX-ACCESS  read-write
+            STATUS      current
+            ::= { frMgtVCSigEntry 24 }
+
+        frMgtVCSigNetnT3Admin OBJECT-TYPE
+            SYNTAX      INTEGER (5 | 10 | 15 | 20 | 25 | 30)
+            UNITS       "Seconds"
+            MAX-ACCESS  read-write
+            STATUS      current
+            ::= { frMgtVCSigEntry 25 }
+
+
+        frPVCEndptTable OBJECT-TYPE
+            SYNTAX      SEQUENCE OF FrPVCEndptEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frnetservObjects 3 }
+
+        frPVCEndptEntry OBJECT-TYPE
+            SYNTAX      FrPVCEndptEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            INDEX   { ifIndex, frPVCEndptDLCIIndex }
+            ::= { frPVCEndptTable 1 }
+
+        FrPVCEndptEntry ::=
+            SEQUENCE {
+                frPVCEndptDLCIIndex            Integer32,
+                frPVCEndptInMaxFrameSize       Integer32,
+                frPVCEndptInBc                 Integer32,
+                frPVCEndptInBe                 Integer32,
+                frPVCEndptInCIR                Integer32,
+                frPVCEndptOutMaxFrameSize      Integer32,
+                frPVCEndptOutBc                Integer32,
+                frPVCEndptOutBe                Integer32,
+                frPVCEndptOutCIR               Integer32,
+                frPVCEndptConnectIdentifier    Integer32,
+                frPVCEndptRowStatus            RowStatus,
+                frPVCEndptRcvdSigStatus        INTEGER,
+                frPVCEndptInFrames             Counter32,
+                frPVCEndptOutFrames            Counter32,
+                frPVCEndptInDEFrames           Counter32,
+                frPVCEndptInExcessFrames       Counter32,
+                frPVCEndptOutExcessFrames      Counter32,
+                frPVCEndptInDiscards           Counter32,
+                frPVCEndptInOctets             Counter32,
+                frPVCEndptOutOctets            Counter32,
+                frPVCEndptInDiscardsDESet      Counter32,
+                frPVCEndptInFramesFECNSet      Counter32,
+                frPVCEndptOutFramesFECNSet     Counter32,
+                frPVCEndptInFramesBECNSet      Counter32,
+                frPVCEndptOutFramesBECNSet     Counter32,
+                frPVCEndptInCongDiscards       Counter32,
+                frPVCEndptInDECongDiscards     Counter32,
+                frPVCEndptOutCongDiscards      Counter32,
+                frPVCEndptOutDECongDiscards    Counter32,
+                frPVCEndptOutDEFrames          Counter32,
+                frPVCEndptAtmIwfConnIndex      Integer32
+
+            }
+
+
+
+
+
+
+        frPVCEndptDLCIIndex OBJECT-TYPE
+            SYNTAX      Integer32 (16..4194303)
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frPVCEndptEntry 1 }
+
+        frPVCEndptInMaxFrameSize OBJECT-TYPE
+            SYNTAX      Integer32 (1..4096)
+            UNITS       "Octets"
+            MAX-ACCESS  read-create
+            STATUS      current
+            DEFVAL { 1600 }
+            ::= { frPVCEndptEntry 2 }
+
+        frPVCEndptInBc OBJECT-TYPE
+            SYNTAX      Integer32 (1..2147483647)
+            UNITS       "Bits"
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCEndptEntry 3 }
+
+        frPVCEndptInBe OBJECT-TYPE
+            SYNTAX      Integer32 (1..2147483647)
+            UNITS       "Bits"
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCEndptEntry 4 }
+
+        frPVCEndptInCIR OBJECT-TYPE
+            SYNTAX      Integer32 (1..2147483647)
+            UNITS       "Bits per Second"
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCEndptEntry 5 }
+
+        frPVCEndptOutMaxFrameSize OBJECT-TYPE
+
+
+
+
+
+            SYNTAX      Integer32 (1..4096)
+            UNITS       "Octets"
+            MAX-ACCESS  read-create
+            STATUS      current
+            DEFVAL { 1600 }
+            ::= { frPVCEndptEntry 6 }
+
+        frPVCEndptOutBc OBJECT-TYPE
+            SYNTAX      Integer32 (1..2147483647)
+            UNITS       "Bits"
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCEndptEntry 7 }
+
+        frPVCEndptOutBe OBJECT-TYPE
+            SYNTAX      Integer32 (1..2147483647)
+            UNITS       "Bits"
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCEndptEntry 8 }
+
+        frPVCEndptOutCIR OBJECT-TYPE
+            SYNTAX      Integer32 (1..2147483647)
+            UNITS       "Bits per Second"
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCEndptEntry 9 }
+
+        frPVCEndptConnectIdentifier OBJECT-TYPE
+            SYNTAX      Integer32 (0..2147483647)
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 10 }
+
+        frPVCEndptRowStatus OBJECT-TYPE
+            SYNTAX      RowStatus
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCEndptEntry 11 }
+
+        frPVCEndptRcvdSigStatus OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        deleted(1),
+                        active(2),
+                        inactive(3),
+                        none(4)
+                        }
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 12 }
+
+        frPVCEndptInFrames OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 13 }
+
+        frPVCEndptOutFrames OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 14 }
+
+
+
+
+
+        frPVCEndptInDEFrames OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 15 }
+
+        frPVCEndptInExcessFrames OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 16 }
+
+        frPVCEndptOutExcessFrames OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 17 }
+
+        frPVCEndptInDiscards OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+
+
+
+
+
+            ::= { frPVCEndptEntry 18 }
+
+        frPVCEndptInOctets OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Octets"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 19 }
+
+        frPVCEndptOutOctets OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Octets"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 20 }
+
+        frPVCEndptInDiscardsDESet OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+
+
+
+
+
+            ::= { frPVCEndptEntry 21 }
+
+        frPVCEndptInFramesFECNSet OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 22 }
+
+        frPVCEndptOutFramesFECNSet OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 23 }
+
+        frPVCEndptInFramesBECNSet OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 24 }
+
+        frPVCEndptOutFramesBECNSet OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 25 }
+
+        frPVCEndptInCongDiscards OBJECT-TYPE
+            SYNTAX      Counter32
+
+
+
+
+
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 26 }
+
+        frPVCEndptInDECongDiscards OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 27 }
+
+        frPVCEndptOutCongDiscards OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 28 }
+
+        frPVCEndptOutDECongDiscards OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 29 }
+
+        frPVCEndptOutDEFrames OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Frames"
+            MAX-ACCESS  read-only
+            STATUS      current
+
+
+
+
+
+            ::= { frPVCEndptEntry 30 }
+
+        frPVCEndptAtmIwfConnIndex OBJECT-TYPE
+            SYNTAX      Integer32  (0..2147483647)
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCEndptEntry 31 }
+
+
+        frPVCConnectIndexValue OBJECT-TYPE
+            SYNTAX      INTEGER (0..2147483647)
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frnetservObjects 4 }
+
+        frPVCConnectTable OBJECT-TYPE
+            SYNTAX      SEQUENCE OF FrPVCConnectEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frnetservObjects 5 }
+
+        frPVCConnectEntry OBJECT-TYPE
+            SYNTAX      FrPVCConnectEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            INDEX { frPVCConnectIndex,
+                    frPVCConnectLowIfIndex,
+
+
+
+
+
+                    frPVCConnectLowDLCIIndex,
+                    frPVCConnectHighIfIndex,
+                    frPVCConnectHighDLCIIndex }
+            ::= { frPVCConnectTable 1 }
+
+        FrPVCConnectEntry ::=
+            SEQUENCE {
+                frPVCConnectIndex            Integer32,
+                frPVCConnectLowIfIndex       InterfaceIndex,
+                frPVCConnectLowDLCIIndex     Integer32,
+                frPVCConnectHighIfIndex      InterfaceIndex,
+                frPVCConnectHighDLCIIndex    Integer32,
+                frPVCConnectAdminStatus      INTEGER,
+                frPVCConnectL2hOperStatus    INTEGER,
+                frPVCConnectH2lOperStatus    INTEGER,
+                frPVCConnectL2hLastChange    TimeStamp,
+                frPVCConnectH2lLastChange    TimeStamp,
+                frPVCConnectRowStatus        RowStatus,
+                frPVCConnectUserName         SnmpAdminString,
+                frPVCConnectProviderName     SnmpAdminString
+        }
+
+          frPVCConnectIndex OBJECT-TYPE
+              SYNTAX      Integer32 (0..2147483647)
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              ::= { frPVCConnectEntry 1 }
+
+        frPVCConnectLowIfIndex OBJECT-TYPE
+            SYNTAX      InterfaceIndex
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frPVCConnectEntry 2 }
+
+        frPVCConnectLowDLCIIndex OBJECT-TYPE
+            SYNTAX      Integer32 (16..4194303)
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frPVCConnectEntry 3 }
+
+        frPVCConnectHighIfIndex OBJECT-TYPE
+            SYNTAX      InterfaceIndex
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frPVCConnectEntry 4 }
+
+        frPVCConnectHighDLCIIndex OBJECT-TYPE
+            SYNTAX      Integer32 (16..4194303)
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frPVCConnectEntry 5 }
+
+        frPVCConnectAdminStatus OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        active(1),
+                        inactive(2),
+                        testing(3)
+                        }
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCConnectEntry 6 }
+
+        frPVCConnectL2hOperStatus OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        active(1),
+                        inactive(2),
+                        testing(3),
+                        unknown(4)
+                        }
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCConnectEntry 7 }
+
+        frPVCConnectH2lOperStatus OBJECT-TYPE
+            SYNTAX      INTEGER {
+                        active(1),
+                        inactive(2),
+                        testing(3),
+                        unknown(4)
+                        }
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCConnectEntry 8 }
+
+        frPVCConnectL2hLastChange OBJECT-TYPE
+            SYNTAX      TimeStamp
+            MAX-ACCESS  read-only
+            STATUS      current
+
+
+
+
+
+            ::= { frPVCConnectEntry 9 }
+
+        frPVCConnectH2lLastChange OBJECT-TYPE
+            SYNTAX      TimeStamp
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frPVCConnectEntry 10 }
+
+        frPVCConnectRowStatus OBJECT-TYPE
+            SYNTAX      RowStatus
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCConnectEntry 11 }
+
+        frPVCConnectUserName OBJECT-TYPE
+            SYNTAX      SnmpAdminString
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCConnectEntry 12 }
+
+
+
+
+
+        frPVCConnectProviderName OBJECT-TYPE
+            SYNTAX      SnmpAdminString
+            MAX-ACCESS  read-create
+            STATUS      current
+            ::= { frPVCConnectEntry 13 }
+
+
+        frAccountPVCTable OBJECT-TYPE
+            SYNTAX      SEQUENCE OF FrAccountPVCEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frnetservObjects 6 }
+
+        frAccountPVCEntry OBJECT-TYPE
+            SYNTAX      FrAccountPVCEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            INDEX   {   ifIndex,
+                        frAccountPVCDLCIIndex }
+            ::= { frAccountPVCTable 1 }
+
+        FrAccountPVCEntry ::=
+            SEQUENCE {
+                frAccountPVCDLCIIndex            Integer32,
+                frAccountPVCSegmentSize          Integer32,
+                frAccountPVCInSegments           Counter32,
+                frAccountPVCOutSegments          Counter32
+            }
+
+        frAccountPVCDLCIIndex OBJECT-TYPE
+            SYNTAX      Integer32 (16..4194303)
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frAccountPVCEntry 1 }
+
+        frAccountPVCSegmentSize OBJECT-TYPE
+            SYNTAX      Integer32
+            UNITS       "Octets"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frAccountPVCEntry 2 }
+
+        frAccountPVCInSegments OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Segments"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frAccountPVCEntry 3 }
+
+        frAccountPVCOutSegments OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Segments"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frAccountPVCEntry 4 }
+
+
+        frAccountLportTable OBJECT-TYPE
+            SYNTAX      SEQUENCE OF FrAccountLportEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { frnetservObjects 7 }
+
+
+
+
+
+        frAccountLportEntry OBJECT-TYPE
+            SYNTAX      FrAccountLportEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            INDEX   {   ifIndex }
+            ::= { frAccountLportTable 1 }
+
+        FrAccountLportEntry ::=
+            SEQUENCE {
+                frAccountLportSegmentSize
+                    Integer32,
+                frAccountLportInSegments
+                    Counter32,
+                frAccountLportOutSegments
+                    Counter32
+            }
+
+        frAccountLportSegmentSize OBJECT-TYPE
+            SYNTAX      Integer32
+            UNITS       "Octets"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frAccountLportEntry 1 }
+
+        frAccountLportInSegments OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Segments"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frAccountLportEntry 2 }
+
+        frAccountLportOutSegments OBJECT-TYPE
+            SYNTAX      Counter32
+            UNITS       "Segments"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { frAccountLportEntry 3 }
+
+
+        frPVCConnectStatusChange  NOTIFICATION-TYPE
+            OBJECTS { frPVCConnectIndex,
+                      frPVCConnectLowIfIndex,
+                      frPVCConnectLowDLCIIndex,
+                      frPVCConnectHighIfIndex,
+                      frPVCConnectHighDLCIIndex,
+                      frPVCConnectL2hOperStatus,
+                      frPVCConnectH2lOperStatus,
+                      frPVCEndptRcvdSigStatus }
+            STATUS  deprecated
+            ::= { frnetservTraps 1 }
+
+        frPVCConnectStatusNotif  NOTIFICATION-TYPE
+            OBJECTS { frPVCConnectL2hOperStatus,
+                      frPVCConnectH2lOperStatus,
+                      frPVCEndptRcvdSigStatus }
+            STATUS  current
+            ::= { frnetservTrapsPrefix 2 }
+
+
+
+
+
+
+
+        frnetservConformance  OBJECT IDENTIFIER
+            ::= { frnetservMIB 3 }
+
+        frnetservGroups       OBJECT IDENTIFIER
+            ::= { frnetservConformance 1 }
+        frnetservCompliances  OBJECT IDENTIFIER
+            ::= { frnetservConformance 2 }
+
+
+        frnetservCompliance2 MODULE-COMPLIANCE
+            STATUS      current
+            MODULE -- this module
+                MANDATORY-GROUPS { frnetservLportGroup2,
+                                   frnetservMgtVCSigGroup,
+                                   frnetservPVCEndptGroup,
+                                   frnetservPVCEndptGroup2,
+                                   frnetservPVCConnectGroup,
+                                   frnetservPVCConnectNamesGroup,
+                                   frnetservPVCNotifGroup2 }
+
+                GROUP       frnetservAccountPVCGroup
+                GROUP       frnetservAccountLportGroup
+
+                OBJECT      frPVCEndptInMaxFrameSize
+
+
+
+
+
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptInBc
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptInBe
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptInCIR
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptOutMaxFrameSize
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptOutBc
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptOutBe
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptOutCIR
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptRowStatus
+                SYNTAX      INTEGER { active(1) }
+                MIN-ACCESS  read-only
+
+
+
+
+
+                OBJECT      frPVCConnectAdminStatus
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCConnectRowStatus
+                SYNTAX      INTEGER { active(1) }
+                MIN-ACCESS  read-only
+
+                OBJECT      frLportFragControl
+                MIN-ACCESS  read-only
+
+                OBJECT      frLportFragSize
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCConnectUserName
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCConnectProviderName
+                MIN-ACCESS  read-only
+
+              ::= { frnetservCompliances 2 }
+
+        frnetSwitchCompliance MODULE-COMPLIANCE
+            STATUS      current
+            MODULE -- this module
+                MANDATORY-GROUPS { frnetservLportGroup2,
+                                   frnetservLportAdminGroup,
+                                   frnetservMgtVCSigGroup,
+                                   frnetservMgtVCSigAdminGroup,
+                                   frnetservPVCEndptGroup,
+                                   frnetservPVCEndptGroup2,
+                                   frnetservPVCConnectGroup,
+                                   frnetservPVCConnectNamesGroup,
+                                   frnetservPVCNotifGroup2 }
+
+                GROUP       frnetservAccountPVCGroup
+                GROUP       frnetservAccountLportGroup
+
+              ::= { frnetservCompliances 3 }
+
+
+        frnetservCompliance MODULE-COMPLIANCE
+            STATUS  deprecated
+
+            MODULE -- this module
+                MANDATORY-GROUPS { frnetservLportGroup,
+
+
+
+
+
+                                   frnetservMgtVCSigGroup,
+                                   frnetservPVCEndptGroup,
+                                   frnetservPVCConnectGroup }
+
+                GROUP       frnetservAccountPVCGroup
+
+                GROUP       frnetservAccountLportGroup
+
+                OBJECT      frPVCEndptInMaxFrameSize
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptInBc
+                MIN-ACCESS  read-only
+                OBJECT      frPVCEndptInBe
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptInCIR
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptOutMaxFrameSize
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptOutBc
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptOutBe
+
+
+
+
+
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptOutCIR
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCEndptRowStatus
+                SYNTAX      INTEGER { active(1) }
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCConnectAdminStatus
+                MIN-ACCESS  read-only
+
+                OBJECT      frPVCConnectRowStatus
+                SYNTAX      INTEGER { active(1) }
+                MIN-ACCESS  read-only
+            ::= { frnetservCompliances 1 }
+
+         frnetservLportGroup  OBJECT-GROUP
+             OBJECTS { frLportNumPlan, frLportContact, frLportLocation,
+                       frLportType,
+                       frLportAddrDLCILen, frLportVCSigProtocol,
+                       frLportVCSigPointer }
+             STATUS  deprecated
+             ::= { frnetservGroups 1 }
+
+        frnetservMgtVCSigGroup  OBJECT-GROUP
+            OBJECTS { frMgtVCSigProced,
+                      frMgtVCSigUserN391,
+                      frMgtVCSigUserN392,
+                      frMgtVCSigUserN393,
+                      frMgtVCSigUserT391,
+                      frMgtVCSigNetN392,
+                      frMgtVCSigNetN393,
+                      frMgtVCSigNetT392,
+                      frMgtVCSigNetnN4,
+                      frMgtVCSigNetnT3,
+                      frMgtVCSigUserLinkRelErrors,
+                      frMgtVCSigUserProtErrors,
+                      frMgtVCSigUserChanInactive,
+                      frMgtVCSigNetLinkRelErrors,
+                      frMgtVCSigNetProtErrors,
+                      frMgtVCSigNetChanInactive }
+            STATUS  current
+            ::= { frnetservGroups 2 }
+
+        frnetservPVCEndptGroup  OBJECT-GROUP
+            OBJECTS { frPVCConnectIndexValue,
+                      frPVCEndptInMaxFrameSize,
+                      frPVCEndptInBc,
+                      frPVCEndptInBe,
+                      frPVCEndptInCIR,
+                      frPVCEndptOutMaxFrameSize,
+                      frPVCEndptOutBc,
+                      frPVCEndptOutBe,
+                      frPVCEndptOutCIR,
+                      frPVCEndptConnectIdentifier,
+                      frPVCEndptRowStatus,
+                      frPVCEndptRcvdSigStatus,
+                      frPVCEndptInFrames,
+                      frPVCEndptOutFrames,
+                      frPVCEndptInDEFrames,
+                      frPVCEndptInExcessFrames,
+                      frPVCEndptOutExcessFrames,
+
+
+
+
+
+                      frPVCEndptInDiscards,
+                      frPVCEndptInOctets,
+                      frPVCEndptOutOctets }
+            STATUS  current
+            ::= { frnetservGroups 3 }
+
+        frnetservPVCConnectGroup  OBJECT-GROUP
+            OBJECTS { frPVCConnectAdminStatus,
+                      frPVCConnectL2hOperStatus,
+                      frPVCConnectH2lOperStatus,
+                      frPVCConnectL2hLastChange,
+                      frPVCConnectH2lLastChange,
+                      frPVCConnectRowStatus }
+            STATUS  current
+            ::= { frnetservGroups 4 }
+
+        frnetservAccountPVCGroup  OBJECT-GROUP
+            OBJECTS { frAccountPVCSegmentSize,
+                      frAccountPVCInSegments,
+                      frAccountPVCOutSegments }
+            STATUS  current
+            ::= { frnetservGroups 5 }
+
+        frnetservAccountLportGroup  OBJECT-GROUP
+            OBJECTS { frAccountLportSegmentSize,
+                      frAccountLportInSegments,
+                      frAccountLportOutSegments }
+            STATUS  current
+            ::= { frnetservGroups 6 }
+
+        frnetservLportGroup2  OBJECT-GROUP
+            OBJECTS { frLportNumPlan,
+                      frLportContact,
+                      frLportLocation,
+
+
+
+
+
+                      frLportType,
+                      frLportAddrDLCILen,
+                      frLportVCSigProtocol,
+                      frLportFragControl,
+                      frLportFragSize }
+            STATUS  current
+            ::= { frnetservGroups 7 }
+
+        frnetservPVCEndptGroup2  OBJECT-GROUP
+              OBJECTS { frPVCEndptInDiscardsDESet,
+                        frPVCEndptInFramesFECNSet,
+                        frPVCEndptOutFramesFECNSet,
+                        frPVCEndptInFramesBECNSet,
+                        frPVCEndptOutFramesBECNSet,
+                        frPVCEndptInCongDiscards,
+                        frPVCEndptInDECongDiscards,
+                        frPVCEndptOutCongDiscards,
+                        frPVCEndptOutDECongDiscards,
+                        frPVCEndptOutDEFrames,
+                        frPVCEndptAtmIwfConnIndex }
+              STATUS  current
+              ::= { frnetservGroups 8 }
+
+        frnetservPVCConnectNamesGroup  OBJECT-GROUP
+              OBJECTS { frPVCConnectUserName,
+                        frPVCConnectProviderName }
+              STATUS  current
+              ::= { frnetservGroups 9 }
+
+        frnetservLportAdminGroup OBJECT-GROUP
+              OBJECTS { frLportDLCIIndexValue,
+                        frLportTypeAdmin,
+                        frLportVCSigProtocolAdmin }
+              STATUS  current
+
+
+
+
+
+              ::= { frnetservGroups 10 }
+
+        frnetservMgtVCSigAdminGroup OBJECT-GROUP
+              OBJECTS { frMgtVCSigProcedAdmin,
+                        frMgtVCSigUserN391Admin,
+                        frMgtVCSigUserN392Admin,
+                        frMgtVCSigUserN393Admin,
+                        frMgtVCSigUserT391Admin,
+                        frMgtVCSigNetN392Admin,
+                        frMgtVCSigNetN393Admin,
+                        frMgtVCSigNetT392Admin,
+                        frMgtVCSigNetnT3Admin }
+              STATUS  current
+              ::= { frnetservGroups 11 }
+
+        frnetservPVCNotifGroup NOTIFICATION-GROUP
+              NOTIFICATIONS { frPVCConnectStatusChange }
+              STATUS    deprecated
+            ::= { frnetservGroups 12 }
+
+        frnetservPVCNotifGroup2 NOTIFICATION-GROUP
+              NOTIFICATIONS { frPVCConnectStatusNotif }
+              STATUS    current
+            ::= { frnetservGroups 13 }
+
+        END

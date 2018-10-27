@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.calendar.factory;
@@ -23,6 +16,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.function.Consumer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -51,7 +47,8 @@ public class SelectCalendar {
 	private static Log m_log = LogFactory.getLog( SelectCalendar.class );
 
 	private static final long TIMEZONE = HinemosTime.getTimeZoneOffset();
-	private static final long HOUR24 = 24 * 60 * 60 * 1000;
+	private static final long HOUR = 60 * 60 * 1000;
+	private static final long HOUR24 = 24 * HOUR;
 
 	/**
 	 * カレンダ情報をキャッシュより取得します。
@@ -295,171 +292,137 @@ public class SelectCalendar {
 		return ret;
 	}
 	/**
-	 * カレンダ詳細定義 - 年、月、日が現在の時間が等しいか調べる
-	 * 時間、分、秒は見ない。
-	 * CalendarWeekViewで利用する。
+	 * 週間予定で使用するための{@link CalendarDetailInfo}(※)を作成する。
+	 *  <p>※ビューで使用する timeFrom, timeTo, operateFlg のみセットしている。
 	 * @throws CalendarNotFound
 	 * @throws InvalidRole
 	 */
-
 	public ArrayList<CalendarDetailInfo> getCalendarWeek(String id, Integer year, Integer month, Integer day) throws CalendarNotFound, InvalidRole {
-
 		CalendarInfo info = getCalendarFull(id);
 		return getCalendarWeek(info, year, month, day);
 	}
 
 	public ArrayList<CalendarDetailInfo> getCalendarWeek(CalendarInfo info, Integer year, Integer month, Integer day) throws CalendarNotFound {
-		m_log.trace("calendarId:" + info.getCalendarId() + ", year:" + year + ", month:" + month + ", day:" + day);
-		long validFrom = info.getValidTimeFrom();
-		long validTo = info.getValidTimeTo();
-		ArrayList<CalendarDetailInfo> ret = new ArrayList<CalendarDetailInfo>();
-		Calendar startCalendar = HinemosTime.getCalendarInstance();
-		startCalendar.clear();
-		startCalendar.set(year, month - 1, day, 0, 0, 0);
-		long startTime = startCalendar.getTimeInMillis();
-		Calendar endCalendar = HinemosTime.getCalendarInstance();
-		endCalendar.clear();
-		endCalendar.set(year, month - 1, day + 1, 0, 0, 0);
-		long endTime = endCalendar.getTimeInMillis();
 
-		if (startTime <=  validFrom && endTime <= validFrom) {
-			return ret;
-		}
-		if (validTo <= startTime && validTo <= endTime) {
-			return ret;
-		}
-		if (startTime < validFrom && validFrom < endTime) {
-			CalendarDetailInfo detail = new CalendarDetailInfo();
-			detail.setTimeFrom(0 - TIMEZONE);
-			detail.setTimeTo(validFrom - startTime - TIMEZONE);
-			detail.setOperateFlg(false);
-			detail.setOrderNo(-2);// ソート用に入れる
-			m_log.trace("start<validfrom && validfrom<endttime add");
-			ret.add(detail);
-		}
-		if (startTime < validTo && validTo < endTime) {
-			CalendarDetailInfo detail = new CalendarDetailInfo();
-			detail.setTimeFrom(validTo - startTime - TIMEZONE);
-			detail.setTimeTo(HOUR24 - TIMEZONE);
-			detail.setOperateFlg(false);
-			detail.setOrderNo(-1);// ソート用に入れる
-			m_log.trace("start<validto && validto<endttime add");
-			ret.add(detail);
-		}
-
-		// clientから指定された日に関係するCalendarDetailListを返すため
-		// チェックすべき日付の洗い出しをする
-		startCalendar.clear();
-		startCalendar.set(year, month - 1, day, 0, 0, 0);
-		ArrayList<Date> checkDateList = new ArrayList<>();
-		int onesec = 1*1000;
-		Long startLong = startCalendar.getTime().getTime();
-		ArrayList<CalendarDetailInfo> substituteList = new ArrayList<>();
+		ArrayList<CalendarDetailInfo> ret = new ArrayList<>();
 		
-		for (CalendarDetailInfo detailInfo : info.getCalendarDetailList()) {
-			int timezone = HinemosTime.getTimeZoneOffset();
-			// start_time
-			checkDateList.add(new Date(startLong + detailInfo.getTimeFrom() + timezone));
-			checkDateList.add(new Date(startLong + detailInfo.getTimeFrom() - onesec + timezone));// 1secondを引く
-			checkDateList.add(new Date(startLong + detailInfo.getTimeFrom() + onesec + timezone));// 1secondを足す
-			// end_time
-			checkDateList.add(new Date(startLong + detailInfo.getTimeTo() + timezone));
-			checkDateList.add(new Date(startLong + detailInfo.getTimeTo() - onesec + timezone));
-			checkDateList.add(new Date(startLong + detailInfo.getTimeTo() + onesec + timezone));
-			if (detailInfo.isSubstituteFlg()) {
-				// 振り替え情報があるかチェックするためリストに入れる
-				substituteList.add(detailInfo);
+		// 稼働/非稼働の切り替わりは、カレンダ詳細(&カレンダ有効期限)の開始・終了時刻に
+		// 限定される。
+		// 例えば、カレンダに含まれる全てのカレンダ詳細の開始・終了時刻が"10:00～15:00"である
+		// 場合(そして振り替え間隔が24の倍数である場合)、稼働/非稼働は必ず、10:00または
+		// 15:00のどちらで切り替わる。
+		// よって、開始・終了時刻を全てリストアップし、調査日の各時刻において判定を行い、
+		// 稼働となる時間帯を求めればよい。
+		// 調査日とは関わりのない時刻(例えば調査日が月曜の場合の、"振り替えなし毎週火曜日"の
+		// カレンダ詳細の開始・終了時刻など)を判定から除外することで計算量を減らせるが、
+		// 除外するかどうかの判断で逆に計算量が膨らみそうなので、未実装である。
+
+		// メソッド内で使い回すカレンダ (Hinemosタイムゾーン)
+		Calendar cal = HinemosTime.getCalendarInstance();
+		cal.clear();
+
+		// 調査日の始まりと終りの時刻を求める
+		cal.set(year, month - 1, day, 0, 0, 0);
+		long beginningOfDay = cal.getTimeInMillis();
+
+		cal.set(year, month - 1, day + 1, 0, 0, 0);
+		long endOfDay = cal.getTimeInMillis();
+
+		// 調査日がカレンダの有効期間外の場合を刈り取る
+		// (別にやらなくても問題ないが、少しでも効率化するため。)
+		if (endOfDay <= info.getValidTimeFrom() || info.getValidTimeTo() <= beginningOfDay) {
+			return ret;
+		}
+
+		// 判定時刻のリストアップ (ソート済み、重複なし)
+		SortedSet<Date> checkTimes = new TreeSet<>();
+
+		Consumer<Long> addCheckTime = new Consumer<Long>() {
+			@Override
+			public void accept(Long time) {
+				// 指定された日時について、時刻(hh:mm:ss)は変えずに
+				// 日付(yyyy-MM-dd)を調査日にすげ替えて、リストへ追加する
+				cal.setTimeInMillis(time);
+				cal.set(year, month - 1, day);
+				cal.set(Calendar.MILLISECOND, 0);  // もしミリ秒が入っていたら重複判断が狂うので潰す
+				checkTimes.add(cal.getTime());
 			}
-		}
-		
-		// getDetail24した後の日時で洗い出しをする
-		ArrayList<CalendarDetailInfo> detailList = new ArrayList<>();
+		};
+
+		/// 調査日の始まり(終わりは判定不要)
+		addCheckTime.accept(beginningOfDay);
+
+		/// 有効期間  開始・終了時刻
+		addCheckTime.accept(info.getValidTimeFrom());
+		addCheckTime.accept(info.getValidTimeTo());
+
+		/// カレンダ詳細  開始・終了時刻
 		for (CalendarDetailInfo detail : info.getCalendarDetailList()) {
-			detailList.addAll(CalendarUtil.getDetail24(detail));
-		}
-		for (CalendarDetailInfo detailInfo : detailList) {
-			int timezone = HinemosTime.getTimeZoneOffset();
-			// start_time
-			checkDateList.add(new Date(startLong + detailInfo.getTimeFrom() + timezone));
-			checkDateList.add(new Date(startLong + detailInfo.getTimeFrom() - onesec + timezone));// 1secondを引く
-			checkDateList.add(new Date(startLong + detailInfo.getTimeFrom() + onesec + timezone));// 1secondを足す
-			// end_time
-			checkDateList.add(new Date(startLong + detailInfo.getTimeTo() + timezone));
-			checkDateList.add(new Date(startLong + detailInfo.getTimeTo() - onesec + timezone));
-			checkDateList.add(new Date(startLong + detailInfo.getTimeTo() + onesec + timezone));
-		}
-		
-		// すでにリストに追加済みの情報に、振り替え日時を意識した日時をリストに入れる
-		ArrayList<Date> checkDateListSub = new ArrayList<>();
-		for (Date checkDate : checkDateList) {
-			for (CalendarDetailInfo detailInfo : substituteList) {
-				Long checkDateLong = checkDate.getTime();
-				checkDateListSub.add(new Date(checkDateLong - (CalendarUtil.parseDate(detailInfo.getSubstituteTime()) + HinemosTime.getTimeZoneOffset())));
-			}
-		}
-		checkDateList.addAll(checkDateListSub);
-		
-		// カレンダー情報のvalid_time_fromとvalid_time_to
-		checkDateList.add(new Date(info.getValidTimeFrom()));
-		checkDateList.add(new Date(info.getValidTimeTo()));
-		// list内の重複をなくす
-		checkDateList = new ArrayList<>(new HashSet<>(checkDateList));
-		// list内をソートする
-		Collections.sort(checkDateList);
-		m_log.trace("checkDateList.size:" + checkDateList.size());
-		
-		ArrayList<CalendarDetailInfo> detailSubsList = new ArrayList<>();
-		for (Date targetDate : checkDateList) {
-			Calendar targetCal = Calendar.getInstance();
-			targetCal.setTime(targetDate);
-			// チェック対象日時が大本の日時と違う場合はチェックを実施しない
-			if (startCalendar.get(Calendar.YEAR) != targetCal.get(Calendar.YEAR)
-					|| startCalendar.get(Calendar.MONTH) != targetCal.get(Calendar.MONTH)
-					|| startCalendar.get(Calendar.DATE) != targetCal.get(Calendar.DATE)) {
-				continue;
-			}
-			m_log.trace("startCalendar:" + targetDate);
-			ArrayList<CalendarDetailInfo> detailList2 = new ArrayList<>();
-			Date substituteDate = new Date(targetDate.getTime());
-			
-			// detailList2には、関連するCalendarDetailInfoが入る
-			Object[] retObjArr = CalendarUtil.getCalendarRunDetailInfo(info, targetDate, detailList2);
-			boolean isrun = (Boolean)retObjArr[0];
-			// 戻り値が2つの場合は、振り替え実施
-			if (retObjArr.length == 2) {
-				substituteDate.setTime(((Date)retObjArr[1]).getTime());
-			}
-			m_log.trace("id:"+ info.getCalendarId() + ", startCalendar:" + targetDate + ", detailList2.size:" 
-			+ detailList2.size() + ", isrun:" + isrun + ", substituteDate:" + substituteDate.toString());
 
-			// 関連するCalendarDetailInfoが日跨ぎをしているかもしれないので、getDetail24のリストで対象日付のリストを取得する
-			for (CalendarDetailInfo detailInfo : detailList2) {
-				ArrayList<CalendarDetailInfo> calendarDetailList = CalendarUtil.getDetail24(detailInfo);
-				for (CalendarDetailInfo detail24 : calendarDetailList) {
-					if (CalendarUtil.isRunByDetailDateTime(detail24, substituteDate) && !detailSubsList.contains(detail24)) {
-						detailSubsList.add(detail24);
-						m_log.trace("add to ret. orderNo:" + detail24.getOrderNo() + ", description:" + detail24.getDescription() 
-						+ ", isOperation:" + detail24.isOperateFlg() + ", from:" + detail24.getTimeFrom() + ", to:" + detail24.getTimeTo());
+			// 振り替えが指定されている場合は、時刻をずらしながら上限回数分ループして追加する
+			int substLimit = 1;
+			long substDelta = 0;
+			if (detail.isSubstituteFlg()) {
+				substLimit = detail.getSubstituteLimit();
+				substDelta = detail.getSubstituteTime() * HOUR;
+			}
+		
+			for (int substCount = 0; substCount < substLimit; ++substCount) {
+				for (long t : new long[] { detail.getTimeFrom(), detail.getTimeTo() }) {
+					t += TIMEZONE;  // 日跨ぎ判定のため、0Lが"00:00:00"を指すUTCへ変換
+					t += substDelta * substCount;  // 振り替え補正
+					if (t < 0) {
+						t = HOUR24 - (-t) % HOUR24;
+					} else if (t > HOUR24) {
+						t %= HOUR24;
 					}
+					addCheckTime.accept(t - TIMEZONE);      // TZを戻す
 				}
 			}
 		}
-		ret.addAll(detailSubsList);
-		Collections.sort(ret, new Comparator<CalendarDetailInfo>() {
-			public int compare(CalendarDetailInfo obj0, CalendarDetailInfo obj1) {
-				int order1 = obj0.getOrderNo();
-				int order2 = obj1.getOrderNo();
-				int ret = order1 - order2;
-				return ret;
+
+		// 時刻ごとの稼働判定と、時間帯オブジェクト(CalendarDetailInfo)の生成
+		List<CalendarDetailInfo> bands = new ArrayList<>();
+		boolean prevResult = false;
+		CalendarDetailInfo band = null;
+		long timeFromToOffset = TIMEZONE + beginningOfDay;  // checkTime(Date型)のgetTimeはUTC基準なのでTIMEZONEを引く
+
+		for (Date checkTime : checkTimes) {
+			boolean checkResult = CalendarUtil.isRun(info, checkTime);
+			if (m_log.isTraceEnabled()) {
+				m_log.trace(checkTime + ", " + checkResult);
 			}
-		});
-		
-		if (m_log.isDebugEnabled()) {
-			for (CalendarDetailInfo detail : ret) {
-				m_log.debug("detail=" + detail);
+
+			if (band == null) {
+				// ループ初回(調査日の00:00:00)の場合は、最初の時間帯オブジェクトを用意するだけ
+				band = new CalendarDetailInfo();
+				band.setTimeFrom(checkTime.getTime() - timeFromToOffset);
+				band.setOperateFlg(checkResult);
+			} else {
+				if (checkResult != prevResult) {
+					// 稼働判定の切り替わりを検出したら、時間帯オブジェクトをリストへ追加
+					band.setTimeTo(checkTime.getTime() - timeFromToOffset);
+					bands.add(band);
+					// 次の時間帯オブジェクト
+					band = new CalendarDetailInfo();
+					band.setTimeFrom(checkTime.getTime() - timeFromToOffset);
+					band.setOperateFlg(checkResult);
+				}
+			}
+			prevResult = checkResult;
+
+		}
+
+		// 最後の時間帯オブジェクトが宙に浮いているので、忘れずにリストへ追加する
+		band.setTimeTo(endOfDay - timeFromToOffset);
+		bands.add(band);
+
+		// 稼働時間帯のみ返す
+		for (CalendarDetailInfo b : bands) {
+			if (b.isOperateFlg()) {
+				ret.add(b);
 			}
 		}
-		m_log.trace("ret.size:" + ret.size());
 		return ret;
 	}
 

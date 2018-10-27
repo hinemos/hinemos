@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.model;
 
 import java.io.Serializable;
@@ -19,6 +13,10 @@ import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinColumns;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
@@ -37,6 +35,7 @@ public class CollectDataTag implements Serializable{
 //	private String key;
 	private ValueType type;
 	private String value;
+	private CollectStringData collectStringData;
 	
 	private CollectDataTagPK id;
 
@@ -103,6 +102,22 @@ public class CollectDataTag implements Serializable{
 	}
 	public void setValue(String value) {
 		this.value = value;
+	}
+
+	//bi-directional many-to-one association to CollectStringData
+	@XmlTransient
+	@ManyToOne(fetch=FetchType.LAZY)
+	@JoinColumns({
+		@JoinColumn(name="collect_id", referencedColumnName="collect_id", insertable=false, updatable=false),
+		@JoinColumn(name="data_id", referencedColumnName="data_id", insertable=false, updatable=false)
+	})
+	public CollectStringData getCollectStringData() {
+		return this.collectStringData;
+	}
+
+	@Deprecated
+	public void setCollectStringData(CollectStringData collectStringData) {
+		this.collectStringData = collectStringData;
 	}
 
 	/* (non-Javadoc)

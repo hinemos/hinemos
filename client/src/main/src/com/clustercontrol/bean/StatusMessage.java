@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.bean;
@@ -66,6 +59,9 @@ public class StatusMessage {
 	/** 終了(終了遅延) (状態の種別) */
 	public static final String STRING_END_END_DELAY = Messages.getString("end.end.delay");
 
+	/** 終了(排他分岐) (状態の種別) */
+	public static final String STRING_END_EXCLUSIVE_BRANCH = Messages.getString("end.exclusive.branch");
+
 	/** 起動失敗(状態の種別) */
 	public static final String STRING_ERROR = Messages.getString("start.error");
 
@@ -94,6 +90,8 @@ public class StatusMessage {
 			return STRING_END_CALENDAR;
 		} else if (type == StatusConstant.TYPE_END_UNMATCH) {
 			return STRING_END_UNMATCH;
+		} else if (type == StatusConstant.TYPE_END_EXCLUSIVE_BRANCH) {
+			return STRING_END_EXCLUSIVE_BRANCH;
 		} else if (type == StatusConstant.TYPE_END_SKIP) {
 			return STRING_END_SKIP;
 		} else if (type == StatusConstant.TYPE_END_START_DELAY) {
@@ -133,6 +131,8 @@ public class StatusMessage {
 			return StatusConstant.TYPE_MODIFIED;
 		} else if (string.equals(STRING_END_UNMATCH)) {
 			return StatusConstant.TYPE_END_UNMATCH;
+		} else if (string.equals(STRING_END_EXCLUSIVE_BRANCH)) {
+			return StatusConstant.TYPE_END_EXCLUSIVE_BRANCH;
 		} else if (string.equals(STRING_END_CALENDAR)) {
 			return StatusConstant.TYPE_END_CALENDAR;
 		} else if (string.equals(STRING_END_SKIP)) {

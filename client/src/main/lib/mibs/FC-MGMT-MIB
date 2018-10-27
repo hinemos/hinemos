@@ -1,0 +1,1647 @@
+   FC-MGMT-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE,
+       Integer32, Unsigned32, Counter32, Counter64, transmission
+                               FROM SNMPv2-SMI
+       MODULE-COMPLIANCE, OBJECT-GROUP
+                               FROM SNMPv2-CONF
+       TruthValue, TEXTUAL-CONVENTION
+                               FROM SNMPv2-TC
+       ifIndex                 FROM IF-MIB
+       SnmpAdminString         FROM SNMP-FRAMEWORK-MIB;
+
+   fcMgmtMIB MODULE-IDENTITY
+       LAST-UPDATED    "200504260000Z"  -- 26 April 2005
+       ORGANIZATION    "IETF IPS (IP-Storage) Working Group"
+     ::= { transmission 56 }
+
+ fcmgmtObjects       OBJECT IDENTIFIER ::= { fcMgmtMIB 1 }
+ fcmgmtNotifications OBJECT IDENTIFIER ::= { fcMgmtMIB 2 }
+ fcmgmtNotifPrefix   OBJECT IDENTIFIER ::= { fcmgmtNotifications 0 }
+ fcmgmtConformance   OBJECT IDENTIFIER ::= { fcMgmtMIB 3 }
+
+
+ FcNameIdOrZero ::= TEXTUAL-CONVENTION
+     STATUS current
+    SYNTAX  OCTET STRING (SIZE(0 | 8 | 16))
+
+FcAddressIdOrZero ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX  OCTET STRING (SIZE(0 | 3))
+
+FcDomainIdOrZero ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX  Integer32 (0..239)
+
+
+
+
+
+
+
+
+
+
+
+FcPortType ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX   Unsigned32
+
+FcClasses ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX   BITS { classF(0), class1(1), class2(2), class3(3),
+                    class4(4), class5(5), class6(6) }
+
+FcBbCredit ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX     Integer32 (0..32767)
+
+FcBbCreditModel ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX    INTEGER { regular(1), alternate (2) }
+
+
+FcDataFieldSize ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX     Integer32 (128..2112)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+FcUnitFunctions ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX  BITS {
+                other(0),        -- none of the following
+                hub(1),
+                switch(2),
+
+
+
+
+
+                bridge(3),
+                gateway(4),
+                host(5),
+                storageSubsys(6),
+                storageAccessDev(7),
+                nas(8),
+                wdmux(9),
+                storageDevice(10)
+            }
+
+
+fcmInstanceTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF FcmInstanceEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmgmtObjects 1 }
+
+fcmInstanceEntry OBJECT-TYPE
+    SYNTAX     FcmInstanceEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { fcmInstanceIndex }
+    ::= { fcmInstanceTable 1 }
+
+FcmInstanceEntry ::=
+    SEQUENCE {
+        fcmInstanceIndex             Unsigned32,
+        fcmInstanceWwn               FcNameIdOrZero,
+        fcmInstanceFunctions         FcUnitFunctions,
+        fcmInstancePhysicalIndex     Integer32,
+        fcmInstanceSoftwareIndex     Integer32,
+        fcmInstanceStatus            INTEGER,
+        fcmInstanceTextName          SnmpAdminString,
+        fcmInstanceDescr             SnmpAdminString,
+        fcmInstanceFabricId          FcNameIdOrZero
+    }
+
+
+
+
+
+
+
+
+fcmInstanceIndex OBJECT-TYPE
+    SYNTAX     Unsigned32 (1..4294967295)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmInstanceEntry 1 }
+
+fcmInstanceWwn  OBJECT-TYPE
+    SYNTAX     FcNameIdOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmInstanceEntry 2 }
+
+fcmInstanceFunctions OBJECT-TYPE
+    SYNTAX     FcUnitFunctions
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmInstanceEntry 3 }
+
+fcmInstancePhysicalIndex OBJECT-TYPE
+    SYNTAX     Integer32 (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmInstanceEntry 4 }
+
+fcmInstanceSoftwareIndex OBJECT-TYPE
+    SYNTAX     Integer32 (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmInstanceEntry 5 }
+
+fcmInstanceStatus OBJECT-TYPE
+    SYNTAX     INTEGER {
+                   unknown(1),
+                   ok(2),      -- able to operate correctly
+                   warning(3), -- needs attention
+                   failed(4)   -- something has failed
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmInstanceEntry 6 }
+
+fcmInstanceTextName OBJECT-TYPE
+    SYNTAX     SnmpAdminString (SIZE(0..79))
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { fcmInstanceEntry 7 }
+
+
+
+
+
+
+fcmInstanceDescr OBJECT-TYPE
+    SYNTAX     SnmpAdminString
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { fcmInstanceEntry 8 }
+
+fcmInstanceFabricId OBJECT-TYPE
+    SYNTAX     FcNameIdOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmInstanceEntry 9 }
+
+
+fcmSwitchTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF FcmSwitchEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmgmtObjects 2 }
+
+fcmSwitchEntry OBJECT-TYPE
+    SYNTAX     FcmSwitchEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { fcmInstanceIndex, fcmSwitchIndex }
+    ::= { fcmSwitchTable 1 }
+
+FcmSwitchEntry ::=
+    SEQUENCE {
+        fcmSwitchIndex         Unsigned32,
+        fcmSwitchDomainId      FcDomainIdOrZero,
+        fcmSwitchPrincipal     TruthValue,
+        fcmSwitchWWN           FcNameIdOrZero
+    }
+
+fcmSwitchIndex OBJECT-TYPE
+    SYNTAX     Unsigned32 (1..4294967295)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmSwitchEntry 1 }
+
+fcmSwitchDomainId OBJECT-TYPE
+    SYNTAX     FcDomainIdOrZero
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { fcmSwitchEntry 2 }
+
+fcmSwitchPrincipal OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmSwitchEntry 3 }
+
+
+
+
+
+
+
+
+
+fcmSwitchWWN  OBJECT-TYPE
+    SYNTAX     FcNameIdOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmSwitchEntry 4 }
+
+
+fcmPortTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF FcmPortEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmgmtObjects 3 }
+
+fcmPortEntry OBJECT-TYPE
+    SYNTAX     FcmPortEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { ifIndex }
+    ::= { fcmPortTable 1 }
+
+FcmPortEntry ::=
+    SEQUENCE {
+        fcmPortInstanceIndex    Unsigned32,
+        fcmPortWwn              FcNameIdOrZero,
+        fcmPortNodeWwn          FcNameIdOrZero,
+        fcmPortAdminType        FcPortType,
+        fcmPortOperType         FcPortType,
+        fcmPortFcCapClass       FcClasses,
+        fcmPortFcOperClass      FcClasses,
+        fcmPortTransmitterType  INTEGER,
+        fcmPortConnectorType    INTEGER,
+        fcmPortSerialNumber     SnmpAdminString,
+        fcmPortPhysicalNumber   Unsigned32,
+        fcmPortAdminSpeed       INTEGER,
+        fcmPortCapProtocols     BITS,
+        fcmPortOperProtocols    BITS
+
+
+
+
+
+    }
+
+fcmPortInstanceIndex OBJECT-TYPE
+    SYNTAX     Unsigned32 (1..4294967295)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortEntry 1 }
+
+fcmPortWwn OBJECT-TYPE
+    SYNTAX     FcNameIdOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+     ::= { fcmPortEntry 2 }
+
+fcmPortNodeWwn OBJECT-TYPE
+    SYNTAX     FcNameIdOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+     ::= { fcmPortEntry 3 }
+
+fcmPortAdminType OBJECT-TYPE
+    SYNTAX     FcPortType
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { fcmPortEntry 4 }
+
+fcmPortOperType OBJECT-TYPE
+    SYNTAX     FcPortType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortEntry 5 }
+
+
+
+
+
+
+
+fcmPortFcCapClass OBJECT-TYPE
+    SYNTAX     FcClasses
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortEntry 6 }
+
+fcmPortFcOperClass OBJECT-TYPE
+    SYNTAX     FcClasses
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortEntry 7 }
+
+fcmPortTransmitterType OBJECT-TYPE
+    SYNTAX     INTEGER {
+        unknown(1),
+        other(2),
+        shortwave850nm(3),
+        longwave1550nm(4),
+        longwave1310nm(5),
+        electrical(6)
+     }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortEntry 8 }
+
+fcmPortConnectorType OBJECT-TYPE
+    SYNTAX     INTEGER {
+        unknown(1),
+        other(2),
+        gbic(3),
+        embedded(4),
+        glm(5),
+        gbicSerialId(6),
+        gbicNoSerialId(7),
+        sfpSerialId(8),
+        sfpNoSerialId(9)
+    }
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { fcmPortEntry 9 }
+
+fcmPortSerialNumber OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmPortEntry 10 }
+
+fcmPortPhysicalNumber OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmPortEntry 11 }
+
+fcmPortAdminSpeed OBJECT-TYPE
+    SYNTAX     INTEGER {
+                   auto(1),
+                   eighthGbs(2),   -- 125Mbs
+                   quarterGbs(3),  -- 250Mbs
+                   halfGbs(4),     -- 500Mbs
+                   oneGbs(5),      --   1Gbs
+                   twoGbs(6),      --   2Gbs
+                   fourGbs(7),     --   4Gbs
+                   tenGbs(8)       --  10Gbs
+
+
+
+
+
+               }
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { fcmPortEntry 12 }
+
+fcmPortCapProtocols OBJECT-TYPE
+    SYNTAX     BITS {
+                   unknown(0),
+                   loop(1),
+                   fabric(2),
+                   scsi(3),
+                   tcpIp(4),
+                   vi(5),
+                   ficon(6)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortEntry 13 }
+
+fcmPortOperProtocols OBJECT-TYPE
+    SYNTAX     BITS {
+                   unknown(0),
+                   loop(1),
+                   fabric(2),
+                   scsi(3),
+                   tcpIp(4),
+                   vi(5),
+                   ficon(6)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortEntry 14 }
+
+
+fcmPortStatsTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF FcmPortStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmgmtObjects 4 }
+
+fcmPortStatsEntry OBJECT-TYPE
+    SYNTAX     FcmPortStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    AUGMENTS   { fcmPortEntry }
+    ::= { fcmPortStatsTable 1 }
+
+FcmPortStatsEntry ::=
+    SEQUENCE {
+        fcmPortBBCreditZeros       Counter64,
+        fcmPortFullInputBuffers    Counter64,
+        fcmPortClass2RxFrames      Counter64,
+        fcmPortClass2RxOctets      Counter64,
+        fcmPortClass2TxFrames      Counter64,
+        fcmPortClass2TxOctets      Counter64,
+        fcmPortClass2Discards      Counter64,
+        fcmPortClass2RxFbsyFrames  Counter64,
+        fcmPortClass2RxPbsyFrames  Counter64,
+        fcmPortClass2RxFrjtFrames  Counter64,
+        fcmPortClass2RxPrjtFrames  Counter64,
+        fcmPortClass2TxFbsyFrames  Counter64,
+        fcmPortClass2TxPbsyFrames  Counter64,
+        fcmPortClass2TxFrjtFrames  Counter64,
+        fcmPortClass2TxPrjtFrames  Counter64,
+
+
+
+
+
+        fcmPortClass3RxFrames      Counter64,
+        fcmPortClass3RxOctets      Counter64,
+        fcmPortClass3TxFrames      Counter64,
+        fcmPortClass3TxOctets      Counter64,
+        fcmPortClass3Discards      Counter64,
+        fcmPortClassFRxFrames      Counter32,
+        fcmPortClassFRxOctets      Counter32,
+        fcmPortClassFTxFrames      Counter32,
+        fcmPortClassFTxOctets      Counter32,
+        fcmPortClassFDiscards      Counter32
+    }
+
+fcmPortBBCreditZeros OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 1 }
+
+fcmPortFullInputBuffers OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 2 }
+
+fcmPortClass2RxFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 3 }
+
+fcmPortClass2RxOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { fcmPortStatsEntry 4 }
+
+fcmPortClass2TxFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 5 }
+
+fcmPortClass2TxOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 6 }
+
+fcmPortClass2Discards OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 7 }
+
+fcmPortClass2RxFbsyFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 8 }
+
+fcmPortClass2RxPbsyFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 9 }
+
+fcmPortClass2RxFrjtFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 10 }
+
+fcmPortClass2RxPrjtFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 11 }
+
+fcmPortClass2TxFbsyFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 12 }
+
+fcmPortClass2TxPbsyFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 13 }
+
+
+
+
+
+
+
+
+fcmPortClass2TxFrjtFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 14 }
+
+fcmPortClass2TxPrjtFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 15 }
+
+fcmPortClass3RxFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 16 }
+
+fcmPortClass3RxOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 17 }
+
+fcmPortClass3TxFrames OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 18 }
+
+
+
+
+
+
+
+
+fcmPortClass3TxOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 19 }
+
+fcmPortClass3Discards OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 20 }
+
+fcmPortClassFRxFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 21 }
+
+fcmPortClassFRxOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 22 }
+
+fcmPortClassFTxFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 23 }
+
+
+
+
+
+
+
+
+
+
+
+fcmPortClassFTxOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 24 }
+
+fcmPortClassFDiscards OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortStatsEntry 25 }
+
+
+fcmPortLcStatsTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF FcmPortLcStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmgmtObjects 5 }
+
+fcmPortLcStatsEntry OBJECT-TYPE
+    SYNTAX     FcmPortLcStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    AUGMENTS   { fcmPortEntry }
+    ::= { fcmPortLcStatsTable 1 }
+
+
+
+
+
+
+
+FcmPortLcStatsEntry ::=
+    SEQUENCE {
+        fcmPortLcBBCreditZeros       Counter32,
+        fcmPortLcFullInputBuffers    Counter32,
+        fcmPortLcClass2RxFrames      Counter32,
+        fcmPortLcClass2RxOctets      Counter32,
+        fcmPortLcClass2TxFrames      Counter32,
+        fcmPortLcClass2TxOctets      Counter32,
+        fcmPortLcClass2Discards      Counter32,
+        fcmPortLcClass2RxFbsyFrames  Counter32,
+        fcmPortLcClass2RxPbsyFrames  Counter32,
+        fcmPortLcClass2RxFrjtFrames  Counter32,
+        fcmPortLcClass2RxPrjtFrames  Counter32,
+        fcmPortLcClass2TxFbsyFrames  Counter32,
+        fcmPortLcClass2TxPbsyFrames  Counter32,
+        fcmPortLcClass2TxFrjtFrames  Counter32,
+        fcmPortLcClass2TxPrjtFrames  Counter32,
+        fcmPortLcClass3RxFrames      Counter32,
+        fcmPortLcClass3RxOctets      Counter32,
+        fcmPortLcClass3TxFrames      Counter32,
+        fcmPortLcClass3TxOctets      Counter32,
+        fcmPortLcClass3Discards      Counter32
+    }
+
+fcmPortLcBBCreditZeros OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 1 }
+
+fcmPortLcFullInputBuffers OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 2 }
+
+
+
+
+
+
+
+
+
+fcmPortLcClass2RxFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 3 }
+
+fcmPortLcClass2RxOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 4 }
+
+fcmPortLcClass2TxFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 5 }
+
+fcmPortLcClass2TxOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 6 }
+
+fcmPortLcClass2Discards OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 7 }
+
+
+
+
+
+
+
+
+
+
+
+fcmPortLcClass2RxFbsyFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 8 }
+
+fcmPortLcClass2RxPbsyFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 9 }
+
+fcmPortLcClass2RxFrjtFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 10 }
+
+fcmPortLcClass2RxPrjtFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 11 }
+
+
+
+
+
+
+
+
+
+
+
+fcmPortLcClass2TxFbsyFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 12 }
+
+fcmPortLcClass2TxPbsyFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 13 }
+
+fcmPortLcClass2TxFrjtFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 14 }
+
+fcmPortLcClass2TxPrjtFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 15 }
+
+
+
+
+
+
+
+
+
+
+fcmPortLcClass3RxFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 16 }
+
+fcmPortLcClass3RxOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 17 }
+
+fcmPortLcClass3TxFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 18 }
+
+fcmPortLcClass3TxOctets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 19 }
+
+fcmPortLcClass3Discards OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortLcStatsEntry 20 }
+
+
+
+
+
+
+
+
+
+
+
+
+fcmPortErrorsTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF FcmPortErrorsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmgmtObjects 6 }
+
+fcmPortErrorsEntry OBJECT-TYPE
+    SYNTAX     FcmPortErrorsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    AUGMENTS   { fcmPortEntry }
+    ::= { fcmPortErrorsTable 1 }
+
+FcmPortErrorsEntry ::=
+    SEQUENCE {
+        fcmPortRxLinkResets             Counter32,
+        fcmPortTxLinkResets             Counter32,
+        fcmPortLinkResets               Counter32,
+        fcmPortRxOfflineSequences       Counter32,
+        fcmPortTxOfflineSequences       Counter32,
+        fcmPortLinkFailures             Counter32,
+        fcmPortLossofSynchs             Counter32,
+        fcmPortLossofSignals            Counter32,
+        fcmPortPrimSeqProtocolErrors    Counter32,
+        fcmPortInvalidTxWords           Counter32,
+        fcmPortInvalidCRCs              Counter32,
+        fcmPortInvalidOrderedSets       Counter32,
+        fcmPortFrameTooLongs            Counter32,
+        fcmPortTruncatedFrames          Counter32,
+        fcmPortAddressErrors            Counter32,
+        fcmPortDelimiterErrors          Counter32,
+        fcmPortEncodingDisparityErrors  Counter32,
+        fcmPortOtherErrors              Counter32
+    }
+
+
+
+
+
+
+
+fcmPortRxLinkResets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 1 }
+
+fcmPortTxLinkResets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 2 }
+
+fcmPortLinkResets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 3 }
+
+fcmPortRxOfflineSequences OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 4 }
+
+fcmPortTxOfflineSequences OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 5 }
+
+
+
+
+
+
+
+fcmPortLinkFailures OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 6 }
+
+fcmPortLossofSynchs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 7 }
+
+fcmPortLossofSignals OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 8 }
+
+fcmPortPrimSeqProtocolErrors OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 9 }
+
+
+
+
+
+
+
+fcmPortInvalidTxWords OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 10 }
+
+fcmPortInvalidCRCs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 11 }
+
+fcmPortInvalidOrderedSets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 12 }
+
+fcmPortFrameTooLongs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 13 }
+
+fcmPortTruncatedFrames OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 14 }
+
+fcmPortAddressErrors OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 15 }
+
+fcmPortDelimiterErrors OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 16 }
+
+fcmPortEncodingDisparityErrors OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 17 }
+
+fcmPortOtherErrors OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { fcmPortErrorsEntry 18 }
+
+
+
+
+
+
+
+
+
+
+
+
+fcmFxPortTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF FcmFxPortEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmgmtObjects 7 }
+
+fcmFxPortEntry OBJECT-TYPE
+    SYNTAX     FcmFxPortEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { ifIndex }
+    ::= { fcmFxPortTable 1 }
+
+FcmFxPortEntry ::=
+    SEQUENCE {
+        fcmFxPortRatov                  Unsigned32,
+        fcmFxPortEdtov                  Unsigned32,
+        fcmFxPortRttov                  Unsigned32,
+        fcmFxPortHoldTime               Unsigned32,
+        fcmFxPortCapBbCreditMax         FcBbCredit,
+        fcmFxPortCapBbCreditMin         FcBbCredit,
+        fcmFxPortCapDataFieldSizeMax    FcDataFieldSize,
+        fcmFxPortCapDataFieldSizeMin    FcDataFieldSize,
+        fcmFxPortCapClass2SeqDeliv      TruthValue,
+        fcmFxPortCapClass3SeqDeliv      TruthValue,
+        fcmFxPortCapHoldTimeMax         Unsigned32,
+        fcmFxPortCapHoldTimeMin         Unsigned32
+    }
+
+fcmFxPortRatov OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 1 }
+
+fcmFxPortEdtov OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 2 }
+
+fcmFxPortRttov OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 3 }
+
+fcmFxPortHoldTime OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 4 }
+
+fcmFxPortCapBbCreditMax OBJECT-TYPE
+    SYNTAX      FcBbCredit
+    UNITS       "buffers"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 5 }
+
+fcmFxPortCapBbCreditMin OBJECT-TYPE
+    SYNTAX      FcBbCredit
+    UNITS       "buffers"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 6 }
+
+fcmFxPortCapDataFieldSizeMax OBJECT-TYPE
+    SYNTAX      FcDataFieldSize
+    UNITS       "bytes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 7 }
+
+fcmFxPortCapDataFieldSizeMin OBJECT-TYPE
+    SYNTAX      FcDataFieldSize
+    UNITS       "bytes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 8 }
+
+fcmFxPortCapClass2SeqDeliv OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 9 }
+
+
+
+
+
+
+
+
+
+fcmFxPortCapClass3SeqDeliv OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 10 }
+
+fcmFxPortCapHoldTimeMax OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 11 }
+
+fcmFxPortCapHoldTimeMin OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFxPortEntry 12 }
+
+
+fcmISPortTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF FcmISPortEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { fcmgmtObjects 8 }
+
+
+
+
+
+
+
+
+
+
+fcmISPortEntry OBJECT-TYPE
+    SYNTAX     FcmISPortEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { ifIndex }
+    ::= { fcmISPortTable 1 }
+
+FcmISPortEntry ::=
+    SEQUENCE {
+        fcmISPortClassFCredit           FcBbCredit,
+        fcmISPortClassFDataFieldSize    FcDataFieldSize
+    }
+
+fcmISPortClassFCredit OBJECT-TYPE
+    SYNTAX      FcBbCredit
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { fcmISPortEntry 1 }
+
+fcmISPortClassFDataFieldSize OBJECT-TYPE
+    SYNTAX      FcDataFieldSize
+    UNITS       "bytes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmISPortEntry 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fcmFLoginTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF FcmFLoginEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { fcmgmtObjects 9 }
+
+fcmFLoginEntry OBJECT-TYPE
+    SYNTAX      FcmFLoginEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { ifIndex, fcmFLoginNxPortIndex }
+    ::= { fcmFLoginTable 1 }
+
+FcmFLoginEntry ::=
+    SEQUENCE {
+        fcmFLoginNxPortIndex             Unsigned32,
+        fcmFLoginPortWwn                 FcNameIdOrZero,
+        fcmFLoginNodeWwn                 FcNameIdOrZero,
+        fcmFLoginBbCreditModel           FcBbCreditModel,
+        fcmFLoginBbCredit                FcBbCredit,
+        fcmFLoginClassesAgreed           FcClasses,
+        fcmFLoginClass2SeqDelivAgreed    TruthValue,
+        fcmFLoginClass2DataFieldSize     FcDataFieldSize,
+        fcmFLoginClass3SeqDelivAgreed    TruthValue,
+        fcmFLoginClass3DataFieldSize     FcDataFieldSize
+    }
+
+
+
+
+
+
+
+
+
+
+fcmFLoginNxPortIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { fcmFLoginEntry 1 }
+
+fcmFLoginPortWwn  OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFLoginEntry 2 }
+
+fcmFLoginNodeWwn  OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFLoginEntry 3 }
+
+fcmFLoginBbCreditModel OBJECT-TYPE
+    SYNTAX      FcBbCreditModel
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFLoginEntry 4 }
+
+fcmFLoginBbCredit OBJECT-TYPE
+    SYNTAX      FcBbCredit
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFLoginEntry 5 }
+
+fcmFLoginClassesAgreed OBJECT-TYPE
+    SYNTAX      FcClasses
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFLoginEntry 6 }
+
+fcmFLoginClass2SeqDelivAgreed OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFLoginEntry 7 }
+
+fcmFLoginClass2DataFieldSize OBJECT-TYPE
+    SYNTAX      FcDataFieldSize
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFLoginEntry 8 }
+
+fcmFLoginClass3SeqDelivAgreed OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFLoginEntry 9 }
+
+
+
+
+
+
+
+
+fcmFLoginClass3DataFieldSize OBJECT-TYPE
+    SYNTAX      FcDataFieldSize
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmFLoginEntry 10 }
+
+
+fcmLinkTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF FcmLinkEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { fcmgmtObjects 10 }
+
+fcmLinkEntry OBJECT-TYPE
+    SYNTAX      FcmLinkEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { fcmInstanceIndex, fcmLinkIndex }
+    ::= { fcmLinkTable 1 }
+
+
+
+
+
+FcmLinkEntry ::=
+   SEQUENCE {
+        fcmLinkIndex               Unsigned32,
+        fcmLinkEnd1NodeWwn         FcNameIdOrZero,
+        fcmLinkEnd1PhysPortNumber  Unsigned32,
+        fcmLinkEnd1PortWwn         FcNameIdOrZero,
+        fcmLinkEnd2NodeWwn         FcNameIdOrZero,
+        fcmLinkEnd2PhysPortNumber  Unsigned32,
+        fcmLinkEnd2PortWwn         FcNameIdOrZero,
+        fcmLinkEnd2AgentAddress    SnmpAdminString,
+        fcmLinkEnd2PortType        FcPortType,
+        fcmLinkEnd2UnitType        FcUnitFunctions,
+        fcmLinkEnd2FcAddressId     FcAddressIdOrZero
+   }
+
+fcmLinkIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { fcmLinkEntry 1 }
+
+fcmLinkEnd1NodeWwn  OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmLinkEntry 2 }
+
+fcmLinkEnd1PhysPortNumber OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmLinkEntry 3 }
+
+
+
+
+
+
+
+
+
+
+fcmLinkEnd1PortWwn OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmLinkEntry 4 }
+
+fcmLinkEnd2NodeWwn  OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmLinkEntry 5 }
+
+fcmLinkEnd2PhysPortNumber OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmLinkEntry 6 }
+
+fcmLinkEnd2PortWwn OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmLinkEntry 7 }
+
+fcmLinkEnd2AgentAddress OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+
+
+
+
+
+    ::= { fcmLinkEntry 8 }
+
+fcmLinkEnd2PortType OBJECT-TYPE
+    SYNTAX      FcPortType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmLinkEntry 9 }
+
+fcmLinkEnd2UnitType OBJECT-TYPE
+    SYNTAX      FcUnitFunctions
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmLinkEntry 10 }
+
+fcmLinkEnd2FcAddressId OBJECT-TYPE
+    SYNTAX      FcAddressIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { fcmLinkEntry 11 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fcmgmtCompliances OBJECT IDENTIFIER ::= { fcmgmtConformance 1 }
+fcmgmtGroups      OBJECT IDENTIFIER ::= { fcmgmtConformance 2 }
+
+fcmgmtCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS { fcmInstanceBasicGroup,
+                           fcmPortBasicGroup,
+                           fcmPortErrorsGroup }
+
+        GROUP   fcmPortStatsGroup
+
+        GROUP   fcmPortClass23StatsGroup
+
+        GROUP   fcmPortClassFStatsGroup
+
+        GROUP   fcmPortLcStatsGroup
+
+        GROUP   fcmSwitchBasicGroup
+
+        GROUP   fcmSwitchPortGroup
+
+        GROUP   fcmSwitchLoginGroup
+
+        GROUP fcmLinkBasicGroup
+
+        OBJECT      fcmInstancePhysicalIndex
+        SYNTAX      Integer32 (0)
+
+        OBJECT      fcmInstanceSoftwareIndex
+        SYNTAX      Integer32 (0)
+
+        OBJECT      fcmInstanceTextName
+        MIN-ACCESS  read-only
+
+        OBJECT      fcmInstanceDescr
+        MIN-ACCESS  read-only
+
+        OBJECT      fcmPortAdminType
+        MIN-ACCESS  read-only
+
+        OBJECT      fcmPortAdminSpeed
+        MIN-ACCESS  read-only
+
+        OBJECT      fcmSwitchDomainId
+        MIN-ACCESS  read-only
+
+
+
+
+
+        OBJECT      fcmISPortClassFCredit
+        MIN-ACCESS  read-only
+
+    ::= { fcmgmtCompliances 1 }
+
+
+fcmInstanceBasicGroup OBJECT-GROUP
+    OBJECTS { fcmInstanceWwn, fcmInstanceFunctions,
+              fcmInstancePhysicalIndex, fcmInstanceSoftwareIndex,
+              fcmInstanceStatus, fcmInstanceTextName,
+              fcmInstanceDescr, fcmInstanceFabricId }
+    STATUS  current
+    ::= { fcmgmtGroups 1 }
+
+fcmSwitchBasicGroup OBJECT-GROUP
+    OBJECTS { fcmSwitchDomainId, fcmSwitchPrincipal, fcmSwitchWWN }
+    STATUS  current
+    ::= { fcmgmtGroups 2 }
+
+fcmPortBasicGroup OBJECT-GROUP
+    OBJECTS { fcmPortInstanceIndex, fcmPortWwn, fcmPortNodeWwn,
+              fcmPortAdminType, fcmPortOperType, fcmPortFcCapClass,
+              fcmPortFcOperClass, fcmPortTransmitterType,
+              fcmPortConnectorType, fcmPortSerialNumber,
+              fcmPortPhysicalNumber, fcmPortAdminSpeed,
+              fcmPortCapProtocols, fcmPortOperProtocols }
+    STATUS  current
+    ::= { fcmgmtGroups 3 }
+
+fcmPortStatsGroup OBJECT-GROUP
+    OBJECTS { fcmPortBBCreditZeros, fcmPortFullInputBuffers }
+    STATUS  current
+    ::= { fcmgmtGroups 4 }
+
+
+
+
+
+
+fcmPortClass23StatsGroup OBJECT-GROUP
+    OBJECTS { fcmPortClass2RxFrames, fcmPortClass2RxOctets,
+              fcmPortClass2TxFrames, fcmPortClass2TxOctets,
+              fcmPortClass2Discards, fcmPortClass2RxFbsyFrames,
+              fcmPortClass2RxPbsyFrames,
+              fcmPortClass2RxFrjtFrames,
+              fcmPortClass2RxPrjtFrames,
+              fcmPortClass2TxFbsyFrames,
+              fcmPortClass2TxPbsyFrames,
+              fcmPortClass2TxFrjtFrames,
+              fcmPortClass2TxPrjtFrames, fcmPortClass3RxFrames,
+              fcmPortClass3RxOctets, fcmPortClass3TxFrames,
+              fcmPortClass3TxOctets, fcmPortClass3Discards }
+    STATUS  current
+    ::= { fcmgmtGroups 5 }
+
+fcmPortClassFStatsGroup OBJECT-GROUP
+    OBJECTS { fcmPortClassFRxFrames,
+              fcmPortClassFRxOctets,
+              fcmPortClassFTxFrames,
+              fcmPortClassFTxOctets,
+              fcmPortClassFDiscards }
+    STATUS  current
+    ::= { fcmgmtGroups 6 }
+
+fcmPortLcStatsGroup OBJECT-GROUP
+    OBJECTS { fcmPortLcBBCreditZeros, fcmPortLcFullInputBuffers,
+              fcmPortLcClass2RxFrames, fcmPortLcClass2RxOctets,
+              fcmPortLcClass2TxFrames, fcmPortLcClass2TxOctets,
+              fcmPortLcClass2Discards, fcmPortLcClass3Discards,
+              fcmPortLcClass3RxFrames, fcmPortLcClass3RxOctets,
+              fcmPortLcClass3TxFrames, fcmPortLcClass3TxOctets,
+              fcmPortLcClass2RxFbsyFrames,
+              fcmPortLcClass2RxPbsyFrames,
+              fcmPortLcClass2RxFrjtFrames,
+              fcmPortLcClass2RxPrjtFrames,
+              fcmPortLcClass2TxFbsyFrames,
+              fcmPortLcClass2TxPbsyFrames,
+              fcmPortLcClass2TxFrjtFrames,
+              fcmPortLcClass2TxPrjtFrames }
+    STATUS  current
+    ::= { fcmgmtGroups 7 }
+
+fcmPortErrorsGroup OBJECT-GROUP
+    OBJECTS { fcmPortRxLinkResets, fcmPortTxLinkResets,
+              fcmPortLinkResets, fcmPortRxOfflineSequences,
+              fcmPortTxOfflineSequences, fcmPortLinkFailures,
+              fcmPortLossofSynchs, fcmPortLossofSignals,
+              fcmPortPrimSeqProtocolErrors, fcmPortInvalidTxWords,
+              fcmPortInvalidCRCs, fcmPortInvalidOrderedSets,
+              fcmPortFrameTooLongs, fcmPortTruncatedFrames,
+              fcmPortAddressErrors, fcmPortDelimiterErrors,
+              fcmPortEncodingDisparityErrors,
+              fcmPortOtherErrors }
+    STATUS  current
+    ::= { fcmgmtGroups 8 }
+
+fcmSwitchPortGroup OBJECT-GROUP
+    OBJECTS { fcmFxPortRatov, fcmFxPortEdtov, fcmFxPortRttov,
+              fcmFxPortHoldTime, fcmFxPortCapBbCreditMax,
+              fcmFxPortCapBbCreditMin,
+              fcmFxPortCapDataFieldSizeMax,
+              fcmFxPortCapDataFieldSizeMin,
+              fcmFxPortCapClass2SeqDeliv,
+              fcmFxPortCapClass3SeqDeliv,
+              fcmFxPortCapHoldTimeMax,
+              fcmFxPortCapHoldTimeMin,
+              fcmISPortClassFCredit,
+              fcmISPortClassFDataFieldSize }
+    STATUS  current
+    ::= { fcmgmtGroups 9 }
+
+fcmSwitchLoginGroup OBJECT-GROUP
+    OBJECTS { fcmFLoginPortWwn, fcmFLoginNodeWwn,
+              fcmFLoginBbCreditModel, fcmFLoginBbCredit,
+              fcmFLoginClassesAgreed,
+              fcmFLoginClass2SeqDelivAgreed,
+              fcmFLoginClass2DataFieldSize,
+              fcmFLoginClass3SeqDelivAgreed,
+              fcmFLoginClass3DataFieldSize }
+    STATUS  current
+
+
+
+
+
+    ::= { fcmgmtGroups 10 }
+
+fcmLinkBasicGroup OBJECT-GROUP
+    OBJECTS { fcmLinkEnd1NodeWwn , fcmLinkEnd1PhysPortNumber,
+              fcmLinkEnd1PortWwn, fcmLinkEnd2NodeWwn ,
+              fcmLinkEnd2PhysPortNumber, fcmLinkEnd2PortWwn,
+              fcmLinkEnd2AgentAddress, fcmLinkEnd2PortType,
+              fcmLinkEnd2UnitType, fcmLinkEnd2FcAddressId }
+    STATUS  current
+    ::= { fcmgmtGroups 11 }
+
+END

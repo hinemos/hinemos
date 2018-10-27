@@ -1,0 +1,572 @@
+T11-FC-NAME-SERVER-MIB DEFINITIONS ::= BEGIN
+
+
+IMPORTS
+    MODULE-IDENTITY,OBJECT-TYPE,
+    NOTIFICATION-TYPE, Unsigned32,
+    Counter32, Integer32, mib-2   FROM SNMPv2-SMI         -- [RFC2578]
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP            FROM SNMPv2-CONF        -- [RFC2580]
+    SnmpAdminString               FROM SNMP-FRAMEWORK-MIB -- [RFC3411]
+    TruthValue, TEXTUAL-CONVENTION,
+    TimeStamp                     FROM SNMPv2-TC          -- [RFC2579]
+    fcmInstanceIndex, FcPortType,
+    FcAddressIdOrZero, FcClasses,
+    FcNameIdOrZero                FROM FC-MGMT-MIB        -- [FC-MGMT]
+    T11FabricIndex                FROM T11-TC-MIB      -- [FC-FAM-MIB]
+    t11FamLocalSwitchWwn
+                      FROM T11-FC-FABRIC-ADDR-MGR-MIB; -- [FC-FAM-MIB]
+
+t11FcNameServerMIB  MODULE-IDENTITY
+    LAST-UPDATED "200603020000Z"
+    ORGANIZATION "T11"
+
+
+
+
+
+    ::= { mib-2 135 }
+
+t11NsNotifications    OBJECT IDENTIFIER ::= { t11FcNameServerMIB 0 }
+t11NsMIBObjects       OBJECT IDENTIFIER ::= { t11FcNameServerMIB 1 }
+t11NsMIBConformance   OBJECT IDENTIFIER ::= { t11FcNameServerMIB 2 }
+t11NsStatus           OBJECT IDENTIFIER ::= { t11NsMIBObjects 1 }
+t11NsStatistics       OBJECT IDENTIFIER ::= { t11NsMIBObjects 2 }
+
+
+T11NsGs4RejectReasonCode ::= TEXTUAL-CONVENTION
+    STATUS    current
+
+
+
+
+
+    SYNTAX  INTEGER {
+              none(1),
+              invalidCmdCode(2),
+              invalidVerLevel(3),
+              logicalError(4),
+              invalidIUSize(5),
+              logicalBusy(6),
+              protocolError(7),
+              unableToPerformCmdReq(8),
+              cmdNotSupported(9),
+              serverNotAvailable(10),
+              couldNotEstabSession(11),
+              vendorError(12)
+            }
+
+T11NsRejReasonCodeExpl ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX  INTEGER {
+              noAdditionalExplanation(1),
+              portIdentifierNotRegistered(2),
+              portNameNotRegistered(3),
+              nodeNameNotRegistered(4),
+              classOfServiceNotRegistered(5),
+              nodeIpAddressNotRegistered(6),
+              ipaNotRegistered(7),
+              fc4TypeNotRegistered(8),
+              symbolicPortNameNotRegistered(9),
+              symbolicNodeNameNotRegistered(10),
+              portTypeNotRegistered(11),
+              portIpAddressNotRegistered(12),
+              fabricPortNameNotRegistered(13),
+              hardAddressNotRegistered(14),
+              fc4DescriptorNotRegistered(15),
+              fc4FeaturesNotRegistered(16),
+              accessDenied(17),
+              unacceptablePortIdentifier(18),
+              databaseEmpty(19),
+
+
+
+
+
+              noObjectRegInSpecifiedScope(20),
+              domainIdNotPresent(21),
+              portIdNotPresent(22),
+              noDeviceAttached(23),
+              authorizationException(24),
+              authenticationException(25),
+              databaseFull(26)
+           }
+
+
+t11NsInfoSubsetTable OBJECT-TYPE
+    SYNTAX        SEQUENCE OF T11NsInfoSubsetEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    ::= { t11NsStatus 1 }
+
+t11NsInfoSubsetEntry OBJECT-TYPE
+    SYNTAX        T11NsInfoSubsetEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX { fcmInstanceIndex, t11NsInfoSubsetIndex }
+    ::= { t11NsInfoSubsetTable 1 }
+
+T11NsInfoSubsetEntry ::= SEQUENCE {
+    t11NsInfoSubsetIndex                 Unsigned32,
+    t11NsInfoSubsetSwitchIndex           Unsigned32,
+    t11NsInfoSubsetTableLastChange       TimeStamp,
+    t11NsInfoSubsetNumRows               Integer32,
+    t11NsInfoSubsetTotalRejects          Counter32,
+    t11NsInfoSubsetRejReqNotfyEnable     TruthValue
+}
+
+t11NsInfoSubsetIndex OBJECT-TYPE
+    SYNTAX        Unsigned32 (1..4294967295)
+    MAX-ACCESS    not-accessible
+    STATUS        current
+
+
+
+
+
+    ::= { t11NsInfoSubsetEntry 1 }
+
+t11NsInfoSubsetSwitchIndex OBJECT-TYPE
+    SYNTAX        Unsigned32 (0..4294967295)
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsInfoSubsetEntry 2 }
+
+t11NsInfoSubsetTableLastChange OBJECT-TYPE
+    SYNTAX        TimeStamp
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsInfoSubsetEntry 3 }
+
+t11NsInfoSubsetNumRows OBJECT-TYPE
+    SYNTAX        Integer32 (0..2147483647)
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsInfoSubsetEntry 4 }
+
+t11NsInfoSubsetTotalRejects OBJECT-TYPE
+    SYNTAX        Counter32
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsInfoSubsetEntry 5 }
+
+t11NsInfoSubsetRejReqNotfyEnable OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+    STATUS        current
+    DEFVAL { false }
+    ::= { t11NsInfoSubsetEntry 6 }
+
+
+t11NsRegTable OBJECT-TYPE
+    SYNTAX        SEQUENCE OF T11NsRegEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    ::= { t11NsStatus 2 }
+
+t11NsRegEntry OBJECT-TYPE
+    SYNTAX T11NsRegEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX { fcmInstanceIndex, t11NsInfoSubsetIndex,
+            t11NsRegFabricIndex, t11NsRegPortIdentifier }
+    ::= { t11NsRegTable 1 }
+
+T11NsRegEntry ::= SEQUENCE {
+    t11NsRegFabricIndex            T11FabricIndex,
+    t11NsRegPortIdentifier         FcAddressIdOrZero,
+    t11NsRegPortName               FcNameIdOrZero,
+    t11NsRegNodeName               FcNameIdOrZero,
+    t11NsRegClassOfSvc             FcClasses,
+    t11NsRegNodeIpAddress          OCTET STRING,
+    t11NsRegProcAssoc              OCTET STRING,
+    t11NsRegFc4Type                OCTET STRING,
+    t11NsRegPortType               FcPortType,
+    t11NsRegPortIpAddress          OCTET STRING,
+    t11NsRegFabricPortName         FcNameIdOrZero,
+    t11NsRegHardAddress            FcAddressIdOrZero,
+    t11NsRegSymbolicPortName       SnmpAdminString,
+    t11NsRegSymbolicNodeName       SnmpAdminString,
+    t11NsRegFc4Features            OCTET STRING
+    }
+
+t11NsRegFabricIndex OBJECT-TYPE
+    SYNTAX               T11FabricIndex
+    MAX-ACCESS           not-accessible
+    STATUS               current
+    ::= { t11NsRegEntry 1 }
+
+t11NsRegPortIdentifier OBJECT-TYPE
+    SYNTAX               FcAddressIdOrZero
+    MAX-ACCESS           not-accessible
+    STATUS               current
+    ::= { t11NsRegEntry 2 }
+
+t11NsRegPortName OBJECT-TYPE
+    SYNTAX        FcNameIdOrZero
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL {''H}
+    ::= { t11NsRegEntry 3 }
+
+t11NsRegNodeName OBJECT-TYPE
+    SYNTAX        FcNameIdOrZero
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL {''H}
+    ::= { t11NsRegEntry 4 }
+
+t11NsRegClassOfSvc OBJECT-TYPE
+    SYNTAX        FcClasses
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsRegEntry 5 }
+
+t11NsRegNodeIpAddress OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0 | 16))
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL  { ''H }
+    ::= { t11NsRegEntry 6 }
+
+t11NsRegProcAssoc OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0 | 8))
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL  { ''H }
+    ::= { t11NsRegEntry 7 }
+
+
+
+
+
+t11NsRegFc4Type OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0 | 32))
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL  { ''H }
+    ::= { t11NsRegEntry 8 }
+
+t11NsRegPortType OBJECT-TYPE
+    SYNTAX        FcPortType
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL  { 1 }                -- 'unknown', see [FC-MGMT]
+    ::= { t11NsRegEntry 9 }
+
+t11NsRegPortIpAddress OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0 | 16))
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL {''H}
+    ::= { t11NsRegEntry 10 }
+
+t11NsRegFabricPortName OBJECT-TYPE
+    SYNTAX        FcNameIdOrZero
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL {''H}
+    ::= { t11NsRegEntry 11 }
+
+t11NsRegHardAddress OBJECT-TYPE
+    SYNTAX        FcAddressIdOrZero
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL {''H}
+    ::= { t11NsRegEntry 12 }
+
+t11NsRegSymbolicPortName OBJECT-TYPE
+    SYNTAX        SnmpAdminString (SIZE (0..255))
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL {''H}
+    ::= { t11NsRegEntry 13 }
+
+t11NsRegSymbolicNodeName OBJECT-TYPE
+    SYNTAX        SnmpAdminString (SIZE (0..255))
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL {''H}
+    ::= { t11NsRegEntry 14 }
+
+
+t11NsRegFc4Features OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0 | 128))
+    MAX-ACCESS    read-only
+    STATUS        current
+    DEFVAL {''H}
+    ::= { t11NsRegEntry 15 }
+
+
+
+t11NsRegFc4DescriptorTable OBJECT-TYPE
+    SYNTAX        SEQUENCE OF T11NsRegFc4DescriptorEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    ::= { t11NsStatus 3 }
+
+t11NsRegFc4DescriptorEntry OBJECT-TYPE
+    SYNTAX        T11NsRegFc4DescriptorEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX { fcmInstanceIndex, t11NsInfoSubsetIndex,
+            t11NsRegFabricIndex, t11NsRegPortIdentifier,
+            t11NsRegFc4TypeValue }
+    ::= { t11NsRegFc4DescriptorTable 1 }
+
+T11NsRegFc4DescriptorEntry ::= SEQUENCE {
+    t11NsRegFc4TypeValue           Unsigned32,
+    t11NsRegFc4Descriptor          OCTET STRING
+}
+
+t11NsRegFc4TypeValue OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..255)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    ::= { t11NsRegFc4DescriptorEntry 1 }
+
+t11NsRegFc4Descriptor OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0..255))
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsRegFc4DescriptorEntry 2 }
+
+
+
+t11NsStatsTable OBJECT-TYPE
+    SYNTAX        SEQUENCE OF T11NsStatsEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    ::= { t11NsStatistics 1 }
+
+t11NsStatsEntry OBJECT-TYPE
+    SYNTAX        T11NsStatsEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX { fcmInstanceIndex, t11NsInfoSubsetIndex,
+            t11NsRegFabricIndex }
+    ::= { t11NsStatsTable 1 }
+
+T11NsStatsEntry ::=  SEQUENCE {
+    t11NsInGetReqs                Counter32,
+    t11NsOutGetReqs               Counter32,
+    t11NsInRegReqs                Counter32,
+    t11NsInDeRegReqs              Counter32,
+    t11NsInRscns                  Counter32,
+    t11NsOutRscns                 Counter32,
+    t11NsRejects                  Counter32,
+    t11NsDatabaseFull             TruthValue
+ }
+
+t11NsInGetReqs OBJECT-TYPE
+
+
+
+
+
+    SYNTAX        Counter32
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsStatsEntry 1 }
+
+t11NsOutGetReqs OBJECT-TYPE
+    SYNTAX        Counter32
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsStatsEntry 2 }
+
+t11NsInRegReqs OBJECT-TYPE
+    SYNTAX        Counter32
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsStatsEntry 3 }
+
+t11NsInDeRegReqs OBJECT-TYPE
+    SYNTAX        Counter32
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsStatsEntry 4 }
+
+t11NsInRscns OBJECT-TYPE
+    SYNTAX        Counter32
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsStatsEntry 5 }
+
+t11NsOutRscns OBJECT-TYPE
+    SYNTAX        Counter32
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsStatsEntry 6 }
+
+t11NsRejects OBJECT-TYPE
+    SYNTAX        Counter32
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsStatsEntry 7 }
+
+t11NsDatabaseFull OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsStatsEntry 8 }
+
+
+t11NsRejectTable OBJECT-TYPE
+    SYNTAX        SEQUENCE OF T11NsRejectEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    ::= { t11NsStatus 4 }
+
+t11NsRejectEntry OBJECT-TYPE
+    SYNTAX T11NsRejectEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX { fcmInstanceIndex, t11NsInfoSubsetIndex,
+            t11NsRegFabricIndex, t11NsRegPortIdentifier }
+    ::= { t11NsRejectTable 1 }
+
+T11NsRejectEntry ::= SEQUENCE {
+
+
+
+
+
+    t11NsRejectCtCommandString   OCTET STRING,
+    t11NsRejectReasonCode        T11NsGs4RejectReasonCode,
+    t11NsRejReasonCodeExp        T11NsRejReasonCodeExpl,
+    t11NsRejReasonVendorCode     OCTET STRING
+}
+
+t11NsRejectCtCommandString OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0..255))
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsRejectEntry 1 }
+
+t11NsRejectReasonCode OBJECT-TYPE
+    SYNTAX        T11NsGs4RejectReasonCode
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsRejectEntry 2 }
+
+t11NsRejReasonCodeExp OBJECT-TYPE
+    SYNTAX        T11NsRejReasonCodeExpl
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsRejectEntry 3 }
+
+
+
+
+
+t11NsRejReasonVendorCode OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE(1))
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11NsRejectEntry 4 }
+
+
+
+t11NsRejectRegNotify NOTIFICATION-TYPE
+    OBJECTS   { t11FamLocalSwitchWwn,
+                t11NsRegPortName, t11NsRejectCtCommandString,
+                t11NsRejectReasonCode, t11NsRejReasonCodeExp,
+                t11NsRejReasonVendorCode }
+    STATUS    current
+    ::= { t11NsNotifications 1 }
+
+
+
+
+
+
+
+t11NsMIBCompliances OBJECT IDENTIFIER ::= {t11NsMIBConformance 1}
+t11NsMIBGroups      OBJECT IDENTIFIER ::= {t11NsMIBConformance 2}
+
+t11NsMIBCompliance MODULE-COMPLIANCE
+    STATUS    current
+    MODULE MANDATORY-GROUPS {t11NsDBGroup,
+                             t11NsNotifyControlGroup,
+                             t11NsNotifyGroup}
+
+      OBJECT t11NsInfoSubsetRejReqNotfyEnable
+      MIN-ACCESS read-only
+
+      GROUP t11NsRequestStatsGroup
+
+      GROUP t11NsRscnStatsGroup
+
+      GROUP t11NsRejectStatsGroup
+
+    ::= { t11NsMIBCompliances 1 }
+
+
+t11NsDBGroup        OBJECT-GROUP
+    OBJECTS { t11NsInfoSubsetSwitchIndex,
+              t11NsInfoSubsetTableLastChange,
+              t11NsInfoSubsetNumRows,
+              t11NsRegPortName,
+              t11NsRegNodeName,
+              t11NsRegClassOfSvc,
+
+
+
+
+
+              t11NsRegNodeIpAddress,
+              t11NsRegProcAssoc,
+              t11NsRegFc4Type,
+              t11NsRegPortType,
+              t11NsRegPortIpAddress,
+              t11NsRegFabricPortName,
+              t11NsRegHardAddress,
+              t11NsRegSymbolicPortName,
+              t11NsRegSymbolicNodeName,
+              t11NsRegFc4Features,
+              t11NsRegFc4Descriptor }
+    STATUS current
+    ::= { t11NsMIBGroups 1 }
+
+t11NsRequestStatsGroup OBJECT-GROUP
+    OBJECTS { t11NsInGetReqs,
+              t11NsOutGetReqs,
+              t11NsInRegReqs,
+              t11NsInDeRegReqs,
+              t11NsDatabaseFull}
+    STATUS current
+    ::= { t11NsMIBGroups 2 }
+
+t11NsRscnStatsGroup OBJECT-GROUP
+    OBJECTS { t11NsInRscns,
+              t11NsOutRscns }
+    STATUS current
+    ::= { t11NsMIBGroups 3 }
+
+t11NsRejectStatsGroup OBJECT-GROUP
+    OBJECTS { t11NsInfoSubsetTotalRejects,
+              t11NsRejects }
+    STATUS current
+    ::= { t11NsMIBGroups 4 }
+
+t11NsNotifyControlGroup  OBJECT-GROUP
+
+
+
+
+
+    OBJECTS { t11NsRejectCtCommandString,
+              t11NsRejectReasonCode,
+              t11NsRejReasonCodeExp,
+              t11NsRejReasonVendorCode,
+              t11NsInfoSubsetRejReqNotfyEnable }
+    STATUS current
+    ::= { t11NsMIBGroups 5 }
+
+t11NsNotifyGroup        NOTIFICATION-GROUP
+    NOTIFICATIONS {t11NsRejectRegNotify }
+    STATUS current
+    ::= { t11NsMIBGroups 6 }
+
+END

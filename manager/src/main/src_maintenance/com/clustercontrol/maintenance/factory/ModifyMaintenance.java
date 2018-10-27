@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2007 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.maintenance.factory;
@@ -55,38 +48,40 @@ public class ModifyMaintenance {
 	public boolean addMaintenance(MaintenanceInfo data, String name)
 			throws EntityExistsException, InvalidRole, HinemosUnknown {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// Entityクラスのインスタンス生成
-		MaintenanceTypeMst maintenanceTypeMstEntity = null;
-		if (data.getTypeId() != null) {
-			try {
-				maintenanceTypeMstEntity = QueryUtil.getMaintenanceTypeMstPK(data.getTypeId());
-			} catch (MaintenanceNotFound e) {
+			// Entityクラスのインスタンス生成
+			MaintenanceTypeMst maintenanceTypeMstEntity = null;
+			if (data.getTypeId() != null) {
+				try {
+					maintenanceTypeMstEntity = QueryUtil.getMaintenanceTypeMstPK(data.getTypeId());
+				} catch (MaintenanceNotFound e) {
+				}
 			}
-		}
-		try {
-			// 重複チェック
-			jtm.checkEntityExists(MaintenanceInfo.class, data.getMaintenanceId());
-			
-			long now = HinemosTime.currentTimeMillis();
-			
-			data.setRegUser(name);
-			data.setRegDate(now);
-			data.setUpdateUser(name);
-			data.setUpdateDate(now);
-			
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-			em.persist(data);
-			data.relateToMaintenanceTypeMstEntity(maintenanceTypeMstEntity);
-		} catch (EntityExistsException e){
-			m_log.info("addMaintenance() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			throw e;
-		}
 
-		if(data.getNotifyId() != null){
-			new NotifyControllerBean().addNotifyRelation(data.getNotifyId());
+			try {
+				// 重複チェック
+				jtm.checkEntityExists(MaintenanceInfo.class, data.getMaintenanceId());
+				
+				long now = HinemosTime.currentTimeMillis();
+				
+				data.setRegUser(name);
+				data.setRegDate(now);
+				data.setUpdateUser(name);
+				data.setUpdateDate(now);
+				
+				em.persist(data);
+				data.relateToMaintenanceTypeMstEntity(maintenanceTypeMstEntity);
+			} catch (EntityExistsException e){
+				m_log.info("addMaintenance() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				throw e;
+			}
+
+			if(data.getNotifyId() != null){
+				new NotifyControllerBean().addNotifyRelation(data.getNotifyId());
+			}
 		}
 
 		return true;
@@ -150,18 +145,20 @@ public class ModifyMaintenance {
 	public boolean deleteMaintenance(String maintenanceId)
 			throws MaintenanceNotFound, InvalidRole, HinemosUnknown {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// 削除対象を検索
-		MaintenanceInfo entity = QueryUtil.getMaintenanceInfoPK(maintenanceId, ObjectPrivilegeMode.MODIFY);
+			// 削除対象を検索
+			MaintenanceInfo entity = QueryUtil.getMaintenanceInfoPK(maintenanceId, ObjectPrivilegeMode.MODIFY);
 
-		//通知情報の削除
-		new NotifyControllerBean().deleteNotifyRelation(entity.getNotifyGroupId());
+			//通知情報の削除
+			new NotifyControllerBean().deleteNotifyRelation(entity.getNotifyGroupId());
 
-		//メンテナンス情報の削除
-		entity.unchain();	// 削除前処理
-		em.remove(entity);
+			//メンテナンス情報の削除
+			entity.unchain();	// 削除前処理
+			em.remove(entity);
 
-		return true;
+			return true;
+		}
 	}
 }

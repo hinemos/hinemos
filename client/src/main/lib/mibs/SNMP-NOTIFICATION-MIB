@@ -1,0 +1,327 @@
+   SNMP-NOTIFICATION-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY,
+       OBJECT-TYPE,
+       snmpModules
+           FROM SNMPv2-SMI
+
+       RowStatus,
+       StorageType
+           FROM SNMPv2-TC
+
+       SnmpAdminString
+           FROM SNMP-FRAMEWORK-MIB
+
+       SnmpTagValue,
+
+
+
+
+
+       snmpTargetParamsName
+           FROM SNMP-TARGET-MIB
+
+       MODULE-COMPLIANCE,
+       OBJECT-GROUP
+           FROM SNMPv2-CONF;
+
+   snmpNotificationMIB MODULE-IDENTITY
+       LAST-UPDATED "200210140000Z"
+       ORGANIZATION "IETF SNMPv3 Working Group"
+
+
+
+
+
+       ::= { snmpModules 13 }
+
+   snmpNotifyObjects       OBJECT IDENTIFIER ::=
+                                             { snmpNotificationMIB 1 }
+   snmpNotifyConformance   OBJECT IDENTIFIER ::=
+                                             { snmpNotificationMIB 3 }
+
+
+   snmpNotifyTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF SnmpNotifyEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { snmpNotifyObjects 1 }
+
+   snmpNotifyEntry OBJECT-TYPE
+       SYNTAX      SnmpNotifyEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { IMPLIED snmpNotifyName }
+       ::= { snmpNotifyTable 1 }
+
+   SnmpNotifyEntry ::= SEQUENCE {
+       snmpNotifyName         SnmpAdminString,
+       snmpNotifyTag          SnmpTagValue,
+       snmpNotifyType         INTEGER,
+       snmpNotifyStorageType  StorageType,
+       snmpNotifyRowStatus    RowStatus
+   }
+
+   snmpNotifyName OBJECT-TYPE
+       SYNTAX      SnmpAdminString (SIZE(1..32))
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { snmpNotifyEntry 1 }
+
+   snmpNotifyTag OBJECT-TYPE
+       SYNTAX      SnmpTagValue
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { "" }
+       ::= { snmpNotifyEntry 2 }
+
+   snmpNotifyType OBJECT-TYPE
+       SYNTAX      INTEGER {
+                       trap(1),
+                       inform(2)
+                   }
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { trap }
+       ::= { snmpNotifyEntry 3 }
+
+   snmpNotifyStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { nonVolatile }
+       ::= { snmpNotifyEntry 4 }
+
+   snmpNotifyRowStatus OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpNotifyEntry 5 }
+
+   snmpNotifyFilterProfileTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF SnmpNotifyFilterProfileEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+
+
+
+
+
+       ::= { snmpNotifyObjects 2 }
+
+   snmpNotifyFilterProfileEntry OBJECT-TYPE
+       SYNTAX      SnmpNotifyFilterProfileEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { IMPLIED snmpTargetParamsName }
+       ::= { snmpNotifyFilterProfileTable 1 }
+
+   SnmpNotifyFilterProfileEntry ::= SEQUENCE {
+       snmpNotifyFilterProfileName         SnmpAdminString,
+       snmpNotifyFilterProfileStorType     StorageType,
+       snmpNotifyFilterProfileRowStatus    RowStatus
+   }
+
+   snmpNotifyFilterProfileName OBJECT-TYPE
+       SYNTAX      SnmpAdminString (SIZE(1..32))
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpNotifyFilterProfileEntry 1 }
+
+   snmpNotifyFilterProfileStorType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { nonVolatile }
+       ::= { snmpNotifyFilterProfileEntry 2 }
+
+   snmpNotifyFilterProfileRowStatus OBJECT-TYPE
+
+
+
+
+
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpNotifyFilterProfileEntry 3 }
+
+   snmpNotifyFilterTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF SnmpNotifyFilterEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { snmpNotifyObjects 3 }
+
+   snmpNotifyFilterEntry OBJECT-TYPE
+       SYNTAX      SnmpNotifyFilterEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+
+
+
+
+
+       INDEX {         snmpNotifyFilterProfileName,
+               IMPLIED snmpNotifyFilterSubtree }
+       ::= { snmpNotifyFilterTable 1 }
+
+   SnmpNotifyFilterEntry ::= SEQUENCE {
+       snmpNotifyFilterSubtree           OBJECT IDENTIFIER,
+       snmpNotifyFilterMask              OCTET STRING,
+       snmpNotifyFilterType              INTEGER,
+       snmpNotifyFilterStorageType       StorageType,
+       snmpNotifyFilterRowStatus         RowStatus
+   }
+
+   snmpNotifyFilterSubtree OBJECT-TYPE
+       SYNTAX      OBJECT IDENTIFIER
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { snmpNotifyFilterEntry 1 }
+
+   snmpNotifyFilterMask OBJECT-TYPE
+       SYNTAX      OCTET STRING (SIZE(0..16))
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { ''H }
+       ::= { snmpNotifyFilterEntry 2 }
+
+   snmpNotifyFilterType OBJECT-TYPE
+       SYNTAX      INTEGER {
+                       included(1),
+                       excluded(2)
+                   }
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { included }
+       ::= { snmpNotifyFilterEntry 3 }
+
+   snmpNotifyFilterStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { nonVolatile }
+       ::= { snmpNotifyFilterEntry 4 }
+
+   snmpNotifyFilterRowStatus OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpNotifyFilterEntry 5 }
+
+
+   snmpNotifyCompliances OBJECT IDENTIFIER ::=
+                                           { snmpNotifyConformance 1 }
+   snmpNotifyGroups      OBJECT IDENTIFIER ::=
+                                           { snmpNotifyConformance 2 }
+
+
+   snmpNotifyBasicCompliance MODULE-COMPLIANCE
+       STATUS      current
+       MODULE SNMP-TARGET-MIB
+           MANDATORY-GROUPS { snmpTargetBasicGroup }
+
+           OBJECT snmpTargetParamsMPModel
+           MIN-ACCESS    read-only
+
+           OBJECT snmpTargetParamsSecurityModel
+
+
+
+
+
+           MIN-ACCESS    read-only
+
+           OBJECT snmpTargetParamsSecurityName
+           MIN-ACCESS    read-only
+
+           OBJECT snmpTargetParamsSecurityLevel
+           MIN-ACCESS    read-only
+
+           OBJECT snmpTargetParamsStorageType
+           SYNTAX INTEGER {
+               readOnly(5)
+           }
+           MIN-ACCESS    read-only
+
+           OBJECT snmpTargetParamsRowStatus
+           SYNTAX INTEGER {
+               active(1)
+           }
+           MIN-ACCESS    read-only
+
+       MODULE -- This Module
+           MANDATORY-GROUPS { snmpNotifyGroup }
+
+           OBJECT snmpNotifyTag
+           MIN-ACCESS    read-only
+
+           OBJECT snmpNotifyType
+           SYNTAX INTEGER {
+               trap(1)
+           }
+
+
+
+
+
+           MIN-ACCESS    read-only
+
+           OBJECT snmpNotifyStorageType
+           SYNTAX INTEGER {
+               readOnly(5)
+           }
+           MIN-ACCESS    read-only
+
+           OBJECT snmpNotifyRowStatus
+           SYNTAX INTEGER {
+               active(1)
+           }
+           MIN-ACCESS    read-only
+
+       ::= { snmpNotifyCompliances 1 }
+
+   snmpNotifyBasicFiltersCompliance MODULE-COMPLIANCE
+       STATUS      current
+       MODULE SNMP-TARGET-MIB
+           MANDATORY-GROUPS { snmpTargetBasicGroup }
+       MODULE -- This Module
+           MANDATORY-GROUPS { snmpNotifyGroup,
+                              snmpNotifyFilterGroup }
+       ::= { snmpNotifyCompliances 2 }
+
+   snmpNotifyFullCompliance MODULE-COMPLIANCE
+       STATUS      current
+       MODULE SNMP-TARGET-MIB
+           MANDATORY-GROUPS { snmpTargetBasicGroup,
+                              snmpTargetResponseGroup }
+       MODULE -- This Module
+           MANDATORY-GROUPS { snmpNotifyGroup,
+                              snmpNotifyFilterGroup }
+       ::= { snmpNotifyCompliances 3 }
+
+   snmpNotifyGroup OBJECT-GROUP
+       OBJECTS {
+           snmpNotifyTag,
+           snmpNotifyType,
+           snmpNotifyStorageType,
+           snmpNotifyRowStatus
+       }
+       STATUS      current
+       ::= { snmpNotifyGroups 1 }
+
+   snmpNotifyFilterGroup OBJECT-GROUP
+       OBJECTS {
+           snmpNotifyFilterProfileName,
+           snmpNotifyFilterProfileStorType,
+           snmpNotifyFilterProfileRowStatus,
+           snmpNotifyFilterMask,
+           snmpNotifyFilterType,
+           snmpNotifyFilterStorageType,
+           snmpNotifyFilterRowStatus
+       }
+       STATUS      current
+       ::= { snmpNotifyGroups 2 }
+
+   END

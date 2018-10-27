@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.collect.model;
 
 
@@ -24,6 +32,8 @@ public class CollectData implements Serializable {
 	
 	private CollectDataPK id;
 	private Float value;
+	private Float average;
+	private Float standardDeviation;
 	private Long position;
 
 	public CollectData() {
@@ -41,7 +51,14 @@ public class CollectData implements Serializable {
 		this.setId(pk);
 		this.setValue(value);
 	}
-	
+
+	public CollectData(CollectDataPK pk,Float value, Float average, Float standardDeviation) {
+		this.setId(pk);
+		this.setValue(value);
+		this.setAverage(average);
+		this.setStandardDeviation(standardDeviation);
+	}
+
 	@XmlTransient
 	@EmbeddedId
 	public CollectDataPK getId() {
@@ -81,7 +98,31 @@ public class CollectData implements Serializable {
 	public void setValue(Float value) {
 		this.value = value;
 	}
-	
+
+	@Column(name="average")
+	public Float getAverage() {
+		if (average == null) {
+			return Float.NaN;
+		} else {
+			return average;
+		}
+	}
+	public void setAverage(Float average) {
+		this.average = average;
+	}
+
+	@Column(name="standard_deviation")
+	public Float getStandardDeviation() {
+		if (standardDeviation == null) {
+			return Float.NaN;
+		} else {
+			return standardDeviation;
+		}
+	}
+	public void setStandardDeviation(Float standardDeviation) {
+		this.standardDeviation = standardDeviation;
+	}
+
 	@XmlTransient
 	@Column(name="position", insertable=false)
 	public Long getPosition(){

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.winservice.util;
@@ -29,15 +22,17 @@ public class QueryUtil {
 	private static Log m_log = LogFactory.getLog( QueryUtil.class );
 
 	public static WinServiceCheckInfo getMonitorWinserviceInfoPK(String monitorId) throws MonitorNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		WinServiceCheckInfo entity = em.find(WinServiceCheckInfo.class, monitorId, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			MonitorNotFound e = new MonitorNotFound("MonitorWinserviceInfoEntity.findByPrimaryKey, "
-					+ "monitorId = " + monitorId);
-			m_log.info("getMonitorWinserviceInfoPK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			WinServiceCheckInfo entity = em.find(WinServiceCheckInfo.class, monitorId, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				MonitorNotFound e = new MonitorNotFound("MonitorWinserviceInfoEntity.findByPrimaryKey, "
+						+ "monitorId = " + monitorId);
+				m_log.info("getMonitorWinserviceInfoPK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 }

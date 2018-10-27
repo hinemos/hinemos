@@ -1,0 +1,60 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"infoCommand",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_infoCommand"}
+	]},
+
+	{
+	"propName":"warnCommand",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_warnCommand"}
+	]},
+
+	{
+	"propName":"criticalCommand",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_criticalCommand"}
+	]},
+
+	{
+	"propName":"unknownCommand",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_unknownCommand"}
+	]},
+
+	{
+	"propName":"infoEffectiveUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_infoEffectiveUser"}
+	]},
+
+	{
+	"propName":"warnEffectiveUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_warnEffectiveUser"}
+	]},
+
+	{
+	"propName":"criticalEffectiveUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_criticalEffectiveUser"}
+	]},
+
+	{
+	"propName":"unknownEffectiveUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_unknownEffectiveUser"}
+	]},
+
+	{
+	"propName":"commandTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_commandTimeout"}
+	]}
+]
+}

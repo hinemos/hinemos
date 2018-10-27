@@ -1,0 +1,390 @@
+   NETWORK-SERVICES-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       OBJECT-TYPE, Counter32, Gauge32, MODULE-IDENTITY, mib-2
+         FROM SNMPv2-SMI
+       TimeStamp, TEXTUAL-CONVENTION
+         FROM SNMPv2-TC
+       MODULE-COMPLIANCE, OBJECT-GROUP
+         FROM SNMPv2-CONF
+       SnmpAdminString
+           FROM SNMP-FRAMEWORK-MIB;
+
+   application MODULE-IDENTITY
+       LAST-UPDATED "200003030000Z"
+       ORGANIZATION "IETF Mail and Directory Management Working Group"
+
+
+
+
+
+       ::= {mib-2 27}
+
+
+
+   DistinguishedName ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "255a"
+
+
+
+
+
+       STATUS current
+       SYNTAX OCTET STRING (SIZE (0..255))
+
+
+   URLString ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "255a"
+       STATUS current
+       SYNTAX OCTET STRING (SIZE (0..255))
+
+
+   applTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF ApplEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       ::= {application 1}
+
+   applEntry OBJECT-TYPE
+       SYNTAX ApplEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       INDEX {applIndex}
+       ::= {applTable 1}
+
+   ApplEntry ::= SEQUENCE {
+       applIndex
+           INTEGER,
+       applName
+           SnmpAdminString,
+       applDirectoryName
+
+
+
+
+
+           DistinguishedName,
+       applVersion
+           SnmpAdminString,
+       applUptime
+           TimeStamp,
+       applOperStatus
+           INTEGER,
+       applLastChange
+           TimeStamp,
+       applInboundAssociations
+           Gauge32,
+       applOutboundAssociations
+           Gauge32,
+       applAccumulatedInboundAssociations
+           Counter32,
+       applAccumulatedOutboundAssociations
+           Counter32,
+       applLastInboundActivity
+           TimeStamp,
+       applLastOutboundActivity
+           TimeStamp,
+       applRejectedInboundAssociations
+           Counter32,
+       applFailedOutboundAssociations
+           Counter32,
+       applDescription
+           SnmpAdminString,
+       applURL
+           URLString
+   }
+
+   applIndex OBJECT-TYPE
+       SYNTAX INTEGER (1..2147483647)
+       MAX-ACCESS not-accessible
+       STATUS current
+       ::= {applEntry 1}
+
+   applName OBJECT-TYPE
+       SYNTAX SnmpAdminString
+       MAX-ACCESS read-only
+       STATUS current
+
+
+
+
+
+       ::= {applEntry 2}
+
+   applDirectoryName OBJECT-TYPE
+       SYNTAX DistinguishedName
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 3}
+
+   applVersion OBJECT-TYPE
+       SYNTAX SnmpAdminString
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 4}
+   applUptime OBJECT-TYPE
+       SYNTAX TimeStamp
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 5}
+
+   applOperStatus OBJECT-TYPE
+       SYNTAX INTEGER {
+         up(1),
+         down(2),
+         halted(3),
+         congested(4),
+         restarting(5),
+         quiescing(6)
+       }
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 6}
+
+   applLastChange OBJECT-TYPE
+       SYNTAX TimeStamp
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 7}
+
+   applInboundAssociations OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 8}
+
+   applOutboundAssociations OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 9}
+
+   applAccumulatedInboundAssociations OBJECT-TYPE
+
+
+
+
+
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 10}
+
+   applAccumulatedOutboundAssociations OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 11}
+
+   applLastInboundActivity OBJECT-TYPE
+       SYNTAX TimeStamp
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 12}
+
+   applLastOutboundActivity OBJECT-TYPE
+       SYNTAX TimeStamp
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 13}
+
+   applRejectedInboundAssociations OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 14}
+
+   applFailedOutboundAssociations OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 15}
+
+   applDescription OBJECT-TYPE
+       SYNTAX SnmpAdminString
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 16}
+
+   applURL OBJECT-TYPE
+       SYNTAX URLString
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {applEntry 17}
+
+
+   assocTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF AssocEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       ::= {application 2}
+
+   assocEntry OBJECT-TYPE
+       SYNTAX AssocEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       INDEX {applIndex, assocIndex}
+       ::= {assocTable 1}
+
+   AssocEntry ::= SEQUENCE {
+       assocIndex
+           INTEGER,
+       assocRemoteApplication
+           SnmpAdminString,
+       assocApplicationProtocol
+           OBJECT IDENTIFIER,
+       assocApplicationType
+           INTEGER,
+       assocDuration
+           TimeStamp
+   }
+
+   assocIndex OBJECT-TYPE
+       SYNTAX INTEGER (1..2147483647)
+       MAX-ACCESS not-accessible
+       STATUS current
+       ::= {assocEntry 1}
+
+   assocRemoteApplication OBJECT-TYPE
+       SYNTAX SnmpAdminString
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {assocEntry 2}
+
+   assocApplicationProtocol OBJECT-TYPE
+       SYNTAX OBJECT IDENTIFIER
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {assocEntry 3}
+
+   assocApplicationType OBJECT-TYPE
+       SYNTAX INTEGER {
+           uainitiator(1),
+           uaresponder(2),
+           peerinitiator(3),
+           peerresponder(4)}
+       MAX-ACCESS read-only
+       STATUS current
+       ::= {assocEntry 4}
+
+   assocDuration OBJECT-TYPE
+       SYNTAX TimeStamp
+       MAX-ACCESS read-only
+       STATUS current
+
+
+
+
+
+       ::= {assocEntry 5}
+
+
+
+   applConformance OBJECT IDENTIFIER ::= {application 3}
+
+   applGroups      OBJECT IDENTIFIER ::= {applConformance 1}
+   applCompliances OBJECT IDENTIFIER ::= {applConformance 2}
+
+
+   applCompliance MODULE-COMPLIANCE
+       STATUS obsolete
+       MODULE
+         MANDATORY-GROUPS {applRFC1565Group}
+       ::= {applCompliances 1}
+
+   assocCompliance MODULE-COMPLIANCE
+       STATUS obsolete
+       MODULE
+         MANDATORY-GROUPS {applRFC1565Group, assocRFC1565Group}
+       ::= {applCompliances 2}
+
+   applRFC2248Compliance MODULE-COMPLIANCE
+       STATUS deprecated
+       MODULE
+         MANDATORY-GROUPS {applRFC2248Group}
+       ::= {applCompliances 3}
+
+   assocRFC2248Compliance MODULE-COMPLIANCE
+       STATUS deprecated
+       MODULE
+         MANDATORY-GROUPS {applRFC2248Group, assocRFC2248Group}
+       ::= {applCompliances 4}
+
+   applRFC2788Compliance MODULE-COMPLIANCE
+       STATUS current
+       MODULE
+         MANDATORY-GROUPS {applRFC2788Group}
+       ::= {applCompliances 5}
+
+   assocRFC2788Compliance MODULE-COMPLIANCE
+       STATUS current
+       MODULE
+         MANDATORY-GROUPS {applRFC2788Group, assocRFC2788Group}
+       ::= {applCompliances 6}
+
+
+
+   applRFC1565Group OBJECT-GROUP
+       OBJECTS {
+         applName, applVersion, applUptime, applOperStatus,
+         applLastChange, applInboundAssociations,
+         applOutboundAssociations, applAccumulatedInboundAssociations,
+         applAccumulatedOutboundAssociations, applLastInboundActivity,
+         applLastOutboundActivity, applRejectedInboundAssociations,
+         applFailedOutboundAssociations}
+       STATUS obsolete
+       ::= {applGroups 7}
+
+   assocRFC1565Group OBJECT-GROUP
+       OBJECTS {
+
+
+
+
+
+         assocRemoteApplication, assocApplicationProtocol,
+         assocApplicationType, assocDuration}
+       STATUS obsolete
+       ::= {applGroups 2}
+
+   applRFC2248Group OBJECT-GROUP
+       OBJECTS {
+         applName, applVersion, applUptime, applOperStatus,
+         applLastChange, applInboundAssociations,
+         applOutboundAssociations, applAccumulatedInboundAssociations,
+         applAccumulatedOutboundAssociations, applLastInboundActivity,
+         applLastOutboundActivity, applRejectedInboundAssociations,
+         applFailedOutboundAssociations, applDescription, applURL}
+       STATUS deprecated
+       ::= {applGroups 3}
+
+   assocRFC2248Group OBJECT-GROUP
+       OBJECTS {
+         assocRemoteApplication, assocApplicationProtocol,
+         assocApplicationType, assocDuration}
+       STATUS deprecated
+       ::= {applGroups 4}
+
+   applRFC2788Group OBJECT-GROUP
+       OBJECTS {
+         applName, applDirectoryName, applVersion, applUptime,
+         applOperStatus, applLastChange, applInboundAssociations,
+         applOutboundAssociations, applAccumulatedInboundAssociations,
+         applAccumulatedOutboundAssociations, applLastInboundActivity,
+         applLastOutboundActivity, applRejectedInboundAssociations,
+         applFailedOutboundAssociations, applDescription, applURL}
+       STATUS current
+       ::= {applGroups 5}
+
+   assocRFC2788Group OBJECT-GROUP
+       OBJECTS {
+         assocRemoteApplication, assocApplicationProtocol,
+         assocApplicationType, assocDuration}
+       STATUS current
+       ::= {applGroups 6}
+
+
+   applTCPProtoID OBJECT IDENTIFIER ::= {application 4}
+   applUDPProtoID OBJECT IDENTIFIER ::= {application 5}
+
+   END

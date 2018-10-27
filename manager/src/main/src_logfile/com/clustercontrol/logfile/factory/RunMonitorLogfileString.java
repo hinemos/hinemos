@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.logfile.factory;
 
 import java.io.File;
@@ -9,28 +17,21 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.fault.JobInfoNotFound;
+import com.clustercontrol.hub.bean.CollectStringTag;
 import com.clustercontrol.hub.bean.StringSample;
 import com.clustercontrol.hub.bean.StringSampleTag;
-import com.clustercontrol.hub.bean.ValueType;
 import com.clustercontrol.hub.util.CollectStringDataUtil;
 import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
-import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
-import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.logfile.bean.LogfileResultDTO;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
-import com.clustercontrol.repository.factory.FacilitySelector;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.MessageConstant;
 
@@ -39,53 +40,27 @@ public class RunMonitorLogfileString {
 	public static final Log _log = LogFactory.getLog(RunMonitorLogfileString.class);
 	private List<MonitorJobEndNode> monitorJobEndNodeList = new ArrayList<>();
 
-	public void run(String facilityId, LogfileResultDTO result) throws HinemosUnknown {
+	public List<OutputBasicInfo> run(String facilityId, LogfileResultDTO result) throws HinemosUnknown {
+		List<OutputBasicInfo> rtn = new ArrayList<>();
+		
+		// 収集処理.
 		if (result.monitorInfo.getCollectorFlg() != null && result.monitorInfo.getCollectorFlg()) {
 			StringSample sample = new StringSample(new Date(result.msgInfo.getGenerationDate()), result.monitorInfo.getMonitorId());
 			
 			String filePath = new File(new File(result.monitorInfo.getLogfileCheckInfo().getDirectory()), result.monitorInfo.getLogfileCheckInfo().getFileName()).getPath();
-			sample.set(facilityId, filePath, result.message.trim(), Arrays.asList(new StringSampleTag("filename", ValueType.string, result.monitorInfo.getLogfileCheckInfo().getLogfile())));
+			sample.set(facilityId, filePath, result.message.trim(), Arrays.asList(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile())));
 			CollectStringDataUtil.store(Arrays.asList(sample));
 		}
 		
 		if (result.monitorStrValueInfo == null)
-			return;
-
-		List<String> facilityIdList = null;
-		if (result.runInstructionInfo == null) {
-			// 監視ジョブ以外
-			facilityIdList = FacilitySelector.getFacilityIdList(result.monitorInfo.getFacilityId(), result.monitorInfo.getOwnerRoleId(), 0, false, false);
-		} else {
-			// 監視ジョブ
-			JobSessionJobEntity jobSessionJobEntity = null;
-			try {
-				jobSessionJobEntity = QueryUtil.getJobSessionJobPK(
-						result.runInstructionInfo.getSessionId(),
-						result.runInstructionInfo.getJobunitId(),
-						result.runInstructionInfo.getJobId(), ObjectPrivilegeMode.NONE);
-			} catch (InvalidRole | JobInfoNotFound e) {
-				// 処理対象のジョブセッションジョブを取得できない場合は処理終了
-				return;
-			}
-			facilityIdList = FacilitySelector.getFacilityIdList(
-					result.runInstructionInfo.getFacilityId(),
-					jobSessionJobEntity.getOwnerRoleId(), 0, false, false);
-		}
-
-		if (_log.isDebugEnabled()) {
-			_log.debug(result.monitorInfo.getFacilityId() + " contains : " + facilityIdList);
-		}
-		if (! facilityIdList.contains(facilityId)) {
-			_log.debug("facilityId is not contained " + facilityId + " in " + facilityIdList);
-			return;
-		}
+			return rtn;
 		
 		String origMessage = MessageConstant.LOGFILE_FILENAME.getMessage() + "=" + result.monitorInfo.getLogfileCheckInfo().getLogfile() + "\n"
 				+ MessageConstant.LOGFILE_PATTERN.getMessage() + "=" + result.monitorStrValueInfo.getPattern() + "\n" 
 				+ MessageConstant.LOGFILE_LINE.getMessage() + "=" + result.message.trim();
 		
 		OutputBasicInfo output = new OutputBasicInfo();
-
+		output.setNotifyGroupId(NotifyGroupIdGenerator.generate(result.monitorInfo));
 		output.setMonitorId(result.monitorStrValueInfo.getMonitorId());
 		output.setFacilityId(facilityId);
 		output.setPluginId(HinemosModuleConstant.MONITOR_LOGFILE);
@@ -102,7 +77,7 @@ public class RunMonitorLogfileString {
 		
 		if (result.monitorStrValueInfo.getMessage() != null) {
 			String str = result.monitorStrValueInfo.getMessage().replace("#[LOG_LINE]", result.message.trim());
-			int maxLen = HinemosPropertyUtil.getHinemosPropertyNum("monitor.log.line.max.length", Long.valueOf(256)).intValue();
+			int maxLen = HinemosPropertyCommon.monitor_log_line_max_length.getIntegerValue();
 			if (str.length() > maxLen) {
 				str = str.substring(0, maxLen);
 			}
@@ -114,11 +89,11 @@ public class RunMonitorLogfileString {
 		output.setGenerationDate(result.msgInfo.getGenerationDate());
 		output.setRunInstructionInfo(result.runInstructionInfo);
 		
-		output.setMultiId(HinemosPropertyUtil.getHinemosPropertyStr("monitor.systemlog.receiverid", System.getProperty("hinemos.manager.nodename")));
+		output.setMultiId(HinemosPropertyCommon.monitor_systemlog_receiverid.getStringValue());
 
 		if (result.runInstructionInfo == null) {
 			// 監視ジョブ以外
-			new NotifyControllerBean().notify(output, NotifyGroupIdGenerator.generate(result.monitorInfo));
+			rtn.add(output);
 		} else {
 			// 監視ジョブ
 			this.monitorJobEndNodeList.add(new MonitorJobEndNode(
@@ -129,6 +104,7 @@ public class RunMonitorLogfileString {
 					RunStatusConstant.END,
 					MonitorJobWorker.getReturnValue(output.getRunInstructionInfo(), output.getPriority())));
 		}
+		return rtn;
 	}
 
 	/**

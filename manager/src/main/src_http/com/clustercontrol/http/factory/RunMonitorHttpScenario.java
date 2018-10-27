@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.http.factory;
@@ -43,6 +36,7 @@ import org.apache.log4j.Logger;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.collect.bean.Sample;
 import com.clustercontrol.collect.util.CollectDataUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -55,10 +49,10 @@ import com.clustercontrol.http.util.GetHttpResponse;
 import com.clustercontrol.http.util.GetHttpResponse.AuthType;
 import com.clustercontrol.http.util.QueryUtil;
 import com.clustercontrol.http.util.Response;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.util.ParallelExecution;
+import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -115,9 +109,10 @@ public class RunMonitorHttpScenario extends RunMonitor {
 	 *
 	 */
 	@Override
-	protected boolean runMonitorInfo() throws FacilityNotFound, MonitorNotFound, EntityExistsException, InvalidRole, HinemosUnknown {
+	protected List<OutputBasicInfo> runMonitorInfo() throws FacilityNotFound, MonitorNotFound, EntityExistsException, InvalidRole, HinemosUnknown {
 		m_log.debug("runMonitorInfo()");
 
+		List<OutputBasicInfo> ret = new ArrayList<>();
 		m_now = new Date(HinemosTime.currentTimeMillis());
 
 		m_priorityMap = new HashMap<Integer, ArrayList<String>>();
@@ -132,7 +127,7 @@ public class RunMonitorHttpScenario extends RunMonitor {
 			boolean run = this.setMonitorInfo(m_monitorTypeId, m_monitorId);
 			if(!run){
 				// 処理終了
-				return true;
+				return ret;
 			}
 
 			// 判定情報を設定
@@ -151,7 +146,7 @@ public class RunMonitorHttpScenario extends RunMonitor {
 				// 有効/無効フラグがtrueとなっているファシリティIDを取得する
 				facilityList = new RepositoryControllerBean().getExecTargetFacilityIdList(m_facilityId, m_monitor.getOwnerRoleId());
 				if (facilityList.size() == 0) {
-					return true;
+					return ret;
 				}
 
 				m_isNode = new RepositoryControllerBean().isNode(m_facilityId);
@@ -210,7 +205,7 @@ public class RunMonitorHttpScenario extends RunMonitor {
 				facilityList = new RepositoryControllerBean().getExecTargetFacilityIdList(m_facilityId, m_monitor.getOwnerRoleId());
 				if (facilityList.size() != 1
 						|| !facilityList.get(0).equals(m_facilityId) ) {
-					return true;
+					return ret;
 				}
 
 				m_isNode = new RepositoryControllerBean().isNode(m_facilityId);
@@ -275,7 +270,8 @@ public class RunMonitorHttpScenario extends RunMonitor {
 					// 監視結果を通知
 					if (!m_isMonitorJob) {
 						if(result.getMonitorFlg()){
-							notify(true, facilityId, result.getCheckResult(), new Date(m_nodeDate), result);
+							ret.add(createOutputBasicInfo(true, facilityId, result.getCheckResult(), new Date(m_nodeDate), result,
+									m_monitor));
 						}
 					} else {
 						m_monitorRunResultInfo = new MonitorRunResultInfo();
@@ -307,7 +303,7 @@ public class RunMonitorHttpScenario extends RunMonitor {
 			}
 			m_log.debug("monitor end : monitorTypeId : " + m_monitorTypeId + ", monitorId : " + m_monitorId);
 
-			return true;
+			return ret;
 
 		}
 		catch (EntityExistsException e) {
@@ -316,18 +312,15 @@ public class RunMonitorHttpScenario extends RunMonitor {
 		catch (FacilityNotFound e) {
 			throw e;
 		}
-		catch (InvalidRole e) {
-			throw e;
-		}
 		catch (InterruptedException e) {
 			m_log.info("runMonitorInfo() monitorTypeId = " + m_monitorTypeId + ", monitorId = " + m_monitorId + " : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			return false;
+			throw new HinemosUnknown(e);
 		}
 		catch (ExecutionException e) {
 			m_log.info("runMonitorInfo() monitorTypeId = " + m_monitorTypeId + ", monitorId = " + m_monitorId + " : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			return false;
+			throw new HinemosUnknown(e);
 		}
 	}
 
@@ -374,9 +367,9 @@ public class RunMonitorHttpScenario extends RunMonitor {
 				.setUserAgent(m_httpScenarioCheckInfo.getUserAgent())
 				.setConnectTimeout(m_httpScenarioCheckInfo.getConnectTimeout() == null ? 0: m_httpScenarioCheckInfo.getConnectTimeout())
 				.setRequestTimeout(m_httpScenarioCheckInfo.getRequestTimeout() == null ? 0: m_httpScenarioCheckInfo.getRequestTimeout())
-				.setCancelProxyCache(HinemosPropertyUtil.getHinemosPropertyBool("monitor.http.scenario.disable.proxy.cache", true))
+				.setCancelProxyCache(HinemosPropertyCommon.monitor_http_scenario_disable_proxy_cache.getBooleanValue())
 				.setKeepAlive(true)
-				.setNeedAuthSSLCert(! HinemosPropertyUtil.getHinemosPropertyBool("monitor.http.ssl.trustall", true));
+				.setNeedAuthSSLCert(! HinemosPropertyCommon.monitor_http_ssl_trustall.getBooleanValue());
 			if (m_httpScenarioCheckInfo.getProxyFlg()) {
 				builder
 				.setProxyURL(m_httpScenarioCheckInfo.getProxyUrl())
@@ -993,6 +986,11 @@ public class RunMonitorHttpScenario extends RunMonitor {
 
 	@Override
 	public int getCheckResult(boolean ret) {
+		throw new UnsupportedOperationException("forbidden to call getCheckResult() method");
+	}
+
+	@Override
+	public int getCheckResult(boolean ret, Object value) {
 		throw new UnsupportedOperationException("forbidden to call getCheckResult() method");
 	}
 

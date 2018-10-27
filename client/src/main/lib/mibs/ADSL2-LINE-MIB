@@ -1,0 +1,3430 @@
+   ADSL2-LINE-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+      MODULE-IDENTITY,
+      OBJECT-TYPE,
+      transmission,
+      Unsigned32,
+      NOTIFICATION-TYPE,
+      Integer32,
+      Counter32
+         FROM SNMPv2-SMI
+
+      ifIndex
+         FROM IF-MIB
+
+      TruthValue,
+      RowStatus
+         FROM SNMPv2-TC
+
+      SnmpAdminString
+         FROM SNMP-FRAMEWORK-MIB
+
+      HCPerfIntervalThreshold,
+      HCPerfTimeElapsed
+         FROM  HC-PerfHist-TC-MIB   -- [RFC3705]
+
+      Adsl2Unit,
+      Adsl2Direction,
+      Adsl2TransmissionModeType,
+      Adsl2RaMode,
+      Adsl2InitResult,
+      Adsl2OperationModes,
+      Adsl2PowerMngState,
+      Adsl2ConfPmsForce,
+      Adsl2LConfProfPmMode,
+      Adsl2LineLdsf,
+      Adsl2LdsfResult,
+      Adsl2SymbolProtection,
+      Adsl2MaxBer,
+      Adsl2ScMaskDs,
+      Adsl2ScMaskUs,
+      Adsl2RfiDs,
+      Adsl2PsdMaskDs,
+      Adsl2PsdMaskUs,
+      Adsl2Tssi,
+      Adsl2LastTransmittedState,
+      Adsl2LineStatus,
+      Adsl2ChAtmStatus,
+
+
+
+
+
+      Adsl2ChPtmStatus
+             FROM   ADSL2-LINE-TC-MIB       -- [This document]
+
+      MODULE-COMPLIANCE,
+      OBJECT-GROUP,
+      NOTIFICATION-GROUP
+         FROM SNMPv2-CONF;
+
+   adsl2MIB MODULE-IDENTITY
+      LAST-UPDATED "200610040000Z" -- October 4th, 2006
+      ORGANIZATION "ADSLMIB Working Group"
+
+
+
+
+
+
+         ::= { transmission 238 }
+
+     adsl2            OBJECT IDENTIFIER ::= { adsl2MIB 1 }
+     adsl2Line          OBJECT IDENTIFIER ::= { adsl2 1 }
+     adsl2Status        OBJECT IDENTIFIER ::= { adsl2 2 }
+     adsl2Inventory     OBJECT IDENTIFIER ::= { adsl2 3 }
+     adsl2PM            OBJECT IDENTIFIER ::= { adsl2 4 }
+     adsl2Profile       OBJECT IDENTIFIER ::= { adsl2 5 }
+     adsl2Scalar        OBJECT IDENTIFIER ::= { adsl2 6 }
+     adsl2Notifications OBJECT IDENTIFIER ::= { adsl2 0 }
+     adsl2Conformance   OBJECT IDENTIFIER ::= { adsl2 7 }
+     adsl2PMLine      OBJECT IDENTIFIER ::= { adsl2PM 1 }
+     adsl2PMChannel   OBJECT IDENTIFIER ::= { adsl2PM 2 }
+     adsl2ProfileLine      OBJECT IDENTIFIER ::= { adsl2Profile 1 }
+     adsl2ProfileChannel   OBJECT IDENTIFIER ::= { adsl2Profile 2 }
+     adsl2ProfileAlarmConf OBJECT IDENTIFIER ::= { adsl2Profile 3 }
+     adsl2ScalarSC         OBJECT IDENTIFIER ::= { adsl2Scalar 1 }
+
+
+   adsl2LineTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2LineEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2Line 1 }
+
+   adsl2LineEntry  OBJECT-TYPE
+      SYNTAX      Adsl2LineEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex }
+      ::= { adsl2LineTable 1 }
+
+   Adsl2LineEntry  ::=
+      SEQUENCE {
+         adsl2LineCnfgTemplate            SnmpAdminString,
+         adsl2LineAlarmCnfgTemplate       SnmpAdminString,
+         adsl2LineCmndConfPmsf            Adsl2ConfPmsForce,
+         adsl2LineCmndConfLdsf            Adsl2LineLdsf,
+         adsl2LineCmndConfLdsfFailReason  Adsl2LdsfResult,
+         adsl2LineCmndAutomodeColdStart   TruthValue,
+         adsl2LineStatusAtuTransSys       Adsl2TransmissionModeType,
+         adsl2LineStatusPwrMngState       Adsl2PowerMngState,
+         adsl2LineStatusInitResult        Adsl2InitResult,
+         adsl2LineStatusLastStateDs       Adsl2LastTransmittedState,
+         adsl2LineStatusLastStateUs       Adsl2LastTransmittedState,
+         adsl2LineStatusAtur              Adsl2LineStatus,
+         adsl2LineStatusAtuc              Adsl2LineStatus,
+         adsl2LineStatusLnAttenDs         Unsigned32,
+         adsl2LineStatusLnAttenUs         Unsigned32,
+         adsl2LineStatusSigAttenDs        Unsigned32,
+         adsl2LineStatusSigAttenUs        Unsigned32,
+         adsl2LineStatusSnrMarginDs       Integer32,
+         adsl2LineStatusSnrMarginUs       Integer32,
+         adsl2LineStatusAttainableRateDs  Unsigned32,
+         adsl2LineStatusAttainableRateUs  Unsigned32,
+         adsl2LineStatusActPsdDs          Integer32,
+         adsl2LineStatusActPsdUs          Integer32,
+         adsl2LineStatusActAtpDs          Integer32,
+         adsl2LineStatusActAtpUs          Integer32
+      }
+
+   adsl2LineCnfgTemplate  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+      MAX-ACCESS  read-write
+      STATUS      current
+      DEFVAL       { "DEFVAL" }
+      ::= { adsl2LineEntry 1 }
+
+
+
+
+
+
+   adsl2LineAlarmCnfgTemplate  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+      MAX-ACCESS  read-write
+      STATUS      current
+      DEFVAL       { "DEFVAL" }
+      ::= { adsl2LineEntry 2 }
+
+   adsl2LineCmndConfPmsf  OBJECT-TYPE
+      SYNTAX      Adsl2ConfPmsForce
+      MAX-ACCESS  read-write
+      STATUS      current
+      DEFVAL       { l3toL0 }
+      ::= { adsl2LineEntry 3 }
+
+   adsl2LineCmndConfLdsf  OBJECT-TYPE
+      SYNTAX      Adsl2LineLdsf
+      MAX-ACCESS  read-write
+      STATUS      current
+      DEFVAL       { inhibit }
+
+
+
+
+
+      ::= { adsl2LineEntry 4 }
+
+   adsl2LineCmndConfLdsfFailReason  OBJECT-TYPE
+      SYNTAX      Adsl2LdsfResult
+      MAX-ACCESS  read-only
+      STATUS      current
+      DEFVAL       { none }
+      ::= { adsl2LineEntry 5 }
+
+      adsl2LineCmndAutomodeColdStart   OBJECT-TYPE
+         SYNTAX      TruthValue
+         MAX-ACCESS  read-write
+         STATUS      current
+
+         DEFVAL       { false }
+         ::= { adsl2LineEntry 6 }
+
+
+   adsl2LineStatusAtuTransSys  OBJECT-TYPE
+      SYNTAX      Adsl2TransmissionModeType
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 7 }
+
+   adsl2LineStatusPwrMngState  OBJECT-TYPE
+      SYNTAX      Adsl2PowerMngState
+      MAX-ACCESS  read-only
+      STATUS      current
+         ::= { adsl2LineEntry 8 }
+
+
+
+
+
+   adsl2LineStatusInitResult  OBJECT-TYPE
+      SYNTAX      Adsl2InitResult
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 9 }
+
+   adsl2LineStatusLastStateDs  OBJECT-TYPE
+      SYNTAX      Adsl2LastTransmittedState
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 10 }
+
+   adsl2LineStatusLastStateUs  OBJECT-TYPE
+      SYNTAX      Adsl2LastTransmittedState
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 11 }
+
+   adsl2LineStatusAtur  OBJECT-TYPE
+      SYNTAX      Adsl2LineStatus
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 12 }
+
+   adsl2LineStatusAtuc  OBJECT-TYPE
+      SYNTAX      Adsl2LineStatus
+      MAX-ACCESS  read-only
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2LineEntry 13 }
+
+   adsl2LineStatusLnAttenDs  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..1270 | 2147483646 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 14 }
+
+   adsl2LineStatusLnAttenUs  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..1270 | 2147483646 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 15 }
+
+   adsl2LineStatusSigAttenDs  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..1270 | 2147483646 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 16 }
+
+   adsl2LineStatusSigAttenUs  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..1270 | 2147483646 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 17 }
+
+   adsl2LineStatusSnrMarginDs  OBJECT-TYPE
+      SYNTAX      Integer32 (-640..630 | 2147483646 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 18 }
+
+   adsl2LineStatusSnrMarginUs  OBJECT-TYPE
+      SYNTAX      Integer32 (-640..630 | 2147483646 | 2147483647)
+
+
+
+
+
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 19 }
+
+   adsl2LineStatusAttainableRateDs  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "bits/second"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 20 }
+
+   adsl2LineStatusAttainableRateUs  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "bits/second"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 21 }
+
+   adsl2LineStatusActPsdDs OBJECT-TYPE
+      SYNTAX      Integer32 (-900..0 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 22 }
+
+   adsl2LineStatusActPsdUs OBJECT-TYPE
+      SYNTAX      Integer32 (-900..0 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 23 }
+
+   adsl2LineStatusActAtpDs  OBJECT-TYPE
+      SYNTAX      Integer32 (-310..310 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 24 }
+
+   adsl2LineStatusActAtpUs  OBJECT-TYPE
+      SYNTAX      Integer32 (-310..310 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineEntry 25 }
+
+
+   adsl2ChannelStatusTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2ChannelStatusEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2Status 1 }
+
+   adsl2ChannelStatusEntry  OBJECT-TYPE
+      SYNTAX      Adsl2ChannelStatusEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex, adsl2ChStatusUnit }
+      ::= { adsl2ChannelStatusTable 1 }
+
+   Adsl2ChannelStatusEntry  ::=
+      SEQUENCE {
+         adsl2ChStatusUnit                Adsl2Unit,
+         adsl2ChStatusChannelNum          Unsigned32,
+         adsl2ChStatusActDataRate         Unsigned32,
+         adsl2ChStatusPrevDataRate        Unsigned32,
+         adsl2ChStatusActDelay            Unsigned32,
+         adsl2ChStatusAtmStatus           Adsl2ChAtmStatus,
+         adsl2ChStatusPtmStatus           Adsl2ChPtmStatus
+      }
+
+   adsl2ChStatusUnit  OBJECT-TYPE
+      SYNTAX      Adsl2Unit
+      MAX-ACCESS  not-accessible
+
+
+
+
+
+      STATUS      current
+      ::= { adsl2ChannelStatusEntry 1 }
+
+   adsl2ChStatusChannelNum  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2ChannelStatusEntry 2 }
+
+   adsl2ChStatusActDataRate  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2ChannelStatusEntry 3 }
+
+   adsl2ChStatusPrevDataRate  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2ChannelStatusEntry 4 }
+
+   adsl2ChStatusActDelay  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..8176)
+      UNITS       "milliseconds"
+
+
+
+
+
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2ChannelStatusEntry 5 }
+
+   adsl2ChStatusAtmStatus  OBJECT-TYPE
+      SYNTAX      Adsl2ChAtmStatus
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2ChannelStatusEntry 6 }
+
+   adsl2ChStatusPtmStatus  OBJECT-TYPE
+      SYNTAX      Adsl2ChPtmStatus
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2ChannelStatusEntry 7 }
+
+
+
+   adsl2ScalarSCMaxInterfaces  OBJECT-TYPE
+
+
+
+
+
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2ScalarSC 1 }
+
+   adsl2ScalarSCAvailInterfaces  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2ScalarSC 2 }
+
+
+   adsl2SCStatusTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2SCStatusEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2Status 2 }
+
+   adsl2SCStatusEntry  OBJECT-TYPE
+      SYNTAX      Adsl2SCStatusEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex, adsl2SCStatusDirection }
+      ::= { adsl2SCStatusTable 1 }
+
+   Adsl2SCStatusEntry  ::=
+      SEQUENCE {
+         adsl2SCStatusDirection         Adsl2Direction,
+         adsl2SCStatusMtime             Unsigned32,
+         adsl2SCStatusSnr               OCTET STRING,
+         adsl2SCStatusBitsAlloc         OCTET STRING,
+         adsl2SCStatusGainAlloc         OCTET STRING,
+         adsl2SCStatusTssi              Adsl2Tssi,
+         adsl2SCStatusLinScale          Unsigned32,
+         adsl2SCStatusLinReal           OCTET STRING,
+         adsl2SCStatusLinImg            OCTET STRING,
+         adsl2SCStatusLogMt             Unsigned32,
+         adsl2SCStatusLog               OCTET STRING,
+         adsl2SCStatusQlnMt             Unsigned32,
+         adsl2SCStatusQln               OCTET STRING,
+         adsl2SCStatusLnAtten           Unsigned32,
+         adsl2SCStatusSigAtten          Unsigned32,
+         adsl2SCStatusSnrMargin         Integer32,
+         adsl2SCStatusAttainableRate    Unsigned32,
+         adsl2SCStatusActAtp            Integer32,
+         adsl2SCStatusRowStatus         RowStatus
+      }
+
+   adsl2SCStatusDirection  OBJECT-TYPE
+      SYNTAX      Adsl2Direction
+      MAX-ACCESS  not-accessible
+      STATUS      current
+
+
+
+
+
+        ::= { adsl2SCStatusEntry 1 }
+
+   adsl2SCStatusMtime  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "symbols"
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 2 }
+
+   adsl2SCStatusSnr  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(0..512))
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 3 }
+
+   adsl2SCStatusBitsAlloc  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(0..256))
+
+
+
+
+
+      UNITS       "bits"
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 4 }
+
+   adsl2SCStatusGainAlloc  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(0..1024))
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 5 }
+
+   adsl2SCStatusTssi  OBJECT-TYPE
+      SYNTAX      Adsl2Tssi
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 6 }
+
+   adsl2SCStatusLinScale  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 7 }
+
+   adsl2SCStatusLinReal  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(0..1024))
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 8 }
+
+   adsl2SCStatusLinImg  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(0..1024))
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 9 }
+
+   adsl2SCStatusLogMt  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+
+
+
+
+
+        ::= { adsl2SCStatusEntry 10 }
+
+   adsl2SCStatusLog  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(0..1024))
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 11 }
+
+   adsl2SCStatusQlnMt  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 12 }
+
+   adsl2SCStatusQln  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(0..512))
+      UNITS       "dBm/Hz"
+
+
+
+
+
+      MAX-ACCESS  read-only
+      STATUS      current
+        ::= { adsl2SCStatusEntry 13 }
+
+   adsl2SCStatusLnAtten  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..1270 | 2147483646 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2SCStatusEntry 14 }
+
+   adsl2SCStatusSigAtten  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..1270 | 2147483646 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2SCStatusEntry 15 }
+
+   adsl2SCStatusSnrMargin  OBJECT-TYPE
+      SYNTAX      Integer32 (-640..630 | 2147483646 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2SCStatusEntry 16 }
+
+   adsl2SCStatusAttainableRate  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "bits/second"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2SCStatusEntry 17 }
+
+   adsl2SCStatusActAtp  OBJECT-TYPE
+      SYNTAX      Integer32
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2SCStatusEntry 18 }
+
+   adsl2SCStatusRowStatus  OBJECT-TYPE
+      SYNTAX      RowStatus
+      MAX-ACCESS  read-create
+
+
+
+
+
+      STATUS      current
+      ::= { adsl2SCStatusEntry 19 }
+
+   adsl2LineInventoryTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2LineInventoryEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2Inventory 1 }
+
+   adsl2LineInventoryEntry  OBJECT-TYPE
+      SYNTAX      Adsl2LineInventoryEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex, adsl2LInvUnit }
+      ::= { adsl2LineInventoryTable 1 }
+
+   Adsl2LineInventoryEntry  ::=
+      SEQUENCE {
+         adsl2LInvUnit                      Adsl2Unit,
+         adsl2LInvG994VendorId              OCTET STRING,
+         adsl2LInvSystemVendorId            OCTET STRING,
+         adsl2LInvVersionNumber             OCTET STRING,
+         adsl2LInvSerialNumber              OCTET STRING,
+         adsl2LInvSelfTestResult            Unsigned32,
+         adsl2LInvTransmissionCapabilities  Adsl2TransmissionModeType
+      }
+
+   adsl2LInvUnit  OBJECT-TYPE
+      SYNTAX      Adsl2Unit
+      MAX-ACCESS  not-accessible
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2LineInventoryEntry 1 }
+
+   adsl2LInvG994VendorId  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(8))
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineInventoryEntry 2 }
+
+   adsl2LInvSystemVendorId  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(8))
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineInventoryEntry 3 }
+
+   adsl2LInvVersionNumber  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(0..16))
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineInventoryEntry 4 }
+
+   adsl2LInvSerialNumber  OBJECT-TYPE
+      SYNTAX      OCTET STRING  (SIZE(0..32))
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineInventoryEntry 5 }
+
+   adsl2LInvSelfTestResult  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineInventoryEntry 6 }
+
+   adsl2LInvTransmissionCapabilities  OBJECT-TYPE
+      SYNTAX      Adsl2TransmissionModeType
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2LineInventoryEntry 7 }
+
+
+   adsl2LineConfTemplateTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2LineConfTemplateEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2ProfileLine 1 }
+
+   adsl2LineConfTemplateEntry  OBJECT-TYPE
+
+
+
+
+
+      SYNTAX      Adsl2LineConfTemplateEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { adsl2LConfTempTemplateName }
+      ::= { adsl2LineConfTemplateTable 1 }
+
+   Adsl2LineConfTemplateEntry  ::=
+      SEQUENCE {
+         adsl2LConfTempTemplateName      SnmpAdminString,
+         adsl2LConfTempLineProfile       SnmpAdminString,
+         adsl2LConfTempChan1ConfProfile  SnmpAdminString,
+         adsl2LConfTempChan1RaRatioDs    Unsigned32,
+         adsl2LConfTempChan1RaRatioUs    Unsigned32,
+         adsl2LConfTempChan2ConfProfile  SnmpAdminString,
+         adsl2LConfTempChan2RaRatioDs    Unsigned32,
+         adsl2LConfTempChan2RaRatioUs    Unsigned32,
+         adsl2LConfTempChan3ConfProfile  SnmpAdminString,
+         adsl2LConfTempChan3RaRatioDs    Unsigned32,
+         adsl2LConfTempChan3RaRatioUs    Unsigned32,
+         adsl2LConfTempChan4ConfProfile  SnmpAdminString,
+         adsl2LConfTempChan4RaRatioDs    Unsigned32,
+         adsl2LConfTempChan4RaRatioUs    Unsigned32,
+         adsl2LConfTempRowStatus         RowStatus
+      }
+
+   adsl2LConfTempTemplateName  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2LineConfTemplateEntry 1 }
+
+   adsl2LConfTempLineProfile  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+      MAX-ACCESS  read-create
+      STATUS      current
+
+
+
+
+
+      DEFVAL       { "DEFVAL" }
+      ::= { adsl2LineConfTemplateEntry 2 }
+
+   adsl2LConfTempChan1ConfProfile  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { "DEFVAL" }
+      ::= { adsl2LineConfTemplateEntry 3 }
+
+   adsl2LConfTempChan1RaRatioDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..100)
+      UNITS       "percent"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 100 }
+      ::= { adsl2LineConfTemplateEntry 4 }
+
+   adsl2LConfTempChan1RaRatioUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..100)
+      UNITS       "percent"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 100 }
+      ::= { adsl2LineConfTemplateEntry 5 }
+
+   adsl2LConfTempChan2ConfProfile  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(0..32))
+      MAX-ACCESS  read-create
+      STATUS      current
+
+      DEFVAL       { "" }
+      ::= { adsl2LineConfTemplateEntry 6 }
+
+   adsl2LConfTempChan2RaRatioDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..100)
+      UNITS       "percent"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 0 }
+      ::= { adsl2LineConfTemplateEntry 7 }
+
+   adsl2LConfTempChan2RaRatioUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..100)
+      UNITS       "percent"
+
+
+
+
+
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 0 }
+      ::= { adsl2LineConfTemplateEntry 8 }
+
+   adsl2LConfTempChan3ConfProfile  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(0..32))
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { "" }
+      ::= { adsl2LineConfTemplateEntry 9 }
+
+   adsl2LConfTempChan3RaRatioDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..100)
+      UNITS       "percent"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 0 }
+      ::= { adsl2LineConfTemplateEntry 10 }
+
+   adsl2LConfTempChan3RaRatioUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..100)
+      UNITS       "percent"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 0 }
+      ::= { adsl2LineConfTemplateEntry 11 }
+
+   adsl2LConfTempChan4ConfProfile  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(0..32))
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { "" }
+      ::= { adsl2LineConfTemplateEntry 12 }
+
+   adsl2LConfTempChan4RaRatioDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..100)
+      UNITS       "percent"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 0 }
+      ::= { adsl2LineConfTemplateEntry 13 }
+
+   adsl2LConfTempChan4RaRatioUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..100)
+      UNITS       "percent"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 0 }
+      ::= { adsl2LineConfTemplateEntry 14 }
+
+   adsl2LConfTempRowStatus  OBJECT-TYPE
+      SYNTAX      RowStatus
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2LineConfTemplateEntry 15 }
+
+
+
+
+
+
+   adsl2LineConfProfTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2LineConfProfEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2ProfileLine 2 }
+
+   adsl2LineConfProfEntry  OBJECT-TYPE
+      SYNTAX      Adsl2LineConfProfEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { adsl2LConfProfProfileName }
+      ::= { adsl2LineConfProfTable 1 }
+
+   Adsl2LineConfProfEntry  ::=
+      SEQUENCE {
+         adsl2LConfProfProfileName          SnmpAdminString,
+         adsl2LConfProfScMaskDs             Adsl2ScMaskDs,
+         adsl2LConfProfScMaskUs             Adsl2ScMaskUs,
+         adsl2LConfProfRfiBandsDs           Adsl2RfiDs,
+         adsl2LConfProfRaModeDs             Adsl2RaMode,
+         adsl2LConfProfRaModeUs             Adsl2RaMode,
+         adsl2LConfProfRaUsNrmDs            Unsigned32,
+         adsl2LConfProfRaUsNrmUs            Unsigned32,
+         adsl2LConfProfRaUsTimeDs           Unsigned32,
+         adsl2LConfProfRaUsTimeUs           Unsigned32,
+         adsl2LConfProfRaDsNrmsDs           Unsigned32,
+         adsl2LConfProfRaDsNrmsUs           Unsigned32,
+         adsl2LConfProfRaDsTimeDs           Unsigned32,
+         adsl2LConfProfRaDsTimeUs           Unsigned32,
+         adsl2LConfProfTargetSnrmDs         Unsigned32,
+         adsl2LConfProfTargetSnrmUs         Unsigned32,
+         adsl2LConfProfMaxSnrmDs            Unsigned32,
+
+
+
+
+
+         adsl2LConfProfMaxSnrmUs            Unsigned32,
+         adsl2LConfProfMinSnrmDs            Unsigned32,
+         adsl2LConfProfMinSnrmUs            Unsigned32,
+         adsl2LConfProfMsgMinUs             Unsigned32,
+         adsl2LConfProfMsgMinDs             Unsigned32,
+         adsl2LConfProfAtuTransSysEna       Adsl2TransmissionModeType,
+         adsl2LConfProfPmMode               Adsl2LConfProfPmMode,
+         adsl2LConfProfL0Time               Unsigned32,
+         adsl2LConfProfL2Time               Unsigned32,
+         adsl2LConfProfL2Atpr               Unsigned32,
+         adsl2LConfProfL2Atprt              Unsigned32,
+         adsl2LConfProfRowStatus            RowStatus
+      }
+
+   adsl2LConfProfProfileName  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+      MAX-ACCESS  not-accessible
+      STATUS      current
+        ::= { adsl2LineConfProfEntry 1 }
+
+   adsl2LConfProfScMaskDs  OBJECT-TYPE
+      SYNTAX      Adsl2ScMaskDs
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2LineConfProfEntry 2 }
+
+   adsl2LConfProfScMaskUs  OBJECT-TYPE
+      SYNTAX      Adsl2ScMaskUs
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2LineConfProfEntry 3 }
+
+   adsl2LConfProfRfiBandsDs  OBJECT-TYPE
+      SYNTAX      Adsl2RfiDs
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2LineConfProfEntry 4 }
+
+   adsl2LConfProfRaModeDs  OBJECT-TYPE
+      SYNTAX      Adsl2RaMode
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { manual }
+      ::= { adsl2LineConfProfEntry 5 }
+
+   adsl2LConfProfRaModeUs  OBJECT-TYPE
+      SYNTAX      Adsl2RaMode
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { manual }
+      ::= { adsl2LineConfProfEntry 6 }
+
+   adsl2LConfProfRaUsNrmDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..310)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 10 }
+      ::= { adsl2LineConfProfEntry 7 }
+
+   adsl2LConfProfRaUsNrmUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..310)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 10 }
+      ::= { adsl2LineConfProfEntry 8 }
+
+   adsl2LConfProfRaUsTimeDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..16383)
+      UNITS       "seconds"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 3600 }
+      ::= { adsl2LineConfProfEntry 9 }
+
+   adsl2LConfProfRaUsTimeUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..16383)
+      UNITS       "seconds"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 3600 }
+      ::= { adsl2LineConfProfEntry 10 }
+
+   adsl2LConfProfRaDsNrmsDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..310)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 10 }
+      ::= { adsl2LineConfProfEntry 11 }
+
+   adsl2LConfProfRaDsNrmsUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..310)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 10 }
+      ::= { adsl2LineConfProfEntry 12 }
+
+   adsl2LConfProfRaDsTimeDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..16383)
+      UNITS       "seconds"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 3600 }
+      ::= { adsl2LineConfProfEntry 13 }
+
+   adsl2LConfProfRaDsTimeUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..16383)
+      UNITS       "seconds"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 3600 }
+      ::= { adsl2LineConfProfEntry 14 }
+
+   adsl2LConfProfTargetSnrmDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..310)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 60 }
+      ::= { adsl2LineConfProfEntry 15 }
+
+   adsl2LConfProfTargetSnrmUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..310)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 60 }
+      ::= { adsl2LineConfProfEntry 16 }
+
+   adsl2LConfProfMaxSnrmDs  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..310 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 310 }
+      ::= { adsl2LineConfProfEntry 17 }
+
+   adsl2LConfProfMaxSnrmUs  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..310 | 2147483647)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 310 }
+      ::= { adsl2LineConfProfEntry 18 }
+
+   adsl2LConfProfMinSnrmDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..310)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 10 }
+      ::= { adsl2LineConfProfEntry 19 }
+
+   adsl2LConfProfMinSnrmUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..310)
+      UNITS       "0.1 dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 10 }
+      ::= { adsl2LineConfProfEntry 20 }
+
+
+
+
+
+
+   adsl2LConfProfMsgMinUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(4000..63000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 4000 }
+     ::= { adsl2LineConfProfEntry 21 }
+
+   adsl2LConfProfMsgMinDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(4000..63000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 4000 }
+      ::= { adsl2LineConfProfEntry 22 }
+
+   adsl2LConfProfAtuTransSysEna  OBJECT-TYPE
+      SYNTAX      Adsl2TransmissionModeType
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2LineConfProfEntry 23 }
+
+   adsl2LConfProfPmMode  OBJECT-TYPE
+      SYNTAX      Adsl2LConfProfPmMode
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL  { { allowTransitionsToIdle, allowTransitionsToLowPower } }
+      ::= { adsl2LineConfProfEntry 24 }
+
+   adsl2LConfProfL0Time  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..255)
+      UNITS       "seconds"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 255 }
+      ::= { adsl2LineConfProfEntry 25 }
+
+   adsl2LConfProfL2Time  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..255)
+      UNITS       "seconds"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 255 }
+      ::= { adsl2LineConfProfEntry 26 }
+
+   adsl2LConfProfL2Atpr  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..31)
+      UNITS       "dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+
+
+
+
+
+      DEFVAL       { 10 }
+      ::= { adsl2LineConfProfEntry 27 }
+
+   adsl2LConfProfL2Atprt  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..31)
+      UNITS       "dB"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 31 }
+      ::= { adsl2LineConfProfEntry 28 }
+
+   adsl2LConfProfRowStatus  OBJECT-TYPE
+      SYNTAX      RowStatus
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2LineConfProfEntry 29 }
+
+
+   adsl2LineConfProfModeSpecTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2LineConfProfModeSpecEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2ProfileLine 3 }
+
+   adsl2LineConfProfModeSpecEntry  OBJECT-TYPE
+      SYNTAX      Adsl2LineConfProfModeSpecEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { adsl2LConfProfProfileName, adsl2LConfProfAdslMode }
+      ::= { adsl2LineConfProfModeSpecTable 1 }
+
+   Adsl2LineConfProfModeSpecEntry  ::=
+      SEQUENCE {
+         adsl2LConfProfAdslMode             Adsl2OperationModes,
+         adsl2LConfProfMaxNomPsdDs          Integer32,
+         adsl2LConfProfMaxNomPsdUs          Integer32,
+         adsl2LConfProfMaxNomAtpDs          Unsigned32,
+         adsl2LConfProfMaxNomAtpUs          Unsigned32,
+         adsl2LConfProfMaxAggRxPwrUs        Integer32,
+         adsl2LConfProfPsdMaskDs            Adsl2PsdMaskDs,
+
+
+
+
+
+         adsl2LConfProfPsdMaskUs            Adsl2PsdMaskUs,
+         adsl2LConfProfPsdMaskSelectUs      Unsigned32,
+         adsl2LConfProfModeSpecRowStatus    RowStatus
+      }
+
+   adsl2LConfProfAdslMode    OBJECT-TYPE
+      SYNTAX      Adsl2OperationModes
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2LineConfProfModeSpecEntry 1 }
+
+   adsl2LConfProfMaxNomPsdDs  OBJECT-TYPE
+      SYNTAX      Integer32(-600..-300)
+      UNITS       "0.1 dBm/Hz"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { -300 }
+     ::= { adsl2LineConfProfModeSpecEntry 2 }
+
+   adsl2LConfProfMaxNomPsdUs  OBJECT-TYPE
+      SYNTAX      Integer32(-600..-300)
+      UNITS       "0.1 dBm/Hz"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { -300 }
+      ::= { adsl2LineConfProfModeSpecEntry 3 }
+
+   adsl2LConfProfMaxNomAtpDs  OBJECT-TYPE
+
+
+
+
+
+      SYNTAX      Unsigned32 (0..255)
+      UNITS       "0.1 dBm"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 255 }
+      ::= { adsl2LineConfProfModeSpecEntry 4 }
+
+   adsl2LConfProfMaxNomAtpUs  OBJECT-TYPE
+      SYNTAX      Unsigned32 (0..255)
+      UNITS       "0.1 dBm"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 255 }
+      ::= { adsl2LineConfProfModeSpecEntry 5 }
+
+   adsl2LConfProfMaxAggRxPwrUs  OBJECT-TYPE
+      SYNTAX      Integer32(-255..255 | 2147483647)
+      UNITS       "0.1 dBm"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 255 }
+      ::= { adsl2LineConfProfModeSpecEntry 6 }
+
+   adsl2LConfProfPsdMaskDs   OBJECT-TYPE
+      SYNTAX      Adsl2PsdMaskDs
+      MAX-ACCESS  read-create
+      STATUS      current
+
+
+
+
+
+        ::= { adsl2LineConfProfModeSpecEntry 7 }
+
+   adsl2LConfProfPsdMaskUs   OBJECT-TYPE
+      SYNTAX      Adsl2PsdMaskUs
+      MAX-ACCESS  read-create
+      STATUS      current
+        ::= { adsl2LineConfProfModeSpecEntry 8 }
+
+   adsl2LConfProfPsdMaskSelectUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(1..9)
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { 1 }
+       ::= { adsl2LineConfProfModeSpecEntry 9 }
+
+   adsl2LConfProfModeSpecRowStatus  OBJECT-TYPE
+      SYNTAX      RowStatus
+      MAX-ACCESS  read-create
+      STATUS      current
+
+      ::= { adsl2LineConfProfModeSpecEntry 10 }
+
+   adsl2ChConfProfileTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2ChConfProfileEntry
+      MAX-ACCESS  not-accessible
+
+
+
+
+
+      STATUS      current
+      ::= { adsl2ProfileChannel 1 }
+
+   adsl2ChConfProfileEntry  OBJECT-TYPE
+      SYNTAX      Adsl2ChConfProfileEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { adsl2ChConfProfProfileName }
+      ::= { adsl2ChConfProfileTable 1 }
+
+   Adsl2ChConfProfileEntry  ::=
+      SEQUENCE {
+         adsl2ChConfProfProfileName          SnmpAdminString,
+         adsl2ChConfProfMinDataRateDs        Unsigned32,
+         adsl2ChConfProfMinDataRateUs        Unsigned32,
+         adsl2ChConfProfMinResDataRateDs     Unsigned32,
+         adsl2ChConfProfMinResDataRateUs     Unsigned32,
+         adsl2ChConfProfMaxDataRateDs        Unsigned32,
+         adsl2ChConfProfMaxDataRateUs        Unsigned32,
+         adsl2ChConfProfMinDataRateLowPwrDs  Unsigned32,
+         adsl2ChConfProfMaxDelayDs           Unsigned32,
+         adsl2ChConfProfMaxDelayUs           Unsigned32,
+         adsl2ChConfProfMinProtectionDs      Adsl2SymbolProtection,
+         adsl2ChConfProfMinProtectionUs      Adsl2SymbolProtection,
+         adsl2ChConfProfMaxBerDs             Adsl2MaxBer,
+         adsl2ChConfProfMaxBerUs             Adsl2MaxBer,
+         adsl2ChConfProfUsDataRateDs         Unsigned32,
+         adsl2ChConfProfDsDataRateDs         Unsigned32,
+         adsl2ChConfProfUsDataRateUs         Unsigned32,
+         adsl2ChConfProfDsDataRateUs         Unsigned32,
+         adsl2ChConfProfImaEnabled           TruthValue,
+         adsl2ChConfProfRowStatus            RowStatus
+      }
+
+   adsl2ChConfProfProfileName  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+
+
+
+
+
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 1 }
+
+   adsl2ChConfProfMinDataRateDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 2 }
+
+   adsl2ChConfProfMinDataRateUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 3 }
+
+   adsl2ChConfProfMinResDataRateDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 4 }
+
+   adsl2ChConfProfMinResDataRateUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 5 }
+
+   adsl2ChConfProfMaxDataRateDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 6 }
+
+   adsl2ChConfProfMaxDataRateUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 7 }
+
+   adsl2ChConfProfMinDataRateLowPwrDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 8 }
+
+   adsl2ChConfProfMaxDelayDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..63)
+      UNITS       "milliseconds"
+      MAX-ACCESS  read-create
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2ChConfProfileEntry 9 }
+
+   adsl2ChConfProfMaxDelayUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..63)
+      UNITS       "milliseconds"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 10 }
+
+   adsl2ChConfProfMinProtectionDs  OBJECT-TYPE
+      SYNTAX      Adsl2SymbolProtection
+      UNITS       "symbols"
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { noProtection }
+      ::= { adsl2ChConfProfileEntry 11 }
+
+   adsl2ChConfProfMinProtectionUs  OBJECT-TYPE
+      SYNTAX      Adsl2SymbolProtection
+      UNITS       "symbols"
+
+
+
+
+
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { noProtection }
+      ::= { adsl2ChConfProfileEntry 12 }
+
+   adsl2ChConfProfMaxBerDs  OBJECT-TYPE
+      SYNTAX      Adsl2MaxBer
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { eminus5 }
+     ::= { adsl2ChConfProfileEntry 13 }
+
+   adsl2ChConfProfMaxBerUs  OBJECT-TYPE
+      SYNTAX      Adsl2MaxBer
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { eminus5 }
+      ::= { adsl2ChConfProfileEntry 14 }
+
+   adsl2ChConfProfUsDataRateDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2ChConfProfileEntry 15 }
+
+   adsl2ChConfProfDsDataRateDs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 16 }
+
+   adsl2ChConfProfUsDataRateUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 17 }
+
+   adsl2ChConfProfDsDataRateUs  OBJECT-TYPE
+      SYNTAX      Unsigned32(0..200000000)
+      UNITS       "bits/second"
+      MAX-ACCESS  read-create
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2ChConfProfileEntry 18 }
+
+   adsl2ChConfProfImaEnabled  OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { false }
+    ::= { adsl2ChConfProfileEntry 19 }
+
+   adsl2ChConfProfRowStatus  OBJECT-TYPE
+      SYNTAX      RowStatus
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2ChConfProfileEntry 20 }
+
+   adsl2LineAlarmConfTemplateTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2LineAlarmConfTemplateEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2ProfileAlarmConf 1 }
+
+
+
+
+
+
+   adsl2LineAlarmConfTemplateEntry  OBJECT-TYPE
+      SYNTAX      Adsl2LineAlarmConfTemplateEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { adsl2LAlarmConfTempTemplateName }
+      ::= { adsl2LineAlarmConfTemplateTable 1 }
+
+   Adsl2LineAlarmConfTemplateEntry  ::=
+      SEQUENCE {
+         adsl2LAlarmConfTempTemplateName      SnmpAdminString,
+         adsl2LAlarmConfTempLineProfile       SnmpAdminString,
+         adsl2LAlarmConfTempChan1ConfProfile  SnmpAdminString,
+         adsl2LAlarmConfTempChan2ConfProfile  SnmpAdminString,
+         adsl2LAlarmConfTempChan3ConfProfile  SnmpAdminString,
+         adsl2LAlarmConfTempChan4ConfProfile  SnmpAdminString,
+         adsl2LAlarmConfTempRowStatus         RowStatus
+      }
+
+   adsl2LAlarmConfTempTemplateName  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2LineAlarmConfTemplateEntry 1 }
+
+   adsl2LAlarmConfTempLineProfile  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { "DEFVAL" }
+      ::= { adsl2LineAlarmConfTemplateEntry 2 }
+
+   adsl2LAlarmConfTempChan1ConfProfile  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(1..32))
+
+
+
+
+
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { "DEFVAL" }
+      ::= { adsl2LineAlarmConfTemplateEntry 3 }
+
+   adsl2LAlarmConfTempChan2ConfProfile  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(0..32))
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { "" }
+      ::= { adsl2LineAlarmConfTemplateEntry 4 }
+
+   adsl2LAlarmConfTempChan3ConfProfile  OBJECT-TYPE
+      SYNTAX      SnmpAdminString (SIZE(0..32))
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { "" }
+      ::= { adsl2LineAlarmConfTemplateEntry 5 }
+
+   adsl2LAlarmConfTempChan4ConfProfile  OBJECT-TYPE
+
+
+
+
+
+      SYNTAX      SnmpAdminString (SIZE(0..32))
+      MAX-ACCESS  read-create
+      STATUS      current
+      DEFVAL       { "" }
+      ::= { adsl2LineAlarmConfTemplateEntry 6 }
+
+   adsl2LAlarmConfTempRowStatus  OBJECT-TYPE
+      SYNTAX      RowStatus
+      MAX-ACCESS  read-create
+      STATUS      current
+      ::= { adsl2LineAlarmConfTemplateEntry 7 }
+
+
+   adsl2LineAlarmConfProfileTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  Adsl2LineAlarmConfProfileEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+
+
+
+
+
+        ::= { adsl2ProfileAlarmConf 2 }
+
+   adsl2LineAlarmConfProfileEntry  OBJECT-TYPE
+        SYNTAX      Adsl2LineAlarmConfProfileEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX  { adsl2LineAlarmConfProfileName }
+        ::= { adsl2LineAlarmConfProfileTable 1 }
+
+   Adsl2LineAlarmConfProfileEntry ::=
+        SEQUENCE {
+        adsl2LineAlarmConfProfileName                SnmpAdminString,
+        adsl2LineAlarmConfProfileAtucThresh15MinFecs
+                                             HCPerfIntervalThreshold,
+        adsl2LineAlarmConfProfileAtucThresh15MinEs
+                                             HCPerfIntervalThreshold,
+        adsl2LineAlarmConfProfileAtucThresh15MinSes
+                                              HCPerfIntervalThreshold,
+        adsl2LineAlarmConfProfileAtucThresh15MinLoss
+                                              HCPerfIntervalThreshold,
+        adsl2LineAlarmConfProfileAtucThresh15MinUas
+                                              HCPerfIntervalThreshold,
+        adsl2LineAlarmConfProfileAturThresh15MinFecs
+                                              HCPerfIntervalThreshold,
+        adsl2LineAlarmConfProfileAturThresh15MinEs
+                                              HCPerfIntervalThreshold,
+        adsl2LineAlarmConfProfileAturThresh15MinSes
+                                              HCPerfIntervalThreshold,
+        adsl2LineAlarmConfProfileAturThresh15MinLoss
+                                              HCPerfIntervalThreshold,
+        adsl2LineAlarmConfProfileAturThresh15MinUas
+                                              HCPerfIntervalThreshold,
+
+        adsl2LineAlarmConfProfileThresh15MinFailedFullInt   Unsigned32,
+        adsl2LineAlarmConfProfileThresh15MinFailedShrtInt   Unsigned32,
+
+        adsl2LineAlarmConfProfileRowStatus                   RowStatus
+        }
+
+   adsl2LineAlarmConfProfileName  OBJECT-TYPE
+        SYNTAX      SnmpAdminString (SIZE(1..32))
+
+
+
+
+
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { adsl2LineAlarmConfProfileEntry 1 }
+
+   adsl2LineAlarmConfProfileAtucThresh15MinFecs  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 2 }
+
+   adsl2LineAlarmConfProfileAtucThresh15MinEs  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 3 }
+
+   adsl2LineAlarmConfProfileAtucThresh15MinSes  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 4 }
+
+
+
+
+
+
+   adsl2LineAlarmConfProfileAtucThresh15MinLoss  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 5 }
+
+   adsl2LineAlarmConfProfileAtucThresh15MinUas  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 6 }
+
+   adsl2LineAlarmConfProfileAturThresh15MinFecs  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 7 }
+
+   adsl2LineAlarmConfProfileAturThresh15MinEs  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 8 }
+
+   adsl2LineAlarmConfProfileAturThresh15MinSes  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 9 }
+
+   adsl2LineAlarmConfProfileAturThresh15MinLoss  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 10 }
+
+   adsl2LineAlarmConfProfileAturThresh15MinUas  OBJECT-TYPE
+        SYNTAX      HCPerfIntervalThreshold
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+
+
+
+
+
+        ::= { adsl2LineAlarmConfProfileEntry 11 }
+
+   adsl2LineAlarmConfProfileThresh15MinFailedFullInt  OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 12 }
+
+   adsl2LineAlarmConfProfileThresh15MinFailedShrtInt  OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2LineAlarmConfProfileEntry 13 }
+
+   adsl2LineAlarmConfProfileRowStatus  OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { adsl2LineAlarmConfProfileEntry 14 }
+
+
+
+
+
+
+
+
+   adsl2ChAlarmConfProfileTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE  OF  Adsl2ChAlarmConfProfileEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { adsl2ProfileAlarmConf 3 }
+
+   adsl2ChAlarmConfProfileEntry  OBJECT-TYPE
+        SYNTAX      Adsl2ChAlarmConfProfileEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX  { adsl2ChAlarmConfProfileName }
+        ::= { adsl2ChAlarmConfProfileTable 1 }
+
+   Adsl2ChAlarmConfProfileEntry ::=
+        SEQUENCE {
+        adsl2ChAlarmConfProfileName
+                                                        SnmpAdminString,
+        adsl2ChAlarmConfProfileAtucThresh15MinCodingViolations
+                                                        Unsigned32,
+        adsl2ChAlarmConfProfileAtucThresh15MinCorrected Unsigned32,
+        adsl2ChAlarmConfProfileAturThresh15MinCodingViolations
+                                                        Unsigned32,
+        adsl2ChAlarmConfProfileAturThresh15MinCorrected Unsigned32,
+        adsl2ChAlarmConfProfileRowStatus                RowStatus
+        }
+
+   adsl2ChAlarmConfProfileName  OBJECT-TYPE
+        SYNTAX      SnmpAdminString (SIZE(1..32))
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { adsl2ChAlarmConfProfileEntry 1 }
+
+
+
+
+
+
+   adsl2ChAlarmConfProfileAtucThresh15MinCodingViolations OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2ChAlarmConfProfileEntry 2 }
+
+   adsl2ChAlarmConfProfileAtucThresh15MinCorrected  OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2ChAlarmConfProfileEntry 3 }
+
+   adsl2ChAlarmConfProfileAturThresh15MinCodingViolations  OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-create
+        STATUS      current
+      DEFVAL       { 0 }
+        ::= { adsl2ChAlarmConfProfileEntry 4 }
+
+   adsl2ChAlarmConfProfileAturThresh15MinCorrected  OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-create
+        STATUS      current
+
+
+
+
+
+      DEFVAL       { 0 }
+        ::= { adsl2ChAlarmConfProfileEntry 5 }
+
+   adsl2ChAlarmConfProfileRowStatus  OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { adsl2ChAlarmConfProfileEntry 6 }
+
+   adsl2PMLineCurrTable  OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2PMLineCurrEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLine 1 }
+
+   adsl2PMLineCurrEntry  OBJECT-TYPE
+      SYNTAX      Adsl2PMLineCurrEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex, adsl2PMLCurrUnit }
+      ::= { adsl2PMLineCurrTable 1 }
+
+
+
+
+
+   Adsl2PMLineCurrEntry  ::=
+      SEQUENCE {
+         adsl2PMLCurrUnit                    Adsl2Unit,
+         adsl2PMLCurrValidIntervals          Unsigned32,
+         adsl2PMLCurrInvalidIntervals        Unsigned32,
+         adsl2PMLCurr15MTimeElapsed          HCPerfTimeElapsed,
+         adsl2PMLCurr15MFecs                 Counter32,
+         adsl2PMLCurr15MEs                   Counter32,
+         adsl2PMLCurr15MSes                  Counter32,
+         adsl2PMLCurr15MLoss                 Counter32,
+         adsl2PMLCurr15MUas                  Counter32,
+         adsl2PMLCurr1DayValidIntervals      Unsigned32,
+         adsl2PMLCurr1DayInvalidIntervals    Unsigned32,
+         adsl2PMLCurr1DayTimeElapsed         HCPerfTimeElapsed,
+         adsl2PMLCurr1DayFecs                Counter32,
+         adsl2PMLCurr1DayEs                  Counter32,
+         adsl2PMLCurr1DaySes                 Counter32,
+         adsl2PMLCurr1DayLoss                Counter32,
+         adsl2PMLCurr1DayUas                 Counter32
+      }
+
+   adsl2PMLCurrUnit  OBJECT-TYPE
+      SYNTAX      Adsl2Unit
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 1 }
+
+   adsl2PMLCurrValidIntervals  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 2 }
+
+   adsl2PMLCurrInvalidIntervals  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 3 }
+
+   adsl2PMLCurr15MTimeElapsed  OBJECT-TYPE
+      SYNTAX      HCPerfTimeElapsed
+      UNITS       "seconds"
+
+
+
+
+
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 4 }
+
+   adsl2PMLCurr15MFecs  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 5 }
+
+   adsl2PMLCurr15MEs  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 6 }
+
+   adsl2PMLCurr15MSes  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2PMLineCurrEntry 7 }
+
+   adsl2PMLCurr15MLoss  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 8 }
+
+   adsl2PMLCurr15MUas  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 9 }
+
+   adsl2PMLCurr1DayValidIntervals  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 10 }
+
+   adsl2PMLCurr1DayInvalidIntervals  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 11 }
+
+   adsl2PMLCurr1DayTimeElapsed  OBJECT-TYPE
+      SYNTAX      HCPerfTimeElapsed
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+
+
+
+
+
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 12 }
+
+   adsl2PMLCurr1DayFecs  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 13 }
+
+   adsl2PMLCurr1DayEs  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 14 }
+
+   adsl2PMLCurr1DaySes  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2PMLineCurrEntry 15 }
+
+   adsl2PMLCurr1DayLoss  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 16 }
+
+   adsl2PMLCurr1DayUas  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrEntry 17 }
+
+
+
+   adsl2PMLineCurrInitTable   OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2PMLineCurrInitEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLine 2 }
+
+   adsl2PMLineCurrInitEntry  OBJECT-TYPE
+      SYNTAX      Adsl2PMLineCurrInitEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex }
+      ::= { adsl2PMLineCurrInitTable 1 }
+
+   Adsl2PMLineCurrInitEntry  ::=
+      SEQUENCE {
+         adsl2PMLCurrInit15MTimeElapsed          Unsigned32,
+         adsl2PMLCurrInit15MFullInits            Unsigned32,
+         adsl2PMLCurrInit15MFailedFullInits      Unsigned32,
+         adsl2PMLCurrInit15MShortInits           Unsigned32,
+         adsl2PMLCurrInit15MFailedShortInits     Unsigned32,
+         adsl2PMLCurrInit1DayTimeElapsed         Unsigned32,
+         adsl2PMLCurrInit1DayFullInits           Unsigned32,
+         adsl2PMLCurrInit1DayFailedFullInits     Unsigned32,
+         adsl2PMLCurrInit1DayShortInits          Unsigned32,
+         adsl2PMLCurrInit1DayFailedShortInits    Unsigned32
+      }
+
+   adsl2PMLCurrInit15MTimeElapsed  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrInitEntry 1 }
+
+   adsl2PMLCurrInit15MFullInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrInitEntry 2 }
+
+   adsl2PMLCurrInit15MFailedFullInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2PMLineCurrInitEntry 3 }
+
+   adsl2PMLCurrInit15MShortInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrInitEntry 4 }
+
+   adsl2PMLCurrInit15MFailedShortInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrInitEntry 5 }
+
+   adsl2PMLCurrInit1DayTimeElapsed  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrInitEntry 6 }
+
+   adsl2PMLCurrInit1DayFullInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrInitEntry 7 }
+
+
+
+
+
+
+   adsl2PMLCurrInit1DayFailedFullInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrInitEntry 8 }
+
+   adsl2PMLCurrInit1DayShortInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrInitEntry 9 }
+
+   adsl2PMLCurrInit1DayFailedShortInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineCurrInitEntry 10 }
+
+
+
+   adsl2PMLineHist15MinTable    OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2PMLineHist15MinEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLine 3 }
+
+   adsl2PMLineHist15MinEntry  OBJECT-TYPE
+      SYNTAX      Adsl2PMLineHist15MinEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+
+
+
+
+
+      INDEX  { ifIndex,
+               adsl2PMLHist15MUnit,
+               adsl2PMLHist15MInterval }
+      ::= { adsl2PMLineHist15MinTable 1 }
+
+   Adsl2PMLineHist15MinEntry  ::=
+      SEQUENCE {
+         adsl2PMLHist15MUnit                 Adsl2Unit,
+         adsl2PMLHist15MInterval             Unsigned32,
+         adsl2PMLHist15MMonitoredTime        Unsigned32,
+         adsl2PMLHist15MFecs                 Counter32,
+         adsl2PMLHist15MEs                   Counter32,
+         adsl2PMLHist15MSes                  Counter32,
+         adsl2PMLHist15MLoss                 Counter32,
+         adsl2PMLHist15MUas                  Counter32,
+         adsl2PMLHist15MValidInterval        TruthValue
+      }
+
+   adsl2PMLHist15MUnit  OBJECT-TYPE
+      SYNTAX      Adsl2Unit
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLineHist15MinEntry 1 }
+
+   adsl2PMLHist15MInterval  OBJECT-TYPE
+      SYNTAX      Unsigned32 (1..96)
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLineHist15MinEntry 2 }
+
+   adsl2PMLHist15MMonitoredTime  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist15MinEntry 3 }
+
+
+
+
+
+   adsl2PMLHist15MFecs  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist15MinEntry 4 }
+
+   adsl2PMLHist15MEs  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist15MinEntry 5 }
+
+   adsl2PMLHist15MSes  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist15MinEntry 6 }
+
+   adsl2PMLHist15MLoss  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist15MinEntry 7 }
+
+   adsl2PMLHist15MUas  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist15MinEntry 8 }
+
+   adsl2PMLHist15MValidInterval  OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist15MinEntry 9 }
+
+
+
+   adsl2PMLineHist1DayTable     OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2PMLineHist1DayEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLine 4 }
+
+   adsl2PMLineHist1DayEntry  OBJECT-TYPE
+      SYNTAX      Adsl2PMLineHist1DayEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex,
+               adsl2PMLHist1DUnit,
+               adsl2PMLHist1DInterval }
+      ::= { adsl2PMLineHist1DayTable 1 }
+
+   Adsl2PMLineHist1DayEntry  ::=
+      SEQUENCE {
+         adsl2PMLHist1DUnit              Adsl2Unit,
+         adsl2PMLHist1DInterval          Unsigned32,
+         adsl2PMLHist1DMonitoredTime     Unsigned32,
+         adsl2PMLHist1DFecs              Counter32,
+         adsl2PMLHist1DEs                Counter32,
+         adsl2PMLHist1DSes               Counter32,
+         adsl2PMLHist1DLoss              Counter32,
+         adsl2PMLHist1DUas               Counter32,
+         adsl2PMLHist1DValidInterval     TruthValue
+      }
+
+   adsl2PMLHist1DUnit  OBJECT-TYPE
+      SYNTAX      Adsl2Unit
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLineHist1DayEntry 1 }
+
+   adsl2PMLHist1DInterval  OBJECT-TYPE
+      SYNTAX      Unsigned32 (1..30)
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLineHist1DayEntry 2 }
+
+   adsl2PMLHist1DMonitoredTime  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist1DayEntry 3 }
+
+   adsl2PMLHist1DFecs  OBJECT-TYPE
+      SYNTAX      Counter32
+
+
+
+
+
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist1DayEntry 4 }
+
+   adsl2PMLHist1DEs  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist1DayEntry 5 }
+
+   adsl2PMLHist1DSes  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist1DayEntry 6 }
+
+   adsl2PMLHist1DLoss  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+
+
+
+
+
+      ::= { adsl2PMLineHist1DayEntry 7 }
+
+   adsl2PMLHist1DUas  OBJECT-TYPE
+      SYNTAX      Counter32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist1DayEntry 8 }
+
+   adsl2PMLHist1DValidInterval  OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineHist1DayEntry 9 }
+
+
+
+
+
+   adsl2PMLineInitHist15MinTable      OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2PMLineInitHist15MinEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLine 5 }
+
+   adsl2PMLineInitHist15MinEntry  OBJECT-TYPE
+      SYNTAX      Adsl2PMLineInitHist15MinEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex,
+               adsl2PMLHistInit15MInterval }
+      ::= { adsl2PMLineInitHist15MinTable 1 }
+
+   Adsl2PMLineInitHist15MinEntry  ::=
+      SEQUENCE {
+         adsl2PMLHistInit15MInterval              Unsigned32,
+         adsl2PMLHistInit15MMonitoredTime         Unsigned32,
+         adsl2PMLHistInit15MFullInits             Unsigned32,
+         adsl2PMLHistInit15MFailedFullInits       Unsigned32,
+         adsl2PMLHistInit15MShortInits            Unsigned32,
+         adsl2PMLHistInit15MFailedShortInits      Unsigned32,
+         adsl2PMLHistInit15MValidInterval         TruthValue
+      }
+
+   adsl2PMLHistInit15MInterval  OBJECT-TYPE
+      SYNTAX      Unsigned32 (1..96)
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLineInitHist15MinEntry 1 }
+
+   adsl2PMLHistInit15MMonitoredTime  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist15MinEntry 2 }
+
+   adsl2PMLHistInit15MFullInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist15MinEntry 3 }
+
+   adsl2PMLHistInit15MFailedFullInits  OBJECT-TYPE
+
+
+
+
+
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist15MinEntry 4 }
+
+   adsl2PMLHistInit15MShortInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist15MinEntry 5 }
+
+   adsl2PMLHistInit15MFailedShortInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist15MinEntry 6 }
+
+   adsl2PMLHistInit15MValidInterval  OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist15MinEntry 7 }
+
+
+
+   adsl2PMLineInitHist1DayTable       OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2PMLineInitHist1DayEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLine 6 }
+
+   adsl2PMLineInitHist1DayEntry  OBJECT-TYPE
+      SYNTAX      Adsl2PMLineInitHist1DayEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex,
+               adsl2PMLHistinit1DInterval }
+      ::= { adsl2PMLineInitHist1DayTable 1 }
+
+   Adsl2PMLineInitHist1DayEntry  ::=
+      SEQUENCE {
+         adsl2PMLHistinit1DInterval              Unsigned32,
+         adsl2PMLHistinit1DMonitoredTime         Unsigned32,
+         adsl2PMLHistinit1DFullInits             Unsigned32,
+         adsl2PMLHistinit1DFailedFullInits       Unsigned32,
+         adsl2PMLHistinit1DShortInits            Unsigned32,
+         adsl2PMLHistinit1DFailedShortInits      Unsigned32,
+         adsl2PMLHistinit1DValidInterval         TruthValue
+      }
+
+   adsl2PMLHistinit1DInterval  OBJECT-TYPE
+      SYNTAX      Unsigned32 (1..30)
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMLineInitHist1DayEntry 1 }
+
+   adsl2PMLHistinit1DMonitoredTime  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist1DayEntry 2 }
+
+
+
+
+
+
+   adsl2PMLHistinit1DFullInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+       ::= { adsl2PMLineInitHist1DayEntry 3 }
+
+   adsl2PMLHistinit1DFailedFullInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist1DayEntry 4 }
+
+   adsl2PMLHistinit1DShortInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist1DayEntry 5 }
+
+   adsl2PMLHistinit1DFailedShortInits  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist1DayEntry 6 }
+
+   adsl2PMLHistinit1DValidInterval  OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMLineInitHist1DayEntry 7 }
+
+
+
+
+
+   adsl2PMChCurrTable        OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2PMChCurrEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMChannel 1 }
+
+   adsl2PMChCurrEntry  OBJECT-TYPE
+      SYNTAX      Adsl2PMChCurrEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex, adsl2PMChCurrUnit }
+      ::= { adsl2PMChCurrTable 1 }
+
+   Adsl2PMChCurrEntry  ::=
+      SEQUENCE {
+         adsl2PMChCurrUnit                     Adsl2Unit,
+         adsl2PMChCurrValidIntervals           Unsigned32,
+         adsl2PMChCurrInvalidIntervals         Unsigned32,
+         adsl2PMChCurr15MTimeElapsed           HCPerfTimeElapsed,
+         adsl2PMChCurr15MCodingViolations      Unsigned32,
+         adsl2PMChCurr15MCorrectedBlocks       Unsigned32,
+         adsl2PMChCurr1DayValidIntervals       Unsigned32,
+         adsl2PMChCurr1DayInvalidIntervals     Unsigned32,
+         adsl2PMChCurr1DayTimeElapsed          HCPerfTimeElapsed,
+         adsl2PMChCurr1DayCodingViolations     Unsigned32,
+         adsl2PMChCurr1DayCorrectedBlocks      Unsigned32
+      }
+
+   adsl2PMChCurrUnit  OBJECT-TYPE
+      SYNTAX      Adsl2Unit
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMChCurrEntry 1 }
+
+   adsl2PMChCurrValidIntervals  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChCurrEntry 2 }
+
+   adsl2PMChCurrInvalidIntervals  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+       ::= { adsl2PMChCurrEntry 3 }
+
+   adsl2PMChCurr15MTimeElapsed  OBJECT-TYPE
+      SYNTAX      HCPerfTimeElapsed
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChCurrEntry 4 }
+
+   adsl2PMChCurr15MCodingViolations  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+     ::= { adsl2PMChCurrEntry 5 }
+
+   adsl2PMChCurr15MCorrectedBlocks  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+
+
+
+
+
+      STATUS      current
+      ::= { adsl2PMChCurrEntry 6 }
+
+   adsl2PMChCurr1DayValidIntervals  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChCurrEntry 7 }
+
+   adsl2PMChCurr1DayInvalidIntervals  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChCurrEntry 8 }
+
+   adsl2PMChCurr1DayTimeElapsed  OBJECT-TYPE
+      SYNTAX      HCPerfTimeElapsed
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChCurrEntry 9 }
+
+   adsl2PMChCurr1DayCodingViolations  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChCurrEntry 10 }
+
+   adsl2PMChCurr1DayCorrectedBlocks  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChCurrEntry 11 }
+
+
+
+   adsl2PMChHist15MinTable         OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2PMChHist15MinEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMChannel 2 }
+
+   adsl2PMChHist15MinEntry  OBJECT-TYPE
+      SYNTAX      Adsl2PMChHist15MinEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      INDEX  { ifIndex,
+               adsl2PMChHist15MUnit,
+               adsl2PMChHist15MInterval }
+      ::= { adsl2PMChHist15MinTable 1 }
+
+
+
+
+
+   Adsl2PMChHist15MinEntry  ::=
+      SEQUENCE {
+         adsl2PMChHist15MUnit                     Adsl2Unit,
+         adsl2PMChHist15MInterval                 Unsigned32,
+         adsl2PMChHist15MMonitoredTime            Unsigned32,
+         adsl2PMChHist15MCodingViolations         Unsigned32,
+         adsl2PMChHist15MCorrectedBlocks          Unsigned32,
+         adsl2PMChHist15MValidInterval            TruthValue
+      }
+
+   adsl2PMChHist15MUnit  OBJECT-TYPE
+      SYNTAX      Adsl2Unit
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMChHist15MinEntry 1 }
+
+   adsl2PMChHist15MInterval  OBJECT-TYPE
+      SYNTAX      Unsigned32 (1..96)
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMChHist15MinEntry 2 }
+
+   adsl2PMChHist15MMonitoredTime  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChHist15MinEntry 3 }
+
+   adsl2PMChHist15MCodingViolations  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChHist15MinEntry 4 }
+
+
+
+
+
+   adsl2PMChHist15MCorrectedBlocks  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChHist15MinEntry 5 }
+
+   adsl2PMChHist15MValidInterval  OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChHist15MinEntry 6 }
+
+
+
+   adsl2PMChHist1DTable         OBJECT-TYPE
+      SYNTAX      SEQUENCE  OF  Adsl2PMChHist1DEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMChannel 3 }
+
+   adsl2PMChHist1DEntry  OBJECT-TYPE
+      SYNTAX      Adsl2PMChHist1DEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+
+
+
+
+
+      INDEX  { ifIndex,
+               adsl2PMChHist1DUnit,
+               adsl2PMChHist1DInterval }
+      ::= { adsl2PMChHist1DTable 1 }
+
+   Adsl2PMChHist1DEntry  ::=
+      SEQUENCE {
+         adsl2PMChHist1DUnit                      Adsl2Unit,
+         adsl2PMChHist1DInterval                  Unsigned32,
+         adsl2PMChHist1DMonitoredTime             Unsigned32,
+         adsl2PMChHist1DCodingViolations          Unsigned32,
+         adsl2PMChHist1DCorrectedBlocks           Unsigned32,
+         adsl2PMChHist1DValidInterval             TruthValue
+      }
+
+   adsl2PMChHist1DUnit  OBJECT-TYPE
+      SYNTAX      Adsl2Unit
+      MAX-ACCESS  not-accessible
+      STATUS      current
+       ::= { adsl2PMChHist1DEntry 1 }
+
+   adsl2PMChHist1DInterval  OBJECT-TYPE
+      SYNTAX      Unsigned32 (1..30)
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      ::= { adsl2PMChHist1DEntry 2 }
+
+   adsl2PMChHist1DMonitoredTime  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      UNITS       "seconds"
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChHist1DEntry 3 }
+
+   adsl2PMChHist1DCodingViolations  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChHist1DEntry 4 }
+
+   adsl2PMChHist1DCorrectedBlocks  OBJECT-TYPE
+      SYNTAX      Unsigned32
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChHist1DEntry 5 }
+
+   adsl2PMChHist1DValidInterval  OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-only
+      STATUS      current
+      ::= { adsl2PMChHist1DEntry 6 }
+
+
+   adsl2LinePerfFECSThreshAtuc NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMLCurr15MFecs,
+      adsl2LineAlarmConfProfileAtucThresh15MinFecs
+      }
+      STATUS     current
+      ::= { adsl2Notifications 1 }
+
+   adsl2LinePerfFECSThreshAtur NOTIFICATION-TYPE
+      OBJECTS
+      {
+
+
+
+
+
+      adsl2PMLCurr15MFecs,
+      adsl2LineAlarmConfProfileAturThresh15MinFecs
+      }
+      STATUS     current
+      ::= { adsl2Notifications 2 }
+
+   adsl2LinePerfESThreshAtuc NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMLCurr15MEs,
+      adsl2LineAlarmConfProfileAtucThresh15MinEs
+      }
+      STATUS     current
+      ::= { adsl2Notifications 3 }
+
+   adsl2LinePerfESThreshAtur NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMLCurr15MEs,
+      adsl2LineAlarmConfProfileAturThresh15MinEs
+      }
+      STATUS     current
+      ::= { adsl2Notifications 4 }
+
+   adsl2LinePerfSESThreshAtuc NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMLCurr15MSes,
+      adsl2LineAlarmConfProfileAtucThresh15MinSes
+      }
+      STATUS     current
+      ::= { adsl2Notifications 5 }
+
+   adsl2LinePerfSESThreshAtur NOTIFICATION-TYPE
+      OBJECTS
+      {
+
+
+
+
+
+      adsl2PMLCurr15MSes,
+      adsl2LineAlarmConfProfileAturThresh15MinSes
+      }
+      STATUS     current
+      ::= { adsl2Notifications 6 }
+
+   adsl2LinePerfLOSSThreshAtuc NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMLCurr15MLoss,
+      adsl2LineAlarmConfProfileAtucThresh15MinLoss
+      }
+      STATUS     current
+      ::= { adsl2Notifications 7 }
+
+   adsl2LinePerfLOSSThreshAtur NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMLCurr15MLoss,
+      adsl2LineAlarmConfProfileAturThresh15MinLoss
+      }
+      STATUS     current
+      ::= { adsl2Notifications 8 }
+
+   adsl2LinePerfUASThreshAtuc NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMLCurr15MUas,
+      adsl2LineAlarmConfProfileAtucThresh15MinUas
+      }
+      STATUS     current
+      ::= { adsl2Notifications 9 }
+
+   adsl2LinePerfUASThreshAtur NOTIFICATION-TYPE
+      OBJECTS
+      {
+
+
+
+
+
+      adsl2PMLCurr15MUas,
+      adsl2LineAlarmConfProfileAturThresh15MinUas
+      }
+      STATUS     current
+      ::= { adsl2Notifications 10 }
+
+   adsl2LinePerfCodingViolationsThreshAtuc NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMChCurr15MCodingViolations,
+      adsl2ChAlarmConfProfileAtucThresh15MinCodingViolations
+      }
+      STATUS     current
+      ::= { adsl2Notifications 11 }
+
+   adsl2LinePerfCodingViolationsThreshAtur NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMChCurr15MCodingViolations,
+      adsl2ChAlarmConfProfileAturThresh15MinCodingViolations
+      }
+      STATUS     current
+      ::= { adsl2Notifications 12 }
+
+   adsl2LinePerfCorrectedThreshAtuc NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMChCurr15MCorrectedBlocks,
+      adsl2ChAlarmConfProfileAtucThresh15MinCorrected
+      }
+      STATUS     current
+      ::= { adsl2Notifications 13 }
+
+   adsl2LinePerfCorrectedThreshAtur NOTIFICATION-TYPE
+      OBJECTS
+
+
+
+
+
+      {
+      adsl2PMChCurr15MCorrectedBlocks,
+      adsl2ChAlarmConfProfileAturThresh15MinCorrected
+      }
+      STATUS     current
+      ::= { adsl2Notifications 14 }
+
+   adsl2LinePerfFailedFullInitThresh NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMLCurrInit15MFailedFullInits,
+      adsl2LineAlarmConfProfileThresh15MinFailedFullInt
+      }
+      STATUS     current
+      ::= { adsl2Notifications 15 }
+
+   adsl2LinePerfFailedShortInitThresh NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2PMLCurrInit15MFailedShortInits,
+      adsl2LineAlarmConfProfileThresh15MinFailedShrtInt
+      }
+      STATUS     current
+      ::= { adsl2Notifications 16 }
+
+   adsl2LineStatusChangeAtuc NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2LineStatusAtuc
+      }
+      STATUS     current
+      ::= { adsl2Notifications 17 }
+
+
+
+
+
+
+   adsl2LineStatusChangeAtur NOTIFICATION-TYPE
+      OBJECTS
+      {
+      adsl2LineStatusAtur
+      }
+      STATUS     current
+      ::= { adsl2Notifications 18 }
+
+
+
+      adsl2Groups OBJECT IDENTIFIER ::= { adsl2Conformance 1 }
+      adsl2Compliances OBJECT IDENTIFIER ::= { adsl2Conformance 2 }
+
+      adsl2LineMibCompliance MODULE-COMPLIANCE
+         STATUS  current
+         MODULE  -- this module
+         MANDATORY-GROUPS
+             {
+             adsl2LineGroup,
+             adsl2ChannelStatusGroup,
+             adsl2SCStatusGroup,
+             adsl2LineInventoryGroup,
+             adsl2LineConfTemplateGroup,
+             adsl2LineConfProfGroup,
+             adsl2LineConfProfModeSpecGroup,
+             adsl2ChConfProfileGroup,
+             adsl2LineAlarmConfTemplateGroup,
+             adsl2PMLineCurrGroup,
+             adsl2PMLineCurrInitGroup,
+             adsl2PMLineHist15MinGroup,
+             adsl2PMLineHist1DayGroup,
+             adsl2PMLineInitHist15MinGroup,
+             adsl2PMLineInitHist1DayGroup,
+             adsl2PMChCurrGroup,
+             adsl2PMChHist15MinGroup,
+             adsl2PMChHist1DGroup
+             }
+
+      GROUP  adsl2ChannelStatusAtmGroup
+
+      GROUP  adsl2ChannelStatusPtmGroup
+
+      GROUP  adsl2LineConfProfRaGroup
+
+      GROUP  adsl2LineConfProfMsgMinGroup
+
+      GROUP  adsl2LineAlarmConfProfileGroup
+
+      GROUP  adsl2ChAlarmConfProfileGroup
+
+      GROUP  adsl2ChConfProfileAtmGroup
+
+      GROUP  adsl2ChConfProfileMinResGroup
+
+      GROUP  adsl2PMLineCurrInitShortGroup
+
+      GROUP  adsl2PMLineInitHist15MinShortGroup
+
+      GROUP  adsl2PMLineInitHist1DayShortGroup
+
+
+
+
+
+
+      GROUP  adsl2ScalarSCGroup
+
+      GROUP  adsl2ThreshNotificationGroup
+
+      GROUP  adsl2StatusChangeNotificationGroup
+
+         ::= { adsl2Compliances 1 }
+
+
+      adsl2LineGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2LineCnfgTemplate,
+             adsl2LineAlarmCnfgTemplate,
+             adsl2LineCmndConfPmsf,
+             adsl2LineCmndConfLdsf,
+             adsl2LineCmndConfLdsfFailReason,
+             adsl2LineCmndAutomodeColdStart,
+             adsl2LineStatusAtuTransSys,
+             adsl2LineStatusPwrMngState,
+             adsl2LineStatusInitResult,
+             adsl2LineStatusLastStateDs,
+             adsl2LineStatusLastStateUs,
+             adsl2LineStatusAtur,
+             adsl2LineStatusAtuc,
+             adsl2LineStatusLnAttenDs,
+             adsl2LineStatusLnAttenUs,
+             adsl2LineStatusSigAttenDs,
+             adsl2LineStatusSigAttenUs,
+             adsl2LineStatusSnrMarginDs,
+             adsl2LineStatusSnrMarginUs,
+             adsl2LineStatusAttainableRateDs,
+             adsl2LineStatusAttainableRateUs,
+             adsl2LineStatusActPsdDs,
+             adsl2LineStatusActPsdUs,
+             adsl2LineStatusActAtpDs,
+
+
+
+
+
+             adsl2LineStatusActAtpUs
+             }
+         STATUS     current
+         ::= { adsl2Groups 1 }
+
+      adsl2ChannelStatusGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2ChStatusChannelNum,
+             adsl2ChStatusActDataRate,
+             adsl2ChStatusPrevDataRate,
+             adsl2ChStatusActDelay
+             }
+         STATUS     current
+         ::= { adsl2Groups 2 }
+
+      adsl2ChannelStatusAtmGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2ChStatusAtmStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 3 }
+
+      adsl2ChannelStatusPtmGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2ChStatusPtmStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 4 }
+
+      adsl2SCStatusGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2SCStatusMtime,
+             adsl2SCStatusSnr,
+
+
+
+
+
+             adsl2SCStatusBitsAlloc,
+             adsl2SCStatusGainAlloc,
+             adsl2SCStatusTssi,
+             adsl2SCStatusLinScale,
+             adsl2SCStatusLinReal,
+             adsl2SCStatusLinImg,
+             adsl2SCStatusLogMt,
+             adsl2SCStatusLog,
+             adsl2SCStatusQlnMt,
+             adsl2SCStatusQln,
+             adsl2SCStatusLnAtten,
+             adsl2SCStatusSigAtten,
+             adsl2SCStatusSnrMargin,
+             adsl2SCStatusAttainableRate,
+             adsl2SCStatusActAtp,
+             adsl2SCStatusRowStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 5 }
+
+      adsl2LineInventoryGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2LInvG994VendorId,
+             adsl2LInvSystemVendorId,
+             adsl2LInvVersionNumber,
+             adsl2LInvSerialNumber,
+             adsl2LInvSelfTestResult,
+             adsl2LInvTransmissionCapabilities
+             }
+         STATUS     current
+         ::= { adsl2Groups 6 }
+
+      adsl2LineConfTemplateGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2LConfTempLineProfile,
+             adsl2LConfTempChan1ConfProfile,
+             adsl2LConfTempChan1RaRatioDs,
+             adsl2LConfTempChan1RaRatioUs,
+             adsl2LConfTempChan2ConfProfile,
+             adsl2LConfTempChan2RaRatioDs,
+             adsl2LConfTempChan2RaRatioUs,
+
+
+
+
+
+             adsl2LConfTempChan3ConfProfile,
+             adsl2LConfTempChan3RaRatioDs,
+             adsl2LConfTempChan3RaRatioUs,
+             adsl2LConfTempChan4ConfProfile,
+             adsl2LConfTempChan4RaRatioDs,
+             adsl2LConfTempChan4RaRatioUs,
+             adsl2LConfTempRowStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 7 }
+
+      adsl2LineConfProfGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2LConfProfScMaskDs,
+             adsl2LConfProfScMaskUs,
+             adsl2LConfProfRfiBandsDs,
+             adsl2LConfProfRaModeDs,
+             adsl2LConfProfRaModeUs,
+             adsl2LConfProfTargetSnrmDs,
+             adsl2LConfProfTargetSnrmUs,
+             adsl2LConfProfMaxSnrmDs,
+             adsl2LConfProfMaxSnrmUs,
+             adsl2LConfProfMinSnrmDs,
+             adsl2LConfProfMinSnrmUs,
+             adsl2LConfProfAtuTransSysEna,
+             adsl2LConfProfPmMode,
+             adsl2LConfProfL0Time,
+             adsl2LConfProfL2Time,
+             adsl2LConfProfL2Atpr,
+             adsl2LConfProfL2Atprt,
+             adsl2LConfProfRowStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 8 }
+
+      adsl2LineConfProfRaGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2LConfProfRaUsNrmDs,
+             adsl2LConfProfRaUsNrmUs,
+             adsl2LConfProfRaUsTimeDs,
+             adsl2LConfProfRaUsTimeUs,
+             adsl2LConfProfRaDsNrmsDs,
+
+
+
+
+
+             adsl2LConfProfRaDsNrmsUs,
+             adsl2LConfProfRaDsTimeDs,
+             adsl2LConfProfRaDsTimeUs
+             }
+         STATUS     current
+         ::= { adsl2Groups 9 }
+
+      adsl2LineConfProfMsgMinGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2LConfProfMsgMinUs,
+             adsl2LConfProfMsgMinDs
+             }
+         STATUS     current
+         ::= { adsl2Groups 10 }
+
+      adsl2LineConfProfModeSpecGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2LConfProfMaxNomPsdDs,
+             adsl2LConfProfMaxNomPsdUs,
+             adsl2LConfProfMaxNomAtpDs,
+             adsl2LConfProfMaxNomAtpUs,
+             adsl2LConfProfMaxAggRxPwrUs,
+             adsl2LConfProfPsdMaskDs,
+             adsl2LConfProfPsdMaskUs,
+             adsl2LConfProfPsdMaskSelectUs,
+             adsl2LConfProfModeSpecRowStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 11 }
+
+      adsl2ChConfProfileGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2ChConfProfMinDataRateDs,
+             adsl2ChConfProfMinDataRateUs,
+             adsl2ChConfProfMaxDataRateDs,
+             adsl2ChConfProfMaxDataRateUs,
+
+
+
+
+
+             adsl2ChConfProfMinDataRateLowPwrDs,
+             adsl2ChConfProfMaxDelayDs,
+             adsl2ChConfProfMaxDelayUs,
+             adsl2ChConfProfMinProtectionDs,
+             adsl2ChConfProfMinProtectionUs,
+             adsl2ChConfProfMaxBerDs,
+             adsl2ChConfProfMaxBerUs,
+             adsl2ChConfProfUsDataRateDs,
+             adsl2ChConfProfDsDataRateDs,
+             adsl2ChConfProfUsDataRateUs,
+             adsl2ChConfProfDsDataRateUs,
+             adsl2ChConfProfRowStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 12 }
+
+      adsl2ChConfProfileAtmGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2ChConfProfImaEnabled,
+             adsl2ChStatusAtmStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 13 }
+
+      adsl2ChConfProfileMinResGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2ChConfProfMinResDataRateDs,
+             adsl2ChConfProfMinResDataRateUs
+             }
+         STATUS     current
+         ::= { adsl2Groups 14 }
+
+      adsl2LineAlarmConfTemplateGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2LAlarmConfTempLineProfile,
+             adsl2LAlarmConfTempChan1ConfProfile,
+             adsl2LAlarmConfTempChan2ConfProfile,
+
+
+
+
+
+             adsl2LAlarmConfTempChan3ConfProfile,
+             adsl2LAlarmConfTempChan4ConfProfile,
+             adsl2LAlarmConfTempRowStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 15 }
+
+      adsl2LineAlarmConfProfileGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2LineAlarmConfProfileAtucThresh15MinFecs,
+             adsl2LineAlarmConfProfileAtucThresh15MinEs,
+             adsl2LineAlarmConfProfileAtucThresh15MinSes,
+             adsl2LineAlarmConfProfileAtucThresh15MinLoss,
+             adsl2LineAlarmConfProfileAtucThresh15MinUas,
+             adsl2LineAlarmConfProfileAturThresh15MinFecs,
+             adsl2LineAlarmConfProfileAturThresh15MinEs,
+             adsl2LineAlarmConfProfileAturThresh15MinSes,
+             adsl2LineAlarmConfProfileAturThresh15MinLoss,
+             adsl2LineAlarmConfProfileAturThresh15MinUas,
+             adsl2LineAlarmConfProfileThresh15MinFailedFullInt,
+             adsl2LineAlarmConfProfileThresh15MinFailedShrtInt,
+             adsl2LineAlarmConfProfileRowStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 16 }
+
+      adsl2ChAlarmConfProfileGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2ChAlarmConfProfileAtucThresh15MinCodingViolations,
+             adsl2ChAlarmConfProfileAtucThresh15MinCorrected,
+             adsl2ChAlarmConfProfileAturThresh15MinCodingViolations,
+             adsl2ChAlarmConfProfileAturThresh15MinCorrected,
+             adsl2ChAlarmConfProfileRowStatus
+             }
+         STATUS     current
+         ::= { adsl2Groups 17 }
+
+      adsl2PMLineCurrGroup OBJECT-GROUP
+         OBJECTS
+
+
+
+
+
+             {
+             adsl2PMLCurrValidIntervals,
+             adsl2PMLCurrInvalidIntervals,
+             adsl2PMLCurr15MTimeElapsed,
+             adsl2PMLCurr15MFecs,
+             adsl2PMLCurr15MEs,
+             adsl2PMLCurr15MSes,
+             adsl2PMLCurr15MLoss,
+             adsl2PMLCurr15MUas,
+             adsl2PMLCurr1DayValidIntervals,
+             adsl2PMLCurr1DayInvalidIntervals,
+             adsl2PMLCurr1DayTimeElapsed,
+             adsl2PMLCurr1DayFecs,
+             adsl2PMLCurr1DayEs,
+             adsl2PMLCurr1DaySes,
+             adsl2PMLCurr1DayLoss,
+             adsl2PMLCurr1DayUas
+             }
+         STATUS     current
+         ::= { adsl2Groups 18 }
+
+      adsl2PMLineCurrInitGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMLCurrInit15MTimeElapsed,
+             adsl2PMLCurrInit15MFullInits,
+             adsl2PMLCurrInit15MFailedFullInits,
+             adsl2PMLCurrInit1DayTimeElapsed,
+             adsl2PMLCurrInit1DayFullInits,
+             adsl2PMLCurrInit1DayFailedFullInits
+             }
+         STATUS     current
+         ::= { adsl2Groups 19 }
+
+      adsl2PMLineCurrInitShortGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMLCurrInit15MShortInits,
+             adsl2PMLCurrInit15MFailedShortInits,
+             adsl2PMLCurrInit1DayShortInits,
+             adsl2PMLCurrInit1DayFailedShortInits
+             }
+
+
+
+
+
+         STATUS     current
+         ::= { adsl2Groups 20 }
+
+      adsl2PMLineHist15MinGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMLHist15MMonitoredTime,
+             adsl2PMLHist15MFecs,
+             adsl2PMLHist15MEs,
+             adsl2PMLHist15MSes,
+             adsl2PMLHist15MLoss,
+             adsl2PMLHist15MUas,
+             adsl2PMLHist15MValidInterval
+             }
+         STATUS     current
+         ::= { adsl2Groups 21 }
+
+      adsl2PMLineHist1DayGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMLHist1DMonitoredTime,
+             adsl2PMLHist1DFecs,
+             adsl2PMLHist1DEs,
+             adsl2PMLHist1DSes,
+             adsl2PMLHist1DLoss,
+             adsl2PMLHist1DUas,
+             adsl2PMLHist1DValidInterval
+             }
+         STATUS     current
+         ::= { adsl2Groups 22 }
+
+      adsl2PMLineInitHist15MinGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMLHistInit15MMonitoredTime,
+             adsl2PMLHistInit15MFullInits,
+             adsl2PMLHistInit15MFailedFullInits,
+             adsl2PMLHistInit15MValidInterval
+             }
+
+
+
+
+
+         STATUS     current
+         ::= { adsl2Groups 23 }
+
+      adsl2PMLineInitHist15MinShortGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMLHistInit15MShortInits,
+             adsl2PMLHistInit15MFailedShortInits
+             }
+         STATUS     current
+         ::= { adsl2Groups 24 }
+
+      adsl2PMLineInitHist1DayGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMLHistinit1DMonitoredTime,
+             adsl2PMLHistinit1DFullInits,
+             adsl2PMLHistinit1DFailedFullInits,
+             adsl2PMLHistinit1DValidInterval
+             }
+         STATUS     current
+         ::= { adsl2Groups 25 }
+
+      adsl2PMLineInitHist1DayShortGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMLHistinit1DShortInits,
+             adsl2PMLHistinit1DFailedShortInits
+             }
+         STATUS     current
+         ::= { adsl2Groups 26 }
+
+      adsl2PMChCurrGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMChCurrValidIntervals,
+
+
+
+
+
+             adsl2PMChCurrInvalidIntervals,
+             adsl2PMChCurr15MTimeElapsed,
+             adsl2PMChCurr15MCodingViolations,
+             adsl2PMChCurr15MCorrectedBlocks,
+             adsl2PMChCurr1DayValidIntervals,
+             adsl2PMChCurr1DayInvalidIntervals,
+             adsl2PMChCurr1DayTimeElapsed,
+             adsl2PMChCurr1DayCodingViolations,
+             adsl2PMChCurr1DayCorrectedBlocks
+             }
+         STATUS     current
+         ::= { adsl2Groups 27 }
+
+      adsl2PMChHist15MinGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMChHist15MMonitoredTime,
+             adsl2PMChHist15MCodingViolations,
+             adsl2PMChHist15MCorrectedBlocks,
+             adsl2PMChHist15MValidInterval
+             }
+         STATUS     current
+         ::= { adsl2Groups 28 }
+
+      adsl2PMChHist1DGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2PMChHist1DMonitoredTime,
+             adsl2PMChHist1DCodingViolations,
+             adsl2PMChHist1DCorrectedBlocks,
+             adsl2PMChHist1DValidInterval
+             }
+         STATUS     current
+         ::= { adsl2Groups 29 }
+
+      adsl2ScalarSCGroup OBJECT-GROUP
+         OBJECTS
+             {
+             adsl2ScalarSCMaxInterfaces,
+
+
+
+
+
+             adsl2ScalarSCAvailInterfaces
+             }
+         STATUS     current
+         ::= { adsl2Groups 30 }
+
+      adsl2ThreshNotificationGroup NOTIFICATION-GROUP
+         NOTIFICATIONS
+         {
+         adsl2LinePerfFECSThreshAtuc,
+         adsl2LinePerfFECSThreshAtur,
+         adsl2LinePerfESThreshAtuc,
+         adsl2LinePerfESThreshAtur,
+         adsl2LinePerfSESThreshAtuc,
+         adsl2LinePerfSESThreshAtur,
+         adsl2LinePerfLOSSThreshAtuc,
+         adsl2LinePerfLOSSThreshAtur,
+         adsl2LinePerfUASThreshAtuc,
+         adsl2LinePerfUASThreshAtur,
+         adsl2LinePerfCodingViolationsThreshAtuc,
+         adsl2LinePerfCodingViolationsThreshAtur,
+         adsl2LinePerfCorrectedThreshAtuc,
+         adsl2LinePerfCorrectedThreshAtur,
+         adsl2LinePerfFailedFullInitThresh,
+         adsl2LinePerfFailedShortInitThresh
+         }
+         STATUS      current
+         ::= { adsl2Groups 31 }
+
+      adsl2StatusChangeNotificationGroup NOTIFICATION-GROUP
+         NOTIFICATIONS
+         {
+         adsl2LineStatusChangeAtuc,
+         adsl2LineStatusChangeAtur
+         }
+         STATUS      current
+         ::= { adsl2Groups 32 }
+
+   END

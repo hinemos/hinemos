@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2008 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.poller.impl;
@@ -52,8 +45,8 @@ import org.snmp4j.util.DefaultPDUFactory;
 
 import com.clustercontrol.bean.SnmpProtocolConstant;
 import com.clustercontrol.bean.SnmpSecurityLevelConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.SnmpResponseError;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.nodemap.util.SearchConnectionProperties;
 import com.clustercontrol.poller.bean.PollerProtocolConstant;
 import com.clustercontrol.poller.util.DataTable;
@@ -73,21 +66,13 @@ public class Snmp4jPollerImpl {
 
 	private final static Log log = LogFactory.getLog(Snmp4jPollerImpl.class);
 
-	private static final String PROP_DELETE_LABEL = "monitor.resource.delete.label";
-	private final static String PROP_NON_REPEATERS = "monitor.poller.snmp.bulk.nonrepeaters";
-	private final static String PROP_MAX_REPETITIONS = "monitor.poller.snmp.bulk.maxrepetitions";
-	private final static String PROP_NOT_V3_SNMP_POOL_SIZE = "monitor.poller.snmp.not.v3.snmp.pool.size";
-	public final static String LABEL_REPLACE_KEY = "monitor.resource.label.replace"; 
-	public final static String LABEL_REPLACE_DEFAULT = " Label:\\S*  Serial Number .*"; 
-
-
 	private final List<String> processOidList;
 
-	private final Integer maxRepetitions = HinemosPropertyUtil.getHinemosPropertyNum(PROP_MAX_REPETITIONS, Long.valueOf(10)).intValue();
-	private final Integer nonRepeaters  = HinemosPropertyUtil.getHinemosPropertyNum(PROP_NON_REPEATERS, Long.valueOf(0)).intValue();
-	private final boolean deleteLabel = HinemosPropertyUtil.getHinemosPropertyBool(PROP_DELETE_LABEL, true);
+	private final Integer maxRepetitions = HinemosPropertyCommon.monitor_poller_snmp_bulk_maxrepetitions.getIntegerValue();
+	private final Integer nonRepeaters  = HinemosPropertyCommon.monitor_poller_snmp_bulk_nonrepeaters.getIntegerValue();
+	private final boolean deleteLabel = HinemosPropertyCommon.monitor_resource_delete_label.getBooleanValue();
 	
-	private final int notV3SnmpPoolSize = HinemosPropertyUtil.getHinemosPropertyNum(PROP_NOT_V3_SNMP_POOL_SIZE, Long.valueOf(32)).intValue();
+	private final int notV3SnmpPoolSize = HinemosPropertyCommon.monitor_poller_snmp_not_v3_snmp_pool_size.getIntegerValue();
 	
 	private List<Snmp> notV3SnmpPool = new ArrayList<Snmp>(notV3SnmpPoolSize);
 	private int notV3SnmpPoolIndex = 0;
@@ -201,7 +186,7 @@ public class Snmp4jPollerImpl {
 
 			MultipleOidsUtils utils = new MultipleOidsUtils(snmp, factory);
 			
-			int maxRetry = HinemosPropertyUtil.getHinemosPropertyNum("monitor.poller.snmp.max.retry", Long.valueOf(3)).intValue();
+			int maxRetry = HinemosPropertyCommon.monitor_poller_snmp_max_retry.getIntegerValue();
 			boolean errorFlag = true;
 			for (int i = 0; i < maxRetry; i++) {
 				Collection<VariableBinding> vbs = utils.query(target, createColumnOidList(oidSet).toArray(new OID[0])); 
@@ -448,7 +433,7 @@ public class Snmp4jPollerImpl {
 			// C:\
 			String ret = value.toString();
 			if (deleteLabel && oidString.startsWith(SearchDeviceProperties.getOidFilesystemName())) {
-				ret = ret.replaceAll(HinemosPropertyUtil.getHinemosPropertyStr(LABEL_REPLACE_KEY, LABEL_REPLACE_DEFAULT), "");
+				ret = ret.replaceAll(HinemosPropertyCommon.monitor_resource_label_replace.getStringValue(), "");
 			}
 
 			return ret;

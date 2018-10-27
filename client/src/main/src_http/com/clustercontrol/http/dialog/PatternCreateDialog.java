@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.http.dialog;
@@ -49,7 +42,7 @@ import com.clustercontrol.util.WidgetTestUtil;
 public class PatternCreateDialog extends CommonDialog {
 
 	/** カラム数（タイトル）。 */
-	public static final int WIDTH_TITLE = 4;
+	public static final int WIDTH_TITLE = 6;
 
 	/** 入力値を保持するオブジェクト。 */
 	private Pattern m_inputData = null;
@@ -142,7 +135,7 @@ public class PatternCreateDialog extends CommonDialog {
 		this.m_textDescription = new Text(parent, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "description", m_textDescription);
 		gridData = new GridData();
-		gridData.horizontalSpan = 10;
+		gridData.horizontalSpan = 9;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textDescription.setLayoutData(gridData);
@@ -187,9 +180,10 @@ public class PatternCreateDialog extends CommonDialog {
 		this.m_textPattern = new Text(monitorRuleGroup, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "pattern", m_textPattern);
 		gridData = new GridData();
-		gridData.horizontalSpan = 10;
+		gridData.horizontalSpan = 9;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
+		this.m_textPattern.setMessage(Messages.getString("pattern.placeholder.regex"));
 		this.m_textPattern.setLayoutData(gridData);
 		this.m_textPattern.addModifyListener(new ModifyListener(){
 			@Override

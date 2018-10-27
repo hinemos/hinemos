@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2017 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.tasktray.ha;
 
 import java.awt.AWTException;
@@ -70,33 +64,56 @@ public class ServiceObserver   {
 	private static String observMode;
 	
 	private ResourceBundle bundle;
-	
-	PopupMenu menu;
+
+	public static void setRunCommand(String command) {
+		runCommand = command;
+	}
+	public static void setStopCommand(String command) {
+		stopCommand = command;
+	}
+	public static void setRestartCommand(String command) {
+		restartCommand = command;
+	}
+	public static void setObservCommand(String command) {
+		observCommand = command;
+	}
+	public static void setObservMode(String mode) {
+		observMode = mode;
+	}
 	
 	public ServiceObserver() {
 		String homeDir = System.getProperty("homedir");
 		
-		runCommand = "cmd /c \"" + homeDir + "\\bin\\HA_ManagerStart.cmd\"";
-		stopCommand = "cmd /c \"" + homeDir + "\\bin\\HA_ManagerStop.cmd\"";
-		restartCommand = "cmd /c \"" + homeDir + "\\bin\\HA_ManagerRestart.cmd\"";
+		setRunCommand("cmd /c \"" + homeDir + "\\bin\\HA_ManagerStart.cmd\"");
+		setStopCommand("cmd /c \"" + homeDir + "\\bin\\HA_ManagerStop.cmd\"");
+		setRestartCommand("cmd /c \"" + homeDir + "\\bin\\HA_ManagerRestart.cmd\"");
 //		observCommand = "cmd /c powershell \"&\'" + homeDir + "\\sbin\\service_observerHA.ps1\'\"";
-		observCommand = "cmd /c sc query Hinemos_HA";
+		setObservCommand("cmd /c sc query Hinemos_HA");
 		
 		Properties properties = new Properties();
+		FileInputStream stream = null;
 		try {
-			properties.load(new FileInputStream(homeDir + "\\etc\\hinemos_ha_tasktray.properties"));
-			observMode = properties.getProperty("observe.mode");
+			stream = new FileInputStream(homeDir + "\\etc\\hinemos_ha_tasktray.properties");
+			properties.load(stream);
+			setObservMode(properties.getProperty("observe.mode"));
 			if(observMode != null && "powershell".equals(observMode)) {
-				observCommand = "cmd /c powershell \"&\'" + homeDir + "\\sbin\\ha_service_observer.ps1\'\"";
+				setObservCommand("cmd /c powershell \"&\'" + homeDir + "\\sbin\\ha_service_observer.ps1\'\"");
 			}
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
+		} finally {
+			if (stream != null) {
+				try {
+					stream.close();
+				} catch (IOException e) {
+				}
+			}
 		}
 		
 		bundle = ResourceBundle.getBundle("messages_tasktray");
 	}
 	
-	public synchronized void start() throws SocketException, UnknownHostException, IOException {
+	public void start() throws SocketException, UnknownHostException, IOException {
 		
 		if (!SystemTray.isSupported()) {
 //			log.warn("SystemTray is not supported.");
@@ -258,7 +275,7 @@ public class ServiceObserver   {
 	}
 	// cluster.statusファイル読み込み 
 	private String LogFileRead( ) {
-        String readData = "";
+		StringBuilder readData = new StringBuilder();
 		String homeDir = System.getProperty("datadir");
 		final String fileName = homeDir + "\\cluster.status";
 
@@ -270,13 +287,14 @@ public class ServiceObserver   {
 
 			//ファイル読み込み
 			String str;
-		  	while((str = br.readLine()) != null){
-		    	readData = readData + "\n" + str;
-		    }
+			while((str = br.readLine()) != null) {
+				readData.append("\n");
+				readData.append(str);
+			}
 			br.close();
 
+		} catch (IOException e) {
 		} catch (Exception e) {
-//			m_log.error(e);
 		} finally {
 			try {
 				if (fi != null) {
@@ -284,12 +302,12 @@ public class ServiceObserver   {
 				}
 			} catch (Exception e) {
 			}
-		}        
-        
-		return readData;
+		}
+
+		return readData.toString();
 		
 	}
-	public synchronized void shutdown() {
+	public void shutdown() {
 		shutdown = true;
 		observer.shutdown();
 	}

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) since 2009 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.performance.factory;
@@ -51,16 +44,17 @@ public class OperateCollectCalcMaster {
 	 */
 	public boolean add(CollectorCalcMethodMstData data) throws EntityExistsException {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
 		// 計算ロジック情報の追加
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// インスタンス生成
 			CollectorCalcMethodMstEntity entity = new CollectorCalcMethodMstEntity(data.getCalcMethod());
 			// 重複チェック
 			jtm.checkEntityExists(CollectorCalcMethodMstEntity.class, entity.getCalcMethod());
 			entity.setClassName(data.getClassName());
 			entity.setExpression(data.getExpression());
+			// 登録
+			em.persist(entity);
 		} catch (EntityExistsException e) {
 			m_log.info("add() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -75,14 +69,16 @@ public class OperateCollectCalcMaster {
 	 */
 	public boolean delete(String calcMethod) throws CollectorNotFound {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		CollectorCalcMethodMstEntity entity
-		= QueryUtil.getCollectorCalcMethodMstPK(calcMethod);
-		// pkが同じデータが登録されている場合は、削除する
-		em.remove(entity);
+			CollectorCalcMethodMstEntity entity
+			= QueryUtil.getCollectorCalcMethodMstPK(calcMethod);
+			// pkが同じデータが登録されている場合は、削除する
+			em.remove(entity);
 
-		return true;
+			return true;
+		}
 	}
 
 	/**
@@ -90,16 +86,18 @@ public class OperateCollectCalcMaster {
 	 */
 	public boolean deleteAll() {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		List<CollectorCalcMethodMstEntity> col
-		= QueryUtil.getAllCollectorCalcMethodMst();
-		for (CollectorCalcMethodMstEntity entity : col) {
-			// 削除処理
-			em.remove(entity);
+			List<CollectorCalcMethodMstEntity> col
+			= QueryUtil.getAllCollectorCalcMethodMst();
+			for (CollectorCalcMethodMstEntity entity : col) {
+				// 削除処理
+				em.remove(entity);
+			}
+
+			return true;
 		}
-
-		return true;
 	}
 
 	/**

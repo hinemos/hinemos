@@ -1,0 +1,2 @@
+Reporting-Version: @VERSION@
+Build-Date: @BUILD_DATE@

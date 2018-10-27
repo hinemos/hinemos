@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.hub.factory;
@@ -24,8 +17,8 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.hub.bean.PropertyConstants;
 import com.clustercontrol.hub.bean.QuartzConstant;
 import com.clustercontrol.hub.model.TransferInfo;
 import com.clustercontrol.hub.session.HubControllerBean;
@@ -94,7 +87,7 @@ public class ModifySchedule {
 				break;
 			case batch:
 				{
-					String baseTime = PropertyConstants.hub_transfer_batch_basetime.string();
+					String baseTime = HinemosPropertyCommon.hub_transfer_batch_basetime.getStringValue();
 					int intervalSec = transfer.getInterval() * 60 * 60;
 					long nextTime = getBaseTime(baseTime, intervalSec);
 					m_log.debug(String.format("addSchedule() : id=%s, nextTime=%d", transfer.getTransferId(), nextTime));
@@ -112,11 +105,11 @@ public class ModifySchedule {
 				}
 				break;
 			case delay:
-				String cronString = PropertyConstants.hub_transfer_delay_interval.string();
+				String cronString = HinemosPropertyCommon.hub_transfer_delay_interval.getStringValue();
 				try {
 					new CronExpression(cronString);
 				} catch(Throwable e) {
-					m_log.warn(PropertyConstants.hub_transfer_delay_interval.message_invalid(cronString));
+					m_log.warn(HinemosPropertyCommon.hub_transfer_delay_interval.message_invalid(cronString));
 					break;
 				}
 				
@@ -168,13 +161,13 @@ public class ModifySchedule {
 			int hour = Integer.parseInt(m.group(1));
 			int minute = Integer.parseInt(m.group(2));
 			if (0 > hour || hour >= 24 || 0 > minute || minute >= 60) {
-				m_log.warn(PropertyConstants.hub_transfer_batch_basetime.message_invalid(baseTimeStr));
+				m_log.warn(HinemosPropertyCommon.hub_transfer_batch_basetime.message_invalid(baseTimeStr));
 				hour = 0;
 				minute = 0;
 			}
 			offset = (hour * 60 * 60 + minute * 60) * 1000;
 		} else {
-			m_log.warn(PropertyConstants.hub_transfer_batch_basetime.message_invalid(baseTimeStr));
+			m_log.warn(HinemosPropertyCommon.hub_transfer_batch_basetime.message_invalid(baseTimeStr));
 		}
 		
 		long currentTime = HinemosTime.currentTimeMillis() + HinemosTime.getTimeZoneOffset();

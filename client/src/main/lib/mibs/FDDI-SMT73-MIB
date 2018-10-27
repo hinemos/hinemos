@@ -1,0 +1,1269 @@
+          FDDI-SMT73-MIB DEFINITIONS ::= BEGIN
+
+          IMPORTS
+                  Counter
+                      FROM RFC1155-SMI
+                 transmission  FROM RFC1213-MIB
+                  OBJECT-TYPE
+                      FROM RFC-1212;
+
+
+
+
+          fddi    OBJECT IDENTIFIER ::= { transmission 15 }
+          fddimib   OBJECT IDENTIFIER ::= { fddi 73 }
+
+
+
+          FddiTimeNano ::= INTEGER (0..2147483647)
+
+
+
+
+
+          FddiTimeMilli ::= INTEGER (0..2147483647)
+
+          FddiResourceId ::= INTEGER (0..65535)
+
+          FddiSMTStationIdType ::= OCTET STRING (SIZE (8))
+
+          FddiMACLongAddressType ::= OCTET STRING (SIZE (6))
+
+
+
+          fddimibSMT          OBJECT IDENTIFIER ::= { fddimib 1 }
+
+          fddimibMAC          OBJECT IDENTIFIER ::= { fddimib 2 }
+
+          fddimibMACCounters  OBJECT IDENTIFIER ::= { fddimib 3 }
+
+
+
+
+
+          fddimibPATH         OBJECT IDENTIFIER ::= { fddimib 4 }
+
+          fddimibPORT         OBJECT IDENTIFIER ::= { fddimib 5 }
+
+
+
+          fddimibSMTNumber OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMT  1 }
+
+
+
+          fddimibSMTTable OBJECT-TYPE
+              SYNTAX  SEQUENCE OF FddimibSMTEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              ::= { fddimibSMT  2 }
+
+          fddimibSMTEntry OBJECT-TYPE
+              SYNTAX  FddimibSMTEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              INDEX   { fddimibSMTIndex }
+              ::= { fddimibSMTTable 1 }
+
+          FddimibSMTEntry ::=
+              SEQUENCE {
+                  fddimibSMTIndex
+                      INTEGER,
+
+
+
+
+
+                  fddimibSMTStationId
+                      FddiSMTStationIdType,
+                  fddimibSMTOpVersionId
+                      INTEGER,
+                  fddimibSMTHiVersionId
+                      INTEGER,
+                  fddimibSMTLoVersionId
+                      INTEGER,
+                  fddimibSMTUserData
+                      OCTET STRING,
+                  fddimibSMTMIBVersionId
+                      INTEGER,
+                  fddimibSMTMACCts
+                      INTEGER,
+                  fddimibSMTNonMasterCts
+                      INTEGER,
+                  fddimibSMTMasterCts
+                      INTEGER,
+                  fddimibSMTAvailablePaths
+                      INTEGER,
+                  fddimibSMTConfigCapabilities
+                      INTEGER,
+                  fddimibSMTConfigPolicy
+                      INTEGER,
+                  fddimibSMTConnectionPolicy
+                      INTEGER,
+                  fddimibSMTTNotify
+                      INTEGER,
+                  fddimibSMTStatRptPolicy
+                      INTEGER,
+                  fddimibSMTTraceMaxExpiration
+                      FddiTimeMilli,
+                  fddimibSMTBypassPresent
+                      INTEGER,
+                  fddimibSMTECMState
+                      INTEGER,
+                  fddimibSMTCFState
+                      INTEGER,
+                  fddimibSMTRemoteDisconnectFlag
+                      INTEGER,
+                  fddimibSMTStationStatus
+                      INTEGER,
+                  fddimibSMTPeerWrapFlag
+                      INTEGER,
+                  fddimibSMTTimeStamp
+                      FddiTimeMilli,
+                  fddimibSMTTransitionTimeStamp
+                      FddiTimeMilli,
+
+
+
+
+
+                  fddimibSMTStationAction
+                      INTEGER
+              }
+
+          fddimibSMTIndex OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 1 }
+
+          fddimibSMTStationId OBJECT-TYPE
+              SYNTAX  FddiSMTStationIdType -- OCTET STRING (SIZE (8))
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 2 }
+
+          fddimibSMTOpVersionId OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 3 }
+
+          fddimibSMTHiVersionId OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 4 }
+
+
+
+
+
+
+          fddimibSMTLoVersionId OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 5 }
+
+          fddimibSMTUserData OBJECT-TYPE
+              SYNTAX  OCTET STRING (SIZE (32))
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 6 }
+
+          fddimibSMTMIBVersionId OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 7 }
+
+          fddimibSMTMACCts OBJECT-TYPE
+              SYNTAX  INTEGER (0..255)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 8 }
+
+          fddimibSMTNonMasterCts OBJECT-TYPE
+              SYNTAX  INTEGER (0..2)
+
+
+
+
+
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 9 }
+
+          fddimibSMTMasterCts OBJECT-TYPE
+              SYNTAX  INTEGER (0..255)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 10 }
+
+          fddimibSMTAvailablePaths OBJECT-TYPE
+              SYNTAX  INTEGER (0..7)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 11 }
+
+          fddimibSMTConfigCapabilities OBJECT-TYPE
+
+
+
+
+
+              SYNTAX  INTEGER (0..3)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 12 }
+
+          fddimibSMTConfigPolicy OBJECT-TYPE
+              SYNTAX  INTEGER (0..1)
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 13 }
+
+          fddimibSMTConnectionPolicy OBJECT-TYPE
+
+
+
+
+
+              SYNTAX  INTEGER (32768..65535)
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 14 }
+
+          fddimibSMTTNotify OBJECT-TYPE
+              SYNTAX  INTEGER (2..30)
+              ACCESS  read-write
+              STATUS  mandatory
+
+
+
+
+
+              ::= { fddimibSMTEntry 15 }
+
+          fddimibSMTStatRptPolicy OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 16 }
+
+          fddimibSMTTraceMaxExpiration OBJECT-TYPE
+              SYNTAX  FddiTimeMilli
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 17 }
+
+          fddimibSMTBypassPresent OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 18 }
+
+          fddimibSMTECMState OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          ec0(1), -- Out
+
+
+
+
+
+                          ec1(2), -- In
+                          ec2(3), -- Trace
+                          ec3(4), -- Leave
+                          ec4(5), -- Path_Test
+                          ec5(6), -- Insert
+                          ec6(7), -- Check
+                          ec7(8)  -- Deinsert
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 19 }
+
+          fddimibSMTCFState OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          cf0(1),   -- isolated
+                          cf1(2),   -- local_a
+                          cf2(3),   -- local_b
+                          cf3(4),   -- local_ab
+                          cf4(5),   -- local_s
+                          cf5(6),   -- wrap_a
+                          cf6(7),   -- wrap_b
+                          cf7(8),   -- wrap_ab
+                          cf8(9),   -- wrap_s
+                          cf9(10),  -- c_wrap_a
+                          cf10(11), -- c_wrap_b
+                          cf11(12), -- c_wrap_s
+                          cf12(13)  -- thru
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 20 }
+
+          fddimibSMTRemoteDisconnectFlag OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 21 }
+
+          fddimibSMTStationStatus OBJECT-TYPE
+              SYNTAX  INTEGER { concatenated(1), separated(2), thru(3) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 22 }
+
+          fddimibSMTPeerWrapFlag OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 23 }
+
+          fddimibSMTTimeStamp OBJECT-TYPE
+              SYNTAX  FddiTimeMilli
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 24 }
+
+          fddimibSMTTransitionTimeStamp OBJECT-TYPE
+              SYNTAX  FddiTimeMilli
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 25 }
+
+          fddimibSMTStationAction OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          other(1),               -- none of the following
+                          connect(2),
+                          disconnect(3),
+                          path-Test(4),
+                          self-Test(5),
+                          disable-a(6),
+                          disable-b(7),
+                          disable-m(8)
+                      }
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibSMTEntry 26 }
+
+
+
+          fddimibMACNumber OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMAC  1 }
+
+
+
+          fddimibMACTable OBJECT-TYPE
+              SYNTAX  SEQUENCE OF FddimibMACEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              ::= { fddimibMAC  2 }
+
+          fddimibMACEntry OBJECT-TYPE
+              SYNTAX  FddimibMACEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              INDEX   { fddimibMACSMTIndex, fddimibMACIndex }
+              ::= { fddimibMACTable 1 }
+
+          FddimibMACEntry ::=
+              SEQUENCE {
+                  fddimibMACSMTIndex
+
+
+
+
+
+                          INTEGER,
+                  fddimibMACIndex
+                          INTEGER,
+                  fddimibMACIfIndex
+                          INTEGER,
+                  fddimibMACFrameStatusFunctions
+                          INTEGER,
+                  fddimibMACTMaxCapability
+                          FddiTimeNano,
+                  fddimibMACTVXCapability
+                          FddiTimeNano,
+                  fddimibMACAvailablePaths
+                          INTEGER,
+                  fddimibMACCurrentPath
+                          INTEGER,
+                  fddimibMACUpstreamNbr
+                          FddiMACLongAddressType,
+                  fddimibMACDownstreamNbr
+                          FddiMACLongAddressType,
+                  fddimibMACOldUpstreamNbr
+                          FddiMACLongAddressType,
+                  fddimibMACOldDownstreamNbr
+                          FddiMACLongAddressType,
+                  fddimibMACDupAddressTest
+                          INTEGER,
+                  fddimibMACRequestedPaths
+                          INTEGER,
+                  fddimibMACDownstreamPORTType
+                          INTEGER,
+                  fddimibMACSMTAddress
+                          FddiMACLongAddressType,
+                  fddimibMACTReq
+                          FddiTimeNano,
+                  fddimibMACTNeg
+                          FddiTimeNano,
+                  fddimibMACTMax
+                          FddiTimeNano,
+                  fddimibMACTvxValue
+                          FddiTimeNano,
+                  fddimibMACFrameCts
+                          Counter,
+                  fddimibMACCopiedCts
+                          Counter,
+                  fddimibMACTransmitCts
+                          Counter,
+                  fddimibMACErrorCts
+                          Counter,
+                  fddimibMACLostCts
+
+
+
+
+
+                          Counter,
+                  fddimibMACFrameErrorThreshold
+                          INTEGER,
+                  fddimibMACFrameErrorRatio
+                          INTEGER,
+                  fddimibMACRMTState
+                          INTEGER,
+                  fddimibMACDaFlag
+                          INTEGER,
+                  fddimibMACUnaDaFlag
+                          INTEGER,
+                  fddimibMACFrameErrorFlag
+                          INTEGER,
+                  fddimibMACMAUnitdataAvailable
+                          INTEGER,
+                  fddimibMACHardwarePresent
+                          INTEGER,
+                  fddimibMACMAUnitdataEnable
+                          INTEGER
+              }
+
+
+          fddimibMACSMTIndex OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 1 }
+
+          fddimibMACIndex OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 2 }
+
+          fddimibMACIfIndex OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 3 }
+
+          fddimibMACFrameStatusFunctions OBJECT-TYPE
+              SYNTAX  INTEGER (0..7)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 4 }
+
+          fddimibMACTMaxCapability OBJECT-TYPE
+              SYNTAX  FddiTimeNano
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 5 }
+
+          fddimibMACTVXCapability OBJECT-TYPE
+              SYNTAX  FddiTimeNano
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 6 }
+
+
+
+
+
+          fddimibMACAvailablePaths OBJECT-TYPE
+              SYNTAX  INTEGER (0..7)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 7 }
+
+          fddimibMACCurrentPath OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          isolated(1),
+                          local(2),
+                          secondary(3),
+                          primary(4),
+                          concatenated(5),
+                          thru(6)
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 8 }
+
+          fddimibMACUpstreamNbr OBJECT-TYPE
+              SYNTAX  FddiMACLongAddressType -- OCTET STRING (SIZE (6))
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 9 }
+
+          fddimibMACDownstreamNbr OBJECT-TYPE
+              SYNTAX  FddiMACLongAddressType -- OCTET STRING (SIZE (6))
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 10 }
+
+          fddimibMACOldUpstreamNbr OBJECT-TYPE
+              SYNTAX  FddiMACLongAddressType -- OCTET STRING (SIZE (6))
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 11 }
+
+          fddimibMACOldDownstreamNbr OBJECT-TYPE
+              SYNTAX  FddiMACLongAddressType -- OCTET STRING (SIZE (6))
+              ACCESS  read-only
+              STATUS  mandatory
+
+
+
+
+
+              ::= { fddimibMACEntry 12 }
+
+          fddimibMACDupAddressTest OBJECT-TYPE
+              SYNTAX  INTEGER { none(1), pass(2), fail(3) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 13 }
+
+          fddimibMACRequestedPaths OBJECT-TYPE
+              SYNTAX  INTEGER  (0..255)
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibMACEntry 14 }
+
+          fddimibMACDownstreamPORTType OBJECT-TYPE
+              SYNTAX  INTEGER { a(1), b(2), s(3), m(4), none(5) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 15 }
+
+          fddimibMACSMTAddress OBJECT-TYPE
+              SYNTAX  FddiMACLongAddressType -- OCTET STRING (SIZE (6))
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 16 }
+
+          fddimibMACTReq OBJECT-TYPE
+              SYNTAX  FddiTimeNano
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 17 }
+
+          fddimibMACTNeg OBJECT-TYPE
+              SYNTAX  FddiTimeNano
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 18 }
+
+          fddimibMACTMax OBJECT-TYPE
+
+
+
+
+
+              SYNTAX  FddiTimeNano
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 19 }
+
+          fddimibMACTvxValue OBJECT-TYPE
+              SYNTAX  FddiTimeNano
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 20 }
+
+          fddimibMACFrameCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 21 }
+
+          fddimibMACCopiedCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 22 }
+
+          fddimibMACTransmitCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 23 }
+
+          fddimibMACErrorCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 24 }
+
+          fddimibMACLostCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 25 }
+
+          fddimibMACFrameErrorThreshold OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+              ACCESS  read-write
+              STATUS  mandatory
+
+
+
+
+
+              ::= { fddimibMACEntry 26 }
+
+          fddimibMACFrameErrorRatio OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 27 }
+
+          fddimibMACRMTState OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          rm0(1), -- Isolated
+                          rm1(2), -- Non_Op
+                          rm2(3), -- Ring_Op
+                          rm3(4), -- Detect
+                          rm4(5), -- Non_Op_Dup
+                          rm5(6), -- Ring_Op_Dup
+                          rm6(7), -- Directed
+                          rm7(8)  -- Trace
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 28 }
+
+          fddimibMACDaFlag OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 29 }
+
+          fddimibMACUnaDaFlag OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 30 }
+
+          fddimibMACFrameErrorFlag OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 31 }
+
+          fddimibMACMAUnitdataAvailable OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 32 }
+
+          fddimibMACHardwarePresent OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACEntry 33 }
+
+          fddimibMACMAUnitdataEnable OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibMACEntry 34 }
+
+
+
+
+
+          fddimibMACCountersTable OBJECT-TYPE
+              SYNTAX  SEQUENCE OF FddimibMACCountersEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              ::= { fddimibMACCounters  1 }
+
+          fddimibMACCountersEntry OBJECT-TYPE
+              SYNTAX  FddimibMACCountersEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              INDEX   { fddimibMACSMTIndex, fddimibMACIndex }
+              ::= { fddimibMACCountersTable 1 }
+
+
+
+
+
+          FddimibMACCountersEntry ::=
+              SEQUENCE {
+                  fddimibMACTokenCts
+                          Counter,
+                  fddimibMACTvxExpiredCts
+                          Counter,
+                  fddimibMACNotCopiedCts
+                          Counter,
+                  fddimibMACLateCts
+                          Counter,
+                  fddimibMACRingOpCts
+                          Counter,
+                  fddimibMACNotCopiedRatio
+                          INTEGER,
+                  fddimibMACNotCopiedFlag
+                          INTEGER,
+                  fddimibMACNotCopiedThreshold
+                          INTEGER
+              }
+
+          fddimibMACTokenCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACCountersEntry 1 }
+
+          fddimibMACTvxExpiredCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACCountersEntry 2 }
+
+          fddimibMACNotCopiedCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+
+
+
+
+
+              STATUS  mandatory
+              ::= { fddimibMACCountersEntry 3 }
+
+          fddimibMACLateCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACCountersEntry 4 }
+
+          fddimibMACRingOpCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACCountersEntry 5 }
+
+          fddimibMACNotCopiedRatio OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+
+
+
+
+
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACCountersEntry 6 }
+
+          fddimibMACNotCopiedFlag OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibMACCountersEntry 7 }
+
+          fddimibMACNotCopiedThreshold OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibMACCountersEntry 8 }
+
+
+
+          fddimibPATHNumber OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPATH  1 }
+
+
+
+          fddimibPATHTable OBJECT-TYPE
+              SYNTAX  SEQUENCE OF FddimibPATHEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              ::= { fddimibPATH  2 }
+
+          fddimibPATHEntry OBJECT-TYPE
+              SYNTAX  FddimibPATHEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              INDEX   { fddimibPATHSMTIndex, fddimibPATHIndex }
+              ::= { fddimibPATHTable 1 }
+
+          FddimibPATHEntry ::=
+              SEQUENCE {
+                  fddimibPATHSMTIndex
+                          INTEGER,
+                  fddimibPATHIndex
+                          INTEGER,
+                  fddimibPATHTVXLowerBound
+                          FddiTimeNano,
+                  fddimibPATHTMaxLowerBound
+                          FddiTimeNano,
+                  fddimibPATHMaxTReq
+                          FddiTimeNano
+              }
+
+          fddimibPATHSMTIndex OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+
+
+
+
+
+              ::= { fddimibPATHEntry 1 }
+
+
+          fddimibPATHIndex OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPATHEntry 2 }
+
+          fddimibPATHTVXLowerBound OBJECT-TYPE
+              SYNTAX  FddiTimeNano
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibPATHEntry 3 }
+
+          fddimibPATHTMaxLowerBound OBJECT-TYPE
+              SYNTAX  FddiTimeNano
+
+
+
+
+
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibPATHEntry 4 }
+
+          fddimibPATHMaxTReq OBJECT-TYPE
+              SYNTAX  FddiTimeNano
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibPATHEntry 5 }
+
+
+
+
+
+
+          fddimibPATHConfigTable OBJECT-TYPE
+              SYNTAX SEQUENCE OF FddimibPATHConfigEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              ::= { fddimibPATH 3 }
+
+          fddimibPATHConfigEntry OBJECT-TYPE
+              SYNTAX FddimibPATHConfigEntry
+              ACCESS not-accessible
+              STATUS mandatory
+              INDEX { fddimibPATHConfigSMTIndex,
+                      fddimibPATHConfigPATHIndex,
+                      fddimibPATHConfigTokenOrder }
+              ::= { fddimibPATHConfigTable 1 }
+
+          FddimibPATHConfigEntry ::=
+              SEQUENCE {
+                  fddimibPATHConfigSMTIndex
+                      INTEGER,
+                  fddimibPATHConfigPATHIndex
+                      INTEGER,
+                  fddimibPATHConfigTokenOrder
+                      INTEGER,
+                  fddimibPATHConfigResourceType
+                      INTEGER,
+                  fddimibPATHConfigResourceIndex
+                      INTEGER,
+                  fddimibPATHConfigCurrentPath
+                      INTEGER
+              }
+
+          fddimibPATHConfigSMTIndex OBJECT-TYPE
+              SYNTAX INTEGER (1..65535)
+              ACCESS read-only
+              STATUS mandatory
+              ::= { fddimibPATHConfigEntry 1 }
+
+          fddimibPATHConfigPATHIndex OBJECT-TYPE
+              SYNTAX INTEGER (1..65535)
+              ACCESS read-only
+              STATUS mandatory
+              ::= { fddimibPATHConfigEntry 2 }
+
+          fddimibPATHConfigTokenOrder OBJECT-TYPE
+              SYNTAX INTEGER (1..65535)
+              ACCESS read-only
+              STATUS mandatory
+              ::= { fddimibPATHConfigEntry 3 }
+
+          fddimibPATHConfigResourceType OBJECT-TYPE
+              SYNTAX INTEGER { mac(2), port(4) }
+              ACCESS read-only
+              STATUS mandatory
+              ::= { fddimibPATHConfigEntry 4 }
+
+          fddimibPATHConfigResourceIndex OBJECT-TYPE
+              SYNTAX INTEGER (1..65535)
+              ACCESS read-only
+              STATUS mandatory
+              ::= { fddimibPATHConfigEntry 5 }
+
+          fddimibPATHConfigCurrentPath OBJECT-TYPE
+              SYNTAX INTEGER {
+                       isolated(1), local(2), secondary(3), primary(4),
+                       concatenated(5), thru(6)
+                     }
+              ACCESS read-only
+
+
+
+
+
+              STATUS mandatory
+              ::= { fddimibPATHConfigEntry 6 }
+
+
+
+          fddimibPORTNumber OBJECT-TYPE
+              SYNTAX  INTEGER (0..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORT  1 }
+
+
+
+          fddimibPORTTable OBJECT-TYPE
+              SYNTAX  SEQUENCE OF FddimibPORTEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              ::= { fddimibPORT  2 }
+
+          fddimibPORTEntry OBJECT-TYPE
+              SYNTAX  FddimibPORTEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              INDEX   { fddimibPORTSMTIndex, fddimibPORTIndex }
+              ::= { fddimibPORTTable 1 }
+
+          FddimibPORTEntry ::=
+              SEQUENCE {
+
+
+
+
+
+                  fddimibPORTSMTIndex
+                          INTEGER,
+                  fddimibPORTIndex
+                          INTEGER,
+                  fddimibPORTMyType
+                          INTEGER,
+                  fddimibPORTNeighborType
+                          INTEGER,
+                  fddimibPORTConnectionPolicies
+                          INTEGER,
+                  fddimibPORTMACIndicated
+                          INTEGER,
+                  fddimibPORTCurrentPath
+                          INTEGER,
+                  fddimibPORTRequestedPaths
+                          OCTET STRING,
+                  fddimibPORTMACPlacement
+                          FddiResourceId,
+                  fddimibPORTAvailablePaths
+                          INTEGER,
+                  fddimibPORTPMDClass
+                          INTEGER,
+                  fddimibPORTConnectionCapabilities
+                          INTEGER,
+                  fddimibPORTBSFlag
+                          INTEGER,
+                  fddimibPORTLCTFailCts
+                          Counter,
+                  fddimibPORTLerEstimate
+                          INTEGER,
+                  fddimibPORTLemRejectCts
+                          Counter,
+                  fddimibPORTLemCts
+                          Counter,
+                  fddimibPORTLerCutoff
+                          INTEGER,
+                  fddimibPORTLerAlarm
+                          INTEGER,
+                  fddimibPORTConnectState
+                          INTEGER,
+                  fddimibPORTPCMState
+                          INTEGER,
+                  fddimibPORTPCWithhold
+                          INTEGER,
+                  fddimibPORTLerFlag
+                          INTEGER,
+                  fddimibPORTHardwarePresent
+                          INTEGER,
+
+
+
+
+
+                  fddimibPORTAction
+                          INTEGER
+              }
+
+          fddimibPORTSMTIndex OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 1 }
+
+          fddimibPORTIndex OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 2 }
+
+          fddimibPORTMyType OBJECT-TYPE
+              SYNTAX  INTEGER { a(1), b(2), s(3), m(4), none(5) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 3 }
+
+          fddimibPORTNeighborType OBJECT-TYPE
+              SYNTAX  INTEGER { a(1), b(2), s(3), m(4), none(5) }
+              ACCESS  read-only
+              STATUS  mandatory
+
+
+
+
+
+              ::= { fddimibPORTEntry 4 }
+
+          fddimibPORTConnectionPolicies OBJECT-TYPE
+              SYNTAX  INTEGER (0..3)
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 5 }
+
+          fddimibPORTMACIndicated OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          tVal9FalseRVal9False(1),
+                          tVal9FalseRVal9True(2),
+                          tVal9TrueRVal9False(3),
+                          tVal9TrueRVal9True(4)
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 6 }
+
+          fddimibPORTCurrentPath OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          ce0(1), -- isolated
+
+
+
+
+
+                          ce1(2), -- local
+                          ce2(3), -- secondary
+                          ce3(4), -- primary
+                          ce4(5), -- concatenated
+                          ce5(6)  -- thru
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 7 }
+
+          fddimibPORTRequestedPaths OBJECT-TYPE
+              SYNTAX  OCTET STRING (SIZE (3))
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 8 }
+
+          fddimibPORTMACPlacement OBJECT-TYPE
+              SYNTAX  FddiResourceId -- INTEGER (0..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 9 }
+
+          fddimibPORTAvailablePaths OBJECT-TYPE
+              SYNTAX  INTEGER (0..7)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 10 }
+
+          fddimibPORTPMDClass OBJECT-TYPE
+              SYNTAX  INTEGER {
+                              multimode(1),
+                              single-mode1(2),
+                              single-mode2(3),
+                              sonet(4),
+                              low-cost-fiber(5),
+                              twisted-pair(6),
+                              unknown(7),
+                              unspecified(8)
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 11 }
+
+          fddimibPORTConnectionCapabilities OBJECT-TYPE
+              SYNTAX  INTEGER (0..3)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 12 }
+
+          fddimibPORTBSFlag OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 13 }
+
+          fddimibPORTLCTFailCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 14 }
+
+          fddimibPORTLerEstimate OBJECT-TYPE
+              SYNTAX  INTEGER (4..15)
+              ACCESS  read-only
+              STATUS  mandatory
+
+
+
+
+
+              ::= { fddimibPORTEntry 15 }
+
+          fddimibPORTLemRejectCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 16 }
+
+          fddimibPORTLemCts OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 17 }
+
+          fddimibPORTLerCutoff OBJECT-TYPE
+              SYNTAX  INTEGER (4..15)
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 18 }
+
+          fddimibPORTLerAlarm OBJECT-TYPE
+              SYNTAX  INTEGER (4..15)
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 19 }
+
+          fddimibPORTConnectState OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          disabled(1),
+                          connecting(2),
+                          standby(3),
+                          active(4)
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 20 }
+
+          fddimibPORTPCMState OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          pc0(1), -- Off
+                          pc1(2), -- Break
+                          pc2(3), -- Trace
+                          pc3(4), -- Connect
+                          pc4(5), -- Next
+                          pc5(6), -- Signal
+                          pc6(7), -- Join
+                          pc7(8), -- Verify
+                          pc8(9), -- Active
+                          pc9(10) -- Maint
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 21 }
+
+          fddimibPORTPCWithhold OBJECT-TYPE
+              SYNTAX  INTEGER {
+                           none(1),
+                           m-m(2),
+
+
+
+
+
+                           otherincompatible(3),
+                           pathnotavailable(4)
+                      }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 22 }
+
+          fddimibPORTLerFlag OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 23 }
+
+          fddimibPORTHardwarePresent OBJECT-TYPE
+              SYNTAX  INTEGER { true(1), false(2) }
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 24 }
+
+          fddimibPORTAction OBJECT-TYPE
+              SYNTAX  INTEGER {
+                      other(1),           -- none of the following
+                      maintPORT(2),
+                      enablePORT(3),
+                      disablePORT(4),
+                      startPORT(5),
+                      stopPORT(6)
+
+
+
+
+
+                      }
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { fddimibPORTEntry 25 }
+
+
+          END

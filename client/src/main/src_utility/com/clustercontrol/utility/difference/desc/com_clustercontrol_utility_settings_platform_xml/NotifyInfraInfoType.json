@@ -1,0 +1,110 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"infoInfraId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_infoInfraId"}
+	]},
+
+	{
+	"propName":"warnInfraId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_warnInfraId"}
+	]},
+
+	{
+	"propName":"criticalInfraId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_criticalInfraId"}
+	]},
+
+	{
+	"propName":"unknownInfraId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_unknownInfraId"}
+	]},
+
+	{
+	"propName":"infoInfraFailurePriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_infoInfraFailurePriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"warnInfraFailurePriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_warnInfraFailurePriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"criticalInfraFailurePriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_criticalInfraFailurePriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"unknownInfraFailurePriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_unknownInfraFailurePriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"InfraExecFacilityFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_InfraExecFacilityFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_EventOccurs"},
+				{"value":"1", "name":"name_FixedScope"}
+			]
+		}
+	]},
+
+	{
+	"propName":"InfraExecFacility",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_InfraExecFacility"}
+	]},
+
+	{
+	"propName":"InfraExecScope",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfraInfoType_InfraExecScope"}
+	]}
+]
+}

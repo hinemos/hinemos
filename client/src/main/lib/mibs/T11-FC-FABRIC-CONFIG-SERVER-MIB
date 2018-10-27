@@ -1,0 +1,1027 @@
+T11-FC-FABRIC-CONFIG-SERVER-MIB  DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    NOTIFICATION-TYPE, mib-2, Counter32, Unsigned32
+                  FROM SNMPv2-SMI                  -- [RFC2578]
+    MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                  FROM SNMPv2-CONF                 -- [RFC2580]
+    TEXTUAL-CONVENTION, TruthValue, TimeStamp
+                  FROM SNMPv2-TC                   -- [RFC2579]
+    SnmpAdminString
+                  FROM SNMP-FRAMEWORK-MIB          -- [RFC3411]
+    URLString
+                  FROM NETWORK-SERVICES-MIB        -- [RFC2788]
+
+    FcPortType, FcNameIdOrZero, FcDomainIdOrZero,
+    fcmInstanceIndex, fcmSwitchIndex, FcAddressIdOrZero
+                  FROM FC-MGMT-MIB                 -- [RFC4044]
+    T11NsGs4RejectReasonCode
+                  FROM T11-FC-NAME-SERVER-MIB      -- [RFC4438]
+    T11FabricIndex
+                  FROM T11-TC-MIB                  -- [RFC4439]
+    t11FamLocalSwitchWwn
+                  FROM T11-FC-FABRIC-ADDR-MGR-MIB; -- [RFC4439]
+
+
+t11FcFabricConfigServerMIB   MODULE-IDENTITY
+    LAST-UPDATED  "200706270000Z"
+    ORGANIZATION  "For the initial versions, T11.
+                   For later versions, the IETF's IMSS Working Group."
+    ::= { mib-2 162 }
+
+t11FcsMIBObjects       OBJECT IDENTIFIER
+                                    ::= { t11FcFabricConfigServerMIB 1 }
+t11FcsMIBConformance   OBJECT IDENTIFIER
+                                    ::= { t11FcFabricConfigServerMIB 2 }
+t11FcsNotifications    OBJECT IDENTIFIER
+                                    ::= { t11FcFabricConfigServerMIB 0 }
+
+t11FcsDiscovery        OBJECT IDENTIFIER ::= { t11FcsMIBObjects 1 }
+t11FcsDiscoveredConfig OBJECT IDENTIFIER ::= { t11FcsMIBObjects 2 }
+t11FcsStats            OBJECT IDENTIFIER ::= { t11FcsMIBObjects 3 }
+t11FcsNotificationInfo OBJECT IDENTIFIER ::= { t11FcsMIBObjects 4 }
+
+
+T11FcListIndex ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT  "d"
+    STATUS  current
+    SYNTAX  Unsigned32 (1..4294967295)
+
+T11FcListIndexPointerOrZero ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT  "d"
+
+
+
+
+
+    STATUS  current
+    SYNTAX  Unsigned32 -- the default range of (0..4294967295)
+
+T11FcIeType ::= TEXTUAL-CONVENTION
+    STATUS  current
+    SYNTAX  INTEGER {
+                unknown(1),
+                other(2),
+                switch(3),
+                hub(4),
+                bridge(5)
+            }
+
+T11FcPortState  ::= TEXTUAL-CONVENTION
+    STATUS  current
+
+
+
+
+
+    SYNTAX  INTEGER {
+                unknown(1),
+                other(2),
+                online(3),
+                offline(4),
+                testing(5),
+                fault(6)
+            }
+
+T11FcPortTxType ::= TEXTUAL-CONVENTION
+    STATUS  current
+    SYNTAX  INTEGER {
+                unknown(1),
+                other(2),
+                shortwave850nm(3),
+                longwave1550nm(4),
+                longwave1310nm(5),
+                electrical(6),
+                tenGbaseSr850(7),
+                tenGbaseLr1310(8),
+                tenGbaseEr1550(9),
+                tenGbaseLx1300(10),
+                tenGbaseSw850(11),
+                tenGbaseLw1310(12),
+                tenGbaseEw1550(13)
+            }
+
+
+
+
+
+
+T11FcsRejectReasonExplanation ::= TEXTUAL-CONVENTION
+    STATUS  current
+    SYNTAX  INTEGER {
+                noAdditionalExplanation(1),
+                invNameIdForIEOrPort(2),
+                ieListNotAvailable(3),
+                ieTypeNotAvailable(4),
+                domainIdNotAvailable(5),
+                mgmtIdNotAvailable(6),
+                fabNameNotAvailable(7),
+                ielogNameNotAvailable(8),
+                mgmtAddrListNotAvailable(9),
+                ieInfoListNotAvailable(10),
+                portListNotAvailable(11),
+                portTypeNotAvailable(12),
+                phyPortNumNotAvailable(13),
+                attPortNameListNotAvailable(14),
+                portStateNotAvailable(15),
+                unableToRegIELogName(16),
+                platformNameNoExist(17),
+                platformNameAlreadyExists(18),
+                platformNodeNameNoExists(19),
+                platformNodeNameAlreadyExists(20),
+                resourceUnavailable(21),
+                noEntriesInLunMap(22),
+                invalidDeviceNameLength(23),
+                multipleAttributes(24),
+                invalidAttribBlockLength(25),
+                attributesMissing(26)
+            }
+
+
+t11FcsFabricDiscoveryTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsFabricDiscoveryEntry
+
+
+
+
+
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsDiscovery 1 }
+
+t11FcsFabricDiscoveryEntry OBJECT-TYPE
+    SYNTAX       T11FcsFabricDiscoveryEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex }
+    ::= { t11FcsFabricDiscoveryTable 1 }
+
+T11FcsFabricDiscoveryEntry ::= SEQUENCE {
+    t11FcsFabricDiscoveryRangeLow   T11FabricIndex,
+    t11FcsFabricDiscoveryRangeHigh  T11FabricIndex,
+    t11FcsFabricDiscoveryStart      INTEGER,
+    t11FcsFabricDiscoveryTimeOut    Unsigned32
+}
+
+t11FcsFabricDiscoveryRangeLow  OBJECT-TYPE
+    SYNTAX       T11FabricIndex
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11FcsFabricDiscoveryEntry 1 }
+
+t11FcsFabricDiscoveryRangeHigh  OBJECT-TYPE
+    SYNTAX       T11FabricIndex
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11FcsFabricDiscoveryEntry 2 }
+
+t11FcsFabricDiscoveryStart  OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     start(1),
+                     noOp(2)
+                 }
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11FcsFabricDiscoveryEntry 3 }
+
+t11FcsFabricDiscoveryTimeOut OBJECT-TYPE
+    SYNTAX       Unsigned32 (300..86400)
+    UNITS        "Seconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { 900 }
+    ::= { t11FcsFabricDiscoveryEntry 4 }
+
+
+
+
+
+
+
+t11FcsDiscoveryStateTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsDiscoveryStateEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsDiscovery 2 }
+
+t11FcsDiscoveryStateEntry OBJECT-TYPE
+    SYNTAX       T11FcsDiscoveryStateEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex, t11FcsFabricIndex }
+    ::= { t11FcsDiscoveryStateTable 1 }
+
+T11FcsDiscoveryStateEntry ::= SEQUENCE {
+    t11FcsFabricIndex              T11FabricIndex,
+    t11FcsDiscoveryStatus          INTEGER,
+    t11FcsDiscoveryCompleteTime    TimeStamp
+}
+
+t11FcsFabricIndex OBJECT-TYPE
+    SYNTAX       T11FabricIndex
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsDiscoveryStateEntry 1 }
+
+
+
+
+
+
+t11FcsDiscoveryStatus  OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     inProgress(1),
+                     completed(2),
+                     localOnly(3)
+                 }
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { t11FcsDiscoveryStateEntry 2 }
+
+t11FcsDiscoveryCompleteTime  OBJECT-TYPE
+    SYNTAX       TimeStamp
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsDiscoveryStateEntry 3 }
+
+
+
+
+
+
+
+
+
+
+t11FcsIeTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsIeEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsDiscoveredConfig 1 }
+
+t11FcsIeEntry OBJECT-TYPE
+    SYNTAX       T11FcsIeEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex, t11FcsFabricIndex,
+              t11FcsIeName }
+    ::= { t11FcsIeTable 1 }
+
+T11FcsIeEntry ::= SEQUENCE {
+    t11FcsIeName                FcNameIdOrZero,
+    t11FcsIeType                T11FcIeType,
+
+
+
+
+
+    t11FcsIeDomainId            FcDomainIdOrZero,
+    t11FcsIeMgmtId              FcAddressIdOrZero,
+    t11FcsIeFabricName          FcNameIdOrZero,
+    t11FcsIeLogicalName         OCTET STRING,
+    t11FcsIeMgmtAddrListIndex   T11FcListIndexPointerOrZero,
+    t11FcsIeInfoList            OCTET STRING
+}
+
+t11FcsIeName  OBJECT-TYPE
+    SYNTAX       FcNameIdOrZero (SIZE(8 | 16))
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsIeEntry 1 }
+
+t11FcsIeType  OBJECT-TYPE
+    SYNTAX       T11FcIeType
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsIeEntry 2 }
+
+t11FcsIeDomainId  OBJECT-TYPE
+    SYNTAX       FcDomainIdOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsIeEntry 3 }
+
+t11FcsIeMgmtId  OBJECT-TYPE
+    SYNTAX       FcAddressIdOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    DEFVAL { '000000'h }
+    ::= { t11FcsIeEntry 4 }
+
+t11FcsIeFabricName  OBJECT-TYPE
+    SYNTAX       FcNameIdOrZero (SIZE(8 | 16))
+    MAX-ACCESS   read-only
+    STATUS       current
+    DEFVAL { '0000000000000000'h }
+    ::= { t11FcsIeEntry 5 }
+
+t11FcsIeLogicalName  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (0..255))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsIeEntry 6 }
+
+t11FcsIeMgmtAddrListIndex  OBJECT-TYPE
+    SYNTAX       T11FcListIndexPointerOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsIeEntry 7 }
+
+t11FcsIeInfoList  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (0..252))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsIeEntry 8 }
+
+
+t11FcsMgmtAddrListTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsMgmtAddrListEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsDiscoveredConfig 2 }
+
+t11FcsMgmtAddrListEntry  OBJECT-TYPE
+    SYNTAX       T11FcsMgmtAddrListEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11FcsMgmtAddrListIndex, t11FcsMgmtAddrIndex }
+
+
+
+
+
+    ::= { t11FcsMgmtAddrListTable 1 }
+
+T11FcsMgmtAddrListEntry ::= SEQUENCE {
+    t11FcsMgmtAddrListIndex        T11FcListIndex,
+    t11FcsMgmtAddrIndex            Unsigned32,
+    t11FcsMgmtAddr                 URLString
+}
+
+t11FcsMgmtAddrListIndex  OBJECT-TYPE
+    SYNTAX       T11FcListIndex
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsMgmtAddrListEntry 1 }
+
+t11FcsMgmtAddrIndex OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsMgmtAddrListEntry 2 }
+
+t11FcsMgmtAddr  OBJECT-TYPE
+    SYNTAX       URLString
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsMgmtAddrListEntry 3 }
+
+
+t11FcsPortTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsPortEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsDiscoveredConfig 4 }
+
+t11FcsPortEntry  OBJECT-TYPE
+    SYNTAX       T11FcsPortEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex, t11FcsFabricIndex,
+              t11FcsIeName, t11FcsPortName }
+    ::= { t11FcsPortTable 1 }
+
+T11FcsPortEntry ::= SEQUENCE {
+    t11FcsPortName                    FcNameIdOrZero,
+    t11FcsPortType                    FcPortType,
+    t11FcsPortTxType                  T11FcPortTxType,
+    t11FcsPortModuleType              Unsigned32,
+    t11FcsPortPhyPortNum              Unsigned32,
+    t11FcsPortAttachPortNameIndex     T11FcListIndexPointerOrZero,
+    t11FcsPortState                   T11FcPortState,
+    t11FcsPortSpeedCapab              OCTET STRING,
+    t11FcsPortOperSpeed               OCTET STRING,
+    t11FcsPortZoningEnfStatus         OCTET STRING
+}
+
+t11FcsPortName  OBJECT-TYPE
+    SYNTAX       FcNameIdOrZero (SIZE(8 | 16))
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsPortEntry 1 }
+
+t11FcsPortType  OBJECT-TYPE
+    SYNTAX       FcPortType
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    ::= { t11FcsPortEntry 2 }
+
+t11FcsPortTxType  OBJECT-TYPE
+    SYNTAX       T11FcPortTxType
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPortEntry 3 }
+
+t11FcsPortModuleType  OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..255)
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPortEntry 4 }
+
+t11FcsPortPhyPortNum  OBJECT-TYPE
+    SYNTAX       Unsigned32 -- the default range of (0..4294967295)
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPortEntry 5 }
+
+t11FcsPortAttachPortNameIndex  OBJECT-TYPE
+    SYNTAX       T11FcListIndexPointerOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    ::= { t11FcsPortEntry 6 }
+
+t11FcsPortState  OBJECT-TYPE
+    SYNTAX       T11FcPortState
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPortEntry 7 }
+
+t11FcsPortSpeedCapab  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (2))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPortEntry 8 }
+
+t11FcsPortOperSpeed  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (2))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPortEntry 9 }
+
+t11FcsPortZoningEnfStatus  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (12))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPortEntry 10 }
+
+
+t11FcsAttachPortNameListTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsAttachPortNameListEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsDiscoveredConfig 5 }
+
+t11FcsAttachPortNameListEntry  OBJECT-TYPE
+    SYNTAX       T11FcsAttachPortNameListEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex,  fcmSwitchIndex,
+              t11FcsAttachPortNameListIndex, t11FcsAttachPortName }
+    ::= { t11FcsAttachPortNameListTable 1 }
+
+T11FcsAttachPortNameListEntry ::= SEQUENCE {
+    t11FcsAttachPortNameListIndex        T11FcListIndex,
+    t11FcsAttachPortName                 OCTET STRING
+}
+
+t11FcsAttachPortNameListIndex  OBJECT-TYPE
+    SYNTAX       T11FcListIndex
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsAttachPortNameListEntry 1 }
+
+t11FcsAttachPortName  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (12))
+    MAX-ACCESS   read-only
+
+
+
+
+
+    STATUS       current
+    ::= { t11FcsAttachPortNameListEntry 2 }
+
+
+t11FcsPlatformTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsPlatformEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsDiscoveredConfig 6 }
+
+t11FcsPlatformEntry  OBJECT-TYPE
+    SYNTAX       T11FcsPlatformEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11FcsFabricIndex, t11FcsPlatformIndex }
+    ::= { t11FcsPlatformTable 1 }
+
+T11FcsPlatformEntry ::= SEQUENCE {
+    t11FcsPlatformIndex              Unsigned32,
+    t11FcsPlatformName               OCTET STRING,
+    t11FcsPlatformType               OCTET STRING,
+    t11FcsPlatformNodeNameListIndex  T11FcListIndexPointerOrZero,
+    t11FcsPlatformMgmtAddrListIndex  T11FcListIndexPointerOrZero,
+    t11FcsPlatformVendorId           SnmpAdminString,
+    t11FcsPlatformProductId          SnmpAdminString,
+    t11FcsPlatformProductRevLevel    SnmpAdminString,
+    t11FcsPlatformDescription        SnmpAdminString,
+    t11FcsPlatformLabel              SnmpAdminString,
+    t11FcsPlatformLocation           SnmpAdminString,
+    t11FcsPlatformSystemID           SnmpAdminString,
+    t11FcsPlatformSysMgmtAddr        T11FcListIndexPointerOrZero,
+    t11FcsPlatformClusterId          SnmpAdminString,
+    t11FcsPlatformClusterMgmtAddr    T11FcListIndexPointerOrZero,
+    t11FcsPlatformFC4Types           OCTET STRING
+}
+
+t11FcsPlatformIndex OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsPlatformEntry 1 }
+
+t11FcsPlatformName  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (1..255))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 2 }
+
+
+
+
+
+t11FcsPlatformType  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (4))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 3 }
+
+t11FcsPlatformNodeNameListIndex  OBJECT-TYPE
+    SYNTAX       T11FcListIndexPointerOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 4 }
+
+t11FcsPlatformMgmtAddrListIndex  OBJECT-TYPE
+    SYNTAX       T11FcListIndexPointerOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 5 }
+
+t11FcsPlatformVendorId  OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE (0 | 12))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 6 }
+
+
+
+
+
+
+t11FcsPlatformProductId  OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE (0 | 20))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 7 }
+
+t11FcsPlatformProductRevLevel  OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE (0 | 4..32))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 8 }
+
+t11FcsPlatformDescription  OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE (0 | 4..128))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 9 }
+
+t11FcsPlatformLabel  OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE (0 | 4..64))
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    ::= { t11FcsPlatformEntry 10 }
+
+t11FcsPlatformLocation  OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE (0 | 4..128))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 11 }
+
+t11FcsPlatformSystemID  OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE (0 | 4..64))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 12 }
+
+t11FcsPlatformSysMgmtAddr  OBJECT-TYPE
+    SYNTAX       T11FcListIndexPointerOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 13 }
+
+t11FcsPlatformClusterId  OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE (0 | 4..64))
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    ::= { t11FcsPlatformEntry 14 }
+
+t11FcsPlatformClusterMgmtAddr  OBJECT-TYPE
+    SYNTAX       T11FcListIndexPointerOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 15 }
+
+t11FcsPlatformFC4Types  OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (0 | 32))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsPlatformEntry 16 }
+
+
+t11FcsNodeNameListTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsNodeNameListEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsDiscoveredConfig 7 }
+
+t11FcsNodeNameListEntry  OBJECT-TYPE
+    SYNTAX       T11FcsNodeNameListEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex,  fcmSwitchIndex,
+              t11FcsNodeNameListIndex, t11FcsNodeName }
+    ::= { t11FcsNodeNameListTable 1 }
+
+T11FcsNodeNameListEntry ::= SEQUENCE {
+    t11FcsNodeNameListIndex       T11FcListIndex,
+    t11FcsNodeName                FcNameIdOrZero
+}
+
+t11FcsNodeNameListIndex  OBJECT-TYPE
+    SYNTAX       T11FcListIndex
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsNodeNameListEntry 1 }
+
+t11FcsNodeName  OBJECT-TYPE
+    SYNTAX       FcNameIdOrZero (SIZE(8 | 16))
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsNodeNameListEntry 2 }
+
+
+t11FcsStatsTable  OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsStats 1 }
+
+t11FcsStatsEntry  OBJECT-TYPE
+    SYNTAX       T11FcsStatsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+
+
+
+
+
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex, t11FcsFabricIndex }
+    ::= { t11FcsStatsTable 1 }
+
+T11FcsStatsEntry ::= SEQUENCE {
+    t11FcsInGetReqs                Counter32,
+    t11FcsOutGetReqs               Counter32,
+    t11FcsInRegReqs                Counter32,
+    t11FcsOutRegReqs               Counter32,
+    t11FcsInDeregReqs              Counter32,
+    t11FcsOutDeregReqs             Counter32,
+    t11FcsRejects                  Counter32
+}
+
+t11FcsInGetReqs  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsStatsEntry 1 }
+
+
+t11FcsOutGetReqs  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsStatsEntry 2 }
+
+
+t11FcsInRegReqs  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsStatsEntry 3 }
+
+t11FcsOutRegReqs  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsStatsEntry 4 }
+
+
+t11FcsInDeregReqs  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsStatsEntry 5 }
+
+t11FcsOutDeregReqs  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsStatsEntry 6 }
+
+t11FcsRejects  OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsStatsEntry 7 }
+
+
+t11FcsNotifyControlTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FcsNotifyControlEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FcsNotificationInfo 1 }
+
+t11FcsNotifyControlEntry OBJECT-TYPE
+    SYNTAX       T11FcsNotifyControlEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex,
+              t11FcsFabricIndex }
+    ::= { t11FcsNotifyControlTable 1 }
+
+T11FcsNotifyControlEntry ::= SEQUENCE {
+     t11FcsReqRejectNotifyEnable        TruthValue,
+     t11FcsDiscoveryCompNotifyEnable    TruthValue,
+     t11FcsMgmtAddrChangeNotifyEnable   TruthValue,
+     t11FcsRejectCtCommandString        OCTET STRING,
+     t11FcsRejectRequestSource          FcNameIdOrZero,
+     t11FcsRejectReasonCode             T11NsGs4RejectReasonCode,
+     t11FcsRejectReasonCodeExp          T11FcsRejectReasonExplanation,
+     t11FcsRejectReasonVendorCode       OCTET STRING
+}
+
+t11FcsReqRejectNotifyEnable OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+
+
+
+
+
+    STATUS        current
+    DEFVAL { false }
+    ::= { t11FcsNotifyControlEntry 1 }
+
+t11FcsDiscoveryCompNotifyEnable OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+    STATUS        current
+    DEFVAL { false }
+    ::= { t11FcsNotifyControlEntry 2 }
+
+t11FcsMgmtAddrChangeNotifyEnable OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+    STATUS        current
+    DEFVAL { false }
+    ::= { t11FcsNotifyControlEntry 3 }
+
+t11FcsRejectCtCommandString OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE (0..255))
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FcsNotifyControlEntry 4 }
+
+t11FcsRejectRequestSource OBJECT-TYPE
+    SYNTAX       FcNameIdOrZero
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { t11FcsNotifyControlEntry 5 }
+
+t11FcsRejectReasonCode OBJECT-TYPE
+    SYNTAX        T11NsGs4RejectReasonCode
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FcsNotifyControlEntry 6 }
+
+t11FcsRejectReasonCodeExp OBJECT-TYPE
+    SYNTAX        T11FcsRejectReasonExplanation
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FcsNotifyControlEntry 7 }
+
+t11FcsRejectReasonVendorCode OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE(1))
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FcsNotifyControlEntry 8 }
+
+t11FcsRqRejectNotification NOTIFICATION-TYPE
+    OBJECTS { t11FamLocalSwitchWwn,
+              t11FcsRejectReasonCode,
+              t11FcsRejectReasonCodeExp,
+              t11FcsRejectReasonVendorCode }
+    STATUS  current
+    ::= { t11FcsNotifications 1 }
+
+t11FcsDiscoveryCompleteNotify NOTIFICATION-TYPE
+    OBJECTS {t11FcsFabricDiscoveryRangeLow}
+    STATUS  current
+    ::= { t11FcsNotifications 2 }
+
+t11FcsMgmtAddrChangeNotify NOTIFICATION-TYPE
+    OBJECTS { t11FcsMgmtAddrChangeFabricIndex,
+              t11FcsMgmtAddrChangeIeName }
+    STATUS  current
+
+
+
+
+
+    ::= { t11FcsNotifications 3 }
+
+t11FcsMgmtAddrChangeFabricIndex OBJECT-TYPE
+    SYNTAX        T11FabricIndex
+    MAX-ACCESS    accessible-for-notify
+    STATUS        current
+    ::= { t11FcsNotificationInfo 2 }
+
+t11FcsMgmtAddrChangeIeName OBJECT-TYPE
+    SYNTAX        FcNameIdOrZero
+    MAX-ACCESS    accessible-for-notify
+    STATUS        current
+    ::= { t11FcsNotificationInfo 3 }
+
+
+
+t11FcsMIBCompliances OBJECT IDENTIFIER ::= { t11FcsMIBConformance 1 }
+t11FcsMIBGroups      OBJECT IDENTIFIER ::= { t11FcsMIBConformance 2 }
+
+t11FcsMIBCompliance MODULE-COMPLIANCE
+    STATUS        current
+    MODULE MANDATORY-GROUPS { t11FcsDiscoveredConfigGroup,
+                              t11FcsDiscoveryStatusGroup,
+                              t11FcsNotificationInfoGroup,
+                              t11FcsNotificationGroup }
+
+    GROUP   t11FcsDiscoveryControlGroup
+
+    GROUP   t11FcsStatisticsGroup
+
+
+
+
+
+
+    OBJECT   t11FcsDiscoveryStatus
+    WRITE-SYNTAX INTEGER { localOnly(3) }
+    MIN-ACCESS   read-only
+
+    OBJECT   t11FcsReqRejectNotifyEnable
+    MIN-ACCESS   read-only
+
+    OBJECT   t11FcsDiscoveryCompNotifyEnable
+    MIN-ACCESS   read-only
+
+    OBJECT   t11FcsMgmtAddrChangeNotifyEnable
+    MIN-ACCESS   read-only
+
+    ::= { t11FcsMIBCompliances 1 }
+
+
+
+t11FcsDiscoveryControlGroup OBJECT-GROUP
+    OBJECTS { t11FcsFabricDiscoveryRangeLow,
+              t11FcsFabricDiscoveryRangeHigh,
+              t11FcsFabricDiscoveryStart,
+              t11FcsFabricDiscoveryTimeOut }
+    STATUS   current
+    ::= { t11FcsMIBGroups 1 }
+
+t11FcsDiscoveryStatusGroup OBJECT-GROUP
+    OBJECTS { t11FcsDiscoveryStatus,
+              t11FcsDiscoveryCompleteTime }
+    STATUS   current
+
+
+
+
+
+    ::= { t11FcsMIBGroups 2 }
+
+t11FcsDiscoveredConfigGroup OBJECT-GROUP
+    OBJECTS {
+              t11FcsIeType,
+              t11FcsIeDomainId,
+              t11FcsIeMgmtId,
+              t11FcsIeFabricName,
+              t11FcsIeLogicalName,
+              t11FcsIeMgmtAddrListIndex,
+              t11FcsIeInfoList,
+              t11FcsMgmtAddr,
+              t11FcsPortType,
+              t11FcsPortTxType,
+              t11FcsPortModuleType,
+              t11FcsPortPhyPortNum,
+              t11FcsPortAttachPortNameIndex,
+              t11FcsPortState,
+              t11FcsPortSpeedCapab,
+              t11FcsPortOperSpeed,
+              t11FcsPortZoningEnfStatus,
+              t11FcsAttachPortName,
+              t11FcsPlatformName,
+              t11FcsPlatformType,
+              t11FcsPlatformNodeNameListIndex,
+              t11FcsPlatformMgmtAddrListIndex,
+              t11FcsPlatformVendorId,
+              t11FcsPlatformProductId,
+              t11FcsPlatformProductRevLevel,
+              t11FcsPlatformDescription,
+              t11FcsPlatformLabel,
+              t11FcsPlatformLocation,
+              t11FcsPlatformSystemID,
+              t11FcsPlatformSysMgmtAddr,
+              t11FcsPlatformClusterId,
+              t11FcsPlatformClusterMgmtAddr,
+              t11FcsPlatformFC4Types,
+              t11FcsNodeName }
+    STATUS   current
+    ::= { t11FcsMIBGroups 3 }
+
+t11FcsStatisticsGroup OBJECT-GROUP
+    OBJECTS { t11FcsInGetReqs,
+              t11FcsOutGetReqs,
+              t11FcsInRegReqs,
+
+
+
+
+
+              t11FcsOutRegReqs,
+              t11FcsInDeregReqs,
+              t11FcsOutDeregReqs,
+              t11FcsRejects }
+    STATUS  current
+    ::= { t11FcsMIBGroups 4 }
+
+t11FcsNotificationInfoGroup OBJECT-GROUP
+    OBJECTS { t11FcsReqRejectNotifyEnable,
+              t11FcsDiscoveryCompNotifyEnable,
+              t11FcsMgmtAddrChangeNotifyEnable,
+              t11FcsRejectCtCommandString,
+              t11FcsRejectRequestSource,
+              t11FcsRejectReasonCode,
+              t11FcsRejectReasonCodeExp,
+              t11FcsRejectReasonVendorCode,
+              t11FcsMgmtAddrChangeFabricIndex,
+              t11FcsMgmtAddrChangeIeName }
+    STATUS  current
+    ::= { t11FcsMIBGroups 5 }
+
+t11FcsNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { t11FcsRqRejectNotification,
+                    t11FcsDiscoveryCompleteNotify,
+                    t11FcsMgmtAddrChangeNotify }
+    STATUS  current
+    ::= { t11FcsMIBGroups 6 }
+
+END

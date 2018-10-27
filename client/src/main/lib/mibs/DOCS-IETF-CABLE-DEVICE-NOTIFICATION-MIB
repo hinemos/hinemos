@@ -1,0 +1,640 @@
+   DOCS-IETF-CABLE-DEVICE-NOTIFICATION-MIB DEFINITIONS ::= BEGIN
+
+     IMPORTS
+           MODULE-IDENTITY,
+           OBJECT-TYPE,
+           NOTIFICATION-TYPE,
+           mib-2
+                 FROM SNMPv2-SMI -- RFC 2578
+           MODULE-COMPLIANCE,
+
+
+
+
+
+           OBJECT-GROUP,
+           NOTIFICATION-GROUP
+                 FROM SNMPv2-CONF -- RFC 2580
+
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsDevSwFilename,
+           docsDevSwServer,
+           docsDevServerDhcp,
+           docsDevServerTime
+                 FROM DOCS-CABLE-DEVICE-MIB -- RFC 2669
+
+           docsIfCmCmtsAddress,
+           docsIfCmtsCmStatusMacAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfCmtsCmStatusModulationType
+                 FROM DOCS-IF-MIB -- RFC 4546
+
+           ifPhysAddress
+                 FROM IF-MIB;  -- RFC 2863
+
+     docsDevNotifMIB MODULE-IDENTITY
+
+           LAST-UPDATED    "200605240000Z" -- May 24, 2006
+           ORGANIZATION    "IETF IP over Cable Data Network
+                            Working Group"
+
+
+
+           ::= { mib-2 132 }
+
+   docsDevNotifControl OBJECT IDENTIFIER ::= { docsDevNotifMIB 1}
+   docsDevCmNotifs OBJECT IDENTIFIER ::= { docsDevNotifMIB 2 0 }
+   docsDevCmtsNotifs OBJECT IDENTIFIER ::= { docsDevNotifMIB 3 0 }
+
+   docsDevCmNotifControl OBJECT-TYPE
+       SYNTAX BITS {
+           cmInitTLVUnknownNotif( 0),
+           cmDynServReqFailNotif( 1),
+           cmDynServRspFailNotif( 2),
+           cmDynServAckFailNotif( 3),
+           cmBpiInitNotif( 4),
+           cmBPKMNotif( 5),
+           cmDynamicSANotif( 6),
+           cmDHCPFailNotif( 7),
+           cmSwUpgradeInitNotif( 8),
+           cmSwUpgradeFailNotif( 9),
+           cmSwUpgradeSuccessNotif( 10),
+
+
+
+
+
+           cmSwUpgradeCVCNotif( 11),
+           cmTODFailNotif( 12),
+           cmDCCReqFailNotif( 13),
+           cmDCCRspFailNotif( 14),
+           cmDCCAckFailNotif( 15)
+       }
+      MAX-ACCESS read-write
+
+      STATUS current
+      DEFVAL { {} }
+      ::= { docsDevNotifControl 1 }
+
+   docsDevCmtsNotifControl OBJECT-TYPE
+       SYNTAX BITS {
+           cmtsInitRegReqFailNotif( 0),
+           cmtsInitRegRspFailNotif( 1),
+           cmtsInitRegAckFailNotif( 2),
+           cmtsDynServReqFailNotif( 3),
+           cmtsDynServRspFailNotif( 4),
+           cmtsDynServAckFailNotif( 5),
+           cmtsBpiInitNotif( 6),
+           cmtsBPKMNotif( 7),
+           cmtsDynamicSANotif( 8),
+           cmtsDCCReqFailNotif( 9),
+           cmtsDCCRspFailNotif( 10),
+           cmtsDCCAckFailNotif( 11)
+       }
+       MAX-ACCESS read-write
+       STATUS current
+       DEFVAL { {} }
+       ::= { docsDevNotifControl 2 }
+
+   docsDevCmInitTLVUnknownNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 1 }
+
+
+
+
+
+
+
+   docsDevCmDynServReqFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 2 }
+
+   docsDevCmDynServRspFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+
+
+
+
+
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 3}
+
+   docsDevCmDynServAckFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 4}
+
+   docsDevCmBpiInitNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 5 }
+
+   docsDevCmBPKMNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 6 }
+
+   docsDevCmDynamicSANotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 7 }
+
+   docsDevCmDHCPFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsDevServerDhcp,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 8 }
+
+
+
+
+
+   docsDevCmSwUpgradeInitNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsDevSwFilename,
+           docsDevSwServer,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 9 }
+
+   docsDevCmSwUpgradeFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+
+
+
+
+
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsDevSwFilename,
+           docsDevSwServer,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 10 }
+
+   docsDevCmSwUpgradeSuccessNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+
+
+
+
+
+           docsDevSwFilename,
+           docsDevSwServer,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 11 }
+
+   docsDevCmSwUpgradeCVCFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+
+
+
+
+
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 12 }
+
+   docsDevCmTODFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsDevServerTime,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 13 }
+
+   docsDevCmDCCReqFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 14 }
+
+   docsDevCmDCCRspFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 15 }
+
+   docsDevCmDCCAckFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           ifPhysAddress,
+           docsIfCmCmtsAddress,
+           docsIfDocsisBaseCapability,
+           docsIfCmStatusDocsisOperMode,
+           docsIfCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmNotifs 16}
+
+   docsDevCmtsInitRegReqFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 1 }
+
+   docsDevCmtsInitRegRspFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 2 }
+
+   docsDevCmtsInitRegAckFailNotif NOTIFICATION-TYPE
+
+
+
+
+
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 3 }
+
+   docsDevCmtsDynServReqFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+
+
+
+
+
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+        }
+       STATUS current
+       ::= { docsDevCmtsNotifs 4 }
+
+   docsDevCmtsDynServRspFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 5 }
+
+   docsDevCmtsDynServAckFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 6 }
+
+
+   docsDevCmtsBpiInitNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 7 }
+
+   docsDevCmtsBPKMNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 8 }
+
+   docsDevCmtsDynamicSANotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 9 }
+
+   docsDevCmtsDCCReqFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 10 }
+
+   docsDevCmtsDCCRspFailNotif NOTIFICATION-TYPE
+
+
+
+
+
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 11 }
+
+   docsDevCmtsDCCAckFailNotif NOTIFICATION-TYPE
+       OBJECTS {
+           docsDevEvLevel,
+           docsDevEvId,
+           docsDevEvText,
+           docsIfCmtsCmStatusMacAddress,
+
+
+
+
+
+           ifPhysAddress,
+           docsIfCmtsCmStatusDocsisRegMode,
+           docsIfDocsisBaseCapability,
+           docsIfCmtsCmStatusModulationType
+       }
+       STATUS current
+       ::= { docsDevCmtsNotifs 12}
+
+
+   docsDevNotifConformance OBJECT IDENTIFIER
+      ::= { docsDevNotifMIB 4 }
+   docsDevNotifGroups OBJECT IDENTIFIER
+      ::= { docsDevNotifConformance 1 }
+   docsDevNotifCompliances OBJECT IDENTIFIER
+      ::= { docsDevNotifConformance 2 }
+   docsDevCmNotifCompliance MODULE-COMPLIANCE
+       STATUS current
+
+
+
+
+
+
+       MODULE --docsDevNotif
+         MANDATORY-GROUPS {
+                  docsDevCmNotifControlGroup,
+                  docsDevCmNotificationGroup
+              }
+       ::= { docsDevNotifCompliances 1 }
+
+   docsDevCmNotifControlGroup OBJECT-GROUP
+       OBJECTS {
+           docsDevCmNotifControl
+       }
+       STATUS current
+       ::= { docsDevNotifGroups 1 }
+
+   docsDevCmNotificationGroup NOTIFICATION-GROUP
+       NOTIFICATIONS {
+           docsDevCmInitTLVUnknownNotif,
+           docsDevCmDynServReqFailNotif,
+           docsDevCmDynServRspFailNotif,
+           docsDevCmDynServAckFailNotif,
+           docsDevCmBpiInitNotif,
+           docsDevCmBPKMNotif,
+           docsDevCmDynamicSANotif,
+           docsDevCmDHCPFailNotif,
+           docsDevCmSwUpgradeInitNotif,
+           docsDevCmSwUpgradeFailNotif,
+           docsDevCmSwUpgradeSuccessNotif,
+           docsDevCmSwUpgradeCVCFailNotif,
+           docsDevCmTODFailNotif,
+           docsDevCmDCCReqFailNotif,
+           docsDevCmDCCRspFailNotif,
+           docsDevCmDCCAckFailNotif
+       }
+       STATUS current
+       ::= { docsDevNotifGroups 2 }
+
+   docsDevCmtsNotifCompliance MODULE-COMPLIANCE
+       STATUS current
+       MODULE --docsDevNotif
+          MANDATORY-GROUPS {
+             docsDevCmtsNotifControlGroup,
+             docsDevCmtsNotificationGroup
+          }
+       ::= { docsDevNotifCompliances 2 }
+
+   docsDevCmtsNotifControlGroup OBJECT-GROUP
+       OBJECTS {
+           docsDevCmtsNotifControl
+       }
+       STATUS current
+       ::= { docsDevNotifGroups 3 }
+
+   docsDevCmtsNotificationGroup NOTIFICATION-GROUP
+       NOTIFICATIONS {
+           docsDevCmtsInitRegReqFailNotif,
+           docsDevCmtsInitRegRspFailNotif,
+           docsDevCmtsInitRegAckFailNotif ,
+           docsDevCmtsDynServReqFailNotif,
+           docsDevCmtsDynServRspFailNotif,
+           docsDevCmtsDynServAckFailNotif,
+           docsDevCmtsBpiInitNotif,
+           docsDevCmtsBPKMNotif,
+           docsDevCmtsDynamicSANotif,
+           docsDevCmtsDCCReqFailNotif,
+           docsDevCmtsDCCRspFailNotif,
+           docsDevCmtsDCCAckFailNotif
+       }
+       STATUS current
+       ::= { docsDevNotifGroups 4 }
+
+   END

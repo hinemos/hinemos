@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+
+	<!-- SelectReportingCollectKeyInfo -->
+	<named-query name="ReportingCollectKeyInfo.findByMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectKeyInfo a
+				WHERE a.id.monitorId = :monitorId AND a.id.facilityid = :facilityid
+				ORDER BY a.id.displayName
+			]]>
+		</query>
+	</named-query>
+	<!-- SelectReportingCollectData -->
+	<named-query name="ReportingCollectKeyInfo.findFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a.id.facilityid FROM CollectKeyInfo a
+				WHERE a.collectorid = :collectorid
+			]]>
+		</query>
+	</named-query>
+	<!-- SelectReportingJob -->
+	<named-query name="ReportingJobSessionJobEntity.findByParentJobunitId">
+		<query>
+			<![CDATA[
+			SELECT a FROM JobSessionJobEntity a
+			WHERE a.parentJobunitId = :parentJobunitId
+			AND ((a.startDate >= :fromTime AND a.startDate < :toTime) OR (a.endDate >= :fromTime AND a.endDate < :toTime))
+			ORDER BY a.startDate
+			]]>
+		</query>
+	</named-query>
+	<!-- ReportUtil -->
+	<named-query name="ReportingFacilityInfo.findByPkAndFafcilityType">
+		<query>
+			<![CDATA[
+			SELECT a FROM FacilityInfo a
+			WHERE a.facilityId = :facilityId
+			AND a.facilityType = :facilityType
+			]]>
+		</query>
+	</named-query>
+
+	<!-- Enterprise only in use.-->
+	<!-- SelectReportingJmx -->
+	<!--  SelectReportingPerformance -->
+	<named-query name="ReportingCollectKeyInfo.findByMonitorIdAndFacilityidList">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectKeyInfo a
+				WHERE a.id.monitorId = :monitorId AND a.id.facilityid IN :facilityidList
+				ORDER BY a.id.monitorId, a.id.itemName, a.id.displayName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingCollectorItemCodeMstEntity.findByItemCodeList">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectorItemCodeMstEntity a
+				WHERE a.itemCode IN :itemCodeList
+				ORDER BY a.itemCode
+			]]>
+		</query>
+	</named-query>
+
+	<!-- SelectReportingJmx -->
+	<named-query name="ReportingJmxCheckInfo.getMonitorJmxInfoByMonitorIdAndMasterId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JmxCheckInfo a
+				WHERE a.monitorId = :monitorId
+				AND a.masterId = :masterId
+			]]>
+		</query>
+	</named-query>
+	<!-- SelectReportingEntJob -->
+	<named-query name="ReportingJobSessionJobEntity.findByMaxTime">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionJobEntity a
+				WHERE (a.endDate - a.startDate) = :maxTime
+				AND a.id.jobunitId = :jobunitId
+				AND a.id.jobId = :jobId
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.repository.model;
 
 import java.io.Serializable;
@@ -7,9 +15,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 
 /**
  * The persistent class for the cc_collector_platform_mst database table.
@@ -31,8 +36,6 @@ public class CollectorSubPlatformMstEntity implements Serializable {
 
 	public CollectorSubPlatformMstEntity(String subPlatformId) {
 		this.setSubPlatformId(subPlatformId);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
 	}
 
 	@Id

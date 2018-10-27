@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.bean;
@@ -60,7 +53,10 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 
 	/** 判定条件 */
 	private Integer m_decisionCondition;
-
+	
+	/** セッション横断ジョブ履歴判定対象範囲（分）*/
+	private Integer m_crossSessionRange = 60;
+	
 	/**
 	 * 待ち条件の判定対象となるジョブIDを返す。<BR>
 	 * @return 待ち条件の判定対象となるジョブID
@@ -224,7 +220,24 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	public void setDecisionCondition(Integer decisionCondition) {
 		this.m_decisionCondition = decisionCondition;
 	}
+	
+	/**
+	 * セッション横断ジョブ履歴判定対象範囲を返す。
+	 * @return
+	 */
+	public Integer getCrossSessionRange() {
+		return m_crossSessionRange;
+	}
 
+	/**
+	 * セッション横断ジョブ履歴判定対象範囲を設定する。
+	 * @param crossSessionRange
+	 */
+	public void setCrossSessionRange(Integer crossSessionRange) {
+		this.m_crossSessionRange = crossSessionRange;
+	}
+
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -241,6 +254,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		result = prime * result + ((m_decisionValue01 == null) ? 0 : m_decisionValue01.hashCode());
 		result = prime * result + ((m_decisionValue02 == null) ? 0 : m_decisionValue02.hashCode());
 		result = prime * result + ((m_decisionCondition == null) ? 0 : m_decisionCondition.hashCode());
+		result = prime * result + ((m_crossSessionRange == null) ? 0 : m_crossSessionRange.hashCode());
 		return result;
 	}
 
@@ -261,7 +275,8 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 				equalsSub(o1.getDescription(), o2.getDescription()) &&
 				equalsSub(o1.getDecisionValue01(), o2.getDecisionValue01()) &&
 				equalsSub(o1.getDecisionValue02(), o2.getDecisionValue02()) &&
-				equalsSub(o1.getDecisionCondition(), o2.getDecisionCondition());
+				equalsSub(o1.getDecisionCondition(), o2.getDecisionCondition()) &&
+				equalsSub(o1.getCrossSessionRange(), o2.getCrossSessionRange());
 		return ret;
 	}
 
@@ -278,9 +293,9 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	@Override
 	public int compareTo(JobObjectInfo o) {
 		return ("" + this.m_jobId + this.m_jobName + this.m_type + this.m_value + this.m_time + this.m_startMinute
-				 + this.m_decisionValue01 + this.m_decisionValue02 + this.m_decisionCondition+ this.m_description)
-				.compareTo("" + o.m_jobId + o.m_jobName + o.m_type + o.m_value + o.m_time + o.m_startMinute + o.m_description
-						 + o.m_decisionValue01 + o.m_decisionValue02 + o.m_decisionCondition);
+				 + this.m_decisionValue01 + this.m_decisionValue02 + this.m_decisionCondition + this.m_description + this.m_crossSessionRange)
+				.compareTo("" + o.m_jobId + o.m_jobName + o.m_type + o.m_value + o.m_time + o.m_startMinute
+						 + o.m_decisionValue01 + o.m_decisionValue02 + o.m_decisionCondition + o.m_description + o.m_crossSessionRange);
 	}
 
 	/**

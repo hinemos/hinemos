@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.hub.factory;
@@ -56,8 +49,8 @@ public class ModifyLogFormat {
 	 * @throws HinemosUnknown
 	 */
 	public void add(LogFormat entity, String userId) throws LogFormatDuplicate, HinemosUnknown {
-		try {
-			JpaTransactionManager jtm = new JpaTransactionManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			
 			long now = HinemosTime.currentTimeMillis();
 			jtm.checkEntityExists(LogFormat.class, entity.getLogFormatId());
@@ -67,7 +60,6 @@ public class ModifyLogFormat {
 			entity.setUpdateDate(now);
 			entity.setUpdateUser(userId);
 			
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 			em.persist(entity);
 			jtm.flush();
 			
@@ -85,8 +77,8 @@ public class ModifyLogFormat {
 	 * @throws InvalidRole
 	 */
 	public void modify(LogFormat logFormat, String userId) throws LogFormatNotFound, InvalidRole {
-		try {
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			String logFormatId = logFormat.getLogFormatId();
 			LogFormat entity = em.find(LogFormat.class, logFormatId, ObjectPrivilegeMode.MODIFY);
 			if (entity == null) {
@@ -150,8 +142,8 @@ public class ModifyLogFormat {
 		m_log.debug(String.format("delete() : logFormatd = %s", logFormatId));
 
 		// ファイルを取得
-		try {
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			LogFormat entity = em.find(LogFormat.class, logFormatId, ObjectPrivilegeMode.MODIFY);
 			if (entity == null) {
 				LogFormatNotFound e = new LogFormatNotFound("LogFormat.findByPrimaryKey, logFormatId = " + logFormatId);

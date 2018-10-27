@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.plugin.impl;
@@ -33,10 +26,10 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.HinemosManagerMain;
 import com.clustercontrol.HinemosManagerMain.StartupMode;
 import com.clustercontrol.HinemosManagerMain.StartupTask;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.plugin.api.AsyncTaskFactory;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.plugin.util.TaskExecutionAfterCommitCallback;
@@ -54,14 +47,6 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 	public static final int _queueSizeDefault = 20000;
 	// 停止時に残留している処理の最大処理時間（デフォルト値）
 	public static final int _shutdownTimeoutDefault = 10000;
-
-	// 定義ファイルのキー定義
-	public static final String _keyPrefix = "worker.";
-	public static final String _keyWorkerList = _keyPrefix + "list";
-	public static final String _keyPostfixFactoryClassName = ".factoryclass";
-	public static final String _keyPostfixThreadSize = ".thread.size";
-	public static final String _keyPostfixQueueSize = ".queue.size";
-	public static final String _keyPostfixShutdownTimeout = ".shutdown.timeout";
 
 	// 非同期処理のWorker一覧
 	private static String[] workers = null;
@@ -90,26 +75,21 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 	public static final String NOTIFY_INFRA_TASK_FACTORY = "NotifyInfraTaskFactory";
 	
 	static {
-		String workerList = HinemosPropertyUtil
-				.getHinemosPropertyStr(
-						_keyWorkerList,
-						NOTIFY_STATUS_TASK_FACTORY +
-				","  + NOTIFY_EVENT_TASK_FACTORY +
-				"," + NOTIFY_MAIL_TASK_FACTORY +
-				"," + NOTIFY_COMMAND_TASK_FACTORY +
-				"," + NOTIFY_LOG_ESCALATION_TASK_FACTORY +
-				"," + NOTIFY_JOB_TASK_FACTORY +
-				"," + CREATE_JOB_SESSION_TASK_FACTORY +
-				"," + NOTIFY_INFRA_TASK_FACTORY);
+		String workerList = HinemosPropertyCommon.worker_list.getStringValue();
 		workers = workerList.split(",");
 	}
-	
+
 	@Override
 	public Set<String> getDependency() {
 		Set<String> dependency = new HashSet<String>();
 		dependency.add(Log4jReloadPlugin.class.getName());
 		dependency.add(CacheInitializerPlugin.class.getName());
 		return dependency;
+	}
+
+	@Override
+	public Set<String> getRequiredKeys() {
+		return null;
 	}
 
 	@Override
@@ -131,13 +111,13 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 
 				String className = null;
 				if (worker.equals(CREATE_JOB_SESSION_TASK_FACTORY)) {
-					className = HinemosPropertyUtil.getHinemosPropertyStr(_keyPrefix + worker + _keyPostfixFactoryClassName, "com.clustercontrol.jobmanagement.factory." + worker);
+					className = HinemosPropertyCommon.worker_$_factoryclass.getStringValue(worker, "com.clustercontrol.jobmanagement.factory." + worker);
 				} else {
-					className = HinemosPropertyUtil.getHinemosPropertyStr(_keyPrefix + worker + _keyPostfixFactoryClassName, defaultClassPrefix + worker);
+					className = HinemosPropertyCommon.worker_$_factoryclass.getStringValue(worker, defaultClassPrefix + worker);
 				}
 
 				if (className == null || "".equals(className)) {
-					log.warn("class not defined. (" + _keyPrefix + worker + _keyPostfixFactoryClassName + ")");
+					log.warn("class not defined. (" + "worker." + worker + ".factoryclass" + ")");
 				}
 				try {
 					Class<?> clazz = Class.forName(className);
@@ -161,12 +141,14 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 				}
 
 				int threadSize;
-				if (worker.equals(NOTIFY_STATUS_TASK_FACTORY ) || worker.equals(CREATE_JOB_SESSION_TASK_FACTORY)) {
-					threadSize = HinemosPropertyUtil.getHinemosPropertyNum(_keyPrefix + worker + _keyPostfixThreadSize, Long.valueOf(_threadSizeDefault)).intValue();
+				if (worker.equals(NOTIFY_STATUS_TASK_FACTORY ) 
+						|| worker.equals(CREATE_JOB_SESSION_TASK_FACTORY)
+						|| worker.equals(NOTIFY_EVENT_TASK_FACTORY )) {
+					threadSize = HinemosPropertyCommon.worker_$_thread_size.getIntegerValue(worker, Long.valueOf(_threadSizeDefault));
 				} else {
-					threadSize = HinemosPropertyUtil.getHinemosPropertyNum(_keyPrefix + worker + _keyPostfixThreadSize, Long.valueOf(8)).intValue();
+					threadSize = HinemosPropertyCommon.worker_$_thread_size.getIntegerValue(worker, Long.valueOf(8));
 				}
-				int queueSize = HinemosPropertyUtil.getHinemosPropertyNum(_keyPrefix + worker + _keyPostfixQueueSize, Long.valueOf(_queueSizeDefault)).intValue();
+				int queueSize = HinemosPropertyCommon.worker_$_queue_size.getIntegerValue(worker, Long.valueOf(_queueSizeDefault));
 
 				log.info("activating asynchronous worker. (worker = " + worker + ", class = " + className +
 						", threadSize = " + threadSize + ", queueSize = " + queueSize + ")");
@@ -178,7 +160,7 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 
 				_executorMap.put(worker, executor);
 
-				long shutdownTimeout= HinemosPropertyUtil.getHinemosPropertyNum(_keyPrefix + worker + _keyPostfixShutdownTimeout, Long.valueOf(_shutdownTimeoutDefault));
+				long shutdownTimeout= HinemosPropertyCommon.worker_$_shutdown_timeout.getNumericValue(worker, Long.valueOf(_shutdownTimeoutDefault));
 				_shutdownTimeoutMap.put(worker, shutdownTimeout);
 			}
 		}
@@ -245,6 +227,7 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 		
 			List<Serializable> params = AsyncTask.getRemainedParams(worker);
 			log.info("running remained task : num = " + params.size());
+			tm.flush();
 	
 			for (Serializable param : params) {
 				try {
@@ -395,6 +378,12 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 		@Override
 		public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
 			log.warn("too many tasks are assigned to " + _worker + ". rejecting new task. : " + r + ".");
+			try {
+				AsyncTask task = (AsyncTask) r;
+				task.remove();
+			} catch (Throwable t) {
+				log.warn(t.getMessage()); // ここは通らないはず
+			}
 		}
 	}
 

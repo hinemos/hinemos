@@ -1,0 +1,21 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"HinemosProperty_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Key",
+			"ValueType",
+			"Value",
+			"Description",
+			"OwnerRoleId"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"HinemosPropertyInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

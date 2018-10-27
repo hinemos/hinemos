@@ -1,0 +1,34 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"FileCheckList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Name",
+			"OwnerRoleId",
+			"JobunitId",
+			"JobId",
+			"CalId",
+			"ValidFlg",
+			"FileCheckData.FacilityId",
+			"FileCheckData.Directory",
+			"FileCheckData.FileName",
+			"FileCheckData.EventType",
+			"FileCheckData.ModifyType",
+			"JobRuntimeInfo",
+			"JobRuntimeInfo.ParamType",
+			"JobRuntimeInfo.Description",
+			"JobRuntimeInfo.DefaultValue",
+			"JobRuntimeInfo.RequiredFlg",
+			"JobRuntimeInfo.JobRuntimeDetailInfo",
+			"JobRuntimeInfo.JobRuntimeDetailInfo.*"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"FileCheckInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

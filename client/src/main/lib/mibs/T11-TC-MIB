@@ -1,0 +1,18 @@
+T11-TC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, Unsigned32, mib-2
+                                     FROM SNMPv2-SMI  -- [RFC2578]
+    TEXTUAL-CONVENTION               FROM SNMPv2-TC;  -- [RFC2579]
+
+t11TcMIB MODULE-IDENTITY
+    LAST-UPDATED "200603020000Z"
+    ORGANIZATION "T11"
+    ::= { mib-2 136 }
+
+T11FabricIndex ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT  "d"
+    STATUS    current
+    SYNTAX      Unsigned32 (0..4095)
+
+END

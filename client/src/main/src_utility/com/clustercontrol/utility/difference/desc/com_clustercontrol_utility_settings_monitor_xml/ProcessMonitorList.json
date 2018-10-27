@@ -1,0 +1,33 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"ProcessMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"ProcessInfo.Command",
+			"ProcessInfo.Param",
+			"ProcessInfo.CaseSensitivityFlg",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"NumericValue"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"ProcessMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

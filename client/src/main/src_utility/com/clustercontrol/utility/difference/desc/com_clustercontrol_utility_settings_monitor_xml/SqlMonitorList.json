@@ -1,0 +1,44 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"SqlMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"SqlInfo.ConnectionUrl",
+			"SqlInfo.JdbcDriver",
+			"SqlInfo.User",
+			"SqlInfo.Password",
+			"SqlInfo.Query",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"NumericValue",
+			"StringValue",
+			"StringValue.*.Description",
+			"StringValue.*.OrderNo",
+			"StringValue.*.Pattern",
+			"StringValue.*.ProcessType",
+			"StringValue.*.CaseSensitivityFlg",
+			"StringValue.*.Message",
+			"StringValue.*.ValidFlg",
+			"StringValue.*.Priority"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"SqlMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

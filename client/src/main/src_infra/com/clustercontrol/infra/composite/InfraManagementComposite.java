@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.composite;
@@ -46,6 +39,7 @@ import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
 import com.clustercontrol.ws.infra.InfraManagementInfo;
+import com.clustercontrol.ws.infra.InvalidRole_Exception;
 import com.sun.xml.internal.ws.client.ClientTransportException;
 
 /**
@@ -193,10 +187,13 @@ public class InfraManagementComposite extends Composite {
 				if(ClientSession.isDialogFree()){
 					ClientSession.occupyDialog();
 					if (e instanceof ClientTransportException) {
-						m_log.warn("update() : " + e.getMessage()); //TODO
+						m_log.warn("update() : " + e.getMessage());
 						errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.transfer") + ", " + HinemosMessage.replace(e.getMessage()));
+					} else if (e instanceof InvalidRole_Exception) {
+						m_log.warn("update() : " + e.getMessage());
+						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16") + ", " + HinemosMessage.replace(e.getMessage()));
 					} else {
-						m_log.warn("update() : " + e.getMessage(), e); //TODO
+						m_log.warn("update() : " + e.getMessage(), e);
 						errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 					}
 					ClientSession.freeDialog();

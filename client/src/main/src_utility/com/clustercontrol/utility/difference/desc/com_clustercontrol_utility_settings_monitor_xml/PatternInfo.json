@@ -1,0 +1,42 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"PatternInfo_description"}
+	]},
+
+	{
+	"propName":"patternOrderNo",
+	"annotations":[
+		{"type":"Column", "columnName":"PatternInfo_patternOrderNo"}
+	]},
+
+	{
+	"propName":"pattern",
+	"annotations":[
+		{"type":"Column", "columnName":"PatternInfo_pattern"}
+	]},
+
+	{
+	"propName":"processType",
+	"annotations":[
+		{"type":"Column", "columnName":"PatternInfo_processType"}
+	]},
+
+	{
+	"propName":"caseSensitivityFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"PatternInfo_caseSensitivityFlg"}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"PatternInfo_validFlg"}
+	]}
+]
+}

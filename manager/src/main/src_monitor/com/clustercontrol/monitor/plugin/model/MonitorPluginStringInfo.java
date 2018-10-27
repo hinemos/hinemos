@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.plugin.model;
 
 import java.io.Serializable;
@@ -16,9 +24,6 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
-
 /**
  * The persistent class for the cc_monitor_plugin_string_info database table.
  * 
@@ -36,16 +41,8 @@ public class MonitorPluginStringInfo implements Serializable {
 	public MonitorPluginStringInfo() {
 	}
 
-	public MonitorPluginStringInfo(MonitorPluginStringInfoEntityPK id,
-			PluginCheckInfo monitorPluginInfoEntity) {
+	public MonitorPluginStringInfo(MonitorPluginStringInfoEntityPK id) {
 		this.setId(id);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToMonitorPluginInfoEntity(monitorPluginInfoEntity);
-	}
-
-	public MonitorPluginStringInfo(String monitorId, String key, PluginCheckInfo monitorPluginInfoEntity) {
-		this(new MonitorPluginStringInfoEntityPK(monitorId, key), monitorPluginInfoEntity);
 	}
 
 	@XmlTransient

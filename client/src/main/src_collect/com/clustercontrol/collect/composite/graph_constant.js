@@ -1,18 +1,12 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
-性能[グラフ]の定数を定義しているJavaScriptです。
-定数を定義しているが、定数の値は書き換え可能なので書き換えないよう注意。
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ *
+ * 性能[グラフ]の定数を定義しているJavaScriptです。
+ * 定数を定義しているが、定数の値は書き換え可能なので書き換えないよう注意。
  */
 ////////////////////////////////////////
 // NEWGRAPH MODE
@@ -131,7 +125,16 @@ var HINEMOS_COLLECT_CONST = {
 ////////////////////////////////////////
 // CRUSH JAVASCRIPT ERROR MESSAGE
 ////////////////////////////////////////
-'CONST_CRUSH_ERR_MSG' : "Another browser function is still pending."
+'CONST_CRUSH_ERR_MSG' : "Another browser function is still pending.",
+
+////////////////////////////////////////
+// PLOT TYPE
+////////////////////////////////////////
+'CONST_PLOT_TYPE_NORMAL' : "normal",
+'CONST_PLOT_TYPE_APP' : "app",
+'CONST_PLOT_TYPE_AVG' : "avg",
+'CONST_PLOT_TYPE_SIG' : "sig",
+'CONST_PLOT_TYPE_SIM' : "sim"
 
 };
 

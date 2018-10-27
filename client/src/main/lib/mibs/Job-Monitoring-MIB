@@ -1,0 +1,744 @@
+Job-Monitoring-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, enterprises,
+    Integer32                                       FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION                              FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP                 FROM SNMPv2-CONF;
+
+
+jobmonMIB MODULE-IDENTITY
+    LAST-UPDATED "9902190000Z"
+    ORGANIZATION "Printer Working Group (PWG)"
+
+
+    ::= { enterprises pwg(2699)  mibs(1)  jobmonMIB(1) }
+
+
+JmUTF8StringTC ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "255a"
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (0..63))
+
+
+
+
+JmJobStringTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (0..63))
+
+
+
+
+
+
+
+
+
+JmNaturalLanguageTagTC  ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (0..63))
+
+
+
+JmTimeStampTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER (0..2147483647)
+
+
+
+
+JmJobSourcePlatformTypeTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+        other(1),
+        unknown(2),
+        sptUNIX(3),           -- UNIX
+        sptOS2(4),            -- OS/2
+        sptPCDOS(5),          -- DOS
+        sptNT(6),             -- NT
+        sptMVS(7),            -- MVS
+        sptVM(8),             -- VM
+        sptOS400(9),          -- OS/400
+        sptVMS(10),           -- VMS
+        sptWindows(11),       -- Windows
+        sptNetWare(12)        -- NetWare
+    }
+
+
+
+JmFinishingTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+        other(1),
+        unknown(2),
+        none(3),
+        staple(4),
+        punch(5),
+        cover(6),
+        bind(7)
+    }
+
+
+JmPrintQualityTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+        other(1),    -- Not one of the specified or registered
+        unknown(2),  -- The actual value is unknown.
+        draft(3),    -- Lowest quality available on the printer.
+        normal(4),   -- Normal or intermediate quality on the
+        high(5)      -- Highest quality available on the printer.
+    }
+
+
+
+JmPrinterResolutionTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE(9))
+
+
+JmTonerEconomyTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+        unknown(2),    -- unknown.
+        off(3),        -- Off.  Normal.  Use full toner.
+        on(4)          -- On.  Use less toner than normal.
+    }
+
+
+
+JmBooleanTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+        unknown(2),    -- unknown.
+        false(3),      -- FALSE.
+        true(4)        -- TRUE.
+    }
+
+
+
+JmMediumTypeTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+        other(1),
+        unknown(2),
+        stationery(3),
+        transparency(4),
+        envelope(5),
+        envelopePlain(6),
+        envelopeWindow(7),
+        continuousLong(8),
+        continuousShort(9),
+        tabStock(10),
+        multiPartForm(11),
+        labels(12),
+        multiLayer(13)
+    }
+
+
+JmJobCollationTypeTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+        other(1),
+        unknown(2),
+        uncollatedSheets(3),    -- sheets within each document copy
+        collatedDocuments(4),   -- internal collated sheets,
+        uncollatedDocuments(5)  -- internal collated sheets,
+
+
+
+
+
+    }
+
+
+JmJobSubmissionIDTypeTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX    OCTET STRING(SIZE(1)) -- ASCII '0'-'9', 'A'-'Z', 'a'-'z'
+
+
+
+JmJobStateTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+        unknown(2),
+        pending(3),
+        pendingHeld(4),
+        processing(5),
+        processingStopped(6),
+        canceled(7),
+        aborted(8),
+        completed(9)
+    }
+
+
+
+JmAttributeTypeTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+
+
+
+
+
+
+    SYNTAX      INTEGER {
+        other(1),                       -- Integer32 (-2..2147483647)
+
+        jobStateReasons2(3),            -- JmJobStateReasons2TC
+        jobStateReasons3(4),            -- JmJobStateReasons3TC
+        jobStateReasons4(5),            -- JmJobStateReasons4TC
+        processingMessage(6),           -- JmUTF8StringTC (SIZE(0..63))
+        processingMessageNaturalLangTag(7),
+        jobCodedCharSet(8),             -- CodedCharSet
+        jobNaturalLanguageTag(9),       -- OCTET STRING(SIZE(0..63))
+
+
+        jobURI(20),                     -- OCTET STRING(SIZE(0..63))
+        jobAccountName(21),             -- OCTET STRING(SIZE(0..63))
+        serverAssignedJobName(22),      -- JmJobStringTC (SIZE(0..63))
+        jobName(23),                    -- JmJobStringTC (SIZE(0..63))
+        jobServiceTypes(24),            -- JmJobServiceTypesTC
+        jobSourceChannelIndex(25),      -- Integer32 (0..2147483647)
+        jobSourcePlatformType(26),      -- JmJobSourcePlatformTypeTC
+        submittingServerName(27),       -- JmJobStringTC (SIZE(0..63))
+        submittingApplicationName(28),  -- JmJobStringTC (SIZE(0..63))
+        jobOriginatingHost(29),         -- JmJobStringTC (SIZE(0..63))
+        deviceNameRequested(30),        -- JmJobStringTC (SIZE(0..63))
+        queueNameRequested(31),         -- JmJobStringTC (SIZE(0..63))
+        physicalDevice(32),             -- hrDeviceIndex
+        numberOfDocuments(33),          -- Integer32 (-2..2147483647)
+        fileName(34),                   -- JmJobStringTC (SIZE(0..63))
+        documentName(35),               -- JmJobStringTC (SIZE(0..63))
+        jobComment(36),                 -- JmJobStringTC (SIZE(0..63))
+        documentFormatIndex(37),        -- Integer32 (0..2147483647)
+        documentFormat(38),             -- PrtInterpreterLangFamilyTC
+
+        jobPriority(50),                -- Integer32 (-2..100)
+        jobProcessAfterDateAndTime(51), -- DateAndTime (SNMPv2-TC)
+        jobHold(52),                    -- JmBooleanTC
+        jobHoldUntil(53),               -- JmJobStringTC (SIZE(0..63))
+        outputBin(54),                  -- Integer32 (0..2147483647)
+
+
+
+
+
+        sides(55),                      -- Integer32 (-2..2)
+        finishing(56),                  -- JmFinishingTC
+
+        printQualityRequested(70),      -- JmPrintQualityTC
+        printQualityUsed(71),           -- JmPrintQualityTC
+        printerResolutionRequested(72), -- JmPrinterResolutionTC
+        printerResolutionUsed(73),      -- JmPrinterResolutionTC
+        tonerEcomonyRequested(74),      -- JmTonerEconomyTC
+        tonerEcomonyUsed(75),           -- JmTonerEconomyTC
+        tonerDensityRequested(76),      -- Integer32 (-2..100)
+        tonerDensityUsed(77),           -- Integer32 (-2..100)
+
+
+        jobCopiesRequested(90),         -- Integer32 (-2..2147483647)
+        jobCopiesCompleted(91),         -- Integer32 (-2..2147483647)
+        documentCopiesRequested(92),    -- Integer32 (-2..2147483647)
+        documentCopiesCompleted(93),    -- Integer32 (-2..2147483647)
+        jobKOctetsTransferred(94),      -- Integer32 (-2..2147483647)
+        sheetCompletedCopyNumber(95),   -- Integer32 (-2..2147483647)
+        sheetCompletedDocumentNumber(96),
+        jobCollationType(97),           -- JmJobCollationTypeTC
+
+        impressionsSpooled(110),        -- Integer32 (-2..2147483647)
+        impressionsSentToDevice(111),   -- Integer32 (-2..2147483647)
+        impressionsInterpreted(112),    -- Integer32 (-2..2147483647)
+        impressionsCompletedCurrentCopy(113),
+        fullColorImpressionsCompleted(114),
+        highlightColorImpressionsCompleted(115),
+
+        pagesRequested(130),            -- Integer32 (-2..2147483647)
+        pagesCompleted(131),            -- Integer32 (-2..2147483647)
+        pagesCompletedCurrentCopy(132), -- Integer32 (-2..2147483647)
+
+        sheetsRequested(150),           -- Integer32 (-2..2147483647)
+        sheetsCompleted(151),           -- Integer32 (-2..2147483647)
+        sheetsCompletedCurrentCopy(152),-- Integer32 (-2..2147483647)
+
+
+
+
+
+
+        mediumRequested(170),           -- JmMediumTypeTC
+        mediumConsumed(171),            -- Integer32 (-2..2147483647)
+        colorantRequested(172),         -- Integer32 (-2..2147483647)
+        colorantConsumed(173),          -- Integer32 (-2..2147483647)
+        mediumTypeConsumed(174),        -- Integer32 (-2..2147483647)
+        mediumSizeConsumed(175),        -- Integer32 (-2..2147483647)
+
+        jobSubmissionToServerTime(190), -- JmTimeStampTC
+        jobSubmissionTime(191),         -- JmTimeStampTC
+        jobStartedBeingHeldTime(192),   -- JmTimeStampTC
+        jobStartedProcessingTime(193),  -- JmTimeStampTC
+        jobCompletionTime(194),         -- JmTimeStampTC
+        jobProcessingCPUTime(195)       -- Integer32 (-2..2147483647)
+    }
+
+
+
+JmJobServiceTypesTC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER (0..2147483647)   -- 31 bits, all but sign bit
+
+
+
+JmJobStateReasons1TC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER (0..2147483647)   -- 31 bits, all but sign bit
+
+
+
+JmJobStateReasons2TC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER (0..2147483647)   -- 31 bits, all but sign bit
+
+JmJobStateReasons3TC ::= TEXTUAL-CONVENTION
+
+
+
+
+
+    STATUS      current
+    SYNTAX      INTEGER (0..2147483647)   -- 31 bits, all but sign bit
+
+
+
+
+
+JmJobStateReasons4TC ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER (0..2147483647)   -- 31 bits, all but sign bit
+
+
+
+jobmonMIBObjects  OBJECT IDENTIFIER  ::= { jobmonMIB 1 }
+
+
+
+jmGeneral  OBJECT IDENTIFIER ::= { jobmonMIBObjects 1 }
+
+jmGeneralTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF JmGeneralEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { jmGeneral 1 }
+
+
+jmGeneralEntry  OBJECT-TYPE
+    SYNTAX      JmGeneralEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX  { jmGeneralJobSetIndex }
+    ::= { jmGeneralTable 1 }
+
+
+JmGeneralEntry ::= SEQUENCE {
+    jmGeneralJobSetIndex                  Integer32 (1..32767),
+    jmGeneralNumberOfActiveJobs           Integer32 (0..2147483647),
+    jmGeneralOldestActiveJobIndex         Integer32 (0..2147483647),
+    jmGeneralNewestActiveJobIndex         Integer32 (0..2147483647),
+    jmGeneralJobPersistence               Integer32 (15..2147483647),
+    jmGeneralAttributePersistence         Integer32 (15..2147483647),
+    jmGeneralJobSetName                   JmUTF8StringTC (SIZE(0..63))
+}
+
+
+jmGeneralJobSetIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..32767)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { jmGeneralEntry 1 }
+
+
+jmGeneralNumberOfActiveJobs OBJECT-TYPE
+    SYNTAX      Integer32 (0..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 0 }      -- no jobs
+    ::= { jmGeneralEntry 2 }
+
+
+jmGeneralOldestActiveJobIndex  OBJECT-TYPE
+    SYNTAX      Integer32 (0..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 0 }      -- no active jobs
+    ::= { jmGeneralEntry 3 }
+
+
+
+jmGeneralNewestActiveJobIndex  OBJECT-TYPE
+    SYNTAX      Integer32 (0..2147483647)
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    DEFVAL      { 0 }      -- no active jobs
+    ::= { jmGeneralEntry 4 }
+
+
+
+jmGeneralJobPersistence OBJECT-TYPE
+    SYNTAX      Integer32 (15..2147483647)
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 60 }          -- one minute
+    ::= { jmGeneralEntry 5 }
+
+
+
+jmGeneralAttributePersistence OBJECT-TYPE
+    SYNTAX      Integer32 (15..2147483647)
+    UNITS       "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 60 }          -- one minute
+    ::= { jmGeneralEntry 6 }
+
+
+
+jmGeneralJobSetName OBJECT-TYPE
+    SYNTAX      JmUTF8StringTC (SIZE(0..63))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { ''H }      -- empty string
+    ::= { jmGeneralEntry 7 }
+
+
+
+
+
+
+
+
+jmJobID  OBJECT IDENTIFIER ::= { jobmonMIBObjects 2 }
+
+jmJobIDTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF JmJobIDEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { jmJobID 1 }
+
+
+
+jmJobIDEntry  OBJECT-TYPE
+    SYNTAX      JmJobIDEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX  { jmJobSubmissionID }
+    ::= { jmJobIDTable 1 }
+
+JmJobIDEntry ::= SEQUENCE {
+    jmJobSubmissionID                     OCTET STRING(SIZE(48)),
+    jmJobIDJobSetIndex                    Integer32 (0..32767),
+    jmJobIDJobIndex                       Integer32 (0..2147483647)
+}
+
+
+jmJobSubmissionID OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      OCTET STRING(SIZE(48))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { jmJobIDEntry 1 }
+
+
+
+jmJobIDJobSetIndex OBJECT-TYPE
+    SYNTAX      Integer32 (0..32767)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 0 }      -- 0 indicates no job set index
+    ::= { jmJobIDEntry 2 }
+
+
+
+jmJobIDJobIndex OBJECT-TYPE
+    SYNTAX      Integer32 (0..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 0 }      -- 0 indicates no jmJobIndex value.
+    ::= { jmJobIDEntry 3 }
+
+
+
+
+jmJob  OBJECT IDENTIFIER ::= { jobmonMIBObjects 3 }
+
+jmJobTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF JmJobEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { jmJob 1 }
+
+
+
+
+
+
+jmJobEntry  OBJECT-TYPE
+    SYNTAX      JmJobEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX  { jmGeneralJobSetIndex, jmJobIndex }
+    ::= { jmJobTable 1 }
+
+JmJobEntry ::= SEQUENCE {
+    jmJobIndex                            Integer32 (1..2147483647),
+    jmJobState                            JmJobStateTC,
+    jmJobStateReasons1                    JmJobStateReasons1TC,
+    jmNumberOfInterveningJobs             Integer32 (-2..2147483647),
+    jmJobKOctetsPerCopyRequested          Integer32 (-2..2147483647),
+    jmJobKOctetsProcessed                 Integer32 (-2..2147483647),
+    jmJobImpressionsPerCopyRequested      Integer32 (-2..2147483647),
+    jmJobImpressionsCompleted             Integer32 (-2..2147483647),
+    jmJobOwner                            JmJobStringTC (SIZE(0..63))
+}
+
+
+jmJobIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { jmJobEntry 1 }
+
+
+
+
+
+
+jmJobState OBJECT-TYPE
+    SYNTAX      JmJobStateTC
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { unknown }      -- default is unknown
+    ::= { jmJobEntry 2 }
+
+
+
+jmJobStateReasons1 OBJECT-TYPE
+    SYNTAX      JmJobStateReasons1TC
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 0 }      -- no reasons
+    ::= { jmJobEntry 3 }
+
+
+
+
+
+
+
+
+jmNumberOfInterveningJobs OBJECT-TYPE
+    SYNTAX      Integer32 (-2..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 0 }      -- default is no intervening jobs.
+    ::= { jmJobEntry 4 }
+
+
+
+jmJobKOctetsPerCopyRequested OBJECT-TYPE
+    SYNTAX      Integer32 (-2..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { -2 }      -- the default is unknown(-2)
+    ::= { jmJobEntry 5 }
+
+
+
+jmJobKOctetsProcessed OBJECT-TYPE
+    SYNTAX      Integer32 (-2..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 0 }      -- default is no octets processed.
+    ::= { jmJobEntry 6 }
+
+
+jmJobImpressionsPerCopyRequested OBJECT-TYPE
+    SYNTAX      Integer32 (-2..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+
+
+
+
+
+    DEFVAL      { -2 }      -- default is unknown(-2)
+    ::= { jmJobEntry 7 }
+
+
+jmJobImpressionsCompleted OBJECT-TYPE
+    SYNTAX      Integer32 (-2..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { 0 }      -- default is no octets
+    ::= { jmJobEntry 8 }
+
+
+
+jmJobOwner OBJECT-TYPE
+    SYNTAX      JmJobStringTC (SIZE(0..63))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { ''H }      -- default is empty string
+    ::= { jmJobEntry 9 }
+
+
+
+
+jmAttribute  OBJECT IDENTIFIER ::= { jobmonMIBObjects 4 }
+
+
+
+jmAttributeTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF JmAttributeEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { jmAttribute 1 }
+
+
+jmAttributeEntry  OBJECT-TYPE
+    SYNTAX      JmAttributeEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX  { jmGeneralJobSetIndex, jmJobIndex, jmAttributeTypeIndex,
+    jmAttributeInstanceIndex }
+    ::= { jmAttributeTable 1 }
+
+JmAttributeEntry ::= SEQUENCE {
+    jmAttributeTypeIndex                  JmAttributeTypeTC,
+    jmAttributeInstanceIndex              Integer32 (1..32767),
+    jmAttributeValueAsInteger             Integer32 (-2..2147483647),
+    jmAttributeValueAsOctets              OCTET STRING(SIZE(0..63))
+}
+
+
+jmAttributeTypeIndex OBJECT-TYPE
+    SYNTAX      JmAttributeTypeTC
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { jmAttributeEntry 1 }
+
+
+
+jmAttributeInstanceIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..32767)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { jmAttributeEntry 2 }
+
+
+
+jmAttributeValueAsInteger OBJECT-TYPE
+    SYNTAX      Integer32 (-2..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL      { -2 }      -- default value is unknown(-2)
+    ::= { jmAttributeEntry 3 }
+
+
+
+jmAttributeValueAsOctets OBJECT-TYPE
+    SYNTAX      OCTET STRING(SIZE(0..63))
+    MAX-ACCESS  read-only
+    STATUS      current
+
+
+
+
+
+    DEFVAL      { ''H }      -- empty string
+    ::= { jmAttributeEntry 4 }
+
+
+
+jobmonMIBNotifications  OBJECT IDENTIFIER  ::= { jobmonMIB 2 }
+
+
+
+
+jmMIBConformance OBJECT IDENTIFIER ::= { jobmonMIB 3 }
+
+
+
+jmMIBCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE -- this module
+    MANDATORY-GROUPS {
+        jmGeneralGroup, jmJobIDGroup, jmJobGroup, jmAttributeGroup }
+
+
+
+
+
+
+    OBJECT   jmGeneralJobSetName
+    SYNTAX   JmUTF8StringTC (SIZE(0..8))
+
+    OBJECT   jmJobOwner
+    SYNTAX   JmJobStringTC (SIZE(0..16))
+
+
+    ::= { jmMIBConformance 1 }
+
+
+jmMIBGroups      OBJECT IDENTIFIER ::= { jmMIBConformance 2 }
+
+jmGeneralGroup OBJECT-GROUP
+    OBJECTS {
+        jmGeneralNumberOfActiveJobs,   jmGeneralOldestActiveJobIndex,
+        jmGeneralNewestActiveJobIndex, jmGeneralJobPersistence,
+        jmGeneralAttributePersistence, jmGeneralJobSetName}
+    STATUS  current
+    ::= { jmMIBGroups 1 }
+
+
+
+jmJobIDGroup OBJECT-GROUP
+    OBJECTS {
+        jmJobIDJobSetIndex, jmJobIDJobIndex }
+    STATUS  current
+    ::= { jmMIBGroups 2 }
+
+
+
+jmJobGroup OBJECT-GROUP
+    OBJECTS {
+        jmJobState, jmJobStateReasons1, jmNumberOfInterveningJobs,
+        jmJobKOctetsPerCopyRequested, jmJobKOctetsProcessed,
+        jmJobImpressionsPerCopyRequested, jmJobImpressionsCompleted,
+        jmJobOwner }
+    STATUS  current
+
+
+
+
+
+    ::= { jmMIBGroups 3 }
+
+
+
+jmAttributeGroup OBJECT-GROUP
+    OBJECTS {
+        jmAttributeValueAsInteger, jmAttributeValueAsOctets }
+    STATUS  current
+    ::= { jmMIBGroups 4 }
+
+
+END

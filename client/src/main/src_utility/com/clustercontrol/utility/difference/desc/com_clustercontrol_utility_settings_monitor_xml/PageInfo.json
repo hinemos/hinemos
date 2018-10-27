@@ -1,0 +1,58 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"PageInfo_description"}
+	]},
+
+	{
+	"propName":"pageOrderNo",
+	"annotations":[
+		{"type":"Column", "columnName":"PageInfo_pageOrderNo"}
+	]},
+
+	{
+	"propName":"url",
+	"annotations":[
+		{"type":"Column", "columnName":"PageInfo_url"}
+	]},
+
+	{
+	"propName":"statusCode",
+	"annotations":[
+		{"type":"Column", "columnName":"PageInfo_statusCode"}
+	]},
+
+	{
+	"propName":"post",
+	"annotations":[
+		{"type":"Column", "columnName":"PageInfo_post"}
+	]},
+
+	{
+	"propName":"message",
+	"annotations":[
+		{"type":"Column", "columnName":"PageInfo_message"}
+	]},
+
+	{
+	"propName":"patternValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"patternOrderNo"},
+		{"type":"Column", "columnName":"PatternInfo_patternValue"},
+		{"type":"Ignore", "propNames":["patternOrderNo"]}
+	]},
+
+	{
+	"propName":"variableValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"name"},
+		{"type":"Column", "columnName":"VariableInfo_variableValue"},
+		{"type":"Ignore", "propNames":["name"]}
+	]}
+]
+}

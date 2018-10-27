@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.run.model;
 
 import java.io.Serializable;
@@ -43,8 +51,10 @@ public class MonitorNumericValueInfo implements Serializable {
 		this.setId(pk);
 	}
 
-	public MonitorNumericValueInfo(MonitorInfo monitorInfo, Integer priority) {
-		this(new MonitorNumericValueInfoPK(monitorInfo.getMonitorId(), priority));
+	public MonitorNumericValueInfo(MonitorInfo monitorInfo, 
+			String monitorNumericType, Integer priority) {
+		this(new MonitorNumericValueInfoPK(monitorInfo.getMonitorId(), 
+				monitorNumericType, priority));
 	}
 
 	@XmlTransient
@@ -63,8 +73,16 @@ public class MonitorNumericValueInfo implements Serializable {
 	public String getMonitorId() {
 		return getId().getMonitorId();
 	}
-	public void setMonitorId(String priority) {
-		getId().setMonitorId(priority);
+	public void setMonitorId(String monitorId) {
+		getId().setMonitorId(monitorId);
+	}
+
+	@Transient
+	public String getMonitorNumericType() {
+		return getId().getMonitorNumericType();
+	}
+	public void setMonitorNumericType(String monitorNumericType) {
+		getId().setMonitorNumericType(monitorNumericType);
 	}
 
 	@Transient
@@ -119,6 +137,7 @@ public class MonitorNumericValueInfo implements Serializable {
 	public String toString() {
 		String[] names = {
 				"monitorId",
+				"monitorNumericType",
 				"priority",
 				"thresholdLowerLimit",
 				"thresholdUpperLimit",
@@ -126,6 +145,7 @@ public class MonitorNumericValueInfo implements Serializable {
 		};
 		String[] values = {
 				this.id.getMonitorId(),
+				this.id.getMonitorNumericType(),
 				this.id.getPriority().toString(),
 				this.thresholdLowerLimit.toString(),
 				this.thresholdUpperLimit.toString(),

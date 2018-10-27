@@ -1,22 +1,17 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.http.dialog;
 
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -346,7 +341,7 @@ public class PageCreateDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "notify", m_comboNotify);
 
 		gridData = new GridData();
-		gridData.horizontalSpan = 2;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_comboNotify.setLayoutData(gridData);
@@ -367,7 +362,7 @@ public class PageCreateDialog extends CommonDialog {
 		label = new Label(groupNotifyAttribute, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "blank", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = 6;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -583,6 +578,21 @@ public class PageCreateDialog extends CommonDialog {
 
 		if(this.m_pattern.getItems().isEmpty()){
 			result = createValidateResult(Messages.getString("message.hinemos.1"), Messages.getString("message.monitor.http.scenario.required", new Object[]{Messages.getString("monitor.http.scenario.page.content.determine")}));
+		}
+
+		// 変数に重複したものないかをチェック
+		// TODO 直接VariableCreateDialogでチェックしたほうがよいが、TableItemInfoComposite、TableItemManagerやModelを全体的に修正が必要
+		if(!this.m_variable.getItems().isEmpty()){
+			Set<String> uniqueSet = new HashSet<>();
+			for(Variable one : this.m_variable.getItems()){
+				String key = one.getName();
+				if (uniqueSet.contains(key)){
+					result = createValidateResult(Messages.getString("message.hinemos.1"), Messages.getString(
+							"message.hinemos.10", new Object[] { Messages.getString("monitor.http.scenario.variable.name"), key }));
+				}else{
+					uniqueSet.add(key);
+				}
+			}
 		}
 
 		if(result == null){

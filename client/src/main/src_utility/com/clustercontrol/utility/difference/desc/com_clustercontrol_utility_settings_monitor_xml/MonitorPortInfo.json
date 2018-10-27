@@ -1,0 +1,53 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"serviceId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPortInfo_serviceId"},
+		{"type":"Translate",
+			"values":[
+				{"value":"001", "name":"name_TCP"},
+				{"value":"002", "name":"name_FTP"},
+				{"value":"003", "name":"name_SMTP"},
+				{"value":"004", "name":"name_SMTPS"},
+				{"value":"005", "name":"name_POP3"},
+				{"value":"006", "name":"name_POP3S"},
+				{"value":"007", "name":"name_IMAP"},
+				{"value":"008", "name":"name_IMAPS"},
+				{"value":"009", "name":"name_NTP"},
+				{"value":"010", "name":"name_DNS"}
+			]
+		}
+	]},
+
+	{
+	"propName":"portNo",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPortInfo_portNo"}
+	]},
+
+	{
+	"propName":"runCount",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPortInfo_runCount"},
+		{"type":"Translate", "values":[{"value":"1", "name":"value_once"}, {"value":"2", "name":"value_twice"}, {"value":"3", "name":"value_threeTimes"}]}
+
+	]},
+
+	{
+	"propName":"runInterval",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPortInfo_runInterval"},
+		{"type":"Translate", "values":[{"value":"1000", "name":"value_second"}, {"value":"2000", "name":"value_twoSeconds"}, {"value":"5000", "name":"value_fiveSeconds"}]}
+	]},
+
+	{
+	"propName":"timeout",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPortInfo_timeout"}
+	]}
+]
+}

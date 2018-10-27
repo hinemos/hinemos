@@ -1,0 +1,25 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"command",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorProcessInfo_command"}
+	]},
+
+	{
+	"propName":"param",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorProcessInfo_param"}
+	]},
+	
+	{
+	"propName":"caseSensitivityFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorProcessInfo_caseSensitivityFlg"},
+		{"type":"Translate", "values":[{"value":"0", "name":"name_hyphen"}, {"value":"1", "name":"name_circle"}]}
+	]}
+]
+}

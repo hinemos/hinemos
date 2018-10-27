@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.selfcheck.monitor;
@@ -18,13 +11,15 @@ package com.clustercontrol.selfcheck.monitor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.selfcheck.FileSystemUsageConfig;
 import com.clustercontrol.selfcheck.util.FileSystemPoller;
 import com.clustercontrol.util.MessageConstant;
@@ -72,27 +67,26 @@ public class FileSystemMonitor extends SelfCheckMonitorBase {
 	 */
 	@Override
 	public void execute() {
-		if (!HinemosPropertyUtil.getHinemosPropertyBool("selfcheck.monitoring.filesystem.usage", false)) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_filesystem_usage.getBooleanValue()) {
 			m_log.debug("skip");
 			return;
 		}
 
-		this.snmpPort = HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.snmp.port", Long.valueOf(161)).intValue();
-		String snmpVersionStr = HinemosPropertyUtil.getHinemosPropertyStr("selfcheck.snmp.version", SnmpVersionConstant.STRING_V2);
+		this.snmpPort = HinemosPropertyCommon.selfcheck_snmp_port.getIntegerValue();
+		String snmpVersionStr = HinemosPropertyCommon.selfcheck_snmp_version.getStringValue();
 		snmpVersion = SnmpVersionConstant.stringToType(snmpVersionStr);
-		snmpCommunity = HinemosPropertyUtil.getHinemosPropertyStr("selfcheck.snmp.community", "public");
-		snmpRetries = HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.snmp.retries", Long.valueOf(3)).intValue();
-		snmpTimeout = HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.snmp.timeout", Long.valueOf(3000)).intValue();
+		snmpCommunity = HinemosPropertyCommon.selfcheck_snmp_community.getStringValue();
+		snmpRetries = HinemosPropertyCommon.selfcheck_snmp_retries.getIntegerValue();
+		snmpTimeout = HinemosPropertyCommon.selfcheck_snmp_timeout.getIntegerValue();
 
 		/** ローカル変数 */
-		String fsUsageRaw = HinemosPropertyUtil.getHinemosPropertyStr(
-				"selfcheck.monitoring.filesystem.usage.list",
-				"/:50");
+		String fsUsageRaw = HinemosPropertyCommon.selfcheck_monitoring_filesystem_usage_list.getStringValue();
 		List<FileSystemUsageConfig> fsUsages = new ArrayList<FileSystemUsageConfig>();
+		Pattern p = Pattern.compile("(.*):([0-9]+)");
 		for (String fs : fsUsageRaw.split(",")) {
-			String[] pair = fs.split(":");
-			if (pair.length == 2) {
-				fsUsages.add(new FileSystemUsageConfig(pair[0], Integer.parseInt(pair[1])));
+			Matcher m = p.matcher(fs);
+			if (m.matches()) {
+				fsUsages.add(new FileSystemUsageConfig(m.group(1), Integer.parseInt(m.group(2))));
 			}
 		}
 		List<FileSystemUsageConfig> fsUsageList = Collections.unmodifiableList(fsUsages);
@@ -121,7 +115,7 @@ public class FileSystemMonitor extends SelfCheckMonitorBase {
 	
 			if (fileSystemUsage == -1 || fileSystemTotal == -1) {
 				m_log.info("skipped monitoring file system usage. (mountPoint = " + mountPoint + ", threshold = " + thresholdPer + " [%])");
-				return;
+				continue;
 			} else {
 				if (fileSystemUsagePer <= thresholdPer) {
 					m_log.debug("usage of file system is low. (mountPoint = " + mountPoint
@@ -135,9 +129,9 @@ public class FileSystemMonitor extends SelfCheckMonitorBase {
 			}
 	
 			if (!isNotify(subKey, warn)) {
-				return;
-			}
-			String[] msgAttr1 = { mountPoint, String.format("%.2f", fileSystemUsagePer), Integer.toString(thresholdPer)};
+				continue;
+			} 
+			String[] msgAttr1 = { mountPoint.replace(":\\", ":/"), String.format("%.2f", fileSystemUsagePer), Integer.toString(thresholdPer)};
 			AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_002_SYS_SFC, msgAttr1,
 					"usage of filesystem(" +
 							mountPoint +

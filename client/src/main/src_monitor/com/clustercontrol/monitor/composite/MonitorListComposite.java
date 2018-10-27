@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.composite;
@@ -51,7 +44,7 @@ import com.clustercontrol.viewer.CommonTableViewer;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.MonitorFilterInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
+import com.clustercontrol.ws.monitor.MonitorInfoBean;
 import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 
 /**
@@ -198,7 +191,7 @@ public class MonitorListComposite extends Composite {
 		Map<String, String> errMsgs = new ConcurrentHashMap<>();
 
 		// データ取得
-		Map<String, List<MonitorInfo>> dispDataMap= new ConcurrentHashMap<>();
+		Map<String, List<MonitorInfoBean>> dispDataMap= new ConcurrentHashMap<>();
 
 		String conditionManager = null;
 		if(condition != null) {
@@ -232,29 +225,25 @@ public class MonitorListComposite extends Composite {
 		// MonitorInfo を tableViewer にセットするための詰め替え
 		ArrayList<Object> listInput = new ArrayList<Object>();
 
-		for( Map.Entry<String, List<MonitorInfo>> e: dispDataMap.entrySet() ){
-			for (MonitorInfo monitor : e.getValue()) {
+		for( Map.Entry<String, List<MonitorInfoBean>> e: dispDataMap.entrySet() ){
+			for (MonitorInfoBean monitorBean : e.getValue()) {
 				ArrayList<Object> a = new ArrayList<Object>();
 				a.add(e.getKey());
-				a.add(monitor.getMonitorId());
-				a.add(monitor.getMonitorTypeId());
-				a.add(MonitorTypeMessage.typeToString(monitor.getMonitorType()));
-				a.add(monitor.getDescription());
-				a.add(monitor.getFacilityId());
-				a.add(HinemosMessage.replace(monitor.getScope()));
-				a.add(monitor.getCalendarId());
-				if(monitor.getRunInterval() == 0){
-					a.add("-");
-				}else{
-					a.add(monitor.getRunInterval() / 60 + Messages.getString("minute"));
-				}
-				a.add(monitor.isMonitorFlg());
-				a.add(monitor.isCollectorFlg());
-				a.add(monitor.getOwnerRoleId());
-				a.add(monitor.getRegUser());
-				a.add(new Date(monitor.getRegDate()));
-				a.add(monitor.getUpdateUser());
-				a.add(new Date(monitor.getUpdateDate()));
+				a.add(monitorBean.getMonitorId());
+				a.add(monitorBean.getMonitorTypeId());
+				a.add(MonitorTypeMessage.typeToString(monitorBean.getMonitorType()));
+				a.add(monitorBean.getDescription());
+				a.add(monitorBean.getFacilityId());
+				a.add(HinemosMessage.replace(monitorBean.getScope()));
+				a.add(monitorBean.getCalendarId());
+				a.add(monitorBean.getRunInterval());
+				a.add(monitorBean.isMonitorFlg());
+				a.add(monitorBean.isCollectorFlg());
+				a.add(monitorBean.getOwnerRoleId());
+				a.add(monitorBean.getRegUser());
+				a.add(new Date(monitorBean.getRegDate()));
+				a.add(monitorBean.getUpdateUser());
+				a.add(new Date(monitorBean.getUpdateDate()));
 				a.add(null);
 
 				listInput.add(a);
@@ -307,32 +296,13 @@ public class MonitorListComposite extends Composite {
 	}
 
 	private void getMonitorList(String managerName,
-			Map<String, List<MonitorInfo>> dispDataMap,
+			Map<String, List<MonitorInfoBean>> dispDataMap,
 			Map<String, String> errorMsgs) {
 		try {
 			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			List<MonitorInfo> list = wrapper.getMonitorList();
+			List<MonitorInfoBean> list = wrapper.getMonitorBeanList();
 			
 			if( null != list ){
-				// メモリが溢れてしまうので、監視設定一覧に表示しない情報は落とす。
-				for (MonitorInfo info : list) {
-					info.setCustomCheckInfo(null);
-					info.setCustomTrapCheckInfo(null);
-					info.setHttpCheckInfo(null);
-					info.setHttpScenarioCheckInfo(null);
-					info.setJmxCheckInfo(null);
-					info.setLogfileCheckInfo(null);
-					info.setPerfCheckInfo(null);
-					info.setPingCheckInfo(null);
-					info.setPluginCheckInfo(null);
-					info.setPortCheckInfo(null);
-					info.setProcessCheckInfo(null);
-					info.setSnmpCheckInfo(null);
-					info.setSqlCheckInfo(null);
-					info.setTrapCheckInfo(null);
-					info.setWinEventCheckInfo(null);
-					info.setWinServiceCheckInfo(null);
-				}
 				dispDataMap.put(managerName, list);
 			}
 		} catch (InvalidRole_Exception e) {
@@ -347,12 +317,12 @@ public class MonitorListComposite extends Composite {
 	}
 
 	private void getMonitorListWithCondition(String managerName, MonitorFilterInfo filter,
-			Map<String, List<MonitorInfo>> dispDataMap,
+			Map<String, List<MonitorInfoBean>> dispDataMap,
 			Map<String, String> errorMsgs) {
 		try {
 			// マネージャにアクセス
 			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			List<MonitorInfo> list = wrapper.getMonitorListByCondition(filter);
+			List<MonitorInfoBean> list = wrapper.getMonitorBeanListByCondition(filter);
 			if( null != list ){
 				dispDataMap.put(managerName, list);
 			}

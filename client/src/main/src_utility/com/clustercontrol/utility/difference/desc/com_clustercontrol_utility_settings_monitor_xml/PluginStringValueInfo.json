@@ -1,0 +1,24 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"key",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPluginStringValueInfo_key"}
+	]},
+
+	{
+	"propName":"monitorId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPluginStringValueInfo_monitorId"}
+	]},
+
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorPluginStringValueInfo_value"}
+	]}
+]
+}

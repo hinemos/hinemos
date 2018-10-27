@@ -1,0 +1,33 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"mapId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"bgName",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeMapType_bgName"}
+	]},
+	
+	{
+	"propName":"association",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeMapType_association"},
+		{"type":"Array", "idType":"props", "props":["source"]}
+	]},
+	
+
+	{
+	"propName":"contents",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeMapType_contents"},
+		{"type":"Array", "idType":"props", "props":["facilityId"]}
+	]}
+]
+}

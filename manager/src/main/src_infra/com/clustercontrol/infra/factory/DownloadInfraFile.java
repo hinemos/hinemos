@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.factory;
@@ -40,16 +33,19 @@ public class DownloadInfraFile {
 	private static Logger m_log = Logger.getLogger( DownloadInfraFile.class );
 	
 	public DataHandler download(String fileId, String fileName) throws InfraFileNotFound, HinemosUnknown, IOException {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		InfraFileInfo entity = em.find(InfraFileInfo.class, fileId, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			InfraFileNotFound e = new InfraFileNotFound("InfraFileEntity.findByPrimaryKey" + ", fileId = " + fileId);
-			m_log.info("download() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			InfraFileInfo entity = em.find(InfraFileInfo.class, fileId, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				InfraFileNotFound e = new InfraFileNotFound("InfraFileEntity.findByPrimaryKey" + ", fileId = " + fileId);
+				m_log.info("download() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			
+			String filename = InfraJdbcExecutor.selectFileContent(fileId, fileName);
+			FileDataSource fileData = new FileDataSource(filename);
+			return new DataHandler(fileData);
 		}
-		
-		String filename = InfraJdbcExecutor.selectFileContent(fileId, fileName);
-		FileDataSource fileData = new FileDataSource(filename);
-		return new DataHandler(fileData);
 	}
 }

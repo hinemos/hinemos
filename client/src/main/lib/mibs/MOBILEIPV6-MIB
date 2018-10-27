@@ -1,0 +1,2815 @@
+      MOBILEIPV6-MIB DEFINITIONS ::= BEGIN
+       IMPORTS
+         MODULE-IDENTITY, mib-2, Unsigned32, Integer32, Counter32,
+         Gauge32, Counter64,
+         OBJECT-TYPE, NOTIFICATION-TYPE
+                    FROM SNMPv2-SMI
+         TEXTUAL-CONVENTION,
+         TruthValue, DateAndTime, TimeStamp
+                    FROM SNMPv2-TC
+         MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                    FROM SNMPv2-CONF
+         InetAddressType, InetAddress
+                    FROM INET-ADDRESS-MIB
+         ipv6InterfaceIfIndex
+                    FROM IP-MIB
+         ;
+
+     mip6MIB MODULE-IDENTITY
+          LAST-UPDATED "200602010000Z"        --  1st February 2006
+          ORGANIZATION "IETF mip6 Working Group"
+
+
+
+                  ::= { mib-2 133 }
+
+
+
+       mip6Notifications        OBJECT IDENTIFIER ::= { mip6MIB 0 }
+       mip6Objects              OBJECT IDENTIFIER ::= { mip6MIB 1 }
+       mip6Conformance          OBJECT IDENTIFIER ::= { mip6MIB 2 }
+       mip6Core                 OBJECT IDENTIFIER ::= { mip6Objects 1 }
+       mip6Mn                   OBJECT IDENTIFIER ::= { mip6Objects 2 }
+       mip6Cn                   OBJECT IDENTIFIER ::= { mip6Objects 3 }
+       mip6Ha                   OBJECT IDENTIFIER ::= { mip6Objects 4 }
+
+
+       mip6System               OBJECT IDENTIFIER ::= { mip6Core 1 }
+       mip6Bindings             OBJECT IDENTIFIER ::= { mip6Core 2 }
+       mip6Stats                OBJECT IDENTIFIER ::= { mip6Core 3 }
+
+       mip6MnSystem             OBJECT IDENTIFIER ::= { mip6Mn 1 }
+       mip6MnConf               OBJECT IDENTIFIER ::= { mip6Mn 2 }
+       mip6MnRegistration       OBJECT IDENTIFIER ::= { mip6Mn 3 }
+
+       mip6CnSystem             OBJECT IDENTIFIER ::= { mip6Cn 1 }
+
+
+
+
+
+       mip6CnStats              OBJECT IDENTIFIER ::= { mip6Cn 2 }
+
+       mip6HaAdvertisement      OBJECT IDENTIFIER ::= { mip6Ha 1 }
+       mip6HaStats              OBJECT IDENTIFIER ::= { mip6Ha 2 }
+
+
+
+       Mip6BURequestRejectionCode ::= TEXTUAL-CONVENTION
+              STATUS        current
+              SYNTAX  INTEGER {
+                      reasonUnspecified               (1),  --(Code 128)
+                      admProhibited                   (2),  --(Code 129)
+                      insufficientResource            (3),  --(Code 130)
+                      homeRegistrationNotSupported    (4),  --(Code 131)
+                      notHomeSubnet                   (5),  --(Code 132)
+                      notHomeAgentForThisMobileNode   (6),  --(Code 133)
+                      duplicateAddressDetectionFailed (7),  --(Code 134)
+                      sequenceNumberOutOfWindow       (8),  --(Code 135)
+                      expiredHomeNonceIndex           (9),  --(Code 136)
+                      expiredCareofNonceIndex         (10), --(Code 137)
+                      expiredNonces                   (11), --(Code 138)
+                      registrationTypeChangeDisallowed(12)  --(Code 139)
+                     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6Capabilities OBJECT-TYPE
+           SYNTAX      BITS {
+                            mobileNode         (0),
+                            homeAgent          (1),
+                            correspondentNode  (2)
+                       }
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6System 1 }
+
+       mip6Status OBJECT-TYPE
+           SYNTAX      INTEGER { enabled(1), disabled(2) }
+           MAX-ACCESS  read-write
+           STATUS      current
+           ::= { mip6System 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        mip6BindingCacheTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6BindingCacheEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6Bindings 1 }
+
+        mip6BindingCacheEntry OBJECT-TYPE
+           SYNTAX      Mip6BindingCacheEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX  { mip6BindingHomeAddressType, mip6BindingHomeAddress }
+           ::= { mip6BindingCacheTable 1 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        Mip6BindingCacheEntry ::=
+           SEQUENCE {
+            mip6BindingHomeAddressType   InetAddressType,
+            mip6BindingHomeAddress       InetAddress,
+            mip6BindingCOAType           InetAddressType,
+            mip6BindingCOA               InetAddress,
+            mip6BindingTimeRegistered    DateAndTime,
+            mip6BindingTimeGranted       Gauge32,
+            mip6BindingTimeRemaining     Gauge32,
+            mip6BindingHomeRegn          TruthValue,
+            mip6BindingMaxSeq            Unsigned32,
+            mip6BindingUsageTS           DateAndTime,
+            mip6BindingUsageCount        Gauge32,
+            mip6BindingAdminStatus       INTEGER
+           }
+
+       mip6BindingHomeAddressType OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6BindingCacheEntry 1 }
+
+       mip6BindingHomeAddress OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6BindingCacheEntry 2 }
+
+
+
+
+
+
+
+
+
+
+       mip6BindingCOAType   OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingCacheEntry 3 }
+
+       mip6BindingCOA   OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingCacheEntry 4 }
+
+        mip6BindingTimeRegistered OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingCacheEntry 5 }
+
+        mip6BindingTimeGranted OBJECT-TYPE
+           SYNTAX      Gauge32
+           UNITS       "seconds"
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingCacheEntry 6 }
+
+
+
+
+
+
+       mip6BindingTimeRemaining OBJECT-TYPE
+           SYNTAX      Gauge32
+           UNITS       "seconds"
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingCacheEntry 7 }
+
+        mip6BindingHomeRegn OBJECT-TYPE
+           SYNTAX      TruthValue
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingCacheEntry 8 }
+
+        mip6BindingMaxSeq OBJECT-TYPE
+           SYNTAX      Unsigned32 (0..65536)
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingCacheEntry 9 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        mip6BindingUsageTS OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingCacheEntry 10 }
+
+        mip6BindingUsageCount OBJECT-TYPE
+           SYNTAX      Gauge32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingCacheEntry 11 }
+
+        mip6BindingAdminStatus OBJECT-TYPE
+           SYNTAX      INTEGER {
+                           active     (1),
+                           inactive   (2)
+                       }
+           MAX-ACCESS  read-write
+           STATUS      current
+           ::= { mip6BindingCacheEntry 12 }
+
+
+
+
+
+
+
+        mip6BindingHistoryTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6BindingHistoryEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6Bindings 2 }
+
+        mip6BindingHistoryEntry OBJECT-TYPE
+           SYNTAX      Mip6BindingHistoryEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX   { mip6BindingHstHomeAddressType,
+                     mip6BindingHstHomeAddress ,
+                     mip6BindingHstIndex}
+           ::= { mip6BindingHistoryTable 1 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        Mip6BindingHistoryEntry ::=
+           SEQUENCE {
+            mip6BindingHstHomeAddressType   InetAddressType,
+            mip6BindingHstHomeAddress       InetAddress,
+            mip6BindingHstIndex             Unsigned32,
+            mip6BindingHstCOAType           InetAddressType,
+            mip6BindingHstCOA               InetAddress,
+            mip6BindingHstTimeRegistered    DateAndTime,
+            mip6BindingHstTimeExpired       DateAndTime,
+            mip6BindingHstHomeRegn          TruthValue,
+            mip6BindingHstUsageTS           DateAndTime,
+            mip6BindingHstUsageCount        Gauge32
+           }
+
+       mip6BindingHstHomeAddressType OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 1 }
+
+       mip6BindingHstHomeAddress OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 2 }
+
+       mip6BindingHstIndex OBJECT-TYPE
+           SYNTAX      Unsigned32 (1..4294967295)
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 3 }
+
+
+
+
+
+
+       mip6BindingHstCOAType   OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 4 }
+
+       mip6BindingHstCOA   OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 5 }
+
+        mip6BindingHstTimeRegistered OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 6 }
+
+        mip6BindingHstTimeExpired OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 7 }
+
+
+
+
+
+
+
+
+
+
+
+        mip6BindingHstHomeRegn OBJECT-TYPE
+           SYNTAX      TruthValue
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 8 }
+
+        mip6BindingHstUsageTS OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 9 }
+
+        mip6BindingHstUsageCount OBJECT-TYPE
+           SYNTAX      Gauge32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6BindingHistoryEntry 10 }
+
+
+
+        mip6TotalTraffic OBJECT IDENTIFIER ::= { mip6Stats 1 }
+
+
+
+
+
+
+
+
+        mip6InOctets  OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6TotalTraffic 1 }
+
+        mip6HCInOctets  OBJECT-TYPE
+           SYNTAX      Counter64
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6TotalTraffic 2 }
+
+
+
+
+
+
+
+
+
+        mip6InPkts    OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6TotalTraffic 3 }
+
+        mip6HCInPkts    OBJECT-TYPE
+           SYNTAX      Counter64
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6TotalTraffic 4 }
+
+
+
+
+
+
+
+
+
+        mip6OutOctets  OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6TotalTraffic 5 }
+
+        mip6HCOutOctets  OBJECT-TYPE
+           SYNTAX      Counter64
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6TotalTraffic 6 }
+
+
+
+
+
+
+
+
+
+        mip6OutPkts    OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6TotalTraffic 7 }
+
+        mip6HCOutPkts    OBJECT-TYPE
+           SYNTAX      Counter64
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6TotalTraffic 8 }
+
+
+
+
+
+
+
+
+
+        mip6CounterDiscontinuityTime OBJECT-TYPE
+           SYNTAX      TimeStamp
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6TotalTraffic 9 }
+
+
+
+        mip6NodeTrafficTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6NodeTrafficEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6Stats 2 }
+
+        mip6NodeTrafficEntry OBJECT-TYPE
+           SYNTAX      Mip6NodeTrafficEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX  { mip6BindingHomeAddressType, mip6BindingHomeAddress }
+           ::= { mip6NodeTrafficTable 1 }
+
+
+
+
+
+
+
+
+        Mip6NodeTrafficEntry ::=
+           SEQUENCE {
+                 mip6NodeInOctets             Counter32,
+                 mip6HCNodeInOctets           Counter64,
+                 mip6NodeInPkts               Counter32,
+                 mip6HCNodeInPkts             Counter64,
+                 mip6NodeOutOctets            Counter32,
+                 mip6HCNodeOutOctets          Counter64,
+                 mip6NodeOutPkts              Counter32,
+                 mip6HCNodeOutPkts            Counter64,
+                 mip6NodeCtrDiscontinuityTime TimeStamp
+           }
+
+        mip6NodeInOctets  OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6NodeTrafficEntry 1 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        mip6HCNodeInOctets  OBJECT-TYPE
+           SYNTAX      Counter64
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6NodeTrafficEntry 2 }
+
+        mip6NodeInPkts    OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6NodeTrafficEntry 3 }
+
+
+
+
+
+
+
+
+
+        mip6HCNodeInPkts    OBJECT-TYPE
+           SYNTAX      Counter64
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6NodeTrafficEntry 4 }
+
+        mip6NodeOutOctets  OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6NodeTrafficEntry 5 }
+
+
+
+
+
+
+
+
+
+
+
+
+        mip6HCNodeOutOctets  OBJECT-TYPE
+           SYNTAX      Counter64
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6NodeTrafficEntry 6 }
+
+        mip6NodeOutPkts    OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6NodeTrafficEntry 7 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+        mip6HCNodeOutPkts    OBJECT-TYPE
+           SYNTAX      Counter64
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6NodeTrafficEntry 8 }
+
+        mip6NodeCtrDiscontinuityTime OBJECT-TYPE
+           SYNTAX      TimeStamp
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6NodeTrafficEntry 9 }
+
+
+       mip6MnHomeAddressTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6MnHomeAddressEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6MnSystem 1 }
+
+
+
+
+
+        mip6MnHomeAddressEntry OBJECT-TYPE
+           SYNTAX      Mip6MnHomeAddressEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX   { mip6MnHomeAddressType, mip6MnHomeAddress }
+           ::= { mip6MnHomeAddressTable 1 }
+
+        Mip6MnHomeAddressEntry ::=
+           SEQUENCE {
+                 mip6MnHomeAddressType            InetAddressType,
+                 mip6MnHomeAddress                InetAddress,
+                 mip6MnHomeAddressState           INTEGER
+           }
+
+       mip6MnHomeAddressType OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6MnHomeAddressEntry 1 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnHomeAddress OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6MnHomeAddressEntry 2 }
+
+       mip6MnHomeAddressState OBJECT-TYPE
+           SYNTAX      INTEGER {
+                               unknown(1),
+                               home(2),
+                               registered(3),
+                               pending(4),
+                               isolated(5)
+                       }
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnHomeAddressEntry 3 }
+
+
+
+
+
+
+       mip6MnDiscoveryRequests OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+              ::= { mip6MnConf 1 }
+
+       mip6MnDiscoveryReplies OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+              ::= { mip6MnConf 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnDiscoveryTimeouts OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+              ::= { mip6MnConf 3 }
+
+       mip6MnPrefixSolicitationsSent OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+              ::= { mip6MnConf 4 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnPrefixAdvsRecd OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnConf 5 }
+
+       mip6MnPrefixAdvsIgnored OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnConf 6 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnMovedToFN OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnConf 7 }
+
+       mip6MnMovedToHN OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnConf 8 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnBLTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6MnBLEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6MnRegistration 1 }
+
+       mip6MnBLEntry OBJECT-TYPE
+           SYNTAX      Mip6MnBLEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX { mip6MnHomeAddressType,
+                   mip6MnHomeAddress,
+                   mip6MnBLNodeAddressType,
+                   mip6MnBLNodeAddress
+                 }
+           ::= { mip6MnBLTable 1 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       Mip6MnBLEntry ::= SEQUENCE {
+           mip6MnBLNodeAddressType   InetAddressType,
+           mip6MnBLNodeAddress       InetAddress,
+           mip6MnBLCOAType           InetAddressType,
+           mip6MnBLCOA               InetAddress,
+           mip6MnBLLifeTimeRequested Unsigned32,
+           mip6MnBLLifeTimeGranted   Unsigned32,
+           mip6MnBLMaxSeq            Unsigned32,
+           mip6MnBLTimeSent          DateAndTime,
+           mip6MnBLAccepted          TruthValue,
+           mip6MnBLAcceptedTime      DateAndTime,
+           mip6MnBLRetransmissions   Gauge32,
+           mip6MnBLDontSendBUFlag    TruthValue
+           }
+
+       mip6MnBLNodeAddressType OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6MnBLEntry 1 }
+
+       mip6MnBLNodeAddress OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6MnBLEntry 2 }
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnBLCOAType OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 3 }
+
+       mip6MnBLCOA OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 4 }
+
+       mip6MnBLLifeTimeRequested OBJECT-TYPE
+           SYNTAX      Unsigned32
+           UNITS       "seconds"
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 5 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnBLLifeTimeGranted OBJECT-TYPE
+           SYNTAX      Unsigned32
+           UNITS       "seconds"
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 6 }
+
+       mip6MnBLMaxSeq OBJECT-TYPE
+           SYNTAX      Unsigned32 (0..65536)
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 7 }
+
+       mip6MnBLTimeSent OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 8 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnBLAccepted OBJECT-TYPE
+           SYNTAX      TruthValue
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 9 }
+
+       mip6MnBLAcceptedTime OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 10 }
+
+
+       mip6MnBLRetransmissions  OBJECT-TYPE
+           SYNTAX      Gauge32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 11 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnBLDontSendBUFlag OBJECT-TYPE
+           SYNTAX      TruthValue
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6MnBLEntry 12 }
+
+
+
+       mip6MnRegnCounters OBJECT IDENTIFIER ::= { mip6MnRegistration 2 }
+
+       mip6MnMobilityMessagesSent OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= {  mip6MnRegnCounters 1 }
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnMobilityMessagesRecd OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= {  mip6MnRegnCounters 2 }
+
+       mip6MnBUsToHA  OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= {  mip6MnRegnCounters 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnBUAcksFromHA  OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= {  mip6MnRegnCounters 4 }
+
+       mip6MnBUsToCN OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= {  mip6MnRegnCounters 5 }
+
+       mip6MnBUAcksFromCN OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= {  mip6MnRegnCounters 6 }
+
+
+
+
+
+
+       mip6MnBindingErrorsFromCN OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= {  mip6MnRegnCounters 7 }
+
+       mip6MnICMPErrorsRecd OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= {  mip6MnRegnCounters 8 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnBRRequestsRecd OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= {  mip6MnRegnCounters 9 }
+
+       mip6CnGlobalStats OBJECT IDENTIFIER ::= { mip6CnStats 1 }
+
+
+       mip6CnHomeTestInitsRecd     OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 1 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6CnHomeTestsSent      OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 2 }
+
+       mip6CnCareOfTestInitsRecd     OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 3 }
+
+       mip6CnCareOfTestsSent            OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 4 }
+
+
+
+
+
+
+       mip6CnBUsRecd     OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 5 }
+
+       mip6CnBUAcksSent    OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 6 }
+
+
+       mip6CnBRsSent     OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 7 }
+
+
+
+
+
+        mip6CnBindingErrors OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 8 }
+
+       mip6CnBUsAccepted   OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 9 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6CnBUsRejected   OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 10 }
+
+       mip6CnReasonUnspecified OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 11 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6CnInsufficientResource OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 12 }
+
+       mip6CnHomeRegnNotSupported OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 13 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6CnSeqNumberOutOfWindow OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 14 }
+
+       mip6CnExpiredHomeNonceIndex OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 15 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6CnExpiredCareOfNonceIndex OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 16 }
+
+       mip6CnExpiredNonce OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 17 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6CnRegTypeChangeDisallowed OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnGlobalStats 18 }
+
+
+
+
+       mip6CnCounterTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6CnCounterEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6CnStats 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6CnCounterEntry OBJECT-TYPE
+           SYNTAX      Mip6CnCounterEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX   {    mip6BindingHomeAddressType,
+                        mip6BindingHomeAddress
+                   }
+           ::= { mip6CnCounterTable 1 }
+
+       Mip6CnCounterEntry ::=
+           SEQUENCE {
+              mip6CnBURequestsAccepted       Counter32,
+              mip6CnBURequestsRejected       Counter32,
+              mip6CnBCEntryCreationTime      DateAndTime,
+              mip6CnBUAcceptedTime           DateAndTime,
+              mip6CnBURejectionTime          DateAndTime,
+              mip6CnBURejectionCode          Mip6BURequestRejectionCode,
+              mip6CnCtrDiscontinuityTime     TimeStamp
+           }
+
+       mip6CnBURequestsAccepted OBJECT-TYPE   --(Code 0,1)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnCounterEntry 1 }
+
+
+
+
+
+
+
+       mip6CnBURequestsRejected     OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnCounterEntry 2 }
+
+       mip6CnBCEntryCreationTime        OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnCounterEntry 3 }
+
+       mip6CnBUAcceptedTime OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnCounterEntry 4 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6CnBURejectionTime   OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnCounterEntry 5 }
+
+       mip6CnBURejectionCode  OBJECT-TYPE
+              SYNTAX      Mip6BURequestRejectionCode
+              MAX-ACCESS  read-only
+              STATUS      current
+
+              ::= { mip6CnCounterEntry 6 }
+
+        mip6CnCtrDiscontinuityTime OBJECT-TYPE
+           SYNTAX      TimeStamp
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6CnCounterEntry 7 }
+
+
+
+
+
+
+
+       mip6HaAdvsRecd OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaAdvertisement 1 }
+
+
+       mip6HaAdvsSent OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaAdvertisement 2 }
+
+
+       mip6HaConfTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6HaConfEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6HaAdvertisement 3 }
+
+       mip6HaConfEntry OBJECT-TYPE
+           SYNTAX      Mip6HaConfEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX   { ipv6InterfaceIfIndex }
+           ::= { mip6HaConfTable 1 }
+
+       Mip6HaConfEntry    ::= SEQUENCE {
+             mip6HaAdvPreference               Integer32,
+             mip6HaAdvLifetime                 Integer32,
+             mip6HaPrefixAdv                   INTEGER,
+             mip6HaPrefixSolicitation          INTEGER,
+             mip6HaMCastCtlMsgSupport          INTEGER
+           }
+
+       mip6HaAdvPreference OBJECT-TYPE
+           SYNTAX      Integer32 (0..65536)
+           MAX-ACCESS  read-write
+           STATUS      current
+           ::= { mip6HaConfEntry 1 }
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaAdvLifetime   OBJECT-TYPE
+           SYNTAX      Integer32 (1..65535)
+           UNITS       "seconds"
+           MAX-ACCESS  read-write
+           STATUS      current
+           ::= { mip6HaConfEntry 2 }
+
+       mip6HaPrefixAdv    OBJECT-TYPE
+           SYNTAX      INTEGER { enabled(1), disabled(2) }
+           MAX-ACCESS  read-write
+           STATUS      current
+           ::= { mip6HaConfEntry 3}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaPrefixSolicitation   OBJECT-TYPE
+           SYNTAX      INTEGER { enabled(1), disabled(2) }
+           MAX-ACCESS  read-write
+           STATUS      current
+           ::= { mip6HaConfEntry 4}
+
+
+      mip6HaMCastCtlMsgSupport OBJECT-TYPE
+           SYNTAX      INTEGER { enabled(1), disabled(2) }
+           MAX-ACCESS  read-write
+           STATUS      current
+           ::= { mip6HaConfEntry 5}
+
+
+
+
+
+
+
+       mip6HaGlobalStats OBJECT IDENTIFIER ::= { mip6HaStats 1 }
+
+       mip6HaHomeTestInitsRecd     OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 1 }
+
+       mip6HaHomeTestsSent      OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaBUsRecd     OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 3 }
+
+       mip6HaBUAcksSent    OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 4 }
+
+       mip6HaBRAdviceSent OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 5 }
+
+
+
+
+
+       mip6HaBUsAccepted   OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 6 }
+
+       mip6HaPrefDiscoverReqd OBJECT-TYPE        -- (Code 1)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 7 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaReasonUnspecified OBJECT-TYPE               -- (Code 128)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 8 }
+
+       mip6HaAdmProhibited OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 9 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaInsufficientResource OBJECT-TYPE            -- (Code 130)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 10 }
+
+       mip6HaHomeRegnNotSupported OBJECT-TYPE    -- (Code 131)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 11 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaNotHomeSubnet OBJECT-TYPE                   -- (Code 132)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 12 }
+
+       mip6HaNotHomeAgentForThisMN OBJECT-TYPE           -- (Code 133)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 13 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaDupAddrDetectionFailed OBJECT-TYPE       -- (Code 134)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 14 }
+
+       mip6HaSeqNumberOutOfWindow OBJECT-TYPE            -- (Code 135)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 15 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaExpiredHomeNonceIndex OBJECT-TYPE           -- (Code 136)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 16 }
+
+       mip6HaRegTypeChangeDisallowed OBJECT-TYPE         -- (Code 139)
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlobalStats 17 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaCounterTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6HaCounterEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6HaStats 2 }
+
+       mip6HaCounterEntry  OBJECT-TYPE
+           SYNTAX      Mip6HaCounterEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX   { mip6BindingHomeAddressType,
+                     mip6BindingHomeAddress
+                   }
+           ::= { mip6HaCounterTable 1 }
+
+       Mip6HaCounterEntry      ::= SEQUENCE {
+           mip6HaBURequestsAccepted       Counter32,
+           mip6HaBURequestsDenied         Counter32,
+           mip6HaBCEntryCreationTime      DateAndTime,
+           mip6HaBUAcceptedTime           DateAndTime,
+           mip6HaBURejectionTime          DateAndTime,
+           mip6HaRecentBURejectionCode    Mip6BURequestRejectionCode,
+           mip6HaCtrDiscontinuityTime     TimeStamp
+           }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaBURequestsAccepted OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaCounterEntry 1 }
+
+       mip6HaBURequestsDenied   OBJECT-TYPE
+           SYNTAX      Counter32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaCounterEntry 2 }
+
+       mip6HaBCEntryCreationTime   OBJECT-TYPE
+           SYNTAX      DateAndTime
+           UNITS       "seconds"
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaCounterEntry 3 }
+
+       mip6HaBUAcceptedTime  OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaCounterEntry 4 }
+
+
+
+
+
+       mip6HaBURejectionTime  OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaCounterEntry 5 }
+
+       mip6HaRecentBURejectionCode  OBJECT-TYPE
+           SYNTAX      Mip6BURequestRejectionCode
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaCounterEntry 6 }
+
+        mip6HaCtrDiscontinuityTime OBJECT-TYPE
+           SYNTAX      TimeStamp
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaCounterEntry 7 }
+
+
+
+
+
+
+
+
+
+       mip6HaListTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6HaListEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6HaAdvertisement 4 }
+
+       mip6HaListEntry  OBJECT-TYPE
+           SYNTAX      Mip6HaListEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX   { ipv6InterfaceIfIndex, mip6HaLinkLocalAddressType,
+                                           mip6HaLinkLocalAddress }
+           ::= { mip6HaListTable 1 }
+
+       Mip6HaListEntry      ::= SEQUENCE {
+           mip6HaLinkLocalAddressType      InetAddressType,
+           mip6HaLinkLocalAddress          InetAddress,
+           mip6HaPreference                Integer32,
+           mip6HaRecvLifeTime              Gauge32,
+           mip6HaRecvTimeStamp             DateAndTime
+           }
+
+
+
+
+
+       mip6HaLinkLocalAddressType  OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6HaListEntry 1 }
+
+       mip6HaLinkLocalAddress  OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6HaListEntry 2 }
+
+      mip6HaPreference     OBJECT-TYPE
+           SYNTAX      Integer32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaListEntry 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+      mip6HaRecvLifeTime       OBJECT-TYPE
+           SYNTAX      Gauge32
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaListEntry 4 }
+
+      mip6HaRecvTimeStamp  OBJECT-TYPE
+           SYNTAX      DateAndTime
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaListEntry 5 }
+
+
+      mip6HaGlAddrTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF Mip6HaGlAddrEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6HaAdvertisement 5 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaGlAddrEntry  OBJECT-TYPE
+           SYNTAX      Mip6HaGlAddrEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           INDEX   { ipv6InterfaceIfIndex,   mip6HaLinkLocalAddressType,
+                     mip6HaLinkLocalAddress, mip6HaGaAddrSeqNo }
+           ::= { mip6HaGlAddrTable 1 }
+
+       Mip6HaGlAddrEntry      ::= SEQUENCE {
+           mip6HaGaAddrSeqNo              Integer32,
+           mip6HaGaGlobalAddressType      InetAddressType,
+           mip6HaGaGlobalAddress          InetAddress
+       }
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaGaAddrSeqNo  OBJECT-TYPE
+           SYNTAX      Integer32 (1..1024)
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           ::= { mip6HaGlAddrEntry 1 }
+
+       mip6HaGaGlobalAddressType  OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlAddrEntry 2 }
+
+       mip6HaGaGlobalAddress  OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  read-only
+           STATUS      current
+           ::= { mip6HaGlAddrEntry 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnRegistered NOTIFICATION-TYPE
+           OBJECTS   {
+                       mip6BindingTimeRegistered,
+                       mip6BindingCOAType,
+                       mip6BindingCOA
+                     }
+           STATUS    current
+           ::= { mip6Notifications 1 }
+
+       mip6MnDeRegistered NOTIFICATION-TYPE
+           OBJECTS   {
+                       mip6BindingTimeRegistered,
+                       mip6BindingCOAType,
+                       mip6BindingCOA
+                     }
+           STATUS    current
+           ::= { mip6Notifications 2 }
+
+
+
+
+
+
+
+
+
+
+
+       mip6MnCOAChanged NOTIFICATION-TYPE
+           OBJECTS   {
+                       mip6BindingTimeRegistered,
+                       mip6BindingCOAType,
+                       mip6BindingCOA
+                     }
+           STATUS    current
+           ::= { mip6Notifications 3 }
+
+       mip6MnBindingExpiredAtHA NOTIFICATION-TYPE
+           OBJECTS   {
+                       mip6BindingTimeRegistered,
+                       mip6BindingCOAType,
+                       mip6BindingCOA
+                     }
+           STATUS    current
+           ::= { mip6Notifications 4 }
+
+
+
+
+
+
+       mip6MnBindingExpiredAtCN NOTIFICATION-TYPE
+           OBJECTS   {
+                       mip6BindingTimeRegistered,
+                       mip6BindingCOAType,
+                       mip6BindingCOA
+                     }
+           STATUS    current
+           ::= { mip6Notifications 5 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      mip6Groups      OBJECT IDENTIFIER ::= { mip6Conformance 1 }
+      mip6Compliances OBJECT IDENTIFIER ::= { mip6Conformance 2 }
+
+      mip6SystemGroup    OBJECT-GROUP
+           OBJECTS {
+                     mip6Capabilities,
+                     mip6Status
+          }
+           STATUS  current
+           ::= { mip6Groups 1 }
+
+      mip6BindingCacheGroup    OBJECT-GROUP
+           OBJECTS {
+                     mip6BindingCOAType,
+                     mip6BindingCOA,
+                     mip6BindingTimeRegistered,
+                     mip6BindingTimeGranted,
+                     mip6BindingTimeRemaining,
+                     mip6BindingMaxSeq,
+                     mip6BindingHomeRegn,
+                     mip6BindingUsageTS,
+                     mip6BindingUsageCount,
+                     mip6BindingAdminStatus
+          }
+           STATUS  current
+           ::= { mip6Groups 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      mip6BindingHstGroup    OBJECT-GROUP
+           OBJECTS {
+                     mip6BindingHstCOAType,
+                     mip6BindingHstCOA,
+                     mip6BindingHstTimeRegistered,
+                     mip6BindingHstTimeExpired,
+                     mip6BindingHstHomeRegn,
+                     mip6BindingHstUsageTS,
+                     mip6BindingHstUsageCount
+          }
+           STATUS  current
+           ::= { mip6Groups 3 }
+
+      mip6TotalTrafficGroup    OBJECT-GROUP
+           OBJECTS {
+                     mip6InOctets,
+                     mip6HCInOctets,
+                     mip6InPkts,
+                     mip6HCInPkts,
+                     mip6OutOctets,
+                     mip6HCOutOctets,
+                     mip6OutPkts,
+                     mip6HCOutPkts,
+                     mip6CounterDiscontinuityTime
+          }
+           STATUS  current
+           ::= { mip6Groups 4 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      mip6NodeTrafficGroup    OBJECT-GROUP
+           OBJECTS {
+                     mip6NodeInOctets,
+                     mip6HCNodeInOctets,
+                     mip6NodeInPkts,
+                     mip6HCNodeInPkts,
+                     mip6NodeOutOctets,
+                     mip6HCNodeOutOctets,
+                     mip6NodeOutPkts,
+                     mip6HCNodeOutPkts,
+                     mip6NodeCtrDiscontinuityTime
+          }
+           STATUS  current
+           ::= { mip6Groups 5 }
+
+      mip6MnSystemGroup    OBJECT-GROUP
+           OBJECTS {
+                     mip6MnHomeAddressState
+          }
+           STATUS  current
+           ::= { mip6Groups 6 }
+
+      mip6MnConfGroup   OBJECT-GROUP
+           OBJECTS {
+                     mip6MnDiscoveryRequests,
+                     mip6MnDiscoveryReplies,
+                     mip6MnDiscoveryTimeouts,
+                     mip6MnPrefixSolicitationsSent,
+                     mip6MnPrefixAdvsRecd,
+                     mip6MnPrefixAdvsIgnored,
+                     mip6MnMovedToFN,
+                     mip6MnMovedToHN
+          }
+           STATUS  current
+           ::= { mip6Groups 7 }
+
+
+
+
+
+      mip6MnRegistrationGroup  OBJECT-GROUP
+           OBJECTS {
+                     mip6MnBLCOAType,
+                     mip6MnBLCOA,
+                     mip6MnBLLifeTimeRequested,
+                     mip6MnBLLifeTimeGranted,
+                     mip6MnBLMaxSeq,
+                     mip6MnBLTimeSent,
+                     mip6MnBLAccepted,
+                     mip6MnBLAcceptedTime,
+                     mip6MnBLRetransmissions,
+                     mip6MnBLDontSendBUFlag,
+                     mip6MnMobilityMessagesSent,
+                     mip6MnMobilityMessagesRecd,
+                     mip6MnBUsToHA,
+                     mip6MnBUAcksFromHA,
+                     mip6MnBUsToCN,
+                     mip6MnBUAcksFromCN,
+                     mip6MnBindingErrorsFromCN,
+                     mip6MnICMPErrorsRecd,
+                     mip6MnBRRequestsRecd
+          }
+           STATUS  current
+           ::= { mip6Groups 8 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      mip6CnStatsGroup   OBJECT-GROUP
+           OBJECTS {
+                     mip6CnBURequestsAccepted,
+                     mip6CnBURequestsRejected,
+                     mip6CnBCEntryCreationTime,
+                     mip6CnBUAcceptedTime,
+                     mip6CnBURejectionTime,
+                     mip6CnBURejectionCode,
+                     mip6CnCtrDiscontinuityTime
+          }
+           STATUS  current
+           ::= { mip6Groups 9 }
+
+      mip6HaSystemGroup   OBJECT-GROUP
+           OBJECTS {
+                     mip6HaAdvsRecd,
+                     mip6HaAdvsSent,
+                     mip6HaAdvPreference,
+                     mip6HaAdvLifetime,
+                     mip6HaPrefixAdv,
+                     mip6HaPrefixSolicitation,
+                     mip6HaMCastCtlMsgSupport
+          }
+           STATUS  current
+           ::= { mip6Groups 10 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaListGroup   OBJECT-GROUP
+           OBJECTS {
+                     mip6HaPreference,
+                     mip6HaRecvLifeTime,
+                     mip6HaRecvTimeStamp,
+                     mip6HaGaGlobalAddressType,
+                     mip6HaGaGlobalAddress
+          }
+           STATUS  current
+           ::= { mip6Groups 11 }
+
+       mip6HaStatsGroup   OBJECT-GROUP
+           OBJECTS {
+                     mip6HaBURequestsAccepted,
+                     mip6HaBURequestsDenied,
+                     mip6HaBCEntryCreationTime,
+                     mip6HaBUAcceptedTime,
+                     mip6HaBURejectionTime,
+                     mip6HaRecentBURejectionCode,
+                     mip6HaCtrDiscontinuityTime
+
+          }
+           STATUS  current
+           ::= { mip6Groups 12 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6CnGlobalStatsGroup   OBJECT-GROUP
+           OBJECTS {
+                     mip6CnHomeTestInitsRecd,
+                     mip6CnHomeTestsSent,
+                     mip6CnCareOfTestInitsRecd,
+                     mip6CnCareOfTestsSent,
+                     mip6CnBUsRecd,
+                     mip6CnBUAcksSent,
+                     mip6CnBRsSent,
+                     mip6CnBindingErrors,
+                     mip6CnBUsAccepted,
+                     mip6CnBUsRejected,
+                     mip6CnReasonUnspecified,
+                     mip6CnInsufficientResource,
+                     mip6CnHomeRegnNotSupported,
+                     mip6CnSeqNumberOutOfWindow,
+                     mip6CnExpiredHomeNonceIndex,
+                     mip6CnExpiredCareOfNonceIndex,
+                     mip6CnExpiredNonce,
+                     mip6CnRegTypeChangeDisallowed
+          }
+           STATUS  current
+           ::= { mip6Groups 13 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6HaGlobalStatsGroup   OBJECT-GROUP
+           OBJECTS {
+                     mip6HaHomeTestInitsRecd,
+                     mip6HaHomeTestsSent,
+                     mip6HaBUsRecd,
+                     mip6HaBUAcksSent,
+                     mip6HaBRAdviceSent,
+                     mip6HaBUsAccepted,
+                     mip6HaPrefDiscoverReqd,
+                     mip6HaReasonUnspecified,
+                     mip6HaAdmProhibited,
+                     mip6HaInsufficientResource,
+                     mip6HaHomeRegnNotSupported,
+                     mip6HaNotHomeSubnet,
+                     mip6HaNotHomeAgentForThisMN,
+                     mip6HaDupAddrDetectionFailed,
+                     mip6HaSeqNumberOutOfWindow,
+                     mip6HaExpiredHomeNonceIndex,
+                     mip6HaRegTypeChangeDisallowed
+
+          }
+           STATUS  current
+           ::= { mip6Groups 14 }
+
+       mip6BindingCacheCtlGroup    OBJECT-GROUP
+           OBJECTS {
+                     mip6BindingAdminStatus
+          }
+           STATUS  current
+           ::= { mip6Groups 15 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       mip6NotificationGroup   NOTIFICATION-GROUP
+           NOTIFICATIONS {
+                    mip6MnRegistered,
+                    mip6MnDeRegistered,
+                    mip6MnCOAChanged,
+                    mip6MnBindingExpiredAtHA,
+                    mip6MnBindingExpiredAtCN
+          }
+           STATUS  current
+           ::= { mip6Groups 16 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      mip6CoreCompliance MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6SystemGroup }
+
+           ::= { mip6Compliances 1 }
+
+      mip6Compliance2 MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6SystemGroup,
+                                  mip6BindingCacheGroup,
+                                  mip6TotalTrafficGroup
+                                   }
+           ::= { mip6Compliances 2 }
+
+
+
+
+
+
+
+
+
+
+      mip6Compliance3 MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6SystemGroup,
+                                  mip6BindingCacheGroup,
+                                  mip6BindingHstGroup,
+                                  mip6TotalTrafficGroup,
+                                  mip6NodeTrafficGroup
+                                 }
+
+
+
+
+
+           ::= { mip6Compliances 3 }
+
+
+      mip6CoreReadOnlyCompliance MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6SystemGroup }
+
+           OBJECT      mip6Status
+           MIN-ACCESS  read-only
+
+           ::= { mip6Compliances 4 }
+
+      mip6ReadOnlyCompliance2 MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+
+
+
+
+
+               MANDATORY-GROUPS { mip6SystemGroup,
+                                  mip6BindingCacheGroup,
+                                  mip6TotalTrafficGroup
+                                   }
+           OBJECT      mip6Status
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6BindingAdminStatus
+           MIN-ACCESS  read-only
+           ::= { mip6Compliances 5 }
+
+      mip6ReadOnlyCompliance3 MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6SystemGroup,
+                                  mip6BindingCacheGroup,
+                                  mip6BindingHstGroup,
+                                  mip6TotalTrafficGroup,
+                                  mip6NodeTrafficGroup
+                                 }
+           OBJECT      mip6Status
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6BindingAdminStatus
+           MIN-ACCESS  read-only
+           ::= { mip6Compliances 6 }
+
+      mip6MnCoreCompliance MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6MnSystemGroup
+                                 }
+           ::= { mip6Compliances 7 }
+
+      mip6MnCompliance2 MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6MnSystemGroup,
+                                  mip6MnConfGroup,
+                                  mip6MnRegistrationGroup,
+                                  mip6TotalTrafficGroup
+                                 }
+           ::= { mip6Compliances 8 }
+
+      mip6CnCoreCompliance MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6CnGlobalStatsGroup,
+                                  mip6TotalTrafficGroup
+                                 }
+           ::= { mip6Compliances 9 }
+
+      mip6CnCompliance MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6CnGlobalStatsGroup,
+                                  mip6CnStatsGroup,
+                                  mip6TotalTrafficGroup
+                                 }
+           ::= { mip6Compliances 10 }
+
+      mip6HaCoreCompliance MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6HaSystemGroup
+                                 }
+           ::= { mip6Compliances 11 }
+
+      mip6HaCompliance2 MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6HaSystemGroup,
+                                  mip6HaListGroup,
+                                  mip6HaStatsGroup,
+                                  mip6HaGlobalStatsGroup,
+                                  mip6TotalTrafficGroup
+                                 }
+           ::= { mip6Compliances 12 }
+
+      mip6HaCompliance3 MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6HaSystemGroup,
+                                  mip6HaListGroup,
+                                  mip6HaStatsGroup,
+                                  mip6HaGlobalStatsGroup,
+                                  mip6BindingCacheCtlGroup,
+                                  mip6TotalTrafficGroup
+                                 }
+           ::= { mip6Compliances 13 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      mip6HaCoreReadOnlyCompliance MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6HaSystemGroup
+                                 }
+           OBJECT      mip6HaAdvPreference
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaAdvLifetime
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaPrefixAdv
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaPrefixSolicitation
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaMCastCtlMsgSupport
+           MIN-ACCESS  read-only
+
+           ::= { mip6Compliances 14 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      mip6HaReadOnlyCompliance2 MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6HaSystemGroup,
+                                  mip6HaListGroup,
+                                  mip6HaStatsGroup,
+                                  mip6HaGlobalStatsGroup,
+
+
+
+
+
+                                  mip6TotalTrafficGroup
+                                 }
+
+           OBJECT      mip6HaAdvPreference
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaAdvLifetime
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaPrefixAdv
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaPrefixSolicitation
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaMCastCtlMsgSupport
+           MIN-ACCESS  read-only
+
+           ::= { mip6Compliances 15 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      mip6HaReadOnlyCompliance3 MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6HaSystemGroup,
+                                  mip6HaListGroup,
+                                  mip6HaStatsGroup,
+                                  mip6HaGlobalStatsGroup,
+
+
+
+
+
+                                  mip6BindingCacheCtlGroup,
+                                  mip6TotalTrafficGroup
+                                 }
+
+           OBJECT      mip6HaAdvPreference
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaAdvLifetime
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaPrefixAdv
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaPrefixSolicitation
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6HaMCastCtlMsgSupport
+           MIN-ACCESS  read-only
+
+           OBJECT      mip6BindingAdminStatus
+           MIN-ACCESS  read-only
+
+           ::= { mip6Compliances 16 }
+
+       mip6NotificationCompliance MODULE-COMPLIANCE
+           STATUS  current
+           MODULE  -- this module
+               MANDATORY-GROUPS { mip6NotificationGroup
+                                 }
+           ::= { mip6Compliances 17 }
+
+      END

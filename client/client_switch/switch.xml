@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <!--
+   Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+   
    Hinemos (http://www.hinemos.info/)
-
-   Copyright (C) 2010 NTT DATA Corporation.
+   
  -->
 
 <!-- execute Ant (Run in the same JRE as the workspace -->
@@ -12,18 +13,22 @@
 	<property name="project.name">HinemosClient</property>
 	<property name="source.client">src_client</property>
 
-	<!-- RCP -->
-	<target name="switch_to_RCP">
-		<!-- RCP用ソースをリンク -->
-
+	<target name="clean">
+		<!-- src_clientを削除 -->
 		<exec executable="CMD">
 			<arg line="/C rmdir src_client" />
 		</exec>
-		<exec executable="CMD">
-			<arg line="/C mklink /J src_client client_switch\src_client_rcp" />
-		</exec>
 
-		<!-- Refresh -->
+		<!-- plugin.xml, MANIFEST.MFを削除  -->
+		<exec executable="CMD">
+			<arg line="/C del plugin.xml" />
+		</exec>
+		<exec executable="CMD">
+			<arg line="/C rmdir /S /Q META-INF" />
+		</exec>
+	</target>
+
+	<target name="refresh">
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>
 		<antcall target="refresh_src_client" />
@@ -33,23 +38,46 @@
 		<echo>RCP実行環境に切り替えました。&#x0a;(!) 実行前に、Target Platform (RCP.target)を合わせてください。</echo>
 	</target>
 
+	<target name="init" depends="clean">
+	</target>
+
+	<!-- RCP -->
+	<target name="switch_to_RCP" depends="init">
+		<!-- src_clientをリンク -->
+		<exec executable="CMD">
+			<arg line="/C mklink /J src_client client_switch\RCP\src_client" />
+		</exec>
+
+		<!-- 共通plugin.xmlをコピー -->
+		<exec executable="CMD">
+			<arg line="/C mklink /H plugin.xml client_switch\RCP\plugin.xml" />
+		</exec>
+		
+		<!-- 共通MANIFESTをコピー -->
+		<exec executable="CMD">
+			<arg line="/C mklink /J META-INF client_switch\RCP\META-INF" />
+		</exec>
+		
+		<antcall target="refresh" />
+	</target>
+
 	<!-- RAP -->
-	<target name="switch_to_RAP">
-		<!-- RAP用ソースをリンク -->
+	<target name="switch_to_RAP" depends="init">
+		<!-- src_clientをリンク -->
 		<exec executable="CMD">
-			<arg line="/C rmdir src_client" />
-		</exec>
-		<exec executable="CMD">
-			<arg line="/C mklink /J src_client client_switch\src_client_rap" />
+			<arg line="/C mklink /J src_client client_switch\RAP\src_client" />
 		</exec>
 
-		<!-- Refresh -->
-		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask" property="eclipse_jar_available"/>
-		<antcall target="refresh_src_client" />
-		<antcall target="refresh_notice" />
-
-		<!-- Notice -->
-		<echo>RAP実行環境に切り替えました。&#x0a;(!) 実行前に、必ずTarget Platform (RAP.target)を合わせてください。</echo>
+		<!-- 共通plugin.xmlをコピー -->
+		<exec executable="CMD">
+			<arg line="/C mklink /H plugin.xml client_switch\RAP\plugin.xml" />
+		</exec>
+		
+		<!-- 共通MANIFESTをコピー -->
+		<exec executable="CMD">
+			<arg line="/C mklink /J META-INF client_switch\RAP\META-INF" />
+		</exec>
+		<antcall target="refresh" />
 	</target>
 
 	<!-- Refresh source path -->
@@ -63,5 +91,4 @@
 	<target name="refresh_notice" unless="eclipse_jar_available">
 		<echo>(!) RefreshLocalTaskが無効になっています。手動でRefreshしてください。</echo>
 	</target>
-
 </project>

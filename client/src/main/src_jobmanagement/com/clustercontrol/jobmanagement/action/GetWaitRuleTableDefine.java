@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.action;
@@ -42,10 +35,12 @@ public class GetWaitRuleTableDefine {
 	public static final int DECISION_CONDITION = 4;
 	/** 判定値2 */
 	public static final int DECISION_VALUE_2 = 5;
+	/** セッション横断ジョブ判定対象範囲 */
+	public static final int CROSS_SESSION_RANGE = 6;
 	/**  説明 */
-	public static final int DESCRIPTION = 6;
+	public static final int DESCRIPTION = 7;
 	/**  セッション開始時の時間（分） */
-	public static final int START_MINUTE = 7;
+	public static final int START_MINUTE = 8;
 	
 	/** 初期表示時ソートカラム */
 	public static final int SORT_COLUMN_INDEX = JUDGMENT_OBJECT;
@@ -73,6 +68,8 @@ public class GetWaitRuleTableDefine {
 				new TableColumnInfo(Messages.getString("wait.rule.decision.condition"), TableColumnInfo.DECISION_CONDITION, 120, SWT.LEFT));
 		tableDefine.add(DECISION_VALUE_2,
 				new TableColumnInfo(Messages.getString("wait.rule.decision.value2"), TableColumnInfo.NONE, 110, SWT.LEFT));
+		tableDefine.add(CROSS_SESSION_RANGE,
+				new TableColumnInfo(Messages.getString("wait.rule.cross.session.range"), TableColumnInfo.NONE, 150, SWT.LEFT));
 		tableDefine.add(DESCRIPTION,
 				new TableColumnInfo(Messages.getString("description"), TableColumnInfo.NONE, 150, SWT.LEFT));
 

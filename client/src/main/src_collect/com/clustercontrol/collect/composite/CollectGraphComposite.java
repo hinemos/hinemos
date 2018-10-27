@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.collect.composite;
@@ -20,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.logging.Log;
@@ -57,11 +51,12 @@ import com.clustercontrol.util.HtmlLoaderUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.ws.collect.CollectKeyInfoPK;
+import com.clustercontrol.ws.collect.HinemosDbTimeout_Exception;
 import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
 import com.clustercontrol.ws.collect.InvalidRole_Exception;
 import com.clustercontrol.ws.collect.InvalidUserPass_Exception;
 import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.ws.repository.FacilityInfo;
 
 /**
  * 性能グラフを表示するコンポジットクラス<BR>
@@ -207,7 +202,7 @@ public class CollectGraphComposite extends Composite {
 				// 画面のサイズ変更されるたびにメンバにサイズを保持
 				Point point = CollectGraphComposite.this.getSize();
 				m_log.debug("resize x:" + point.x + ", y:" + point.y);
-				CollectGraphUtil.setM_screenWidth(point.x);
+				CollectGraphUtil.setScreenWidth(point.x);
 			}
 		});
 	}
@@ -300,6 +295,13 @@ public class CollectGraphComposite extends Composite {
 				m_log.error("function InvalidUserPass_Exception");
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.45"));
+			} catch (HinemosDbTimeout_Exception e) {
+				String message = HinemosMessage.replace(e.getMessage());
+				m_log.error("グラフ描画時にエラーが発生 message=" + message, e);
+				MessageDialog.openError(
+						null,
+						Messages.getString("error"),
+						Messages.getString("message.collection.graph.unexpected.error") + " : " + message);
 			} catch (Exception e) {
 				m_log.error("グラフ描画時にエラーが発生 message=" + e.getMessage(), e);
 				MessageDialog.openError(
@@ -310,7 +312,8 @@ public class CollectGraphComposite extends Composite {
 			return retObj;
 		}
 		
-		private Object executeFromJavascript(Object[] arguments) throws InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+		private Object executeFromJavascript(Object[] arguments) 
+				throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
 			SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
 			dateFormat.setTimeZone(TimezoneUtil.getTimeZone());
 			
@@ -327,6 +330,13 @@ public class CollectGraphComposite extends Composite {
 				if (ret1s.length == 2 && ret1s[0] != null && !ret1s[0].equals("") && ret1s[1] != null && !ret1s[1].equals("")){
 					scriptMap.put(ret1s[0], ret1s[1]);
 				}
+				else if (ret1s.length > 2){
+					String value = ret1s[1];
+					for (int i = 2; i < ret1s.length; i++) {
+					value += ":" + ret1s[i];
+					}
+					scriptMap.put(ret1s[0], value);
+					}
 			}
 			
 			String methodName = scriptMap.get("method_name");
@@ -350,7 +360,7 @@ public class CollectGraphComposite extends Composite {
 			if (methodName.equals(CALL_METHOD_NAME_AUTOZOOMGRAPH)) {
 				// 「自動調整」ボタンが押下されたときに呼ばれる
 				// javascriptでは画面サイズが正しく取得できないことがあるため、Java側で取得して返す
-				return CollectGraphUtil.getM_screenWidth();
+				return CollectGraphUtil.getScreenWidth();
 			} else if (methodName.equals(CALL_METHOD_NAME_NOTICESLIDERTYPE) || methodName.equals(CALL_METHOD_NAME_NOTICESLIDER_BRUSHEND)) {
 				// スライダーの種別(10year,year,month,week,day)を操作したときに呼ばれる
 				// メンバに現在表示中の期間(種別)を保持するのみで終わり
@@ -471,7 +481,7 @@ public class CollectGraphComposite extends Composite {
 				// ComboBoxを変更する
 				m_collectGraphView.getCollectSettingComposite().setSummaryTypeComboBox(SummaryTypeConstant.TYPE_AVG_HOUR);
 				// labelの更新
-				setSettingLabel(SummaryTypeConstant.TYPE_AVG_HOUR, CollectGraphUtil.getM_collectKeyInfoList());
+				setSettingLabel(SummaryTypeConstant.TYPE_AVG_HOUR, CollectGraphUtil.getCollectKeyInfoList());
 				
 				// 表示中のRAWとこれから表示するavg_hourを混合させないためにすべてのplotを消す
 				deletePlots(CALL_METHOD_NAME_BRUSHEND, xaxis_min, xaxis_max, true);
@@ -496,7 +506,10 @@ public class CollectGraphComposite extends Composite {
 			if (methodName.equals(CALL_METHOD_NAME_AUTODRAW)) {
 				// 現在表示している期間の間隔で、現在時刻で最新情報を取得する
 				long term = xaxis_max - xaxis_min;
-				xaxis_max = new Date().getTime();
+				if (xaxis_max < new Date().getTime()) {
+					xaxis_max = new Date().getTime();
+				}
+
 				xaxis_min = xaxis_max - term;
 				m_log.debug("autodraw -> xaxis_min:" + new Date(xaxis_min).toString() + ", xaxis_max:" + new Date(xaxis_max).toString() + ", term:" + term);
 				// スライダーの選択範囲を変更する
@@ -515,8 +528,6 @@ public class CollectGraphComposite extends Composite {
 			// 前後取りに行くパターン(min < targetstart && max > targetend, targetend < now)
 			// すべて取りに行くパターン(min > targetend || max < targetstart)
 			
-			long conditionStart = xaxis_min;
-			long conditionEnd = xaxis_max;
 			// methodnameがautodrawの場合は、必ずDBにとりにいく
 			if (CollectGraphUtil.getTargetConditionStartDate() <= xaxis_min 
 					&& xaxis_max <= CollectGraphUtil.getTargetConditionEndDate()) {
@@ -532,65 +543,43 @@ public class CollectGraphComposite extends Composite {
 
 			// 現在時刻
 			Long nowDate = System.currentTimeMillis();
-			// DBにとりに良く最新の時間(現在時刻より未来にならない)
+			// DBに取りに行く日時（From）
+			long dbStartDate = xaxis_min;
+			// DBに取りに行く日時（To）
 			long dbEndDate = xaxis_max;
-			
-			
-			// すべて取りに行く(前側)
-			if (xaxis_max <= CollectGraphUtil.getTargetConditionStartDate()) {
-				m_log.debug("GET ALL side:startdate");
-				addGraphPlot(xaxis_min, xaxis_max, xaxis_min, xaxis_max);
-				if (xaxis_max > nowDate) {
-					dbEndDate = nowDate;
-				}
-				conditionStart = xaxis_min;
-				conditionEnd = dbEndDate;
+			if (xaxis_max > nowDate) {
+				dbEndDate = nowDate;
 			}
-			// すべて取りに行く(後側)
-			if (xaxis_min >= CollectGraphUtil.getTargetConditionEndDate()) {
+
+			if (xaxis_max <= CollectGraphUtil.getTargetConditionStartDate()) {
+				// すべて取りに行く(前側)
+				m_log.debug("GET ALL side:startdate");
+				addGraphPlot(dbStartDate, dbEndDate, xaxis_min, xaxis_max, nowDate);
+			} else if (xaxis_min >= CollectGraphUtil.getTargetConditionEndDate()) {
+				// すべて取りに行く(後側)
 				m_log.debug("GET ALL side:enddate");
 				if (xaxis_min > nowDate) {
 					// グラフ表示最古時間が現在時刻よりも新しい場合はデータが無いのでとりにいかない
 					m_log.debug("startdate is future. finish.");
-					// 開始・終了ともに同じ時刻にしておく
-					conditionStart = CollectGraphUtil.getTargetConditionEndDate();
-					conditionEnd = CollectGraphUtil.getTargetConditionEndDate();
 				} else {
-					addGraphPlot(xaxis_min, xaxis_max, xaxis_min, xaxis_max);
+					addGraphPlot(dbStartDate, dbEndDate, xaxis_min, xaxis_max, nowDate);
+				}
+			} else {
+				// 前側取りに行く
+				if (xaxis_min <= CollectGraphUtil.getTargetConditionStartDate() && xaxis_max >= CollectGraphUtil.getTargetConditionStartDate()) {
+					m_log.debug("GET FRONT");
+					addGraphPlot(dbStartDate, CollectGraphUtil.getTargetConditionStartDate(), xaxis_min, xaxis_max, nowDate);
+				}
+				// 後側取りに行く
+				if (xaxis_max > CollectGraphUtil.getTargetDBAccessDate()) {
+					m_log.debug("GET BACK");
 					if (xaxis_max > nowDate) {
 						dbEndDate = nowDate;
-						m_log.debug("xaxis_max is :" + xaxis_max);
+						m_log.debug("xaxis_max is now.:" + xaxis_max);
 					}
-					conditionStart = xaxis_min;
-					conditionEnd = xaxis_max;
+					addGraphPlot(CollectGraphUtil.getTargetDBAccessDate() + 1, dbEndDate, xaxis_min, xaxis_max, nowDate);
 				}
 			}
-			
-			// 前側取りに行く
-			if (xaxis_min <= CollectGraphUtil.getTargetConditionStartDate() && xaxis_max >= CollectGraphUtil.getTargetConditionStartDate()) {
-				m_log.debug("GET FRONT");
-				addGraphPlot(xaxis_min, CollectGraphUtil.getTargetConditionStartDate(), xaxis_min, xaxis_max);
-				// グラフに表示している最古時間の保持
-				conditionStart = xaxis_min;
-				conditionEnd = xaxis_max;
-			}
-			
-			// 後側取りに行く
-			if (xaxis_max >= CollectGraphUtil.getTargetConditionEndDate() && xaxis_min <= CollectGraphUtil.getTargetConditionEndDate()) {
-				m_log.debug("GET BACK");
-				addGraphPlot(CollectGraphUtil.getTargetConditionEndDate(), xaxis_max, xaxis_min, xaxis_max);
-				if (xaxis_max > nowDate) {
-					dbEndDate = nowDate;
-					m_log.debug("xaxis_max is now.:" + xaxis_max);
-				}
-				conditionStart = xaxis_min;
-				conditionEnd = dbEndDate;
-			}
-			
-			// 前後(ここにくるときには済み)
-			
-			CollectGraphUtil.setTargetConditionStartDate(conditionStart);
-			CollectGraphUtil.setTargetConditionEndDate(conditionEnd);
 			
 			// y軸をきれいにする
 			String yaxisParam = getHeadControlClassName() + ".trimBranch();";
@@ -644,15 +633,16 @@ public class CollectGraphComposite extends Composite {
 	 * @param endDate DBから取得するデータの終了時刻
 	 * @param selectStartDate グラフの表示開始時刻
 	 * @param selectEndDate グラフの表示終了時刻
+	 * @param nowDate 現在日時
+	 * @throws HinemosDbTimeout_Exception 
 	 * @throws InvalidRole_Exception 
 	 * @throws HinemosUnknown_Exception 
 	 * @throws InvalidUserPass_Exception 
 	 */
-	private void addGraphPlot(Long startDate, Long endDate, Long selectStartDate, Long selectEndDate) 
-			throws InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+	private void addGraphPlot(Long startDate, Long endDate, Long selectStartDate, Long selectEndDate, Long nowDate) 
+			throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
 		m_log.debug("addGraphPlot() start");
-		StringBuffer sb = CollectGraphUtil.getAddGraphPlotJson(startDate, endDate, selectStartDate, selectEndDate);
-		
+		StringBuffer sb = CollectGraphUtil.getAddGraphPlotJson(startDate, endDate, selectStartDate, selectEndDate, nowDate);
 		if (sb == null) {
 			m_log.debug("addGraphPlot() add plot data 0.");
 			return;
@@ -742,48 +732,52 @@ public class CollectGraphComposite extends Composite {
 	 * 
 	 * @param collectKeyInfoList
 	 * @param summaryCode
-	 * @param treeItemList
+	 * @param facilityInfoMap マネージャ名、FacilityInfoのマップ
 	 * @param returnFlg 折り返し有無
+	 * @throws HinemosDbTimeout_Exception 
 	 * @throws InvalidRole_Exception 
 	 * @throws HinemosUnknown_Exception 
 	 * @throws InvalidUserPass_Exception 
 	 * @throws Exception 
 	 */
-	public void drawGraphs(List<CollectKeyInfoPK> collectKeyInfoList, String selectInfoStr, int summaryType, List<FacilityTreeItem> treeItemList, 
+	public void drawGraphs(List<CollectKeyInfoPK> collectKeyInfoList, String selectInfoStr, int summaryType, Map<String, List<FacilityInfo>> facilityInfoMap, 
 			boolean returnFlg, boolean returnKindFlg, boolean totalFlg, boolean stackflg, boolean appflg, 
-			boolean threflg, boolean pieflg, boolean scatterflg, boolean legendFlg, boolean barFlg) 
-					throws InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+			boolean threflg, boolean pieflg, boolean scatterflg, boolean legendFlg, boolean sigmaFlg, boolean barFlg) 
+					throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
 		SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
 		dateFormat.setTimeZone(TimezoneUtil.getTimeZone());
 		
 		m_log.info("drawGraphs() START time:" + dateFormat.format(new Date()) + ", selectInfoStr:" + selectInfoStr + ", summaryType:" + summaryType);
-		
-		setSettingLabel(summaryType, collectKeyInfoList);
-		
+
 		if (!completed || !slider_completed) {
 			m_log.info("uncompleted!!");
 			return;
 		}
+		
+		setSettingLabel(summaryType, collectKeyInfoList);
+		
 		CollectGraphUtil.init(totalFlg, stackflg, collectKeyInfoList, pieflg, scatterflg, barFlg, selectInfoStr);
 		
 		// 画面に表示する文言の設定
 		setGraphMessages();
 		
 		// グラフ種別などを文字列に変換する
-		boolean booleanArr[] = {returnFlg, returnKindFlg, totalFlg, stackflg, appflg, threflg, pieflg, scatterflg, legendFlg, barFlg, ClusterControlPlugin.isRAP()};
+		boolean booleanArr[] = {returnFlg, returnKindFlg, totalFlg, stackflg, appflg, threflg, pieflg, scatterflg, legendFlg, sigmaFlg, barFlg, ClusterControlPlugin.isRAP()};
 		String setting = getBooleanString(booleanArr);
-		m_log.info("setting boolean[return, returnkind, total, stack, applox, thre, pie, scatter, legend, bar, rap]:" + setting);
+		m_log.info("setting boolean[return, returnkind, total, stack, applox, thre, pie, scatter, legend, sigma, bar, rap]:" + setting);
 		
 		// 画面上のすべてのdivを削除する
 		deleteGraphs();
 		
 		int facilitySize = 0;
 		int graphSize = 0;
-		int count = 0;
-		for (FacilityTreeItem treeItem : treeItemList) {
-			// マネージャ名とファシリティ名のマップを作成する
-			facilitySize = CollectGraphUtil.sortManagerNameFacilityIdMap(treeItem, count);
-			count++;
+		for (Map.Entry<String, List<FacilityInfo>> entry : facilityInfoMap.entrySet()) {
+			if (entry.getValue() != null) {
+				for (FacilityInfo info : entry.getValue()) {
+					// マネージャ名とファシリティ名のマップを作成する
+					facilitySize = CollectGraphUtil.sortManagerNameFacilityIdMap(entry.getKey(), info, facilitySize);
+				}
+			}
 		}
 		graphSize = facilitySize * collectKeyInfoList.size();
 		
@@ -812,7 +806,7 @@ public class CollectGraphComposite extends Composite {
 		CollectGraphUtil.addManagerDummyName();
 		
 		// グラフのベース情報を作成
-		String createGraphJson = CollectGraphUtil.drawGraphSheets(summaryType);
+		String createGraphJson = CollectGraphUtil.drawGraphSheets(summaryType, appflg);
 		// グラフのベースの描画
 		String params = getHeadControlClassName() + ".addGraphAtOnce(" + createGraphJson + ", " + facilitySize + ", " + preferenceCount + ", '" + setting + "');";
 		Long start = System.currentTimeMillis();
@@ -824,7 +818,7 @@ public class CollectGraphComposite extends Composite {
 		// 自動調整を実行する可能性があるので、グラフをすべて描画し終わってからinitZoomする
 		String preferenceZoom = ClusterControlPlugin.getDefault().getPreferenceStore().getString(CollectSettingComposite.P_COLLECT_GRAPH_ZOOM_LEVEL);
 		CollectGraphUtil.setGraphZoomSize(preferenceZoom);
-		params = "initZoom(\'" + CollectGraphUtil.getGraphZoomSize() + "\', " + returnFlg + ", " + CollectGraphUtil.getM_screenWidth() +");";
+		params = "initZoom(\'" + CollectGraphUtil.getGraphZoomSize() + "\', " + returnFlg + ", " + CollectGraphUtil.getScreenWidth() +");";
 		executeScript(params, m_browserGraph);
 		
 		// スライダーの削除 -> 作成
@@ -844,7 +838,7 @@ public class CollectGraphComposite extends Composite {
 		
 		// プロット情報の取得と描画
 		addGraphPlot(CollectGraphUtil.getTargetConditionStartDate(), CollectGraphUtil.getTargetConditionEndDate(), 
-				CollectGraphUtil.getTargetConditionStartDate(), CollectGraphUtil.getTargetConditionEndDate());
+				CollectGraphUtil.getTargetConditionStartDate(), CollectGraphUtil.getTargetConditionEndDate(), null);
 		
 		// y軸をきれいにする
 		String yaxisParam = getHeadControlClassName() + ".trimBranch();";
@@ -873,6 +867,7 @@ public class CollectGraphComposite extends Composite {
 				+ "\'critical\':\'" + CollectGraphUtil.escapeParam(Messages.getString("critical")) + "\', "
 				+ "\'unknown\':\'" + CollectGraphUtil.escapeParam(Messages.getString("unknown")) + "\', "
 				+ "\'detail\':\'" + CollectGraphUtil.escapeParam(Messages.getString("detail")) + "\', "// 詳細
+				+ "\'prediction\':\'" + CollectGraphUtil.escapeParam(Messages.getString("collect.prediction", new String[]{"@@"})) + "\', "// 予測先({@@}分後)
 				+ "\'timezoneoffset\':" + TimezoneUtil.getTimeZoneOffset()/(1000*60) + ", "// タイムゾーンオフセット(数値)
 				+ "\'captureerror\':\'" + CollectGraphUtil.escapeParam(Messages.getString("message.collection.graph.capture.morethan.displayed")) + "\', "// キャプチャファイルが100以上あるため、実行できません
 				+ "\'unexpectederror\':\'" + CollectGraphUtil.escapeParam(Messages.getString("message.collection.graph.unexpected.error")) + "\', "// 予期しないエラーが発生しました。

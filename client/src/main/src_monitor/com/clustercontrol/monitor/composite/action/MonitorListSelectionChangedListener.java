@@ -1,19 +1,15 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.composite.action;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,6 +20,7 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 
+import com.clustercontrol.monitor.run.action.GetMonitorListTableDefine;
 import com.clustercontrol.monitor.view.MonitorListView;
 
 /**
@@ -56,8 +53,13 @@ ISelectionChangedListener {
 
 		//選択アイテムを取得
 		StructuredSelection selection = (StructuredSelection) event.getSelection();
-
+		String selectMonitorTypeId = null;
 		if ( viewPart != null && selection != null) {
+			List<?> list = selection.toList();
+			for (Object obj : list) {
+				ArrayList<?> item = (ArrayList<?>)obj;
+				selectMonitorTypeId = (String) item.get(GetMonitorListTableDefine.MONITOR_TYPE_ID);
+			}
 			MonitorListView view = (MonitorListView) viewPart.getAdapter(MonitorListView.class);
 
 			if (view == null) {
@@ -66,7 +68,7 @@ ISelectionChangedListener {
 			}
 
 			//ビューのボタン（アクション）の使用可/不可を設定する
-			view.setEnabledAction(selection.size(), event.getSelection());
+			view.setEnabledAction(selection.size(), selectMonitorTypeId, event.getSelection());
 		}
 	}
 

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.factory;
@@ -27,6 +20,7 @@ import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfoPK;
+import com.clustercontrol.monitor.run.util.MonitorJudgementInfoCacheRefreshCallback;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 
 /**
@@ -48,19 +42,26 @@ abstract public class ModifyMonitorStringValueType extends ModifyMonitor{
 	 */
 	@Override
 	protected boolean addJudgementInfo() throws MonitorNotFound, InvalidRole {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// 文字列監視判定情報を設定
-		List<MonitorStringValueInfo> list = m_monitorInfo.getStringValueInfo();
-		if (list != null) {
-			for(int index = 0; index < list.size(); index++){
-				MonitorStringValueInfo value = list.get(index);
-				value.setOrderNo(index + 1);
-				em.persist(value);
-				value.relateToMonitorInfo(m_monitorInfo);
+			// 文字列監視判定情報を設定
+			List<MonitorStringValueInfo> list = m_monitorInfo.getStringValueInfo();
+			if (list != null) {
+				for(int index = 0; index < list.size(); index++){
+					MonitorStringValueInfo value = list.get(index);
+					value.setOrderNo(index + 1);
+					em.persist(value);
+					value.relateToMonitorInfo(m_monitorInfo);
+				}
 			}
+
+			// 判定キャッシュを更新
+			jtm.addCallback(new MonitorJudgementInfoCacheRefreshCallback(
+					m_monitorInfo.getMonitorId(), m_monitorInfo.getMonitorType(), m_monitorInfo.getStringValueInfo(), null, null));
+
+			return true;
 		}
-		return true;
 	}
 	
 	/**
@@ -79,46 +80,52 @@ abstract public class ModifyMonitorStringValueType extends ModifyMonitor{
 	@Override
 	protected boolean modifyJudgementInfo() throws MonitorNotFound, EntityExistsException, InvalidRole {
 
-		MonitorInfo monitorInfo = QueryUtil.getMonitorInfoPK(m_monitorInfo.getMonitorId());
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// 文字列監視判定情報を設定
-		List<MonitorStringValueInfo> valueList = m_monitorInfo.getStringValueInfo();
-		if(valueList == null){
+			MonitorInfo monitorInfo = QueryUtil.getMonitorInfoPK(m_monitorInfo.getMonitorId());
+
+			// 文字列監視判定情報を設定
+			List<MonitorStringValueInfo> valueList = m_monitorInfo.getStringValueInfo();
+			if(valueList == null){
+				return true;
+			}
+
+			List<MonitorStringValueInfoPK> monitorStringValueInfoEntityPkList = new ArrayList<MonitorStringValueInfoPK>();
+
+			int orderNo = 0;
+			for(MonitorStringValueInfo value : valueList){
+				if(value != null){
+					MonitorStringValueInfo entity = null;
+					MonitorStringValueInfoPK entityPk = new MonitorStringValueInfoPK(
+							m_monitorInfo.getMonitorId(),
+							Integer.valueOf(++orderNo));
+					try {
+						entity = QueryUtil.getMonitorStringValueInfoPK(entityPk);
+					} catch (MonitorNotFound e) {
+						entity = new MonitorStringValueInfo(entityPk);
+						em.persist(entity);
+						entity.relateToMonitorInfo(monitorInfo);
+					}
+					entity.setCaseSensitivityFlg(value.getCaseSensitivityFlg());
+					entity.setDescription(value.getDescription());
+					entity.setMessage(value.getMessage());
+					entity.setPattern(value.getPattern());
+					entity.setPriority(value.getPriority());
+					entity.setProcessType(value.getProcessType());
+					entity.setValidFlg(value.getValidFlg());
+					monitorStringValueInfoEntityPkList.add(entityPk);
+				}
+			}
+			// 不要なMonitorStringValueInfoEntityを削除
+			monitorInfo.deleteMonitorStringValueInfoEntities(monitorStringValueInfoEntityPkList);
+
+			// 判定キャッシュを更新
+			jtm.addCallback(new MonitorJudgementInfoCacheRefreshCallback(
+					m_monitorInfo.getMonitorId(), m_monitorInfo.getMonitorType(), m_monitorInfo.getStringValueInfo(), null, null));
+
 			return true;
 		}
-
-		List<MonitorStringValueInfoPK> monitorStringValueInfoEntityPkList = new ArrayList<MonitorStringValueInfoPK>();
-
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-
-		int orderNo = 0;
-		for(MonitorStringValueInfo value : valueList){
-			if(value != null){
-				MonitorStringValueInfo entity = null;
-				MonitorStringValueInfoPK entityPk = new MonitorStringValueInfoPK(
-						m_monitorInfo.getMonitorId(),
-						Integer.valueOf(++orderNo));
-				try {
-					entity = QueryUtil.getMonitorStringValueInfoPK(entityPk);
-				} catch (MonitorNotFound e) {
-					entity = new MonitorStringValueInfo(entityPk);
-					em.persist(entity);
-					entity.relateToMonitorInfo(monitorInfo);
-				}
-				entity.setCaseSensitivityFlg(value.getCaseSensitivityFlg());
-				entity.setDescription(value.getDescription());
-				entity.setMessage(value.getMessage());
-				entity.setPattern(value.getPattern());
-				entity.setPriority(value.getPriority());
-				entity.setProcessType(value.getProcessType());
-				entity.setValidFlg(value.getValidFlg());
-				monitorStringValueInfoEntityPkList.add(entityPk);
-			}
-		}
-		// 不要なMonitorStringValueInfoEntityを削除
-		monitorInfo.deleteMonitorStringValueInfoEntities(monitorStringValueInfoEntityPkList);
-
-		return true;
 	}
 
 }

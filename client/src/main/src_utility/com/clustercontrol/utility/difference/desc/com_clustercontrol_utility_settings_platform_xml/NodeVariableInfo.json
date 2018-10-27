@@ -1,0 +1,25 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+
+	]},
+
+	{
+	"propName":"nodeVariableName",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"nodeVariableValue",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeVariableInfo_nodeVariableValue"}
+	]}
+
+]
+}

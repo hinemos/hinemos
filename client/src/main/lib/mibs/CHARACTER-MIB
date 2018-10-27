@@ -1,0 +1,412 @@
+   CHARACTER-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+       Counter32, Integer32, Gauge32, TimeTicks
+           FROM SNMPv2-SMI
+       AutonomousType, InstancePointer
+           FROM SNMPv2-TC
+       InterfaceIndex
+           FROM IF-MIB
+       transmission, mib-2
+           FROM RFC1213-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP
+           FROM SNMPv2-CONF;
+
+
+   char MODULE-IDENTITY
+       LAST-UPDATED "9405261700Z"
+       ORGANIZATION "IETF Character MIB Working Group"
+       ::= { mib-2 19 }
+
+   PortIndex ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "d"
+       STATUS current
+       SYNTAX Integer32
+
+
+
+   charNumber OBJECT-TYPE
+       SYNTAX Integer32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { char 1 }
+
+
+
+   charPortTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF CharPortEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       ::= { char 2 }
+
+
+
+
+
+
+   charPortEntry OBJECT-TYPE
+       SYNTAX CharPortEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       INDEX { charPortIndex }
+       ::= { charPortTable 1 }
+
+   CharPortEntry ::=
+       SEQUENCE {
+           charPortIndex
+               PortIndex,
+           charPortName
+               DisplayString,
+           charPortType
+               INTEGER,
+           charPortHardware
+               AutonomousType,
+           charPortReset
+               INTEGER,
+           charPortAdminStatus
+               INTEGER,
+           charPortOperStatus
+               INTEGER,
+           charPortLastChange
+               TimeTicks,
+           charPortInFlowType
+               INTEGER,
+           charPortOutFlowType
+               INTEGER,
+           charPortInFlowState
+               INTEGER,
+           charPortOutFlowState
+               INTEGER,
+           charPortInCharacters
+               Counter32,
+           charPortOutCharacters
+               Counter32,
+           charPortAdminOrigin
+               INTEGER,
+           charPortSessionMaximum
+               INTEGER,
+           charPortSessionNumber
+               Gauge32,
+           charPortSessionIndex
+               INTEGER,
+           charPortInFlowTypes
+
+
+
+
+
+               OCTET STRING,
+           charPortOutFlowTypes
+               OCTET STRING,
+           charPortLowerIfIndex
+               InterfaceIndex
+       }
+
+   charPortIndex OBJECT-TYPE
+       SYNTAX PortIndex
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 1 }
+
+   charPortName OBJECT-TYPE
+       SYNTAX DisplayString (SIZE (0..32))
+       MAX-ACCESS read-write
+       STATUS current
+       ::= { charPortEntry 2 }
+
+   charPortType OBJECT-TYPE
+       SYNTAX INTEGER { physical(1), virtual(2) }
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 3 }
+
+   charPortHardware OBJECT-TYPE
+       SYNTAX AutonomousType
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 4 }
+
+   charPortReset OBJECT-TYPE
+       SYNTAX INTEGER { ready(1), execute(2) }
+       MAX-ACCESS read-write
+       STATUS current
+       ::= { charPortEntry 5 }
+
+   charPortAdminStatus OBJECT-TYPE
+       SYNTAX INTEGER { enabled(1), disabled(2), off(3),
+                        maintenance(4) }
+       MAX-ACCESS read-write
+       STATUS current
+       ::= { charPortEntry 6 }
+
+   charPortOperStatus OBJECT-TYPE
+       SYNTAX INTEGER { up(1), down(2),
+                        maintenance(3), absent(4), active(5) }
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 7 }
+
+   charPortLastChange OBJECT-TYPE
+       SYNTAX TimeTicks
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 8 }
+
+
+   charPortInFlowType OBJECT-TYPE
+       SYNTAX INTEGER { none(1), xonXoff(2), hardware(3),
+                        ctsRts(4), dsrDtr(5) }
+       MAX-ACCESS read-write
+       STATUS deprecated
+       ::= { charPortEntry 9 }
+
+
+
+
+
+
+
+   charPortOutFlowType OBJECT-TYPE
+       SYNTAX INTEGER { none(1), xonXoff(2), hardware(3),
+                        ctsRts(4), dsrDtr(5) }
+       MAX-ACCESS read-write
+       STATUS deprecated
+       ::= { charPortEntry 10 }
+
+   charPortInFlowState OBJECT-TYPE
+       SYNTAX INTEGER { none(1), unknown(2), stop(3), go(4) }
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 11 }
+
+   charPortOutFlowState OBJECT-TYPE
+       SYNTAX INTEGER { none(1), unknown(2), stop(3), go(4) }
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 12 }
+
+   charPortInCharacters OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+
+
+
+
+
+       STATUS current
+       ::= { charPortEntry 13 }
+
+   charPortOutCharacters OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 14 }
+
+   charPortAdminOrigin OBJECT-TYPE
+       SYNTAX INTEGER { dynamic(1), network(2), local(3),
+                        none(4) }
+       MAX-ACCESS read-write
+       STATUS current
+       ::= { charPortEntry 15 }
+
+   charPortSessionMaximum OBJECT-TYPE
+       SYNTAX INTEGER (-1..2147483647)
+       MAX-ACCESS read-write
+       STATUS current
+       ::= { charPortEntry 16 }
+
+
+
+
+
+
+   charPortSessionNumber OBJECT-TYPE
+       SYNTAX Gauge32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 17 }
+
+   charPortSessionIndex OBJECT-TYPE
+       SYNTAX INTEGER (0..2147483647)
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 18 }
+
+   charPortInFlowTypes OBJECT-TYPE
+       SYNTAX OCTET STRING (SIZE (1))
+       MAX-ACCESS read-write
+       STATUS current
+       ::= { charPortEntry 19 }
+
+   charPortOutFlowTypes OBJECT-TYPE
+       SYNTAX OCTET STRING (SIZE (1))
+       MAX-ACCESS read-write
+       STATUS current
+       ::= { charPortEntry 20 }
+
+   charPortLowerIfIndex OBJECT-TYPE
+       SYNTAX InterfaceIndex
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charPortEntry 21 }
+
+
+
+   charSessTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF CharSessEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       ::= { char 3 }
+
+   charSessEntry OBJECT-TYPE
+       SYNTAX CharSessEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       INDEX { charSessPortIndex, charSessIndex }
+       ::= { charSessTable 1 }
+
+   CharSessEntry ::=
+       SEQUENCE {
+           charSessPortIndex
+               PortIndex,
+           charSessIndex
+
+
+
+
+
+               INTEGER,
+           charSessKill
+               INTEGER,
+           charSessState
+               INTEGER,
+           charSessProtocol
+               AutonomousType,
+           charSessOperOrigin
+               INTEGER,
+           charSessInCharacters
+               Counter32,
+           charSessOutCharacters
+               Counter32,
+           charSessConnectionId
+               InstancePointer,
+           charSessStartTime
+               TimeTicks
+       }
+
+   charSessPortIndex OBJECT-TYPE
+       SYNTAX PortIndex
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charSessEntry 1 }
+
+   charSessIndex OBJECT-TYPE
+       SYNTAX INTEGER (1..2147483647)
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charSessEntry 2 }
+
+   charSessKill OBJECT-TYPE
+       SYNTAX INTEGER { ready(1), execute(2) }
+       MAX-ACCESS read-write
+       STATUS current
+       ::= { charSessEntry 3 }
+
+   charSessState OBJECT-TYPE
+       SYNTAX INTEGER { connecting(1), connected(2),
+                        disconnecting(3) }
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charSessEntry 4 }
+
+   charSessProtocol OBJECT-TYPE
+       SYNTAX AutonomousType
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charSessEntry 5 }
+
+   wellKnownProtocols OBJECT IDENTIFIER ::= { char 4 }
+
+   protocolOther  OBJECT IDENTIFIER ::= { wellKnownProtocols 1 }
+   protocolTelnet OBJECT IDENTIFIER ::= { wellKnownProtocols 2 }
+   protocolRlogin OBJECT IDENTIFIER ::= { wellKnownProtocols 3 }
+   protocolLat    OBJECT IDENTIFIER ::= { wellKnownProtocols 4 }
+   protocolX29    OBJECT IDENTIFIER ::= { wellKnownProtocols 5 }
+   protocolVtp    OBJECT IDENTIFIER ::= { wellKnownProtocols 6 }
+
+
+   charSessOperOrigin OBJECT-TYPE
+       SYNTAX INTEGER { unknown(1), network(2), local(3) }
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charSessEntry 6 }
+
+   charSessInCharacters OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charSessEntry 7 }
+
+   charSessOutCharacters OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charSessEntry 8 }
+
+   charSessConnectionId OBJECT-TYPE
+       SYNTAX InstancePointer
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charSessEntry 9 }
+
+   charSessStartTime OBJECT-TYPE
+       SYNTAX TimeTicks
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { charSessEntry 10 }
+
+
+
+
+
+
+
+
+
+   charConformance OBJECT IDENTIFIER ::= { char 5 }
+
+   charGroups      OBJECT IDENTIFIER ::= { charConformance 1 }
+   charCompliances OBJECT IDENTIFIER ::= { charConformance 2 }
+
+
+
+   charCompliance MODULE-COMPLIANCE
+       STATUS  current
+
+       MODULE  -- this module
+           MANDATORY-GROUPS { charGroup }
+       ::= { charCompliances 1 }
+
+
+
+   charGroup    OBJECT-GROUP
+       OBJECTS { charNumber, charPortIndex, charPortName,
+                 charPortType, charPortHardware, charPortReset,
+                 charPortAdminStatus, charPortOperStatus,
+                 charPortLastChange,
+                 charPortInFlowState, charPortOutFlowState,
+                 charPortAdminOrigin, charPortSessionMaximum,
+                 charPortInFlowTypes, charPortOutFlowTypes,
+                 charPortInCharacters, charPortOutCharacters,
+                 charPortSessionNumber, charPortSessionIndex,
+                 charPortLowerIfIndex,
+                 charSessPortIndex, charSessIndex,
+                 charSessKill, charSessState,
+                 charSessProtocol, charSessOperOrigin,
+                 charSessInCharacters, charSessOutCharacters,
+                 charSessConnectionId, charSessStartTime }
+       STATUS  current
+       ::= { charGroups 1 }
+
+   END

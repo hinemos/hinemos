@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.factory;
@@ -44,23 +37,28 @@ import com.clustercontrol.collect.bean.Sample;
 import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.hub.bean.StringSample;
 import com.clustercontrol.hub.util.CollectStringDataUtil;
+import com.clustercontrol.monitor.run.bean.MonitorNumericType;
 import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorJudgementInfo;
 import com.clustercontrol.monitor.run.util.MonitorExecuteTask;
+import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil;
+import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil.CollectMonitorDataInfo;
 import com.clustercontrol.monitor.run.util.NodeMonitorPollerController;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCache;
 import com.clustercontrol.monitor.run.util.ParallelExecution;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
-import com.clustercontrol.notify.session.NotifyControllerBean;
+import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -197,20 +195,17 @@ abstract public class RunMonitor {
 		m_monitorId = monitorId;
 		m_prvData = prvData;
 
-		boolean isSuccess = false;
-
 		try
 		{
 			// 監視実行
-			isSuccess = runMonitorInfo();
+			runMonitorInfo();
+		} catch (Exception e) {
+			String[] args = {m_monitorTypeId,m_monitorId};
+			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_012_MON, args);
+			throw e;
 		} finally {
-			if(!isSuccess){
-				String[] args = {m_monitorTypeId,""};
-				AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_012_MON, args);
-			}
 			// 終了処理
 			this.terminate();
-			
 		}
 		// 処理結果を返す。
 		return m_monitorRunResultInfo;
@@ -229,24 +224,22 @@ abstract public class RunMonitor {
 	 *
 	 * @see #runMonitorInfo()
 	 */
-	public void runMonitor(String monitorTypeId, String monitorId) throws FacilityNotFound, MonitorNotFound, InvalidRole, HinemosUnknown {
+	public List<OutputBasicInfo> runMonitor(String monitorTypeId, String monitorId) throws FacilityNotFound, MonitorNotFound, InvalidRole, HinemosUnknown {
 
 		this.initialize(monitorTypeId);
 
 		m_monitorTypeId = monitorTypeId;
 		m_monitorId = monitorId;
 
-		boolean isSuccess = false;
-
 		try
 		{
 			// 監視実行
-			isSuccess = runMonitorInfo();
-		} finally {
-			if(!isSuccess){
+			return runMonitorInfo();
+		} catch (Exception e) {
 				String[] args = {m_monitorTypeId,m_monitorId};
 				AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_012_MON, args);
-			}
+				throw e;
+		} finally {
 			// 終了処理
 			this.terminate();
 		}
@@ -280,9 +273,11 @@ abstract public class RunMonitor {
 	 * @see #getPriority(int)
 	 * @see #notify(boolean, String, int, Date)
 	 */
-	protected boolean runMonitorInfo() throws FacilityNotFound, MonitorNotFound, InvalidRole, EntityExistsException, HinemosUnknown {
+	protected List<OutputBasicInfo> runMonitorInfo() throws FacilityNotFound, MonitorNotFound, InvalidRole, EntityExistsException, HinemosUnknown {
 
 		m_now = HinemosTime.getDateInstance();
+		
+		List<OutputBasicInfo> ret = new ArrayList<OutputBasicInfo>();
 
 		m_priorityMap = new HashMap<Integer, ArrayList<String>>();
 		m_priorityMap.put(Integer.valueOf(PriorityConstant.TYPE_INFO),		new ArrayList<String>());
@@ -298,7 +293,7 @@ abstract public class RunMonitor {
 			boolean run = this.setMonitorInfo(m_monitorTypeId, m_monitorId);
 			if(!run){
 				// 処理終了
-				return true;
+				return ret;
 			}
 
 			// 判定情報を設定
@@ -317,7 +312,7 @@ abstract public class RunMonitor {
 				// 有効/無効フラグがtrueとなっているファシリティIDを取得する
 				facilityList = new RepositoryControllerBean().getExecTargetFacilityIdList(m_facilityId, m_monitor.getOwnerRoleId());
 				if (facilityList.size() == 0) {
-					return true;
+					return ret;
 				}
 
 				m_isNode = new RepositoryControllerBean().isNode(m_facilityId);
@@ -378,7 +373,7 @@ abstract public class RunMonitor {
 				facilityList = new RepositoryControllerBean().getExecTargetFacilityIdList(m_facilityId, m_monitor.getOwnerRoleId());
 				if (facilityList.size() != 1
 						|| !facilityList.get(0).equals(m_facilityId) ) {
-					return true;
+					return ret;
 				}
 
 				m_isNode = true;
@@ -431,16 +426,12 @@ abstract public class RunMonitor {
 			// 収集値の入れ物を作成
 			StringSample strSample = null;
 			Sample sample = null;
-			if(m_monitor.getCollectorFlg()){
+			Date sampleTime = HinemosTime.getDateInstance();
+			if(m_monitor.getCollectorFlg() 
+					&& (m_monitor.getMonitorType() == MonitorTypeConstant.TYPE_STRING 
+					|| m_monitor.getMonitorType() == MonitorTypeConstant.TYPE_TRAP)) {
 				//収集 - 文字列
-				if (m_monitor.getMonitorType() == MonitorTypeConstant.TYPE_STRING 
-						|| m_monitor.getMonitorType() == MonitorTypeConstant.TYPE_TRAP ) {
-					strSample = new StringSample(HinemosTime.getDateInstance(), m_monitor.getMonitorId());
-				}
-				//収集 - 数値
-				else {
-					sample = new Sample(HinemosTime.getDateInstance(), m_monitor.getMonitorId());
-				}
+				strSample = new StringSample(sampleTime, m_monitor.getMonitorId());
 			}
 			
 			for (int i = 0; i < taskCount; i++) {
@@ -464,18 +455,54 @@ abstract public class RunMonitor {
 				
 				if (!m_isMonitorJob) {
 					// 処理する場合
-					if(result.getProcessType().booleanValue()){
+					if(result.getProcessType().booleanValue() && m_monitor.getMonitorFlg()){
 						// 監視結果を通知
-						notify(true, facilityId, result.getCheckResult(), new Date(m_nodeDate), result);
-						// 個々の収集値の登録
-						if(sample != null){
+						ret.add(createOutputBasicInfo(true, facilityId, result.getCheckResult(), new Date(m_nodeDate), result, m_monitor));
+					}
+
+					// 個々の収集値の登録
+					if (m_monitor.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC
+							&& (m_monitor.getCollectorFlg()
+							|| m_monitor.getPredictionFlg()
+							|| m_monitor.getChangeFlg())) {
+
+						// 将来予測監視、変化量監視の処理を行う
+						CollectMonitorDataInfo collectMonitorDataInfo 
+							= CollectMonitorManagerUtil.calculateChangePredict(this, m_monitor, facilityId,
+							result.getDisplayName(), m_monitor.getItemName(), sampleTime.getTime(), result.getValue());
+
+						// 将来予測もしくは変更点監視が有効な場合、通知を行う
+						Double average = null;
+						Double standardDeviation = null;
+						if (collectMonitorDataInfo != null) {
+							if (collectMonitorDataInfo.getChangeMonitorRunResultInfo() != null) {
+								// 変化量監視の通知
+								MonitorRunResultInfo collectResult = collectMonitorDataInfo.getChangeMonitorRunResultInfo();
+								ret.add(createOutputBasicInfo(true, facilityId, collectResult.getCheckResult(), 
+										new Date(collectResult.getNodeDate()),  
+										collectResult, m_monitor));
+							}
+							if (collectMonitorDataInfo.getPredictionMonitorRunResultInfo() != null) {
+								// 将来予測監視の通知
+								MonitorRunResultInfo collectResult = collectMonitorDataInfo.getPredictionMonitorRunResultInfo();
+								ret.add(createOutputBasicInfo(true, facilityId, collectResult.getCheckResult(), 
+										new Date(collectResult.getNodeDate()),  
+										collectResult, m_monitor));
+							}
+							average = collectMonitorDataInfo.getAverage();
+							standardDeviation = collectMonitorDataInfo.getStandardDeviation();
+						}
+						if (m_monitor.getCollectorFlg().booleanValue()) {
+							sample = new Sample(sampleTime, m_monitor.getMonitorId());
 							int errorType = -1;
 							if(result.isCollectorResult()){
 								errorType = CollectedDataErrorTypeConstant.NOT_ERROR;
 							}else{
 								errorType = CollectedDataErrorTypeConstant.UNKNOWN;
 							}
-							sample.set(facilityId, m_monitor.getItemName(), result.getValue(), errorType);
+							sample.set(facilityId, m_monitor.getItemName(), result.getValue(), average, 
+									standardDeviation, errorType);
+							sampleList.add(sample);
 						}
 					}
 				} else {
@@ -499,9 +526,6 @@ abstract public class RunMonitor {
 					CollectStringDataUtil.store(collectedSamples);
 				}
 			} else {
-				if(sample != null){
-					sampleList.add(sample);
-				}
 				if(!sampleList.isEmpty()){
 					CollectDataUtil.put(sampleList);
 				}
@@ -509,18 +533,18 @@ abstract public class RunMonitor {
 			
 			m_log.debug("monitor end : monitorTypeId : " + m_monitorTypeId + ", monitorId : " + m_monitorId);
 
-			return true;
+			return ret;
 
 		} catch (FacilityNotFound e) {
 			throw e;
 		} catch (InterruptedException e) {
 			m_log.info("runMonitorInfo() monitorTypeId = " + m_monitorTypeId + ", monitorId  = " + m_monitorId + " : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			return false;
+			throw new HinemosUnknown(e);
 		} catch (ExecutionException e) {
 			m_log.info("runMonitorInfo() monitorTypeId = " + m_monitorTypeId + ", monitorId  = " + m_monitorId + " : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			return false;
+			throw new HinemosUnknown(e);
 		}
 	}
 
@@ -541,28 +565,28 @@ abstract public class RunMonitor {
 	 *
 	 * @see #runMonitorInfo()
 	 */
-	public void runMonitorAggregateByNode(String monitorTypeId, String facilityId) throws FacilityNotFound, MonitorNotFound, InvalidRole, HinemosUnknown {
+	public List<OutputBasicInfo> runMonitorAggregateByNode(String monitorTypeId, String facilityId) throws FacilityNotFound, MonitorNotFound, InvalidRole, HinemosUnknown {
 
+		List<OutputBasicInfo> ret = null;
 		this.initialize(monitorTypeId);
 
 		m_monitorTypeId = monitorTypeId;
 		m_facilityId = facilityId;
 		m_now = HinemosTime.getDateInstance();
 
-		boolean isSuccess = false;
-
 		try
 		{
 			// 監視実行
-			isSuccess = runMonitorInfoAggregateByNode();
+			ret = runMonitorInfoAggregateByNode();
+		} catch (Exception e) {
+			String[] args = {m_monitorTypeId,facilityId}; 
+			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_013_MON, args);
+			throw e;
 		} finally {
-			if(!isSuccess){
-				String[] args = {m_monitorTypeId,facilityId}; 
-				AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_013_MON, args);
-			}
 			// 終了処理
 			this.terminate();
 		}
+		return ret;
 	}
 	
 	/**
@@ -576,7 +600,9 @@ abstract public class RunMonitor {
 	 * @throws HinemosUnknown
 	 *
 	 */
-	private boolean runMonitorInfoAggregateByNode() throws FacilityNotFound, MonitorNotFound, InvalidRole, EntityExistsException, HinemosUnknown {
+	private List<OutputBasicInfo> runMonitorInfoAggregateByNode() throws FacilityNotFound, MonitorNotFound, InvalidRole, EntityExistsException, HinemosUnknown {
+		
+		List<OutputBasicInfo> ret = new ArrayList<> ();
 		
 		if (!m_isMonitorJob) {
 			// 現在時刻から、今はどの監視間隔の監視を行なえばよいのかを計算し、タスクリストに追加する
@@ -601,10 +627,10 @@ abstract public class RunMonitor {
 					// それぞれ遅延していることを通知する
 					final Set<MonitorInfo> monitors = entry.getValue();
 					for (MonitorInfo monitor : monitors) {
-						String notifyGroupId = monitor.getNotifyGroupId();
-						
 						// 通知情報を設定
 						OutputBasicInfo notifyInfo = new OutputBasicInfo();
+
+						notifyInfo.setNotifyGroupId(monitor.getNotifyGroupId());
 						notifyInfo.setPluginId(m_monitorTypeId);
 						notifyInfo.setMonitorId(monitor.getMonitorId());
 						notifyInfo.setApplication(monitor.getApplication());
@@ -623,30 +649,20 @@ abstract public class RunMonitor {
 						notifyInfo.setMessageOrg(messageOrg);
 						notifyInfo.setGenerationDate(m_now.getTime());
 
-						// for debug
-						if (m_log.isDebugEnabled()) {
-							m_log.debug("notify() priority = " + priority
-									+ " , message = " + message
-									+ " , messageOrg = " + messageOrg
-									+ ", generationDate = " + m_now);
-						}
-	
 						// ログ出力情報を送信
-						if (m_log.isDebugEnabled()) {
-							m_log.debug("sending message"
-									+ " : priority=" + notifyInfo.getPriority()
-									+ " generationDate=" + notifyInfo.getGenerationDate() + " pluginId=" + notifyInfo.getPluginId()
-									+ " monitorId=" + notifyInfo.getMonitorId() + " facilityId=" + notifyInfo.getFacilityId()
-									+ " subKey=" + notifyInfo.getSubKey()
-									+ ")");
-						}
-
-						new NotifyControllerBean().notify(notifyInfo, notifyGroupId);
+						m_log.info("message=" + message
+								+ " priority=" + notifyInfo.getPriority()
+								+ " generationDate=" + notifyInfo.getGenerationDate() + " pluginId=" + notifyInfo.getPluginId()
+								+ " monitorId=" + notifyInfo.getMonitorId() + " facilityId=" + notifyInfo.getFacilityId()
+								+ " subKey=" + notifyInfo.getSubKey()
+								+ ")");
+						
+						ret.add(notifyInfo);
 					}
 				}
 
 				// ここでログを出しているので、戻った先でログを出さないように成功としてtrueを返す
-				return true;
+				return ret;
 			}
 			
 			// 以下の処理はノードあたり1スレッドのみが進入可能。最後に必ずSemaphoreをリリースすること
@@ -693,7 +709,7 @@ abstract public class RunMonitor {
 				}
 				
 				// 収集した値を元に閾値判定を行なう
-				checkMultiMonitorInfoData(preCollectData, runMonitorList);
+				ret.addAll(checkMultiMonitorInfoData(preCollectData, runMonitorList));
 			} finally {
 				execSingleThreadSemaphore.release();
 			}
@@ -712,9 +728,9 @@ abstract public class RunMonitor {
 			m_isNode = true;
 				
 			// 収集した値を元に閾値判定を行なう
-			checkMultiMonitorInfoData(preCollectData, Arrays.asList(this));
+			ret.addAll(checkMultiMonitorInfoData(preCollectData, Arrays.asList(this)));
 		}
-		return true;
+		return ret;
 	}
 
 	/**
@@ -751,17 +767,14 @@ abstract public class RunMonitor {
 		// 監視基本情報を取得
 		m_monitor = QueryUtil.getMonitorInfoPK_NONE(monitorId);
 
-		boolean isSuccess = false;
-
 		try
 		{
 			// 監視実行
-			isSuccess = runMonitorInfoAggregateByNode();
+			runMonitorInfoAggregateByNode();
+		} catch (Exception e) {
+			String[] args = {m_monitorTypeId, m_facilityId}; 
+			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_013_MON, args);
 		} finally {
-			if(!isSuccess){
-				String[] args = {m_monitorTypeId, m_facilityId}; 
-				AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_013_MON, args);
-			}
 			// 終了処理
 			this.terminate();
 		}
@@ -839,8 +852,13 @@ abstract public class RunMonitor {
 	 * 
 	 * @param preCollectData
 	 * @param runMonitorList
+	 * @return
+	 * @throws HinemosUnknown
 	 */
-	protected void checkMultiMonitorInfoData(final Object preCollectData, final List<RunMonitor> runMonitorList) {
+	protected List<OutputBasicInfo> checkMultiMonitorInfoData(final Object preCollectData, final List<RunMonitor> runMonitorList)
+		throws HinemosUnknown {
+		List<OutputBasicInfo> ret = new ArrayList<>();
+		
 		// 複数の監視項目について並行して閾値判定するメリットはほとんど無いため、全監視項目の判定・通知を直列に実施する
 		List<Sample> sampleList = new ArrayList<Sample>();
 		for (final RunMonitor targetMonitor : runMonitorList) {
@@ -861,7 +879,9 @@ abstract public class RunMonitor {
 				if(result.getProcessType().booleanValue()){
 					// 監視結果を通知
 					if (!m_isMonitorJob) {
-						targetMonitor.notify(true, facilityId, result.getCheckResult(), new Date(result.getNodeDate()), result);
+						if (targetMonitor.m_monitor.getMonitorFlg()) {
+							ret.add(createOutputBasicInfo(true, facilityId, result.getCheckResult(), new Date(result.getNodeDate()), result, targetMonitor.m_monitor));
+						}
 					} else {
 						m_monitorRunResultInfo = new MonitorRunResultInfo();
 						m_monitorRunResultInfo.setNodeDate(m_nodeDate);
@@ -869,18 +889,58 @@ abstract public class RunMonitor {
 						m_monitorRunResultInfo.setPriority(result.getPriority());
 						m_monitorRunResultInfo.setMessageOrg(makeJobOrgMessage(result.getMessage(), null));
 					}
+
 					
-					// 収集が有効な場合、収集値を登録
-					if(targetMonitor.m_monitor.getCollectorFlg().booleanValue()) {
+					if(targetMonitor.m_monitor.getCollectorFlg()
+							|| targetMonitor.m_monitor.getPredictionFlg()
+							|| targetMonitor.m_monitor.getChangeFlg()) {
 						int errorType = 0;
-						Sample sample = new Sample(HinemosTime.getDateInstance(), targetMonitor.m_monitor.getMonitorId());
-						if(result.isCollectorResult()){
-							errorType = CollectedDataErrorTypeConstant.NOT_ERROR;
-						}else{
-							errorType = CollectedDataErrorTypeConstant.UNKNOWN;
+						Date sampleTime = HinemosTime.getDateInstance();
+
+						// 将来予測監視、変化量監視の処理を行う
+						CollectMonitorDataInfo collectMonitorDataInfo 
+						= CollectMonitorManagerUtil.calculateChangePredict(
+								targetMonitor,
+								targetMonitor.getMonitorInfo(),
+								facilityId,
+								result.getDisplayName(),
+								targetMonitor.getMonitorInfo().getItemName(),
+								sampleTime.getTime(),
+								result.getValue());
+
+						// 将来予測もしくは変更点監視が有効な場合、通知を行う
+						Double average = null;
+						Double standardDeviation = null;
+						if (collectMonitorDataInfo != null) {
+							if (collectMonitorDataInfo.getChangeMonitorRunResultInfo() != null) {
+								// 変化量監視の通知
+								MonitorRunResultInfo collectResult = collectMonitorDataInfo.getChangeMonitorRunResultInfo();
+								ret.add(createOutputBasicInfo(
+										true, facilityId, collectResult.getCheckResult(), 
+										new Date(collectResult.getNodeDate()), collectResult, targetMonitor.m_monitor));
+							}
+							if (collectMonitorDataInfo.getPredictionMonitorRunResultInfo() != null) {
+								// 将来予測監視の通知
+								MonitorRunResultInfo collectResult = collectMonitorDataInfo.getPredictionMonitorRunResultInfo();
+								ret.add(createOutputBasicInfo(
+										true, facilityId, collectResult.getCheckResult(), 
+										new Date(collectResult.getNodeDate()), collectResult, targetMonitor.m_monitor));
+							}
+							average = collectMonitorDataInfo.getAverage();
+							standardDeviation = collectMonitorDataInfo.getStandardDeviation();
 						}
-						sample.set(facilityId, targetMonitor.getMonitorInfo().getItemName(), result.getValue(), errorType);
-						sampleList.add(sample);
+						// 収集がONの場合には収集データを登録する。
+						if (targetMonitor.m_monitor.getCollectorFlg().booleanValue()) {
+							Sample sample = new Sample(sampleTime, targetMonitor.m_monitor.getMonitorId());
+							if(result.isCollectorResult()){
+								errorType = CollectedDataErrorTypeConstant.NOT_ERROR;
+							}else{
+								errorType = CollectedDataErrorTypeConstant.UNKNOWN;
+							}
+							sample.set(facilityId, targetMonitor.getMonitorInfo().getItemName(), 
+									result.getValue(), average, standardDeviation, errorType);
+							sampleList.add(sample);
+						}
 					}
 				}
 				if (m_log.isDebugEnabled()) 
@@ -897,6 +957,7 @@ abstract public class RunMonitor {
 		if(!sampleList.isEmpty()){
 			CollectDataUtil.put(sampleList);
 		}
+		return ret;
 	}
 	
 	/**
@@ -944,9 +1005,29 @@ abstract public class RunMonitor {
 	 * @param facilityId 監視対象のファシリティID
 	 * @return 値取得に成功した場合、</code> true </code>
 	 * @throws FacilityNotFound
+	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
+	 * @throws HinemosDbTimeout
 	 */
-	public abstract boolean collect(String facilityId) throws FacilityNotFound, HinemosUnknown;
+	public abstract boolean collect(String facilityId) throws FacilityNotFound, InvalidSetting, HinemosUnknown, HinemosDbTimeout;
+
+
+	/**
+	 * 監視対象に対する監視を実行し、値を収集します。
+	 * <p>
+	 * 各監視管理のサブクラスで実装します。
+	 * 引数で指定されたファシリティIDの監視を実行して値を収集し、
+	 * 監視結果をリストにして返します。
+	 *
+	 * @param facilityId 監視対象のファシリティID
+	 * @return 監視結果リスト
+	 * @throws InvalidSetting
+	 * @throws HinemosUnknown
+	 * @throws HinemosDbTimeout
+	 */
+	public List<MonitorRunResultInfo> collectMultiple(String facilityId) throws InvalidSetting, HinemosUnknown, HinemosDbTimeout {
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * マルチスレッドを実現するCallableTaskに渡すためのインスタンスを作成するメソッドです。
@@ -989,6 +1070,23 @@ abstract public class RunMonitor {
 	 * @return 判定結果
 	 */
 	public abstract int getCheckResult(boolean ret);
+
+	/**
+	 * 判定結果を返します。
+	 * <p>
+	 * 将来予測監視で使用するため、数値監視のサブクラスで実装します。
+	 * {@link #collect(String)}メソッドで監視を実行した後に呼ばれます。
+	 * 監視取得値と判定情報から、判定結果を返します。
+	 * <p>
+	 * <dl>
+	 *  <dt>判定結果の値</dt>
+	 *  <dd>数値監視：重要度定数（{@link com.clustercontrol.bean.PriorityConstant}）</dd>
+	 * </dl>
+	 *
+	 * @param ret 監視の実行が成功した場合、</code> true </code>
+	 * @return 判定結果
+	 */
+	public abstract int getCheckResult(boolean ret, Object value);
 
 	/**
 	 * 重要度を返します。
@@ -1187,16 +1285,40 @@ abstract public class RunMonitor {
 		if (!m_isMonitorJob) {
 			// 監視ジョブ以外の場合
 
-			// 通知情報を取得
-			List<NotifyRelationInfo> notifyRelationList = 
-					new NotifyControllerBean().getNotifyRelation(m_monitor.getNotifyGroupId());
-			m_notifyGroupId = m_monitor.getNotifyGroupId();
-			m_monitor.setNotifyRelationList(notifyRelationList);
-			if(m_notifyGroupId == null || "".equals(m_notifyGroupId)){
-				if(m_monitor.getMonitorType().intValue() != MonitorTypeConstant.TYPE_STRING){
-					// 通知しない場合は、処理終了
+			// 何もチェックが入っていない場合は処理終了
+			if (m_monitor.getMonitorType().equals(MonitorTypeConstant.TYPE_NUMERIC)) {
+				// 数値監視の場合
+				if (!m_monitor.getMonitorFlg() 
+						&& !m_monitor.getCollectorFlg()
+						&& !m_monitor.getChangeFlg()
+						&& !m_monitor.getPredictionFlg()) {
 					return false;
 				}
+			} else {
+				// 数値監視以外の場合
+				if (!m_monitor.getMonitorFlg() && !m_monitor.getCollectorFlg()) {
+					return false;
+				}
+			}
+
+			// 通知情報を取得
+			List<NotifyRelationInfo> notifyRelationList = 
+					NotifyRelationCache.getNotifyList(m_monitor.getNotifyGroupId());
+			m_notifyGroupId = m_monitor.getNotifyGroupId();
+			m_monitor.setNotifyRelationList(notifyRelationList);
+
+			if (m_monitor.getMonitorType().equals(MonitorTypeConstant.TYPE_NUMERIC)) {
+				// 通知情報(将来予測)を取得
+				List<NotifyRelationInfo> predictionNotifyRelationList = 
+						NotifyRelationCache.getNotifyList(
+						CollectMonitorManagerUtil.getPredictionNotifyGroupId(m_notifyGroupId));
+				m_monitor.setPredictionNotifyRelationList(predictionNotifyRelationList);
+	
+				// 通知情報(変更点監視)を取得
+				List<NotifyRelationInfo> changeNotifyRelationList = 
+						NotifyRelationCache.getNotifyList(
+						CollectMonitorManagerUtil.getChangeNotifyGroupId(m_notifyGroupId));
+				m_monitor.setChangeNotifyRelationList(changeNotifyRelationList);
 			}
 
 			// 収集間隔
@@ -1240,238 +1362,6 @@ abstract public class RunMonitor {
 		m_failurePriority = m_monitor.getFailurePriority().intValue();
 
 		return true;
-	}
-
-	/**
-	 * 監視管理に通知します。
-	 * <p>
-	 * 通知に必要となる情報をログ出力情報にセットし、キューへメッセージを送信します。
-	 * <ol>
-	 * <li>通知IDを取得し、<code>null</code>の場合は、処理を終了します。</li>
-	 * <li>各情報を取得し、ログ出力情報（{@link com.clustercontrol.monitor.message.LogOutputNotifyInfo }）にセットします。
-	 * 監視単位がノードの場合とスコープの場合では、通知する情報が異なります。
-	 * </li>
-	 * <li>ログ出力情報を、ログ出力キューへ送信します。</li>
-	 * </ol>
-	 *
-	 * @param isNode ノードの場合、</code> true </code>
-	 * @param facilityId 通知対象のファシリティID
-	 * @param result 判定結果
-	 * @param generationDate ログ出力日時（監視を実行した日時）
-	 * @throws HinemosUnknown
-	 * @since 2.0.0
-	 *
-	 * @see com.clustercontrol.monitor.message.LogOutputNotifyInfo
-	 * @see com.clustercontrol.repository.session.RepositoryControllerBean#getFacilityPath(java.lang.String, java.lang.String)
-	 * @see #getNotifyRelationInfos()
-	 * @see #getPriority(int)
-	 * @see #getMessage(int)
-	 * @see #getMessageOrg(int)
-	 * @see #getJobRunInfo(int)
-	 * @see #getMessageForScope(int)
-	 * @see #getMessageOrgForScope(int)
-	 * @see #getJobRunInfoForScope(int)
-	 */
-	protected void notify(
-			boolean isNode,
-			String facilityId,
-			int result,
-			Date generationDate) throws HinemosUnknown {
-		// for debug
-		if (m_log.isDebugEnabled()) {
-			m_log.debug("notify() isNode = " + isNode + ", facilityId = " + facilityId
-					+ ", result = " + result + ", generationDate = " + generationDate.toString());
-		}
-
-		// 監視無効の場合、通知しない
-		if(!m_monitor.getMonitorFlg()){
-			m_log.debug("notify() isNode = " + isNode + ", facilityId = " + facilityId
-					+ ", result = " + result + ", generationDate = " + generationDate.toString()
-					+ ", monitorFlg is false");
-			return;
-		}
-
-		// 通知IDが指定されていない場合、通知しない
-		String notifyGroupId = getNotifyGroupId();
-		List<NotifyRelationInfo> notifyRelationList = m_monitor.getNotifyRelationList();
-		if(notifyRelationList == null || notifyRelationList.size() == 0){
-			return;
-		}
-
-		// 通知情報を設定
-		OutputBasicInfo notifyInfo = new OutputBasicInfo();
-		notifyInfo.setPluginId(m_monitorTypeId);
-		notifyInfo.setMonitorId(m_monitorId);
-		notifyInfo.setApplication(m_monitor.getApplication());
-
-		String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
-		notifyInfo.setFacilityId(facilityId);
-		notifyInfo.setScopeText(facilityPath);
-
-		int priority = -1;
-		String message = "";
-		String messageOrg = "";
-
-		if(isNode){
-			// ノードの場合
-			priority = getPriority(result);
-			message = getMessage(result);
-			messageOrg = getMessageOrg(result);
-		}
-		else{
-			// スコープの場合
-			priority = result;
-			message = getMessageForScope(result);
-			messageOrg = getMessageOrgForScope(result);
-		}
-		notifyInfo.setPriority(priority);
-		notifyInfo.setMessage(message);
-		notifyInfo.setMessageOrg(messageOrg);
-		if (generationDate != null) {
-			notifyInfo.setGenerationDate(generationDate.getTime());
-		}
-		// for debug
-		if (m_log.isDebugEnabled()) {
-			m_log.debug("notify() priority = " + priority
-					+ " , message = " + message
-					+ " , messageOrg = " + messageOrg
-					+ ", generationDate = " + generationDate);
-		}
-
-		// ログ出力情報を送信
-		if (m_log.isDebugEnabled()) {
-			m_log.debug("sending message"
-					+ " : priority=" + notifyInfo.getPriority()
-					+ " generationDate=" + notifyInfo.getGenerationDate() + " pluginId=" + notifyInfo.getPluginId()
-					+ " monitorId=" + notifyInfo.getMonitorId() + " facilityId=" + notifyInfo.getFacilityId()
-					+ " subKey=" + notifyInfo.getSubKey()
-					+ ")");
-		}
-
-		new NotifyControllerBean().notify(notifyInfo, notifyGroupId);
-	}
-
-	/**
-	 * 監視管理に通知します。(並列処理時)
-	 * <p>
-	 * 通知に必要となる情報をログ出力情報にセットし、キューへメッセージを送信します。
-	 * <ol>
-	 * <li>通知IDを取得し、<code>null</code>の場合は、処理を終了します。</li>
-	 * <li>各情報を取得し、ログ出力情報（{@link com.clustercontrol.monitor.message.LogOutputNotifyInfo }）にセットします。
-	 * 監視単位がノードの場合とスコープの場合では、通知する情報が異なります。
-	 * </li>
-	 * <li>ログ出力情報を、ログ出力キューへ送信します。</li>
-	 * </ol>
-	 *
-	 * @param isNode ノードの場合、</code> true </code>
-	 * @param facilityId 通知対象のファシリティID
-	 * @param result 判定結果
-	 * @param generationDate ログ出力日時（監視を実行した日時）
-	 * @param resultList 並列実行時の情報
-	 * @throws HinemosUnknown
-	 * @since 2.0.0
-	 *
-	 * @see com.clustercontrol.monitor.message.LogOutputNotifyInfo
-	 * @see com.clustercontrol.repository.session.RepositoryControllerBean#getFacilityPath(java.lang.String, java.lang.String)
-	 * @see #getNotifyRelationInfos()
-	 * @see #getPriority(int)
-	 * @see #getMessage(int)
-	 * @see #getMessageOrg(int)
-	 * @see #getJobRunInfo(int)
-	 * @see #getMessageForScope(int)
-	 * @see #getMessageOrgForScope(int)
-	 * @see #getJobRunInfoForScope(int)
-	 */
-	protected void notify(
-			boolean isNode,
-			String facilityId,
-			int result,
-			Date generationDate,
-			MonitorRunResultInfo resultInfo) throws HinemosUnknown {
-
-		// for debug
-		if (m_log.isDebugEnabled()) {
-			m_log.debug("notify() isNode = " + isNode + ", facilityId = " + facilityId
-					+ ", result = " + result + ", generationDate = " + generationDate.toString()
-					+ ", resultInfo = " + resultInfo.getMessage());
-		}
-
-		boolean monitorFlg = false;
-
-		monitorFlg = m_monitor.getMonitorFlg();
-
-		// 監視無効の場合、通知しない
-		if(!monitorFlg){
-			m_log.debug("notify() isNode = " + isNode + ", facilityId = " + facilityId
-					+ ", result = " + result + ", generationDate = " + generationDate.toString()
-					+ ", resultInfo = " + resultInfo.getMessage() + ", monitorFlg is false");
-			return;
-		}
-
-		// 通知IDが指定されていない場合、通知しない
-		String notifyGroupId = resultInfo.getNotifyGroupId();
-		if(notifyGroupId == null || "".equals(notifyGroupId)){
-			return;
-		}
-
-		// 通知情報を設定
-		OutputBasicInfo notifyInfo = new OutputBasicInfo();
-		notifyInfo.setPluginId(m_monitorTypeId);
-		notifyInfo.setMonitorId(m_monitorId);
-		notifyInfo.setApplication(m_monitor.getApplication());
-
-		String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
-		notifyInfo.setFacilityId(facilityId);
-		notifyInfo.setScopeText(facilityPath);
-
-		int priority = -1;
-		String message = "";
-		String messageOrg = "";
-
-		if(isNode){
-			// ノードの場合
-			priority = resultInfo.getPriority();
-			message = resultInfo.getMessage();
-			messageOrg = resultInfo.getMessageOrg();
-		}
-		else{
-			// スコープの場合
-			priority = result;
-			message = getMessageForScope(result);
-			messageOrg = getMessageOrgForScope(result);
-		}
-		notifyInfo.setPriority(priority);
-		// 通知抑制用のサブキーを設定。
-		if(resultInfo.getDisplayName() != null && !"".equals(resultInfo.getDisplayName())){
-			// 監視結果にデバイス名を含むものは、デバイス名をサブキーとして設定。
-			notifyInfo.setSubKey(resultInfo.getDisplayName());
-		} else if(resultInfo.getPatternText() != null){
-			// 監視結果にパターンマッチ文字列を含むものは、デバイス名をサブキーとして設定。
-			notifyInfo.setSubKey(resultInfo.getPatternText());
-		}
-		notifyInfo.setMessage(message);
-		notifyInfo.setMessageOrg(messageOrg);
-		if (generationDate != null) {
-			notifyInfo.setGenerationDate(generationDate.getTime());
-		}
-		// for debug
-		if (m_log.isDebugEnabled()) {
-			m_log.debug("notify() priority = " + priority
-					+ " , message = " + message
-					+ " , messageOrg = " + messageOrg
-					+ ", generationDate = " + generationDate);
-		}
-
-		// ログ出力情報を送信
-		if (m_log.isDebugEnabled()) {
-			m_log.debug("sending message"
-					+ " : priority=" + notifyInfo.getPriority()
-					+ " generationDate=" + notifyInfo.getGenerationDate() + " pluginId=" + notifyInfo.getPluginId()
-					+ " monitorId=" + notifyInfo.getMonitorId() + " facilityId=" + notifyInfo.getFacilityId()
-					+ " subKey=" + notifyInfo.getSubKey()
-					+ ")");
-		}
-		new NotifyControllerBean().notify(notifyInfo, notifyGroupId);
 	}
 
 	/**
@@ -1562,5 +1452,198 @@ abstract public class RunMonitor {
 	 */
 	protected String makeJobOrgMessage(String orgMsg, String msg){
 		return "";
+	}
+
+	/**
+	 * 通知情報を返す
+	 * 
+	 * @param isNode 			true：ノード
+	 * @param facilityId		通知対象のファシリティID
+	 * @param result			判定結果
+	 * @param generationDate	ログ出力日時（監視を実行した日時）
+	 * @param resultInfo		変化量、将来予測の情報
+	 * @param monitorInfo		監視設定
+	 * @return 通知情報
+	 */
+	protected OutputBasicInfo createOutputBasicInfo(
+			boolean isNode,
+			String facilityId,
+			int result,
+			Date generationDate,
+			MonitorRunResultInfo resultInfo,
+			MonitorInfo monitorInfo) throws HinemosUnknown {
+
+		// 通知情報
+		OutputBasicInfo rtn = new OutputBasicInfo();
+
+		// for debug
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("createOutputBasicInfo() isNode = " + isNode + ", facilityId = " + facilityId
+					+ ", result = " + result + ", generationDate = " + generationDate.toString()
+					+ ", resultInfo = " + resultInfo.getMessage());
+		}
+
+		if (resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_BASIC)) {
+			// 通常
+			rtn.setNotifyGroupId(monitorInfo.getNotifyGroupId());
+		} else if (resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_CHANGE)
+				|| resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_PREDICTION)) {
+			// 変化量、将来予測
+			rtn.setNotifyGroupId(resultInfo.getNotifyGroupId());
+		}
+
+		// 通知情報を設定
+		rtn.setPluginId(monitorInfo.getMonitorTypeId());
+		rtn.setMonitorId(monitorInfo.getMonitorId());
+		if (resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_BASIC)) {
+			// 通常
+			rtn.setApplication(monitorInfo.getApplication());
+		} else if (resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_CHANGE)
+				|| resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_PREDICTION)) {
+			// 変化量、将来予測
+			rtn.setApplication(resultInfo.getApplication());
+		}
+
+		rtn.setFacilityId(facilityId);
+		rtn.setScopeText(new RepositoryControllerBean().getFacilityPath(facilityId, null));
+
+		int priority = -1;
+		String message = "";
+		String messageOrg = "";
+		if(isNode){
+			// ノードの場合
+			priority = resultInfo.getPriority();
+			message = resultInfo.getMessage();
+			messageOrg = resultInfo.getMessageOrg();
+		}
+		else{
+			// スコープの場合
+			priority = result;
+			message = getMessageForScope(result);
+			messageOrg = getMessageOrgForScope(result);
+		}
+		rtn.setPriority(priority);
+		// 通知抑制用のサブキーを設定。
+		if(resultInfo.getDisplayName() != null && !"".equals(resultInfo.getDisplayName())){
+			// 監視結果にデバイス名を含むものは、デバイス名をサブキーとして設定。
+			rtn.setSubKey(resultInfo.getDisplayName());
+		} else if(resultInfo.getPatternText() != null){
+			// 監視結果にパターンマッチ文字列を含むものは、デバイス名をサブキーとして設定。
+			rtn.setSubKey(resultInfo.getPatternText());
+		}
+		rtn.setMessage(message);
+		rtn.setMessageOrg(messageOrg);
+		if (generationDate != null) {
+			rtn.setGenerationDate(generationDate.getTime());
+		}
+		// for debug
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("notify() priority = " + priority
+					+ " , message = " + message
+					+ " , messageOrg = " + messageOrg
+					+ ", generationDate = " + generationDate);
+		}
+
+		// ログ出力情報を送信
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("sending message"
+					+ " : priority=" + rtn.getPriority()
+					+ " generationDate=" + rtn.getGenerationDate() + " pluginId=" + rtn.getPluginId()
+					+ " monitorId=" + rtn.getMonitorId() + " facilityId=" + rtn.getFacilityId()
+					+ " subKey=" + rtn.getSubKey() + " notifyGroupId=" + rtn.getNotifyGroupId()
+					+ ")");
+		}
+		return rtn;
+	}
+
+	/**
+	 * 通知情報を返す
+	 * 
+	 * @param isNode 			true：ノード
+	 * @param facilityId		通知対象のファシリティID
+	 * @param result			判定結果
+	 * @param generationDate	ログ出力日時（監視を実行した日時）
+	 * @return 通知情報
+	 */
+	protected OutputBasicInfo createOutputBasicInfo(
+			boolean isNode,
+			String facilityId,
+			int result,
+			Date generationDate) throws HinemosUnknown {
+
+		// for debug
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("notify() isNode = " + isNode + ", facilityId = " + facilityId
+					+ ", result = " + result + ", generationDate = " + generationDate.toString());
+		}
+
+		// 監視無効の場合、通知しない
+		if(!m_monitor.getMonitorFlg()){
+			m_log.debug("notify() isNode = " + isNode + ", facilityId = " + facilityId
+					+ ", result = " + result + ", generationDate = " + generationDate.toString()
+					+ ", monitorFlg is false");
+			return null;
+		}
+
+		// 通知IDが指定されていない場合、通知しない
+		List<NotifyRelationInfo> notifyRelationList = m_monitor.getNotifyRelationList();
+		if(notifyRelationList == null || notifyRelationList.size() == 0){
+			return null;
+		}
+
+		// 通知情報
+		OutputBasicInfo rtn = new OutputBasicInfo();
+
+		// 通知情報を設定
+		rtn.setNotifyGroupId(getNotifyGroupId());
+		rtn.setPluginId(m_monitorTypeId);
+		rtn.setMonitorId(m_monitorId);
+		rtn.setApplication(m_monitor.getApplication());
+
+		String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
+		rtn.setFacilityId(facilityId);
+		rtn.setScopeText(facilityPath);
+
+		int priority = -1;
+		String message = "";
+		String messageOrg = "";
+
+		if(isNode){
+			// ノードの場合
+			priority = getPriority(result);
+			message = getMessage(result);
+			messageOrg = getMessageOrg(result);
+		}
+		else{
+			// スコープの場合
+			priority = result;
+			message = getMessageForScope(result);
+			messageOrg = getMessageOrgForScope(result);
+		}
+		rtn.setPriority(priority);
+		rtn.setMessage(message);
+		rtn.setMessageOrg(messageOrg);
+		if (generationDate != null) {
+			rtn.setGenerationDate(generationDate.getTime());
+		}
+		// for debug
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("notify() priority = " + priority
+					+ " , message = " + message
+					+ " , messageOrg = " + messageOrg
+					+ ", generationDate = " + generationDate);
+		}
+
+		// ログ出力情報を送信
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("sending message"
+					+ " : priority=" + rtn.getPriority()
+					+ " generationDate=" + rtn.getGenerationDate() + " pluginId=" + rtn.getPluginId()
+					+ " monitorId=" + rtn.getMonitorId() + " facilityId=" + rtn.getFacilityId()
+					+ " subKey=" + rtn.getSubKey() + " notifyGroupId=" + rtn.getNotifyGroupId()
+					+ ")");
+		}
+
+		return rtn;
 	}
 }

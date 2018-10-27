@@ -1,0 +1,296 @@
+GMPLS-LSR-STD-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+  MODULE-IDENTITY, OBJECT-TYPE, Unsigned32, zeroDotZero
+    FROM SNMPv2-SMI                                   -- RFC 2578
+  MODULE-COMPLIANCE, OBJECT-GROUP
+    FROM SNMPv2-CONF                                  -- RFC 2580
+  RowPointer
+    FROM SNMPv2-TC                                    -- RFC 2579
+  GmplsSegmentDirectionTC
+    FROM GMPLS-TC-STD-MIB                             -- RFC 4801
+  mplsInterfaceIndex, mplsInSegmentIndex, mplsOutSegmentIndex,
+  mplsInterfaceGroup, mplsInSegmentGroup, mplsOutSegmentGroup,
+  mplsXCGroup, mplsPerfGroup, mplsLsrNotificationGroup
+    FROM MPLS-LSR-STD-MIB                             -- RFC 3813
+  ifGeneralInformationGroup, ifCounterDiscontinuityGroup
+    FROM IF-MIB                                       -- RFC 2863
+  mplsStdMIB
+    FROM MPLS-TC-STD-MIB                              -- RFC 3811
+;
+
+gmplsLsrStdMIB MODULE-IDENTITY
+  LAST-UPDATED
+    "200702270000Z" -- 27 February 2007 00:00:00 GMT
+  ORGANIZATION
+    "IETF Common Control And Measurement Plane (CCAMP) Working Group"
+
+  ::= { mplsStdMIB 15 }
+
+gmplsLsrObjects       OBJECT IDENTIFIER ::= { gmplsLsrStdMIB 1 }
+gmplsLsrConformance   OBJECT IDENTIFIER ::= { gmplsLsrStdMIB 2 }
+
+gmplsInterfaceTable OBJECT-TYPE
+  SYNTAX        SEQUENCE OF GmplsInterfaceEntry
+  MAX-ACCESS    not-accessible
+  STATUS        current
+  ::= { gmplsLsrObjects 1 }
+
+gmplsInterfaceEntry OBJECT-TYPE
+  SYNTAX        GmplsInterfaceEntry
+  MAX-ACCESS    not-accessible
+  STATUS        current
+  INDEX { mplsInterfaceIndex }
+::= { gmplsInterfaceTable 1 }
+
+GmplsInterfaceEntry ::= SEQUENCE {
+  gmplsInterfaceSignalingCaps      BITS,
+  gmplsInterfaceRsvpHelloPeriod    Unsigned32
+}
+
+gmplsInterfaceSignalingCaps OBJECT-TYPE
+  SYNTAX  BITS {
+    unknown(0),
+    rsvpGmpls(1),
+    crldpGmpls(2), -- note the use of CR-LDP is deprecated
+    otherGmpls(3)
+  }
+  MAX-ACCESS   read-create
+  STATUS       current
+  DEFVAL { { rsvpGmpls } }
+::= { gmplsInterfaceEntry 1 }
+
+gmplsInterfaceRsvpHelloPeriod OBJECT-TYPE
+  SYNTAX       Unsigned32
+  UNITS        "milliseconds"
+  MAX-ACCESS   read-create
+  STATUS       current
+  DEFVAL { 3000 }
+::= { gmplsInterfaceEntry 2 }
+
+gmplsInSegmentTable  OBJECT-TYPE
+  SYNTAX        SEQUENCE OF GmplsInSegmentEntry
+  MAX-ACCESS    not-accessible
+  STATUS        current
+::= { gmplsLsrObjects 2 }
+
+gmplsInSegmentEntry  OBJECT-TYPE
+  SYNTAX        GmplsInSegmentEntry
+  MAX-ACCESS    not-accessible
+  STATUS        current
+  INDEX { mplsInSegmentIndex }
+::= { gmplsInSegmentTable 1 }
+
+GmplsInSegmentEntry ::= SEQUENCE {
+  gmplsInSegmentDirection        GmplsSegmentDirectionTC,
+  gmplsInSegmentExtraParamsPtr   RowPointer
+}
+
+gmplsInSegmentDirection OBJECT-TYPE
+  SYNTAX        GmplsSegmentDirectionTC
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL        { forward }
+::= { gmplsInSegmentEntry 1 }
+
+gmplsInSegmentExtraParamsPtr  OBJECT-TYPE
+  SYNTAX       RowPointer
+  MAX-ACCESS   read-create
+  STATUS       current
+  DEFVAL      { zeroDotZero }
+  ::= { gmplsInSegmentEntry 2 }
+
+gmplsOutSegmentTable  OBJECT-TYPE
+
+
+
+
+
+  SYNTAX        SEQUENCE OF GmplsOutSegmentEntry
+  MAX-ACCESS    not-accessible
+  STATUS        current
+::= { gmplsLsrObjects 3 }
+
+gmplsOutSegmentEntry  OBJECT-TYPE
+  SYNTAX        GmplsOutSegmentEntry
+  MAX-ACCESS    not-accessible
+  STATUS        current
+  INDEX  { mplsOutSegmentIndex }
+::= { gmplsOutSegmentTable 1 }
+
+GmplsOutSegmentEntry ::= SEQUENCE {
+  gmplsOutSegmentDirection       GmplsSegmentDirectionTC,
+  gmplsOutSegmentTTLDecrement    Unsigned32,
+  gmplsOutSegmentExtraParamsPtr  RowPointer
+}
+
+gmplsOutSegmentDirection OBJECT-TYPE
+  SYNTAX        GmplsSegmentDirectionTC
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL  { forward }
+::= { gmplsOutSegmentEntry 1 }
+
+gmplsOutSegmentTTLDecrement OBJECT-TYPE
+  SYNTAX        Unsigned32
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL  { 0 }
+::= { gmplsOutSegmentEntry 2 }
+
+gmplsOutSegmentExtraParamsPtr  OBJECT-TYPE
+  SYNTAX       RowPointer
+  MAX-ACCESS   read-create
+  STATUS       current
+  DEFVAL      { zeroDotZero }
+  ::= { gmplsOutSegmentEntry 3 }
+
+gmplsLsrGroups
+  OBJECT IDENTIFIER ::= { gmplsLsrConformance 1 }
+
+
+
+
+
+gmplsLsrCompliances
+  OBJECT IDENTIFIER ::= { gmplsLsrConformance 2 }
+
+
+gmplsLsrModuleFullCompliance MODULE-COMPLIANCE
+  STATUS current
+
+  MODULE IF-MIB -- The Interfaces Group MIB, RFC 2863.
+
+  MANDATORY-GROUPS {
+    ifGeneralInformationGroup,
+    ifCounterDiscontinuityGroup
+  }
+
+  MODULE MPLS-LSR-STD-MIB -- The MPLS-LSR-STD-MIB, RFC3813
+
+  MANDATORY-GROUPS {
+    mplsInterfaceGroup,
+    mplsInSegmentGroup,
+    mplsOutSegmentGroup,
+    mplsXCGroup,
+    mplsPerfGroup,
+    mplsLsrNotificationGroup
+  }
+
+  MODULE -- this module
+
+  MANDATORY-GROUPS    {
+    gmplsInterfaceGroup,
+    gmplsInSegmentGroup,
+    gmplsOutSegmentGroup
+  }
+
+  OBJECT      gmplsInSegmentDirection
+  SYNTAX      GmplsSegmentDirectionTC
+  MIN-ACCESS  read-only
+
+
+
+
+
+
+  OBJECT      gmplsOutSegmentDirection
+  SYNTAX      GmplsSegmentDirectionTC
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsOutSegmentTTLDecrement
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsInSegmentExtraParamsPtr
+  MIN-ACCESS  read-only
+  OBJECT      gmplsOutSegmentExtraParamsPtr
+  MIN-ACCESS  read-only
+
+::= { gmplsLsrCompliances 1 }
+
+
+gmplsLsrModuleReadOnlyCompliance MODULE-COMPLIANCE
+  STATUS current
+
+  MODULE IF-MIB -- The interfaces Group MIB, RFC 2863
+
+  MANDATORY-GROUPS {
+    ifGeneralInformationGroup,
+    ifCounterDiscontinuityGroup
+  }
+
+  MODULE MPLS-LSR-STD-MIB
+
+  MANDATORY-GROUPS {
+    mplsInterfaceGroup,
+    mplsInSegmentGroup,
+    mplsOutSegmentGroup,
+    mplsXCGroup,
+    mplsPerfGroup
+  }
+
+
+
+
+
+  MODULE -- this module
+
+  MANDATORY-GROUPS {
+    gmplsInterfaceGroup,
+    gmplsInSegmentGroup,
+    gmplsOutSegmentGroup
+  }
+
+  OBJECT      gmplsInterfaceSignalingCaps
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsInterfaceRsvpHelloPeriod
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsInSegmentDirection
+  SYNTAX      GmplsSegmentDirectionTC
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsInSegmentExtraParamsPtr
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsOutSegmentDirection
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsOutSegmentTTLDecrement
+  MIN-ACCESS  read-only
+  OBJECT      gmplsOutSegmentExtraParamsPtr
+  MIN-ACCESS  read-only
+
+::= { gmplsLsrCompliances 2 }
+
+gmplsInterfaceGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsInterfaceSignalingCaps,
+
+
+
+
+
+    gmplsInterfaceRsvpHelloPeriod
+  }
+  STATUS  current
+::= { gmplsLsrGroups 1 }
+
+gmplsInSegmentGroup  OBJECT-GROUP
+  OBJECTS {
+    gmplsInSegmentDirection,
+    gmplsInSegmentExtraParamsPtr
+  }
+  STATUS  current
+::= { gmplsLsrGroups 2 }
+
+gmplsOutSegmentGroup  OBJECT-GROUP
+  OBJECTS {
+    gmplsOutSegmentDirection,
+    gmplsOutSegmentTTLDecrement,
+    gmplsOutSegmentExtraParamsPtr
+  }
+  STATUS  current
+::= { gmplsLsrGroups 3 }
+END

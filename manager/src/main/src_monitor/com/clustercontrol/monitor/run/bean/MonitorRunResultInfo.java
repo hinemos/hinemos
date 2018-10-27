@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.run.bean;
 
 import java.io.Serializable;
@@ -8,7 +16,7 @@ import javax.xml.bind.annotation.XmlType;
  * 
  * 各監視の結果情報を格納するクラスです。
  * 
- * @version 6.0.0
+ * @version 6.1.0
  * @since 3.0.0
  */
 @XmlType(namespace = "http://monitor.ws.clustercontrol.com")
@@ -58,6 +66,9 @@ public class MonitorRunResultInfo implements Serializable {
 	/** 通知グループID */
 	private String m_notifyGroupId;
 
+	/** アプリケーション名 */
+	private String m_application;
+
 	/** パターンマッチ表現（文字列監視の場合、監視結果を生じさせたパターンマッチ表現） */
 	private String m_patternText;
 
@@ -66,6 +77,15 @@ public class MonitorRunResultInfo implements Serializable {
 
 	/** 今回取得したデータ（ジョブ監視で使用） **/
 	private Object m_curData = null;
+
+	/** 平均値 */
+	private Double m_average;
+
+	/** 標準偏差 */
+	private Double m_standardDeviation;
+
+	/** 数値監視の種別（数値監視以外はBASIC */
+	private MonitorNumericType m_monitorNumericType = MonitorNumericType.TYPE_BASIC;
 
 	/**
 	 * 監視結果の重要度を返す
@@ -260,6 +280,22 @@ public class MonitorRunResultInfo implements Serializable {
 	}
 
 	/**
+	 * アプリケーション名を返す
+	 * @return アプリケーション名
+	 */
+	public String getApplication() {
+		return m_application;
+	}
+
+	/**
+	 * アプリケーション名を設定する
+	 * @param application
+	 */
+	public void setApplication(String application) {
+		this.m_application = application;
+	}
+
+	/**
 	 * 監視値を設定する
 	 * @param m_value
 	 */
@@ -350,5 +386,53 @@ public class MonitorRunResultInfo implements Serializable {
 	 */
 	public void setCurData(Object curData) {
 		m_curData = curData;
+	}
+
+	/**
+	 * 平均値を返す（変化点監視で使用）
+	 * @return 平均値（変化点監視で使用）
+	 */
+	public Double getAverage() {
+		return m_average;
+	}
+
+	/**
+	 * 平均値を設定する（変化点監視で使用）
+	 * @param 平均値（変化点監視で使用）
+	 */
+	public void setAverage(Double average) {
+		m_average = average;
+	}
+	
+	/**
+	 * 標準偏差を返す（変化点監視で使用）
+	 * @return 標準偏差（変化点監視で使用）
+	 */
+	public Double getStandardDeviation() {
+		return m_standardDeviation;
+	}
+
+	/**
+	 * 標準偏差を設定する（変化点監視で使用）
+	 * @param 標準偏差（変化点監視で使用）
+	 */
+	public void setStandardDeviation(Double standardDeviation) {
+		m_standardDeviation = standardDeviation;
+	}
+	
+	/**
+	 * 数値監視種別を返す
+	 * @return 数値監視種別
+	 */
+	public MonitorNumericType getMonitorNumericType() {
+		return m_monitorNumericType;
+	}
+
+	/**
+	 * 数値監視種別を設定する
+	 * @param 数値監視種別
+	 */
+	public void setMonitorNumericType(MonitorNumericType monitorNumericType) {
+		m_monitorNumericType = monitorNumericType;
 	}
 }

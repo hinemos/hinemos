@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.composite;
@@ -202,6 +195,7 @@ public class InfraScopeComposite extends Composite {
 				}
 			}
 		});
+		btnRefer.setEnabled(false);
 
 		update();
 	}
@@ -238,14 +232,17 @@ public class InfraScopeComposite extends Composite {
 			if (m_facilityId == null) {
 				// 変数の場合
 				m_scopeParam.setSelection(true);
+				btnRefer.setEnabled(false);
 			} else {
 				// 固定値の場合
 				m_scopeFixedValue.setSelection(true);
+				btnRefer.setEnabled(true);
 				this.m_scope.setText(HinemosMessage.replace(info.getScope()));
 			}
 
 		} else {
 			m_scopeFixedValue.setSelection(true);
+			btnRefer.setEnabled(false);
 		}
 		// スコープが必須項目であることを明示
 		this.update();

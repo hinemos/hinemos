@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.factory;
@@ -24,9 +17,12 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.binary.model.BinaryPatternInfo;
+import com.clustercontrol.binary.util.BinaryQueryUtil;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.http.model.Page;
 import com.clustercontrol.http.model.Pattern;
 import com.clustercontrol.http.model.Variable;
@@ -36,9 +32,11 @@ import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorNumericValueInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
 import com.clustercontrol.monitor.run.model.MonitorTruthValueInfo;
+import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil;
 import com.clustercontrol.monitor.run.util.QueryUtil;
+import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
-import com.clustercontrol.notify.session.NotifyControllerBean;
+import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.repository.factory.FacilitySelector;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.snmptrap.model.TrapValueInfo;
@@ -51,7 +49,7 @@ import com.clustercontrol.util.apllog.AplLogger;
  * <p>
  * 監視種別（真偽値，数値，文字列）の各クラスで継承してください。
  *
- * @version 4.1.0
+ * @version 6.1.0
  * @since 2.0.0
  */
 public class SelectMonitor {
@@ -92,7 +90,19 @@ public class SelectMonitor {
 
 			// 通知情報を設定する
 			bean.setNotifyRelationList(
-				new NotifyControllerBean().getNotifyRelation(bean.getNotifyGroupId()));
+					NotifyRelationCache.getNotifyList(bean.getNotifyGroupId()));
+
+			if (bean.getMonitorType().equals(MonitorTypeConstant.TYPE_NUMERIC)) {
+				// 通知情報(将来予測監視用)を設定する
+				bean.setPredictionNotifyRelationList(
+						NotifyRelationCache.getNotifyList(
+							CollectMonitorManagerUtil.getPredictionNotifyGroupId(bean.getNotifyGroupId())));
+	
+				// 通知情報(変更点監視用)を設定する
+				bean.setChangeNotifyRelationList(
+						NotifyRelationCache.getNotifyList(
+								CollectMonitorManagerUtil.getChangeNotifyGroupId(bean.getNotifyGroupId())));
+			}
 
 			if (bean.getMonitorType() == null) {
 				// ここには通らない
@@ -139,7 +149,16 @@ public class SelectMonitor {
 						}
 					}
 				}
-			}
+			} else if(bean.getMonitorType().equals(MonitorTypeConstant.TYPE_BINARY)
+					&& bean.getStringValueInfo() != null
+					&& bean.getBinaryPatternInfo() != null) {
+					for (MonitorStringValueInfo monitorStringValueInfo : bean.getStringValueInfo()) {
+						monitorStringValueInfo = QueryUtil.getMonitorStringValueInfoPK(monitorStringValueInfo.getId());
+					}
+					for (BinaryPatternInfo binaryPatternInfo : bean.getBinaryPatternInfo()) {
+						binaryPatternInfo = BinaryQueryUtil.getBinaryPatternInfoPK(binaryPatternInfo.getId());
+					}
+				}
 
 		} catch (MonitorNotFound e) {
 			outputLog(monitorTypeId, monitorId, PriorityConstant.TYPE_WARNING, MessageConstant.MESSAGE_SYS_010_MON);
@@ -245,6 +264,10 @@ public class SelectMonitor {
 							", application = " + info.getApplication() +
 							", monitorFlg = " + info.getMonitorFlg() +
 							", collectorFlg = " + info.getCollectorFlg() +
+							", predictionFlg = " + info.getPredictionFlg() +
+							", predictionMethod = " + info.getPredictionMethod() +
+							", predictionAnalysysRange = " + info.getPredictionAnalysysRange() +
+							", predictionTarget = " + info.getPredictionTarget() +
 							", regDate = " + info.getRegDate() +
 							", updateDate = " + info.getUpdateDate() +
 							", regUser = " + info.getRegUser() +
@@ -307,6 +330,10 @@ public class SelectMonitor {
 							", application = " + info.getApplication() +
 							", monitorFlg = " + info.getMonitorFlg() +
 							", collectorFlg = " + info.getCollectorFlg() +
+							", predictionFlg = " + info.getPredictionFlg() +
+							", predictionMethod = " + info.getPredictionMethod() +
+							", predictionAnalysysRange = " + info.getPredictionAnalysysRange() +
+							", predictionTarget = " + info.getPredictionTarget() +
 							", regDate = " + info.getRegDate() +
 							", updateDate = " + info.getUpdateDate() +
 							", regUser = " + info.getRegUser() +
@@ -394,6 +421,58 @@ public class SelectMonitor {
 			filterList.add(entity);
 		}
 		return filterList;
+	}
+
+	/**
+	 * 指定された監視種別に一致する監視情報一覧を返します。
+	 * 
+	 * @param monitorType 監視種別
+	 * @param ownerRoleId オーナーロールID
+	 * @return 監視情報一覧
+	 */
+	public ArrayList<MonitorInfo> getMonitorListByMonitorType_OR(List<Integer> monitorTypes, String ownerRoleId) {
+		return new ArrayList<>(QueryUtil.getMonitorInfoByMonitorType_OR(monitorTypes, ownerRoleId));
+	}
+
+	/**
+	 * 以下の条件に一致する監視設定一覧を取得します。
+	 *　　オーナーロールIDが参照可能
+	 *  文字列監視
+	 *　　指定されたファシリティIDもしくはその配下のノードに一致する
+	 * 
+	 * @param facilityId　ファシリティID
+	 * @param ownerRoleId オーナーロールID
+	 * @return 監視設定ID一覧
+	 * @throws ObjectPrivilege_InvalidRole
+	 * @throws MonitorNotFound
+	 * @throws HinemosUnknown
+	 * @throws InvalidRole
+	 */
+	public List<MonitorInfo> getStringMonitoInfoListForAnalytics(String facilityId, String ownerRoleId)
+		throws HinemosUnknown {
+		List<MonitorInfo> list = new ArrayList<>();
+		if (facilityId == null || facilityId.isEmpty()
+				|| ownerRoleId == null || ownerRoleId.isEmpty()) {
+			return list;
+		}
+		
+		// 参照可能な監視設定を取得する
+		List<Integer> typeList = new ArrayList<>();
+		typeList.add(MonitorTypeConstant.TYPE_STRING);
+		List<MonitorInfo> monitorInfoList 
+			= new MonitorSettingControllerBean().getMonitorListByMonitorType(typeList, ownerRoleId);
+		if (monitorInfoList == null) {
+			return list;
+		}
+		for (MonitorInfo monitorInfo : monitorInfoList) {
+			// 指定したファシリティIDをスコープ、もしくはノードに含む場合のみ対象とする
+			if (monitorInfo.getFacilityId().equals(facilityId)
+					|| new RepositoryControllerBean().getFacilityIdList(
+							monitorInfo.getFacilityId(), 0).contains(facilityId)) {
+				list.add(monitorInfo);
+			}
+		}
+		return list;
 	}
 
 	/**

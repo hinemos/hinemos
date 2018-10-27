@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.agent.custom;
@@ -297,7 +290,7 @@ public class CommandCollector implements CollectorTask, Runnable {
 
 		private final Pattern lineSplitter;
 		private final Pattern stdoutPattern;
-		private final static String _stdoutRegex = "^([^,]+),(-?[0-9.]+)$";
+		private final static String _stdoutRegex = "^(.+),\\s*(-?[0-9.]+)$";
 
 		public CollectorCommandWorker(CommandExecuteDTO config, String facilityId) {
 			this.config = config;
@@ -322,11 +315,9 @@ public class CommandCollector implements CollectorTask, Runnable {
 
 			// generate command for platform
 			CommandResult ret = null;
-			Date executeDate = null;
+			Date executeDate = HinemosTime.getDateInstance();
 			Date exitDate = null;
 			try {
-				executeDate = HinemosTime.getDateInstance();
-				
 				CommandCreator.PlatformType platform = CommandCreator.convertPlatform(_commandMode);
 				command = CommandCreator.createCommand(config.getEffectiveUser(), commandBinded, platform, config.isSpecifyUser(), _commandLogin);
 

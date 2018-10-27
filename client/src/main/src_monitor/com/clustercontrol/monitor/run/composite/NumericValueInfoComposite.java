@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.composite;
@@ -32,6 +25,7 @@ import com.clustercontrol.bean.PriorityColorConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.monitor.run.bean.MonitorNumericType;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.monitor.MonitorInfo;
 import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
@@ -56,12 +50,6 @@ import com.clustercontrol.util.WidgetTestUtil;
  */
 public class NumericValueInfoComposite extends Composite {
 
-	/** カラム数（タイトル）。 */
-	public static final int WIDTH_TITLE = 4;
-
-	/** カラム数（値）。 */
-	public static final int WIDTH_VALUE = 2;
-
 	/** 入力値の検証タイプ（整数）。 */
 	public static final int INPUT_VERIFICATION_INTEGER_NUMBER = 0;
 	/** 入力値の検証タイプ（実数）。 */
@@ -72,10 +60,10 @@ public class NumericValueInfoComposite extends Composite {
 	public static final int INPUT_VERIFICATION_POSITIVE_REAL = 3;
 
 	/** 項目名（判定項目１）。 */
-	private String m_itemName1 = null;
+	protected String m_itemName1 = null;
 
 	/** 項目名（判定項目２）。 */
-	private String m_itemName2 = null;
+	protected String m_itemName2 = null;
 
 	/** ラベル（判定項目１） **/
 	private Label m_textItemName1 = null;
@@ -90,22 +78,25 @@ public class NumericValueInfoComposite extends Composite {
 	private String m_criterion2 = Messages.getString("less");
 
 	/** 入力値の検証タイプ（判定項目１）。 */
-	private int m_inputVerifyType1 = INPUT_VERIFICATION_INTEGER_NUMBER;
+	protected int m_inputVerifyType1 = INPUT_VERIFICATION_INTEGER_NUMBER;
 
 	/** 入力値の検証タイプ（判定項目２）。 */
-	private int m_inputVerifyType2 = INPUT_VERIFICATION_INTEGER_NUMBER;
+	protected int m_inputVerifyType2 = INPUT_VERIFICATION_INTEGER_NUMBER;
 
 	/** 判定値（判定項目１：通知） テキストボックス。 */
-	private Text m_textValue1Info = null;
+	protected Text m_textValue1Info = null;
 
 	/** 判定値（判定項目２：通知） テキストボックス。 */
-	private Text m_textValue2Info = null;
+	protected Text m_textValue2Info = null;
 
 	/** 判定値（判定項目１：警告） テキストボックス。 */
-	private Text m_textValue1Warn = null;
+	protected Text m_textValue1Warn = null;
 
 	/** 判定値（判定項目２：警告） テキストボックス。 */
-	private Text m_textValue2Warn = null;
+	protected Text m_textValue2Warn = null;
+
+	/** 数値監視モード  */
+	private String m_monitorNumericType = MonitorNumericType.TYPE_BASIC.getType();
 
 	/**
 	 * インスタンスを返します。
@@ -254,6 +245,54 @@ public class NumericValueInfoComposite extends Composite {
 		m_inputVerifyType1 = inputVerifyType;
 		m_inputVerifyType2 = inputVerifyType;
 
+		this.initialize();
+	}
+
+	/**
+	 * インスタンスを返します。
+	 * <p>
+	 * 初期処理を呼び出し、コンポジットを配置します。<BR>
+	 * 引数で指定された入力値の検証タイプで、全ての入力値テキストボックスの入力検証を行います。
+	 * 判定基準文字列 及び 入力値の初期値はデフォルト値が使用されます。
+	 *
+	 * @param parent 親のコンポジット
+	 * @param style スタイル
+	 * @param rangeFlg 範囲検証フラグ
+	 * @param item1 項目名（判定項目１）
+	 * @param item2 項目名（判定項目２）
+	 * @param criterion1 判定基準文字列（判定項目１）
+	 * @param criterion2 判定基準文字列（判定項目２）
+	 * @param inputVerifyType 入力値の検証タイプ（判定項目１,２）
+	 * @param monitorNumericType 数値監視種別
+	 *
+	 * @see org.eclipse.swt.SWT
+	 * @see #INPUT_VERIFICATION_INTEGER_NUMBER
+	 * @see #INPUT_VERIFICATION_POSITIVE_INTEGER
+	 * @see #INPUT_VERIFICATION_POSITIVE_REAL
+	 * @see #INPUT_VERIFICATION_REAL_NUMBER
+	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
+	 * @see #initialize()
+	 */
+	public NumericValueInfoComposite(Composite parent,
+			int style,
+			boolean rangeFlg,
+			String item1,
+			String item2,
+			String criterion1,
+			String criterion2,
+			int inputVerifyType,
+			String monitorNumericType) {
+
+		super(parent, style);
+
+		m_itemName1 = item1;
+		m_itemName2 = item2;
+		m_criterion1 = criterion1;
+		m_criterion2 = criterion2;
+		m_inputVerifyType1 = inputVerifyType;
+		m_inputVerifyType2 = inputVerifyType;
+		m_monitorNumericType = monitorNumericType;
+		
 		this.initialize();
 	}
 
@@ -470,7 +509,7 @@ public class NumericValueInfoComposite extends Composite {
 		label = new Label(this, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "space1", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -479,7 +518,7 @@ public class NumericValueInfoComposite extends Composite {
 		m_textItemName1 = new Label(this, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "itemname1", m_textItemName1);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE*2;
+		gridData.horizontalSpan = 6;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		m_textItemName1.setLayoutData(gridData);
@@ -489,38 +528,20 @@ public class NumericValueInfoComposite extends Composite {
 		m_textItemName2 = new Label(this, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "", m_textItemName2);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE*2;
+		gridData.horizontalSpan = 6;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		m_textItemName2.setLayoutData(gridData);
 		m_textItemName2.setText(m_itemName2);
 
-		// 空白
-		label = new Label(this, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space2", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 3;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
-
 		// 重要度：通知
 		label = this.getLabelPriority(this, Messages.getString("info"),PriorityColorConstant.COLOR_INFO);
-
-		// 空白
-		label = new Label(this, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space3", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 2;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
 
 		// 閾値の下限
 		this.m_textValue1Info = new Text(this, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "textvalue1", m_textValue1Info);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textValue1Info.setLayoutData(gridData);
@@ -536,7 +557,7 @@ public class NumericValueInfoComposite extends Composite {
 		label = new Label(this, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "morethan", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -546,7 +567,7 @@ public class NumericValueInfoComposite extends Composite {
 		this.m_textValue2Info = new Text(this, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "textvalue2", m_textValue2Info);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textValue2Info.setLayoutData(gridData);
@@ -562,38 +583,20 @@ public class NumericValueInfoComposite extends Composite {
 		label = new Label(this, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "lessthan", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
 		label.setText(m_criterion2);
 
-		// 空白
-		label = new Label(this, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space4", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 3;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
-
 		// 重要度：警告
 		label = this.getLabelPriority(this, Messages.getString("warning"),PriorityColorConstant.COLOR_WARNING);
-
-		// 空白
-		label = new Label(this, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space5", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 2;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
 
 		// 閾値の下限
 		this.m_textValue1Warn = new Text(this, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "valu1warn", m_textValue1Warn);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textValue1Warn.setLayoutData(gridData);
@@ -609,7 +612,7 @@ public class NumericValueInfoComposite extends Composite {
 		label = new Label(this, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "morethan2", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -619,7 +622,7 @@ public class NumericValueInfoComposite extends Composite {
 		this.m_textValue2Warn = new Text(this, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "valu2warn", m_textValue2Warn);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textValue2Warn.setLayoutData(gridData);
@@ -635,52 +638,24 @@ public class NumericValueInfoComposite extends Composite {
 		label = new Label(this, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "lessthan2", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
 		label.setText(m_criterion2);
 
-		// 空白
-		label = new Label(this, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space6", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 3;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
-
 		// 重要度：異常
 		label = this.getLabelPriority(this, Messages.getString("critical"),PriorityColorConstant.COLOR_CRITICAL);
-
-		// 空白
-		label = new Label(this, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space7", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 2;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
 
 		// （通知・警告以外）
 		label = new Label(this, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "otherpriority", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE*3;
+		gridData.horizontalSpan = 12;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
 		label.setText(Messages.getString("other.priority"));
-
-		// 空白
-		label = new Label(this, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space8", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 5;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
-
 	}
 
 	/**
@@ -726,47 +701,47 @@ public class NumericValueInfoComposite extends Composite {
 			if(list != null){
 				for(int index=0; index<list.size(); index++){
 					MonitorNumericValueInfo numericValueInfo = list.get(index);
-					if(numericValueInfo != null){
-						if(PriorityConstant.TYPE_INFO ==  numericValueInfo.getPriority()){
-							String lower = "";
-							String upper = "";
-							if(m_inputVerifyType1  == INPUT_VERIFICATION_INTEGER_NUMBER ||
-									m_inputVerifyType1  == INPUT_VERIFICATION_POSITIVE_INTEGER){
-								lower = Long.toString(numericValueInfo.getThresholdLowerLimit().longValue());
-							}
-							else{
-								lower = Double.toString(numericValueInfo.getThresholdLowerLimit());
-							}
-							if(m_inputVerifyType2  == INPUT_VERIFICATION_INTEGER_NUMBER ||
-									m_inputVerifyType2  == INPUT_VERIFICATION_POSITIVE_INTEGER){
-								upper = Long.toString(numericValueInfo.getThresholdUpperLimit().longValue());
-							}
-							else{
-								upper = Double.toString(numericValueInfo.getThresholdUpperLimit());
-							}
-							this.m_textValue1Info.setText(lower);
-							this.m_textValue2Info.setText(upper);
+					if (numericValueInfo == null || !numericValueInfo.getMonitorNumericType().equals(m_monitorNumericType)) {
+						continue;
+					}
+					if(PriorityConstant.TYPE_INFO ==  numericValueInfo.getPriority()){
+						String lower = "";
+						String upper = "";
+						if(m_inputVerifyType1  == INPUT_VERIFICATION_INTEGER_NUMBER ||
+								m_inputVerifyType1  == INPUT_VERIFICATION_POSITIVE_INTEGER){
+							lower = Long.toString(numericValueInfo.getThresholdLowerLimit().longValue());
 						}
-						else if(PriorityConstant.TYPE_WARNING ==  numericValueInfo.getPriority()){
-							String lower = "";
-							String upper = "";
-							if(m_inputVerifyType1  == INPUT_VERIFICATION_INTEGER_NUMBER ||
-									m_inputVerifyType1  == INPUT_VERIFICATION_POSITIVE_INTEGER){
-								lower = Long.toString(numericValueInfo.getThresholdLowerLimit().longValue());
-							}
-							else{
-								lower = Double.toString(numericValueInfo.getThresholdLowerLimit());
-							}
-							if(m_inputVerifyType2  == INPUT_VERIFICATION_INTEGER_NUMBER ||
-									m_inputVerifyType2  == INPUT_VERIFICATION_POSITIVE_INTEGER){
-								upper = Long.toString(numericValueInfo.getThresholdUpperLimit().longValue());
-							}
-							else{
-								upper = Double.toString(numericValueInfo.getThresholdUpperLimit());
-							}
-							this.m_textValue1Warn.setText(lower);
-							this.m_textValue2Warn.setText(upper);
+						else{
+							lower = Double.toString(numericValueInfo.getThresholdLowerLimit());
 						}
+						if(m_inputVerifyType2  == INPUT_VERIFICATION_INTEGER_NUMBER ||
+								m_inputVerifyType2  == INPUT_VERIFICATION_POSITIVE_INTEGER){
+							upper = Long.toString(numericValueInfo.getThresholdUpperLimit().longValue());
+						}
+						else{
+							upper = Double.toString(numericValueInfo.getThresholdUpperLimit());
+						}
+						this.m_textValue1Info.setText(lower);
+						this.m_textValue2Info.setText(upper);
+					} else if(PriorityConstant.TYPE_WARNING ==  numericValueInfo.getPriority()){
+						String lower = "";
+						String upper = "";
+						if(m_inputVerifyType1  == INPUT_VERIFICATION_INTEGER_NUMBER ||
+								m_inputVerifyType1  == INPUT_VERIFICATION_POSITIVE_INTEGER){
+							lower = Long.toString(numericValueInfo.getThresholdLowerLimit().longValue());
+						}
+						else{
+							lower = Double.toString(numericValueInfo.getThresholdLowerLimit());
+						}
+						if(m_inputVerifyType2  == INPUT_VERIFICATION_INTEGER_NUMBER ||
+								m_inputVerifyType2  == INPUT_VERIFICATION_POSITIVE_INTEGER){
+							upper = Long.toString(numericValueInfo.getThresholdUpperLimit().longValue());
+						}
+						else{
+							upper = Double.toString(numericValueInfo.getThresholdUpperLimit());
+						}
+						this.m_textValue1Warn.setText(lower);
+						this.m_textValue2Warn.setText(upper);
 					}
 				}
 			}
@@ -867,7 +842,6 @@ public class NumericValueInfoComposite extends Composite {
 		valueList.add(valueUnknown);
 
 		List<MonitorNumericValueInfo> valueInfoList = info.getNumericValueInfo();
-		valueInfoList.clear();
 		valueInfoList.addAll(valueList);
 
 		return null;
@@ -903,7 +877,7 @@ public class NumericValueInfoComposite extends Composite {
 		Label label = new Label(parent, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "priority", label);
 		GridData gridData = new GridData();
-		gridData.horizontalSpan = 2;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -942,6 +916,7 @@ public class NumericValueInfoComposite extends Composite {
 
 		MonitorNumericValueInfo value = new MonitorNumericValueInfo();
 		value.setMonitorId(info.getMonitorId());
+		value.setMonitorNumericType(m_monitorNumericType);
 		value.setPriority(Integer.valueOf(priority));
 
 		return value;

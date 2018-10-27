@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.factory;
@@ -25,6 +18,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.scheduler.TriggerSchedulerException;
 import com.clustercontrol.commons.util.EmptyJpaTransactionCallback;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.MonitorNotFound;
@@ -82,7 +76,9 @@ public class ModifySchedule {
 				try {
 					// 監視または収集フラグが有効な設定のみスケジュール登録
 					if(entity.getMonitorFlg()
-							|| entity.getCollectorFlg() ){
+							|| entity.getCollectorFlg()
+							|| entity.getPredictionFlg()
+							|| entity.getChangeFlg()){
 						updateSchedule(entity, true);
 					}
 				} catch (Exception e) {
@@ -120,30 +116,33 @@ public class ModifySchedule {
 		m_log.debug("updateSchedule() : monitorId=" + monitorId);
 
 		MonitorInfo entity = null;
-		try {
-			entity = QueryUtil.getMonitorInfoPK_NONE(monitorId);
-		} catch (MonitorNotFound e) {
-			String msg = "updateSchedule() found no scheduleJob : monitorId = " + monitorId;
-			TriggerSchedulerException e1 = new TriggerSchedulerException(msg);
-			throw new HinemosUnknown(msg, e1);
-		} catch (Exception e) {
-			String msg = "updateSchedule() scheduleJob : monitorId = " + monitorId + e.getClass().getSimpleName() + ", " + e.getMessage();
-			m_log.warn(msg, e);
-			throw new HinemosUnknown(msg, e);
-		}
-		
-		final MonitorInfo entityCopy = entity;
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		jtm.addCallback(new EmptyJpaTransactionCallback() {
-			@Override
-			public void postCommit() {
-				try {
-					updateSchedule(entityCopy, false);
-				} catch (HinemosUnknown e) {
-					m_log.error(e);
-				}
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+
+			try {
+				entity = QueryUtil.getMonitorInfoPK_NONE(monitorId);
+			} catch (MonitorNotFound e) {
+				String msg = "updateSchedule() found no scheduleJob : monitorId = " + monitorId;
+				TriggerSchedulerException e1 = new TriggerSchedulerException(msg);
+				throw new HinemosUnknown(msg, e1);
+			} catch (Exception e) {
+				String msg = "updateSchedule() scheduleJob : monitorId = " + monitorId + e.getClass().getSimpleName() + ", " + e.getMessage();
+				m_log.warn(msg, e);
+				throw new HinemosUnknown(msg, e);
 			}
-		});
+			
+			final MonitorInfo entityCopy = entity;
+			jtm.addCallback(new EmptyJpaTransactionCallback() {
+				@Override
+				public void postCommit() {
+					try {
+						updateSchedule(entityCopy, false);
+					} catch (HinemosUnknown e) {
+						m_log.error(e);
+					}
+				}
+			});
+		}
 	}
 
 	private void updateSchedule(MonitorInfo entity, boolean isInitManager) throws HinemosUnknown {
@@ -187,12 +186,15 @@ public class ModifySchedule {
 				
 				// SimpleTrigger でジョブをスケジューリング登録
 				// 監視も収集も無効の場合、スケジューラには登録しない
-				if (entity.getMonitorFlg() || entity.getCollectorFlg()) {
+				if (entity.getMonitorFlg() 
+						|| entity.getCollectorFlg()
+						|| entity.getPredictionFlg()
+						|| entity.getChangeFlg()) {
 					SchedulerPlugin.scheduleSimpleJob(
 							SchedulerType.RAM,
 							monitorId,
 							monitorTypeId,
-							calcSimpleTriggerStartTime(interval, entity.getDelayTime()),
+							calcSimpleTriggerStartTime(interval, entity.getDelayTime(), isInitManager),
 							interval,
 							true,
 							MonitorRunManagementBean.class.getName(),
@@ -225,18 +227,19 @@ public class ModifySchedule {
 	 */
 	protected void deleteSchedule(final String monitorTypeId, final String monitorId) throws HinemosUnknown {
 		m_log.debug("deleteSchedule() : type =" + monitorTypeId + ", id=" + monitorId);
-		
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		jtm.addCallback(new EmptyJpaTransactionCallback() {
-			@Override
-			public void postCommit() {
-				try {
-					SchedulerPlugin.deleteJob(SchedulerType.RAM, monitorId, monitorTypeId);
-				} catch (HinemosUnknown e) {
-					m_log.error(e);
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			jtm.addCallback(new EmptyJpaTransactionCallback() {
+				@Override
+				public void postCommit() {
+					try {
+						SchedulerPlugin.deleteJob(SchedulerType.RAM, monitorId, monitorTypeId);
+					} catch (HinemosUnknown e) {
+						m_log.error(e);
+					}
 				}
-			}
-		});
+			});
+		}
 	}
 
 //	/**
@@ -267,11 +270,16 @@ public class ModifySchedule {
 	 * スケジュール開始時刻を計算します
 	 * @param intervalSec 実行間隔（秒）
 	 * @param delayTimeSec 監視・ノード固有のディレイ（秒）
+	 * @param isInitManager 起動直後の初期化のフラグ
 	 * @return 開始時刻のエポックタイム（ミリ秒）
 	 */
-	public static long calcSimpleTriggerStartTime(int intervalSec, int delayTimeSec){
+	public static long calcSimpleTriggerStartTime(int intervalSec, int delayTimeSec, boolean isInitManager){
 		// 再起動時も常に同じタイミングでQuartzのTriggerが起動されるようにstartTimeを設定する
 		long now = HinemosTime.currentTimeMillis() + 1000l; // pauseFlag が trueの場合、起動させないように実行開始時刻を少し遅らせる。
+		if (isInitManager) {
+			// 起動直後の場合はスケジューラ有効になるまでスケジューリングしないように実行開始時刻を遅らせる。
+			now += HinemosPropertyCommon.common_scheduler_startup_delay.getIntegerValue() * 1000;
+		}
 		long intervalMilliSecond = intervalSec * 1000;
 
 		// 1) 現在時刻の直前で、監視間隔の倍数となる時刻を求める
@@ -282,7 +290,7 @@ public class ModifySchedule {
 		long startTimeMillis = roundout + delayTimeSec * 1000;
 
 		// 3) もう一つ前の実行タイミングが（現在時刻+5秒）より後の場合は、そちらをstartTimeとする
-		if((HinemosTime.currentTimeMillis() + 5 * 1000l) < (startTimeMillis - intervalMilliSecond)){
+		if((now + 5 * 1000l) < (startTimeMillis - intervalMilliSecond)){
 			m_log.debug("reset time before : " + new Date(startTimeMillis));
 			startTimeMillis = startTimeMillis - intervalMilliSecond;
 			m_log.debug("reset time after : " + new Date(startTimeMillis));

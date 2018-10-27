@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.calendar.util;
@@ -77,18 +70,6 @@ public class CalendarUtil {
 	 * @return true:稼動、false:非稼動
 	 */
 	public static Boolean isRun(CalendarInfo info, Date date) {
-		return getCalendarRunDetailInfo(info, date, new ArrayList<CalendarDetailInfo>());
-	}
-
-	/**
-	 * 指定された日付に適応するCalendarDetailInfoのリストを引数のretDetailListに入れます。<br>
-	 * 指定日が稼動ならtrue、非稼動ならfalseを返します。<br>
-	 * 
-	 * @param info
-	 * @param date
-	 * @return
-	 */
-	public static boolean getCalendarRunDetailInfo(CalendarInfo info, Date date, ArrayList<CalendarDetailInfo> retDetailList) {
 		if (info == null) {
 			return true; // カレンダが設定されていない場合はtrue
 		}
@@ -99,7 +80,7 @@ public class CalendarUtil {
 		Long timeFrom = info.getValidTimeFrom();
 		Long timeTo = info.getValidTimeTo();
 		// 有効期間外の場合はfalse
-		if (date.getTime() < timeFrom || timeTo < date.getTime()) {
+		if (date.getTime() < timeFrom || timeTo <= date.getTime()) {
 			return false;
 		}
 		
@@ -108,9 +89,8 @@ public class CalendarUtil {
 			if (isRunByDetailDateTime(detailInfo3, date)) {
 				m_log.trace("振り替え情報前にhitした description:" + detailInfo3.getDescription() + ", operationFlg:" + detailInfo3.isOperateFlg());
 				m_log.trace("CalendarDetailInfo.toString = " + detailInfo3.toString());
-				retDetailList.add(detailInfo3);
 				if (detailInfo3.isOperateFlg()) {
-					return true;
+					return true; // カレンダが設定されていない場合はtrue
 				} else {
 					return false;
 				}
@@ -122,6 +102,7 @@ public class CalendarUtil {
 					if (!detailInfo.isSubstituteFlg()) {
 						continue;
 					}
+					checkEnd:
 					for (int limit = 1; limit <= detailInfo.getSubstituteLimit(); limit++) {
 						Date substituteDate = new Date(date.getTime() - (parseDate(detailInfo.getSubstituteTime()) + HinemosTime.getTimeZoneOffset()) *limit);
 						m_log.trace("SubstituteDate:" + substituteDate + ", description:" + detailInfo.getDescription() + ", limit:" + limit);
@@ -130,20 +111,19 @@ public class CalendarUtil {
 							if (detailInfo.equals(detailInfo2)) {
 								if (!findhikadou) {
 									m_log.trace("非稼動チェックでヒットしなかった、振り替えない。return false.");
-									return false;
+									break checkEnd;
 								} else {
 									if (!isRunByDetailDateTime(detailInfo2, substituteDate)) {
 										m_log.trace("対象日は非稼動だ、振り替えにはヒットしなかった。次の候補日チェックする。フラグおろす。break.");
-										retDetailList.clear();
 										findhikadou = false;
 										break;
 									} else {
-										if (substituteDate.getTime() < timeFrom || timeTo < substituteDate.getTime()) {
+										if (substituteDate.getTime() < timeFrom || timeTo <= substituteDate.getTime()) {
 											m_log.trace("対象日は非稼動だ、振り替えにもhitした、でも振替日は有効期間外 return false.");
 											return false;
 										}
 										m_log.trace("対象日は非稼動だ、振り替えにもhitした、振り替える return true.");
-										retDetailList.add(detailInfo2);
+										m_log.trace("substituteDate:" + substituteDate.toString());
 										return true;
 									}
 								}

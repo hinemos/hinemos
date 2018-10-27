@@ -1,0 +1,35 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"ScheduleList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Name",
+			"OwnerRoleId",
+			"JobunitId",
+			"JobId",
+			"CalId",
+			"ValidFlg",
+			"ScheduleData.ScheduleType",
+			"ScheduleData.Week",
+			"ScheduleData.Hour",
+			"ScheduleData.Minute",
+			"ScheduleData.FromXminutes",
+			"ScheduleData.EveryXminutes",
+			"JobRuntimeInfo",
+			"JobRuntimeInfo.ParamType",
+			"JobRuntimeInfo.Description",
+			"JobRuntimeInfo.DefaultValue",
+			"JobRuntimeInfo.RequiredFlg",
+			"JobRuntimeInfo.JobRuntimeDetailInfo",
+			"JobRuntimeInfo.JobRuntimeDetailInfo.*"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"ScheduleInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

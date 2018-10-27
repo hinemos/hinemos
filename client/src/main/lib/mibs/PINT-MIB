@@ -1,0 +1,450 @@
+PINT-MIB DEFINITIONS ::= BEGIN
+
+         IMPORTS
+          OBJECT-TYPE, Counter32, MODULE-IDENTITY, mib-2
+         FROM   SNMPv2-SMI
+         TEXTUAL-CONVENTION
+         FROM SNMPv2-TC
+         MODULE-COMPLIANCE, OBJECT-GROUP
+         FROM SNMPv2-CONF
+         sysApplInstallPkgEntry
+         FROM SYSAPPL-MIB
+         SnmpAdminString
+         FROM SNMP-FRAMEWORK-MIB;  -- RFC 2571 [2]
+
+         pintMib MODULE-IDENTITY
+         LAST-UPDATED "200102010000Z" -- 1 Feb 2001
+
+ORGANIZATION "IETF PINT Working Group"
+
+
+
+::= { mib-2 93 }
+
+PintServiceType ::= TEXTUAL-CONVENTION
+        STATUS      current
+        SYNTAX  INTEGER {
+                r2C(1),     -- Request-to-Talk
+                r2F(2),     -- Request-to-Fax
+                r2FB(3),    -- Request-to-Fax-Back
+                r2HC(4)     -- Request-to-Hear-Content
+        }
+
+PintPerfStatPeriod ::= TEXTUAL-CONVENTION
+STATUS      current
+SYNTAX  INTEGER {
+last30sec(1),   -- Performance Statics for the last 30 sec
+
+
+
+
+
+last15min(2),   --    15 min
+last24Hr(3),    --    24 Hour
+sinceReboot(4)  --    Since the time the pint server was
+}
+
+pintServerConfig        OBJECT IDENTIFIER ::= { pintMib 1 }
+pintServerMonitor       OBJECT IDENTIFIER ::= { pintMib 2 }
+pintMibConformance      OBJECT IDENTIFIER ::= { pintMib 3 }
+
+
+pintReleaseNumber OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS read-only
+    STATUS current
+    ::= { pintServerConfig 1 }
+
+pintSysContact           OBJECT-TYPE
+    SYNTAX        SnmpAdminString
+    MAX-ACCESS read-write
+    STATUS current
+    ::= { pintServerConfig 2 }
+
+pintApplInstallPkgTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PintApplInstallPkgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pintServerConfig 3 }
+
+pintApplInstallPkgEntry OBJECT-TYPE
+    SYNTAX      PintApplInstallPkgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    AUGMENTS { sysApplInstallPkgEntry }
+    ::= { pintApplInstallPkgTable 1 }
+
+PintApplInstallPkgEntry ::= SEQUENCE {
+
+
+
+
+
+pintApplInstallPkgDescription    SnmpAdminString
+}
+
+pintApplInstallPkgDescription OBJECT-TYPE
+    SYNTAX        SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS        current
+    ::= { pintApplInstallPkgEntry 1 }
+
+pintRegisteredGatewayTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PintRegisteredGatewayEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pintServerConfig 4 }
+
+pintRegisteredGatewayEntry OBJECT-TYPE
+    SYNTAX      PintRegisteredGatewayEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+AUGMENTS { sysApplInstallPkgEntry  }
+    ::= { pintRegisteredGatewayTable 1 }
+
+PintRegisteredGatewayEntry ::= SEQUENCE {
+pintRegisteredGatewayName       SnmpAdminString,
+pintRegisteredGatewayDescription SnmpAdminString
+}
+
+pintRegisteredGatewayName OBJECT-TYPE
+    SYNTAX        SnmpAdminString
+    MAX-ACCESS read-only
+    STATUS        current
+    ::= { pintRegisteredGatewayEntry 1 }
+
+pintRegisteredGatewayDescription OBJECT-TYPE
+    SYNTAX        SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS        current
+    ::= { pintRegisteredGatewayEntry 2 }
+
+
+
+
+
+
+pintServerGlobalPerf    OBJECT IDENTIFIER ::= {pintServerMonitor 1 }
+pintServerClientPerf    OBJECT IDENTIFIER ::= {pintServerMonitor 2 }
+pintServerUserIdPerf    OBJECT IDENTIFIER ::= {pintServerMonitor 3 }
+pintServerGatewayPerf   OBJECT IDENTIFIER ::= {pintServerMonitor 4 }
+
+pintServerGlobalStatsTable      OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PintServerGlobalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pintServerGlobalPerf 1 }
+
+pintServerGlobalStatsEntry OBJECT-TYPE
+    SYNTAX      PintServerGlobalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {pintServerServiceTypeIndex, pintServerPerfStatPeriodIndex}
+    ::= { pintServerGlobalStatsTable 1 }
+
+PintServerGlobalStatsEntry      ::=  SEQUENCE {
+pintServerServiceTypeIndex                           PintServiceType,
+pintServerPerfStatPeriodIndex                        PintPerfStatPeriod,
+pintServerGlobalCallsReceived                        Counter32,
+pintServerGlobalSuccessfulCalls                      Counter32,
+pintServerGlobalDisconnectedCalls                    Counter32,
+pintServerGlobalDisCUAutFCalls                       Counter32,
+pintServerGlobalDisServProbCalls                     Counter32,
+pintServerGlobalDisGatProbCalls         Counter32
+}
+
+pintServerServiceTypeIndex OBJECT-TYPE
+    SYNTAX     PintServiceType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pintServerGlobalStatsEntry 1 }
+
+pintServerPerfStatPeriodIndex OBJECT-TYPE
+    SYNTAX     PintPerfStatPeriod
+    MAX-ACCESS not-accessible
+
+
+
+
+
+    STATUS     current
+    ::= { pintServerGlobalStatsEntry 2 }
+
+pintServerGlobalCallsReceived OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerGlobalStatsEntry 3 }
+
+pintServerGlobalSuccessfulCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerGlobalStatsEntry 4 }
+
+pintServerGlobalDisconnectedCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerGlobalStatsEntry 5 }
+
+pintServerGlobalDisCUAutFCalls
+OBJECT-TYPE
+SYNTAX     Counter32
+MAX-ACCESS read-only
+STATUS     current
+::= { pintServerGlobalStatsEntry 6 }
+
+pintServerGlobalDisServProbCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerGlobalStatsEntry 7 }
+
+
+
+
+
+pintServerGlobalDisGatProbCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerGlobalStatsEntry 8 }
+
+pintServerClientStatsTable      OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PintServerClientStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pintServerClientPerf 1 }
+
+pintServerClientStatsEntry OBJECT-TYPE
+    SYNTAX      PintServerClientStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {pintServerClientAddress, pintServerServiceTypeIndex,
+    pintServerPerfStatPeriodIndex}
+    ::= { pintServerClientStatsTable 1 }
+
+PintServerClientStatsEntry      ::=  SEQUENCE {
+pintServerClientAddress                              SnmpAdminString,
+pintServerClientCallsReceived                           Counter32,
+pintServerClientSuccessfulCalls                         Counter32,
+pintServerClientDisconnectedCalls                       Counter32,
+pintServerClientDisCAutFCalls                           Counter32,
+pintServerClientDisEFProbCalls                          Counter32
+}
+
+pintServerClientAddress OBJECT-TYPE
+    SYNTAX     SnmpAdminString
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pintServerClientStatsEntry 1 }
+
+
+
+
+
+
+pintServerClientCallsReceived OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerClientStatsEntry 2 }
+
+pintServerClientSuccessfulCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerClientStatsEntry 3 }
+
+pintServerClientDisconnectedCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerClientStatsEntry 4 }
+
+pintServerClientDisCAutFCalls
+OBJECT-TYPE
+SYNTAX     Counter32
+MAX-ACCESS read-only
+STATUS     current
+::= { pintServerClientStatsEntry 5 }
+
+pintServerClientDisEFProbCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerClientStatsEntry 6 }
+
+pintServerUserIdStatsTable      OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PintServerUserIdStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    ::= { pintServerUserIdPerf 1 }
+
+pintServerUserIdStatsEntry OBJECT-TYPE
+    SYNTAX      PintServerUserIdStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {pintServerUserIdName, pintServerServiceTypeIndex,
+    pintServerPerfStatPeriodIndex}
+    ::= { pintServerUserIdStatsTable 1 }
+
+PintServerUserIdStatsEntry      ::=  SEQUENCE {
+pintServerUserIdName                                   SnmpAdminString,
+pintServerUserIdCallsReceived                           Counter32,
+pintServerUserIdSuccessfulCalls                         Counter32,
+pintServerUserIdDisconnectedCalls                       Counter32,
+pintServerUserIdDiscUIdAFailCalls                       Counter32,
+pintServerUserIdEFProbCalls                             Counter32
+}
+
+pintServerUserIdName OBJECT-TYPE
+    SYNTAX     SnmpAdminString (SIZE(0..64))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { pintServerUserIdStatsEntry 1 }
+
+pintServerUserIdCallsReceived OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerUserIdStatsEntry 2 }
+
+
+
+
+
+
+pintServerUserIdSuccessfulCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerUserIdStatsEntry 3 }
+
+pintServerUserIdDisconnectedCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerUserIdStatsEntry 4 }
+
+pintServerUserIdDiscUIdAFailCalls
+OBJECT-TYPE
+SYNTAX     Counter32
+MAX-ACCESS read-only
+STATUS     current
+::= { pintServerUserIdStatsEntry 5 }
+
+pintServerUserIdEFProbCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerUserIdStatsEntry 6 }
+
+pintServerGatewayStatsTable     OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PintServerGatewayStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pintServerGatewayPerf 1 }
+
+pintServerGatewayStatsEntry OBJECT-TYPE
+    SYNTAX      PintServerGatewayStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+
+    INDEX { pintRegisteredGatewayName, pintServerServiceTypeIndex,
+    pintServerPerfStatPeriodIndex }
+    ::= { pintServerGatewayStatsTable 1 }
+
+PintServerGatewayStatsEntry     ::=  SEQUENCE {
+pintServerGatewayCallsReceived                  Counter32,
+pintServerGatewaySuccessfulCalls                Counter32,
+pintServerGatewayDisconnectedCalls              Counter32
+}
+
+pintServerGatewayCallsReceived OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerGatewayStatsEntry 1 }
+
+pintServerGatewaySuccessfulCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerGatewayStatsEntry 2 }
+
+pintServerGatewayDisconnectedCalls OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { pintServerGatewayStatsEntry 3 }
+
+
+
+
+
+
+
+
+pintMibCompliances OBJECT IDENTIFIER ::= { pintMibConformance 1 }
+pintMibGroups      OBJECT IDENTIFIER ::= { pintMibConformance 2 }
+
+pintMibCompliance MODULE-COMPLIANCE
+STATUS  current
+MODULE  -- this module
+MANDATORY-GROUPS { pintMibConfigGroup, pintMibMonitorGroup }
+::= { pintMibCompliances 1 }
+
+pintMibConfigGroup OBJECT-GROUP
+OBJECTS {
+pintReleaseNumber,
+pintSysContact,
+pintApplInstallPkgDescription,
+pintRegisteredGatewayName,
+pintRegisteredGatewayDescription
+}
+STATUS  current
+::= { pintMibGroups 1 }
+
+pintMibMonitorGroup OBJECT-GROUP
+OBJECTS {
+pintServerGlobalCallsReceived,
+pintServerGlobalSuccessfulCalls,
+pintServerGlobalDisconnectedCalls,
+pintServerGlobalDisCUAutFCalls,
+pintServerGlobalDisServProbCalls,
+pintServerGlobalDisGatProbCalls,
+pintServerClientCallsReceived,
+pintServerClientSuccessfulCalls,
+pintServerClientDisconnectedCalls,
+pintServerClientDisCAutFCalls,
+pintServerClientDisEFProbCalls,
+pintServerUserIdCallsReceived,
+pintServerUserIdSuccessfulCalls,
+pintServerUserIdDisconnectedCalls,
+pintServerUserIdDiscUIdAFailCalls,
+pintServerUserIdEFProbCalls,
+
+
+
+
+
+pintServerGatewayCallsReceived,
+pintServerGatewaySuccessfulCalls,
+pintServerGatewayDisconnectedCalls
+}
+STATUS  current
+::= { pintMibGroups 2 }
+
+END

@@ -1,0 +1,28 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"paramId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"JobCommandParamMst_value"}
+	]},
+
+	{
+	"propName":"jobStandardOutputFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobCommandParamMst_jobStandardOutputFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]}
+]
+}

@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.collect.dialog;
@@ -54,6 +47,7 @@ import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.client.ui.util.FileDownloader;
 import com.clustercontrol.collect.action.RecordDataWriter;
 import com.clustercontrol.collect.bean.SummaryTypeMessage;
+import com.clustercontrol.collect.util.CollectGraphUtil.CollectFacilityDataInfo;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
@@ -76,20 +70,20 @@ public class ExportDialog extends Dialog {
 	// Export Setting
 	private RecordDataWriter writer;
 	
-	private TreeMap<String, String> m_managerFacilityIdNameMap = null;
+	private TreeMap<String, CollectFacilityDataInfo> m_managerFacilityDataInfoMap = null;
 	private Integer m_summaryType = null;
 	private List<CollectKeyInfoPK> m_collectKeyInfoPkList = null;	
 	private TreeMap<String, List<String>> m_targetManagerFacilityMap = null;
-	private static final String SQUARE_SEPARATOR = "#";
+	private static final String SQUARE_SEPARATOR = "\u2029";
 	/**
 	 * コンストラクタ
 	 */
-	public ExportDialog(Shell parent, TreeMap<String, String> managerFacilityIdNameMap,
+	public ExportDialog(Shell parent, TreeMap<String, CollectFacilityDataInfo> managerFacilityDataInfoMap,
 			Integer summaryType,
 			List<CollectKeyInfoPK> targetCollectKeyInfoList,
 			TreeMap<String, List<String>> managerFacilityIdMap){
 		super(parent);
-		this.m_managerFacilityIdNameMap = managerFacilityIdNameMap;
+		this.m_managerFacilityDataInfoMap = managerFacilityDataInfoMap;
 		this.m_summaryType = summaryType;
 		this.m_collectKeyInfoPkList = targetCollectKeyInfoList;
 		this.m_targetManagerFacilityMap =managerFacilityIdMap;
@@ -161,7 +155,7 @@ public class ExportDialog extends Dialog {
 		
 		// マネージャ名
 		String managerName = "";
-		for (Map.Entry<String, String> entry : m_managerFacilityIdNameMap.entrySet()) {
+		for (Map.Entry<String, CollectFacilityDataInfo> entry : m_managerFacilityDataInfoMap.entrySet()) {
 			managerName = entry.getKey().substring(0, entry.getKey().lastIndexOf(SQUARE_SEPARATOR));
 			break;// マネージャは1件しかありえないため、即break
 		}
@@ -181,9 +175,9 @@ public class ExportDialog extends Dialog {
 		Label facilityLabel = new Label(composite, SWT.RIGHT | SWT.WRAP);
 		facilityLabel.setText(Messages.getString("facility.name") + " : ");
 		org.eclipse.swt.widgets.List facilityList = new org.eclipse.swt.widgets.List(composite, SWT.V_SCROLL | SWT.H_SCROLL | SWT.LEFT | SWT.BORDER);
-		for (Map.Entry<String, String> entry : m_managerFacilityIdNameMap.entrySet()) {
+		for (Map.Entry<String, CollectFacilityDataInfo> entry : m_managerFacilityDataInfoMap.entrySet()) {
 			String facilityId = entry.getKey().split(SQUARE_SEPARATOR)[entry.getKey().split(SQUARE_SEPARATOR).length - 1];
-			String facilityName = entry.getValue();
+			String facilityName = entry.getValue().getName();
 			facilityList.add(facilityName + "(" + facilityId + ")");
 		}
 		GridData gridData_facility = new GridData(GridData.FILL_BOTH);
@@ -243,7 +237,7 @@ public class ExportDialog extends Dialog {
 					String filePath = this.saveDialog.open();
 					if( filePath != null ){
 						m_log.debug("filePath = " + filePath + ", defaultFileName = " + defaultFileName);
-						output(m_managerFacilityIdNameMap, m_summaryType, m_collectKeyInfoPkList, m_targetManagerFacilityMap, 
+						output(m_managerFacilityDataInfoMap, m_summaryType, m_collectKeyInfoPkList, m_targetManagerFacilityMap, 
 								headerFlag, filePath, defaultFileName, defaultDateStr);
 					}
 				}
@@ -251,7 +245,7 @@ public class ExportDialog extends Dialog {
 				/**
 				 * Output
 				 */
-				protected void output(TreeMap<String,String> managerFacilityIdNameMap,
+				protected void output(TreeMap<String,CollectFacilityDataInfo> managerFacilityDataInfoMap,
 						Integer summaryType,
 						List<CollectKeyInfoPK> targetCollectKeyInfoList,
 						TreeMap<String, List<String>> targetManagerFacilityMap,
@@ -263,7 +257,7 @@ public class ExportDialog extends Dialog {
 					// DataWriterへの入力
 					// 書き込み準備
 					writer = new RecordDataWriter(
-							managerFacilityIdNameMap,
+							managerFacilityDataInfoMap,
 							summaryType,
 							targetCollectKeyInfoList,
 							targetManagerFacilityMap,

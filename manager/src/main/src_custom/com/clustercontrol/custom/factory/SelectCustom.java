@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.custom.factory;
@@ -29,6 +22,7 @@ import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
@@ -103,10 +97,11 @@ public class SelectCustom extends SelectMonitor {
 		m_log.info("refresh cache");
 		
 		long startTime = HinemosTime.currentTimeMillis();
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			_lock.writeLock();
 			
-			new JpaTransactionManager().getEntityManager().clear();
+			HinemosEntityManager em = jtm.getEntityManager();
+			em.clear();
 			ArrayList<MonitorInfo> customCache = new SelectCustom().getMonitorListObjectPrivilegeModeNONE(HinemosModuleConstant.MONITOR_CUSTOM_N);
 			customCache.addAll(new SelectCustom().getMonitorListObjectPrivilegeModeNONE(HinemosModuleConstant.MONITOR_CUSTOM_S));
 			storeCache(customCache);
@@ -163,7 +158,10 @@ public class SelectCustom extends SelectMonitor {
 
 			for (MonitorInfo info : monitorList) {
 				monitorId = info.getMonitorId();
-				if (!info.getMonitorFlg() && !info.getCollectorFlg()) {
+				if (!info.getMonitorFlg() 
+						&& !info.getCollectorFlg()
+						&& !info.getPredictionFlg()
+						&& !info.getChangeFlg()) {
 					if (m_log.isDebugEnabled())
 						m_log.debug("command monitor is not enabled. (monitorId = " + info.getMonitorId() + ", facilityId = " + requestedFacilityId + ")");
 					continue;

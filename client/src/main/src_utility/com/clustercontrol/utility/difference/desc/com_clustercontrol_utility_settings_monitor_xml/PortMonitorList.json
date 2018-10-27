@@ -1,0 +1,36 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"PortMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"PortInfo.ServiceId",
+			"PortInfo.PortNo",
+			"PortInfo.RunCount",
+			"PortInfo.RunInterval",
+			"PortInfo.Timeout",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"StringValue"
+		]
+	}
+
+],
+"props":[
+	{
+	"propName":"PortMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

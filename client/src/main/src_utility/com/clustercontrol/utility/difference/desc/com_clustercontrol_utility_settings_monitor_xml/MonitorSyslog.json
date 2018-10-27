@@ -1,0 +1,27 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitor",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Ignore", "propNames":["itemName", "measure"]}
+	]},
+
+	{
+	"propName":"stringValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"orderNo"},
+		{"type":"Column", "columnName":"MonitorStringValueInfo_stringValue"},
+		{"type":"Ignore", "propNames":["orderNo"]}
+	]},
+
+	{
+	"propName":"SyslogInfo",
+	"annotations":[
+		{"type":"Ignore", "propNames":["MonitorId", "MonitorTypeId"]}
+	]}
+]
+}

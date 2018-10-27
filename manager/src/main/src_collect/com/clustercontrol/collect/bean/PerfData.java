@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.collect.bean;
@@ -33,6 +26,8 @@ public class PerfData implements Serializable {
 	private final String facilityId;    //ファシリティID
 	private final String itemName;      //収集表示名
 	private final Double value;         //性能値
+	private final Double average;         //平均値
+	private final Double standardDeviation;  //標準偏差
 	private final int errorType;        //値が不正な場合のエラーパターン
 	private final String displayName;   //ディスプレイ名
 
@@ -41,15 +36,20 @@ public class PerfData implements Serializable {
 	 * @param facilityId
 	 * @param itemName
 	 * @param value
+	 * @param average
+	 * @param standardDeviation
 	 * @param errorType
 	 * @param displayName
 	 */
-	public PerfData(String facilityId, String itemName, Double value, int errorType, String displayName) {
+	public PerfData(String facilityId, String itemName, Double value, Double average, 
+			Double standardDeviation, int errorType, String displayName) {
 		super();
 
 		this.facilityId = facilityId;
 		this.itemName = itemName;
 		this.value = value;
+		this.average = average;
+		this.standardDeviation = standardDeviation;
 		this.errorType = errorType;
 		this.displayName = displayName;
 	}
@@ -76,6 +76,23 @@ public class PerfData implements Serializable {
 	 */
 	public Double getValue() {
 		return value;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public Double getAverage() {
+		return average;
+	}
+
+
+	/**
+	 * 
+	 * @return
+	 */
+	public Double getStandardDeviation() {
+		return standardDeviation;
 	}
 
 	/**

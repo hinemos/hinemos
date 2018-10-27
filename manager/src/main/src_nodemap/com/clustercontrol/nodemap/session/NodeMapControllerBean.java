@@ -1,14 +1,9 @@
 /*
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.nodemap.session;
@@ -34,6 +29,7 @@ import com.clustercontrol.accesscontrol.util.ObjectPrivilegeUtil;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.BgFileNotFound;
@@ -43,7 +39,6 @@ import com.clustercontrol.fault.IconFileNotFound;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.NodeMapNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.nodemap.NodeMapException;
 import com.clustercontrol.nodemap.bean.Association;
 import com.clustercontrol.nodemap.bean.FacilityElement;
@@ -62,8 +57,6 @@ import com.clustercontrol.nodemap.util.QueryUtil;
 import com.clustercontrol.nodemap.util.SearchConnectionExecutor;
 import com.clustercontrol.nodemap.util.SearchConnectionProperties;
 import com.clustercontrol.ping.bean.PingResult;
-import com.clustercontrol.ping.bean.PingRunCountConstant;
-import com.clustercontrol.ping.bean.PingRunIntervalConstant;
 import com.clustercontrol.ping.factory.RunMonitorPing;
 import com.clustercontrol.ping.util.ReachAddressFping;
 import com.clustercontrol.poller.impl.Snmp4jPollerImpl;
@@ -258,15 +251,25 @@ public class NodeMapControllerBean {
 				try {
 					mapBgImageEntity = QueryUtil.getMapBgImagePK(map.getBgName());
 				} catch (BgFileNotFound e) {
+					//存在しないファイル名の場合は登録を中断
+					String[] args = { map.getBgName() };
+					BgFileNotFound bgFileNotFound =  new BgFileNotFound(
+							Messages.getString("SCOPE") + " " +map.getMapId() +". " +
+							Messages.getString("NODEMAP_FILE_NAME_NOTHING", args));
+					throw bgFileNotFound;
 				}
 				try {
 					bean = QueryUtil.getMapInfoPK(map.getMapId());
 					bean.relateToMapBgImageEntity(mapBgImageEntity);
 				} catch (NodeMapNotFound e) {
 					// 無い場合は生成
-					bean = new MapInfoEntity(map.getMapId(), mapBgImageEntity);
+					bean = new MapInfoEntity(map.getMapId());
+					em.persist(bean);
+					bean.relateToMapBgImageEntity(mapBgImageEntity);
 				}
 			} catch (EntityExistsException e) {
+				throw new HinemosUnknown(e.getMessage(), e);
+			} catch (BgFileNotFound e) {
 				throw new HinemosUnknown(e.getMessage(), e);
 			} catch (Exception e) {
 				m_log.warn("registerNodeMapModel() MapInfoEntity.create : "
@@ -286,7 +289,9 @@ public class NodeMapControllerBean {
 						posi = QueryUtil.getMapPositionPK(posiPk);
 					} catch (NodeMapNotFound e) {
 						// 無い場合は新たに生成
-						posi = new MapPositionEntity(posiPk, null);
+						posi = new MapPositionEntity(posiPk);
+						em.persist(posi);
+						posi.relateToMapInfoEntity(null);
 					}
 					posi.setX(elemet[i].getX());
 					posi.setY(elemet[i].getY());
@@ -311,7 +316,7 @@ public class NodeMapControllerBean {
 							QueryUtil.getMapAssociationPK(beanPk);
 						} catch (NodeMapNotFound e) {
 							// MapAssociationEntity永続化
-							new MapAssociationEntity(beanPk);
+							em.persist(new MapAssociationEntity(beanPk));
 						}
 					} catch (EntityExistsException e) {
 						throw new HinemosUnknown(e.getMessage(), e);
@@ -646,6 +651,7 @@ public class NodeMapControllerBean {
 			} catch (BgFileNotFound e) {
 				// MapBgImageEntity永続化
 				entity = new MapBgImageEntity(filename);
+				jtm.getEntityManager().persist(entity);
 			}
 			entity.setFiledata(filedata);
 
@@ -806,6 +812,7 @@ public class NodeMapControllerBean {
 				bean = QueryUtil.getMapIconImagePK(filename);
 			} catch (IconFileNotFound e) {
 				bean = new MapIconImageEntity(filename);
+				jtm.getEntityManager().persist(bean);
 			}
 			bean.setFiledata(filedata);
 
@@ -1191,20 +1198,17 @@ public class NodeMapControllerBean {
 		try {
 			// 回数[回](default:1、1～9)
 			String runCountKey = "nodemap.ping.runcount";
-			runCount = HinemosPropertyUtil.getHinemosPropertyNum(
-					runCountKey, Long.valueOf(PingRunCountConstant.TYPE_COUNT_01)).intValue();
+			runCount = HinemosPropertyCommon.nodemap_ping_runcount.getIntegerValue();
 			CommonValidator.validateInt(runCountKey, runCount, 1, 9);
 
 			// 間隔[ms](default:1000、0～5000)
 			String runIntervalKey = "nodemap.ping.runinterval";
-			runInterval = HinemosPropertyUtil.getHinemosPropertyNum(
-					runIntervalKey, Long.valueOf(PingRunIntervalConstant.TYPE_SEC_02)).intValue();
+			runInterval = HinemosPropertyCommon.nodemap_ping_runinterval.getIntegerValue();
 			CommonValidator.validateInt(runIntervalKey, runInterval, 0, 5  * 1000);
 			
 			// タイムアウト[ms](default:5000、1～3600000)
 			String pintTimeoutKey = "nodemap.ping.timeout";
-			pingTimeout = HinemosPropertyUtil.getHinemosPropertyNum(
-					pintTimeoutKey, Long.valueOf(PingRunIntervalConstant.TYPE_SEC_05)).intValue();
+			pingTimeout = HinemosPropertyCommon.nodemap_ping_timeout.getIntegerValue();
 			CommonValidator.validateInt(pintTimeoutKey, pingTimeout, 1, 60 * 60 * 1000);
 		} catch (Exception e) {
 			m_log.warn("pingToFacilityList() : "
@@ -1218,8 +1222,8 @@ public class NodeMapControllerBean {
 		boolean resultTmp = true;
 		ArrayList<String> msgErr = new ArrayList<>();
 		ArrayList<String> msgErrV6 = new ArrayList<>();
-		Hashtable<String, PingResult> fpingResultSet = new Hashtable<String, PingResult>();
-		Hashtable<String, PingResult> fpingResultSetV6 = new Hashtable<String, PingResult>();
+		Hashtable<String, PingResult> fpingResultSet = null;
+		Hashtable<String, PingResult> fpingResultSetV6 = null;
 		
 		RunMonitorPing monitorPing = new RunMonitorPing();
 		//IPv4のホストが在ればfpingを利用して監視

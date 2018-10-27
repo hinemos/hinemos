@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.util;
@@ -123,6 +116,12 @@ public class JobTreeItemUtil {
 		jobWaitRuleInfo.setSkip(false);
 		jobWaitRuleInfo.setSkipEndStatus(EndStatusConstant.TYPE_ABNORMAL);
 		jobWaitRuleInfo.setSkipEndValue(EndStatusConstant.INITIAL_VALUE_NORMAL);
+		jobWaitRuleInfo.setJobRetryFlg(false);
+		jobWaitRuleInfo.setJobRetryEndStatus(EndStatusConstant.INITIAL_VALUE_NORMAL);
+		jobWaitRuleInfo.setJobRetry(10);
+		jobWaitRuleInfo.setExclusiveBranch(false);
+		jobWaitRuleInfo.setExclusiveBranchEndStatus(EndStatusConstant.TYPE_NORMAL);
+		jobWaitRuleInfo.setExclusiveBranchEndValue(EndStatusConstant.INITIAL_VALUE_WARNING);
 
 		// 開始遅延タブ
 		jobWaitRuleInfo.setStartDelay(false);
@@ -151,6 +150,8 @@ public class JobTreeItemUtil {
 		jobWaitRuleInfo.setEndDelaySession(false);
 		jobWaitRuleInfo.setEndDelaySessionValue(1);
 		jobWaitRuleInfo.setEndDelayTime(false);
+		jobWaitRuleInfo.setEndDelayChangeMount(false);
+		jobWaitRuleInfo.setEndDelayChangeMountValue(1D);
 
 		// 多重度タブ
 		jobWaitRuleInfo.setMultiplicityEndValue(EndStatusConstant.INITIAL_VALUE_ABNORMAL);
@@ -196,6 +197,7 @@ public class JobTreeItemUtil {
 				jobCommandInfo.setMessageRetryEndValue(orgInfo.getCommand().getMessageRetryEndValue());
 				jobCommandInfo.setCommandRetry(orgInfo.getCommand().getCommandRetry());
 				jobCommandInfo.setCommandRetryFlg(orgInfo.getCommand().isCommandRetryFlg());
+				jobCommandInfo.setCommandRetryEndStatus(orgInfo.getCommand().getCommandRetryEndStatus());
 				jobCommandInfo.setFacilityID(orgInfo.getCommand().getFacilityID());
 				jobCommandInfo.setProcessingMethod(orgInfo.getCommand().getProcessingMethod());
 				jobCommandInfo.setScope(orgInfo.getCommand().getScope());
@@ -311,6 +313,8 @@ public class JobTreeItemUtil {
 				if (orgInfo.getWaitRule().getEndDelayTimeValue() != null) {
 					jobWaitRuleInfo.setEndDelayTimeValue(orgInfo.getWaitRule().getEndDelayTimeValue());
 				}
+				jobWaitRuleInfo.setEndDelayChangeMount(orgInfo.getWaitRule().isEndDelayChangeMount());
+				jobWaitRuleInfo.setEndDelayChangeMountValue(orgInfo.getWaitRule().getEndDelayChangeMountValue());
 				jobWaitRuleInfo.setMultiplicityNotify(orgInfo.getWaitRule().isMultiplicityNotify());
 				jobWaitRuleInfo.setMultiplicityNotifyPriority(orgInfo.getWaitRule().getMultiplicityNotifyPriority());
 				jobWaitRuleInfo.setMultiplicityOperation(orgInfo.getWaitRule().getMultiplicityOperation());
@@ -318,6 +322,12 @@ public class JobTreeItemUtil {
 				jobWaitRuleInfo.setSkip(orgInfo.getWaitRule().isSkip());
 				jobWaitRuleInfo.setSkipEndStatus(orgInfo.getWaitRule().getSkipEndStatus());
 				jobWaitRuleInfo.setSkipEndValue(orgInfo.getWaitRule().getSkipEndValue());
+				jobWaitRuleInfo.setExclusiveBranch(orgInfo.getWaitRule().isExclusiveBranch());
+				jobWaitRuleInfo.setExclusiveBranchEndStatus(orgInfo.getWaitRule().getExclusiveBranchEndStatus());
+				jobWaitRuleInfo.setExclusiveBranchEndValue(orgInfo.getWaitRule().getExclusiveBranchEndValue());
+				jobWaitRuleInfo.setJobRetryFlg(orgInfo.getWaitRule().isJobRetryFlg());
+				jobWaitRuleInfo.setJobRetryEndStatus(orgInfo.getWaitRule().getJobRetryEndStatus());
+				jobWaitRuleInfo.setJobRetry(orgInfo.getWaitRule().getJobRetry());
 				jobWaitRuleInfo.setStartDelay(orgInfo.getWaitRule().isStartDelay());
 				jobWaitRuleInfo.setStartDelayConditionType(orgInfo.getWaitRule().getStartDelayConditionType());
 				jobWaitRuleInfo.setStartDelayNotify(orgInfo.getWaitRule().isStartDelayNotify());
@@ -351,9 +361,12 @@ public class JobTreeItemUtil {
 						jobObjectInfo.setDecisionValue01(item.getDecisionValue01());
 						jobObjectInfo.setDecisionValue02(item.getDecisionValue02());
 						jobObjectInfo.setDecisionCondition(item.getDecisionCondition());
+						jobObjectInfo.setCrossSessionRange(item.getCrossSessionRange());
 						jobWaitRuleInfo.getObject().add(jobObjectInfo);
 					}
 				}
+				//後続ジョブ優先度設定
+				jobWaitRuleInfo.getExclusiveBranchNextJobOrderList().addAll(orgInfo.getWaitRule().getExclusiveBranchNextJobOrderList());
 				jobInfo.setWaitRule(jobWaitRuleInfo);
 			}
 			//参照ジョブ

@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"truthValue",
+	"annotations":[
+		{"type":"Translate", "values":[{"value":"1", "name":"name_ok"}, {"value":"0", "name":"name_ng"}]}
+	]}
+]
+}

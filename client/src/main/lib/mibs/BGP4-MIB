@@ -1,0 +1,698 @@
+    BGP4-MIB DEFINITIONS ::= BEGIN
+
+        IMPORTS
+            MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+            IpAddress, Integer32, Counter32, Gauge32, mib-2
+                FROM SNMPv2-SMI
+            MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                FROM SNMPv2-CONF;
+
+        bgp MODULE-IDENTITY
+            LAST-UPDATED "200601110000Z"
+            ORGANIZATION "IETF IDR Working Group"
+
+
+
+
+            ::= { mib-2 15 }
+
+        bgpVersion OBJECT-TYPE
+            SYNTAX     OCTET STRING (SIZE (1..255))
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp 1 }
+
+        bgpLocalAs OBJECT-TYPE
+
+
+
+
+
+            SYNTAX     Integer32 (0..65535)
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp 2 }
+
+
+        bgpPeerTable OBJECT-TYPE
+            SYNTAX     SEQUENCE OF BgpPeerEntry
+            MAX-ACCESS not-accessible
+            STATUS     current
+            ::= { bgp 3 }
+
+        bgpPeerEntry OBJECT-TYPE
+            SYNTAX     BgpPeerEntry
+            MAX-ACCESS not-accessible
+            STATUS     current
+            INDEX { bgpPeerRemoteAddr }
+            ::= { bgpPeerTable 1 }
+
+        BgpPeerEntry ::= SEQUENCE {
+                bgpPeerIdentifier
+                    IpAddress,
+                bgpPeerState
+                    INTEGER,
+                bgpPeerAdminStatus
+                    INTEGER,
+                bgpPeerNegotiatedVersion
+                    Integer32,
+                bgpPeerLocalAddr
+                    IpAddress,
+                bgpPeerLocalPort
+                    Integer32,
+                bgpPeerRemoteAddr
+                    IpAddress,
+                bgpPeerRemotePort
+
+
+
+
+
+                    Integer32,
+                bgpPeerRemoteAs
+                    Integer32,
+                bgpPeerInUpdates
+                    Counter32,
+                bgpPeerOutUpdates
+                    Counter32,
+                bgpPeerInTotalMessages
+                    Counter32,
+                bgpPeerOutTotalMessages
+                    Counter32,
+                bgpPeerLastError
+                    OCTET STRING,
+                bgpPeerFsmEstablishedTransitions
+                    Counter32,
+                bgpPeerFsmEstablishedTime
+                    Gauge32,
+                bgpPeerConnectRetryInterval
+                    Integer32,
+                bgpPeerHoldTime
+                    Integer32,
+                bgpPeerKeepAlive
+                    Integer32,
+                bgpPeerHoldTimeConfigured
+                    Integer32,
+                bgpPeerKeepAliveConfigured
+                    Integer32,
+                bgpPeerMinASOriginationInterval
+                    Integer32,
+                bgpPeerMinRouteAdvertisementInterval
+                    Integer32,
+                bgpPeerInUpdateElapsedTime
+                    Gauge32
+                }
+
+        bgpPeerIdentifier OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 1 }
+
+
+
+
+
+
+        bgpPeerState OBJECT-TYPE
+            SYNTAX     INTEGER {
+                                idle(1),
+                                connect(2),
+                                active(3),
+                                opensent(4),
+                                openconfirm(5),
+                                established(6)
+                       }
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 2 }
+
+        bgpPeerAdminStatus OBJECT-TYPE
+            SYNTAX     INTEGER {
+                                stop(1),
+                                start(2)
+                       }
+            MAX-ACCESS read-write
+            STATUS     current
+            ::= { bgpPeerEntry 3 }
+
+        bgpPeerNegotiatedVersion OBJECT-TYPE
+            SYNTAX     Integer32
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 4 }
+
+        bgpPeerLocalAddr OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 5 }
+
+        bgpPeerLocalPort OBJECT-TYPE
+            SYNTAX     Integer32 (0..65535)
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 6 }
+
+        bgpPeerRemoteAddr OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 7 }
+
+        bgpPeerRemotePort OBJECT-TYPE
+            SYNTAX     Integer32 (0..65535)
+            MAX-ACCESS read-only
+            STATUS     current
+
+
+
+
+
+            ::= { bgpPeerEntry 8 }
+
+        bgpPeerRemoteAs OBJECT-TYPE
+            SYNTAX     Integer32 (0..65535)
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 9 }
+
+        bgpPeerInUpdates OBJECT-TYPE
+            SYNTAX     Counter32
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 10 }
+
+        bgpPeerOutUpdates OBJECT-TYPE
+            SYNTAX     Counter32
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 11 }
+
+        bgpPeerInTotalMessages OBJECT-TYPE
+            SYNTAX     Counter32
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 12 }
+
+        bgpPeerOutTotalMessages OBJECT-TYPE
+            SYNTAX     Counter32
+
+
+
+
+
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 13 }
+
+        bgpPeerLastError OBJECT-TYPE
+            SYNTAX     OCTET STRING (SIZE (2))
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 14 }
+
+        bgpPeerFsmEstablishedTransitions OBJECT-TYPE
+            SYNTAX     Counter32
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 15 }
+
+        bgpPeerFsmEstablishedTime OBJECT-TYPE
+            SYNTAX     Gauge32
+            UNITS      "seconds"
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 16 }
+
+        bgpPeerConnectRetryInterval OBJECT-TYPE
+            SYNTAX     Integer32 (1..65535)
+            UNITS      "seconds"
+            MAX-ACCESS read-write
+            STATUS     current
+            ::= { bgpPeerEntry 17 }
+
+        bgpPeerHoldTime OBJECT-TYPE
+            SYNTAX     Integer32  ( 0 | 3..65535 )
+            UNITS      "seconds"
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 18 }
+
+        bgpPeerKeepAlive OBJECT-TYPE
+            SYNTAX     Integer32 ( 0 | 1..21845 )
+
+
+
+
+
+            UNITS      "seconds"
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 19 }
+
+        bgpPeerHoldTimeConfigured OBJECT-TYPE
+            SYNTAX     Integer32 ( 0 | 3..65535 )
+            UNITS      "seconds"
+            MAX-ACCESS read-write
+            STATUS     current
+            ::= { bgpPeerEntry 20 }
+
+        bgpPeerKeepAliveConfigured OBJECT-TYPE
+
+
+
+
+
+            SYNTAX     Integer32 ( 0 | 1..21845 )
+            UNITS      "seconds"
+            MAX-ACCESS read-write
+            STATUS     current
+            ::= { bgpPeerEntry 21 }
+
+        bgpPeerMinASOriginationInterval OBJECT-TYPE
+            SYNTAX     Integer32 (1..65535)
+            UNITS      "seconds"
+            MAX-ACCESS read-write
+            STATUS     current
+            ::= { bgpPeerEntry 22 }
+
+        bgpPeerMinRouteAdvertisementInterval OBJECT-TYPE
+            SYNTAX     Integer32 (1..65535)
+            UNITS      "seconds"
+            MAX-ACCESS read-write
+            STATUS     current
+            ::= { bgpPeerEntry 23 }
+
+        bgpPeerInUpdateElapsedTime OBJECT-TYPE
+            SYNTAX     Gauge32
+            UNITS      "seconds"
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgpPeerEntry 24 }
+
+        bgpIdentifier OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp 4 }
+
+
+        bgpRcvdPathAttrTable OBJECT-TYPE
+            SYNTAX     SEQUENCE OF BgpPathAttrEntry
+            MAX-ACCESS not-accessible
+            STATUS     obsolete
+            ::= { bgp 5 }
+
+        bgpPathAttrEntry OBJECT-TYPE
+            SYNTAX     BgpPathAttrEntry
+            MAX-ACCESS not-accessible
+            STATUS     obsolete
+            INDEX { bgpPathAttrDestNetwork,
+                    bgpPathAttrPeer        }
+            ::= { bgpRcvdPathAttrTable 1 }
+
+        BgpPathAttrEntry ::= SEQUENCE {
+            bgpPathAttrPeer
+                 IpAddress,
+            bgpPathAttrDestNetwork
+                 IpAddress,
+            bgpPathAttrOrigin
+                 INTEGER,
+            bgpPathAttrASPath
+                 OCTET STRING,
+            bgpPathAttrNextHop
+                 IpAddress,
+            bgpPathAttrInterASMetric
+                 Integer32
+        }
+
+        bgpPathAttrPeer OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     obsolete
+            ::= { bgpPathAttrEntry 1 }
+
+        bgpPathAttrDestNetwork OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     obsolete
+            ::= { bgpPathAttrEntry 2 }
+
+
+
+
+
+
+        bgpPathAttrOrigin OBJECT-TYPE
+            SYNTAX     INTEGER {
+                           igp(1),-- networks are interior
+                           egp(2),-- networks learned via the
+                           incomplete(3) -- networks that
+                       }
+            MAX-ACCESS read-only
+            STATUS     obsolete
+            ::= { bgpPathAttrEntry 3 }
+
+        bgpPathAttrASPath OBJECT-TYPE
+            SYNTAX     OCTET STRING (SIZE (2..255))
+            MAX-ACCESS read-only
+            STATUS     obsolete
+            ::= { bgpPathAttrEntry 4 }
+
+        bgpPathAttrNextHop OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     obsolete
+            ::= { bgpPathAttrEntry 5 }
+
+
+
+
+
+        bgpPathAttrInterASMetric OBJECT-TYPE
+            SYNTAX     Integer32
+            MAX-ACCESS read-only
+            STATUS     obsolete
+            ::= { bgpPathAttrEntry 6 }
+
+
+        bgp4PathAttrTable OBJECT-TYPE
+            SYNTAX     SEQUENCE OF Bgp4PathAttrEntry
+            MAX-ACCESS not-accessible
+            STATUS     current
+            ::= { bgp 6 }
+
+        bgp4PathAttrEntry OBJECT-TYPE
+            SYNTAX     Bgp4PathAttrEntry
+            MAX-ACCESS not-accessible
+            STATUS     current
+            INDEX { bgp4PathAttrIpAddrPrefix,
+                    bgp4PathAttrIpAddrPrefixLen,
+                    bgp4PathAttrPeer            }
+            ::= { bgp4PathAttrTable 1 }
+
+        Bgp4PathAttrEntry ::= SEQUENCE {
+            bgp4PathAttrPeer
+                 IpAddress,
+            bgp4PathAttrIpAddrPrefixLen
+                 Integer32,
+            bgp4PathAttrIpAddrPrefix
+                 IpAddress,
+            bgp4PathAttrOrigin
+                 INTEGER,
+
+
+
+
+
+            bgp4PathAttrASPathSegment
+                 OCTET STRING,
+            bgp4PathAttrNextHop
+                 IpAddress,
+            bgp4PathAttrMultiExitDisc
+                 Integer32,
+            bgp4PathAttrLocalPref
+                 Integer32,
+            bgp4PathAttrAtomicAggregate
+                 INTEGER,
+            bgp4PathAttrAggregatorAS
+                 Integer32,
+            bgp4PathAttrAggregatorAddr
+                 IpAddress,
+            bgp4PathAttrCalcLocalPref
+                 Integer32,
+            bgp4PathAttrBest
+                 INTEGER,
+            bgp4PathAttrUnknown
+                 OCTET STRING
+        }
+
+        bgp4PathAttrPeer OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 1 }
+
+        bgp4PathAttrIpAddrPrefixLen OBJECT-TYPE
+            SYNTAX     Integer32 (0..32)
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 2 }
+
+        bgp4PathAttrIpAddrPrefix OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 3 }
+
+        bgp4PathAttrOrigin OBJECT-TYPE
+            SYNTAX     INTEGER {
+                           igp(1),-- networks are interior
+                           egp(2),-- networks learned via the
+                           incomplete(3) -- networks that
+                       }
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 4 }
+
+        bgp4PathAttrASPathSegment OBJECT-TYPE
+            SYNTAX     OCTET STRING (SIZE (2..255))
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 5 }
+
+        bgp4PathAttrNextHop OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 6 }
+
+        bgp4PathAttrMultiExitDisc OBJECT-TYPE
+            SYNTAX     Integer32 (-1..2147483647)
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 7 }
+
+        bgp4PathAttrLocalPref OBJECT-TYPE
+            SYNTAX     Integer32 (-1..2147483647)
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 8 }
+
+        bgp4PathAttrAtomicAggregate OBJECT-TYPE
+            SYNTAX     INTEGER {
+                           lessSpecificRouteNotSelected(1),
+                           lessSpecificRouteSelected(2)
+                       }
+            MAX-ACCESS read-only
+            STATUS     current
+
+
+
+
+
+            ::= { bgp4PathAttrEntry 9 }
+
+        bgp4PathAttrAggregatorAS OBJECT-TYPE
+            SYNTAX     Integer32 (0..65535)
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 10 }
+
+        bgp4PathAttrAggregatorAddr OBJECT-TYPE
+            SYNTAX     IpAddress
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 11 }
+
+        bgp4PathAttrCalcLocalPref OBJECT-TYPE
+            SYNTAX     Integer32 (-1..2147483647)
+            MAX-ACCESS read-only
+            STATUS     current
+
+
+
+
+
+            ::= { bgp4PathAttrEntry 12 }
+
+        bgp4PathAttrBest OBJECT-TYPE
+            SYNTAX     INTEGER {
+                           false(1),-- not chosen as best route
+                           true(2) -- chosen as best route
+                       }
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 13 }
+
+        bgp4PathAttrUnknown OBJECT-TYPE
+            SYNTAX     OCTET STRING (SIZE(0..255))
+            MAX-ACCESS read-only
+            STATUS     current
+            ::= { bgp4PathAttrEntry 14 }
+
+
+
+
+
+
+
+        bgpNotification OBJECT IDENTIFIER ::= { bgp 0 }
+
+        bgpEstablishedNotification NOTIFICATION-TYPE
+            OBJECTS { bgpPeerRemoteAddr,
+                      bgpPeerLastError,
+                      bgpPeerState      }
+            STATUS  current
+            ::= { bgpNotification 1 }
+
+        bgpBackwardTransNotification NOTIFICATION-TYPE
+            OBJECTS { bgpPeerRemoteAddr,
+                      bgpPeerLastError,
+                      bgpPeerState      }
+            STATUS  current
+            ::= { bgpNotification 2 }
+
+
+        bgpTraps        OBJECT IDENTIFIER ::= { bgp 7 } -- deprecated
+
+        bgpEstablished NOTIFICATION-TYPE
+            OBJECTS { bgpPeerLastError,
+                      bgpPeerState      }
+            STATUS  deprecated
+
+
+
+
+
+            ::= { bgpTraps 1 }
+
+        bgpBackwardTransition NOTIFICATION-TYPE
+            OBJECTS { bgpPeerLastError,
+                      bgpPeerState      }
+            STATUS  deprecated
+            ::= { bgpTraps 2 }
+
+
+        bgp4MIBConformance OBJECT IDENTIFIER
+            ::= { bgp 8 }
+        bgp4MIBCompliances OBJECT IDENTIFIER
+                    ::= { bgp4MIBConformance 1 }
+        bgp4MIBGroups      OBJECT IDENTIFIER
+            ::= { bgp4MIBConformance 2 }
+
+
+        bgp4MIBCompliance MODULE-COMPLIANCE
+            STATUS  current
+            MODULE  -- this module
+                MANDATORY-GROUPS { bgp4MIBGlobalsGroup,
+                                   bgp4MIBPeerGroup,
+                                   bgp4MIBPathAttrGroup }
+                GROUP bgp4MIBNotificationGroup
+            ::= { bgp4MIBCompliances 1 }
+
+        bgp4MIBDeprecatedCompliances MODULE-COMPLIANCE
+            STATUS  deprecated
+            MODULE  -- this module
+                GROUP bgp4MIBTrapGroup
+
+
+
+
+
+            ::= { bgp4MIBCompliances 2 }
+
+        bgp4MIBObsoleteCompliances MODULE-COMPLIANCE
+            STATUS  obsolete
+            MODULE  -- this module
+                GROUP bgpRcvdPathAttrGroup
+            ::= { bgp4MIBCompliances 3 }
+
+
+        bgp4MIBGlobalsGroup OBJECT-GROUP
+            OBJECTS { bgpVersion,
+                      bgpLocalAs,
+                      bgpIdentifier }
+            STATUS  current
+            ::= { bgp4MIBGroups 1 }
+
+        bgp4MIBPeerGroup OBJECT-GROUP
+            OBJECTS { bgpPeerIdentifier,
+                      bgpPeerState,
+                      bgpPeerAdminStatus,
+                      bgpPeerNegotiatedVersion,
+                      bgpPeerLocalAddr,
+                      bgpPeerLocalPort,
+                      bgpPeerRemoteAddr,
+                      bgpPeerRemotePort,
+                      bgpPeerRemoteAs,
+                      bgpPeerInUpdates,
+                      bgpPeerOutUpdates,
+                      bgpPeerInTotalMessages,
+                      bgpPeerOutTotalMessages,
+                      bgpPeerLastError,
+                      bgpPeerFsmEstablishedTransitions,
+                      bgpPeerFsmEstablishedTime,
+
+
+
+
+
+                      bgpPeerConnectRetryInterval,
+                      bgpPeerHoldTime,
+                      bgpPeerKeepAlive,
+                      bgpPeerHoldTimeConfigured,
+                      bgpPeerKeepAliveConfigured,
+                      bgpPeerMinASOriginationInterval,
+                      bgpPeerMinRouteAdvertisementInterval,
+                      bgpPeerInUpdateElapsedTime }
+            STATUS  current
+            ::= { bgp4MIBGroups 2 }
+
+        bgpRcvdPathAttrGroup OBJECT-GROUP
+            OBJECTS { bgpPathAttrPeer,
+                      bgpPathAttrDestNetwork,
+                      bgpPathAttrOrigin,
+                      bgpPathAttrASPath,
+                      bgpPathAttrNextHop,
+                      bgpPathAttrInterASMetric }
+            STATUS  obsolete
+            ::= { bgp4MIBGroups 3 }
+
+        bgp4MIBPathAttrGroup OBJECT-GROUP
+            OBJECTS { bgp4PathAttrPeer,
+                      bgp4PathAttrIpAddrPrefixLen,
+                      bgp4PathAttrIpAddrPrefix,
+                      bgp4PathAttrOrigin,
+                      bgp4PathAttrASPathSegment,
+                      bgp4PathAttrNextHop,
+                      bgp4PathAttrMultiExitDisc,
+                      bgp4PathAttrLocalPref,
+                      bgp4PathAttrAtomicAggregate,
+                      bgp4PathAttrAggregatorAS,
+                      bgp4PathAttrAggregatorAddr,
+                      bgp4PathAttrCalcLocalPref,
+                      bgp4PathAttrBest,
+                      bgp4PathAttrUnknown }
+            STATUS  current
+
+
+
+
+
+            ::= { bgp4MIBGroups 4 }
+
+        bgp4MIBTrapGroup NOTIFICATION-GROUP
+            NOTIFICATIONS { bgpEstablished,
+                            bgpBackwardTransition }
+            STATUS  deprecated
+            ::= { bgp4MIBGroups 5 }
+
+        bgp4MIBNotificationGroup NOTIFICATION-GROUP
+            NOTIFICATIONS { bgpEstablishedNotification,
+                            bgpBackwardTransNotification }
+            STATUS current
+            ::= { bgp4MIBGroups 6 }
+
+    END

@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jmx.factory;
@@ -36,13 +29,13 @@ import javax.management.remote.JMXServiceURL;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.jmx.factory.MonitorJmxCache.MonitorJmxValue;
 import com.clustercontrol.jmx.factory.MonitorJmxCache.MonitorJmxValuePK;
 import com.clustercontrol.jmx.model.JmxCheckInfo;
 import com.clustercontrol.jmx.model.JmxMasterInfo;
 import com.clustercontrol.jmx.util.QueryUtil;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.bean.ConvertValueConstant;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorNumericValueType;
@@ -127,7 +120,7 @@ public class RunMonitorJmx extends RunMonitorNumericValueType {
 
 		JMXServiceURL url = null;
 		try {
-			String rmiFormat = HinemosPropertyUtil.getHinemosPropertyStr("monitor.jmx.rmi.format", "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi");
+			String rmiFormat = HinemosPropertyCommon.monitor_jmx_rmi_format.getStringValue();
 			String urlStr = String.format(rmiFormat, node.getAvailableIpAddress(), jmx.getPort());
 			m_log.debug("facilityId=" + facilityId + ", url=" + urlStr);
 			url = new JMXServiceURL(urlStr);
@@ -145,7 +138,7 @@ public class RunMonitorJmx extends RunMonitorNumericValueType {
 				env.put(JMXConnector.CREDENTIALS, new String[]{jmx.getAuthUser(), jmx.getAuthPassword()});
 
 			System.setProperty("sun.rmi.transport.tcp.responseTimeout",
-					Integer.toString(HinemosPropertyUtil.getHinemosPropertyNum("system.sun.rmi.transport.tcp.responseTimeout", Long.valueOf(10 * 1000)).intValue()));
+					Integer.toString(HinemosPropertyCommon.system_sun_rmi_transport_tcp_responseTimeout.getIntegerValue()));
 			jmxc = JMXConnectorFactory.connect(url, env);
 			MBeanServerConnection mbsc = jmxc.getMBeanServerConnection();
 
@@ -182,14 +175,15 @@ public class RunMonitorJmx extends RunMonitorNumericValueType {
 				}
 
 				// JMX前回値情報を今回の取得値に更新
-				valueEntity.setValue(Double.valueOf(m_value));
+				valueEntity.setValue(m_value);
 				valueEntity.setGetDate(m_nodeDate);
 				
 				if (!m_isMonitorJob) {
-					// 監視処理時に対象の監視項目IDが有効である場合にキャッシュを更新
-					if (m_monitor.getMonitorFlg()) MonitorJmxCache.update(m_monitorId, facilityId, valueEntity);
+					// 監視処理時に対象の監視項目IDが有効、または収集が有効である場合にキャッシュを更新
+					if (m_monitor.getMonitorFlg() || m_monitor.getCollectorFlg())
+						MonitorJmxCache.update(m_monitorId, facilityId, valueEntity);
 	
-					int m_validSecond = HinemosPropertyUtil.getHinemosPropertyNum("monitor.jmx.valid.second", Long.valueOf(15)).intValue();
+					int m_validSecond = HinemosPropertyCommon.monitor_jmx_valid_second.getIntegerValue();
 					// 前回値取得時刻が取得許容時間よりも前だった場合、値取得失敗
 					int tolerance = (m_runInterval + m_validSecond) * 1000;
 	
@@ -233,10 +227,14 @@ public class RunMonitorJmx extends RunMonitorNumericValueType {
 			return false;
 		}catch (Exception e) {
 			String message = e.getMessage();
+			if (e instanceof NullPointerException) {
+				m_log.warn("fail to access JMXService : " + message + " (" + e.getClass().getName() + ")", e);
+			} else {
+				m_log.warn("fail to access JMXService : " + message + " (" + e.getClass().getName() + ")");
+			}
 			if (message != null) {
 				message = message.replaceAll("\n", "");
 			}
-			m_log.warn("fail to access JMXService : " + message + " (" + e.getClass().getName() + ")");
 			exception = e;
 		} finally {
 			try {

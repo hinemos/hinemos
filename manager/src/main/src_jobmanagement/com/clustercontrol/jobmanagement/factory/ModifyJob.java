@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -25,6 +18,7 @@ import javax.persistence.EntityExistsException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeUtil;
 import com.clustercontrol.bean.EndStatusConstant;
@@ -45,6 +39,7 @@ import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JobEndStatusInfo;
 import com.clustercontrol.jobmanagement.bean.JobEnvVariableInfo;
 import com.clustercontrol.jobmanagement.bean.JobInfo;
+import com.clustercontrol.jobmanagement.bean.JobNextJobOrderInfo;
 import com.clustercontrol.jobmanagement.bean.JobObjectInfo;
 import com.clustercontrol.jobmanagement.bean.JobParameterInfo;
 import com.clustercontrol.jobmanagement.bean.JobTreeItem;
@@ -54,6 +49,9 @@ import com.clustercontrol.jobmanagement.model.JobCommandParamMstEntity;
 import com.clustercontrol.jobmanagement.model.JobStartParamMstEntity;
 import com.clustercontrol.jobmanagement.model.JobEnvVariableMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
+import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
+import com.clustercontrol.jobmanagement.model.JobNextJobOrderMstEntity;
+import com.clustercontrol.jobmanagement.model.JobNextJobOrderMstEntityPK;
 import com.clustercontrol.jobmanagement.model.JobParamMstEntity;
 import com.clustercontrol.jobmanagement.model.JobStartJobMstEntity;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
@@ -73,68 +71,71 @@ public class ModifyJob {
 
 	public Long replaceJobunit(List<JobInfo> oldList, List<JobInfo> newList, String userId)
 			throws JobInvalid, JobMasterNotFound, EntityExistsException, HinemosUnknown, JobMasterDuplicate, InvalidSetting, InvalidRole {
-		//ジョブユニットのジョブIDを取得
-		String jobunitId = newList.get(0).getJobunitId();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
-		// ジョブマスタ変更
-		long start = HinemosTime.currentTimeMillis();
+			//ジョブユニットのジョブIDを取得
+			String jobunitId = newList.get(0).getJobunitId();
 
-		HashSet<JobInfo>delJobs = new HashSet<JobInfo>(oldList);
-		HashSet<JobInfo>newJobs = new HashSet<JobInfo>(newList);
-		delJobs.removeAll(newJobs);
+			// ジョブマスタ変更
+			long start = HinemosTime.currentTimeMillis();
 
-		long timeJobToDelete = HinemosTime.currentTimeMillis();
-		m_log.info("Find jobs to delete " + (timeJobToDelete - start) + "ms");
+			HashSet<JobInfo>delJobs = new HashSet<JobInfo>(oldList);
+			HashSet<JobInfo>newJobs = new HashSet<JobInfo>(newList);
+			delJobs.removeAll(newJobs);
 
-		HashSet<JobInfo> addJobs = newJobs;
-		addJobs.removeAll(new HashSet<JobInfo>(oldList));
+			long timeJobToDelete = HinemosTime.currentTimeMillis();
+			m_log.info("Find jobs to delete " + (timeJobToDelete - start) + "ms");
 
-		long timeJobToAdd = HinemosTime.currentTimeMillis();
-		m_log.info("Find jobs to add " + (timeJobToAdd - timeJobToDelete) + "ms");
-		m_log.info("oldList=" + oldList.size() + ", newList=" + newList.size() +
-				", delJobs=" + delJobs.size() + ", addJobs=" + addJobs.size());
+			HashSet<JobInfo> addJobs = newJobs;
+			addJobs.removeAll(new HashSet<JobInfo>(oldList));
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		for (JobInfo delJob : delJobs) {
-			JobMstEntity entity = QueryUtil.getJobMstPK(delJob.getJobunitId(), delJob.getId());
-			deleteJob(entity);
-		}
+			long timeJobToAdd = HinemosTime.currentTimeMillis();
+			m_log.info("Find jobs to add " + (timeJobToAdd - timeJobToDelete) + "ms");
+			m_log.info("oldList=" + oldList.size() + ", newList=" + newList.size() +
+					", delJobs=" + delJobs.size() + ", addJobs=" + addJobs.size());
 
-		jtm.flush();
+			for (JobInfo delJob : delJobs) {
+				JobMstEntity entity = QueryUtil.getJobMstPK(delJob.getJobunitId(), delJob.getId());
+				deleteJob(entity);
+			}
 
-		long timestamp = HinemosTime.currentTimeMillis();
+			jtm.flush();
 
-		// ジョブユニットを最初に登録する必要があるため。
-		for (JobInfo addJob : addJobs) {
-			int type = addJob.getType();
-			if (type == JobConstant.TYPE_JOBUNIT) {
+			long timestamp = HinemosTime.currentTimeMillis();
+
+			// ジョブユニットを最初に登録する必要があるため。
+			for (JobInfo addJob : addJobs) {
+				int type = addJob.getType();
+				if (type == JobConstant.TYPE_JOBUNIT) {
+					String jobId = addJob.getId();
+					String parentJobId = addJob.getParentId();
+					if (jobunitId.equals(jobId)) {
+						parentJobId = CreateJobSession.TOP_JOB_ID;
+					}
+					createJobMasterData(addJob, jobunitId, parentJobId, userId, timestamp);
+					addJobs.remove(addJob);
+					break;
+				}
+			}
+			for (JobInfo addJob : addJobs) {
+				m_log.debug("replaceJobunit() : addJob JobunitId=" + addJob.getJobunitId() + ", JobId=" + addJob.getId());
 				String jobId = addJob.getId();
 				String parentJobId = addJob.getParentId();
 				if (jobunitId.equals(jobId)) {
 					parentJobId = CreateJobSession.TOP_JOB_ID;
 				}
 				createJobMasterData(addJob, jobunitId, parentJobId, userId, timestamp);
-				addJobs.remove(addJob);
-				break;
 			}
-		}
-		for (JobInfo addJob : addJobs) {
-			String jobId = addJob.getId();
-			String parentJobId = addJob.getParentId();
-			if (jobunitId.equals(jobId)) {
-				parentJobId = CreateJobSession.TOP_JOB_ID;
-			}
-			createJobMasterData(addJob, jobunitId, parentJobId, userId, timestamp);
-		}
 
-		// ジョブユニットの最終更新日時の更新
-		String jobId = newList.get(0).getId();
-		JobMstEntity entity = QueryUtil.getJobMstPK(jobunitId, jobId);
-		entity.setUpdateDate(timestamp);
-		m_log.info("Left tasks in replaceJobunit " + (HinemosTime.currentTimeMillis() - timeJobToAdd) + "ms");
-		
-		// ジョブユニットの最終更新日時を返す
-		return timestamp;
+			// ジョブユニットの最終更新日時の更新
+			String jobId = newList.get(0).getId();
+			JobMstEntity entity = QueryUtil.getJobMstPK(jobunitId, jobId);
+			entity.setUpdateDate(timestamp);
+			m_log.info("Left tasks in replaceJobunit " + (HinemosTime.currentTimeMillis() - timeJobToAdd) + "ms");
+			
+			// ジョブユニットの最終更新日時を返す
+			return timestamp;
+		}
 	}
 
 	/**
@@ -199,43 +200,47 @@ public class ModifyJob {
 	 *
 	 */
 	public void deleteJobunit(String jobunitId, String userId) throws HinemosUnknown, JobMasterNotFound, JobInvalid, ObjectPrivilege_InvalidRole {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// 引数で指定されたジョブユニットIDを持つジョブユニットを取得
-		Collection<JobMstEntity> ct =
-				em.createNamedQuery("JobMstEntity.findByJobunitId", JobMstEntity.class, ObjectPrivilegeMode.MODIFY)
-				.setParameter("jobunitId", jobunitId).getResultList();
+			// 引数で指定されたジョブユニットIDを持つジョブユニットを取得
+			Collection<JobMstEntity> ct =
+					em.createNamedQuery("JobMstEntity.findByJobunitId", JobMstEntity.class, ObjectPrivilegeMode.MODIFY)
+					.setParameter("jobunitId", jobunitId).getResultList();
 
-		// オブジェクト権限チェック(削除対象のリストが空だった場合)
-		if (ct == null || ct.size() == 0) {
-			ObjectPrivilege_InvalidRole e = new ObjectPrivilege_InvalidRole(
-					"targetClass = " + JobMstEntity.class.getSimpleName());
-			m_log.info("deleteJobunit() : object privilege invalid. jobunitId = " + jobunitId);
+			// オブジェクト権限チェック(削除対象のリストが空だった場合)
+			if (ct == null || ct.size() == 0) {
+				ObjectPrivilege_InvalidRole e = new ObjectPrivilege_InvalidRole(
+						"targetClass = " + JobMstEntity.class.getSimpleName());
+				m_log.info("deleteJobunit() : object privilege invalid. jobunitId = " + jobunitId);
 
-			throw e;
+				throw e;
+			}
+
+			for (JobMstEntity jobMstEntity : ct) {
+				deleteJob(jobMstEntity);
+			}
+
+			// オブジェクト権限情報を削除する。
+			ObjectPrivilegeUtil.deleteObjectPrivilege(HinemosModuleConstant.JOB, jobunitId);
 		}
-
-		for (JobMstEntity jobMstEntity : ct) {
-			deleteJob(jobMstEntity);
-		}
-
-		// オブジェクト権限情報を削除する。
-		ObjectPrivilegeUtil.deleteObjectPrivilege(HinemosModuleConstant.JOB, jobunitId);
 	}
 
 	private void deleteJob(JobMstEntity jobMstEntity) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		if (jobMstEntity != null) {
-			String jobunitId = jobMstEntity.getId().getJobunitId();
-			String jobId = jobMstEntity.getId().getJobId();
-			// ジョブユニットに紐づく通知を削除
-			// "JOB_MST-junit-job-0"
-			em.createNamedQuery("NotifyRelationInfoEntity.deleteByNotifyGroupId", Integer.class)
-			.setParameter("notifyGroupId", HinemosModuleConstant.JOB_MST +
-					"-" + jobunitId + "-" + jobId + "-0")
-					.executeUpdate();
-			em.remove(jobMstEntity);
+			if (jobMstEntity != null) {
+				String jobunitId = jobMstEntity.getId().getJobunitId();
+				String jobId = jobMstEntity.getId().getJobId();
+				// ジョブユニットに紐づく通知を削除
+				// "JOB_MST-junit-job-0"
+				em.createNamedQuery("NotifyRelationInfoEntity.deleteByNotifyGroupId", Integer.class)
+				.setParameter("notifyGroupId", HinemosModuleConstant.JOB_MST +
+						"-" + jobunitId + "-" + jobId + "-0")
+						.executeUpdate();
+				em.remove(jobMstEntity);
+			}
 		}
 	}
 
@@ -302,7 +307,6 @@ public class ModifyJob {
 			throws HinemosUnknown, JobMasterDuplicate, JobMasterNotFound, InvalidSetting, InvalidRole {
 
 		m_log.debug("createJobMasterData");
-		JpaTransactionManager jtm = new JpaTransactionManager();
 
 		// ジョブユニット単位で再帰的に登録するため、親となるジョブユニットIDは変わらない
 		// ただし、TOPの親ジョブユニットIDはTOPとする
@@ -324,12 +328,15 @@ public class ModifyJob {
 			info.setCreateTime(updateDate);
 		}
 
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			//ジョブ作成
 			// インスタンス生成
 			JobMstEntity jobMst = new JobMstEntity(jobunitId, info.getId(), info.getType());
 			// 重複チェック
 			jtm.checkEntityExists(JobMstEntity.class, jobMst.getId());
+			// 登録
+			em.persist(jobMst);
 			jobMst.setDescription(info.getDescription());
 			jobMst.setJobName(info.getName());
 			jobMst.setRegisteredModule(info.isRegisteredModule());
@@ -340,10 +347,23 @@ public class ModifyJob {
 			jobMst.setParentJobunitId(parentJobunitId);
 			jobMst.setParentJobId(parentId);
 			jobMst.setIconId(info.getIconId());
-			if(info.getType() == JobConstant.TYPE_JOBUNIT){
+			if (info.getType() == null) {
+				// 何もしない
+			} else if(info.getType() == JobConstant.TYPE_JOBUNIT){
 				jobMst.setOwnerRoleId(info.getOwnerRoleId());
 			} else {
-				QueryUtil.getJobMstPK(jobunitId, jobunitId);
+				// JOBUNIT以外は、JOBUNITのowner_role_idを設定する
+				try {
+					JobMstEntity jobMstEntity
+						= QueryUtil.getJobMstPK_NONE(new JobMstEntityPK(jobMst.getId().getJobunitId(), jobMst.getId().getJobunitId()));
+					if (jobMstEntity.getOwnerRoleId() == null) {
+						jobMst.setOwnerRoleId(RoleIdConstant.INTERNAL);
+					} else {
+						jobMst.setOwnerRoleId(jobMstEntity.getOwnerRoleId());
+					}
+				} catch (JobMasterNotFound e) {
+					jobMst.setOwnerRoleId(RoleIdConstant.INTERNAL);
+				}
 			}
 
 			//待ち条件作成
@@ -366,6 +386,9 @@ public class ModifyJob {
 				jobMst.setUnmatchEndFlg(waitRule.isEndCondition());
 				jobMst.setUnmatchEndStatus(waitRule.getEndStatus());
 				jobMst.setUnmatchEndValue(waitRule.getEndValue());
+				jobMst.setExclusiveBranchFlg(waitRule.isExclusiveBranch());
+				jobMst.setExclusiveBranchEndStatus(waitRule.getExclusiveBranchEndStatus());
+				jobMst.setExclusiveBranchEndValue(waitRule.getExclusiveBranchEndValue());
 				jobMst.setCalendar(waitRule.isCalendar());
 				jobMst.setCalendarId(waitRule.getCalendarId());
 				jobMst.setCalendarEndStatus(waitRule.getCalendarEndStatus());
@@ -396,10 +419,15 @@ public class ModifyJob {
 				jobMst.setEndDelayOperationType(waitRule.getEnd_delay_operation_type());
 				jobMst.setEndDelayOperationEndStatus(waitRule.getEnd_delay_operation_end_status());
 				jobMst.setEndDelayOperationEndValue(waitRule.getEnd_delay_operation_end_value());
+				jobMst.setEndDelayChangeMount(waitRule.isEnd_delay_change_mount());
+				jobMst.setEndDelayChangeMountValue(waitRule.getEnd_delay_change_mount_value());
 				jobMst.setMultiplicityNotify(waitRule.isMultiplicityNotify());
 				jobMst.setMultiplicityNotifyPriority(waitRule.getMultiplicityNotifyPriority());
 				jobMst.setMultiplicityOperation(waitRule.getMultiplicityOperation());
 				jobMst.setMultiplicityEndValue(waitRule.getMultiplicityEndValue());
+				jobMst.setJobRetryFlg(waitRule.getJobRetryFlg());
+				jobMst.setJobRetry(waitRule.getJobRetry());
+				jobMst.setJobRetryEndStatus(waitRule.getJobRetryEndStatus());
 				if(waitRule.getObject() != null){
 					for(JobObjectInfo objectInfo : waitRule.getObject()) {
 						if(objectInfo != null){
@@ -416,6 +444,8 @@ public class ModifyJob {
 										objectInfo.getJobId(),
 										JudgmentObjectConstant.TYPE_JOB_END_STATUS,
 										objectInfo.getValue());
+								em.persist(jobStartJobMstEntity);
+								jobStartJobMstEntity.relateToJobMstEntity(jobMst);
 								jobStartJobMstEntity.setTargetJobDescription(objectInfo.getDescription());
 								// 重複チェック
 								jtm.checkEntityExists(JobStartJobMstEntity.class, jobStartJobMstEntity.getId());
@@ -433,6 +463,8 @@ public class ModifyJob {
 										objectInfo.getJobId(),
 										JudgmentObjectConstant.TYPE_JOB_END_VALUE,
 										objectInfo.getValue());
+								em.persist(jobStartJobMstEntity);
+								jobStartJobMstEntity.relateToJobMstEntity(jobMst);
 								jobStartJobMstEntity.setTargetJobDescription(objectInfo.getDescription());
 								// 重複チェック
 								jtm.checkEntityExists(JobStartJobMstEntity.class, jobStartJobMstEntity.getId());
@@ -463,12 +495,78 @@ public class ModifyJob {
 										objectInfo.getDecisionValue02(),
 										objectInfo.getType(),
 										objectInfo.getDecisionCondition());
-								jobStartParamMstEntity.setDecisionDescription(objectInfo.getDescription());
 								// 重複チェック
 								jtm.checkEntityExists(JobStartParamMstEntity.class, jobStartParamMstEntity.getId());
+								jobStartParamMstEntity.setDecisionDescription(objectInfo.getDescription());
+								em.persist(jobStartParamMstEntity);
+								jobStartParamMstEntity.relateToJobMstEntity(jobMst);
+							}
+							else if(objectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS){
+								m_log.debug("objectInfo.getType = " + objectInfo.getType());
+								m_log.debug("objectInfo.getJobId = " + objectInfo.getJobId());
+								m_log.debug("objectInfo.getValue = " + objectInfo.getValue());
+								m_log.debug("objectInfo.getDescription = " + objectInfo.getDescription());
+								m_log.debug("objectInfo.getCrossSessionRange = " + objectInfo.getCrossSessionRange());
+								// インスタンス生成
+								JobStartJobMstEntity jobStartJobMstEntity
+								= new JobStartJobMstEntity(
+										jobMst,
+										waitJobunitId,
+										objectInfo.getJobId(),
+										JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS,
+										objectInfo.getValue());
+								em.persist(jobStartJobMstEntity);
+								jobStartJobMstEntity.relateToJobMstEntity(jobMst);
+								jobStartJobMstEntity.setTargetJobDescription(objectInfo.getDescription());
+								jobStartJobMstEntity.setTargetJobCrossSessionRange(objectInfo.getCrossSessionRange());
+								// 重複チェック
+								jtm.checkEntityExists(JobStartJobMstEntity.class, jobStartJobMstEntity.getId());
+							}
+							else if(objectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE){
+								m_log.debug("objectInfo.getType = " + objectInfo.getType());
+								m_log.debug("objectInfo.getJobId = " + objectInfo.getJobId());
+								m_log.debug("objectInfo.getValue = " + objectInfo.getValue());
+								m_log.debug("objectInfo.getDescription = " + objectInfo.getDescription());
+								m_log.debug("objectInfo.getCrossSessionRange = " + objectInfo.getCrossSessionRange());
+								// インスタンス生成
+								JobStartJobMstEntity jobStartJobMstEntity
+								= new JobStartJobMstEntity(
+										jobMst,
+										waitJobunitId,
+										objectInfo.getJobId(),
+										JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE,
+										objectInfo.getValue());
+								em.persist(jobStartJobMstEntity);
+								jobStartJobMstEntity.relateToJobMstEntity(jobMst);
+								jobStartJobMstEntity.setTargetJobDescription(objectInfo.getDescription());
+								jobStartJobMstEntity.setTargetJobCrossSessionRange(objectInfo.getCrossSessionRange());
+								// 重複チェック
+								jtm.checkEntityExists(JobStartJobMstEntity.class, jobStartJobMstEntity.getId());
 							}
 						}
 					}
+				}
+				//排他分岐設定を取得
+				if (info.getWaitRule().isExclusiveBranch() && info.getWaitRule().getExclusiveBranchNextJobOrderList() != null) {
+					jobMst.setExclusiveBranchFlg(waitRule.isExclusiveBranch());
+					jobMst.setExclusiveBranchEndStatus(waitRule.getExclusiveBranchEndStatus());
+					jobMst.setExclusiveBranchEndValue(waitRule.getExclusiveBranchEndValue());
+					List<JobNextJobOrderInfo> nextJobOrderList = waitRule.getExclusiveBranchNextJobOrderList();
+
+					//後続ジョブ優先度インスタンス生成
+					for (JobNextJobOrderInfo nextJobOrderInfo: nextJobOrderList) {
+						m_log.debug("nextJobOrderInfo : JobunitId=" + nextJobOrderInfo.getJobunitId());
+						m_log.debug("nextJobOrderInfo : JobId=" + nextJobOrderInfo.getJobId());
+						m_log.debug("nextJobOrderInfo : NextJobId=" + nextJobOrderInfo.getNextJobId());
+						JobNextJobOrderMstEntity nextJobOrderMst = new JobNextJobOrderMstEntity(new JobNextJobOrderMstEntityPK(
+							nextJobOrderInfo.getJobunitId(), nextJobOrderInfo.getJobId(), nextJobOrderInfo.getNextJobId())
+						);
+						// 登録
+						em.persist(nextJobOrderMst);
+						//nextJobOrderListは優先度順になっているためインデックスを優先度として登録する
+						nextJobOrderMst.setOrder(nextJobOrderList.indexOf(nextJobOrderInfo) + 1);
+					}
+					
 				}
 			}
 
@@ -488,6 +586,7 @@ public class ModifyJob {
 				jobMst.setArgument("");
 				jobMst.setCommandRetryFlg(info.getCommand().getCommandRetryFlg());
 				jobMst.setCommandRetry(info.getCommand().getCommandRetry());
+				jobMst.setCommandRetryEndStatus(info.getCommand().getCommandRetryEndStatus());
 
 				if (info.getCommand().getJobCommandParamList() != null
 						&& info.getCommand().getJobCommandParamList().size() > 0) {
@@ -495,6 +594,9 @@ public class ModifyJob {
 						JobCommandParamMstEntity jobCommandParamEntity = new JobCommandParamMstEntity(jobMst, jobCommandParam.getParamId());
 						jobCommandParamEntity.setJobStandardOutputFlg(jobCommandParam.getJobStandardOutputFlg());
 						jobCommandParamEntity.setValue(jobCommandParam.getValue());
+						// 登録
+						em.persist(jobCommandParamEntity);
+						jobCommandParamEntity.relateToJobMstEntity(jobMst);
 					}
 				}
 				jobMst.setManagerDistribution(info.getCommand().getManagerDistribution());
@@ -512,6 +614,9 @@ public class ModifyJob {
 							jtm.checkEntityExists(JobEnvVariableMstEntity.class, jobEnvVariableMstEntity.getId());
 							jobEnvVariableMstEntity.setDescription(envVariableInfo.getDescription());
 							jobEnvVariableMstEntity.setValue(envVariableInfo.getValue());
+							// 登録
+							em.persist(jobEnvVariableMstEntity);
+							jobEnvVariableMstEntity.relateToJobMstEntity(jobMst);
 						}
 					}
 				}
@@ -535,6 +640,7 @@ public class ModifyJob {
 				jobMst.setMessageRetryEndValue(info.getFile().getMessageRetryEndValue());
 				jobMst.setCommandRetryFlg(info.getFile().isCommandRetryFlg());
 				jobMst.setCommandRetry(info.getFile().getCommandRetry());
+				jobMst.setCommandRetryEndStatus(info.getFile().getCommandRetryEndStatus());
 			}
 
 			// 監視ジョブ作成
@@ -612,6 +718,9 @@ public class ModifyJob {
 						jobParamMstEntity.setDescription(paramInfo.getDescription());
 						jobParamMstEntity.setParamType(paramInfo.getType());
 						jobParamMstEntity.setValue(paramInfo.getValue());
+						// 登録
+						em.persist(jobParamMstEntity);
+						jobParamMstEntity.relateToJobMstEntity(jobMst);
 					}
 				}
 			}

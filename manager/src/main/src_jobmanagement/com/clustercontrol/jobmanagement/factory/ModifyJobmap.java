@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -59,10 +52,10 @@ public class ModifyJobmap {
 		m_log.debug("modifyJobmapIconImage() : iconId=" + info.getIconId() + ", isNew=" + isNew);
 
 		JobmapIconImageEntity jobmapIconImageEntity = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			//最終更新日時を設定
 			long currentTimeMillis = HinemosTime.currentTimeMillis();
-			JpaTransactionManager jtm = new JpaTransactionManager();
 			if (isNew) {
 				// 新規登録
 				// 重複チェック
@@ -72,6 +65,8 @@ public class ModifyJobmap {
 				jobmapIconImageEntity.setOwnerRoleId(info.getOwnerRoleId());
 				jobmapIconImageEntity.setRegUser(modifyUserId);
 				jobmapIconImageEntity.setRegDate(currentTimeMillis);
+				// 登録
+				em.persist(jobmapIconImageEntity);
 			} else {
 				// 更新
 				// インスタンスの取得
@@ -108,10 +103,9 @@ public class ModifyJobmap {
 		// ジョブマップ用アイコンを削除
 		m_log.debug("deleteJobmapIconImage() : iconId = " + iconId);
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		HinemosEntityManager em = jtm.getEntityManager();
 		// DBのジョブマップ用アイコン情報を削除
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			//削除対象を検索
 			JobmapIconImageEntity jobmapIconImageEntity = em.find(JobmapIconImageEntity.class, iconId,
 					ObjectPrivilegeMode.MODIFY);

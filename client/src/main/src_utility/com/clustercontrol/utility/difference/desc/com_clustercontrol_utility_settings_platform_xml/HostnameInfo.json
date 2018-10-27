@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"hostname",
+	"annotations":[
+		{"type":"Column", "columnName":"HostnameInfo_hostname"}
+	]}
+]
+}

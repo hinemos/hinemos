@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.startup.composite;
 
 import java.util.List;
@@ -5,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.eclipse.draw2d.ColorConstantsWrapper;
 import org.eclipse.draw2d.Cursors;
 import org.eclipse.draw2d.Figure;
 import org.eclipse.draw2d.FigureCanvas;
@@ -21,8 +28,9 @@ import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IPerspectiveDescriptor;
@@ -33,7 +41,6 @@ import com.clustercontrol.startup.bean.StartUpItem;
 import com.clustercontrol.startup.figure.StartUpFigure;
 
 public class StartUpComposite extends Composite{
-
 	// ログ
 	private static Log m_log = LogFactory.getLog( StartUpComposite.class );
 
@@ -48,9 +55,6 @@ public class StartUpComposite extends Composite{
 	//ラベルタイトル
 	private Label m_labelTitle = null;
 
-	private Color m_backGround = new Color(null, 224, 226, 237);
-	private Color m_labelColor = new Color(null, 0, 63, 133);
-
 	/**
 	 * フォントは何度もnewするとリークするので、複数定義しない。
 	 */
@@ -62,6 +66,9 @@ public class StartUpComposite extends Composite{
 	// モデルと図の関係を保持するマップ
 	// 描画対象スコープ、ノードのファシリティIDとそれを描画している図（Figure）のリファレンスを保持
 	private ConcurrentHashMap<String, StartUpFigure> m_figureMap = new ConcurrentHashMap<String, StartUpFigure>();
+	
+	private Color background = new Color(Display.getCurrent(), new RGB(224, 226, 237));
+	private Color label = new Color(Display.getCurrent(), new RGB(0, 63, 133));
 
 	/**
 	 * インスタンスを返します。
@@ -78,26 +85,22 @@ public class StartUpComposite extends Composite{
 	}
 
 	private void initialize() {
-		// キャンバス表示コンポジットをparentの残り領域全体に拡張して表示
-		GridData gridData = new GridData();
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.verticalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		gridData.grabExcessVerticalSpace = true;
-		this.setLayoutData(gridData);
+		// キャンバス表示コンポジットをparentの残り領域全体に拡張して中央に表示
+		this.setLayoutData(new GridData(GridData.CENTER, GridData.FILL, true, true));
 
 		// キャンバスコンポジット内のレイアウトを設定
-		this.setLayout(new FillLayout());
+		this.setLayout(new GridLayout());
 
 		// 図を配置するキャンバスを生成
-		m_canvas = new FigureCanvas(this, SWT.NONE);
+		m_canvas = new FigureCanvas(this, SWT.NO_REDRAW_RESIZE);
+		m_canvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
 
 		// 背景は白
-		m_canvas.setBackground(ColorConstantsWrapper.white());
+		//m_canvas.setBackground(ColorConstantsWrapper.white());
 
 		//パネル作成
 		m_panel = new Panel();
-		m_panel.setBackgroundColor(m_backGround);
+		m_panel.setBackgroundColor(background);
 		m_canvas.setContents(m_panel);
 		m_panel.setLayoutManager(new XYLayout());
 	}
@@ -131,8 +134,6 @@ public class StartUpComposite extends Composite{
 
 	// draw2D Figure用のイベントリスナ
 	private class MouseEventListener extends MouseMotionListener.Stub implements MouseListener {
-
-
 		@Override
 		public void mouseDoubleClicked(MouseEvent me) {
 			// イベントを消費
@@ -191,7 +192,6 @@ public class StartUpComposite extends Composite{
 			}
 			// イベントを消費
 			me.consume();
-
 		}
 
 		@Override
@@ -207,7 +207,7 @@ public class StartUpComposite extends Composite{
 		m_labelTitle.setVisible(true);
 
 		m_labelTitle.setFont(titleLabelFont);
-		m_labelTitle.setForegroundColor(m_labelColor);
+		m_labelTitle.setForegroundColor(label);
 		m_panel.add(m_labelTitle);
 		Dimension dimension = new Dimension(-1, -1);
 		Point point = new Point(8, 8);
@@ -228,5 +228,10 @@ public class StartUpComposite extends Composite{
 	private void putStartUpFigure (String field, StartUpFigure figure) {
 		m_figureMap.put(field, figure);
 	}
-
+	
+	public void dispose() {
+		super.dispose();
+		background.dispose();
+		label.dispose();
+	}
 }

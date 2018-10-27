@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: monitor_check_perf.xsd 303 2013-05-13 16:00:00Z sekiyaman $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_monitor_master.xsd" />
+    <xs:include schemaLocation="part_monitor_check.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="I">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="perfMonitors" type="PerfMonitorList">
+		<xs:annotation>
+			<xs:documentation>リソース監視設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="PerfMonitorList">
+		<xs:annotation>
+			<xs:documentation>リソース監視設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="perfMonitor" type="MonitorPerf" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>リソース監視設定</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="perf" type="MonitorPerf" />
+	<xs:complexType name="MonitorPerf">
+		<xs:annotation>
+			<xs:documentation>リソース監視の１設定分です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="monitor" type="MonitorInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視設定情報（共通）です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="perfInfo" type="MonitorPerfCheckInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定情報（リソース監視固有部分）です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="numericValue" type="MonitorNumericValueInfo" minOccurs="0" maxOccurs="4">
+				<xs:annotation>
+					<xs:documentation>数値判定情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="numericChangeAmount" type="MonitorNumericValueInfo" minOccurs="0" maxOccurs="4">
+				<xs:annotation>
+					<xs:documentation>変化量判定情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="MonitorPerfCheckInfo">
+		<xs:annotation>
+			<xs:documentation>リソース監視設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="MonitorCheckInfo">
+				<xs:sequence>
+					<xs:element name="collectorId" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								収集IDです。 監視設定では使用しません。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="itemCode" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								収集項目コードです。
+								{CPU0100_CPU_UTIL、、CPU0101_CPU_UTIL_USR、CPU0102_CPU_UTIL_SYS、CPU0103_CPU_UTIL_NCE、CPU0104_CPU_UTIL_IOW、CPU0200_INTERRUPT_RATE、CPU0300_CONTEXT_SWITCH、CPU0400_LOAD_AVE_1M、CPU0500_LOAD_AVE_5M、CPU0600_LOAD_AVE_15M、MEM0100_MEM_UTIL、MEM0101_MEM_UTIL_SWAP、MEM0102_MEM_UTIL_PHYS、MEM0200_SWAP_SPACE、MEM0300_PHYS_UTIL、MEM0301_PHYS_UTIL_USR、MEM0302_PHYS_UTIL_BUF、MEM0303_PHYS_UTIL_CAC、MEM0400_SWAP_IO、MEM0401_SWAP_IO_IN、MEM0402_SWAP_IO_OUT、DSK0100_DVC_IO_CNT、DSK0101_DVC_IO_CNT_IN、DSK0102_DVC_IO_CNT_OUT、DSK0200_DVC_IO_BYTE、DSK0201_DVC_IO_BYTE_IN、DSK0202_DVC_IO_BYTE_OUT、NET0100_PACKET、NET0101_PACKET_RCV、NET0102_PACKET_SNT、NET0300_ERR_PCK、NET0301_ERR_PCK_RCV、NET0302_ERR_PCK_SNT、NET0200_DVC_PCK、NET0201_DVC_PCK_RCV、NET0202_DVC_PCK_SNT、NET0400_DVC_ERR_PCK、NET0401_DVC_ERR_PCK_RCV、NET0402_DVC_ERR_PCK_SNT、NET0500_BYTE、NET0501_BYTE_RCV、NET0502_BYTE_SNT、NET0600_DVC_BYTE、NET0601_DVC_BYTE_RCV、NET0602_DVC_BYTE_SNT、FS_0100_DVC_UTIL}のどれかを指定します。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="deviceDisplayName" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								デバイス名称です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="breakdownFlg" type="xs:boolean" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								内訳データ収集フラグです。{しない(False)、する(True)}を指定します。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

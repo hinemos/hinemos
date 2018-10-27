@@ -1,0 +1,517 @@
+INTEGRATED-SERVICES-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+            MODULE-IDENTITY, OBJECT-TYPE, Counter32,
+            Gauge32, Integer32, mib-2                FROM SNMPv2-SMI
+            TimeInterval, TEXTUAL-CONVENTION, RowStatus,
+            TruthValue                               FROM SNMPv2-TC
+            MODULE-COMPLIANCE, OBJECT-GROUP          FROM SNMPv2-CONF
+            ifIndex, InterfaceIndex                  FROM IF-MIB;
+
+
+intSrv MODULE-IDENTITY
+        LAST-UPDATED "9511030500Z" -- Thu Aug 28 09:04:13 PDT 1997
+        ORGANIZATION "IETF Integrated Services Working Group"
+    ::= { mib-2 52 }
+
+intSrvObjects          OBJECT IDENTIFIER ::= { intSrv 1 }
+intSrvGenObjects       OBJECT IDENTIFIER ::= { intSrv 2 }
+intSrvNotifications    OBJECT IDENTIFIER ::= { intSrv 3 }
+intSrvConformance      OBJECT IDENTIFIER ::= { intSrv 4 }
+
+
+    SessionNumber ::= TEXTUAL-CONVENTION
+        STATUS   current
+       SYNTAX   INTEGER (0..2147483647)
+
+
+    Protocol ::= TEXTUAL-CONVENTION
+        DISPLAY-HINT "d"
+        STATUS   current
+       SYNTAX   INTEGER (1..255)
+
+
+    SessionType ::= TEXTUAL-CONVENTION
+        STATUS   current
+       SYNTAX   INTEGER (1..255)
+
+    Port ::= TEXTUAL-CONVENTION
+        DISPLAY-HINT "d"
+        STATUS   current
+       SYNTAX   OCTET STRING (SIZE(2..4))
+
+
+    MessageSize ::= TEXTUAL-CONVENTION
+        DISPLAY-HINT "d"
+        STATUS   current
+       SYNTAX   INTEGER (0..'7FFFFFFF'h)
+
+
+    BitRate ::= TEXTUAL-CONVENTION
+        DISPLAY-HINT "d"
+        STATUS   current
+       SYNTAX   INTEGER (0..'7FFFFFFF'h)
+
+    BurstSize ::= TEXTUAL-CONVENTION
+         DISPLAY-HINT "d"
+         STATUS   current
+        SYNTAX   INTEGER (0..'7FFFFFFF'h)
+
+
+    QosService ::= TEXTUAL-CONVENTION
+         STATUS   current
+        SYNTAX   INTEGER {
+                   bestEffort (1),         -- Best Effort Service
+                   guaranteedDelay (2),    -- Guaranteed Delay
+                   controlledLoad (5)      -- Controlled Load
+                 }
+
+
+
+    intSrvIfAttribTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF IntSrvIfAttribEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+       ::= { intSrvObjects 1 }
+
+
+    intSrvIfAttribEntry OBJECT-TYPE
+        SYNTAX      IntSrvIfAttribEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+       INDEX { ifIndex }
+       ::= { intSrvIfAttribTable 1 }
+
+IntSrvIfAttribEntry ::=
+    SEQUENCE {
+        intSrvIfAttribAllocatedBits     BitRate,
+        intSrvIfAttribMaxAllocatedBits  BitRate,
+        intSrvIfAttribAllocatedBuffer   BurstSize,
+        intSrvIfAttribFlows             Gauge32,
+        intSrvIfAttribPropagationDelay  Integer32,
+
+
+
+
+
+        intSrvIfAttribStatus            RowStatus
+    }
+
+    intSrvIfAttribAllocatedBits OBJECT-TYPE
+        SYNTAX      BitRate
+        UNITS       "Bits per second"
+        MAX-ACCESS  read-only
+        STATUS      current
+       ::= { intSrvIfAttribEntry 1 }
+
+    intSrvIfAttribMaxAllocatedBits OBJECT-TYPE
+        SYNTAX      BitRate
+        UNITS       "Bits per second"
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvIfAttribEntry 2 }
+
+
+    intSrvIfAttribAllocatedBuffer OBJECT-TYPE
+        SYNTAX      BurstSize
+        UNITS       "Bytes"
+        MAX-ACCESS  read-only
+        STATUS      current
+       ::= { intSrvIfAttribEntry 3 }
+
+
+    intSrvIfAttribFlows OBJECT-TYPE
+        SYNTAX      Gauge32
+        MAX-ACCESS  read-only
+        STATUS      current
+       ::= { intSrvIfAttribEntry 4 }
+
+
+
+
+
+
+    intSrvIfAttribPropagationDelay OBJECT-TYPE
+        SYNTAX      Integer32
+        UNITS       "microseconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+       DEFVAL { 0 }-- by default, interfaces are presumed to add
+       ::= { intSrvIfAttribEntry 5 }
+
+
+    intSrvIfAttribStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvIfAttribEntry 6 }
+
+
+
+
+    intSrvFlowTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF IntSrvFlowEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+       ::= { intSrvObjects 2 }
+
+
+    intSrvFlowEntry OBJECT-TYPE
+        SYNTAX      IntSrvFlowEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+
+
+
+
+
+       INDEX { intSrvFlowNumber }
+       ::= { intSrvFlowTable 1 }
+
+
+    IntSrvFlowEntry ::=
+        SEQUENCE {
+            intSrvFlowNumber                  SessionNumber,
+            intSrvFlowType                    SessionType,
+            intSrvFlowOwner                   INTEGER,
+            intSrvFlowDestAddr                OCTET STRING,
+            intSrvFlowSenderAddr              OCTET STRING,
+            intSrvFlowDestAddrLength          INTEGER,
+            intSrvFlowSenderAddrLength        INTEGER,
+            intSrvFlowProtocol                Protocol,
+            intSrvFlowDestPort                Port,
+            intSrvFlowPort                    Port,
+            intSrvFlowFlowId                  INTEGER,
+            intSrvFlowInterface               InterfaceIndex,
+            intSrvFlowIfAddr                  OCTET STRING,
+            intSrvFlowRate                    BitRate,
+            intSrvFlowBurst                   BurstSize,
+            intSrvFlowWeight                  Integer32,
+            intSrvFlowQueue                   Integer32,
+            intSrvFlowMinTU                   MessageSize,
+            intSrvFlowMaxTU                   MessageSize,
+            intSrvFlowBestEffort              Counter32,
+            intSrvFlowPoliced                 Counter32,
+            intSrvFlowDiscard                 TruthValue,
+            intSrvFlowService                 QosService,
+            intSrvFlowOrder                   INTEGER,
+            intSrvFlowStatus                  RowStatus
+        }
+
+
+    intSrvFlowNumber OBJECT-TYPE
+        SYNTAX      SessionNumber
+        MAX-ACCESS  not-accessible
+        STATUS      current
+       ::= { intSrvFlowEntry 1 }
+
+
+    intSrvFlowType OBJECT-TYPE
+        SYNTAX      SessionType
+        MAX-ACCESS  read-create
+
+
+
+
+
+        STATUS      current
+       ::= { intSrvFlowEntry 2 }
+
+
+    intSrvFlowOwner OBJECT-TYPE
+        SYNTAX      INTEGER {
+                         other(1),
+                         rsvp(2),
+                         management(3)
+                    }
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 3 }
+
+
+    intSrvFlowDestAddr OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(4..16))
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 4 }
+
+
+    intSrvFlowSenderAddr OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(4..16))
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 5 }
+
+
+    intSrvFlowDestAddrLength OBJECT-TYPE
+        SYNTAX      INTEGER(0..128)
+
+
+
+
+
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 6 }
+
+
+    intSrvFlowSenderAddrLength OBJECT-TYPE
+        SYNTAX      INTEGER(0..128)
+        MAX-ACCESS  read-create
+        STATUS      current
+               ::= { intSrvFlowEntry 7 }
+
+
+    intSrvFlowProtocol OBJECT-TYPE
+        SYNTAX      Protocol
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 8 }
+
+
+    intSrvFlowDestPort OBJECT-TYPE
+        SYNTAX      Port
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 9 }
+
+
+    intSrvFlowPort OBJECT-TYPE
+        SYNTAX      Port
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 10 }
+
+
+    intSrvFlowFlowId OBJECT-TYPE
+        SYNTAX      INTEGER (0..16777215)
+        MAX-ACCESS  read-only
+        STATUS      current
+       ::= { intSrvFlowEntry 11 }
+
+
+    intSrvFlowInterface OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 12 }
+
+
+    intSrvFlowIfAddr OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(4..16))
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 13 }
+
+
+    intSrvFlowRate OBJECT-TYPE
+        SYNTAX      BitRate
+        UNITS       "bits per second"
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 14 }
+
+
+    intSrvFlowBurst OBJECT-TYPE
+        SYNTAX      BurstSize
+        UNITS       "bytes"
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 15 }
+
+
+    intSrvFlowWeight OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 16 }
+
+
+
+
+
+
+    intSrvFlowQueue OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 17 }
+
+
+    intSrvFlowMinTU OBJECT-TYPE
+        SYNTAX      MessageSize
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 18 }
+
+
+    intSrvFlowMaxTU OBJECT-TYPE
+        SYNTAX      MessageSize
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 19 }
+
+
+    intSrvFlowBestEffort OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+       ::= { intSrvFlowEntry 20 }
+
+
+    intSrvFlowPoliced OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+
+
+
+
+
+       ::= { intSrvFlowEntry 21 }
+
+
+    intSrvFlowDiscard OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-create
+        STATUS      current
+       DEFVAL { false } -- traffic is, by default, treated as best
+       ::= { intSrvFlowEntry 22 }
+
+
+    intSrvFlowService OBJECT-TYPE
+        SYNTAX      QosService
+        MAX-ACCESS  read-only
+        STATUS      current
+       ::= { intSrvFlowEntry 23 }
+
+
+    intSrvFlowOrder OBJECT-TYPE
+        SYNTAX      INTEGER (0..65535)
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 24 }
+
+
+    intSrvFlowStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+       ::= { intSrvFlowEntry 25 }
+
+
+    intSrvFlowNewIndex OBJECT-TYPE
+        SYNTAX      TestAndIncr
+        MAX-ACCESS  read-write
+        STATUS      current
+       ::= { intSrvGenObjects 1 }
+
+
+
+
+intSrvGroups      OBJECT IDENTIFIER ::= { intSrvConformance 1 }
+intSrvCompliances OBJECT IDENTIFIER ::= { intSrvConformance 2 }
+
+
+
+    intSrvCompliance MODULE-COMPLIANCE
+        STATUS  current
+       MODULE  -- this module
+       MANDATORY-GROUPS { intSrvIfAttribGroup, intSrvFlowsGroup }
+
+       OBJECT       intSrvFlowType
+         MIN-ACCESS read-only
+
+      OBJECT       intSrvFlowOwner
+        MIN-ACCESS read-only
+
+
+
+
+
+
+     OBJECT       intSrvFlowDestAddr
+       MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowSenderAddr
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowDestAddrLength
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowSenderAddrLength
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowProtocol
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowDestPort
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowPort
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowFlowId
+      MIN-ACCESS not-accessible
+
+
+
+
+
+
+    OBJECT       intSrvFlowInterface
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowRate
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowBurst
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowWeight
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowQueue
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowMinTU
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowMaxTU
+      MIN-ACCESS read-only
+
+    OBJECT       intSrvFlowStatus
+      MIN-ACCESS read-only
+
+
+
+
+
+
+    ::= { intSrvCompliances 1 }
+
+
+    intSrvIfAttribGroup OBJECT-GROUP
+         OBJECTS {
+            intSrvIfAttribAllocatedBits, intSrvIfAttribMaxAllocatedBits,
+            intSrvIfAttribAllocatedBuffer, intSrvIfAttribFlows,
+            intSrvIfAttribPropagationDelay, intSrvIfAttribStatus
+        }
+        STATUS  current
+       ::= { intSrvGroups 1 }
+
+    intSrvFlowsGroup OBJECT-GROUP
+         OBJECTS {
+            intSrvFlowType, intSrvFlowOwner, intSrvFlowDestAddr,
+            intSrvFlowSenderAddr, intSrvFlowDestAddrLength,
+            intSrvFlowSenderAddrLength, intSrvFlowProtocol,
+            intSrvFlowDestPort, intSrvFlowPort, intSrvFlowInterface,
+            intSrvFlowBestEffort, intSrvFlowRate, intSrvFlowBurst,
+            intSrvFlowWeight, intSrvFlowQueue, intSrvFlowMinTU,
+            intSrvFlowDiscard, intSrvFlowPoliced, intSrvFlowService,
+            intSrvFlowIfAddr, intSrvFlowOrder, intSrvFlowStatus
+        }
+        STATUS  current
+       ::= { intSrvGroups 2 }
+
+END

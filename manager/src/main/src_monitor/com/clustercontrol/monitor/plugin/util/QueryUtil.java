@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.plugin.util;
 
 import org.apache.commons.logging.Log;
@@ -18,43 +26,49 @@ public class QueryUtil {
 	private static Log m_log = LogFactory.getLog( QueryUtil.class );
 
 	public static PluginCheckInfo getMonitorPluginInfoPK(String monitorId) throws MonitorNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		PluginCheckInfo entity = em.find(PluginCheckInfo.class, monitorId, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			MonitorNotFound e = new MonitorNotFound("MonitorPluginInfoEntity.findByPrimaryKey"
-					+ ", monitorId = " + monitorId);
-			m_log.info("getMonitorPluginInfoPK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			PluginCheckInfo entity = em.find(PluginCheckInfo.class, monitorId, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				MonitorNotFound e = new MonitorNotFound("MonitorPluginInfoEntity.findByPrimaryKey"
+						+ ", monitorId = " + monitorId);
+				m_log.info("getMonitorPluginInfoPK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 
 	public static MonitorPluginNumericInfo getMonitorPluginNumericInfoEntity(MonitorPluginNumericInfoEntityPK pk) throws MonitorNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		MonitorPluginNumericInfo entity = em.find(MonitorPluginNumericInfo.class, pk, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			MonitorNotFound e = new MonitorNotFound("MonitorPluginNumericInfoEntity.findByPrimaryKey"
-					+ pk.toString());
-			m_log.info("getMonitorPluginNumericInfoEntity() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			MonitorPluginNumericInfo entity = em.find(MonitorPluginNumericInfo.class, pk, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				MonitorNotFound e = new MonitorNotFound("MonitorPluginNumericInfoEntity.findByPrimaryKey"
+						+ pk.toString());
+				m_log.info("getMonitorPluginNumericInfoEntity() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static MonitorPluginStringInfo getMonitorPluginStringInfoEntity(MonitorPluginStringInfoEntityPK pk) throws MonitorNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		MonitorPluginStringInfo entity = em.find(MonitorPluginStringInfo.class, pk, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			MonitorNotFound e = new MonitorNotFound("MonitorPluginStringInfoEntity.findByPrimaryKey"
-					+ pk.toString());
-			m_log.info("getMonitorPluginStringInfoEntity() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			MonitorPluginStringInfo entity = em.find(MonitorPluginStringInfo.class, pk, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				MonitorNotFound e = new MonitorNotFound("MonitorPluginStringInfoEntity.findByPrimaryKey"
+						+ pk.toString());
+				m_log.info("getMonitorPluginStringInfoEntity() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 }

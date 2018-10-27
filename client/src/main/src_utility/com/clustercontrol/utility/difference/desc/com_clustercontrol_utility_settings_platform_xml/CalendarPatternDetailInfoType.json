@@ -1,0 +1,24 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"yearNo",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarPatternDetailInfoType_yearNo"}
+	]},
+	
+	{
+	"propName":"monthNo",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarPatternDetailInfoType_monthNo"}
+	]},
+	
+	{
+	"propName":"dayNo",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarPatternDetailInfoType_dayNo"}
+	]}
+]
+}

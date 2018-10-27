@@ -1,0 +1,25 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"envVariableId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"JobEnvVariableMst_value"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"JobEnvVariableMst_description"}
+	]}
+
+]
+}

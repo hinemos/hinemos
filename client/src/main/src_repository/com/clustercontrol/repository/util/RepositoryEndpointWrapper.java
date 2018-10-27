@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.repository.util;
 
 import java.util.ArrayList;
@@ -192,6 +200,22 @@ public class RepositoryEndpointWrapper {
 			}
 		}
 
+		throw wse;
+	}
+
+	public List<String> getFacilityIdList(String parentFacilityId, int level)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getFacilityIdList(parentFacilityId,  level);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getFacilityIdList(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
 		throw wse;
 	}
 

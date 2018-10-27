@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.hinemosagent.bean;
 
 import java.io.Serializable;
@@ -6,7 +14,7 @@ import java.util.Date;
 
 import javax.xml.bind.annotation.XmlType;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.util.HinemosTime;
 
 @XmlType(namespace = "http://agent.ws.clustercontrol.com")
@@ -34,8 +42,8 @@ public class AgentInfo implements Cloneable, Serializable {
 		/*
 		 * (interval * monitor.agent.valid.multi + monitor.agent.valid.plus) の時間でgetTopicがない場合は、無効とみなす。
 		 */
-		int intervalMulti = HinemosPropertyUtil.getHinemosPropertyNum("monitor.agent.valid.multi", Long.valueOf(2)).intValue();
-		int intervalPlus = HinemosPropertyUtil.getHinemosPropertyNum("monitor.agent.valid.plus", Long.valueOf(10 * 1000)).intValue(); // 10sec
+		int intervalMulti = HinemosPropertyCommon.monitor_agent_valid_multi.getIntegerValue();
+		int intervalPlus = HinemosPropertyCommon.monitor_agent_valid_plus.getIntegerValue(); // 10sec
 		if (interval * intervalMulti + intervalPlus > HinemosTime.currentTimeMillis() - lastLogin) {
 			return true;
 		}

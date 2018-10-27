@@ -1,0 +1,146 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"managementId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"name",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_name"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_description"}
+	]},
+
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_facilityId"}
+	]},
+
+	{
+	"propName":"scope",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_scope"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_ownerRoleId"}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_validFlg"}
+	]},
+
+	{
+	"propName":"startPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_startPriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"},
+				{"value":"4", "name":"name_none"}
+			]
+		}
+	]},
+
+	{
+	"propName":"normalPriorityRun",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_normalPriorityRun"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"},
+				{"value":"4", "name":"name_none"}
+			]
+		}
+	]},
+
+	{
+	"propName":"abnormalPriorityRun",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_abnormalPriorityRun"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"},
+				{"value":"4", "name":"name_none"}
+			]
+		}
+	]},
+
+	{
+	"propName":"normalPriorityCheck",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_normalPriorityCheck"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"},
+				{"value":"4", "name":"name_none"}
+			]
+		}
+	]},
+
+	{
+	"propName":"abnormalPriorityCheck",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_abnormalPriorityCheck"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"},
+				{"value":"4", "name":"name_none"}
+			]
+		}
+	]},
+
+	{
+	"propName":"infraModuleInfo",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"moduleId"},
+		{"type":"Column", "columnName":"InfraModuleInfo_infraModuleInfo"},
+		{"type":"Ignore", "propNames":["moduleId"]}
+	]},
+
+	{
+	"propName":"notifyId",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraManagementInfo_notifyId"},
+		{"type":"Array"}
+	]},
+	
+	{
+	"propName":"infraManagementParam",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"paramId"},
+		{"type":"Column", "columnName":"InfraModuleInfo_infraManagementParam"},
+		{"type":"Ignore", "propNames":["paramId"]}
+	]}
+]
+}

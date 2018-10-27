@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.jobmanagement.util;
 
 import org.apache.commons.logging.Log;
@@ -16,12 +24,6 @@ public class FromRunningAfterCommitCallback implements JpaTransactionCallback {
 		this.pk = pk;
 	}
 	
-	@Override
-	public void preBegin() {}
-
-	@Override
-	public void postBegin() {}
-
 	@Override
 	public void preFlush() {}
 

@@ -1,0 +1,60 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+
+	]},
+
+	{
+	"propName":"deviceIndex",
+	"annotations":[
+		{"type":"Column", "columnName":"DiskInfo_deviceIndex"}
+	]},
+
+	{
+	"propName":"deviceType",
+	"annotations":[
+		{"type":"Column", "columnName":"DiskInfo_deviceType"}
+	]},
+
+	{
+	"propName":"deviceName",
+	"annotations":[
+		{"type":"Column", "columnName":"DiskInfo_deviceName"}
+	]},
+
+	{
+	"propName":"deviceDisplayName",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"deviceSize",
+	"annotations":[
+		{"type":"Column", "columnName":"DiskInfo_deviceSize"}
+	]},
+
+	{
+	"propName":"deviceSizeUnit",
+	"annotations":[
+		{"type":"Column", "columnName":"DiskInfo_deviceSizeUnit"}
+	]},
+
+	{
+	"propName":"deviceDescription",
+	"annotations":[
+		{"type":"Column", "columnName":"DiskInfo_deviceDescription"}
+	]},
+
+	{
+	"propName":"deviceDiskRpm",
+	"annotations":[
+		{"type":"Column", "columnName":"DiskInfo_deviceDiskRpm"}
+	]}
+]
+}

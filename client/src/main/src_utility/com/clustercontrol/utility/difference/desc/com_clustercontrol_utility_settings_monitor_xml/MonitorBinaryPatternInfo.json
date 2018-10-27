@@ -1,0 +1,50 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorStringValueInfo_description"}
+	]},
+
+	{
+	"propName":"orderNo",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorStringValueInfo_orderNo"}
+	]},
+
+	{
+	"propName":"pattern",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorStringValueInfo_pattern"}
+	]},
+
+	{
+	"propName":"processType",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorStringValueInfo_processType"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_doProcess"}, {"value":"false", "name":"name_dontProcess"}]}
+	]},
+
+	{
+	"propName":"message",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorStringValueInfo_message"}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorStringValueInfo_validFlg"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_circle"}, {"value":"false", "name":"name_hyphen"}]}
+	]},
+	
+	{
+	"propName":"textEncoding",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorBinaryValueInfo_textEncoding"}
+	]}
+]
+}

@@ -1,21 +1,16 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.session;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -23,7 +18,14 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
+import com.clustercontrol.analytics.factory.ModifyMonitorCorrelation;
+import com.clustercontrol.analytics.factory.ModifyMonitorIntegration;
+import com.clustercontrol.analytics.factory.ModifyMonitorLogcount;
+import com.clustercontrol.analytics.factory.SelectMonitorIntegration;
+import com.clustercontrol.analytics.util.SummaryLogcountWorker;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.binary.factory.ModifyMonitorBinaryFile;
+import com.clustercontrol.binary.factory.ModifyMonitorPacketCapture;
 import com.clustercontrol.commons.scheduler.TriggerSchedulerException;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -42,27 +44,32 @@ import com.clustercontrol.hinemosagent.factory.ModifyMonitorAgent;
 import com.clustercontrol.http.factory.ModifyMonitorHttp;
 import com.clustercontrol.http.factory.ModifyMonitorHttpScenario;
 import com.clustercontrol.http.factory.ModifyMonitorHttpString;
+import com.clustercontrol.hub.bean.CollectStringTag;
+import com.clustercontrol.hub.model.LogFormat;
+import com.clustercontrol.hub.model.LogFormatKey;
 import com.clustercontrol.jmx.factory.ModifyMonitorJmx;
 import com.clustercontrol.logfile.factory.ModifyMonitorLogfileString;
 import com.clustercontrol.monitor.bean.MonitorFilterInfo;
 import com.clustercontrol.monitor.plugin.factory.ModifyMonitorPluginNumeric;
 import com.clustercontrol.monitor.plugin.factory.ModifyMonitorPluginString;
 import com.clustercontrol.monitor.plugin.factory.ModifyMonitorPluginTruth;
+import com.clustercontrol.monitor.run.bean.MonitorInfoBean;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.factory.ModifyMonitor;
 import com.clustercontrol.monitor.run.factory.SelectMonitor;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.MonitorChangedNotificationCallback;
+import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil;
 import com.clustercontrol.monitor.run.util.MonitorValidator;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCacheChangeCallback;
 import com.clustercontrol.monitor.run.util.QueryUtil;
-import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.performance.monitor.factory.ModifyMonitorPerformance;
 import com.clustercontrol.performance.monitor.factory.SelectMonitorPerformance;
 import com.clustercontrol.ping.factory.ModifyMonitorPing;
 import com.clustercontrol.port.factory.ModifyMonitorPort;
 import com.clustercontrol.process.factory.ModifyMonitorProcess;
+import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.snmp.factory.ModifyMonitorSnmp;
 import com.clustercontrol.snmp.factory.ModifyMonitorSnmpString;
 import com.clustercontrol.snmptrap.factory.ModifyMonitorTrap;
@@ -103,6 +110,13 @@ public class MonitorSettingControllerBean {
 
 			//入力チェック
 			try{
+				// 将来予測・変化量のアプリケーションが設定されていない場合は、監視のアプリケーションを設定
+				if (info.getPredictionApplication() == null || info.getPredictionApplication().isEmpty()) {
+					info.setPredictionApplication(info.getApplication());
+				}
+				if (info.getChangeApplication() == null || info.getChangeApplication().isEmpty()) {
+					info.setChangeApplication(info.getApplication());
+				}
 				MonitorValidator.validateMonitorInfo(info);
 				
 				//ユーザがオーナーロールIDに所属しているかチェック
@@ -268,6 +282,26 @@ public class MonitorSettingControllerBean {
 					throw e;
 				}
 			}
+			// ログ件数 監視
+			else if(HinemosModuleConstant.MONITOR_LOGCOUNT.equals(monitorTypeId)){
+				addMonitor = new ModifyMonitorLogcount();
+			}
+			// 相関係数監視
+			else if(HinemosModuleConstant.MONITOR_CORRELATION.equals(monitorTypeId)){
+				addMonitor = new ModifyMonitorCorrelation();
+			}
+			// 収集値統合監視
+			else if(HinemosModuleConstant.MONITOR_INTEGRATION.equals(monitorTypeId)){
+				addMonitor = new ModifyMonitorIntegration();
+			}
+			// バイナリファイル監視
+			else if (HinemosModuleConstant.MONITOR_BINARYFILE_BIN.equals(monitorTypeId)) {
+				addMonitor = new ModifyMonitorBinaryFile();
+			}
+			// パケットキャプチャ監視
+			else if (HinemosModuleConstant.MONITOR_PCAP_BIN.equals(monitorTypeId)) {
+				addMonitor = new ModifyMonitorPacketCapture();
+			}
 			// Other(Pluginで追加する汎用的な監視)
 			else{
 
@@ -362,6 +396,13 @@ public class MonitorSettingControllerBean {
 
 			//入力チェック
 			try{
+				// 将来予測・変化量のアプリケーションが設定されていない場合は、監視のアプリケーションを設定
+				if (info.getPredictionApplication() == null || info.getPredictionApplication().isEmpty()) {
+					info.setPredictionApplication(info.getApplication());
+				}
+				if (info.getChangeApplication() == null || info.getChangeApplication().isEmpty()) {
+					info.setChangeApplication(info.getApplication());
+				}
 				MonitorValidator.validateMonitorInfo(info);
 			} catch (InvalidSetting | InvalidRole e) {
 				throw e;
@@ -524,6 +565,26 @@ public class MonitorSettingControllerBean {
 					throw e;
 				}				
 			}
+			// ログ件数 監視
+			else if(HinemosModuleConstant.MONITOR_LOGCOUNT.equals(monitorTypeId)){
+				modMonitor = new ModifyMonitorLogcount();
+			}
+			// 相関係数 監視
+			else if(HinemosModuleConstant.MONITOR_CORRELATION.equals(monitorTypeId)){
+				modMonitor = new ModifyMonitorCorrelation();
+			}
+			// 収集値統合 監視
+			else if(HinemosModuleConstant.MONITOR_INTEGRATION.equals(monitorTypeId)){
+				modMonitor = new ModifyMonitorIntegration();
+			}
+			// バイナリファイル監視
+			else if (HinemosModuleConstant.MONITOR_BINARYFILE_BIN.equals(monitorTypeId)) {
+				modMonitor = new ModifyMonitorBinaryFile();
+			}
+			// パケットキャプチャ監視
+			else if (HinemosModuleConstant.MONITOR_PCAP_BIN.equals(monitorTypeId)) {
+				modMonitor = new ModifyMonitorPacketCapture();
+			}
 			// Other
 			else{
 
@@ -604,16 +665,15 @@ public class MonitorSettingControllerBean {
 	 * 監視設定情報をマネージャから削除します。<BR>
 	 *
 	 * @param monitorIdList
-	 * @param monitorTypeId
 	 * @return
 	 * @throws MonitorNotFound
 	 * @throws HinemosUnknown
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public boolean deleteMonitor(List<String> monitorIdList, String monitorTypeId)
+	public boolean deleteMonitor(List<String> monitorIdList)
 			throws MonitorNotFound, HinemosUnknown, InvalidSetting, InvalidRole {
-		m_log.debug("deleteMonitor() monitorId = " + monitorIdList + ", monitorTypeId = " + monitorTypeId);
+		m_log.debug("deleteMonitor() monitorId = " + monitorIdList );
 
 		JpaTransactionManager jtm = null;
 
@@ -624,120 +684,139 @@ public class MonitorSettingControllerBean {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
 		}
-		if(monitorTypeId == null || "".equals(monitorTypeId)){
-			HinemosUnknown e = new HinemosUnknown("monitorTypeId is null or empty.");
-			m_log.info("deleteMonitor() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-
-		ModifyMonitor deleteMonitor = null;
-		// Hinemos エージェント監視
-		if(HinemosModuleConstant.MONITOR_AGENT.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorAgent();
-		}
-		// HTTP 監視
-		else if (HinemosModuleConstant.MONITOR_HTTP_N.equals(monitorTypeId)
-				|| HinemosModuleConstant.MONITOR_HTTP_S.equals(monitorTypeId)) {
-			deleteMonitor = new ModifyMonitorHttp();
-		}
-		// HTTP シナリオ監視
-		else if (HinemosModuleConstant.MONITOR_HTTP_SCENARIO.equals(monitorTypeId)) {
-			deleteMonitor = new ModifyMonitorHttpScenario();
-		}
-		// ログファイル 監視
-		else if(HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorTypeId)){
-			deleteMonitor =  new ModifyMonitorLogfileString();
-		}
-		// リソース 監視
-		else if(HinemosModuleConstant.MONITOR_PERFORMANCE.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorPerformance();
-		}
-		// ping監視
-		else if(HinemosModuleConstant.MONITOR_PING.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorPing();
-		}
-		// ポート監視
-		else if(HinemosModuleConstant.MONITOR_PORT.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorPort();
-		}
-		// プロセス監視
-		else if(HinemosModuleConstant.MONITOR_PROCESS.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorProcess();
-		}
-		// SNMPTRAP監視
-		else if(HinemosModuleConstant.MONITOR_SNMPTRAP.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorTrap();
-		}
-		// SNMP監視
-		else if (HinemosModuleConstant.MONITOR_SNMP_N.equals(monitorTypeId)
-				|| HinemosModuleConstant.MONITOR_SNMP_S.equals(monitorTypeId)) {
-			deleteMonitor = new ModifyMonitorSnmp();
-		}
-		// システムログ監視
-		else if(HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorSystemlogString();
-		}
-		// SQL監視
-		else if (HinemosModuleConstant.MONITOR_SQL_N.equals(monitorTypeId)
-				|| HinemosModuleConstant.MONITOR_SQL_S.equals(monitorTypeId)) {
-			deleteMonitor = new ModifyMonitorSql();
-		}
-		// コマンド監視
-		else if(HinemosModuleConstant.MONITOR_CUSTOM_N.equals(monitorTypeId)
-			|| HinemosModuleConstant.MONITOR_CUSTOM_S.equals(monitorTypeId)) {
-			deleteMonitor = new ModifyCustom();
-		}
-		// Windowsサービス監視
-		else if(HinemosModuleConstant.MONITOR_WINSERVICE.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorWinService();
-		}
-		// Windowsイベント監視
-		else if(HinemosModuleConstant.MONITOR_WINEVENT.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorWinEvent();
-		}
-		// JMX 監視
-		else if(HinemosModuleConstant.MONITOR_JMX.equals(monitorTypeId)){
-			deleteMonitor = new ModifyMonitorJmx();
-		}
-		// カスタムトラップ監視
-		else if(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N.equals(monitorTypeId)
-			|| HinemosModuleConstant.MONITOR_CUSTOMTRAP_S.equals(monitorTypeId)) {
-			deleteMonitor = new ModifyCustomTrap();
-		}
-		// Other
-		else{
-			deleteMonitor = new ModifyMonitorPluginString();
-		}
-
+		
 		// 監視設定情報を削除
 		boolean flag = false;
+		boolean systemlogFlag = false;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-
+			
 			for (String monitorId : monitorIdList) {
+				
+				MonitorInfo monitorInfo = QueryUtil.getMonitorInfoPK(monitorId);
+				
+				String monitorTypeId = monitorInfo.getMonitorTypeId();
+				
+				ModifyMonitor deleteMonitor = null;
+				// Hinemos エージェント監視
+				if(HinemosModuleConstant.MONITOR_AGENT.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorAgent();
+				}
+				// HTTP 監視
+				else if (HinemosModuleConstant.MONITOR_HTTP_N.equals(monitorTypeId)
+						|| HinemosModuleConstant.MONITOR_HTTP_S.equals(monitorTypeId)) {
+					deleteMonitor = new ModifyMonitorHttp();
+				}
+				// HTTP シナリオ監視
+				else if (HinemosModuleConstant.MONITOR_HTTP_SCENARIO.equals(monitorTypeId)) {
+					deleteMonitor = new ModifyMonitorHttpScenario();
+				}
+				// ログファイル 監視
+				else if(HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorTypeId)){
+					deleteMonitor =  new ModifyMonitorLogfileString();
+				}
+				// リソース 監視
+				else if(HinemosModuleConstant.MONITOR_PERFORMANCE.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorPerformance();
+				}
+				// ping監視
+				else if(HinemosModuleConstant.MONITOR_PING.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorPing();
+				}
+				// ポート監視
+				else if(HinemosModuleConstant.MONITOR_PORT.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorPort();
+				}
+				// プロセス監視
+				else if(HinemosModuleConstant.MONITOR_PROCESS.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorProcess();
+				}
+				// SNMPTRAP監視
+				else if(HinemosModuleConstant.MONITOR_SNMPTRAP.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorTrap();
+				}
+				// SNMP監視
+				else if (HinemosModuleConstant.MONITOR_SNMP_N.equals(monitorTypeId)
+						|| HinemosModuleConstant.MONITOR_SNMP_S.equals(monitorTypeId)) {
+					deleteMonitor = new ModifyMonitorSnmp();
+				}
+				// システムログ監視
+				else if(HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorSystemlogString();
+				}
+				// SQL監視
+				else if (HinemosModuleConstant.MONITOR_SQL_N.equals(monitorTypeId)
+						|| HinemosModuleConstant.MONITOR_SQL_S.equals(monitorTypeId)) {
+					deleteMonitor = new ModifyMonitorSql();
+				}
+				// コマンド監視
+				else if(HinemosModuleConstant.MONITOR_CUSTOM_N.equals(monitorTypeId)
+					|| HinemosModuleConstant.MONITOR_CUSTOM_S.equals(monitorTypeId)) {
+					deleteMonitor = new ModifyCustom();
+				}
+				// Windowsサービス監視
+				else if(HinemosModuleConstant.MONITOR_WINSERVICE.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorWinService();
+				}
+				// Windowsイベント監視
+				else if(HinemosModuleConstant.MONITOR_WINEVENT.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorWinEvent();
+				}
+				// JMX 監視
+				else if(HinemosModuleConstant.MONITOR_JMX.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorJmx();
+				}
+				// カスタムトラップ監視
+				else if(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N.equals(monitorTypeId)
+					|| HinemosModuleConstant.MONITOR_CUSTOMTRAP_S.equals(monitorTypeId)) {
+					deleteMonitor = new ModifyCustomTrap();
+				}
+				// ログ件数 監視
+				else if(HinemosModuleConstant.MONITOR_LOGCOUNT.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorLogcount();
+				}
+				// 相関係数 監視
+				else if(HinemosModuleConstant.MONITOR_CORRELATION.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorCorrelation();
+				}
+				// 収集値統合 監視
+				else if(HinemosModuleConstant.MONITOR_INTEGRATION.equals(monitorTypeId)){
+					deleteMonitor = new ModifyMonitorIntegration();
+				}
+				// バイナリファイル監視
+				else if (HinemosModuleConstant.MONITOR_BINARYFILE_BIN.equals(monitorTypeId)) {
+					deleteMonitor = new ModifyMonitorBinaryFile();
+				}
+				// パケットキャプチャ監視
+				else if (HinemosModuleConstant.MONITOR_PCAP_BIN.equals(monitorTypeId)) {
+					deleteMonitor = new ModifyMonitorPacketCapture();
+				}
+				// Other
+				else{
+					deleteMonitor = new ModifyMonitorPluginString();
+				}
+				
 				// 他機能で使用されている場合はエラーとする
 				MonitorValidator.valideDeleteMonitor(monitorId);
-				flag = deleteMonitor.delete(monitorTypeId, monitorId);
+				if (HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(monitorInfo.getMonitorTypeId())) {
+					systemlogFlag = true;
+				}
+				flag = deleteMonitor.delete(monitorId);
+				
+				jtm.addCallback(new MonitorChangedNotificationCallback(monitorTypeId));
+				if (HinemosModuleConstant.MONITOR_PROCESS.equals(monitorTypeId)
+						|| HinemosModuleConstant.MONITOR_PERFORMANCE.equals(monitorTypeId)) {
+					jtm.addCallback(new NodeToMonitorCacheChangeCallback(monitorTypeId));
+				}
+				
 			}
-
-			jtm.addCallback(new MonitorChangedNotificationCallback(monitorTypeId));
-			if (HinemosModuleConstant.MONITOR_PROCESS.equals(monitorTypeId)
-					|| HinemosModuleConstant.MONITOR_PERFORMANCE.equals(monitorTypeId)) {
-				jtm.addCallback(new NodeToMonitorCacheChangeCallback(monitorTypeId));
-			}
-
 			jtm.commit();
-		} catch (MonitorNotFound | HinemosUnknown | InvalidRole | InvalidSetting e) {
+		} catch ( HinemosUnknown  | InvalidSetting e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (TriggerSchedulerException e) {
-			m_log.info("deleteMonitor " + e.getClass().getName() + ", " + e.getMessage());
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
@@ -753,8 +832,7 @@ public class MonitorSettingControllerBean {
 				try {
 					// コミット後にキャッシュクリア
 					NotifyRelationCache.refresh();
-
-					if (HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(monitorTypeId)) {
+					if (systemlogFlag){
 						SystemlogCache.refresh();
 					}
 				} catch (Exception e) {
@@ -802,7 +880,18 @@ public class MonitorSettingControllerBean {
 			MonitorInfo monitorInfo = QueryUtil.getMonitorInfoPK(monitorId);
 			// 通知情報の取得
 			monitorInfo.setNotifyRelationList(
-					new NotifyControllerBean().getNotifyRelation(monitorInfo.getNotifyGroupId()));
+					NotifyRelationCache.getNotifyList(monitorInfo.getNotifyGroupId()));
+			if (monitorInfo.getMonitorType().equals(MonitorTypeConstant.TYPE_NUMERIC)) {
+				// 通知情報(将来予測)の取得
+				monitorInfo.setPredictionNotifyRelationList(
+						NotifyRelationCache.getNotifyList(
+						CollectMonitorManagerUtil.getPredictionNotifyGroupId(monitorInfo.getNotifyGroupId())));
+				// 通知情報(変化点監視)の取得
+				monitorInfo.setChangeNotifyRelationList(
+						NotifyRelationCache.getNotifyList(
+						CollectMonitorManagerUtil.getChangeNotifyGroupId(monitorInfo.getNotifyGroupId())));
+			}
+
 			String monitorTypeId = monitorInfo.getMonitorTypeId();
 			
 			SelectMonitor selectMonitor = null;
@@ -814,6 +903,10 @@ public class MonitorSettingControllerBean {
 			else if(HinemosModuleConstant.MONITOR_CUSTOM_N.equals(monitorTypeId)
 					|| HinemosModuleConstant.MONITOR_CUSTOM_S.equals(monitorTypeId)){
 				selectMonitor = new SelectCustom();
+			}
+			// 収集値統合監視
+			else if(HinemosModuleConstant.MONITOR_INTEGRATION.equals(monitorTypeId)){
+				selectMonitor = new SelectMonitorIntegration();
 			}
 			// Other
 			else{
@@ -879,6 +972,49 @@ public class MonitorSettingControllerBean {
 			throw new InvalidRole(e.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("getMonitorList() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+		return list;
+	}
+
+	/**
+	 * 以下の条件に一致する監視設定一覧を取得します。
+	 *　　オーナーロールIDが参照可能
+	 *　　文字列監視
+	 *　　指定されたファシリティIDもしくはその配下のノードに一致する
+	 *　※サイレント監視で使用する。
+	 *
+	 * @param facilityId　ファシリティID
+	 * @param ownerRoleId　オーナーロールID
+	 * @return List 監視設定リスト
+	 * @throws InvalidRole 
+	 * @throws HinemosUnknown 
+	 */
+	public List<MonitorInfo> getStringMonitoInfoListForAnalytics(String facilityId, String ownerRoleId) 
+			throws InvalidRole, HinemosUnknown {
+		JpaTransactionManager jtm = null;
+		List<MonitorInfo> list;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			list = new SelectMonitor().getStringMonitoInfoListForAnalytics(facilityId, ownerRoleId); 
+			jtm.commit();
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (HinemosUnknown e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw e;
+		} catch (Exception e){
+			m_log.warn("getStringMonitoInfoListForAnalytics() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
 				jtm.rollback();
@@ -1105,6 +1241,39 @@ public class MonitorSettingControllerBean {
 	}
 
 	/**
+	 * ログ件数監視一覧リストを返します。
+	 *
+	 * @return Objectの2次元配列
+	 * @throws MonitorNotFound
+	 * @throws HinemosUnknown
+	 */
+	public ArrayList<MonitorInfo> getLogcountList() throws MonitorNotFound, InvalidRole, HinemosUnknown{
+		return getMonitorList(HinemosModuleConstant.MONITOR_LOGCOUNT);
+	}
+
+	/**
+	 * 相関係数監視一覧リストを返します。
+	 *
+	 * @return Objectの2次元配列
+	 * @throws MonitorNotFound
+	 * @throws HinemosUnknown
+	 */
+	public ArrayList<MonitorInfo> getCorrelationList() throws MonitorNotFound, InvalidRole, HinemosUnknown{
+		return getMonitorList(HinemosModuleConstant.MONITOR_CORRELATION);
+	}
+
+	/**
+	 * 収集値統合監視一覧リストを返します。
+	 *
+	 * @return Objectの2次元配列
+	 * @throws MonitorNotFound
+	 * @throws HinemosUnknown
+	 */
+	public ArrayList<MonitorInfo> getIntegrationList() throws MonitorNotFound, InvalidRole, HinemosUnknown{
+		return getMonitorList(HinemosModuleConstant.MONITOR_INTEGRATION);
+	}
+
+	/**
 	 * 監視一覧リストを返します。
 	 *
 	 * @param monitorTypeId 監視種別ID
@@ -1170,13 +1339,25 @@ public class MonitorSettingControllerBean {
 			QueryUtil.getMonitorInfoPK(monitorId, ObjectPrivilegeMode.MODIFY);
 
 			if (validFlag) {
-				if(!info.getMonitorFlg()){
+				if(!info.getMonitorFlg()
+						|| (info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC)
+						&& (!info.getChangeFlg() || !info.getPredictionFlg())) {
 					info.setMonitorFlg(true);
+					if(info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC){
+						info.setChangeFlg(true);
+						info.setPredictionFlg(true);
+					}
 					modifyMonitor(info);
 				}
 			} else {
-				if(info.getMonitorFlg()){
+				if(info.getMonitorFlg()
+						|| (info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC)
+						&& (info.getChangeFlg() || info.getPredictionFlg())) {
 					info.setMonitorFlg(false);
+					if(info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC){
+						info.setChangeFlg(false);
+						info.setPredictionFlg(false);
+					}
 					modifyMonitor(info);
 				}
 			}
@@ -1298,7 +1479,10 @@ public class MonitorSettingControllerBean {
 	 */
 	public ArrayList<MonitorInfo> getMonitorListWithoutCheckInfo(MonitorFilterInfo condition) throws InvalidRole, HinemosUnknown {
 		m_log.debug("getMonitorListWithoutCheckInfo(condition) : start");
-		
+
+		long time1 = System.currentTimeMillis();
+		long time2 = 0L; 
+		long time3 = 0L; 
 		JpaTransactionManager jtm = null;
 
 		ArrayList<MonitorInfo> list = null;
@@ -1310,15 +1494,40 @@ public class MonitorSettingControllerBean {
 			} else {
 				list = new SelectMonitor().getMonitorList();
 			}
-			
+			jtm.commit();
+			time2 = System.currentTimeMillis();
+		} catch (HinemosUnknown | InvalidRole e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (MonitorNotFound e) {
+			m_log.info("getMonitorListWithoutCheckInfo(condition) " + e.getClass().getName() + ", " + e.getMessage());
+			jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(),e);
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("getMonitorListWithoutCheckInfo(condition) : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(),e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+			// MonitorInfoからCheckInfoをはずす
 			for(MonitorInfo info : list) {
-				jtm.getEntityManager().detach(info);
 				info.setCustomCheckInfo(null);
 				info.setCustomTrapCheckInfo(null);
 				info.setHttpCheckInfo(null);
 				info.setHttpScenarioCheckInfo(null);
 				info.setJmxCheckInfo(null);
 				info.setLogfileCheckInfo(null);
+				info.setBinaryCheckInfo(null);
 				info.setPerfCheckInfo(null);
 				info.setPingCheckInfo(null);
 				info.setPluginCheckInfo(null);
@@ -1330,7 +1539,54 @@ public class MonitorSettingControllerBean {
 				info.setWinEventCheckInfo(null);
 				info.setWinServiceCheckInfo(null);
 			}
-			
+			time3 = System.currentTimeMillis();
+			long term = time3 - time1;
+			String msg = String.format("getMonitorListWithoutCheckInfo() end : term1=%s[msec], term2=%s[msec], all_term=%s[msec], ",
+					(time2 - time1), (time3 - time2), term);
+			if (term >= 10 * 1000) {
+				m_log.info(msg);
+			} else {
+				m_log.debug(msg);
+			}
+		}
+
+		m_log.debug("getMonitorListWithoutCheckInfo(condition) : end");
+		return list;
+	}
+
+	/**
+	 * チェック設定を含まない監視設定一覧の取得
+	 *
+	 * @param condition フィルタ条件
+	 * @return チェック設定を含まない監視設定一覧
+	 * @throws HinemosUnknown
+	 */
+	public ArrayList<MonitorInfoBean> getMonitorBeanListWithoutCheckInfo(MonitorFilterInfo condition) throws InvalidRole, HinemosUnknown {
+		m_log.debug("getMonitorListWithoutCheckInfo(condition) : start");
+
+		long time1 = System.currentTimeMillis();
+		long time2 = 0L; 
+		long time3 = 0L; 
+		JpaTransactionManager jtm = null;
+		ArrayList<MonitorInfoBean> rtnList = new ArrayList<>();
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			ArrayList<MonitorInfo> list = null;
+			if(condition != null) {
+				list = new SelectMonitor().getMonitorList(condition);
+			} else {
+				list = new SelectMonitor().getMonitorList();
+			}
+
+			time2 = System.currentTimeMillis();
+
+			// 戻り値に設定
+			for(MonitorInfo info : list) {
+				rtnList.add(createMonitorInfoBean(info));
+			}
+	
 			jtm.commit();
 		} catch (HinemosUnknown | InvalidRole e) {
 			if (jtm != null){
@@ -1352,11 +1608,318 @@ public class MonitorSettingControllerBean {
 				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(),e);
 		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+			time3 = System.currentTimeMillis();
+			long term = time3 - time1;
+			String msg = String.format("getMonitorListWithoutCheckInfo() end : term1=%s[msec], term2=%s[msec], all_term=%s[msec], ",
+					(time2 - time1), (time3 - time2), term);
+			if (term >= 10 * 1000) {
+				m_log.info(msg);
+			} else {
+				m_log.debug(msg);
+			}
+		}
+		m_log.debug("getMonitorListWithoutCheckInfo(condition) : end");
+		return rtnList;
+	}
+
+	/**
+	 * 監視設定IDの取得
+	 *
+	 * @param condition フィルタ条件
+	 * @return 監視設定IDリスト
+	 * @throws HinemosUnknown
+	 */
+	public List<String> getMonitorIdList(MonitorFilterInfo condition) throws InvalidRole, HinemosUnknown {
+		m_log.debug("getMonitorIdList(condition) : start");
+		
+		JpaTransactionManager jtm = null;
+
+		List<MonitorInfo> monitorInfoList = null;
+		List<String> list = new ArrayList<>();
+		
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			if(condition != null) {
+				monitorInfoList = new SelectMonitor().getMonitorList(condition);
+			} else {
+				monitorInfoList = new SelectMonitor().getMonitorList();
+			}
+			
+			for(MonitorInfo info : monitorInfoList) {
+				list.add(info.getMonitorId());
+			}
+			
+			jtm.commit();
+		} catch (HinemosUnknown | InvalidRole e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (MonitorNotFound e) {
+			m_log.info("getMonitorIdList(condition) " + e.getClass().getName() + ", " + e.getMessage());
+			jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(),e);
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("getMonitorIdList(condition) : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(),e);
+		} finally {
 			if (jtm != null)
 				jtm.close();
 		}
 
-		m_log.debug("getMonitorListWithoutCheckInfo(condition) : end");
+		m_log.debug("getMonitorIdList(condition) : end");
 		return list;
+	}
+
+	/**
+	 * 指定した文字列監視設定のタグ一覧を取得します。
+	 * 
+	 * @param monitorId		監視項目ID
+	 * @param ownerRoleId	オーナーロールID
+	 * @return タグ一覧 
+	 * @throws MonitorNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public List<String> getMonitorStringTagList(String monitorId, String ownerRoleId) 
+			throws MonitorNotFound, InvalidRole, HinemosUnknown {
+		JpaTransactionManager jtm = null;
+		List<String> ret = null;
+
+		try {
+			// トランザクション開始
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			HashSet<String> retSet = new HashSet<>();
+			MonitorInfo monitorInfo = QueryUtil.getMonitorInfoPK_OR(monitorId, ownerRoleId);
+			if (monitorInfo.getLogFormatId() != null && !monitorInfo.getLogFormatId().isEmpty()) {
+				LogFormat logFormat = com.clustercontrol.hub.util.QueryUtil.getLogFormatPK_OR(
+					monitorInfo.getLogFormatId(), monitorInfo.getOwnerRoleId());
+				if (logFormat != null && logFormat.getKeyPatternList() != null) {
+					for (LogFormatKey logFormatKey : logFormat.getKeyPatternList()) {
+						retSet.add(logFormatKey.getKey());
+					}
+				}
+			}
+			// Hinemosが自動で抽出するタグを追加
+			retSet.addAll(CollectStringTag.getSampleTagList(monitorInfo.getMonitorTypeId()));
+			ret = new ArrayList<String>(retSet);
+			Collections.sort(ret);
+			jtm.commit();
+		} catch (MonitorNotFound | InvalidRole e) {
+			m_log.warn("getMonitorStringTagList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("getMonitorStringTagList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * 指定された監視種別の監視設定一覧を取得する
+	 *
+	 * @param monitorType 監視種別
+	 * @param ownerRoleId オーナーロールID
+	 * @return
+	 * @throws HinemosUnknown
+	 */
+	public ArrayList<MonitorInfo> getMonitorListByMonitorType(List<Integer> monitorTypes, String ownerRoleId)
+			throws HinemosUnknown{
+
+		JpaTransactionManager jtm = null;
+		ArrayList<MonitorInfo> list = null;
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			list = new SelectMonitor().getMonitorListByMonitorType_OR(monitorTypes, ownerRoleId);
+
+			jtm.commit();
+		} catch (Exception e) {
+			m_log.warn("getMonitorListByMonitorType() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+		return list;
+	}
+
+	/**
+	 * 以下の条件に一致する監視情報を取得します。
+	 *　　オーナーロールIDが参照可能
+	 *　　文字列監視もしくはSNMPTRAP監視
+	 *　　指定されたファシリティIDもしくはその直下のノードに一致する　
+	 *　　※ログ件数監視で使用する。
+	 *
+	 * @param facilityId　ファシリティID
+	 * @param ownerRoleId　オーナーロールID
+	 * @return　監視設定リスト
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public ArrayList<MonitorInfo> getMonitorListForLogcount(String facilityId, String ownerRoleId)
+			throws InvalidRole, HinemosUnknown {
+		JpaTransactionManager jtm = null;
+		ArrayList<MonitorInfo> list = new ArrayList<>();
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			List<Integer> typeList = new ArrayList<>();
+			typeList.add(MonitorTypeConstant.TYPE_STRING);
+			typeList.add(MonitorTypeConstant.TYPE_TRAP);
+			List<MonitorInfo> monitorInfoList = new SelectMonitor().getMonitorListByMonitorType_OR(typeList, ownerRoleId);
+			for (MonitorInfo monitorInfo : monitorInfoList) {
+				// 指定したファシリティIDをスコープ、もしくはノードに含む場合のみ対象とする
+				if (monitorInfo.getFacilityId().equals(facilityId)
+						|| new RepositoryControllerBean().getFacilityIdList(
+								monitorInfo.getFacilityId(), 0).contains(facilityId)) {
+					// 個別の情報は不要なので削除（文字列監視のみ含まれるはずなのですべて消す必要はないがまとめて消している）
+					jtm.getEntityManager().detach(monitorInfo);
+					monitorInfo.setCustomCheckInfo(null);
+					monitorInfo.setCustomTrapCheckInfo(null);
+					monitorInfo.setHttpCheckInfo(null);
+					monitorInfo.setHttpScenarioCheckInfo(null);
+					monitorInfo.setJmxCheckInfo(null);
+					monitorInfo.setLogfileCheckInfo(null);
+					monitorInfo.setBinaryCheckInfo(null);
+					monitorInfo.setPerfCheckInfo(null);
+					monitorInfo.setPingCheckInfo(null);
+					monitorInfo.setPluginCheckInfo(null);
+					monitorInfo.setPortCheckInfo(null);
+					monitorInfo.setProcessCheckInfo(null);
+					monitorInfo.setSnmpCheckInfo(null);
+					monitorInfo.setSqlCheckInfo(null);
+					monitorInfo.setTrapCheckInfo(null);
+					monitorInfo.setWinEventCheckInfo(null);
+					monitorInfo.setWinServiceCheckInfo(null);
+
+					list.add(monitorInfo);
+				}
+			}
+			jtm.commit();
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (HinemosUnknown e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw e;
+		} catch (Exception e){
+			m_log.warn("getMonitorListForLogcount() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+		return list;
+	}
+
+	/**
+	 * ログ件数監視の過去分集計を行う。
+	 *
+	 * @param monitorId 監視設定ID
+	 * @param startDate 収集開始日時
+	 * @return
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public void runSummaryLogcount(String monitorId, Long startDate) throws MonitorNotFound, InvalidSetting, InvalidRole, HinemosUnknown {
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			jtm.begin();
+
+			// 収集終了日を設定
+			Long endDate = HinemosTime.currentTimeMillis();
+
+			// 入力チェック
+			MonitorValidator.validateSummaryLogcount(monitorId, startDate, endDate);
+
+			// 収集処理開始
+			SummaryLogcountWorker.runLogcount(monitorId, startDate, endDate);
+
+			jtm.commit();
+		} catch (InvalidRole | InvalidSetting | MonitorNotFound | HinemosUnknown e) {
+			m_log.info("runSummaryLogcount " + e.getClass().getName() + ", " + e.getMessage());
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("runSummaryLogcount() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Hinemosクライアントに引き渡す監視設定情報を作成
+	 * 
+	 * @param monitorInfo DBより取得した監視設定情報
+	 * @return チェック設定、監視種別ごとの情報を含まない監視設定情報
+	 */
+	private MonitorInfoBean createMonitorInfoBean(MonitorInfo monitorInfo) {
+		if (monitorInfo == null) {
+			return null;
+		}
+		MonitorInfoBean bean = new MonitorInfoBean();
+		bean.setMonitorId(monitorInfo.getMonitorId());
+		bean.setApplication(monitorInfo.getApplication());
+		bean.setCollectorFlg(monitorInfo.getCollectorFlg());
+		bean.setDelayTime(monitorInfo.getDelayTime());
+		bean.setDescription(monitorInfo.getDescription());
+		bean.setFailurePriority(monitorInfo.getFailurePriority());
+		bean.setItemName(monitorInfo.getItemName());
+		bean.setMeasure(monitorInfo.getMeasure());
+		bean.setMonitorFlg(monitorInfo.getMonitorFlg());
+		bean.setMonitorType(monitorInfo.getMonitorType());
+		bean.setMonitorTypeId(monitorInfo.getMonitorTypeId());
+		bean.setNotifyGroupId(monitorInfo.getNotifyGroupId());
+		bean.setRegDate(monitorInfo.getRegDate());
+		bean.setRegUser(monitorInfo.getRegUser());
+		bean.setRunInterval(monitorInfo.getRunInterval());
+		bean.setTriggerType(monitorInfo.getTriggerType());
+		bean.setUpdateDate(monitorInfo.getUpdateDate());
+		bean.setUpdateUser(monitorInfo.getUpdateUser());
+		bean.setCalendarId(monitorInfo.getCalendarId());
+		bean.setFacilityId(monitorInfo.getFacilityId());
+		bean.setLogFormatId(monitorInfo.getLogFormatId());
+		bean.setPredictionFlg(monitorInfo.getPredictionFlg());
+		bean.setPredictionMethod(monitorInfo.getPredictionMethod());
+		bean.setPredictionAnalysysRange(monitorInfo.getPredictionAnalysysRange());
+		bean.setPredictionTarget(monitorInfo.getPredictionTarget());
+		bean.setPredictionApplication(monitorInfo.getPredictionApplication());
+		bean.setChangeFlg(monitorInfo.getChangeFlg());
+		bean.setChangeAnalysysRange(monitorInfo.getChangeAnalysysRange());
+		bean.setChangeApplication(monitorInfo.getChangeApplication());
+		bean.setScope(monitorInfo.getScope());
+		bean.setOwnerRoleId(monitorInfo.getOwnerRoleId());
+		return bean;
 	}
 }

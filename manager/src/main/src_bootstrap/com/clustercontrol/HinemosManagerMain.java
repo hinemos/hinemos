@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol;
@@ -28,7 +21,6 @@ import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,20 +28,21 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.binary.session.BinaryControllerBean;
 import com.clustercontrol.calendar.util.CalendarCache;
 import com.clustercontrol.calendar.util.CalendarPatternCache;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaPersistenceConfig;
 import com.clustercontrol.custom.factory.SelectCustom;
 import com.clustercontrol.jobmanagement.factory.FullJob;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.logfile.session.MonitorLogfileControllerBean;
 import com.clustercontrol.maintenance.factory.HinemosPropertyInfoCache;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.notify.util.NotifyCache;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.performance.util.CollectorMasterCache;
-import com.clustercontrol.platform.PlatformPertial;
+import com.clustercontrol.platform.PlatformDivergence;
 import com.clustercontrol.platform.util.apllog.EventLogger;
 import com.clustercontrol.plugin.HinemosPluginService;
 import com.clustercontrol.process.factory.ProcessMasterCache;
@@ -65,6 +58,8 @@ import com.clustercontrol.winevent.session.MonitorWinEventControllerBean;
 
 /**
  * Hinemos ManagerのMainクラス<br/>
+ * 
+ * @version 6.1.0 バイナリ監視追加
  */
 public class HinemosManagerMain {
 
@@ -102,7 +97,7 @@ public class HinemosManagerMain {
 		org.snmp4j.log.LogFactory.setLogFactory(new org.snmp4j.log.Log4jLogFactory());
 		log.info("setLogFactory(Log4jLogFactory)");
 		
-		PlatformPertial.setupHostname();
+		PlatformDivergence.setupHostname();
 		
 		_hostname = System.getProperty("hinemos.manager.hostname", "");
 		
@@ -190,11 +185,11 @@ public class HinemosManagerMain {
 			
 			// Hinemos時刻(スケジューラが管理している現在時刻)の設定は、各プラグインサービス起動前に行う。
 			// (各プラグインの処理で現在時刻を取得する場合があるため、事前に設定しておく必要がある)
-			long offset = HinemosPropertyUtil.getHinemosPropertyNum("common.time.offset", Long.valueOf(0));
+			long offset = HinemosPropertyCommon.common_time_offset.getNumericValue();
 			HinemosTime.setTimeOffsetMillis(offset);
 			
 			// Hinemos独自のタイムゾーン(UTCからのオフセット)をプロパティから取得/設定(ミリ秒単位)
-			int timeZoneOffset = HinemosPropertyUtil.getHinemosPropertyNum("common.timezone", Long.valueOf(TimeZone.getDefault().getRawOffset())).intValue();
+			int timeZoneOffset = HinemosPropertyCommon.common_timezone.getIntegerValue();
 			HinemosTime.setTimeZoneOffset(timeZoneOffset);
 			
 			// 参照可能なHinemosPluginを全て生成(create)する
@@ -283,6 +278,7 @@ public class HinemosManagerMain {
 		FullJob.init();
 		JobMultiplicityCache.refresh();
 		MonitorLogfileControllerBean.refreshCache();
+		BinaryControllerBean.refreshCache();
 		HinemosPropertyInfoCache.refresh();
 		NotifyCache.refresh();
 		NotifyRelationCache.refresh();

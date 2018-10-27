@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.performance.monitor.model;
 
 import java.io.Serializable;
@@ -10,9 +18,6 @@ import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 
 
 /**
@@ -30,13 +35,6 @@ public class SnmpValueTypeMstEntity implements Serializable {
 	@Deprecated
 	public SnmpValueTypeMstEntity() {
 	}
-
-	public SnmpValueTypeMstEntity(String valueType) {
-		this.setValueType(valueType);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-	}
-
 
 	@Id
 	@Column(name="value_type")

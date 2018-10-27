@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<project name="ManagerPlugincommonProperties" basedir=".">
+	<property name="compile.version" value="1.8" />
+
+	<property file="${hinemos_common.dir}/ant_config/build_common.properties" />
+
+	<property name="dest.plugin.dir" value="${build.dir}/plugin/${class.dir}" />
+	<property name="dest.module.dir" value="${build.dir}/module/${class.dir}" />
+	
+	<property name="source.zip.dir" value="${build.dir}/source" />
+	<property name="javadoc.dir" value="${build.dir}/javadoc" />
+	
+	<property name="ws.dir" value="${build.dir}/ws" />
+	<property name="wsdl.dir" value="${build.dir}/wsdl" />
+	<property name="wsdlsrc.dir" value="${build.dir}/wsdlsrc"/>
+
+	<property name="jar.plugin.dir" value="${build.dir}/plugin/jar"/>
+	<property name="jar.module.dir" value="${build.dir}/module/jar"/>
+	<property name="jar.ws.dir" value="${build.dir}/wsjar"/>
+	
+	<path id="id.compile.classpath.default">
+		<fileset dir="${hinemos_manager.dir}/lib">
+			<include name="**/*.jar" />
+			<exclude name="eclipselink-src.jar" />
+		</fileset>
+		<fileset dir="${hinemos_common.dir}/commonlib">
+			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="${hinemos_manager.dir}/build/jar">
+			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="${hinemos_common.dir}/build/jar">
+			<include name="**/*.jar" />
+		</fileset>
+	</path>
+
+	<path id="id.webclient.classpath">
+	</path>
+
+	<target name="init" depends="init_property, init_classpath" >
+		<tstamp>
+			<format property="build.date" pattern="yyyy-MM-dd HH:mm:ss" />
+		</tstamp>
+
+		<path id="id.compile.classpath">
+			<path refid="id.compile.classpath.plugin" />
+			<path refid="id.compile.classpath.default" />
+		</path>
+	</target>
+
+	<target name="init_property">
+	</target>
+
+	<target name="init_classpath">
+		<path id="id.compile.classpath.plugin">
+			<fileset dir="${jar.plugin.dir}">
+				<include name="**/*.jar" />
+			</fileset>
+		</path>
+	</target>
+</project>

@@ -1,21 +1,16 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import javax.persistence.EntityExistsException;
 
@@ -25,6 +20,8 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.StatusConstant;
+import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -43,7 +40,6 @@ import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobStartJobInfoEntity;
 import com.clustercontrol.jobmanagement.util.JobUtil;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 
@@ -79,6 +75,11 @@ public class CreateHulftJob {
 	public static final String HULOPLCMD_SH = "huloplcmd.sh";
 	public static final String HULOPLCMD_VBS = "huloplcmd.vbs";
 
+	/** HULFT用のスクリプト配置ディレクトリ(LINUX) */
+	public final static String SCRIPT_DIR_LINUX = "../../hulft/sh/";
+	/** HULFT用のスクリプト配置ディレクトリ(Windows) */
+	public final static String SCRIPT_DIR_WIN = "C:\\Program Files (x86)\\Hinemos\\Agent6.0.0\\hulft\\vbs\\";
+	
 	/** 正常の終了値及び終了値の範囲 */
 	private static final int NORMAL = 0;
 	/** 警告の終了値及び終了値の範囲 */
@@ -90,250 +91,292 @@ public class CreateHulftJob {
 
 	private String getScriptDirLinux() {
 		/** HULFT用のスクリプト配置ディレクトリ */
-		String SCRIPT_DIR_LINUX = "../../hulft/sh/";
-		String dir = HinemosPropertyUtil.getHinemosPropertyStr("job.hulft.script.dir.linux", SCRIPT_DIR_LINUX);
+		String scriptDirLinux = CreateHulftJob.SCRIPT_DIR_LINUX;
+		String dir = HinemosPropertyCommon.job_hulft_script_dir_linux.getStringValue();
 		if (dir != null && dir.length() >0) {
-			SCRIPT_DIR_LINUX = dir + "/";
+			scriptDirLinux = dir + "/";
 		}
-		m_log.info("job.hulft.script.dir.linux=" + SCRIPT_DIR_LINUX);
+		m_log.info("job.hulft.script.dir.linux=" + scriptDirLinux);
 
-		return SCRIPT_DIR_LINUX;
+		return scriptDirLinux;
 	}
 
 	private String getScriptDirWin() {
 		/** HULFT用のスクリプト配置ディレクトリ */
-		String SCRIPT_DIR_WIN = "C:\\Program Files (x86)\\Hinemos\\Agent6.0.0\\hulft\\vbs\\";
-		String dir = HinemosPropertyUtil.getHinemosPropertyStr("job.hulft.script.dir.windows", SCRIPT_DIR_WIN);
-
+		String scriptDirWin = CreateHulftJob.SCRIPT_DIR_WIN;
+		String dir = HinemosPropertyCommon.job_hulft_script_dir_windows.getStringValue();
 		if (dir != null && dir.length() >0) {
-			SCRIPT_DIR_WIN = dir + "\\";
+			scriptDirWin = dir + "\\";
 		}
-		m_log.info("job.hulft.script.dir.windows=" + SCRIPT_DIR_WIN);
+		m_log.info("job.hulft.script.dir.windows=" + scriptDirWin);
 
-		return SCRIPT_DIR_WIN;
+		return scriptDirWin;
 	}
 
 	public static boolean isHulftMode() {
-		boolean hulftMode = HinemosPropertyUtil.getHinemosPropertyBool("job.hulft.mode", false);
+		boolean hulftMode = HinemosPropertyCommon.job_hulft_mode.getBooleanValue();
 		m_log.info("hulftMode=" + hulftMode);
 		return hulftMode;
 	}
 
 	protected void createHulftDetailJob(JobInfoEntity parentJobInfo)throws FacilityNotFound, EntityExistsException, HinemosUnknown, JobInfoNotFound {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		//親ジョブのセッションジョブからファイル転送情報を取得
-		JobSessionJobEntity parentSessionJob = parentJobInfo.getJobSessionJobEntity();
-		JobInfoEntity job = parentSessionJob.getJobInfoEntity();
-		JobFileInfoData fileData = new JobFileInfoData(
-				job.getId().getSessionId(),
-				job.getId().getJobunitId(),
-				job.getId().getJobId(),
-				job.getSrcFacilityId(),
-				job.getDestFacilityId(),
-				job.getProcessMode(),
-				job.getSrcFile(),
-				job.getSrcWorkDir(),
-				job.getDestDirectory(),
-				job.getDestWorkDir(),
-				job.getCompressionFlg(),
-				job.getCheckFlg(),
-				job.getSpecifyUser(),
-				job.getEffectiveUser(),
-				job.getMessageRetry(),
-				job.getCommandRetry(),
-				job.getCommandRetryFlg());
-		RepositoryControllerBean repository = new RepositoryControllerBean();
-		ArrayList<String> nodeIdList = repository.getExecTargetFacilityIdList(
-				fileData.getDest_facility_id(), parentSessionJob.getOwnerRoleId());
+			//親ジョブのセッションジョブからファイル転送情報を取得
+			JobSessionJobEntity parentSessionJob = parentJobInfo.getJobSessionJobEntity();
+			JobInfoEntity job = parentSessionJob.getJobInfoEntity();
+			JobFileInfoData fileData = new JobFileInfoData(
+					job.getId().getSessionId(),
+					job.getId().getJobunitId(),
+					job.getId().getJobId(),
+					job.getSrcFacilityId(),
+					job.getDestFacilityId(),
+					job.getProcessMode(),
+					job.getSrcFile(),
+					job.getSrcWorkDir(),
+					job.getDestDirectory(),
+					job.getDestWorkDir(),
+					job.getCompressionFlg(),
+					job.getCheckFlg(),
+					job.getSpecifyUser(),
+					job.getEffectiveUser(),
+					job.getMessageRetry(),
+					job.getCommandRetry(),
+					job.getCommandRetryFlg());
+			RepositoryControllerBean repository = new RepositoryControllerBean();
+			ArrayList<String> nodeIdList = repository.getExecTargetFacilityIdList(
+					fileData.getDest_facility_id(), parentSessionJob.getOwnerRoleId());
 
-		// 配信管理情報の登録ジョブ
-		JobInfoEntity jobUtiliupdtS = subCreateJobInfoEntityForJob (parentSessionJob, UTILIUPDT_S, parentJobInfo.getSrcFacilityId());
-		JobSessionJobEntity jobSessionJobEntity = jobUtiliupdtS.getJobSessionJobEntity();
-		jobUtiliupdtS.setRegDate(parentJobInfo.getRegDate());
-		jobUtiliupdtS.setUpdateDate(parentJobInfo.getUpdateDate());
-		jobUtiliupdtS.setRegUser(parentJobInfo.getRegUser());
-		jobUtiliupdtS.setUpdateUser(parentJobInfo.getUpdateUser());
-		jobUtiliupdtS.setConditionType(ConditionTypeConstant.TYPE_AND);
-		String command;
-		if (repository.getNode(parentJobInfo.getSrcFacilityId()).getPlatformFamily().equals("WINDOWS")) {
-			// Windowsの場合の起動コマンド
-			command = "cscript.exe //nologo \"" + getScriptDirWin() + UTILIUPDT_S_VBS + "\" " + parentJobInfo.getId().getJobId();
-		} else {
-			// Linuxの場合の起動コマンド
-			command = getScriptDirLinux() + UTILIUPDT_S_SH + " " + parentJobInfo.getId().getJobId();
-		}
-		m_log.info("startCommand=" + command);
-		jobUtiliupdtS.setStartCommand(command);
-		jobUtiliupdtS.setSpecifyUser(parentJobInfo.getSpecifyUser());
-		jobUtiliupdtS.setEffectiveUser(parentJobInfo.getEffectiveUser());
-		jobUtiliupdtS.setArgument(parentJobInfo.getSrcFile());
-		jobUtiliupdtS.setMessageRetry(parentJobInfo.getMessageRetry());
-		jobUtiliupdtS.setCommandRetry(parentJobInfo.getCommandRetry());
-		jobUtiliupdtS.setCommandRetryFlg(false);
-		//通知メッセージを作成
-		JobUtil.copyJobNoticeProperties(jobUtiliupdtS, job.getId().getJobId());
+			//対象ノードをジョブ優先度の降順にて並び替え
+			int[][] sortArray =new int[nodeIdList.size()][2];//リスト行番号,優先度の配列を作成
+			for(int i = 0; i < sortArray.length; i++){
+				sortArray[i][0] = i;
+				sortArray[i][1] = repository.getNode( nodeIdList.get(i)).getJobPriority();
+			}
+			Arrays.sort(sortArray, new Comparator<int[]>() {
+				@Override //[1]にセットした優先度をキーに配列をソート(降順)
+				public int compare(int[] o1, int[] o2) {
+					return o2[1] - o1[1];	 
+				}
+			});
+			ArrayList<String> nodeIdListTmp =new ArrayList<String>();
+			for (int ArrayCnt= 0 ; ArrayCnt < sortArray.length; ArrayCnt++	 ){
+				nodeIdListTmp.add( nodeIdList.get(sortArray[ArrayCnt][0]));
+			}
+			nodeIdList = nodeIdListTmp;//ソート結果を反映
 
-		//ジョブユニットのジョブIDは親のものと同じとする。
-		String jobunitId = parentSessionJob.getId().getJobunitId();
+			// 配信管理情報の登録ジョブ
+			JobInfoEntity jobUtiliupdtS = subCreateJobInfoEntityForJob (parentSessionJob, UTILIUPDT_S, parentJobInfo.getSrcFacilityId());
+			JobSessionJobEntity jobSessionJobEntity = jobUtiliupdtS.getJobSessionJobEntity();
+			jobUtiliupdtS.setRegDate(parentJobInfo.getRegDate());
+			jobUtiliupdtS.setUpdateDate(parentJobInfo.getUpdateDate());
+			jobUtiliupdtS.setRegUser(parentJobInfo.getRegUser());
+			jobUtiliupdtS.setUpdateUser(parentJobInfo.getUpdateUser());
+			jobUtiliupdtS.setConditionType(ConditionTypeConstant.TYPE_AND);
+			String command;
+			if (repository.getNode(parentJobInfo.getSrcFacilityId()).getPlatformFamily().equals("WINDOWS")) {
+				// Windowsの場合の起動コマンド
+				command = "cscript.exe //nologo \"" + getScriptDirWin() + UTILIUPDT_S_VBS + "\" " + parentJobInfo.getId().getJobId();
+			} else {
+				// Linuxの場合の起動コマンド
+				command = getScriptDirLinux() + UTILIUPDT_S_SH + " " + parentJobInfo.getId().getJobId();
+			}
+			m_log.info("startCommand=" + command);
+			jobUtiliupdtS.setStartCommand(command);
+			jobUtiliupdtS.setSpecifyUser(parentJobInfo.getSpecifyUser());
+			jobUtiliupdtS.setEffectiveUser(parentJobInfo.getEffectiveUser());
+			jobUtiliupdtS.setArgument(parentJobInfo.getSrcFile());
+			jobUtiliupdtS.setMessageRetry(parentJobInfo.getMessageRetry());
+			jobUtiliupdtS.setCommandRetry(parentJobInfo.getCommandRetry());
+			jobUtiliupdtS.setCommandRetryFlg(false);
+			//通知メッセージを作成
+			JobUtil.copyJobNoticeProperties(jobUtiliupdtS, job.getId().getJobId());
 
-		//ノード単位のジョブネットを作成
-		String waitJobId = jobSessionJobEntity.getId().getJobId();
-		for(int i = 0; i < nodeIdList.size(); i++){
-			String nodeJobId = parentSessionJob.getId().getJobId() + "_" + nodeIdList.get(i);
+			//ジョブユニットのジョブIDは親のものと同じとする。
+			String jobunitId = parentSessionJob.getId().getJobunitId();
 
-			//JobSessionJobを作成
-			// インスタンス生成
-			JobSessionJobEntity nodeJobSessionJob
-				= new JobSessionJobEntity(parentSessionJob.getJobSessionEntity(), jobunitId, nodeJobId);
-			// 重複チェック
-			jtm.checkEntityExists(JobSessionJobEntity.class, nodeJobSessionJob.getId());
-			nodeJobSessionJob.setParentJobunitId(parentSessionJob.getId().getJobunitId());
-			nodeJobSessionJob.setParentJobId(parentSessionJob.getId().getJobId());
-			nodeJobSessionJob.setStatus(StatusConstant.TYPE_WAIT);
-			nodeJobSessionJob.setEndStausCheckFlg(EndStatusCheckConstant.ALL_JOB);
-			nodeJobSessionJob.setDelayNotifyFlg(DelayNotifyConstant.NONE);
+			//ノード単位のジョブネットを作成
+			String waitJobId = jobSessionJobEntity.getId().getJobId();
+			for(int i = 0; i < nodeIdList.size(); i++){
+				String nodeJobId = parentSessionJob.getId().getJobId() + "_" + nodeIdList.get(i);
 
-			//JobInfoEntityを作成
-			// インスタンス生成
-			JobInfoEntity nodeJobInfoEntity = new JobInfoEntity(nodeJobSessionJob);
-			// 重複チェック
-			jtm.checkEntityExists(JobInfoEntity.class, nodeJobInfoEntity.getId());
-			nodeJobInfoEntity.setJobName(nodeIdList.get(i));
-			nodeJobInfoEntity.setJobType(JobConstant.TYPE_JOBNET);
-			nodeJobInfoEntity.setRegisteredModule(job.isRegisteredModule());
-			nodeJobInfoEntity.setUnmatchEndFlg(true);
-			nodeJobInfoEntity.setStartDelayNotifyPriority(PriorityConstant.TYPE_CRITICAL);
-			nodeJobInfoEntity.setStartDelayOperationType(OperationConstant.TYPE_STOP_SKIP);
-			nodeJobInfoEntity.setEndDelayNotifyPriority(PriorityConstant.TYPE_CRITICAL);
-			nodeJobInfoEntity.setEndDelayOperationType(OperationConstant.TYPE_STOP_AT_ONCE);
-			// ファイル転送を中止する場合は、プロセス停止とする。
-			nodeJobInfoEntity.setStopType(CommandStopTypeConstant.DESTROY_PROCESS);
-			// 多重度の設定
-			nodeJobInfoEntity.setMultiplicityEndValue(job.getMultiplicityEndValue());
-			nodeJobInfoEntity.setMultiplicityNotify(job.getMultiplicityNotify());
-			nodeJobInfoEntity.setMultiplicityNotifyPriority(job.getMultiplicityNotifyPriority());
-			nodeJobInfoEntity.setMultiplicityOperation(job.getMultiplicityOperation());
+				//JobSessionJobを作成
+				// インスタンス生成
+				JobSessionJobEntity nodeJobSessionJob
+					= new JobSessionJobEntity(parentSessionJob.getJobSessionEntity(), jobunitId, nodeJobId);
+				// 重複チェック
+				jtm.checkEntityExists(JobSessionJobEntity.class, nodeJobSessionJob.getId());
+				nodeJobSessionJob.setParentJobunitId(parentSessionJob.getId().getJobunitId());
+				nodeJobSessionJob.setParentJobId(parentSessionJob.getId().getJobId());
+				nodeJobSessionJob.setStatus(StatusConstant.TYPE_WAIT);
+				nodeJobSessionJob.setEndStausCheckFlg(EndStatusCheckConstant.ALL_JOB);
+				nodeJobSessionJob.setDelayNotifyFlg(DelayNotifyConstant.NONE);
+				nodeJobSessionJob.setOwnerRoleId(JobUtil.createSessioniOwnerRoleId(jobunitId));
+				// 登録
+				em.persist(nodeJobSessionJob);
+				nodeJobSessionJob.relateToJobSessionEntity(parentSessionJob.getJobSessionEntity());
 
-			// 終了状態を作成
-			// 正常
-			nodeJobInfoEntity.setNormalEndValue(NORMAL);
-			nodeJobInfoEntity.setNormalEndValueFrom(NORMAL);
-			nodeJobInfoEntity.setNormalEndValueTo(NORMAL);
-			// 警告
-			nodeJobInfoEntity.setWarnEndValue(WARNING);
-			nodeJobInfoEntity.setWarnEndValueFrom(WARNING);
-			nodeJobInfoEntity.setWarnEndValueTo(WARNING);
-			// 異常
-			nodeJobInfoEntity.setAbnormalEndValue(ABNORMAL_FOR_FILE);
-			nodeJobInfoEntity.setAbnormalEndValueFrom(ABNORMAL);
-			nodeJobInfoEntity.setAbnormalEndValueTo(ABNORMAL);
+				//JobInfoEntityを作成
+				// インスタンス生成
+				JobInfoEntity nodeJobInfoEntity = new JobInfoEntity(nodeJobSessionJob);
+				// 重複チェック
+				jtm.checkEntityExists(JobInfoEntity.class, nodeJobInfoEntity.getId());
+				// 登録
+				em.persist(nodeJobInfoEntity);
+				nodeJobInfoEntity.relateToJobSessionJobEntity(nodeJobSessionJob);
 
-			//処理方法により待ち条件を作成する
-			if(fileData.getProcess_mode() == ProcessingMethodConstant.TYPE_ALL_NODE){
-				//全ノードで受信
+				nodeJobInfoEntity.setJobName(nodeIdList.get(i));
+				nodeJobInfoEntity.setJobType(JobConstant.TYPE_JOBNET);
+				nodeJobInfoEntity.setRegisteredModule(job.isRegisteredModule());
+				nodeJobInfoEntity.setUnmatchEndFlg(true);
+				nodeJobInfoEntity.setStartDelayNotifyPriority(PriorityConstant.TYPE_CRITICAL);
+				nodeJobInfoEntity.setStartDelayOperationType(OperationConstant.TYPE_STOP_SKIP);
+				nodeJobInfoEntity.setEndDelayNotifyPriority(PriorityConstant.TYPE_CRITICAL);
+				nodeJobInfoEntity.setEndDelayOperationType(OperationConstant.TYPE_STOP_AT_ONCE);
+				// ファイル転送を中止する場合は、プロセス停止とする。
+				nodeJobInfoEntity.setStopType(CommandStopTypeConstant.DESTROY_PROCESS);
+				// 多重度の設定
+				nodeJobInfoEntity.setMultiplicityEndValue(job.getMultiplicityEndValue());
+				nodeJobInfoEntity.setMultiplicityNotify(job.getMultiplicityNotify());
+				nodeJobInfoEntity.setMultiplicityNotifyPriority(job.getMultiplicityNotifyPriority());
+				nodeJobInfoEntity.setMultiplicityOperation(job.getMultiplicityOperation());
 
-				nodeJobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
+				// 終了状態を作成
+				// 正常
+				nodeJobInfoEntity.setNormalEndValue(NORMAL);
+				nodeJobInfoEntity.setNormalEndValueFrom(NORMAL);
+				nodeJobInfoEntity.setNormalEndValueTo(NORMAL);
+				// 警告
+				nodeJobInfoEntity.setWarnEndValue(WARNING);
+				nodeJobInfoEntity.setWarnEndValueFrom(WARNING);
+				nodeJobInfoEntity.setWarnEndValueTo(WARNING);
+				// 異常
+				nodeJobInfoEntity.setAbnormalEndValue(ABNORMAL_FOR_FILE);
+				nodeJobInfoEntity.setAbnormalEndValueFrom(ABNORMAL);
+				nodeJobInfoEntity.setAbnormalEndValueTo(ABNORMAL);
 
-				if(i == 0){
-					//待ち条件を設定
-					nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_AND);
-					nodeJobInfoEntity.setUnmatchEndValue(ABNORMAL);
+				//処理方法により待ち条件を作成する
+				if(fileData.getProcess_mode() == ProcessingMethodConstant.TYPE_ALL_NODE){
+					//全ノードで受信
 
-					//JobStartJobInfoEntityを作成
-					// インスタンス生成
-					JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-							nodeJobInfoEntity,
-							jobSessionJobEntity.getId().getJobunitId(),
-							waitJobId,
-							JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-							EndStatusConstant.TYPE_NORMAL);
-					// 重複チェック
-					jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
-				}else{
-					//待ち条件を設定
-					nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
-					nodeJobInfoEntity.setUnmatchEndValue(NORMAL);
+					nodeJobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
 
-					//JobStartJobInfoEntityを作成
-					Integer[] targetJobEndValues = {EndStatusConstant.TYPE_NORMAL,
-							EndStatusConstant.TYPE_WARNING,
-							EndStatusConstant.TYPE_ABNORMAL};
-					for (Integer targetJobEndValue : targetJobEndValues) {
+					if(i == 0){
+						//待ち条件を設定
+						nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_AND);
+						nodeJobInfoEntity.setUnmatchEndValue(ABNORMAL);
+
+						//JobStartJobInfoEntityを作成
 						// インスタンス生成
 						JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
 								nodeJobInfoEntity,
 								jobSessionJobEntity.getId().getJobunitId(),
 								waitJobId,
 								JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-								targetJobEndValue);
+								EndStatusConstant.TYPE_NORMAL);
 						// 重複チェック
 						jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+						// 登録
+						em.persist(jobStartJobInfoEntity);
+						jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+					}else{
+						//待ち条件を設定
+						nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
+						nodeJobInfoEntity.setUnmatchEndValue(NORMAL);
+
+						//JobStartJobInfoEntityを作成
+						Integer[] targetJobEndValues = {EndStatusConstant.TYPE_NORMAL,
+								EndStatusConstant.TYPE_WARNING,
+								EndStatusConstant.TYPE_ABNORMAL};
+						for (Integer targetJobEndValue : targetJobEndValues) {
+							// インスタンス生成
+							JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
+									nodeJobInfoEntity,
+									jobSessionJobEntity.getId().getJobunitId(),
+									waitJobId,
+									JudgmentObjectConstant.TYPE_JOB_END_STATUS,
+									targetJobEndValue);
+							// 重複チェック
+							jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+							// 登録
+							em.persist(jobStartJobInfoEntity);
+							jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+						}
+
 					}
-
-				}
-			}else{
-				//1ノードで受信時のみ設定
-
-				if(i == 0){
-					//待ち条件を設定
-					nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_AND);
-					nodeJobInfoEntity.setUnmatchEndValue(ABNORMAL);
-					nodeJobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
-
-					//JobStartJobInfoEntityを作成
-					// インスタンス生成
-					JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-							nodeJobInfoEntity,
-							jobSessionJobEntity.getId().getJobunitId(),
-							waitJobId,
-							JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-							EndStatusConstant.TYPE_NORMAL);
-					// 重複チェック
-					jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
 				}else{
-					//待ち条件を設定
-					nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
-					nodeJobInfoEntity.setUnmatchEndValue(NORMAL);
-					nodeJobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_NORMAL);
+					//1ノードで受信時のみ設定
 
-					//JobStartJobInfoEntityを作成
-					// インスタンス生成
-					JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-							nodeJobInfoEntity,
-							jobSessionJobEntity.getId().getJobunitId(),
-							waitJobId,
-							JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-							EndStatusConstant.TYPE_WARNING);
-					// 重複チェック
-					jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+					if(i == 0){
+						//待ち条件を設定
+						nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_AND);
+						nodeJobInfoEntity.setUnmatchEndValue(ABNORMAL);
+						nodeJobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
 
-					//JobStartJobInfoEntityを作成
-					// インスタンス生成
-					jobStartJobInfoEntity = new JobStartJobInfoEntity(
-							nodeJobInfoEntity,
-							jobSessionJobEntity.getId().getJobunitId(),
-							waitJobId,
-							JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-							EndStatusConstant.TYPE_ABNORMAL);
-					// 重複チェック
-					jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+						//JobStartJobInfoEntityを作成
+						// インスタンス生成
+						JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
+								nodeJobInfoEntity,
+								jobSessionJobEntity.getId().getJobunitId(),
+								waitJobId,
+								JudgmentObjectConstant.TYPE_JOB_END_STATUS,
+								EndStatusConstant.TYPE_NORMAL);
+						// 重複チェック
+						jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+						// 登録
+						em.persist(jobStartJobInfoEntity);
+						jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+					}else{
+						//待ち条件を設定
+						nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
+						nodeJobInfoEntity.setUnmatchEndValue(NORMAL);
+						nodeJobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_NORMAL);
+
+						//JobStartJobInfoEntityを作成
+						// インスタンス生成
+						JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
+								nodeJobInfoEntity,
+								jobSessionJobEntity.getId().getJobunitId(),
+								waitJobId,
+								JudgmentObjectConstant.TYPE_JOB_END_STATUS,
+								EndStatusConstant.TYPE_WARNING);
+						// 重複チェック
+						jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+						// 登録
+						em.persist(jobStartJobInfoEntity);
+						jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+
+						//JobStartJobInfoEntityを作成
+						// インスタンス生成
+						jobStartJobInfoEntity = new JobStartJobInfoEntity(
+								nodeJobInfoEntity,
+								jobSessionJobEntity.getId().getJobunitId(),
+								waitJobId,
+								JudgmentObjectConstant.TYPE_JOB_END_STATUS,
+								EndStatusConstant.TYPE_ABNORMAL);
+						// 重複チェック
+						jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+						// 登録
+						em.persist(jobStartJobInfoEntity);
+						jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+					}
 				}
-			}
 
-			//JobSessionJobにファシリティパスを設定
-			nodeJobSessionJob.setScopeText(repository.getFacilityPath(nodeIdList.get(i), null));
+				//JobSessionJobにファシリティパスを設定
+				nodeJobSessionJob.setScopeText(repository.getFacilityPath(nodeIdList.get(i), null));
 
-			//通知メッセージを作成
-			JobUtil.copyJobNoticeProperties(nodeJobInfoEntity, job.getId().getJobId());
+				//通知メッセージを作成
+				JobUtil.copyJobNoticeProperties(nodeJobInfoEntity, job.getId().getJobId());
 
-			//ファイル転送ジョブネットの作成
-			createForwardFileJobNet(nodeJobSessionJob, nodeIdList.get(i), fileData,
-					parentJobInfo.getSrcFile(), parentJobInfo.getId().getJobId());
+				//ファイル転送ジョブネットの作成
+				createForwardFileJobNet(nodeJobSessionJob, nodeIdList.get(i), fileData,
+						parentJobInfo.getSrcFile(), parentJobInfo.getId().getJobId());
 
-			if(fileData.getProcess_mode() == ProcessingMethodConstant.TYPE_RETRY) {
-				waitJobId = nodeJobId;
+				if(fileData.getProcess_mode() == ProcessingMethodConstant.TYPE_RETRY) {
+					waitJobId = nodeJobId;
+				}
 			}
 		}
 	}
@@ -372,58 +415,63 @@ public class CreateHulftJob {
 			JobFileInfoData fileInfo,
 			String parentJobId) throws FacilityNotFound, EntityExistsException, HinemosUnknown {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		//リポジトリ(RepositoryControllerBean)を取得
-		RepositoryControllerBean repository = new RepositoryControllerBean();
+			//リポジトリ(RepositoryControllerBean)を取得
+			RepositoryControllerBean repository = new RepositoryControllerBean();
 
-		// インスタンス生成
-		JobInfoEntity jobInfoEntity = subCreateJobInfoEntityForJob (nodeJobSessionJob,
-				"_" + idCount + UTLSEND,  fileInfo.getSrc_facility_id());
+			// インスタンス生成
+			JobInfoEntity jobInfoEntity = subCreateJobInfoEntityForJob (nodeJobSessionJob,
+					"_" + idCount + UTLSEND,  fileInfo.getSrc_facility_id());
 
-		//待ち条件を設定
-		jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
-		jobInfoEntity.setUnmatchEndFlg(true);
-		jobInfoEntity.setUnmatchEndValue(ABNORMAL);
-		jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
+			//待ち条件を設定
+			jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
+			jobInfoEntity.setUnmatchEndFlg(true);
+			jobInfoEntity.setUnmatchEndValue(ABNORMAL);
+			jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
 
-		//判定対象を作成
-		//JobStartJobInfoEntityを作成
-		// インスタンス生成
-		JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-				jobInfoEntity,
-				jobInfoEntity.getId().getJobunitId(),
-				waitJobId,
-				JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-				EndStatusConstant.TYPE_NORMAL);
-		// 重複チェック
-		jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+			//判定対象を作成
+			//JobStartJobInfoEntityを作成
+			// インスタンス生成
+			JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
+					jobInfoEntity,
+					jobInfoEntity.getId().getJobunitId(),
+					waitJobId,
+					JudgmentObjectConstant.TYPE_JOB_END_STATUS,
+					EndStatusConstant.TYPE_NORMAL);
+			// 重複チェック
+			jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+			// 登録
+			em.persist(jobStartJobInfoEntity);
+			jobStartJobInfoEntity.relateToJobInfoEntity(jobInfoEntity);
 
-		NodeInfo info = repository.getNode(destFacilityId);
+			NodeInfo info = repository.getNode(destFacilityId);
 
-		//実行コマンドを設定
-		String command;
-		if (repository.getNode(fileInfo.getSrc_facility_id()).getPlatformFamily().equals("WINDOWS")) {
-			// Windowsの場合の起動コマンド
-			command = "cscript.exe //nologo \"" + getScriptDirWin() + UTLSEND_VBS + "\" " + parentJobId + " \"" + filePath+ "\" " + info.getNodeName();
-		} else {
-			// Linuxの場合の起動コマンド
-			command = getScriptDirLinux() + UTLSEND_SH + " " + parentJobId + " " + filePath+ " " + info.getNodeName();
+			//実行コマンドを設定
+			String command;
+			if (repository.getNode(fileInfo.getSrc_facility_id()).getPlatformFamily().equals("WINDOWS")) {
+				// Windowsの場合の起動コマンド
+				command = "cscript.exe //nologo \"" + getScriptDirWin() + UTLSEND_VBS + "\" " + parentJobId + " \"" + filePath+ "\" " + info.getNodeName();
+			} else {
+				// Linuxの場合の起動コマンド
+				command = getScriptDirLinux() + UTLSEND_SH + " " + parentJobId + " " + filePath+ " " + info.getNodeName();
+			}
+			m_log.info("startCommand=" + command);
+			jobInfoEntity.setStartCommand(command);
+			jobInfoEntity.setSpecifyUser(fileInfo.getSpecify_user());
+			jobInfoEntity.setEffectiveUser(fileInfo.getEffective_user());
+			jobInfoEntity.setArgument(filePath);
+			jobInfoEntity.setMessageRetry(fileInfo.getMessage_retry());
+			jobInfoEntity.setCommandRetry(fileInfo.getCommand_retry());
+			jobInfoEntity.setCommandRetryFlg(false);
+			
+
+			//通知メッセージを作成
+			JobUtil.copyJobNoticeProperties(jobInfoEntity, fileInfo.job_id);
+
+			return jobInfoEntity.getId().getJobId();
 		}
-		m_log.info("startCommand=" + command);
-		jobInfoEntity.setStartCommand(command);
-		jobInfoEntity.setSpecifyUser(fileInfo.getSpecify_user());
-		jobInfoEntity.setEffectiveUser(fileInfo.getEffective_user());
-		jobInfoEntity.setArgument(filePath);
-		jobInfoEntity.setMessageRetry(fileInfo.getMessage_retry());
-		jobInfoEntity.setCommandRetry(fileInfo.getCommand_retry());
-		jobInfoEntity.setCommandRetryFlg(false);
-		
-
-		//通知メッセージを作成
-		JobUtil.copyJobNoticeProperties(jobInfoEntity, fileInfo.job_id);
-
-		return jobInfoEntity.getId().getJobId();
 	}
 
 	private String utiliupdtR(
@@ -477,78 +525,83 @@ public class CreateHulftJob {
 
 		// 配信側に集信側のホスト管理情報を登録する
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// インスタンス生成
-		JobInfoEntity jobInfoEntity = subCreateJobInfoEntityForJob (nodeJobSessionJob,
-				UTILIUPDT_H_SND, fileInfo.getSrc_facility_id());
-
-		//待ち条件を設定
-		jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
-		jobInfoEntity.setUnmatchEndFlg(true);
-		jobInfoEntity.setUnmatchEndValue(ABNORMAL);
-		jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
-
-		if(waitJobId != null && waitJobId.length() > 0){
-			//JobStartJobInfoEntityを作成
 			// インスタンス生成
-			JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-					jobInfoEntity,
-					jobInfoEntity.getId().getJobunitId(),
-					waitJobId,
-					JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-					EndStatusConstant.TYPE_NORMAL);
-			// 重複チェック
-			jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+			JobInfoEntity jobInfoEntity = subCreateJobInfoEntityForJob (nodeJobSessionJob,
+					UTILIUPDT_H_SND, fileInfo.getSrc_facility_id());
+
+			//待ち条件を設定
+			jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
+			jobInfoEntity.setUnmatchEndFlg(true);
+			jobInfoEntity.setUnmatchEndValue(ABNORMAL);
+			jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
+
+			if(waitJobId != null && waitJobId.length() > 0){
+				//JobStartJobInfoEntityを作成
+				// インスタンス生成
+				JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
+						jobInfoEntity,
+						jobInfoEntity.getId().getJobunitId(),
+						waitJobId,
+						JudgmentObjectConstant.TYPE_JOB_END_STATUS,
+						EndStatusConstant.TYPE_NORMAL);
+				// 重複チェック
+				jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+				// 登録
+				em.persist(jobStartJobInfoEntity);
+				jobStartJobInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+			}
+
+			//リポジトリ(RepositoryControllerBean)を取得
+			RepositoryControllerBean repository = new RepositoryControllerBean();
+			NodeInfo info = repository.getNode(destFacilityId);
+
+			// ホスト種を指定 (H:汎用機　U:UNIX  N:WindowsNT  W:Windows A:AS/400  K:富士通K)
+			String hosttype;
+			if (info.getPlatformFamily().equals("WINDOWS")) {
+				hosttype = "N";
+			} else {
+				hosttype = "U";
+			}
+
+			// 漢字コード種 (S:SHIFT-JIS  E:EUC  8:UTF-8  J:JEF  I:IBM  K:KEIS  N:NEC)
+			String encoding = "";
+			if (info.getCharacterSet().contains("UTF")) {
+				encoding = "8";
+			} else if (info.getCharacterSet().contains("EUC")) {
+				encoding = "E";
+			} else if (info.getCharacterSet().contains("JIS")) {
+				encoding = "S";
+			} else if (info.getPlatformFamily().equals("WINDOWS")) {
+				encoding = "S";
+			} else {
+				encoding = "8";
+			}
+
+			//実行コマンドを設定
+			String command;
+			if (repository.getNode(fileInfo.getSrc_facility_id()).getPlatformFamily().equals("WINDOWS")) {
+				// Windowsの場合の起動コマンド
+				command = "cscript.exe //nologo \"" + getScriptDirWin() + UTILIUPDT_H_VBS + "\" " + info.getNodeName() + " " + hosttype + " " + encoding;
+			} else {
+				// Linuxの場合の起動コマンド
+				command = getScriptDirLinux() + UTILIUPDT_H_SH + " " + info.getNodeName() + " " + hosttype + " " + encoding;
+			}
+			m_log.info("startCommand=" + command);
+			jobInfoEntity.setStartCommand(command);
+			jobInfoEntity.setSpecifyUser(fileInfo.getSpecify_user());
+			jobInfoEntity.setEffectiveUser(fileInfo.getEffective_user());
+			jobInfoEntity.setMessageRetry(fileInfo.getMessage_retry());
+			jobInfoEntity.setCommandRetry(fileInfo.getCommand_retry());
+			jobInfoEntity.setCommandRetryFlg(false);
+
+			//通知メッセージを作成
+			JobUtil.copyJobNoticeProperties(jobInfoEntity, fileInfo.job_id);
+
+			return jobInfoEntity.getId().getJobId();
 		}
-
-		//リポジトリ(RepositoryControllerBean)を取得
-		RepositoryControllerBean repository = new RepositoryControllerBean();
-		NodeInfo info = repository.getNode(destFacilityId);
-
-		// ホスト種を指定 (H:汎用機　U:UNIX  N:WindowsNT  W:Windows A:AS/400  K:富士通K)
-		String hosttype;
-		if (info.getPlatformFamily().equals("WINDOWS")) {
-			hosttype = "N";
-		} else {
-			hosttype = "U";
-		}
-
-		// 漢字コード種 (S:SHIFT-JIS  E:EUC  8:UTF-8  J:JEF  I:IBM  K:KEIS  N:NEC)
-		String encoding = "";
-		if (info.getCharacterSet().contains("UTF")) {
-			encoding = "8";
-		} else if (info.getCharacterSet().contains("EUC")) {
-			encoding = "E";
-		} else if (info.getCharacterSet().contains("JIS")) {
-			encoding = "S";
-		} else if (info.getPlatformFamily().equals("WINDOWS")) {
-			encoding = "S";
-		} else {
-			encoding = "8";
-		}
-
-		//実行コマンドを設定
-		String command;
-		if (repository.getNode(fileInfo.getSrc_facility_id()).getPlatformFamily().equals("WINDOWS")) {
-			// Windowsの場合の起動コマンド
-			command = "cscript.exe //nologo \"" + getScriptDirWin() + UTILIUPDT_H_VBS + "\" " + info.getNodeName() + " " + hosttype + " " + encoding;
-		} else {
-			// Linuxの場合の起動コマンド
-			command = getScriptDirLinux() + UTILIUPDT_H_SH + " " + info.getNodeName() + " " + hosttype + " " + encoding;
-		}
-		m_log.info("startCommand=" + command);
-		jobInfoEntity.setStartCommand(command);
-		jobInfoEntity.setSpecifyUser(fileInfo.getSpecify_user());
-		jobInfoEntity.setEffectiveUser(fileInfo.getEffective_user());
-		jobInfoEntity.setMessageRetry(fileInfo.getMessage_retry());
-		jobInfoEntity.setCommandRetry(fileInfo.getCommand_retry());
-		jobInfoEntity.setCommandRetryFlg(false);
-
-		//通知メッセージを作成
-		JobUtil.copyJobNoticeProperties(jobInfoEntity, fileInfo.job_id);
-
-		return jobInfoEntity.getId().getJobId();
 	}
 
 	private String utliupdtH_rcv(
@@ -560,78 +613,83 @@ public class CreateHulftJob {
 
 		// 集信側に配信側のホスト管理情報を登録する
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// インスタンス生成
-		JobInfoEntity jobInfoEntity = subCreateJobInfoEntityForJob (nodeJobSessionJob,
-				UTILIUPDT_H_RCV, destFacilityId);
-
-		//待ち条件を設定
-		jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
-		jobInfoEntity.setUnmatchEndFlg(true);
-		jobInfoEntity.setUnmatchEndValue(ABNORMAL);
-		jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
-
-		if(waitJobId != null && waitJobId.length() > 0){
-			//JobStartJobInfoEntityを作成
 			// インスタンス生成
-			JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-					jobInfoEntity,
-					jobInfoEntity.getId().getJobunitId(),
-					waitJobId,
-					JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-					EndStatusConstant.TYPE_NORMAL);
-			// 重複チェック
-			jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+			JobInfoEntity jobInfoEntity = subCreateJobInfoEntityForJob (nodeJobSessionJob,
+					UTILIUPDT_H_RCV, destFacilityId);
+
+			//待ち条件を設定
+			jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
+			jobInfoEntity.setUnmatchEndFlg(true);
+			jobInfoEntity.setUnmatchEndValue(ABNORMAL);
+			jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
+
+			if(waitJobId != null && waitJobId.length() > 0){
+				//JobStartJobInfoEntityを作成
+				// インスタンス生成
+				JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
+						jobInfoEntity,
+						jobInfoEntity.getId().getJobunitId(),
+						waitJobId,
+						JudgmentObjectConstant.TYPE_JOB_END_STATUS,
+						EndStatusConstant.TYPE_NORMAL);
+				// 重複チェック
+				jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+				// 登録
+				em.persist(jobStartJobInfoEntity);
+				jobStartJobInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+			}
+
+			//リポジトリ(RepositoryControllerBean)を取得
+			RepositoryControllerBean repository = new RepositoryControllerBean();
+			NodeInfo info = repository.getNode(fileInfo.getSrc_facility_id());
+
+			// ホスト種を指定 (H:汎用機　U:UNIX  N:WindowsNT  W:Windows A:AS/400  K:富士通K)
+			String hosttype;
+			if (info.getPlatformFamily().equals("WINDOWS")) {
+				hosttype = "N";
+			} else {
+				hosttype = "U";
+			}
+
+			// 漢字コード種 (S:SHIFT-JIS  E:EUC  8:UTF-8  J:JEF  I:IBM  K:KEIS  N:NEC)
+			String encoding = "";
+			if (info.getCharacterSet().contains("UTF")) {
+				encoding = "8";
+			} else if (info.getCharacterSet().contains("EUC")) {
+				encoding = "E";
+			} else if (info.getCharacterSet().contains("JIS")) {
+				encoding = "S";
+			} else if (info.getPlatformFamily().equals("WINDOWS")) {
+				encoding = "S";
+			} else {
+				encoding = "8";
+			}
+
+			//実行コマンドを設定
+			String command;
+			if (repository.getNode(destFacilityId).getPlatformFamily().equals("WINDOWS")) {
+				// Windowsの場合の起動コマンド
+				command = "cscript.exe //nologo \"" + getScriptDirWin() + UTILIUPDT_H_VBS + "\" " + info.getNodeName() + " " + hosttype + " " + encoding;
+			} else {
+				// Linuxの場合の起動コマンド
+				command = getScriptDirLinux() + UTILIUPDT_H_SH + " " + info.getNodeName() + " " + hosttype + " " + encoding;
+			}
+			m_log.info("startCommand=" + command);
+			jobInfoEntity.setStartCommand(command);
+			jobInfoEntity.setSpecifyUser(fileInfo.getSpecify_user());
+			jobInfoEntity.setEffectiveUser(fileInfo.getEffective_user());
+			jobInfoEntity.setMessageRetry(fileInfo.getMessage_retry());
+			jobInfoEntity.setCommandRetry(fileInfo.getCommand_retry());
+			jobInfoEntity.setCommandRetryFlg(false);
+
+			//通知メッセージを作成
+			JobUtil.copyJobNoticeProperties(jobInfoEntity, fileInfo.job_id);
+
+			return jobInfoEntity.getId().getJobId();
 		}
-
-		//リポジトリ(RepositoryControllerBean)を取得
-		RepositoryControllerBean repository = new RepositoryControllerBean();
-		NodeInfo info = repository.getNode(fileInfo.getSrc_facility_id());
-
-		// ホスト種を指定 (H:汎用機　U:UNIX  N:WindowsNT  W:Windows A:AS/400  K:富士通K)
-		String hosttype;
-		if (info.getPlatformFamily().equals("WINDOWS")) {
-			hosttype = "N";
-		} else {
-			hosttype = "U";
-		}
-
-		// 漢字コード種 (S:SHIFT-JIS  E:EUC  8:UTF-8  J:JEF  I:IBM  K:KEIS  N:NEC)
-		String encoding = "";
-		if (info.getCharacterSet().contains("UTF")) {
-			encoding = "8";
-		} else if (info.getCharacterSet().contains("EUC")) {
-			encoding = "E";
-		} else if (info.getCharacterSet().contains("JIS")) {
-			encoding = "S";
-		} else if (info.getPlatformFamily().equals("WINDOWS")) {
-			encoding = "S";
-		} else {
-			encoding = "8";
-		}
-
-		//実行コマンドを設定
-		String command;
-		if (repository.getNode(destFacilityId).getPlatformFamily().equals("WINDOWS")) {
-			// Windowsの場合の起動コマンド
-			command = "cscript.exe //nologo \"" + getScriptDirWin() + UTILIUPDT_H_VBS + "\" " + info.getNodeName() + " " + hosttype + " " + encoding;
-		} else {
-			// Linuxの場合の起動コマンド
-			command = getScriptDirLinux() + UTILIUPDT_H_SH + " " + info.getNodeName() + " " + hosttype + " " + encoding;
-		}
-		m_log.info("startCommand=" + command);
-		jobInfoEntity.setStartCommand(command);
-		jobInfoEntity.setSpecifyUser(fileInfo.getSpecify_user());
-		jobInfoEntity.setEffectiveUser(fileInfo.getEffective_user());
-		jobInfoEntity.setMessageRetry(fileInfo.getMessage_retry());
-		jobInfoEntity.setCommandRetry(fileInfo.getCommand_retry());
-		jobInfoEntity.setCommandRetryFlg(false);
-
-		//通知メッセージを作成
-		JobUtil.copyJobNoticeProperties(jobInfoEntity, fileInfo.job_id);
-
-		return jobInfoEntity.getId().getJobId();
 	}
 
 	private String huloplcmd(
@@ -641,138 +699,156 @@ public class CreateHulftJob {
 			JobFileInfoData fileInfo
 			) throws EntityExistsException, FacilityNotFound, HinemosUnknown {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// インスタンス生成
-		JobInfoEntity jobInfoEntity = subCreateJobInfoEntityForJob (nodeJobSessionJob,
-				HULOPLCMD, fileInfo.getSrc_facility_id());
-
-		//待ち条件を設定
-		jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
-		jobInfoEntity.setUnmatchEndFlg(true);
-		jobInfoEntity.setUnmatchEndValue(ABNORMAL);
-		jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
-
-		if(waitJobId != null && waitJobId.length() > 0){
-			//JobStartJobInfoEntityを作成
 			// インスタンス生成
-			JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-					jobInfoEntity,
-					jobInfoEntity.getId().getJobunitId(),
-					waitJobId,
-					JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-					EndStatusConstant.TYPE_NORMAL);
-			// 重複チェック
-			jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+			JobInfoEntity jobInfoEntity = subCreateJobInfoEntityForJob (nodeJobSessionJob,
+					HULOPLCMD, fileInfo.getSrc_facility_id());
+
+			//待ち条件を設定
+			jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
+			jobInfoEntity.setUnmatchEndFlg(true);
+			jobInfoEntity.setUnmatchEndValue(ABNORMAL);
+			jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
+
+			if(waitJobId != null && waitJobId.length() > 0){
+				//JobStartJobInfoEntityを作成
+				// インスタンス生成
+				JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
+						jobInfoEntity,
+						jobInfoEntity.getId().getJobunitId(),
+						waitJobId,
+						JudgmentObjectConstant.TYPE_JOB_END_STATUS,
+						EndStatusConstant.TYPE_NORMAL);
+				// 重複チェック
+				jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+				// 登録
+				em.persist(jobStartJobInfoEntity);
+				jobStartJobInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+			}
+
+			//リポジトリ(RepositoryControllerBean)を取得
+			RepositoryControllerBean repository = new RepositoryControllerBean();
+
+			//実行コマンドを設定
+			String command;
+			if (repository.getNode(fileInfo.getSrc_facility_id()).getPlatformFamily().equals("WINDOWS")) {
+				// Windowsの場合の起動コマンド
+				command = "cscript.exe //nologo \"" + getScriptDirWin() + HULOPLCMD_VBS +"\"";
+			} else {
+				// Linuxの場合の起動コマンド
+				command = getScriptDirLinux() + HULOPLCMD_SH;
+			}
+			m_log.info("startCommand=" + command);
+			jobInfoEntity.setStartCommand(command);
+			jobInfoEntity.setSpecifyUser(fileInfo.getSpecify_user());
+			jobInfoEntity.setEffectiveUser(fileInfo.getEffective_user());
+			jobInfoEntity.setArgument(filePath);
+			jobInfoEntity.setArgumentJobId(waitJobId);
+			jobInfoEntity.setMessageRetry(fileInfo.getMessage_retry());
+			jobInfoEntity.setCommandRetry(fileInfo.getCommand_retry());
+			jobInfoEntity.setCommandRetryFlg(false);
+
+			//通知メッセージを作成
+			JobUtil.copyJobNoticeProperties(jobInfoEntity, fileInfo.job_id);
+
+			return jobInfoEntity.getId().getJobId();
 		}
-
-		//リポジトリ(RepositoryControllerBean)を取得
-		RepositoryControllerBean repository = new RepositoryControllerBean();
-
-		//実行コマンドを設定
-		String command;
-		if (repository.getNode(fileInfo.getSrc_facility_id()).getPlatformFamily().equals("WINDOWS")) {
-			// Windowsの場合の起動コマンド
-			command = "cscript.exe //nologo \"" + getScriptDirWin() + HULOPLCMD_VBS +"\"";
-		} else {
-			// Linuxの場合の起動コマンド
-			command = getScriptDirLinux() + HULOPLCMD_SH;
-		}
-		m_log.info("startCommand=" + command);
-		jobInfoEntity.setStartCommand(command);
-		jobInfoEntity.setSpecifyUser(fileInfo.getSpecify_user());
-		jobInfoEntity.setEffectiveUser(fileInfo.getEffective_user());
-		jobInfoEntity.setArgument(filePath);
-		jobInfoEntity.setArgumentJobId(waitJobId);
-		jobInfoEntity.setMessageRetry(fileInfo.getMessage_retry());
-		jobInfoEntity.setCommandRetry(fileInfo.getCommand_retry());
-		jobInfoEntity.setCommandRetryFlg(false);
-
-		//通知メッセージを作成
-		JobUtil.copyJobNoticeProperties(jobInfoEntity, fileInfo.job_id);
-
-		return jobInfoEntity.getId().getJobId();
 	}
 
 	private JobInfoEntity subCreateJobInfoEntityForJob (JobSessionJobEntity jobSessionJobEntity, String jobIdSuffix, String facilityId)
 			throws FacilityNotFound, HinemosUnknown {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		//リポジトリ(RepositoryControllerBean)を取得
-		RepositoryControllerBean repository = new RepositoryControllerBean();
+			//リポジトリ(RepositoryControllerBean)を取得
+			RepositoryControllerBean repository = new RepositoryControllerBean();
 
-		String jobunitId = jobSessionJobEntity.getId().getJobunitId();
-		String jobId = jobSessionJobEntity.getId().getJobId() + jobIdSuffix;
+			String jobunitId = jobSessionJobEntity.getId().getJobunitId();
+			String jobId = jobSessionJobEntity.getId().getJobId() + jobIdSuffix;
 
-		//JobSessionEntityを設定
-		JobSessionEntity jobSessionEntity = jobSessionJobEntity.getJobSessionEntity();
+			//JobSessionEntityを設定
+			JobSessionEntity jobSessionEntity = jobSessionJobEntity.getJobSessionEntity();
 
-		//JobSessionJobを作成
-		// インスタンス作成
-		JobSessionJobEntity sessionJob
-		= new JobSessionJobEntity(jobSessionEntity, jobunitId, jobId);
-		// 重複チェック
-		jtm.checkEntityExists(JobSessionJobEntity.class, sessionJob.getId());
-		sessionJob.setStatus(StatusConstant.TYPE_WAIT);
-		sessionJob.setParentJobunitId(jobSessionJobEntity.getId().getJobunitId());
-		sessionJob.setParentJobId(jobSessionJobEntity.getId().getJobId());
-		sessionJob.setEndStausCheckFlg(EndStatusCheckConstant.NO_WAIT_JOB);
-		sessionJob.setScopeText(repository.getFacilityPath(facilityId, null));
+			//JobSessionJobを作成
+			// インスタンス作成
+			JobSessionJobEntity sessionJob
+			= new JobSessionJobEntity(jobSessionEntity, jobunitId, jobId);
+			// 重複チェック
+			jtm.checkEntityExists(JobSessionJobEntity.class, sessionJob.getId());
+			sessionJob.setStatus(StatusConstant.TYPE_WAIT);
+			sessionJob.setParentJobunitId(jobSessionJobEntity.getId().getJobunitId());
+			sessionJob.setParentJobId(jobSessionJobEntity.getId().getJobId());
+			sessionJob.setEndStausCheckFlg(EndStatusCheckConstant.NO_WAIT_JOB);
+			sessionJob.setScopeText(repository.getFacilityPath(facilityId, null));
+			sessionJob.setOwnerRoleId(JobUtil.createSessioniOwnerRoleId(jobunitId));
+			// 登録
+			em.persist(sessionJob);
+			sessionJob.relateToJobSessionEntity(jobSessionEntity);
 
-		//JobInfoEntityを作成
-		// インスタンス生成
-		JobInfoEntity jobInfoEntity = new JobInfoEntity(sessionJob);
-		// 重複チェック
-		jtm.checkEntityExists(JobInfoEntity.class, jobInfoEntity.getId());
-		jobInfoEntity.setJobType(JobConstant.TYPE_JOB);
-		jobInfoEntity.setUnmatchEndFlg(true);
-		jobInfoEntity.setUnmatchEndValue(ABNORMAL);
-		jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
-		jobInfoEntity.setStartDelayNotifyPriority(PriorityConstant.TYPE_CRITICAL);
-		jobInfoEntity.setStartDelayOperationType(OperationConstant.TYPE_STOP_SKIP);
-		jobInfoEntity.setEndDelayNotifyPriority(PriorityConstant.TYPE_CRITICAL);
-		jobInfoEntity.setEndDelayOperationType(OperationConstant.TYPE_STOP_AT_ONCE);
-		jobInfoEntity.setProcessMode(ProcessingMethodConstant.TYPE_ALL_NODE);
-		jobInfoEntity.setMessageRetryEndFlg(true);
-		jobInfoEntity.setMessageRetryEndValue(ABNORMAL);
-		jobInfoEntity.setFacilityId(facilityId);
-		// ファイル転送を中止する場合は、プロセス停止とする。
-		jobInfoEntity.setStopType(CommandStopTypeConstant.DESTROY_PROCESS);
-		// 多重度
-		JobInfoEntity jobInfo = jobSessionJobEntity.getJobInfoEntity();
-		jobInfoEntity.setMultiplicityEndValue(jobInfo.getMultiplicityEndValue());
-		jobInfoEntity.setMultiplicityNotify(jobInfo.getMultiplicityNotify());
-		jobInfoEntity.setMultiplicityNotifyPriority(jobInfo.getMultiplicityNotifyPriority());
-		jobInfoEntity.setMultiplicityOperation(jobInfo.getMultiplicityOperation());
-		jobInfoEntity.setRegisteredModule(jobInfo.isRegisteredModule());
-		
-		// 終了状態を作成
-		// 正常
-		jobInfoEntity.setNormalEndValue(NORMAL);
-		jobInfoEntity.setNormalEndValueFrom(NORMAL);
-		jobInfoEntity.setNormalEndValueTo(NORMAL);
-		// 警告
-		jobInfoEntity.setWarnEndValue(WARNING);
-		jobInfoEntity.setWarnEndValueFrom(WARNING);
-		jobInfoEntity.setWarnEndValueTo(WARNING);
-		// 異常
-		jobInfoEntity.setAbnormalEndValue(ABNORMAL);
-		jobInfoEntity.setAbnormalEndValueFrom(ABNORMAL);
-		jobInfoEntity.setAbnormalEndValueTo(ABNORMAL);
+			//JobInfoEntityを作成
+			// インスタンス生成
+			JobInfoEntity jobInfoEntity = new JobInfoEntity(sessionJob);
+			// 重複チェック
+			jtm.checkEntityExists(JobInfoEntity.class, jobInfoEntity.getId());
+			// 登録
+			em.persist(jobInfoEntity);
+			jobInfoEntity.relateToJobSessionJobEntity(sessionJob);
 
-		//JobSessionNodeを作成
-		// インスタンス生成
-		JobSessionNodeEntity jobSessionNodeEntity
-		= new JobSessionNodeEntity(jobInfoEntity.getJobSessionJobEntity(), facilityId);
-		// 重複チェック
-		jtm.checkEntityExists(JobSessionNodeEntity.class, jobSessionNodeEntity.getId());
-		NodeInfo info = repository.getNode(facilityId);
-		jobSessionNodeEntity.setNodeName(info.getFacilityName());
-		jobSessionNodeEntity.setStatus(StatusConstant.TYPE_WAIT);
-		jobSessionNodeEntity.setMessage(null);
+			jobInfoEntity.setJobType(JobConstant.TYPE_JOB);
+			jobInfoEntity.setUnmatchEndFlg(true);
+			jobInfoEntity.setUnmatchEndValue(ABNORMAL);
+			jobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
+			jobInfoEntity.setStartDelayNotifyPriority(PriorityConstant.TYPE_CRITICAL);
+			jobInfoEntity.setStartDelayOperationType(OperationConstant.TYPE_STOP_SKIP);
+			jobInfoEntity.setEndDelayNotifyPriority(PriorityConstant.TYPE_CRITICAL);
+			jobInfoEntity.setEndDelayOperationType(OperationConstant.TYPE_STOP_AT_ONCE);
+			jobInfoEntity.setProcessMode(ProcessingMethodConstant.TYPE_ALL_NODE);
+			jobInfoEntity.setMessageRetryEndFlg(true);
+			jobInfoEntity.setMessageRetryEndValue(ABNORMAL);
+			jobInfoEntity.setFacilityId(facilityId);
+			// ファイル転送を中止する場合は、プロセス停止とする。
+			jobInfoEntity.setStopType(CommandStopTypeConstant.DESTROY_PROCESS);
+			// 多重度
+			JobInfoEntity jobInfo = jobSessionJobEntity.getJobInfoEntity();
+			jobInfoEntity.setMultiplicityEndValue(jobInfo.getMultiplicityEndValue());
+			jobInfoEntity.setMultiplicityNotify(jobInfo.getMultiplicityNotify());
+			jobInfoEntity.setMultiplicityNotifyPriority(jobInfo.getMultiplicityNotifyPriority());
+			jobInfoEntity.setMultiplicityOperation(jobInfo.getMultiplicityOperation());
+			jobInfoEntity.setRegisteredModule(jobInfo.isRegisteredModule());
+			
+			// 終了状態を作成
+			// 正常
+			jobInfoEntity.setNormalEndValue(NORMAL);
+			jobInfoEntity.setNormalEndValueFrom(NORMAL);
+			jobInfoEntity.setNormalEndValueTo(NORMAL);
+			// 警告
+			jobInfoEntity.setWarnEndValue(WARNING);
+			jobInfoEntity.setWarnEndValueFrom(WARNING);
+			jobInfoEntity.setWarnEndValueTo(WARNING);
+			// 異常
+			jobInfoEntity.setAbnormalEndValue(ABNORMAL);
+			jobInfoEntity.setAbnormalEndValueFrom(ABNORMAL);
+			jobInfoEntity.setAbnormalEndValueTo(ABNORMAL);
 
-		return jobInfoEntity;
+			//JobSessionNodeを作成
+			// インスタンス生成
+			JobSessionNodeEntity jobSessionNodeEntity
+			= new JobSessionNodeEntity(jobInfoEntity.getJobSessionJobEntity(), facilityId);
+			// 重複チェック
+			jtm.checkEntityExists(JobSessionNodeEntity.class, jobSessionNodeEntity.getId());
+			NodeInfo info = repository.getNode(facilityId);
+			jobSessionNodeEntity.setNodeName(info.getFacilityName());
+			jobSessionNodeEntity.setStatus(StatusConstant.TYPE_WAIT);
+			jobSessionNodeEntity.setMessage(null);
+			// 登録
+			em.persist(jobSessionNodeEntity);
+			jobSessionNodeEntity.relateToJobSessionJobEntity(jobInfoEntity.getJobSessionJobEntity());
+
+			return jobInfoEntity;
+		}
 	}
 
 	private static class JobFileInfoData

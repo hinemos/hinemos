@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2008 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.performance.operator;
@@ -225,7 +218,7 @@ abstract public class Operator {
 						// エラー処理
 						String message = "getDifferenceValue() deviceName : " + deviceName + ", previousIndex is null";
 						m_log.debug(message);
-						throw new CollectedDataNotFoundException(message);
+						throw new CollectedDataNotFoundWithNoPollingException(message);
 					}
 
 					// pollingTargetにTableEntryから取得するためのKeyを与える
@@ -623,6 +616,12 @@ abstract public class Operator {
 
 		// return用の変数
 		double ret = 0;
+		
+		// 前回収集時の値がなく、今回収集時の値がある場合は、異常ではなく初回収集と判断する
+		if (previousTable.getValue(previousEntryKey) == null && currentTable.getValue(currentEntryKey) != null) {
+			m_log.info("getMibValueDiff() : polling have not done enough count.");
+			throw new CollectedDataNotFoundWithNoPollingException("previous data is null");
+		}
 
 		// 前回収集時の値を取得
 		long previousValue =  getMibValueLong(previousTable, data, previousEntryKey);
@@ -802,6 +801,14 @@ abstract public class Operator {
 		private static final long serialVersionUID = 6306555743811316089L;
 		
 		public CollectedDataNotFoundException(String messages) {
+			super(messages + ", itemcode=" + itemCode);
+		}
+	}
+	
+	public class CollectedDataNotFoundWithNoPollingException extends CollectedDataNotFoundException {
+		private static final long serialVersionUID = 9166324575275897346L;
+
+		public CollectedDataNotFoundWithNoPollingException(String messages) {
 			super(messages + ", itemcode=" + itemCode);
 		}
 	}

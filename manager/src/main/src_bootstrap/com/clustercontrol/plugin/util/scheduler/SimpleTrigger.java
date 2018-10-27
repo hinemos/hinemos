@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.plugin.util.scheduler;
 
 
@@ -34,7 +42,12 @@ public class SimpleTrigger extends AbstractTrigger {
 			setNextFireTime(-1);
 		} else {
 			setPreviousFireTime(getNextFireTime());
-			setNextFireTime(getNextFireTime() + getPeriod());
+			long nextFireTime = getNextFireTime() + getPeriod();
+			while (nextFireTime <= currentTimeMillis) {
+				nextFireTime += getPeriod();
+			}
+			
+			setNextFireTime(nextFireTime);
 		}
 	}
 

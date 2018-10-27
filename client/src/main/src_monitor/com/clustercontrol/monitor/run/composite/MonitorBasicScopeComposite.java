@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.composite;
@@ -74,6 +67,9 @@ public class MonitorBasicScopeComposite extends MonitorBasicComposite {
 	/** オーナーロールID*/
 	private String m_ownerRoleId = null;
 
+	/** スコープラベル */
+	private Label m_labelScope = null;
+
 
 	/**
 	 * インスタンスを返します。
@@ -114,14 +110,14 @@ public class MonitorBasicScopeComposite extends MonitorBasicComposite {
 		 * スコープ
 		 */
 		// ラベル
-		label = new Label(this, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "scope", label);
+		m_labelScope = new Label(this, SWT.NONE);
+		WidgetTestUtil.setTestId(this, "scope", m_labelScope);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH_TITLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
-		label.setText(Messages.getString("scope") + " : ");
+		m_labelScope.setLayoutData(gridData);
+		m_labelScope.setText(Messages.getString("scope") + " : ");
 		// テキスト
 		this.m_textScope = new Text(this, SWT.BORDER | SWT.LEFT | SWT.READ_ONLY);
 		WidgetTestUtil.setTestId(this, null, m_textScope);
@@ -297,5 +293,9 @@ public class MonitorBasicScopeComposite extends MonitorBasicComposite {
 
 	public String getOwnerRoleId(){
 		return this.m_ownerRoleId;
+	}
+
+	public void setScopeLabel(String labelString) {
+		m_labelScope.setText(labelString);
 	}
 }

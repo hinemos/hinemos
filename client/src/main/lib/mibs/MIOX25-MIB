@@ -1,0 +1,366 @@
+          MIOX25-MIB DEFINITIONS  ::= BEGIN
+
+          IMPORTS
+                  Counter,
+                  TimeTicks
+                          FROM RFC1155-SMI
+                  OBJECT-TYPE
+                          FROM RFC-1212
+                  DisplayString, transmission,
+                  ifIndex
+                          FROM RFC1213-MIB
+                  InstancePointer
+                          FROM RFC1316-MIB
+                  X121Address
+                          FROM RFC1382-MIB
+                  PositiveInteger
+                          FROM RFC1381-MIB;
+
+
+          miox    OBJECT IDENTIFIER ::= { transmission 38 }
+
+          mioxPle         OBJECT IDENTIFIER ::= { miox 1 }
+          mioxPeer        OBJECT IDENTIFIER ::= { miox 2 }
+
+
+
+          mioxPleTable    OBJECT-TYPE
+                  SYNTAX  SEQUENCE OF MioxPleEntry
+
+
+
+
+
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  ::= { mioxPle 1   }
+
+          mioxPleEntry    OBJECT-TYPE
+                  SYNTAX  MioxPleEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  INDEX { ifIndex }
+                  ::= { mioxPleTable 1 }
+
+          MioxPleEntry ::= SEQUENCE {
+                  mioxPleMaxCircuits
+                          INTEGER,
+                  mioxPleRefusedConnections
+                          Counter,
+                  mioxPleEnAddrToX121LkupFlrs
+                          Counter,
+                  mioxPleLastFailedEnAddr
+                          OCTET STRING,
+                  mioxPleEnAddrToX121LkupFlrTime
+                          TimeTicks,
+                  mioxPleX121ToEnAddrLkupFlrs
+                          Counter,
+                  mioxPleLastFailedX121Address
+                          X121Address,
+                  mioxPleX121ToEnAddrLkupFlrTime
+                          TimeTicks,
+                  mioxPleQbitFailures
+                          Counter,
+                  mioxPleQbitFailureRemoteAddress
+                          X121Address,
+                  mioxPleQbitFailureTime
+                          TimeTicks,
+                  mioxPleMinimumOpenTimer
+                          PositiveInteger,
+                  mioxPleInactivityTimer
+                          PositiveInteger,
+                  mioxPleHoldDownTimer
+                          PositiveInteger,
+                  mioxPleCollisionRetryTimer
+
+
+
+
+
+                          PositiveInteger,
+                  mioxPleDefaultPeerId
+                          InstancePointer
+                  }
+
+          mioxPleMaxCircuits OBJECT-TYPE
+                  SYNTAX  INTEGER (0..2147483647)
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 1 }
+
+          mioxPleRefusedConnections OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 2 }
+
+          mioxPleEnAddrToX121LkupFlrs OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 3 }
+
+          mioxPleLastFailedEnAddr OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE(2..128))
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 4 }
+
+          mioxPleEnAddrToX121LkupFlrTime OBJECT-TYPE
+                  SYNTAX  TimeTicks
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 5 }
+
+
+          mioxPleX121ToEnAddrLkupFlrs OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 6 }
+
+          mioxPleLastFailedX121Address OBJECT-TYPE
+                  SYNTAX  X121Address
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 7 }
+
+          mioxPleX121ToEnAddrLkupFlrTime OBJECT-TYPE
+                  SYNTAX  TimeTicks
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 8 }
+
+          mioxPleQbitFailures OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 9 }
+
+          mioxPleQbitFailureRemoteAddress OBJECT-TYPE
+                  SYNTAX  X121Address
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 10 }
+
+
+
+
+
+
+          mioxPleQbitFailureTime OBJECT-TYPE
+                  SYNTAX  TimeTicks
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 11 }
+
+          mioxPleMinimumOpenTimer OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 0 }
+                  ::= { mioxPleEntry 12 }
+
+          mioxPleInactivityTimer OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 10000 }
+                  ::= { mioxPleEntry 13 }
+
+          mioxPleHoldDownTimer    OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 0 }
+                  ::= { mioxPleEntry 14 }
+
+
+
+
+
+          mioxPleCollisionRetryTimer OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 0 }
+                  ::= { mioxPleEntry 15 }
+
+
+          mioxPleDefaultPeerId OBJECT-TYPE
+                  SYNTAX  InstancePointer
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  ::= { mioxPleEntry 16 }
+
+
+
+
+
+
+
+
+
+          mioxPeerTable OBJECT-TYPE
+                  SYNTAX  SEQUENCE OF MioxPeerEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  ::= { mioxPeer 1 }
+
+          mioxPeerEntry OBJECT-TYPE
+                  SYNTAX  MioxPeerEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  INDEX { mioxPeerIndex   }
+                  ::= { mioxPeerTable 1 }
+
+
+          MioxPeerEntry ::= SEQUENCE {
+                  mioxPeerIndex
+                          PositiveInteger,
+                  mioxPeerStatus
+                          INTEGER,
+                  mioxPeerMaxCircuits
+                          PositiveInteger,
+                  mioxPeerIfIndex
+                          PositiveInteger,
+                  mioxPeerConnectSeconds
+                          Counter,
+                  mioxPeerX25CallParamId
+                          InstancePointer,
+                  mioxPeerEnAddr
+                          OCTET STRING,
+                  mioxPeerX121Address
+                          X121Address,
+                  mioxPeerX25CircuitId
+                          InstancePointer,
+                  mioxPeerDescr
+                          DisplayString
+                  }
+
+          mioxPeerIndex   OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+
+
+
+
+
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPeerEntry 1 }
+
+          mioxPeerStatus OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                                  valid (1),
+                                  createRequest (2),
+                                  underCreation (3),
+                                  invalid (4),
+                                  clearCall (5),
+                                  makeCall (6)
+                                  }
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  ::= { mioxPeerEntry 2 }
+
+          mioxPeerMaxCircuits OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS    mandatory
+                  DEFVAL { 1 }
+                  ::= { mioxPeerEntry 3 }
+
+          mioxPeerIfIndex OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 1 }
+                  ::= { mioxPeerEntry 4 }
+
+          mioxPeerConnectSeconds OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { mioxPeerEntry 5 }
+
+          mioxPeerX25CallParamId OBJECT-TYPE
+                  SYNTAX  InstancePointer
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { {0 0} }
+                  ::= { mioxPeerEntry 6 }
+
+          mioxPeerEnAddr  OBJECT-TYPE
+                  SYNTAX    OCTET STRING (SIZE (0..128))
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { ''h }
+                  ::= { mioxPeerEntry 7 }
+
+          mioxPeerX121Address OBJECT-TYPE
+                  SYNTAX  X121Address
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { ''h }
+                  ::= { mioxPeerEntry 8 }
+
+          mioxPeerX25CircuitId OBJECT-TYPE
+                  SYNTAX  InstancePointer
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { {0 0} }
+                  ::= { mioxPeerEntry 9 }
+
+          mioxPeerDescr   OBJECT-TYPE
+                  SYNTAX  DisplayString (SIZE (0..255))
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { ''h }
+                  ::= { mioxPeerEntry 10 }
+
+
+
+
+
+
+
+
+
+          mioxPeerEncTable OBJECT-TYPE
+                  SYNTAX  SEQUENCE OF MioxPeerEncEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  ::= { mioxPeer 2 }
+
+          mioxPeerEncEntry OBJECT-TYPE
+                  SYNTAX  MioxPeerEncEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  INDEX { mioxPeerIndex, mioxPeerEncIndex}
+                  ::= { mioxPeerEncTable 1 }
+
+
+
+
+
+
+          MioxPeerEncEntry ::= SEQUENCE {
+                  mioxPeerEncIndex
+                          PositiveInteger,
+                  mioxPeerEncType
+                          INTEGER
+                  }
+
+          mioxPeerEncIndex        OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-only
+                  STATUS    mandatory
+                  ::= { mioxPeerEncEntry 1 }
+
+          mioxPeerEncType OBJECT-TYPE
+                  SYNTAX  INTEGER (0..256)
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  ::= { mioxPeerEncEntry 2 }
+
+
+          END

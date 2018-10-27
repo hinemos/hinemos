@@ -1,0 +1,54 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"targetMonitorId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCorrelationInfo_targetMonitorId"}
+	]},
+
+	{
+	"propName":"targetItemName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCorrelationInfo_targetItemName"}
+	]},
+
+	{
+	"propName":"targetDisplayName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCorrelationInfo_targetDisplayName"}
+	]},
+
+	{
+	"propName":"referMonitorId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCorrelationInfo_referMonitorId"}
+	]},
+
+	{
+	"propName":"referItemName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCorrelationInfo_referItemName"}
+	]},
+
+	{
+	"propName":"referDisplayName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCorrelationInfo_referDisplayName"}
+	]},
+
+	{
+	"propName":"referFacilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCorrelationInfo_referFacilityId"}
+	]},
+	
+	{
+	"propName":"analysysRange",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCorrelationInfo_analysysRange"}
+	]}	
+]
+}

@@ -1,0 +1,44 @@
+{
+"annotations":[
+	{"type":"Element"}
+
+],
+"props":[
+	{
+	"propName":"requestUrl",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpInfo_requestUrl"}
+	]},
+
+	{
+	"propName":"urlReplace",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpInfo_urlReplace"},
+		{"type":"Translate", "values":[{"value":"0", "name":"name_dontReplace"}, {"value":"1", "name":"name_doReplace"}]}
+	]},
+
+	{
+	"propName":"proxyHost",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpInfo_proxyHost"}
+	]},
+
+	{
+	"propName":"proxyPort",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpInfo_proxyPort"}
+	]},
+
+	{
+	"propName":"proxySet",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpInfo_proxySet"}
+	]},
+
+	{
+	"propName":"timeout",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHttpInfo_timeout"}
+	]}
+]
+}

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.selfcheck.monitor;
@@ -25,7 +18,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.poller.bean.PollerProtocolConstant;
 import com.clustercontrol.poller.impl.Snmp4jPollerImpl;
 import com.clustercontrol.poller.util.DataTable;
@@ -91,7 +84,7 @@ public class RAMSwapOutMonitor extends SelfCheckMonitorBase {
 	 */
 	@Override
 	public void execute() {
-		if(!HinemosPropertyUtil.getHinemosPropertyBool("selfcheck.monitoring.swapout", false)) {
+		if(!HinemosPropertyCommon.selfcheck_monitoring_swapout.getBooleanValue()) {
 			m_log.debug("skip");
 			return;
 		}
@@ -101,13 +94,13 @@ public class RAMSwapOutMonitor extends SelfCheckMonitorBase {
 		long lastUpdateTime = 0;
 		boolean warn = true;
 
-		this.intervalMSec = HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.interval", Long.valueOf(150)) * 1000;
-		this.snmpPort = HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.snmp.port", Long.valueOf(161)).intValue();
-		String snmpVersionStr = HinemosPropertyUtil.getHinemosPropertyStr("selfcheck.snmp.version", SnmpVersionConstant.STRING_V2);
+		this.intervalMSec = HinemosPropertyCommon.selfcheck_interval.getNumericValue() * 1000;
+		this.snmpPort = HinemosPropertyCommon.selfcheck_snmp_port.getIntegerValue();
+		String snmpVersionStr = HinemosPropertyCommon.selfcheck_snmp_version.getStringValue();
 		this.snmpVersion = SnmpVersionConstant.stringToType(snmpVersionStr);
-		this.snmpCommunity = HinemosPropertyUtil.getHinemosPropertyStr("selfcheck.snmp.community", "public");
-		this.snmpRetries = HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.snmp.retries", Long.valueOf(3)).intValue();
-		this.snmpTimeout = HinemosPropertyUtil.getHinemosPropertyNum("selfcheck.snmp.timeout", Long.valueOf(3000)).intValue();
+		this.snmpCommunity = HinemosPropertyCommon.selfcheck_snmp_community.getStringValue();
+		this.snmpRetries = HinemosPropertyCommon.selfcheck_snmp_retries.getIntegerValue();
+		this.snmpTimeout = HinemosPropertyCommon.selfcheck_snmp_timeout.getIntegerValue();
 
 		/** メイン処理 */
 		if (m_log.isDebugEnabled()) m_log.debug("monitoring swap-out.");

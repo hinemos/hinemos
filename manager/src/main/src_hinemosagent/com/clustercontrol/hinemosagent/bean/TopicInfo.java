@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.hinemosagent.bean;
 
 import java.io.Serializable;
@@ -85,6 +93,17 @@ public class TopicInfo implements Serializable {
 			flag = flag | TopicFlagConstant.LOGFILE_CHANGED;
 		} else {
 			flag = flag - (flag & TopicFlagConstant.LOGFILE_CHANGED);
+		}
+	}
+	private boolean isBinaryMonitorChanged() {
+		return (flag & TopicFlagConstant.BINARY_CHANGED) != 0;
+	}
+
+	public void setBinaryMonitorChanged(boolean changed) {
+		if (changed) {
+			flag = flag | TopicFlagConstant.BINARY_CHANGED;
+		} else {
+			flag = flag - (flag & TopicFlagConstant.BINARY_CHANGED);
 		}
 	}
 	private boolean isFileCheckChanged() {
@@ -238,6 +257,13 @@ public class TopicInfo implements Serializable {
 		flag = true;
 		info.setLogfileMonitorChanged(flag);
 		System.out.println((flag ^ info.isLogfileMonitorChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
+
+		flag = false;
+		info.setBinaryMonitorChanged(flag);
+		System.out.println((flag ^ info.isBinaryMonitorChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
+		flag = true;
+		info.setBinaryMonitorChanged(flag);
+		System.out.println((flag ^ info.isBinaryMonitorChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
 
 		flag = false;
 		info.setFileCheckChanged(flag);

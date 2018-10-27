@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2013 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.winevent.session;
@@ -28,6 +21,7 @@ import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
@@ -41,6 +35,9 @@ import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.monitor.run.factory.SelectMonitor;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.monitor.run.util.MonitorOnAgentUtil;
+import com.clustercontrol.notify.bean.OutputBasicInfo;
+import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.winevent.bean.WinEventResultDTO;
@@ -123,10 +120,11 @@ public class MonitorWinEventControllerBean {
 		m_log.info("refreshCache()");
 		
 		long startTime = HinemosTime.currentTimeMillis();
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			_lock.writeLock();
 			
-			new JpaTransactionManager().getEntityManager().clear();
+			em.clear();
 			ArrayList<MonitorInfo> winEventCache = new MonitorWinEventControllerBean().getWinEventList();
 			storeCache(winEventCache);
 			
@@ -210,18 +208,26 @@ public class MonitorWinEventControllerBean {
 	public void run(String facilityId, List<WinEventResultDTO> results) throws HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		List<MonitorJobEndNode> monitorJobEndNodeList = new ArrayList<>();
+		List<OutputBasicInfo> notifyInfoList = new ArrayList<>();
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			
 			if (results != null) {
 				for (WinEventResultDTO result : results) {
+					if (! MonitorOnAgentUtil.checkFacilityId(facilityId, result.runInstructionInfo, result.monitorInfo)) {
+						m_log.debug("skip to run because facilityId is not contained.");
+						continue;
+					}
 					RunMonitorWinEventString runMonitorWinEventString = new RunMonitorWinEventString();
-					runMonitorWinEventString.run(facilityId, result);
+					notifyInfoList.add(runMonitorWinEventString.run(facilityId, result));
 					monitorJobEndNodeList.addAll(runMonitorWinEventString.getMonitorJobEndNodeList());
 				}
 			}
-			
+
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(notifyInfoList));
+
 			jtm.commit();
 		} catch (HinemosUnknown e) {
 			m_log.warn("failed storeing result.", e);
@@ -230,7 +236,7 @@ public class MonitorWinEventControllerBean {
 			throw e;
 		} finally {
 			if (jtm != null)
-				jtm.close();
+				jtm.close(this.getClass().getName());
 		}
 
 		// 監視ジョブEndNode処理

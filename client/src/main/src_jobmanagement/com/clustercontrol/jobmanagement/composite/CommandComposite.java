@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.composite;
@@ -70,7 +63,9 @@ import com.clustercontrol.ws.repository.FacilityTreeItem;
  */
 public class CommandComposite extends Composite {
 	/** スコープ用テキスト */
-	private Text m_scope = null;
+	private Text m_scopeFixedValueText = null;
+	/** スコープ（ジョブ変数）用テキスト */
+	private Text m_scopeJobParamText = null;
 	/** 起動コマンド用テキスト */
 	private Text m_startCommand = null;
 	/** 停止コマンド用ラジオボタン */
@@ -86,11 +81,11 @@ public class CommandComposite extends Composite {
 	/** 実効ユーザ用テキスト */
 	private Text m_user = null;
 	/** ジョブ変数用ラジオボタン */
-	private Button m_scopeJobParam = null;
+	private Button m_scopeJobParamRadio = null;
 	/** 固定値用ラジオボタン */
-	private Button m_scopeFixedValue = null;
+	private Button m_scopeFixedValueRadio = null;
 	/** スコープ参照用ボタン */
-	private Button m_scopeSelect = null;
+	private Button m_scopeFixedValueSelect = null;
 	/** 全てのノードで実行用ラジオボタン */
 	private Button m_allNode = null;
 	/** 正常終了するまでノードを順次リトライ用ラジオボタン */
@@ -158,19 +153,21 @@ public class CommandComposite extends Composite {
 		cmdScopeGroup.setLayout(new GridLayout(3, false));
 
 		// スコープ：ジョブ変数（ラジオ）
-		this.m_scopeJobParam = new Button(cmdScopeGroup, SWT.RADIO);
-		WidgetTestUtil.setTestId(this, "m_scopeJobParam", this.m_scopeJobParam);
-		this.m_scopeJobParam.setText(Messages.getString("job.parameter") + " : ");
-		this.m_scopeJobParam.setLayoutData(
+		this.m_scopeJobParamRadio = new Button(cmdScopeGroup, SWT.RADIO);
+		WidgetTestUtil.setTestId(this, "m_scopeJobParam", this.m_scopeJobParamRadio);
+		this.m_scopeJobParamRadio.setText(Messages.getString("job.parameter") + " : ");
+		this.m_scopeJobParamRadio.setLayoutData(
 				new GridData(120, SizeConstant.SIZE_BUTTON_HEIGHT));
-		this.m_scopeJobParam.addSelectionListener(new SelectionListener() {
+		this.m_scopeJobParamRadio.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Button check = (Button) e.getSource();
 				WidgetTestUtil.setTestId(this, null, check);
 				if (check.getSelection()) {
-					m_scopeFixedValue.setSelection(false);
-					m_scopeSelect.setEnabled(false);
+					m_scopeJobParamText.setEditable(true);
+					m_scopeFixedValueRadio.setSelection(false);
+					m_scopeFixedValueSelect.setEnabled(false);
+					m_facilityId = m_scopeJobParamText.getText();
 				}
 				update();
 			}
@@ -181,30 +178,38 @@ public class CommandComposite extends Composite {
 			}
 		});
 		
-		// スコープ：ジョブ変数（ラベル）
-		Label scopeJobParamLabel = new Label(cmdScopeGroup, SWT.LEFT);
-		scopeJobParamLabel.setText(
-				SystemParameterConstant.getParamText(SystemParameterConstant.FACILITY_ID));
-		scopeJobParamLabel.setLayoutData(
-				new GridData(100, SizeConstant.SIZE_LABEL_HEIGHT));
+		// スコープ：ジョブ変数（テキスト）
+		this.m_scopeJobParamText = new Text(cmdScopeGroup, SWT.BORDER);
+		WidgetTestUtil.setTestId(this, "m_scopeJobParamText", this.m_scopeJobParamText);
+		this.m_scopeJobParamText.setLayoutData(new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT));
+		this.m_scopeJobParamText.addModifyListener(new ModifyListener(){
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+				if (m_scopeJobParamRadio.getSelection()) {
+					m_facilityId = m_scopeJobParamText.getText();
+				}
+			}
+		});
 
 		//dummy
 		new Label(cmdScopeGroup, SWT.LEFT);
 
 		// スコープ：固定値（ラジオ）
-		this.m_scopeFixedValue = new Button(cmdScopeGroup, SWT.RADIO);
-		WidgetTestUtil.setTestId(this, "m_scopeFixedValue", this.m_scopeFixedValue);
-		this.m_scopeFixedValue.setText(Messages.getString("fixed.value") + " : ");
-		this.m_scopeFixedValue.setLayoutData(new GridData(120,
+		this.m_scopeFixedValueRadio = new Button(cmdScopeGroup, SWT.RADIO);
+		WidgetTestUtil.setTestId(this, "m_scopeFixedValue", this.m_scopeFixedValueRadio);
+		this.m_scopeFixedValueRadio.setText(Messages.getString("fixed.value") + " : ");
+		this.m_scopeFixedValueRadio.setLayoutData(new GridData(120,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
-		this.m_scopeFixedValue.addSelectionListener(new SelectionListener() {
+		this.m_scopeFixedValueRadio.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Button check = (Button) e.getSource();
 				WidgetTestUtil.setTestId(this, null, check);
 				if (check.getSelection()) {
-					m_scopeJobParam.setSelection(false);
-					m_scopeSelect.setEnabled(true);
+					m_scopeFixedValueSelect.setEnabled(true);
+					m_scopeJobParamRadio.setSelection(false);
+					m_scopeJobParamText.setEditable(false);
 				}
 				update();
 			}
@@ -216,10 +221,10 @@ public class CommandComposite extends Composite {
 		});
 		
 		// スコープ：固定値（テキスト）
-		this.m_scope = new Text(cmdScopeGroup, SWT.BORDER | SWT.READ_ONLY);
-		WidgetTestUtil.setTestId(this, "m_scope", this.m_scope);
-		this.m_scope.setLayoutData(new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT));
-		this.m_scope.addModifyListener(new ModifyListener(){
+		this.m_scopeFixedValueText = new Text(cmdScopeGroup, SWT.BORDER | SWT.READ_ONLY);
+		WidgetTestUtil.setTestId(this, "m_scope", this.m_scopeFixedValueText);
+		this.m_scopeFixedValueText.setLayoutData(new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT));
+		this.m_scopeFixedValueText.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
@@ -227,12 +232,12 @@ public class CommandComposite extends Composite {
 		});
 
 		// スコープ：参照（ボタン）
-		this.m_scopeSelect = new Button(cmdScopeGroup, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "m_scopeSelect", this.m_scopeSelect);
-		this.m_scopeSelect.setText(Messages.getString("refer"));
-		this.m_scopeSelect.setLayoutData(new GridData(80,
+		this.m_scopeFixedValueSelect = new Button(cmdScopeGroup, SWT.NONE);
+		WidgetTestUtil.setTestId(this, "m_scopeSelect", this.m_scopeFixedValueSelect);
+		this.m_scopeFixedValueSelect.setText(Messages.getString("refer"));
+		this.m_scopeFixedValueSelect.setLayoutData(new GridData(80,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
-		this.m_scopeSelect.addSelectionListener(new SelectionAdapter() {
+		this.m_scopeFixedValueSelect.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(m_shell, m_managerName, m_ownerRoleId);
@@ -244,7 +249,7 @@ public class CommandComposite extends Composite {
 							.getSeparator());
 					m_facilityPath = path.getPath(selectItem);
 					m_facilityId = info.getFacilityId();
-					m_scope.setText(m_facilityPath);
+					m_scopeFixedValueText.setText(m_facilityPath);
 					update();
 				}
 			}
@@ -503,10 +508,15 @@ public class CommandComposite extends Composite {
 	@Override
 	public void update(){
 		// 必須項目を明示
-		if(m_scopeFixedValue.getSelection() && "".equals(this.m_scope.getText())){
-			this.m_scope.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		if(m_scopeFixedValueRadio.getSelection() && "".equals(this.m_scopeFixedValueText.getText())){
+			this.m_scopeFixedValueText.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		}else{
-			this.m_scope.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+			this.m_scopeFixedValueText.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		}
+		if(m_scopeJobParamRadio.getSelection() && "".equals(this.m_scopeJobParamText.getText())){
+			this.m_scopeJobParamText.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		}else{
+			this.m_scopeJobParamText.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
 		if("".equals(this.m_startCommand.getText())){
 			this.m_startCommand.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
@@ -533,9 +543,11 @@ public class CommandComposite extends Composite {
 	public void reflectCommandInfo() {
 
 		// 初期値
-		m_scopeJobParam.setSelection(false);
-		m_scopeFixedValue.setSelection(true);
-		m_scope.setText("");
+		m_scopeFixedValueRadio.setSelection(true);
+		m_scopeFixedValueText.setText("");
+		//スコープ（ジョブ変数）の初期値は"#[FACILITY_ID]"とする
+		m_scopeJobParamRadio.setSelection(false);
+		m_scopeJobParamText.setText(SystemParameterConstant.getParamText(SystemParameterConstant.FACILITY_ID));
 		m_allNode.setSelection(true);
 		m_startCommand.setText("");
 		m_executeStopCommand.setSelection(false);
@@ -551,22 +563,20 @@ public class CommandComposite extends Composite {
 			//スコープ設定
 			m_facilityPath = HinemosMessage.replace(m_execute.getScope());
 			m_facilityId = m_execute.getFacilityID();
-			if(SystemParameterConstant.isParam(
-					m_facilityId,
-					SystemParameterConstant.FACILITY_ID)){
+			if(isParamFormat(m_facilityId)){
 				//ファシリティIDがジョブ変数の場合
-				m_facilityId = "";
 				m_facilityPath = "";
-				m_scope.setText(m_facilityPath);
-				m_scopeJobParam.setSelection(true);
-				m_scopeFixedValue.setSelection(false);
+				m_scopeJobParamRadio.setSelection(true);
+				m_scopeJobParamText.setText(m_facilityId);
+				m_scopeFixedValueRadio.setSelection(false);
+				m_scopeFixedValueText.setText("");
 			}
 			else{
 				if (m_facilityPath != null && m_facilityPath.length() > 0) {
-					m_scope.setText(m_facilityPath);
+					m_scopeFixedValueText.setText(m_facilityPath);
 				}
-				m_scopeJobParam.setSelection(false);
-				m_scopeFixedValue.setSelection(true);
+				m_scopeJobParamRadio.setSelection(false);
+				m_scopeFixedValueRadio.setSelection(true);
 			}
 			//処理方法設定
 			if (m_execute.getProcessingMethod() == ProcessingMethodConstant.TYPE_ALL_NODE) {
@@ -627,10 +637,10 @@ public class CommandComposite extends Composite {
 		}
 
 		//スコープ
-		if (m_scopeJobParam.getSelection()) {
-			m_scopeSelect.setEnabled(false);
+		if (m_scopeJobParamRadio.getSelection()) {
+			m_scopeFixedValueSelect.setEnabled(false);
 		} else {
-			m_scopeSelect.setEnabled(true);
+			m_scopeFixedValueSelect.setEnabled(true);
 		}
 	}
 
@@ -666,11 +676,18 @@ public class CommandComposite extends Composite {
 		m_execute = new JobCommandInfo();
 
 		//スコープ取得
-		if(m_scopeJobParam.getSelection()){
-			//ジョブ変数の場合
-			m_execute.setFacilityID(
-					SystemParameterConstant.getParamText(SystemParameterConstant.FACILITY_ID));
-			m_execute.setScope("");
+		if(m_scopeJobParamRadio.getSelection()){
+			if (isParamFormat(m_facilityId)) {
+				//ジョブ変数の場合
+				m_execute.setFacilityID(m_facilityId);
+				m_execute.setScope("");
+			} else {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.hinemos.4"));
+				return result;
+			}
 		}
 		else{
 			//固定値の場合
@@ -754,7 +771,7 @@ public class CommandComposite extends Composite {
 
 	public void setOwnerRoleId(String ownerRoleId) {
 		this.m_ownerRoleId = ownerRoleId;
-		this.m_scope.setText("");
+		this.m_scopeFixedValueText.setText("");
 		this.m_facilityId = null;
 	}
 
@@ -777,7 +794,8 @@ public class CommandComposite extends Composite {
 	 */
 	@Override
 	public void setEnabled(boolean enabled) {
-		m_scope.setEditable(false);
+		m_scopeFixedValueText.setEditable(false);
+		m_scopeJobParamText.setEditable(m_scopeJobParamRadio.getSelection() && enabled);
 		m_startCommand.setEditable(enabled);
 		m_executeStopCommand.setEnabled(enabled);
 		m_stopCommand.setEditable(m_executeStopCommand.getSelection() && enabled);
@@ -785,9 +803,9 @@ public class CommandComposite extends Composite {
 		m_agentUser.setEnabled(enabled);
 		m_specifyUser.setEnabled(enabled);
 		m_user.setEditable(m_specifyUser.getSelection() && enabled);
-		m_scopeJobParam.setEnabled(enabled);
-		m_scopeFixedValue.setEnabled(enabled);
-		m_scopeSelect.setEnabled(enabled);
+		m_scopeJobParamRadio.setEnabled(enabled);
+		m_scopeFixedValueRadio.setEnabled(enabled);
+		m_scopeFixedValueSelect.setEnabled(enabled);
 		m_allNode.setEnabled(enabled);
 		m_retry.setEnabled(enabled);
 		m_readOnly = !enabled;
@@ -801,5 +819,19 @@ public class CommandComposite extends Composite {
 		m_managerDistributionBtn.setEnabled(isEnabled());
 		m_envVariableBtn.setEnabled(isEnabled());
 		m_jobCommandParamBtn.setEnabled(isEnabled());
+	}
+
+	/**
+	 * strがジョブ変数の書式(#[xxx])かどうかを判定する
+	 * 
+	 * @param str
+	 * @return
+	 */
+	private boolean isParamFormat(String str) {
+		if (str == null) {
+			return false;
+		}
+		return str.startsWith(SystemParameterConstant.PREFIX)
+				&& str.endsWith(SystemParameterConstant.SUFFIX);
 	}
 }

@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<!--
+   Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+   
+   Hinemos (http://www.hinemos.info/)
+   
+ -->
+
+<!-- execute Ant (Run in the same JRE as the workspace -->
+
+<project name="ManagerSwitch" default="switch_to_rhel" basedir="../">
+	
+	<macrodef name="switch.mac">
+		<attribute name="src.dir" />
+		<attribute name="msg" />
+		<sequential>
+			<mkdir dir="build/tmp"/>
+
+			<!-- ソースをリンク -->
+			<exec executable="CMD">
+				<arg line="/C rmdir build\tmp\src_platform" />
+			</exec>
+			<exec executable="CMD">
+				<arg line="/C mklink /J build\tmp\src_platform platform_switch\@{src.dir}" />
+			</exec>
+
+			<!-- Refresh -->
+			<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+					property="eclipse_jar_available"/>
+			<antcall target="refresh_src_platform" />
+			<antcall target="refresh_notice" />
+
+			<!-- Notice -->
+			<echo>@{msg}</echo>
+		</sequential>
+	</macrodef>
+	
+	<!-- Common properties -->
+	<property name="project.name">HinemosManager</property>
+	<property name="source.platform">src_platform</property>
+
+	<!-- rhel -->
+	<target name="switch_to_rhel">
+		<switch.mac src.dir="src_platform_rhel" msg="RHEL環境に切り替えました。" />
+	</target>
+	
+	<!-- win -->
+	<target name="switch_to_win">
+		<switch.mac src.dir="src_platform_win" msg="WIN環境に切り替えました。" />
+	</target>
+
+	<!-- Refresh source path -->
+	<target name="refresh_src_platform" if="eclipse_jar_available">
+		<eclipse.refreshLocal resource="${project.name}/" depth="one" />
+		<eclipse.refreshLocal resource="${project.name}/${source.manager}" depth="infinite" />
+		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
+	</target>
+
+	<!-- Notice for requiring manual refresh -->
+	<target name="refresh_notice" unless="eclipse_jar_available">
+		<echo>(!) RefreshLocalTaskが無効になっています。手動でRefreshしてください。</echo>
+	</target>
+
+</project>

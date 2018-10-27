@@ -1,4 +1,5 @@
 		<mapping-file>META-INF/orm_accesscontrol.xml</mapping-file>
+		<mapping-file>META-INF/orm_analytics.xml</mapping-file>
 		<mapping-file>META-INF/orm_calendar.xml</mapping-file>
 		<mapping-file>META-INF/orm_custom.xml</mapping-file>
 		<mapping-file>META-INF/orm_http.xml</mapping-file>
@@ -26,3 +27,6 @@
 		<mapping-file>META-INF/orm_infra.xml</mapping-file>
 		<mapping-file>META-INF/orm_collect.xml</mapping-file>
 		<mapping-file>META-INF/orm_hub.xml</mapping-file>
+		<mapping-file>META-INF/orm_reporting.xml</mapping-file>
+		<mapping-file>META-INF/orm_reporting_data.xml</mapping-file>
+		<mapping-file>META-INF/orm_reporting_data_diff.xml</mapping-file>

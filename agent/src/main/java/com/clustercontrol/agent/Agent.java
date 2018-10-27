@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.agent;
@@ -43,6 +36,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.PropertyConfigurator;
 
+import com.clustercontrol.agent.binary.BinaryMonitorManager;
 import com.clustercontrol.agent.filecheck.FileCheckManager;
 import com.clustercontrol.agent.job.RunHistoryUtil;
 import com.clustercontrol.agent.log.LogfileMonitorManager;
@@ -79,6 +73,14 @@ public class Agent {
 	/** log4j設定ファイル再読み込み間隔 */
 	private long m_reconfigLog4jInterval = 60000;
 
+	/** AgentInfoの更新判定時間 [msec] */
+	private static long m_agentInfoUpdateTime = 10000;
+	/** AgentInfoの前回更新時間 */
+	private static long lastAgentInfoUpdateTime = 0;
+	
+	/** シャットダウン待ち時間 [sec] */
+	private static int m_shutdownWaitTime = 120;
+	
 	private static AgentInfo agentInfo = new AgentInfo();
 
 	public static final Integer DEFAULT_CONNECT_TIMEOUT = 10000;
@@ -575,9 +577,47 @@ public class Agent {
 			m_sendQueue.put(output);
 		}
 
+		// AgentInfoの更新判定時間の更新
+		String time = AgentProperties.getProperty("agent.info.update.time");
+		if (time != null) {
+			try {
+				m_agentInfoUpdateTime = Long.parseLong(time);
+				m_log.info("agent.info.update.time = " + m_agentInfoUpdateTime + " ms");
+			} catch (NumberFormatException e) {
+				m_log.error("agent.info.update.time",e);
+			}
+		}
+		
+		// シャットダウン待ち時間の更新
+		String shutdownWaitTime = AgentProperties.getProperty("agent.shutdown.wait.time");
+		if (shutdownWaitTime != null) {
+			try {
+				m_shutdownWaitTime = Integer.parseInt(shutdownWaitTime);
+				m_log.info("agent.shutdown.wait.time = " + m_shutdownWaitTime + " sec");
+			} catch (NumberFormatException e) {
+				m_log.error("agent.shutdown.wait.time", e);
+			}
+		}
+		
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
+				// ログファイル監視の実行中は停止を待つ
+				LogfileMonitorManager.terminate();
+				for(int i = 0 ; i < m_shutdownWaitTime / 2; i++) {
+					try {
+						if(LogfileMonitorManager.isRunning()) {
+							m_log.info("Logfile monitor is running.");
+							Thread.sleep(2 * 1000);
+						} else {
+							m_log.info("Logfile monitor is stopping.");
+							break;
+						}
+					} catch (InterruptedException e) {
+						m_log.warn(e.getMessage(), e);
+					}
+				}
+				
 				terminate();
 				m_log.info("Hinemos agent stopped");
 			}
@@ -598,6 +638,10 @@ public class Agent {
 
 		// ログファイル読み込みスレッド開始
 		LogfileMonitorManager.start();
+		
+
+		// バイナリ監視スレッド開始
+		BinaryMonitorManager.start();
 
 		// ファイルチェック(ジョブ)読み込みスレッド開始
 		FileCheckManager fileCheckManager = new FileCheckManager();
@@ -696,6 +740,14 @@ public class Agent {
 	}
 
 	public static AgentInfo getAgentInfo() {
+		// 更新判定時間以内の場合agentInfoを書き換えない
+		long diffTime = HinemosTime.currentTimeMillis() - lastAgentInfoUpdateTime;
+		m_log.debug("diffTime : " + diffTime);
+		if(m_agentInfoUpdateTime >= Math.abs(diffTime)) {
+			m_log.debug("m_agentInfoUpdateTime >= diffTime(AgentInfo no update.)");
+			return agentInfo;
+		}
+			
 		// IPアドレスが変更されて設定の再取得中はagentInfoを書き換えない
 		if (ReceiveTopic.isReloadFlg()) {
 			return agentInfo;
@@ -754,6 +806,7 @@ public class Agent {
 
 		m_log.debug(getAgentStr());
 
+		lastAgentInfoUpdateTime = HinemosTime.currentTimeMillis();
 		return agentInfo;
 	}
 

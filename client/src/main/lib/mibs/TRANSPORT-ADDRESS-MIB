@@ -1,0 +1,158 @@
+TRANSPORT-ADDRESS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-IDENTITY, mib-2     FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION                          FROM SNMPv2-TC;
+
+transportAddressMIB MODULE-IDENTITY
+    LAST-UPDATED "200211010000Z"
+    ORGANIZATION
+        "IETF Operations and Management Area"
+
+
+    ::= { mib-2 100 }
+
+
+transportDomains OBJECT IDENTIFIER ::= { transportAddressMIB 1 }
+
+transportDomainUdpIpv4 OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 1 }
+
+transportDomainUdpIpv6 OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 2 }
+
+transportDomainUdpIpv4z OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 3 }
+
+transportDomainUdpIpv6z OBJECT-IDENTITY
+    STATUS      current
+
+
+
+
+
+    ::= { transportDomains 4 }
+
+transportDomainTcpIpv4 OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 5 }
+
+transportDomainTcpIpv6 OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 6 }
+
+transportDomainTcpIpv4z OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 7 }
+
+transportDomainTcpIpv6z OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 8 }
+
+transportDomainSctpIpv4 OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 9 }
+
+
+
+
+
+
+transportDomainSctpIpv6 OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 10 }
+
+transportDomainSctpIpv4z OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 11 }
+
+transportDomainSctpIpv6z OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 12 }
+
+transportDomainLocal OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 13 }
+
+transportDomainUdpDns OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 14 }
+
+
+
+
+
+
+transportDomainTcpDns OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 15 }
+
+transportDomainSctpDns OBJECT-IDENTITY
+    STATUS      current
+    ::= { transportDomains 16 }
+
+TransportDomain ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      OBJECT IDENTIFIER
+
+
+TransportAddressType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+                    unknown(0),
+                    udpIpv4(1),
+                    udpIpv6(2),
+                    udpIpv4z(3),
+                    udpIpv6z(4),
+                    tcpIpv4(5),
+                    tcpIpv6(6),
+                    tcpIpv4z(7),
+                    tcpIpv6z(8),
+                    sctpIpv4(9),
+                    sctpIpv6(10),
+                    sctpIpv4z(11),
+                    sctpIpv6z(12),
+                    local(13),
+                    udpDns(14),
+                    tcpDns(15),
+                    sctpDns(16)
+                }
+
+TransportAddress ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (0..255))
+
+TransportAddressIPv4 ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1d.1d.1d.1d:2d"
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (6))
+
+TransportAddressIPv6 ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "0a[2x:2x:2x:2x:2x:2x:2x:2x]0a:2d"
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (18))
+
+TransportAddressIPv4z ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1d.1d.1d.1d%4d:2d"
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (10))
+
+TransportAddressIPv6z ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "0a[2x:2x:2x:2x:2x:2x:2x:2x%4d]0a:2d"
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (22))
+
+TransportAddressLocal ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1a"
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (1..255))
+
+TransportAddressDns ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1a"
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (1..255))
+
+END

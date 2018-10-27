@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.dialog;
 
 import java.util.HashSet;
@@ -53,8 +47,6 @@ public class LogKeyPatternDialog extends CommonDialog {
 	private Combo cmbValueType;
 	private Button btnMsg;
 	private Button btnMeta;
-	private Group groupMsg;
-	private Group groupMeta;
 
 	private LogFormatKey m_logFormatKey;
 	private int mode;
@@ -100,30 +92,21 @@ public class LogKeyPatternDialog extends CommonDialog {
 	@Override
 	protected void customizeDialog(Composite parent) {
 		parent.getShell().setText(Messages.getString("dialog.hub.log.format.key.pattern"));
-		parent.setLayout(new GridLayout(1, false));
+		parent.setLayout(new GridLayout(2, false));
 
-		Composite keyPatternFormatComposite = new Composite(parent, SWT.NONE);
-		GridData gd_keyPatternFormatComposite = new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1);
-		gd_keyPatternFormatComposite.heightHint = 314;
-		gd_keyPatternFormatComposite.widthHint = 600;
-		keyPatternFormatComposite.setLayoutData(gd_keyPatternFormatComposite);
-		GridLayout layout = new GridLayout(1, true);
-		layout.marginWidth = 5;
-		layout.marginHeight = 5;
-		keyPatternFormatComposite.setLayout(layout);
-		
-		Composite compositeKey = new Composite(keyPatternFormatComposite, SWT.NONE);
-		compositeKey.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1));
-		compositeKey.setLayout(new GridLayout(2, false));
-		
+		// 共通用
+		GridData griddata;
+
 		//キー
-		Label lblKey = new Label(compositeKey, SWT.LEFT);
-		GridData gd_lblKey = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
-		gd_lblKey.widthHint = 106;
-		lblKey.setLayoutData(gd_lblKey);
+		Label lblKey = new Label(parent, SWT.LEFT);
+		griddata = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
+		griddata.widthHint = 106;
+		lblKey.setLayoutData(griddata);
 		lblKey.setText(Messages.getString("hub.log.format.key"));
-		this.txtKey = new Text(compositeKey, SWT.BORDER);
-		this.txtKey.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		this.txtKey = new Text(parent, SWT.BORDER);
+		griddata = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
+		griddata.widthHint = 480;
+		this.txtKey.setLayoutData(griddata);
 		this.txtKey.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -148,19 +131,19 @@ public class LogKeyPatternDialog extends CommonDialog {
 		});
 
 		//ラベル
-		Label lblDescription = new Label(compositeKey, SWT.LEFT);
+		Label lblDescription = new Label(parent, SWT.LEFT);
 		lblDescription.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		lblDescription.setText(Messages.getString("description"));
 
 		//テキスト
-		this.txtDescription = new Text(compositeKey, SWT.BORDER);
+		this.txtDescription = new Text(parent, SWT.BORDER);
 		this.txtDescription.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 
-		Label lblValueType = new Label(compositeKey, SWT.NONE);
+		Label lblValueType = new Label(parent, SWT.NONE);
 		lblValueType.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		lblValueType.setText(Messages.getString("dialog.hub.log.format.key.pattern.value.type"));
 
-		this.cmbValueType = new Combo(compositeKey, SWT.DROP_DOWN | SWT.READ_ONLY);
+		this.cmbValueType = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
 		this.cmbValueType.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 
 		for (ValueType valueType : ValueType.values()) {
@@ -168,16 +151,17 @@ public class LogKeyPatternDialog extends CommonDialog {
 			this.cmbValueType.add(disp);
 			this.cmbValueType.setData(disp, valueType);
 		}
-		
-		Composite compositeMsgOrMeta = new Composite(keyPatternFormatComposite, SWT.BORDER);
+		cmbValueType.setText(getDispValue(ValueType.STRING));
+
+		// ラジオグループ
+		Group compositeMsgOrMeta = new Group(parent, SWT.NONE);
 		GridData gd_compositeMsgOrMeta = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
-		gd_compositeMsgOrMeta.heightHint = 214;
+		gd_compositeMsgOrMeta.horizontalSpan = 2;
 		compositeMsgOrMeta.setLayoutData(gd_compositeMsgOrMeta);
-		compositeMsgOrMeta.setLayout(new GridLayout(1, false));
+		compositeMsgOrMeta.setLayout(new GridLayout(2, false));
 
 		this.btnMsg = new Button(compositeMsgOrMeta, SWT.RADIO);
-		this.btnMsg.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		this.btnMsg.setBounds(0, 0, 75, 16);
+		this.btnMsg.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		this.btnMsg.setText(Messages.getString("dialog.hub.log.format.key.pattern.message"));
 		this.btnMsg.setSelection(true);
 		this.btnMsg.addSelectionListener(new SelectionAdapter() {
@@ -187,18 +171,15 @@ public class LogKeyPatternDialog extends CommonDialog {
 			}
 		});
 
-		groupMsg = new Group(compositeMsgOrMeta, SWT.NONE);
-		groupMsg.setLayout(new GridLayout(2, false));
-		groupMsg.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-
-		Label lblMsgPattern = new Label(groupMsg, SWT.LEFT);
-		GridData gd_lblMsgPattern = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
-		gd_lblMsgPattern.widthHint = 145;
-		lblMsgPattern.setLayoutData(gd_lblMsgPattern);
+		Label lblMsgPattern = new Label(compositeMsgOrMeta, SWT.LEFT);
+		griddata = new GridData();
+		griddata.horizontalIndent = 20;
+		griddata.widthHint = 145;
+		lblMsgPattern.setLayoutData(griddata);
 		lblMsgPattern.setText(Messages.getString("hub.log.format.key.pattern.regex"));
 
-		this.txtMsgPattern = new Text(groupMsg, SWT.BORDER);
-		this.txtMsgPattern.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		this.txtMsgPattern = new Text(compositeMsgOrMeta, SWT.BORDER);
+		this.txtMsgPattern.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		this.txtMsgPattern.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -207,6 +188,7 @@ public class LogKeyPatternDialog extends CommonDialog {
 		});
 
 		this.btnMeta = new Button(compositeMsgOrMeta, SWT.RADIO);
+		this.btnMeta.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		this.btnMeta.setText(Messages.getString("dialog.hub.log.format.key.pattern.meta"));
 		this.btnMeta.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -214,18 +196,15 @@ public class LogKeyPatternDialog extends CommonDialog {
 				update();
 			}
 		});
-		groupMeta = new Group(compositeMsgOrMeta, SWT.NONE);
-		groupMeta.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		groupMeta.setLayout(new GridLayout(2, false));
 
 		//パターン
-		Label lblMetaPattern = new Label(groupMeta, SWT.LEFT);
-		GridData gd_lblMetaPattern = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
-		gd_lblMetaPattern.widthHint = 145;
-		lblMetaPattern.setLayoutData(gd_lblMetaPattern);
+		Label lblMetaPattern = new Label(compositeMsgOrMeta, SWT.LEFT);
+		griddata = new GridData();
+		griddata.horizontalIndent = 20;
+		lblMetaPattern.setLayoutData(griddata);
 		lblMetaPattern.setText(Messages.getString("hub.log.format.key.pattern.regex"));
-		this.txtMetaPattern = new Text(groupMeta, SWT.BORDER);
-		this.txtMetaPattern.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		this.txtMetaPattern = new Text(compositeMsgOrMeta, SWT.BORDER);
+		this.txtMetaPattern.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		this.txtMetaPattern.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -234,13 +213,12 @@ public class LogKeyPatternDialog extends CommonDialog {
 		});
 
 		//バリュー
-		Label lblValue = new Label(groupMeta, SWT.LEFT);
-		lblValue.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
+		Label lblValue = new Label(compositeMsgOrMeta, SWT.LEFT);
+		griddata.horizontalIndent = 20;
+		lblValue.setLayoutData(griddata);
 		lblValue.setText(Messages.getString("hub.log.format.key.value"));
-		this.txtValue = new Text(groupMeta, SWT.BORDER);
-		this.txtValue.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-
-		cmbValueType.setText(getDispValue(ValueType.STRING));
+		this.txtValue = new Text(compositeMsgOrMeta, SWT.BORDER);
+		this.txtValue.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
 		this.reflectLogFormatKey();
 		this.update();

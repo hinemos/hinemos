@@ -1,0 +1,24 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"numericType",
+	"annotations":[
+		{"type":"Ignore", "propNames":[]}
+	]},
+	
+	{
+	"propName":"thresholdLowerLimit",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorNumericValueInfo_thresholdLowerLimit"}
+	]},
+
+	{
+	"propName":"thresholdUpperLimit",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorNumericValueInfo_thresholdUpperLimit"}
+	]}
+]
+}

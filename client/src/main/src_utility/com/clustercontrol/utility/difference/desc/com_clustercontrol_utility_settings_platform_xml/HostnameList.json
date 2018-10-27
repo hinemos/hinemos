@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"HostnameList_funcName"}
+],
+"props":[
+	{
+	"propName":"HostnameInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

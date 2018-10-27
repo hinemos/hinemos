@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.performance.monitor.model;
 
 import java.io.Serializable;
@@ -14,9 +22,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 
 
 /**
@@ -43,14 +48,9 @@ public class CollectorItemCodeMstEntity implements Serializable {
 	public CollectorItemCodeMstEntity() {
 	}
 
-	public CollectorItemCodeMstEntity(String itemCode,
-			CollectorCategoryMstEntity collectorCategoryMstEntity) {
+	public CollectorItemCodeMstEntity(String itemCode) {
 		this.setItemCode(itemCode);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToCollectorCategoryMstEntity(collectorCategoryMstEntity);
 	}
-
 
 	@Id
 	@Column(name="item_code")

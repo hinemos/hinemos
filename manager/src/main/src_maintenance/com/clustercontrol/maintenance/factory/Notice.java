@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.maintenance.factory;
@@ -26,7 +19,6 @@ import com.clustercontrol.fault.MaintenanceNotFound;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.util.QueryUtil;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -50,14 +42,17 @@ public class Notice {
 	 * @param maintenanceId メンテナンスID
 	 * @param type 終了状態
 	 * @param result メンテナンス実行結果
+	 * @return 通知情報
 	 * @throws HinemosUnknown 
 	 * 
 	 * @see com.clustercontrol.bean.EndStatusConstant
 	 * @see com.clustercontrol.bean.JobConstant
 	 * @see com.clustercontrol.monitor.message.LogOutputNotifyInfo
 	 */
-	protected void notify(String maintenanceId, Integer type, int result) throws HinemosUnknown {
-		m_log.debug("notify() : maintenanceId=" + maintenanceId + ", type=" + type);
+	protected OutputBasicInfo createOutputBasicInfo(String maintenanceId, Integer type, int result) throws HinemosUnknown {
+		m_log.debug("createOutputBasicInfo() : maintenanceId=" + maintenanceId + ", type=" + type);
+
+		OutputBasicInfo rtn = null;
 
 		//MaintenanceInfoを取得する
 		MaintenanceInfo info = null;
@@ -68,40 +63,40 @@ public class Notice {
 				//通知する
 
 				//通知情報作成
-				OutputBasicInfo notice = new OutputBasicInfo();
+				rtn = new OutputBasicInfo();
 
+				// 通知グループID
+				rtn.setNotifyGroupId(info.getNotifyGroupId());
 				//プラグインID
-				notice.setPluginId(HinemosModuleConstant.SYSYTEM_MAINTENANCE);
+				rtn.setPluginId(HinemosModuleConstant.SYSYTEM_MAINTENANCE);
 				//アプリケーション
-				notice.setApplication(info.getApplication());
+				rtn.setApplication(info.getApplication());
 				//監視項目ID
-				notice.setMonitorId(maintenanceId);
+				rtn.setMonitorId(maintenanceId);
 
 				//メンテナンス機能では該当する値なし
-				notice.setFacilityId(FacilityTreeAttributeConstant.INTERNAL_SCOPE);
-				notice.setScopeText(FacilityTreeAttributeConstant.INTERNAL_SCOPE_TEXT);
+				rtn.setFacilityId(FacilityTreeAttributeConstant.INTERNAL_SCOPE);
+				rtn.setScopeText(FacilityTreeAttributeConstant.INTERNAL_SCOPE_TEXT);
 
 				//メッセージID、メッセージ、オリジナルメッセージ
 				if(type.intValue() == PriorityConstant.TYPE_INFO){
 					String[] args1 = {maintenanceId};
-					notice.setMessage(MessageConstant.MESSAGE_MAINTENACE_STOPPED_SUCCESS.getMessage(args1));
+					rtn.setMessage(MessageConstant.MESSAGE_MAINTENACE_STOPPED_SUCCESS.getMessage(args1));
 				}
 				else if(type.intValue() == PriorityConstant.TYPE_CRITICAL){
 					String[] args1 = {maintenanceId};
-					notice.setMessage(MessageConstant.MESSAGE_MAINTENANCE_STOPPED_FAILED.getMessage(args1));
+					rtn.setMessage(MessageConstant.MESSAGE_MAINTENANCE_STOPPED_FAILED.getMessage(args1));
 				}
-				notice.setMessageOrg(info.getMaintenanceTypeMstEntity().getType_id() + " : " + result + " records");
+				rtn.setMessageOrg(info.getMaintenanceTypeMstEntity().getType_id() + " : " + result + " records");
 
 				//重要度
-				notice.setPriority(type.intValue());
+				rtn.setPriority(type.intValue());
 				//発生日時
-				notice.setGenerationDate(HinemosTime.getDateInstance().getTime());
-
-				// 通知処理
-				new NotifyControllerBean().notify(notice, info.getNotifyGroupId());
+				rtn.setGenerationDate(HinemosTime.getDateInstance().getTime());
 			}
 		} catch (MaintenanceNotFound e) {
 		} catch (InvalidRole e) {
 		}
+		return rtn;
 	}
 }

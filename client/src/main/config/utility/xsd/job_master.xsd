@@ -1,0 +1,1008 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id: job_master.xsd 219 2016-12-27 16:00:00Z kimura $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:annotation>
+		<xs:documentation>ジョブ定義</xs:documentation>
+	</xs:annotation>
+
+	<xs:include schemaLocation="part_version.xsd" />
+	<xs:include schemaLocation="part_notify_relation.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="I">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のリビジョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="jobMasters" type="JobMasterDataList">
+		<xs:annotation>
+			<xs:documentation>ジョブ定義情報のルートエレメント</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="JobMasterDataList">
+		<xs:annotation>
+			<xs:documentation>ジョブ定義情報のルートエレメント</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="JobInfo" type="JobInfoType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ジョブ設定</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="JobInfoType">
+		<xs:annotation>
+			<xs:documentation> ジョブの基本情報を保持するクラス</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="jobunitId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブユニットID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="id" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="name" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="registeredModule" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>モジュール登録(false:しない, true:する)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="iconId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>アイコンID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="type" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ種別(0:ジョブユニット,1:ジョブネット,2:ジョブ,3:ファイル転送ジョブ,5:参照ジョブ)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="facilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ファシリティID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="processMode" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>処理方式(0:すべてのノードで実行1:スコープ内のノードを順次リトライ)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="managerDistribution" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>スクリプトをマネージャから配布(false:配布しない, true:配布する)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="scriptName" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>スクリプト名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="scriptEncoding" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>スクリプトエンコーディング</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="scriptContent" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>スクリプト内容</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="startCommand" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>起動コマンド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="stopType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>停止種別(0:停止コマンド, 1:プロセス停止)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="stopCommand" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>停止コマンド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="specifyUser" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>実効ユーザ種別(false:エージェント起動ユーザ , true:ユーザを指定する)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="effectiveUser" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>実効ユーザ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="commandParam" type="JobCommandParamMst" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>コマンドジョブ終了時の変数設定に関する情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="envVariableInfo" type="JobEnvVariableMst" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>コマンドジョブの環境変数に関する情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="messageRetryEndFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						エージェントに接続できない時に終了する（チェックボックス）
+					 	{終了する(True)、終了しない(False)}のどちらかを指定します。
+					 </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="messageRetryEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						エージェントに接続できない時に終了する（終了値）
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="conditionType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定対象の条件関係(0:AND, 1:OR)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="suspend" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						開始時保留
+						{false:保留しない, true:保留する}のどちらかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="skip" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						スキップ
+						{false:スキップしない, true:スキップする}のどちらかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="skipEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						スキップ終了状態
+						{0:正常,1:警告,2:異常}のいずれかをセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="skipEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>スキップ終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="unmatchEndFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						条件を満たさなければ終了する
+						{false:終了しない, true:終了する}のどちらかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="unmatchEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						条件を満たさない時の終了状態
+						{0:正常,1:警告,2:異常}いずれかをセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="unmatchEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>条件を満たさない時の終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="calendar" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						カレンダー
+						{false:使わない, true:使う}のいずれかをセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="calendarId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カレンダーID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="calendarEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カレンダにより未実行時の終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="calendarEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						カレンダにより未実行時の終了状態
+						{0:正常,1:警告,2:異常}のいずれかをセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelay" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>開始遅延(false:しない, true:する)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelaySession" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						セッション開始後からの開始遅延
+						{false:しない、true:する}のいずれかをセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelaySessionValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>開始遅延セッション開始後の時間の値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelayTime" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						開始遅延時刻
+						{false:しない　true:する}のいずれかをセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelayTimeValue" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>開始遅延時刻の値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelayConditionType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						開始遅延判定対象の条件関係
+						{AND(0),OR(1)}のいずれかをセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelayNotify" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						開始遅延通知
+						{false:しない　true:する}のいずれかをセットします。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelayNotifyPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						開始遅延通知重要度
+						{危険(0)、不明(1)、警告(2)、情報(3)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelayOperation" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						開始遅延時操作
+						{false:しない、true:する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelayOperationType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						開始遅延操作種別
+						{4:停止[スキップ], 6:停止[保留]}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelayOperationEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						開始遅延時操作終了状態
+						{0:正常,1:警告,2:異常}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDelayOperationEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>開始遅延時操作終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelay" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						終了遅延
+						{false:しない, true:する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelaySession" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						セッション開始後の経過時間
+						{false:監視しない、true:監視する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelaySessionValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>セッション開始後の経過時間（分）</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayJob" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ開始後の経過時間
+						{false:監視しない、true:監視する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayJobValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ開始後の経過時間(分)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayTime" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						終了遅延監視時刻
+						{false:監視しない、true:監視する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayTimeValue" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了監視遅延時刻の値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayChangeMount" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						終了遅延実行履歴からの変化量（×標準偏差）
+						{false:監視しない、true:監視する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayChangeMountValue" type="xs:double" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>実行履歴からの変化量（×標準偏差）の値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayConditionType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了遅延判定対象の条件関係</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayNotify" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						終了遅延通知
+						{false:しない、true:する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayNotifyPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了遅延通知重要度</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayOperation" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						終了遅延操作
+						{false:しない、true:する）の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayOperationType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						終了遅延操作種別
+						{0:停止[コマンド], 2:停止[中断], 10:停止[状態指定]}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayOperationEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						終了遅延操作終了状態
+						{0:正常,1:警告,2:異常}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endDelayOperationEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了遅延操作終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="multiplicityNotify" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						多重度の上限に達した際に通知するか否か
+						{false:しない、true:する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="multiplicityNotifyPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						多重度の上限に達した場合に通知する際の重要度
+						{危険(0)、不明(1)、警告(2)、情報(3)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="multiplicityOperation" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						多重度の上限に達した場合の挙動
+						{0:待機,300:終了}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="multiplicityEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>多重度の上限に達した場合の終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="messageRetry" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>試行回数</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="srcFacilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>転送元ファシリティID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="srcScope" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>転送元スコープ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="destFacilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>送信先ファシリティID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+<!--
+			<xs:element name="destScope" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>送信先スコープ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+-->
+			<xs:element name="srcFile" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>転送ファイル</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+<!--
+			<xs:element name="srcWorkDir" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>転送元作業ディレクトリ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+-->
+			<xs:element name="destDirectory" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>送信先ディレクトリ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+<!--
+			<xs:element name="destWorkDir" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>送信先作業ディレクトリ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+-->
+			<xs:element name="compressionFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイル圧縮
+						{false:しない、true:する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="checkFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルチェック
+						{false:しない、true:する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="createTime" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>登録日時</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="updateTime" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>最終更新日時</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="createUser" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>登録ユーザ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="updateUser" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>最終更新ユーザ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="parentJobunitId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>上位のジョブユニットID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="parentJobId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>上位のジョブID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="referJobunitId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>参照ジョブユニットID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="referJobId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>参照ジョブID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="referJobSelectType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						参照ジョブ種別
+						{0:ジョブツリーから選択 1:登録済みモジュールから選択}のいずれかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="ownerRoleId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>オーナーロールID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="startJob" type="JobStartJobInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ジョブ待ち条件詳細情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="param" type="JobParameterInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ジョブ変数情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyRelationInfos" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定で用いる通知IDです。 複数の通知を併用する場合は併記します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="abnormalPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ異常終了時の通知重要度
+						{0:危険, 1:不明, 2:警告, 3:情報, 4:なし}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="beginPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ開始時の通知重要度
+						{0:危険, 1:不明, 2:警告, 3:情報, 4:なし）の何れかを指定します。
+						</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="normalPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ正常時の通知重要度
+						{0:危険, 1:不明, 2:警告, 3:情報, 4:なし}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="warnPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ警告終了時の通知重要度
+						{0:危険, 1:不明, 2:警告, 3:情報, 4:なし}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="commandRetry" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブが指定された状態になるまで繰り返す（試行回数）</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="commandRetryFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブが指定された状態になるまで繰り返す（チェックボックス）
+						{true:繰り返す, false:繰り返さない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="commandRetryEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						繰り返し完了状態
+						{0:危険, 1:不明, 2:警告, 3:情報}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="jobRetry" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブが指定された状態になるまで繰り返す（試行回数）</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="jobRetryFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブが指定された状態になるまで繰り返す（チェックボックス）
+						{true:繰り返す, false:繰り返さない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="jobRetryEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						繰り返し完了状態
+						{0:危険, 1:不明, 2:警告, 3:情報}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="normalEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了状態(正常)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="normalEndValueFrom" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了状態(正常From)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="normalEndValueTo" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了状態(正常To)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="warnEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了状態(警告)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="warnEndValueFrom" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了状態(警告From)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="warnEndValueTo" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了状態(警告To)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="abnormalEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了状態(異常)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="abnormalEndValueFrom" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了状態(異常From)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="abnormalEndValueTo" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了状態(異常To)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="approvalReqRoleId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>承認依頼先ロール</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="approvalReqUserId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>承認依頼先ユーザ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="approvalReqSentence" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>承認依頼文</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="approvalReqMailTitle" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>承認依頼メール件名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="approvalReqMailBody" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>承認依頼メール本文</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="useApprovalReqSentence" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						承認依頼文を利用
+						{false:しない true:する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視設定ID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorInfoEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視終了値(情報)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorWarnEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視終了値(警告)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorCriticalEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視終了値(危険)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorUnknownEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視終了値(不明)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorWaitTime" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視終了値(タイムアウト)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorWaitEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="exclusiveBranch" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>後続ジョブをどれか一つだけ実行するかの排他分岐フラグ。{true:排他分岐を行う,false:分岐を行わない}のいずれかをセットします。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="exclusiveBranchEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>排他分岐され、実行されなかったジョブの終了状態。{0:正常,1:警告,2:異常}のいずれかをセットします。</xs:documentation>
+		 	  </xs:annotation>
+			</xs:element>
+			<xs:element name="exclusiveBranchEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>排他分岐され、実行されなかったジョブの終了値。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="exclusiveJobValue" type="ExclusiveJobNextJobOrderInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>後続ジョブの優先度</xs:documentation>
+			  </xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="JobParameterInfo">
+		<xs:annotation>
+			<xs:documentation>ジョブ変数に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="paramId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>パラメータID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="paramType" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						パラメータ種別
+						{0:システム、1:ユーザ}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="JobStartJobInfo">
+		<xs:annotation>
+			<xs:documentation>ジョブ待ち条件詳細に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="targetJobId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="targetJobType" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						判定対象種別
+						{0:ジョブ終了状態, 1:ジョブ終了値, 2:時刻, 3:セッション開始後の時間（分）, 4:ジョブ変数, 5:セッション横断ジョブ終了状態, 6:セッション横断ジョブ終了値}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="targetJobEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						終了値/終了状態
+						{0:正常, 1:警告, 2:異常, 4:*}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startTime" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>時刻</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="startDecisionValue01" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定値1</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDecisionValue02" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定値2</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="startDecisionCondition" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+					判定条件
+					{0:=(数値), 1:!=(数値), 2:＞(数値), 3:≧(数値), 4:＜(数値), 5:≦(数値), 6:=(文字列),7:!=(文字列)}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="targetJobDescription" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="targetCrossSessionRange" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>セッション横断ジョブ履歴判定対象範囲（分）</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="ExclusiveJobNextJobOrderInfo">
+		<xs:annotation>
+			<xs:documentation>ジョブの後続ジョブ優先度に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="nextJobId" type="xs:string" minOccurs="0"
+				maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>後続ジョブID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="order" type="xs:int" minOccurs="0"
+				maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>優先度</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="JobCommandParamMst">
+		<xs:annotation>
+			<xs:documentation>コマンドジョブ終了時の変数設定に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="paramId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>変数の名前</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>変数の値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="jobStandardOutputFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						標準出力から取得するか？
+						{false:取得しない, true:取得する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="JobEnvVariableMst">
+		<xs:annotation>
+			<xs:documentation>コマンドジョブの環境変数に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="envVariableId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>変数の名前</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>変数の値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+</xs:schema>

@@ -1,0 +1,771 @@
+ADSL-LINE-EXT-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+      Counter32,
+      Integer32,
+      NOTIFICATION-TYPE,
+      MODULE-IDENTITY,
+      OBJECT-TYPE                       FROM SNMPv2-SMI
+      MODULE-COMPLIANCE, OBJECT-GROUP,
+      NOTIFICATION-GROUP                FROM SNMPv2-CONF
+      TEXTUAL-CONVENTION                FROM SNMPv2-TC
+      PerfCurrentCount,
+
+
+
+
+
+      PerfIntervalCount                 FROM PerfHist-TC-MIB
+      AdslPerfCurrDayCount,
+      AdslPerfPrevDayCount              FROM ADSL-TC-MIB
+      SnmpAdminString                   FROM SNMP-FRAMEWORK-MIB
+      adslLineAlarmConfProfileEntry,
+      adslLineConfProfileEntry,
+      adslAturIntervalEntry,
+      adslAturPerfDataEntry,
+      adslAtucIntervalEntry,
+      adslAtucPerfDataEntry,
+      adslLineEntry,
+      adslMIB                           FROM ADSL-LINE-MIB
+      ;
+
+   adslExtMIB MODULE-IDENTITY
+
+   LAST-UPDATED "200212100000Z"  -- 10 Dec 2002
+
+   ORGANIZATION "IETF ADSL MIB Working Group"
+
+
+
+
+
+
+
+          ::= { adslMIB 3 }
+
+       adslExtMibObjects  OBJECT IDENTIFIER ::= { adslExtMIB 1 }
+
+       AdslTransmissionModeType ::= TEXTUAL-CONVENTION
+           STATUS       current
+           SYNTAX      BITS {
+               ansit1413(0),
+               etsi(1),
+               q9921PotsNonOverlapped(2),
+               q9921PotsOverlapped(3),
+               q9921IsdnNonOverlapped(4),
+               q9921isdnOverlapped(5),
+               q9921tcmIsdnNonOverlapped(6),
+               q9921tcmIsdnOverlapped(7),
+               q9922potsNonOverlapeed(8),
+               q9922potsOverlapped(9),
+               q9922tcmIsdnNonOverlapped(10),
+               q9922tcmIsdnOverlapped(11),
+               q9921tcmIsdnSymmetric(12)
+           }
+
+         adslLineExtTable   OBJECT-TYPE
+             SYNTAX          SEQUENCE OF AdslLineExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+         ::= { adslExtMibObjects 17 }
+
+         adslLineExtEntry   OBJECT-TYPE
+             SYNTAX          AdslLineExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+             AUGMENTS { adslLineEntry }
+         ::= { adslLineExtTable 1 }
+
+         AdslLineExtEntry ::=
+             SEQUENCE {
+             adslLineTransAtucCap        AdslTransmissionModeType,
+             adslLineTransAtucConfig     AdslTransmissionModeType,
+             adslLineTransAtucActual     AdslTransmissionModeType,
+             adslLineGlitePowerState     INTEGER,
+             adslLineConfProfileDualLite SnmpAdminString
+             }
+
+         adslLineTransAtucCap OBJECT-TYPE
+             SYNTAX      AdslTransmissionModeType
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslLineExtEntry 1 }
+
+         adslLineTransAtucConfig OBJECT-TYPE
+             SYNTAX      AdslTransmissionModeType
+             MAX-ACCESS  read-write
+             STATUS      current
+
+         ::= { adslLineExtEntry 2 }
+
+         adslLineTransAtucActual OBJECT-TYPE
+             SYNTAX      AdslTransmissionModeType
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslLineExtEntry 3 }
+
+         adslLineGlitePowerState OBJECT-TYPE
+             SYNTAX      INTEGER {
+                         none(1),
+                         l0(2),          -- L0 Power on
+                         l1(3),          -- L1 Power on but reduced
+                         l3(4)           -- L3 Power off
+                         }
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslLineExtEntry 4 }
+
+         adslLineConfProfileDualLite OBJECT-TYPE
+             SYNTAX SnmpAdminString
+             MAX-ACCESS  read-write
+             STATUS current
+         ::= { adslLineExtEntry 5 }
+
+         adslAtucPerfDataExtTable   OBJECT-TYPE
+
+             SYNTAX          SEQUENCE OF AdslAtucPerfDataExtEntry
+             MAX-ACCESS      not-accessible
+
+
+
+
+
+             STATUS          current
+         ::= { adslExtMibObjects 18 }
+
+         adslAtucPerfDataExtEntry   OBJECT-TYPE
+             SYNTAX          AdslAtucPerfDataExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+         AUGMENTS { adslAtucPerfDataEntry }
+         ::= { adslAtucPerfDataExtTable 1 }
+
+         AdslAtucPerfDataExtEntry ::=
+             SEQUENCE {
+             adslAtucPerfStatFastR            Counter32,
+             adslAtucPerfStatFailedFastR      Counter32,
+             adslAtucPerfStatSesL             Counter32,
+             adslAtucPerfStatUasL             Counter32,
+             adslAtucPerfCurr15MinFastR       PerfCurrentCount,
+             adslAtucPerfCurr15MinFailedFastR PerfCurrentCount,
+             adslAtucPerfCurr15MinSesL        PerfCurrentCount,
+             adslAtucPerfCurr15MinUasL        PerfCurrentCount,
+             adslAtucPerfCurr1DayFastR        AdslPerfCurrDayCount,
+             adslAtucPerfCurr1DayFailedFastR  AdslPerfCurrDayCount,
+             adslAtucPerfCurr1DaySesL         AdslPerfCurrDayCount,
+             adslAtucPerfCurr1DayUasL         AdslPerfCurrDayCount,
+             adslAtucPerfPrev1DayFastR        AdslPerfPrevDayCount,
+             adslAtucPerfPrev1DayFailedFastR  AdslPerfPrevDayCount,
+             adslAtucPerfPrev1DaySesL         AdslPerfPrevDayCount,
+             adslAtucPerfPrev1DayUasL         AdslPerfPrevDayCount
+         }
+
+         adslAtucPerfStatFastR OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "line retrains"
+             MAX-ACCESS  read-only
+             STATUS      current
+
+
+
+
+
+         ::= { adslAtucPerfDataExtEntry 1 }
+
+         adslAtucPerfStatFailedFastR OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "line retrains"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 2 }
+
+         adslAtucPerfStatSesL OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 3 }
+
+         adslAtucPerfStatUasL OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 4 }
+
+         adslAtucPerfCurr15MinFastR OBJECT-TYPE
+             SYNTAX      PerfCurrentCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 5 }
+
+         adslAtucPerfCurr15MinFailedFastR   OBJECT-TYPE
+             SYNTAX      PerfCurrentCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 6 }
+
+         adslAtucPerfCurr15MinSesL OBJECT-TYPE
+             SYNTAX      PerfCurrentCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 7 }
+
+         adslAtucPerfCurr15MinUasL   OBJECT-TYPE
+             SYNTAX      PerfCurrentCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 8 }
+
+         adslAtucPerfCurr1DayFastR    OBJECT-TYPE
+             SYNTAX      AdslPerfCurrDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+
+
+
+
+
+         ::= { adslAtucPerfDataExtEntry 9 }
+
+         adslAtucPerfCurr1DayFailedFastR    OBJECT-TYPE
+             SYNTAX      AdslPerfCurrDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 10 }
+
+         adslAtucPerfCurr1DaySesL    OBJECT-TYPE
+             SYNTAX      AdslPerfCurrDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 11 }
+
+         adslAtucPerfCurr1DayUasL    OBJECT-TYPE
+             SYNTAX      AdslPerfCurrDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+
+
+
+
+
+         ::= { adslAtucPerfDataExtEntry 12 }
+
+         adslAtucPerfPrev1DayFastR     OBJECT-TYPE
+             SYNTAX      AdslPerfPrevDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 13 }
+
+         adslAtucPerfPrev1DayFailedFastR OBJECT-TYPE
+             SYNTAX      AdslPerfPrevDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 14 }
+
+         adslAtucPerfPrev1DaySesL     OBJECT-TYPE
+             SYNTAX      AdslPerfPrevDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 15 }
+
+         adslAtucPerfPrev1DayUasL OBJECT-TYPE
+             SYNTAX      AdslPerfPrevDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucPerfDataExtEntry 16 }
+
+         adslAtucIntervalExtTable   OBJECT-TYPE
+             SYNTAX          SEQUENCE OF AdslAtucIntervalExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+         ::= { adslExtMibObjects 19 }
+
+         adslAtucIntervalExtEntry   OBJECT-TYPE
+             SYNTAX          AdslAtucIntervalExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+             AUGMENTS        { adslAtucIntervalEntry }
+         ::= { adslAtucIntervalExtTable 1 }
+
+         AdslAtucIntervalExtEntry ::=
+             SEQUENCE {
+             adslAtucIntervalFastR            PerfIntervalCount,
+             adslAtucIntervalFailedFastR      PerfIntervalCount,
+             adslAtucIntervalSesL             PerfIntervalCount,
+             adslAtucIntervalUasL             PerfIntervalCount
+             }
+
+         adslAtucIntervalFastR OBJECT-TYPE
+             SYNTAX      PerfIntervalCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucIntervalExtEntry 1 }
+
+         adslAtucIntervalFailedFastR OBJECT-TYPE
+             SYNTAX      PerfIntervalCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+
+
+
+
+
+         ::= { adslAtucIntervalExtEntry 2 }
+
+         adslAtucIntervalSesL OBJECT-TYPE
+             SYNTAX      PerfIntervalCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucIntervalExtEntry 3 }
+
+         adslAtucIntervalUasL OBJECT-TYPE
+             SYNTAX      PerfIntervalCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAtucIntervalExtEntry 4 }
+
+         adslAturPerfDataExtTable   OBJECT-TYPE
+             SYNTAX          SEQUENCE OF AdslAturPerfDataExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+         ::= { adslExtMibObjects 20 }
+
+         adslAturPerfDataExtEntry   OBJECT-TYPE
+             SYNTAX          AdslAturPerfDataExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+             AUGMENTS { adslAturPerfDataEntry }
+         ::= { adslAturPerfDataExtTable 1 }
+
+
+
+
+
+         AdslAturPerfDataExtEntry ::=
+             SEQUENCE {
+             adslAturPerfStatSesL             Counter32,
+             adslAturPerfStatUasL             Counter32,
+             adslAturPerfCurr15MinSesL        PerfCurrentCount,
+             adslAturPerfCurr15MinUasL        PerfCurrentCount,
+             adslAturPerfCurr1DaySesL         AdslPerfCurrDayCount,
+             adslAturPerfCurr1DayUasL         AdslPerfCurrDayCount,
+             adslAturPerfPrev1DaySesL         AdslPerfPrevDayCount,
+             adslAturPerfPrev1DayUasL         AdslPerfPrevDayCount
+         }
+
+         adslAturPerfStatSesL OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAturPerfDataExtEntry 1 }
+
+         adslAturPerfStatUasL OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAturPerfDataExtEntry 2 }
+
+         adslAturPerfCurr15MinSesL OBJECT-TYPE
+             SYNTAX      PerfCurrentCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+
+
+
+
+
+
+         ::= { adslAturPerfDataExtEntry 3 }
+
+         adslAturPerfCurr15MinUasL   OBJECT-TYPE
+             SYNTAX      PerfCurrentCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAturPerfDataExtEntry 4 }
+
+         adslAturPerfCurr1DaySesL    OBJECT-TYPE
+             SYNTAX      AdslPerfCurrDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAturPerfDataExtEntry 5 }
+
+         adslAturPerfCurr1DayUasL    OBJECT-TYPE
+             SYNTAX      AdslPerfCurrDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAturPerfDataExtEntry 6 }
+
+         adslAturPerfPrev1DaySesL     OBJECT-TYPE
+             SYNTAX      AdslPerfPrevDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+
+
+
+
+
+         ::= { adslAturPerfDataExtEntry 7 }
+
+         adslAturPerfPrev1DayUasL OBJECT-TYPE
+             SYNTAX      AdslPerfPrevDayCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAturPerfDataExtEntry 8 }
+
+         adslAturIntervalExtTable   OBJECT-TYPE
+             SYNTAX          SEQUENCE OF AdslAturIntervalExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+         ::= { adslExtMibObjects 21 }
+
+         adslAturIntervalExtEntry   OBJECT-TYPE
+             SYNTAX          AdslAturIntervalExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+             AUGMENTS        { adslAturIntervalEntry }
+         ::= { adslAturIntervalExtTable 1 }
+
+         AdslAturIntervalExtEntry ::=
+             SEQUENCE {
+             adslAturIntervalSesL             PerfIntervalCount,
+             adslAturIntervalUasL             PerfIntervalCount
+             }
+
+         adslAturIntervalSesL OBJECT-TYPE
+             SYNTAX      PerfIntervalCount
+             UNITS       "seconds"
+
+
+
+
+
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAturIntervalExtEntry 1 }
+
+         adslAturIntervalUasL OBJECT-TYPE
+             SYNTAX      PerfIntervalCount
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+         ::= { adslAturIntervalExtEntry 2 }
+
+         adslConfProfileExtTable   OBJECT-TYPE
+             SYNTAX          SEQUENCE OF AdslConfProfileExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+         ::= { adslExtMibObjects 22 }
+
+         adslConfProfileExtEntry   OBJECT-TYPE
+             SYNTAX          AdslConfProfileExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+             AUGMENTS { adslLineConfProfileEntry }
+         ::= { adslConfProfileExtTable 1 }
+
+         AdslConfProfileExtEntry ::=
+             SEQUENCE {
+                 adslConfProfileLineType  INTEGER
+             }
+
+         adslConfProfileLineType OBJECT-TYPE
+
+
+
+
+
+             SYNTAX      INTEGER {
+                 noChannel (1),        -- no channels exist
+                 fastOnly (2),         -- only fast channel exists
+                 interleavedOnly (3),  -- only interleaved channel
+                 fastOrInterleaved (4),-- either fast or interleaved
+                 fastAndInterleaved (5)-- both the fast channel and
+                 }
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL { fastOnly }
+         ::= { adslConfProfileExtEntry 1 }
+
+         adslAlarmConfProfileExtTable   OBJECT-TYPE
+             SYNTAX          SEQUENCE OF AdslAlarmConfProfileExtEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+         ::= { adslExtMibObjects 23 }
+
+         adslAlarmConfProfileExtEntry   OBJECT-TYPE
+             SYNTAX          AdslAlarmConfProfileExtEntry
+             MAX-ACCESS      not-accessible
+
+
+
+
+
+             STATUS          current
+             AUGMENTS { adslLineAlarmConfProfileEntry }
+         ::= { adslAlarmConfProfileExtTable 1 }
+
+         AdslAlarmConfProfileExtEntry ::=
+             SEQUENCE {
+             adslAtucThreshold15MinFailedFastR     Integer32,
+             adslAtucThreshold15MinSesL            Integer32,
+             adslAtucThreshold15MinUasL            Integer32,
+             adslAturThreshold15MinSesL            Integer32,
+             adslAturThreshold15MinUasL            Integer32
+         }
+
+         adslAtucThreshold15MinFailedFastR   OBJECT-TYPE
+             SYNTAX      Integer32(0..900)
+             UNITS       "seconds"
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL { 0 }
+         ::= { adslAlarmConfProfileExtEntry 1 }
+
+         adslAtucThreshold15MinSesL OBJECT-TYPE
+             SYNTAX      Integer32(0..900)
+             UNITS       "seconds"
+             MAX-ACCESS  read-create
+             STATUS      current
+
+
+
+
+
+             DEFVAL { 0 }
+
+         ::= { adslAlarmConfProfileExtEntry 2 }
+
+         adslAtucThreshold15MinUasL OBJECT-TYPE
+             SYNTAX      Integer32(0..900)
+             UNITS       "seconds"
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL { 0 }
+         ::= { adslAlarmConfProfileExtEntry 3 }
+
+         adslAturThreshold15MinSesL OBJECT-TYPE
+             SYNTAX      Integer32(0..900)
+             UNITS       "seconds"
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL { 0 }
+         ::= { adslAlarmConfProfileExtEntry 4 }
+
+         adslAturThreshold15MinUasL OBJECT-TYPE
+             SYNTAX      Integer32(0..900)
+             UNITS       "seconds"
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL { 0 }
+
+         ::= { adslAlarmConfProfileExtEntry 5 }
+
+
+   adslExtTraps OBJECT IDENTIFIER ::= { adslExtMibObjects 24 }
+
+   adslExtAtucTraps OBJECT IDENTIFIER ::= { adslExtTraps 1 }
+
+   adslExtAtucTrapsPrefix OBJECT IDENTIFIER ::= { adslExtAtucTraps 0 }
+
+         adslAtucFailedFastRThreshTrap      NOTIFICATION-TYPE
+             OBJECTS { adslAtucPerfCurr15MinFailedFastR }
+             STATUS  current
+         ::= { adslExtAtucTrapsPrefix 1 }
+
+         adslAtucSesLThreshTrap      NOTIFICATION-TYPE
+             OBJECTS { adslAtucPerfCurr15MinSesL }
+             STATUS  current
+         ::= { adslExtAtucTrapsPrefix 2 }
+
+         adslAtucUasLThreshTrap      NOTIFICATION-TYPE
+             OBJECTS { adslAtucPerfCurr15MinUasL }
+             STATUS  current
+         ::= { adslExtAtucTrapsPrefix 3 }
+
+
+   adslExtAturTraps OBJECT IDENTIFIER ::= { adslExtTraps 2 }
+
+   adslExtAturTrapsPrefix OBJECT IDENTIFIER ::= { adslExtAturTraps 0 }
+
+         adslAturSesLThreshTrap      NOTIFICATION-TYPE
+             OBJECTS { adslAturPerfCurr15MinSesL }
+             STATUS  current
+         ::= { adslExtAturTrapsPrefix 1 }
+
+         adslAturUasLThreshTrap      NOTIFICATION-TYPE
+             OBJECTS { adslAturPerfCurr15MinUasL }
+             STATUS  current
+         ::= { adslExtAturTrapsPrefix 2 }
+
+
+
+   adslExtConformance OBJECT IDENTIFIER ::= { adslExtMIB 2 }
+
+   adslExtGroups OBJECT IDENTIFIER ::= { adslExtConformance 1 }
+   adslExtCompliances OBJECT IDENTIFIER ::= { adslExtConformance 2 }
+
+
+         adslExtLineMibAtucCompliance MODULE-COMPLIANCE
+             STATUS  current
+
+             MODULE  -- this module
+             MANDATORY-GROUPS
+                {
+                adslExtLineGroup,
+                adslExtLineConfProfileControlGroup,
+                adslExtLineAlarmConfProfileGroup
+                }
+
+             GROUP       adslExtAtucPhysPerfCounterGroup
+
+             GROUP       adslExtAturPhysPerfCounterGroup
+
+
+
+
+
+
+             GROUP   adslExtNotificationsGroup
+
+             OBJECT      adslAtucThreshold15MinFailedFastR
+             MIN-ACCESS  read-write
+
+             OBJECT      adslAtucThreshold15MinSesL
+             MIN-ACCESS  read-write
+
+             OBJECT      adslAtucThreshold15MinUasL
+             MIN-ACCESS  read-write
+
+             OBJECT      adslAturThreshold15MinSesL
+             MIN-ACCESS  read-write
+
+             OBJECT      adslAturThreshold15MinUasL
+             MIN-ACCESS  read-write
+
+             OBJECT      adslLineConfProfileDualLite
+             MIN-ACCESS  read-only
+
+
+
+
+
+
+         ::= { adslExtCompliances 1 }
+
+         adslExtLineGroup    OBJECT-GROUP
+             OBJECTS {
+                 adslLineConfProfileDualLite,
+                 adslLineTransAtucCap,
+                 adslLineTransAtucConfig,
+                 adslLineTransAtucActual,
+                 adslLineGlitePowerState
+                }
+             STATUS     current
+         ::= { adslExtGroups 1 }
+
+         adslExtAtucPhysPerfCounterGroup OBJECT-GROUP
+             OBJECTS {
+                 adslAtucPerfStatFastR,
+                 adslAtucPerfStatFailedFastR,
+                 adslAtucPerfCurr15MinFastR,
+                 adslAtucPerfCurr15MinFailedFastR,
+                 adslAtucPerfCurr1DayFastR,
+                 adslAtucPerfCurr1DayFailedFastR,
+                 adslAtucPerfPrev1DayFastR,
+                 adslAtucPerfPrev1DayFailedFastR,
+                 adslAtucPerfStatSesL,
+                 adslAtucPerfStatUasL,
+                 adslAtucPerfCurr15MinSesL,
+                 adslAtucPerfCurr15MinUasL,
+                 adslAtucPerfCurr1DaySesL,
+                 adslAtucPerfCurr1DayUasL,
+                 adslAtucPerfPrev1DaySesL,
+                 adslAtucPerfPrev1DayUasL,
+                 adslAtucIntervalFastR,
+                 adslAtucIntervalFailedFastR,
+                 adslAtucIntervalSesL,
+                 adslAtucIntervalUasL
+                }
+             STATUS     current
+         ::= { adslExtGroups 2 }
+
+         adslExtAturPhysPerfCounterGroup OBJECT-GROUP
+             OBJECTS {
+
+
+
+
+
+                 adslAturPerfStatSesL,
+                 adslAturPerfStatUasL,
+                 adslAturPerfCurr15MinSesL,
+                 adslAturPerfCurr15MinUasL,
+                 adslAturPerfCurr1DaySesL,
+                 adslAturPerfCurr1DayUasL,
+                 adslAturPerfPrev1DaySesL,
+                 adslAturPerfPrev1DayUasL,
+                 adslAturIntervalSesL, adslAturIntervalUasL
+                }
+             STATUS     current
+         ::= { adslExtGroups 3 }
+
+         adslExtLineConfProfileControlGroup OBJECT-GROUP
+             OBJECTS {
+                 adslConfProfileLineType
+                }
+             STATUS     current
+         ::= { adslExtGroups 4 }
+
+         adslExtLineAlarmConfProfileGroup OBJECT-GROUP
+             OBJECTS {
+                    adslAtucThreshold15MinFailedFastR,
+                    adslAtucThreshold15MinSesL,
+                    adslAtucThreshold15MinUasL,
+                    adslAturThreshold15MinSesL,
+                    adslAturThreshold15MinUasL
+                }
+             STATUS     current
+         ::= { adslExtGroups 5 }
+
+         adslExtNotificationsGroup NOTIFICATION-GROUP
+             NOTIFICATIONS {
+                 adslAtucFailedFastRThreshTrap,
+                 adslAtucSesLThreshTrap,
+                 adslAtucUasLThreshTrap,
+                 adslAturSesLThreshTrap,
+                 adslAturUasLThreshTrap
+             }
+
+
+
+
+
+             STATUS        current
+            ::= { adslExtGroups 6 }
+
+END

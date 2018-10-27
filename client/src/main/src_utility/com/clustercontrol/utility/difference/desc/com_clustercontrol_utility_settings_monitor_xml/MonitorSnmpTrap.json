@@ -1,0 +1,25 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitor",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{
+		"type":"ColumnOverrides",
+		"values":[
+			{"p":"monitorFlg", "c":{"type":"Column", "columnName":"MonitorSnmpTrap_ColumnOverrides"}}
+		]}
+	]},
+
+	{
+	"propName":"snmpTrapInfo",
+	"annotations":[
+		{"type":"Ignore", "propNames":["MonitorId", "MonitorTypeId"]}
+	]}
+
+
+]
+}

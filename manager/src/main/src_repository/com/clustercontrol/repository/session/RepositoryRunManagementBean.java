@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.session;
@@ -29,9 +22,9 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.JobInfoNotFound;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.repository.DeviceSearchTask;
 import com.clustercontrol.util.HinemosTime;
 
@@ -51,7 +44,7 @@ public class RepositoryRunManagementBean {
 	private static int execCount = 0;
 	
 	private static boolean countCheck() {
-		int interval = HinemosPropertyUtil.getHinemosPropertyNum("repository.device.search.interval", Long.valueOf(5)).intValue();
+		int interval = HinemosPropertyCommon.repository_device_search_interval.getIntegerValue();
 		if (interval <= 0) {
 			return false;
 		}
@@ -66,7 +59,7 @@ public class RepositoryRunManagementBean {
 	}
 
 	private static final ExecutorService _executorService = Executors.newFixedThreadPool(
-			HinemosPropertyUtil.getHinemosPropertyNum("repository.device.search.threadpool.size", Long.valueOf(5)).intValue(),
+			HinemosPropertyCommon.repository_device_search_threadpool_size.getIntegerValue(),
 			new ThreadFactory() {
 				private volatile int _count = 0;
 

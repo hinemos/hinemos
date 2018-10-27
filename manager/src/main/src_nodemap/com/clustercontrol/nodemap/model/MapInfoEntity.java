@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.nodemap.model;
 
 import java.io.Serializable;
@@ -14,9 +22,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 
 
 /**
@@ -36,12 +41,8 @@ public class MapInfoEntity implements Serializable {
 	public MapInfoEntity() {
 	}
 
-	public MapInfoEntity(String mapId,
-			MapBgImageEntity mapBgImageEntity) {
+	public MapInfoEntity(String mapId) {
 		this.setMapId(mapId);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToMapBgImageEntity(mapBgImageEntity);
 	}
 
 

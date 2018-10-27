@@ -1,0 +1,1130 @@
+     RFC1253-MIB DEFINITIONS ::= BEGIN
+
+     IMPORTS
+             Counter, Gauge, IpAddress
+                     FROM RFC1155-SMI
+             mib-2
+                     FROM RFC1213-MIB
+             OBJECT-TYPE
+                     FROM RFC-1212;
+
+
+             ospf OBJECT IDENTIFIER ::= { mib-2 14 }
+
+
+             AreaID ::= IpAddress
+
+
+             RouterID ::= IpAddress
+
+
+             Metric    ::= INTEGER (1..'FFFF'h)
+             BigMetric ::= INTEGER (1..'FFFFFF'h)
+
+
+             TruthValue ::= INTEGER { true (1), false (2) }
+
+
+             Status ::= INTEGER { enabled (1), disabled (2) }
+
+
+
+
+
+
+             Validation ::= INTEGER { valid (1), invalid (2) }
+
+
+             PositiveInteger ::= INTEGER (1..'FFFFFFFF'h)
+             HelloRange      ::= INTEGER (1..'FFFF'h)
+             UpToMaxAge      ::= INTEGER (1..3600)
+
+
+             InterfaceIndex ::= INTEGER
+
+
+             DesignatedRouterPriority ::= INTEGER (0..'FF'h)
+
+
+
+
+             TOSType ::= INTEGER (0..31)
+
+
+
+     ospfGeneralGroup OBJECT IDENTIFIER ::= { ospf 1 }
+
+     ospfRouterId OBJECT-TYPE
+         SYNTAX   RouterID
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfGeneralGroup 1 }
+
+     ospfAdminStat OBJECT-TYPE
+         SYNTAX   Status
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfGeneralGroup 2 }
+
+     ospfVersionNumber OBJECT-TYPE
+         SYNTAX   INTEGER { version2 (2) }
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfGeneralGroup 3 }
+
+     ospfAreaBdrRtrStatus OBJECT-TYPE
+         SYNTAX   TruthValue
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfGeneralGroup 4 }
+
+     ospfASBdrRtrStatus OBJECT-TYPE
+         SYNTAX   TruthValue
+         ACCESS   read-write
+         STATUS   mandatory
+
+
+
+
+
+         ::= { ospfGeneralGroup 5 }
+
+     ospfExternLSACount OBJECT-TYPE
+         SYNTAX   Gauge
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfGeneralGroup 6 }
+
+     ospfExternLSACksumSum OBJECT-TYPE
+         SYNTAX   INTEGER
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfGeneralGroup 7 }
+
+     ospfTOSSupport OBJECT-TYPE
+         SYNTAX   TruthValue
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfGeneralGroup 8 }
+
+     ospfOriginateNewLSAs OBJECT-TYPE
+         SYNTAX   Counter
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfGeneralGroup 9 }
+
+
+
+
+
+     ospfRxNewLSAs OBJECT-TYPE
+         SYNTAX   Counter
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfGeneralGroup 10 }
+
+
+
+     ospfAreaTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfAreaEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         ::= { ospf 2 }
+
+     ospfAreaEntry OBJECT-TYPE
+         SYNTAX   OspfAreaEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfAreaId }
+         ::= { ospfAreaTable 1 }
+
+     OspfAreaEntry ::=
+         SEQUENCE {
+             ospfAreaId
+                 AreaID,
+             ospfAuthType
+                 INTEGER,
+             ospfImportASExtern
+                 TruthValue,
+             ospfSpfRuns
+
+
+
+
+
+                 Counter,
+             ospfAreaBdrRtrCount
+                 Gauge,
+             ospfASBdrRtrCount
+                 Gauge,
+             ospfLSACount
+                 Gauge,
+             ospfAreaLSACksumSum
+                 INTEGER
+         }
+
+     ospfAreaId OBJECT-TYPE
+         SYNTAX   AreaID
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfAreaEntry 1 }
+
+     ospfAuthType OBJECT-TYPE
+         SYNTAX   INTEGER
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 0 }        -- no authentication, by default
+         ::= { ospfAreaEntry 2 }
+
+     ospfImportASExtern OBJECT-TYPE
+         SYNTAX   TruthValue
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { true }
+
+
+
+
+
+         ::= { ospfAreaEntry 3 }
+
+     ospfSpfRuns OBJECT-TYPE
+         SYNTAX   Counter
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { 0 }
+         ::= { ospfAreaEntry 4 }
+
+     ospfAreaBdrRtrCount OBJECT-TYPE
+         SYNTAX   Gauge
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { 0 }
+         ::= { ospfAreaEntry 5 }
+
+     ospfASBdrRtrCount OBJECT-TYPE
+         SYNTAX   Gauge
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { 0 }
+         ::= { ospfAreaEntry 6 }
+
+     ospfAreaLSACount OBJECT-TYPE
+         SYNTAX   Gauge
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { 0 }
+         ::= { ospfAreaEntry 7 }
+
+
+
+
+
+
+
+     ospfAreaLSACksumSum OBJECT-TYPE
+         SYNTAX   INTEGER
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { 0 }
+         ::= { ospfAreaEntry 8 }
+
+
+
+
+     ospfStubAreaTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfStubAreaEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         ::= { ospf 3 }
+
+     ospfStubAreaEntry OBJECT-TYPE
+         SYNTAX   OspfStubAreaEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfStubAreaID, ospfStubTOS }
+         ::= { ospfStubAreaTable 1 }
+
+
+
+
+
+
+
+
+     OspfStubAreaEntry ::=
+         SEQUENCE {
+             ospfStubAreaID
+                 AreaID,
+             ospfStubTOS
+                 TOSType,
+             ospfStubMetric
+                 BigMetric,
+             ospfStubStatus
+                 Validation
+         }
+
+     ospfStubAreaID OBJECT-TYPE
+         SYNTAX   AreaID
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfStubAreaEntry 1 }
+
+     ospfStubTOS OBJECT-TYPE
+         SYNTAX   TOSType
+         ACCESS   read-write
+         STATUS   mandatory
+
+         ::= { ospfStubAreaEntry 2 }
+
+     ospfStubMetric OBJECT-TYPE
+         SYNTAX   BigMetric
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfStubAreaEntry 3 }
+
+     ospfStubStatus OBJECT-TYPE
+         SYNTAX   Validation
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL   { valid }
+         ::= { ospfStubAreaEntry 4 }
+
+
+
+
+     ospfLsdbTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfLsdbEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         ::= { ospf 4 }
+
+     ospfLsdbEntry OBJECT-TYPE
+         SYNTAX   OspfLsdbEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfLsdbAreaId, ospfLsdbType,
+                 ospfLsdbLSID, ospfLsdbRouterId }
+         ::= { ospfLsdbTable 1 }
+
+     OspfLsdbEntry ::=
+         SEQUENCE {
+             ospfLsdbAreaId
+                 AreaID,
+             ospfLsdbType
+                 INTEGER,
+             ospfLsdbLSID
+                 IpAddress,
+             ospfLsdbRouterId
+                 RouterID,
+             ospfLsdbSequence
+                 INTEGER,
+             ospfLsdbAge
+                 INTEGER,
+             ospfLsdbChecksum
+
+
+
+
+
+                 INTEGER,
+             ospfLsdbAdvertisement
+                 OCTET STRING
+         }
+
+     ospfLsdbAreaId OBJECT-TYPE
+         SYNTAX   AreaID
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfLsdbEntry 1 }
+
+     ospfLsdbType OBJECT-TYPE
+         SYNTAX   INTEGER {
+                     routerLink (1),
+                     networkLink (2),
+                     summaryLink (3),
+                     asSummaryLink (4),
+                     asExternalLink (5)
+                  }
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfLsdbEntry 2 }
+
+     ospfLsdbLSID OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfLsdbEntry 3 }
+
+
+
+
+
+
+
+     ospfLsdbRouterId OBJECT-TYPE
+         SYNTAX   RouterID
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfLsdbEntry 4 }
+
+
+     ospfLsdbSequence OBJECT-TYPE
+         SYNTAX   INTEGER
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfLsdbEntry 5 }
+
+     ospfLsdbAge OBJECT-TYPE
+         SYNTAX   INTEGER    -- Should be 0..MaxAge
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfLsdbEntry 6 }
+
+     ospfLsdbChecksum OBJECT-TYPE
+         SYNTAX   INTEGER
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfLsdbEntry 7 }
+
+     ospfLsdbAdvertisement OBJECT-TYPE
+         SYNTAX   OCTET STRING
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfLsdbEntry 8 }
+
+
+
+
+     ospfAreaRangeTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfAreaRangeEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         ::= { ospf 5 }
+
+     ospfAreaRangeEntry OBJECT-TYPE
+         SYNTAX   OspfAreaRangeEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfAreaRangeAreaID, ospfAreaRangeNet }
+         ::= { ospfAreaRangeTable 1 }
+
+     OspfAreaRangeEntry ::=
+         SEQUENCE {
+             ospfAreaRangeAreaID
+                 AreaID,
+             ospfAreaRangeNet
+                 IpAddress,
+             ospfAreaRangeMask
+                 IpAddress,
+             ospfAreaRangeStatus
+                 Validation
+         }
+
+     ospfAreaRangeAreaID OBJECT-TYPE
+         SYNTAX   AreaID
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfAreaRangeEntry 1 }
+
+     ospfAreaRangeNet OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfAreaRangeEntry 2 }
+
+     ospfAreaRangeMask OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfAreaRangeEntry 3 }
+
+     ospfAreaRangeStatus OBJECT-TYPE
+         SYNTAX   Validation
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL   { valid }
+         ::= { ospfAreaRangeEntry 4 }
+
+
+
+
+     ospfHostTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfHostEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         ::= { ospf 6 }
+
+     ospfHostEntry OBJECT-TYPE
+         SYNTAX   OspfHostEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfHostIpAddress, ospfHostTOS }
+         ::= { ospfHostTable 1 }
+
+     OspfHostEntry ::=
+         SEQUENCE {
+             ospfHostIpAddress
+                 IpAddress,
+             ospfHostTOS
+
+
+
+
+
+                 TOSType,
+             ospfHostMetric
+                 Metric,
+             ospfHostStatus
+                 Validation
+         }
+
+     ospfHostIpAddress OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfHostEntry 1 }
+
+     ospfHostTOS OBJECT-TYPE
+         SYNTAX   TOSType
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfHostEntry 2 }
+
+     ospfHostMetric OBJECT-TYPE
+         SYNTAX   Metric
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfHostEntry 3 }
+
+     ospfHostStatus OBJECT-TYPE
+         SYNTAX   Validation
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL   { valid }
+         ::= { ospfHostEntry 4 }
+
+
+
+
+
+
+
+     ospfIfTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfIfEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         ::= { ospf 7 }
+
+     ospfIfEntry OBJECT-TYPE
+         SYNTAX   OspfIfEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfIfIpAddress, ospfAddressLessIf }
+         ::= { ospfIfTable 1 }
+
+     OspfIfEntry ::=
+         SEQUENCE {
+             ospfIfIpAddress
+                 IpAddress,
+             ospfAddressLessIf
+                 INTEGER,
+             ospfIfAreaId
+                 AreaID,
+             ospfIfType
+                 INTEGER,
+             ospfIfAdminStat
+                 Status,
+             ospfIfRtrPriority
+                 DesignatedRouterPriority,
+             ospfIfTransitDelay
+                 UpToMaxAge,
+             ospfIfRetransInterval
+                 UpToMaxAge,
+             ospfIfHelloInterval
+                 HelloRange,
+             ospfIfRtrDeadInterval
+
+
+
+
+
+                 PositiveInteger,
+             ospfIfPollInterval
+                 PositiveInteger,
+             ospfIfState
+                 INTEGER,
+             ospfIfDesignatedRouter
+                 IpAddress,
+             ospfIfBackupDesignatedRouter
+                 IpAddress,
+             ospfIfEvents
+                 Counter,
+             ospfIfAuthKey
+                 OCTET STRING
+         }
+
+     ospfIfIpAddress OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfIfEntry 1 }
+
+     ospfAddressLessIf OBJECT-TYPE
+         SYNTAX   INTEGER
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfIfEntry 2 }
+
+     ospfIfAreaId OBJECT-TYPE
+         SYNTAX   AreaID
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL   { '00000000'H }    -- 0.0.0.0
+         ::= { ospfIfEntry 3 }
+
+
+
+
+
+
+
+
+     ospfIfType OBJECT-TYPE
+         SYNTAX   INTEGER {
+                     broadcast (1),
+                     nbma (2),
+                     pointToPoint (3)
+                  }
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfIfEntry 4 }
+
+     ospfIfAdminStat OBJECT-TYPE
+         SYNTAX   Status
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { enabled }
+         ::= { ospfIfEntry 5 }
+
+     ospfIfRtrPriority OBJECT-TYPE
+         SYNTAX   DesignatedRouterPriority
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 1 }
+         ::= { ospfIfEntry 6 }
+
+
+
+
+
+     ospfIfTransitDelay OBJECT-TYPE
+         SYNTAX   UpToMaxAge
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 1 }
+         ::= { ospfIfEntry 7 }
+
+     ospfIfRetransInterval OBJECT-TYPE
+         SYNTAX   UpToMaxAge
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 5 }
+         ::= { ospfIfEntry 8 }
+
+     ospfIfHelloInterval OBJECT-TYPE
+         SYNTAX   HelloRange
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 10 }
+         ::= { ospfIfEntry 9 }
+
+     ospfIfRtrDeadInterval OBJECT-TYPE
+         SYNTAX   PositiveInteger
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 40 }
+         ::= { ospfIfEntry 10 }
+
+
+
+
+
+
+
+     ospfIfPollInterval OBJECT-TYPE
+         SYNTAX   PositiveInteger
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 120 }
+         ::= { ospfIfEntry 11 }
+
+     ospfIfState OBJECT-TYPE
+         SYNTAX   INTEGER {
+                     down (1),
+                     loopback (2),
+                     waiting (3),
+                     pointToPoint (4),
+                     designatedRouter (5),
+                     backupDesignatedRouter (6),
+                     otherDesignatedRouter (7)
+                  }
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL { down }
+         ::= { ospfIfEntry 12 }
+
+     ospfIfDesignatedRouter OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { '00000000'H }    -- 0.0.0.0
+         ::= { ospfIfEntry 13 }
+
+     ospfIfBackupDesignatedRouter OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { '00000000'H }    -- 0.0.0.0
+         ::= { ospfIfEntry 14 }
+
+
+
+
+
+
+
+
+     ospfIfEvents OBJECT-TYPE
+         SYNTAX   Counter
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { 0 }
+         ::= { ospfIfEntry 15 }
+
+     ospfIfAuthKey OBJECT-TYPE
+         SYNTAX   OCTET STRING
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL   { '0000000000000000'H }    -- 0.0.0.0.0.0.0.0
+         ::= { ospfIfEntry 16 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     ospfIfMetricTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfIfMetricEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         ::= { ospf 8 }
+
+     ospfIfMetricEntry OBJECT-TYPE
+         SYNTAX   OspfIfMetricEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfIfMetricIpAddress,
+                 ospfIfMetricAddressLessIf,
+                 ospfIfMetricTOS }
+         ::= { ospfIfMetricTable 1 }
+
+     OspfIfMetricEntry ::=
+         SEQUENCE {
+             ospfIfMetricIpAddress
+                 IpAddress,
+             ospfIfMetricAddressLessIf
+                 INTEGER,
+             ospfIfMetricTOS
+                 TOSType,
+
+
+
+
+
+             ospfIfMetricMetric
+                 Metric,
+             ospfIfMetricStatus
+                 Validation
+         }
+
+     ospfIfMetricIpAddress OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfIfMetricEntry 1 }
+
+     ospfIfMetricAddressLessIf OBJECT-TYPE
+         SYNTAX   INTEGER
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfIfMetricEntry 2 }
+
+     ospfIfMetricTOS OBJECT-TYPE
+         SYNTAX   TOSType
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfIfMetricEntry 3 }
+
+     ospfIfMetricMetric OBJECT-TYPE
+         SYNTAX   Metric
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfIfMetricEntry 4 }
+
+
+
+
+
+     ospfIfMetricStatus OBJECT-TYPE
+         SYNTAX   Validation
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL   { valid }
+         ::= { ospfIfMetricEntry 5 }
+
+
+
+
+     ospfVirtIfTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfVirtIfEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         ::= { ospf 9 }
+
+     ospfVirtIfEntry OBJECT-TYPE
+         SYNTAX   OspfVirtIfEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfVirtIfAreaID, ospfVirtIfNeighbor }
+         ::= { ospfVirtIfTable 1 }
+
+     OspfVirtIfEntry ::=
+         SEQUENCE {
+             ospfVirtIfAreaID
+                 AreaID,
+             ospfVirtIfNeighbor
+                 RouterID,
+             ospfVirtIfTransitDelay
+                 UpToMaxAge,
+             ospfVirtIfRetransInterval
+                 UpToMaxAge,
+
+
+
+
+
+             ospfVirtIfHelloInterval
+                 HelloRange,
+             ospfVirtIfRtrDeadInterval
+                 PositiveInteger,
+             ospfVirtIfState
+                 INTEGER,
+             ospfVirtIfEvents
+                 Counter,
+             ospfVirtIfAuthKey
+                 OCTET STRING,
+             ospfVirtIfStatus
+                 Validation
+         }
+
+     ospfVirtIfAreaID OBJECT-TYPE
+         SYNTAX   AreaID
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfVirtIfEntry 1 }
+
+     ospfVirtIfNeighbor OBJECT-TYPE
+         SYNTAX   RouterID
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfVirtIfEntry 2 }
+
+     ospfVirtIfTransitDelay OBJECT-TYPE
+         SYNTAX   UpToMaxAge
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 1 }
+         ::= { ospfVirtIfEntry 3 }
+
+     ospfVirtIfRetransInterval OBJECT-TYPE
+         SYNTAX   UpToMaxAge
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 5 }
+         ::= { ospfVirtIfEntry 4 }
+
+     ospfVirtIfHelloInterval OBJECT-TYPE
+         SYNTAX   HelloRange
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 10 }
+         ::= { ospfVirtIfEntry 5 }
+
+     ospfVirtIfRtrDeadInterval OBJECT-TYPE
+         SYNTAX   PositiveInteger
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { 60 }
+         ::= { ospfVirtIfEntry 6 }
+
+     ospfVirtIfState OBJECT-TYPE
+         SYNTAX   INTEGER {
+                     down (1),            -- these use the same encoding
+                     pointToPoint (4)     -- as the ospfIfTable
+                  }
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { down }
+         ::= { ospfVirtIfEntry 7 }
+
+     ospfVirtIfEvents OBJECT-TYPE
+         SYNTAX   Counter
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { 0 }
+         ::= { ospfVirtIfEntry 8 }
+
+     ospfVirtIfAuthKey OBJECT-TYPE
+         SYNTAX   OCTET STRING
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL   { '0000000000000000'H }    -- 0.0.0.0.0.0.0.0
+         ::= { ospfVirtIfEntry 9 }
+
+     ospfVirtIfStatus OBJECT-TYPE
+         SYNTAX   Validation
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL   { valid }
+         ::= { ospfVirtIfEntry 10 }
+
+
+
+
+     ospfNbrTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfNbrEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+
+
+
+
+
+         ::= { ospf 10 }
+
+     ospfNbrEntry OBJECT-TYPE
+         SYNTAX   OspfNbrEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfNbrIpAddr, ospfNbrAddressLessIndex }
+         ::= { ospfNbrTable 1 }
+
+     OspfNbrEntry ::=
+         SEQUENCE {
+             ospfNbrIpAddr
+                 IpAddress,
+             ospfNbrAddressLessIndex
+                 InterfaceIndex,
+             ospfNbrRtrId
+                 RouterID,
+             ospfNbrOptions
+                 INTEGER,
+             ospfNbrPriority
+                 DesignatedRouterPriority,
+             ospfNbrState
+                 INTEGER,
+             ospfNbrEvents
+                 Counter,
+             ospfNbrLSRetransQLen
+                 Gauge,
+             ospfNBMANbrStatus
+                 Validation
+         }
+
+     ospfNbrIpAddr OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-write
+         STATUS   mandatory
+         ::= { ospfNbrEntry 1 }
+
+     ospfNbrAddressLessIndex OBJECT-TYPE
+         SYNTAX   InterfaceIndex
+         ACCESS   read-write
+         STATUS   mandatory
+
+
+
+
+
+         ::= { ospfNbrEntry 2 }
+
+     ospfNbrRtrId OBJECT-TYPE
+         SYNTAX   RouterID
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { '00000000'H }    -- 0.0.0.0
+         ::= { ospfNbrEntry 3 }
+
+     ospfNbrOptions OBJECT-TYPE
+         SYNTAX   INTEGER
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL { 0 }
+         ::= { ospfNbrEntry 4 }
+
+     ospfNbrPriority OBJECT-TYPE
+         SYNTAX   DesignatedRouterPriority
+         ACCESS   read-write
+         STATUS   mandatory
+
+
+
+
+
+         DEFVAL { 1 }
+         ::= { ospfNbrEntry 5 }
+
+     ospfNbrState OBJECT-TYPE
+         SYNTAX   INTEGER {
+                     down (1),
+                     attempt (2),
+                     init (3),
+                     twoWay (4),
+                     exchangeStart (5),
+                     exchange (6),
+                     loading (7),
+                     full (8)
+                  }
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { down }
+         ::= { ospfNbrEntry 6 }
+
+     ospfNbrEvents OBJECT-TYPE
+         SYNTAX   Counter
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { 0 }
+         ::= { ospfNbrEntry 7 }
+
+     ospfNbrLSRetransQLen OBJECT-TYPE
+         SYNTAX   Gauge
+         ACCESS   read-only
+         STATUS   mandatory
+         DEFVAL   { 0 }
+         ::= { ospfNbrEntry 8 }
+
+     ospfNBMANbrStatus OBJECT-TYPE
+         SYNTAX   Validation
+         ACCESS   read-write
+         STATUS   mandatory
+         DEFVAL { valid }
+         ::= { ospfNbrEntry 9 }
+
+
+
+
+     ospfVirtNbrTable OBJECT-TYPE
+         SYNTAX   SEQUENCE OF OspfVirtNbrEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         ::= { ospf 11 }
+
+     ospfVirtNbrEntry OBJECT-TYPE
+         SYNTAX   OspfVirtNbrEntry
+         ACCESS   not-accessible
+         STATUS   mandatory
+         INDEX { ospfVirtNbrArea, ospfVirtNbrRtrId }
+         ::= { ospfVirtNbrTable 1 }
+
+     OspfVirtNbrEntry ::=
+         SEQUENCE {
+             ospfVirtNbrArea
+                 AreaID,
+             ospfVirtNbrRtrId
+                 RouterID,
+             ospfVirtNbrIpAddr
+                 IpAddress,
+             ospfVirtNbrOptions
+                 INTEGER,
+             ospfVirtNbrState
+                 INTEGER,
+             ospfVirtNbrEvents
+                 Counter,
+             ospfVirtNbrLSRetransQLen
+                 Gauge
+
+
+
+
+
+         }
+
+     ospfVirtNbrArea OBJECT-TYPE
+         SYNTAX   AreaID
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfVirtNbrEntry 1 }
+
+     ospfVirtNbrRtrId OBJECT-TYPE
+         SYNTAX   RouterID
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfVirtNbrEntry 2 }
+
+     ospfVirtNbrIpAddr OBJECT-TYPE
+         SYNTAX   IpAddress
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfVirtNbrEntry 3 }
+
+     ospfVirtNbrOptions OBJECT-TYPE
+         SYNTAX   INTEGER
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfVirtNbrEntry 4 }
+
+     ospfVirtNbrState OBJECT-TYPE
+         SYNTAX   INTEGER {
+                     down (1),
+                     attempt (2),
+                     init (3),
+                     twoWay (4),
+                     exchangeStart (5),
+                     exchange (6),
+                     loading (7),
+                     full (8)
+
+
+
+
+
+                  }
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfVirtNbrEntry 5 }
+
+     ospfVirtNbrEvents OBJECT-TYPE
+         SYNTAX   Counter
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfVirtNbrEntry 6 }
+
+     ospfVirtNbrLSRetransQLen OBJECT-TYPE
+         SYNTAX   Gauge
+         ACCESS   read-only
+         STATUS   mandatory
+         ::= { ospfVirtNbrEntry 7 }
+
+     END

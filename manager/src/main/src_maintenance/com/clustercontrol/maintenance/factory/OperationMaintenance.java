@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2007 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.maintenance.factory;
@@ -21,17 +14,19 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MaintenanceNotFound;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.maintenance.bean.MaintenanceTypeMstConstant;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.session.MaintenanceControllerBean;
 import com.clustercontrol.maintenance.util.QueryUtil;
+import com.clustercontrol.notify.bean.OutputBasicInfo;
 
 /**
  * 
  * メンテナンス機能が提供する操作を実行するクラスです。
  * 
- * @version 4.0.0
+ * @version 6.1.0 バイナリ収集データ削除を追加.
  * @since 2.2.0
  *
  */
@@ -41,8 +36,11 @@ public class OperationMaintenance {
 
 	/**
 	 * @param maintenanceId
+	 * @return 通知情報
 	 */
-	public void runMaintenance(String maintenanceId) {
+	public OutputBasicInfo runMaintenance(String maintenanceId) {
+
+		OutputBasicInfo rtn = null;
 
 		int result = -1;
 		Integer type = PriorityConstant.TYPE_CRITICAL;
@@ -74,6 +72,10 @@ public class OperationMaintenance {
 				result = controller.deleteSummaryMonth(dataRetentionPeriod, true, ownerRoleId);
 			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_STRING_DATA.equals(type_id)) {
 				result = controller.deleteCollectStringData(dataRetentionPeriod, true, ownerRoleId);
+			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_BINFILE_DATA.equals(type_id)) {
+				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, HinemosModuleConstant.MONITOR_BINARYFILE_BIN);
+			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_PCAP_DATA.equals(type_id)) {
+				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, HinemosModuleConstant.MONITOR_PCAP_BIN);
 			} else {
 				m_log.info("runMaintenance() : " + type_id);
 			}
@@ -87,11 +89,12 @@ public class OperationMaintenance {
 			// 何もしない
 		} finally {
 			try {
-				new Notice().notify(maintenanceId, type, result);
+				rtn = new Notice().createOutputBasicInfo(maintenanceId, type, result);
 			} catch (HinemosUnknown e) {
 				m_log.debug(e.getMessage(), e);
 			}
 		}
+		return rtn;
 	}
 
 }

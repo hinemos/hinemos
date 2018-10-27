@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.composite;
@@ -33,6 +26,7 @@ import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.EndStatusConstant;
+import com.clustercontrol.bean.EndStatusMessage;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -83,10 +77,12 @@ public class ControlNodeComposite extends Composite {
 	/** リトライ回数用テキスト */
 	private Text m_messageRetry;
 
-	/** ジョブが正常終了するまで繰り返す用チェックボタン */
+	/** コマンド繰り返し実行用チェックボタン */
 	private Button m_commandRetryCondition = null;
-	/** エラーリトライ回数用テキスト */
+	/** コマンド繰り返し実行回数 */
 	private Text m_commandRetry;
+	/** コマンド繰り返し完了状態 */
+	private Combo m_commandRetryEndStatus = null;
 
 	/** ジョブ種別 */
 	private int m_jobType = JobConstant.TYPE_JOB;
@@ -216,7 +212,7 @@ public class ControlNodeComposite extends Composite {
 						update();
 					}
 				}
-				);
+			);
 
 		// separator
 		JobDialogUtil.getSeparator(this);
@@ -293,10 +289,10 @@ public class ControlNodeComposite extends Composite {
 		// separator
 		JobDialogUtil.getSeparator(this);
 
-		// ジョブが終了するまで繰り返す（チェック）
+		// 繰り返し実行（チェック）
 		this.m_commandRetryCondition = new Button(this, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_commandRetryCondition", this.m_commandRetryCondition);
-		this.m_commandRetryCondition.setText(Messages.getString("command.error.retry"));
+		this.m_commandRetryCondition.setText(Messages.getString("command.retry"));
 		this.m_commandRetryCondition.setLayoutData(new RowData(300,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_commandRetryCondition.addSelectionListener(new SelectionListener() {
@@ -306,8 +302,13 @@ public class ControlNodeComposite extends Composite {
 				WidgetTestUtil.setTestId(this, null, check);
 				if (check.getSelection()) {
 					m_commandRetry.setEditable(true);
+					//ファイル転送ジョブの場合は常に非活性にする
+					if (m_jobType == JobConstant.TYPE_JOB) {
+						m_commandRetryEndStatus.setEnabled(true);
+					}
 				} else {
 					m_commandRetry.setEditable(false);
+					m_commandRetryEndStatus.setEnabled(false);
 				}
 				update();
 			}
@@ -318,17 +319,17 @@ public class ControlNodeComposite extends Composite {
 			}
 		});
 
-		// ジョブが終了するまで繰り返す（Composite）
+		// 繰り返し実行（Composite）
 		Composite commandRetryConditionGroup = new Composite(this, SWT.BORDER);
 		commandRetryConditionGroup.setLayout(new RowLayout());
 
-		// ジョブが終了するまで繰り返す：試行回数（ラベル）
+		// 繰り返し実行：試行回数（ラベル）
 		messageRetryTitle = new Label(commandRetryConditionGroup, SWT.LEFT);
-		messageRetryTitle.setText(Messages.getString("job.retries") + " : ");
+		messageRetryTitle.setText(Messages.getString("job.retry.count") + " : ");
 		messageRetryTitle.setLayoutData(new RowData(105,
 				SizeConstant.SIZE_LABEL_HEIGHT));
 		
-		// ジョブが終了するまで繰り返す：試行回数（テキスト）
+		// 繰り返し実行：試行回数（テキスト）
 		this.m_commandRetry= new Text(commandRetryConditionGroup, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "m_commandRetry", this.m_commandRetry);
 		this.m_commandRetry.setLayoutData(new RowData(100, SizeConstant.SIZE_TEXT_HEIGHT));
@@ -341,11 +342,30 @@ public class ControlNodeComposite extends Composite {
 						update();
 					}
 				}
-				);
+			);
+
+		// 繰り返し実行：繰り返し完了状態（ラベル）
+		Label commandRetryEndStatusTitle = new Label(commandRetryConditionGroup, SWT.RIGHT);
+		commandRetryEndStatusTitle.setText(Messages.getString("job.retry.end.status") + " : ");
+		commandRetryEndStatusTitle.setLayoutData(new RowData(80,
+				SizeConstant.SIZE_LABEL_HEIGHT));
+		
+		// 繰り返し実行：繰り返し完了状態（コンボ）
+		this.m_commandRetryEndStatus = new Combo(commandRetryConditionGroup, SWT.CENTER | SWT.READ_ONLY);
+		WidgetTestUtil.setTestId(this, "m_commandRetryEndStatus", this.m_commandRetryEndStatus);
+		this.m_commandRetryEndStatus.setLayoutData(new RowData(100,
+				SizeConstant.SIZE_COMBO_HEIGHT));
+		this.m_commandRetryEndStatus.add("");
+		this.m_commandRetryEndStatus.add(EndStatusMessage.STRING_NORMAL);
+		this.m_commandRetryEndStatus.add(EndStatusMessage.STRING_WARNING);
+		this.m_commandRetryEndStatus.add(EndStatusMessage.STRING_ABNORMAL);
 
 		// 有効・無効設定
 		if (m_jobType == JobConstant.TYPE_FILEJOB) {
 			this.m_messageRetryEndValue.setEditable(false);
+			this.m_commandRetryCondition.setEnabled(false);
+			this.m_commandRetry.setEditable(false);
+			this.m_commandRetryEndStatus.setEnabled(false);
 		}
 	}
 
@@ -391,13 +411,15 @@ public class ControlNodeComposite extends Composite {
 
 			m_endValue.setText(String.valueOf(m_waitRule.getMultiplicityEndValue()));
 		}
-
+		//初期値
 		m_messageRetry.setText("10");
 		m_messageRetryEndCondition.setSelection(true);
 		m_messageRetryEndValue.setText(String
 				.valueOf(EndStatusConstant.INITIAL_VALUE_ABNORMAL));
-		m_commandRetry.setText("10");
 		m_commandRetryCondition.setSelection(false);
+		m_commandRetry.setText("10");
+		//繰り返し完了状態の初期値は「正常」
+		setSelectEndStatus(m_commandRetryEndStatus, EndStatusConstant.INITIAL_VALUE_NORMAL);
 
 		if (m_jobCommand != null) {
 			//リトライ回数
@@ -409,11 +431,15 @@ public class ControlNodeComposite extends Composite {
 			//エラー時終了値
 			m_messageRetryEndValue.setText(String.valueOf(m_jobCommand.getMessageRetryEndValue()));
 
-			//エラー時リトライ
+			//繰り返し実行
 			m_commandRetryCondition.setSelection(m_jobCommand.isCommandRetryFlg());
 
-			//エラー時のリトライ回数
+			//繰り返し実行回数
 			m_commandRetry.setText(String.valueOf(m_jobCommand.getCommandRetry()));
+
+			//繰り返し実行完了状態
+			setSelectEndStatus(m_commandRetryEndStatus, m_jobCommand.getCommandRetryEndStatus());
+
 		} else if (m_jobFile != null) {
 			//リトライ回数
 			m_messageRetry.setText(String.valueOf(m_jobFile.getMessageRetry()));
@@ -424,10 +450,10 @@ public class ControlNodeComposite extends Composite {
 			//エラー時終了値
 			m_messageRetryEndValue.setText(String.valueOf(m_jobFile.getMessageRetryEndValue()));
 
-			//エラー時リトライ
+			//繰り返し実行回数
 			m_commandRetryCondition.setSelection(m_jobFile.isCommandRetryFlg());
 
-			//エラー時のリトライ回数
+			//繰り返し実行完了状態
 			m_commandRetry.setText(String.valueOf(m_jobFile.getCommandRetry()));
 		}
 		//エラー時終了
@@ -440,11 +466,15 @@ public class ControlNodeComposite extends Composite {
 			m_messageRetryEndValue.setEditable(false);
 		}
 
-		//正常終了するまで繰り返す
+		//繰り返し実行
 		if (m_commandRetryCondition.getSelection()) {
-			m_commandRetry.setEditable(true);
+			if (m_jobType == JobConstant.TYPE_JOB) {
+				m_commandRetry.setEditable(true);
+				m_commandRetryEndStatus.setEnabled(true);
+			}
 		} else {
 			m_commandRetry.setEditable(false);
+			m_commandRetryEndStatus.setEnabled(false);
 		}
 
 	}
@@ -617,22 +647,23 @@ public class ControlNodeComposite extends Composite {
 			}
 		}
 
-		//エラーリトライ回数
+		//繰り返し実行回数
 		try {
 			if (m_commandRetry.getText().length() > 0) {
 				m_jobCommand.setCommandRetry(Integer.parseInt(m_commandRetry.getText()));
+				m_jobCommand.setCommandRetryEndStatus(getSelectEndStatus(m_commandRetryEndStatus));
 			} else {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.87"));
+				result.setMessage(Messages.getString("message.job.167"));
 				return result;
 			}
 		} catch(NumberFormatException e) {
 			result = new ValidateResult();
 			result.setValid(false);
 			result.setID(Messages.getString("message.hinemos.1"));
-			result.setMessage(Messages.getString("message.job.87"));
+			result.setMessage(Messages.getString("message.job.167"));
 			return result;
 		}
 
@@ -704,6 +735,8 @@ public class ControlNodeComposite extends Composite {
 		try {
 			if (m_commandRetry.getText().length() > 0) {
 				m_jobFile.setCommandRetry(Integer.parseInt(m_commandRetry.getText()));
+				//ファイル転送ジョブの場合、繰り返し完了状態は常に「正常」を設定する
+				m_jobFile.setCommandRetryEndStatus(EndStatusConstant.TYPE_NORMAL);
 			} else {
 				result = new ValidateResult();
 				result.setValid(false);
@@ -799,8 +832,41 @@ public class ControlNodeComposite extends Composite {
 		m_messageRetryEndValue.setEditable(m_jobType == JobConstant.TYPE_JOB 
 				&& m_messageRetryEndCondition.getSelection() && enabled);
 
-		m_commandRetryCondition.setEnabled(enabled);
-		m_commandRetry.setEditable(m_commandRetryCondition.getSelection() && enabled);
+		m_commandRetryCondition.setEnabled(m_jobType == JobConstant.TYPE_JOB && enabled);
+		m_commandRetry.setEditable(m_jobType == JobConstant.TYPE_JOB
+				&& m_commandRetryCondition.getSelection() && enabled);
+		m_commandRetryEndStatus.setEnabled(m_jobType == JobConstant.TYPE_JOB 
+				&& m_commandRetryCondition.getSelection() && enabled);
 	}
 
+	/**
+	 *終了状態用コンボボックスにて選択している項目を取得します。
+	 *
+	 */
+	private Integer getSelectEndStatus(Combo combo) {
+		String select = combo.getText();
+		if (select.equals("")) {
+			return null;
+		}
+		return EndStatusMessage.stringToType(select);
+	}
+
+	/**
+	 * 指定した重要度に該当する終了状態用コンボボックスの項目を選択します。
+	 *
+	 */
+	private void setSelectEndStatus(Combo combo, Integer status) {
+		String select = "";
+		if (status != null) {
+			select = EndStatusMessage.typeToString(status);
+		}
+
+		combo.select(0);
+		for (int i = 0; i < combo.getItemCount(); i++) {
+			if (select.equals(combo.getItem(i))) {
+				combo.select(i);
+				break;
+			}
+		}
+	}
 }

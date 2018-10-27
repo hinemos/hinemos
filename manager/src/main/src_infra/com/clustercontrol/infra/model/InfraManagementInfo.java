@@ -1,8 +1,17 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.infra.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.persistence.AttributeOverride;
@@ -24,6 +33,7 @@ import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -57,6 +67,8 @@ public class InfraManagementInfo extends ObjectPrivilegeTargetInfo {
 	private int abnormalPriorityCheck;
 	
 	private List<InfraModuleInfo<?>> infraModuleInfoEntities = new ArrayList<>();
+	
+	private List<InfraManagementParamInfo> infraManagementParamInfoEntities = new ArrayList<>();
 
 	private Long regDate;
 	private String regUser;
@@ -163,7 +175,15 @@ public class InfraManagementInfo extends ObjectPrivilegeTargetInfo {
 	public void setAbnormalPriorityCheck(int abnormalPriorityCheck) {
 		this.abnormalPriorityCheck = abnormalPriorityCheck;
 	}
-	
+
+	@OneToMany(mappedBy="infraManagementInfo", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<InfraManagementParamInfo> getInfraManagementParamList() {
+		return this.infraManagementParamInfoEntities;
+	}
+	public void setInfraManagementParamList(List<InfraManagementParamInfo> infraManagementParamInfoEntities) {
+		this.infraManagementParamInfoEntities = infraManagementParamInfoEntities;
+	}
+
 	@OneToMany(mappedBy="infraManagementInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<InfraModuleInfo<?>> getModuleList() {
 		return this.infraModuleInfoEntities;
@@ -219,7 +239,28 @@ public class InfraManagementInfo extends ObjectPrivilegeTargetInfo {
 	public void setUpdateUser(String updateUser) {
 		this.updateUser = updateUser;
 	}
-	
+
+	/**
+	 * MonitorNumericValueInfoEntity削除<BR>
+	 * 
+	 * 指定されたPK以外の子Entityを削除する。
+	 * 
+	 */
+	public void deleteInfraManagementParamList(List<InfraManagementParamInfoPK> notDelPkList) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<InfraManagementParamInfo> list = this.getInfraManagementParamList();
+			Iterator<InfraManagementParamInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				InfraManagementParamInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
+			}
+		}
+	}
+
 	public void persistSelf(HinemosEntityManager em) throws HinemosUnknown, NotifyDuplicate, InvalidRole, InvalidSetting, EntityExistsException {
 		em.persist(this);
 		for (InfraModuleInfo<?> module: getModuleList()) {

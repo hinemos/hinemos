@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -55,19 +48,21 @@ public class SelectJobmap {
 	 */
 	public JobmapIconImage getJobmapIconImage(String iconId) throws IconFileNotFound, ObjectPrivilege_InvalidRole {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		m_log.debug("getJobmapIconImage() iconId = " + iconId);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			m_log.debug("getJobmapIconImage() iconId = " + iconId);
 
-		JobmapIconImageEntity entity 
-			= em.find(JobmapIconImageEntity.class, iconId, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			IconFileNotFound e = new IconFileNotFound("JobmapIconImageEntity.findByPrimaryKey"
-					+ ", iconId = " + iconId);
-			m_log.info("getJobmapIconImage() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+			JobmapIconImageEntity entity 
+				= em.find(JobmapIconImageEntity.class, iconId, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				IconFileNotFound e = new IconFileNotFound("JobmapIconImageEntity.findByPrimaryKey"
+						+ ", iconId = " + iconId);
+				m_log.info("getJobmapIconImage() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return createJobmapIconImage(entity);
 		}
-		return createJobmapIconImage(entity);
 	}
 
 	/**

@@ -1,0 +1,654 @@
+   SSPM-MIB DEFINITIONS ::= BEGIN
+
+      IMPORTS
+
+          MODULE-IDENTITY, OBJECT-TYPE,
+          Counter32, Integer32, Unsigned32
+                                      FROM SNMPv2-SMI  --[RFC2578]
+
+          TEXTUAL-CONVENTION, StorageType,
+          TruthValue, RowStatus
+                                      FROM SNMPv2-TC  --[RFC2579]
+
+          MODULE-COMPLIANCE, OBJECT-GROUP
+                                      FROM SNMPv2-CONF --[RFC2578,
+          OwnerString, rmon
+                                      FROM RMON-MIB  --[RFC2819]
+
+          InetAddressType, InetAddress
+                                      FROM INET-ADDRESS-MIB  --[RFC3291]
+
+
+
+
+
+
+          InterfaceIndexOrZero
+                                      FROM IF-MIB  --[RFC2863]
+
+          AppLocalIndex
+                                      FROM APM-MIB  --[RFC3729]
+
+          Utf8String
+                                      FROM SYSAPPL-MIB;  --[RFC2287]
+
+      sspmMIB MODULE-IDENTITY
+          LAST-UPDATED "200507280000Z"  -- July 28, 2005
+          ORGANIZATION "IETF RMON MIB working group"
+
+
+             ::= { rmon 28 }
+
+   sspmMIBObjects       OBJECT IDENTIFIER ::= { sspmMIB 1 }
+   sspmMIBNotifications OBJECT IDENTIFIER ::= { sspmMIB 2 }
+   sspmMIBConformance   OBJECT IDENTIFIER ::= { sspmMIB 3 }
+
+
+
+
+
+
+
+   SspmMicroSeconds ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "d"
+       STATUS current
+       SYNTAX Unsigned32
+
+   SspmClockSource ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "d"
+       STATUS current
+       SYNTAX Integer32 (0..255)
+
+   SspmClockMaxSkew ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "d"
+       STATUS current
+       SYNTAX Integer32 (1..65535)
+
+   sspmGeneral           OBJECT IDENTIFIER ::= { sspmMIBObjects 1 }
+   sspmGeneralClockResolution OBJECT-TYPE
+       SYNTAX      SspmMicroSeconds
+       MAX-ACCESS  read-only
+
+
+
+
+
+       STATUS      current
+       ::= { sspmGeneral 1 }
+
+   sspmGeneralClockMaxSkew OBJECT-TYPE
+       SYNTAX SspmClockMaxSkew
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { sspmGeneral 2 }
+
+
+   sspmGeneralClockSource OBJECT-TYPE
+       SYNTAX SspmClockSource
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { sspmGeneral 3 }
+
+   sspmGeneralMinFrequency OBJECT-TYPE
+       SYNTAX     SspmMicroSeconds
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { sspmGeneral 4 }
+
+
+
+
+
+
+   sspmCapabilitiesTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF SspmCapabilitiesEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { sspmGeneral 5 }
+
+   sspmCapabilitiesEntry OBJECT-TYPE
+       SYNTAX      SspmCapabilitiesEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { sspmCapabilitiesInstance }
+       ::= { sspmCapabilitiesTable 1 }
+
+   SspmCapabilitiesEntry ::= SEQUENCE {
+       sspmCapabilitiesInstance AppLocalIndex
+       }
+
+   sspmCapabilitiesInstance OBJECT-TYPE
+       SYNTAX      AppLocalIndex
+       MAX-ACCESS  read-only
+       STATUS      current
+        ::= { sspmCapabilitiesEntry 1 }
+
+   sspmSource           OBJECT IDENTIFIER ::= { sspmMIBObjects 2 }
+
+
+
+
+
+
+   sspmSourceProfileTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF SspmSourceProfileEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { sspmSource 1 }
+
+   sspmSourceProfileEntry OBJECT-TYPE
+       SYNTAX      SspmSourceProfileEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { sspmSourceProfileInstance }
+       ::= { sspmSourceProfileTable 1 }
+
+   SspmSourceProfileEntry ::= SEQUENCE {
+       sspmSourceProfileInstance           Unsigned32,
+       sspmSourceProfileType               AppLocalIndex,
+       sspmSourceProfilePacketSize         Unsigned32,
+       sspmSourceProfilePacketFillType     INTEGER,
+       sspmSourceProfilePacketFillValue    OCTET STRING,
+       sspmSourceProfileTOS                Integer32,
+       sspmSourceProfileFlowLabel          Integer32,
+       sspmSourceProfileLooseSrcRteFill    OCTET STRING,
+       sspmSourceProfileLooseSrcRteLen     Integer32,
+       sspmSourceProfileTTL                Integer32,
+       sspmSourceProfileNoFrag             TruthValue,
+       sspmSourceProfile8021Tagging        Integer32,
+       sspmSourceProfileUsername           Utf8String,
+       sspmSourceProfilePassword           Utf8String,
+       sspmSourceProfileParameter          OCTET STRING,
+       sspmSourceProfileOwner              OwnerString,
+       sspmSourceProfileStorageType        StorageType,
+       sspmSourceProfileStatus             RowStatus
+   }
+
+   sspmSourceProfileInstance OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..65535)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+
+
+
+
+
+        ::= { sspmSourceProfileEntry 1 }
+
+   sspmSourceProfileType OBJECT-TYPE
+       SYNTAX      AppLocalIndex
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 2}
+
+   sspmSourceProfilePacketSize OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 3 }
+
+   sspmSourceProfilePacketFillType OBJECT-TYPE
+       SYNTAX      INTEGER {
+                           random (1),
+                           pattern (2),
+                           url(3)
+                   }
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 4 }
+
+   sspmSourceProfilePacketFillValue OBJECT-TYPE
+       SYNTAX      OCTET STRING (SIZE(0..255))
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 5 }
+
+   sspmSourceProfileTOS OBJECT-TYPE
+       SYNTAX      Integer32 (0..255)
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 0 }
+       ::= { sspmSourceProfileEntry 6 }
+
+
+
+
+
+
+   sspmSourceProfileFlowLabel OBJECT-TYPE
+       SYNTAX      Integer32 (0..1048575) -- 20-bit range (0 to 0xfffff)
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 0 }
+       ::= { sspmSourceProfileEntry 7 }
+
+   sspmSourceProfileLooseSrcRteFill OBJECT-TYPE
+       SYNTAX      OCTET STRING (SIZE(0..240))
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 8 }
+
+   sspmSourceProfileLooseSrcRteLen OBJECT-TYPE
+       SYNTAX      Integer32(0..240)
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 9 }
+
+   sspmSourceProfileTTL OBJECT-TYPE
+       SYNTAX      Integer32(1..255)
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 10 }
+
+   sspmSourceProfileNoFrag OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 11 }
+
+   sspmSourceProfile8021Tagging OBJECT-TYPE
+       SYNTAX      Integer32 (-1..65535)
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 12 }
+
+   sspmSourceProfileUsername OBJECT-TYPE
+       SYNTAX      Utf8String
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 13 }
+
+   sspmSourceProfilePassword OBJECT-TYPE
+       SYNTAX      Utf8String
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 14 }
+
+   sspmSourceProfileParameter OBJECT-TYPE
+       SYNTAX      OCTET STRING (SIZE(0..65535))
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 15 }
+
+   sspmSourceProfileOwner OBJECT-TYPE
+       SYNTAX      OwnerString
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 16 }
+
+   sspmSourceProfileStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 17 }
+
+   sspmSourceProfileStatus OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceProfileEntry 18 }
+
+
+   sspmSourceControlTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF SspmSourceControlEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { sspmSource 2 }
+
+   sspmSourceControlEntry OBJECT-TYPE
+       SYNTAX      SspmSourceControlEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { sspmSourceControlInstance }
+       ::= { sspmSourceControlTable 1 }
+
+   SspmSourceControlEntry ::= SEQUENCE {
+       sspmSourceControlInstance          Unsigned32,
+       sspmSourceControlProfile           Integer32,
+       sspmSourceControlSrc               InterfaceIndexOrZero,
+       sspmSourceControlDestAddrType      InetAddressType,
+       sspmSourceControlDestAddr          InetAddress,
+       sspmSourceControlEnabled           TruthValue,
+       sspmSourceControlTimeOut           SspmMicroSeconds,
+       sspmSourceControlSamplingDist      INTEGER,
+       sspmSourceControlFrequency         SspmMicroSeconds,
+       sspmSourceControlFirstSeqNum       Unsigned32,
+       sspmSourceControlLastSeqNum        Unsigned32,
+       sspmSourceControlOwner             OwnerString,
+       sspmSourceControlStorageType       StorageType,
+       sspmSourceControlStatus            RowStatus
+
+
+
+
+
+   }
+
+   sspmSourceControlInstance OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..65535)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+        ::= { sspmSourceControlEntry 1 }
+
+   sspmSourceControlProfile OBJECT-TYPE
+       SYNTAX      Integer32 (1..65535)
+       MAX-ACCESS  read-create
+       STATUS      current
+        ::= { sspmSourceControlEntry 2 }
+
+   sspmSourceControlSrc OBJECT-TYPE
+       SYNTAX      InterfaceIndexOrZero
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceControlEntry 3 }
+
+   sspmSourceControlDestAddrType OBJECT-TYPE
+       SYNTAX      InetAddressType
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceControlEntry 4 }
+
+   sspmSourceControlDestAddr OBJECT-TYPE
+       SYNTAX      InetAddress
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceControlEntry 5 }
+
+   sspmSourceControlEnabled OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceControlEntry 6 }
+
+   sspmSourceControlTimeOut OBJECT-TYPE
+       SYNTAX      SspmMicroSeconds
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceControlEntry 7 }
+
+   sspmSourceControlSamplingDist OBJECT-TYPE
+       SYNTAX      INTEGER {
+                            deterministic(1),
+                            poisson(2)
+                   }
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceControlEntry 8 }
+
+   sspmSourceControlFrequency OBJECT-TYPE
+       SYNTAX      SspmMicroSeconds
+       MAX-ACCESS  read-create
+
+
+
+
+
+       STATUS      current
+       ::= { sspmSourceControlEntry 9 }
+
+   sspmSourceControlFirstSeqNum OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceControlEntry 10 }
+
+   sspmSourceControlLastSeqNum OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { sspmSourceControlEntry 11 }
+
+   sspmSourceControlOwner OBJECT-TYPE
+       SYNTAX      OwnerString
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceControlEntry 12 }
+
+   sspmSourceControlStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSourceControlEntry 13 }
+
+   sspmSourceControlStatus OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+
+
+
+
+
+       STATUS      current
+       ::= { sspmSourceControlEntry 14 }
+
+   sspmSink           OBJECT IDENTIFIER ::= { sspmMIBObjects 5 }
+
+   sspmSinkTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF SspmSinkEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { sspmSink 1 }
+
+   sspmSinkEntry OBJECT-TYPE
+       SYNTAX      SspmSinkEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { sspmSinkInstance }
+       ::= { sspmSinkTable 1}
+
+   SspmSinkEntry ::= SEQUENCE {
+       sspmSinkInstance                       Unsigned32,
+       sspmSinkType                           AppLocalIndex,
+       sspmSinkSourceAddressType              InetAddressType,
+       sspmSinkSourceAddress                  InetAddress,
+
+
+
+
+
+       sspmSinkExpectedRate                   SspmMicroSeconds,
+       sspmSinkEnable                         TruthValue,
+       sspmSinkExpectedFirstSequenceNum       Unsigned32,
+       sspmSinkLastSequenceNumber             Unsigned32,
+       sspmSinkLastSequenceInvalid            Counter32,
+       sspmSinkStorageType                    StorageType,
+       sspmSinkStatus                         RowStatus
+   }
+
+   sspmSinkInstance OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..65535)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+        ::= { sspmSinkEntry 1 }
+
+   sspmSinkType OBJECT-TYPE
+       SYNTAX      AppLocalIndex
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSinkEntry 2}
+
+   sspmSinkSourceAddressType OBJECT-TYPE
+       SYNTAX      InetAddressType
+       MAX-ACCESS  read-create
+       STATUS      current
+
+
+
+
+
+       ::= { sspmSinkEntry 3 }
+
+   sspmSinkSourceAddress OBJECT-TYPE
+       SYNTAX      InetAddress
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSinkEntry 4 }
+
+   sspmSinkExpectedRate OBJECT-TYPE
+       SYNTAX      SspmMicroSeconds
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSinkEntry 5 }
+
+   sspmSinkEnable OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSinkEntry 6 }
+
+   sspmSinkExpectedFirstSequenceNum OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSinkEntry 7 }
+
+   sspmSinkLastSequenceNumber OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+
+
+
+
+
+       STATUS      current
+       ::= { sspmSinkEntry 8 }
+
+   sspmSinkLastSequenceInvalid OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { sspmSinkEntry 9 }
+
+   sspmSinkStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSinkEntry 10 }
+
+   sspmSinkStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { sspmSinkEntry 11 }
+
+
+   sspmCompliances OBJECT IDENTIFIER ::= { sspmMIBConformance 1 }
+   sspmGroups      OBJECT IDENTIFIER ::= { sspmMIBConformance 2 }
+
+
+
+
+
+   sspmGeneralCompliance MODULE-COMPLIANCE
+     STATUS current
+     MODULE -- this module
+
+     MANDATORY-GROUPS { sspmGeneralGroup }
+
+     GROUP sspmSourceGroup
+
+     GROUP sspmSinkGroup
+
+     GROUP sspmUserPassGroup
+
+     ::= { sspmCompliances 1 }
+
+   sspmSourceFullCompliance MODULE-COMPLIANCE
+     STATUS current
+     MODULE -- this module
+
+     MANDATORY-GROUPS { sspmGeneralGroup, sspmSourceGroup }
+
+     GROUP sspmUserPassGroup
+     ::= { sspmCompliances 2 }
+
+   sspmSinkFullCompliance MODULE-COMPLIANCE
+     STATUS current
+
+
+
+
+
+     MODULE -- this module
+
+     MANDATORY-GROUPS { sspmGeneralGroup, sspmSinkGroup }
+
+     ::= { sspmCompliances 3 }
+
+   sspmGeneralGroup OBJECT-GROUP
+       OBJECTS {
+       sspmGeneralClockResolution,
+       sspmGeneralClockMaxSkew,
+       sspmGeneralClockSource,
+       sspmGeneralMinFrequency,
+       sspmCapabilitiesInstance
+       }
+       STATUS      current
+       ::= { sspmGroups 1 }
+
+   sspmSourceGroup OBJECT-GROUP
+       OBJECTS {
+       sspmSourceProfileType,
+       sspmSourceProfilePacketSize,
+       sspmSourceProfilePacketFillType,
+       sspmSourceProfilePacketFillValue,
+       sspmSourceProfileTOS,
+       sspmSourceProfileFlowLabel,
+       sspmSourceProfileLooseSrcRteFill,
+       sspmSourceProfileLooseSrcRteLen,
+       sspmSourceProfileTTL,
+       sspmSourceProfileNoFrag,
+       sspmSourceProfile8021Tagging,
+       sspmSourceProfileUsername,
+       sspmSourceProfilePassword,
+       sspmSourceProfileParameter,
+       sspmSourceProfileOwner,
+       sspmSourceProfileStorageType,
+       sspmSourceProfileStatus,
+       sspmSourceControlProfile,
+       sspmSourceControlSrc,
+       sspmSourceControlDestAddrType,
+
+
+
+
+
+       sspmSourceControlDestAddr,
+       sspmSourceControlEnabled,
+       sspmSourceControlTimeOut,
+       sspmSourceControlSamplingDist,
+       sspmSourceControlFrequency,
+       sspmSourceControlFirstSeqNum,
+       sspmSourceControlLastSeqNum,
+       sspmSourceControlOwner,
+       sspmSourceControlStorageType,
+       sspmSourceControlStatus
+       }
+       STATUS      current
+       ::= { sspmGroups 2 }
+
+   sspmUserPassGroup OBJECT-GROUP
+       OBJECTS {
+       sspmSourceProfileUsername,
+       sspmSourceProfilePassword
+       }
+       STATUS      current
+       ::= { sspmGroups 3 }
+
+   sspmSinkGroup OBJECT-GROUP
+       OBJECTS {
+       sspmSinkType,
+       sspmSinkSourceAddressType,
+       sspmSinkSourceAddress,
+       sspmSinkExpectedRate,
+       sspmSinkEnable,
+       sspmSinkExpectedFirstSequenceNum,
+       sspmSinkLastSequenceNumber,
+       sspmSinkLastSequenceInvalid,
+       sspmSinkStorageType,
+       sspmSinkStatus
+       }
+       STATUS      current
+       ::= { sspmGroups 4 }
+
+   END

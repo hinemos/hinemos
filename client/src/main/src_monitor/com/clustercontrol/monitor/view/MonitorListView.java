@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.view;
@@ -30,6 +23,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.utility.traputil.ui.views.commands.ImportCommand;
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.Property;
@@ -45,6 +39,7 @@ import com.clustercontrol.monitor.view.action.MonitorEnableAction;
 import com.clustercontrol.monitor.view.action.MonitorFilterAction;
 import com.clustercontrol.monitor.view.action.MonitorModifyAction;
 import com.clustercontrol.monitor.view.action.MonitorRefreshAction;
+import com.clustercontrol.monitor.view.action.MonitorSummaryAction;
 import com.clustercontrol.monitor.view.action.ObjectPrivilegeMonitorListAction;
 import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
@@ -68,6 +63,9 @@ public class MonitorListView extends CommonViewPart implements ObjectPrivilegeTa
 
 	/** 選択レコード数 */
 	private int rowNum = 0;
+
+	/** 選択監視種別ID */
+	private String selectMonitorTypeId = null;
 
 	/**
 	 * コンストラクタ
@@ -174,13 +172,22 @@ public class MonitorListView extends CommonViewPart implements ObjectPrivilegeTa
 	}
 
 	/**
+	 * 選択されている監視設定IDを返します。
+	 * @return selectMonitorTypeId
+	 */
+	public String getSelectMonitorTypeId(){
+		return this.selectMonitorTypeId;
+	}
+
+	/**
 	 * ビューのアクションの有効/無効を設定します。
 	 *
 	 * @param num 選択イベント数
 	 * @param selection ボタン（アクション）を有効にするための情報
 	 */
-	public void setEnabledAction(int num, ISelection selection) {
+	public void setEnabledAction(int num, String selectMonitorTypeId, ISelection selection) {
 		this.rowNum = num;
+		this.selectMonitorTypeId = selectMonitorTypeId;
 
 		//ビューアクションの使用可/不可を設定
 		ICommandService service = (ICommandService) PlatformUI.getWorkbench().getService( ICommandService.class );
@@ -195,6 +202,8 @@ public class MonitorListView extends CommonViewPart implements ObjectPrivilegeTa
 			service.refreshElements(CollectorEnableAction.ID, null);
 			service.refreshElements(MonitorRefreshAction.ID, null);
 			service.refreshElements(MonitorFilterAction.ID, null);
+			service.refreshElements(MonitorSummaryAction.ID, null);
+			service.refreshElements(ImportCommand.ID, null);
 
 			// Update ToolBar after elements refreshed
 			// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.

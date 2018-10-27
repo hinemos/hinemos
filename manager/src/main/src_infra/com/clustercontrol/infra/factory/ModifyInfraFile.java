@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.factory;
@@ -47,21 +40,22 @@ public class ModifyInfraFile {
 	
 	public void add(InfraFileInfo fileInfo, DataHandler fileContent,
 			String userId) throws IOException, InfraFileTooLarge, EntityExistsException, HinemosUnknown {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		
-		long now = HinemosTime.currentTimeMillis();
-		InfraFileInfo entity = new InfraFileInfo(fileInfo.getFileId(), fileInfo.getFileName());
-		jtm.checkEntityExists(InfraFileInfo.class, entity.getFileId());
-		entity.setCreateDatetime(now);
-		entity.setCreateUserId(userId);
-		entity.setModifyDatetime(now);
-		entity.setModifyUserId(userId);
-		entity.setOwnerRoleId(fileInfo.getOwnerRoleId());
-		
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(entity);
-		jtm.flush();
-		InfraJdbcExecutor.insertFileContent(fileInfo.getFileId(), fileContent);
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			long now = HinemosTime.currentTimeMillis();
+			InfraFileInfo entity = new InfraFileInfo(fileInfo.getFileId(), fileInfo.getFileName());
+			jtm.checkEntityExists(InfraFileInfo.class, entity.getFileId());
+			entity.setCreateDatetime(now);
+			entity.setCreateUserId(userId);
+			entity.setModifyDatetime(now);
+			entity.setModifyUserId(userId);
+			entity.setOwnerRoleId(fileInfo.getOwnerRoleId());
+			
+			HinemosEntityManager em = jtm.getEntityManager();
+			em.persist(entity);
+			jtm.flush();
+			InfraJdbcExecutor.insertFileContent(fileInfo.getFileId(), fileContent);
+		}
 	}
 	
 	
@@ -75,11 +69,12 @@ public class ModifyInfraFile {
 	 */
 	public void modify(InfraFileInfo fileInfo, DataHandler fileContent,
 			String userId) throws IOException, InfraFileTooLarge, InfraFileNotFound, InvalidRole, HinemosUnknown {
-		
-		// ファイルを取得
-		InfraFileInfo entity = null;
-		try {
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			// ファイルを取得
+			InfraFileInfo entity = null;
+
+			HinemosEntityManager em = jtm.getEntityManager();
 			String fileId = fileInfo.getFileId();
 			entity = em.find(InfraFileInfo.class, fileId, ObjectPrivilegeMode.MODIFY);
 			if (entity == null) {
@@ -94,7 +89,7 @@ public class ModifyInfraFile {
 			
 			if (fileContent != null) {
 				em.remove(entity.getInfraFileContentEntity());
-				new JpaTransactionManager().flush();
+				jtm.flush();
 				InfraJdbcExecutor.insertFileContent(fileInfo.getFileId(), fileContent);
 			}
 
@@ -114,10 +109,10 @@ public class ModifyInfraFile {
 	public void delete(String fileId) throws InvalidRole, HinemosUnknown, InfraFileNotFound, InfraFileBeingUsed {
 		m_log.debug(String.format("delete() : fileId = %s", fileId));
 
-		// ファイルを取得
-		InfraFileInfo entity = null;
-		try {
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			// ファイルを取得
+			InfraFileInfo entity = null;
+			HinemosEntityManager em = jtm.getEntityManager();
 			entity = em.find(InfraFileInfo.class, fileId, ObjectPrivilegeMode.MODIFY);
 			if (entity == null) {
 				InfraFileNotFound e = new InfraFileNotFound("InfraFileEntity.findByPrimaryKey, fileId = " + fileId);

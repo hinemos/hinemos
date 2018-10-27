@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) since 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.factory;
@@ -78,15 +71,16 @@ public class FacilityModifier {
 	 * @throws EntityExistsException
 	 */
 	public static void addCollectorPratformMst(CollectorPlatformMstData data) throws EntityExistsException {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// インスタンス生成
 			CollectorPlatformMstEntity entity = new CollectorPlatformMstEntity(data.getPlatformId());
 			// 重複チェック
 			jtm.checkEntityExists(CollectorPlatformMstEntity.class, entity.getPlatformId());
 			entity.setOrderNo(data.getOrderNo().intValue());
 			entity.setPlatformName(data.getPlatformName());
+			// 登録
+			em.persist(entity);
 		} catch (EntityExistsException e) {
 			m_log.info("addCollectorPratformMst() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -101,12 +95,14 @@ public class FacilityModifier {
 	 * @throws FacilityNotFound
 	 */
 	public static void deleteCollectorPratformMst(String platformId) throws FacilityNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-
-		// 該当するプラットフォーム定義情報を取得
-		CollectorPlatformMstEntity entity = QueryUtil.getCollectorPlatformMstPK(platformId);
-		// 削除
-		em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+	
+			// 該当するプラットフォーム定義情報を取得
+			CollectorPlatformMstEntity entity = QueryUtil.getCollectorPlatformMstPK(platformId);
+			// 削除
+			em.remove(entity);
+		}
 	}
 
 	/** サブプラットフォーム定義情報を登録する。<BR>
@@ -116,9 +112,8 @@ public class FacilityModifier {
 	 * @throws EntityExistsException
 	 */
 	public static void addCollectorSubPratformMst(CollectorSubPlatformMstData data) throws EntityExistsException {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// インスタンス生成
 			CollectorSubPlatformMstEntity entity = new CollectorSubPlatformMstEntity(data.getSubPlatformId());
 			// 重複チェック
@@ -126,6 +121,8 @@ public class FacilityModifier {
 			entity.setSubPlatformName(data.getSubPlatformName());
 			entity.setType(data.getType());
 			entity.setOrderNo(data.getOrderNo());
+			// 登録
+			em.persist(entity);
 		} catch (EntityExistsException e) {
 			m_log.info("addCollectorSubPratformMst() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -140,12 +137,14 @@ public class FacilityModifier {
 	 * @throws FacilityNotFound
 	 */
 	public static void deleteCollectorSubPratformMst(String subPlatformId) throws FacilityNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// 該当するプラットフォーム定義情報を取得
-		CollectorSubPlatformMstEntity entity = QueryUtil.getCollectorSubPlatformMstPK(subPlatformId);
-		// 削除
-		em.remove(entity);
+			// 該当するプラットフォーム定義情報を取得
+			CollectorSubPlatformMstEntity entity = QueryUtil.getCollectorSubPlatformMstPK(subPlatformId);
+			// 削除
+			em.remove(entity);
+		}
 	}
 
 	/** スコープを追加する。<BR>
@@ -162,8 +161,6 @@ public class FacilityModifier {
 	public static void addScope(String parentFacilityId, ScopeInfo property, String modifyUserId, int displaySortOrder, boolean topicSendFlg)
 			throws FacilityNotFound, EntityExistsException, HinemosUnknown {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
 		/** ローカル変数 */
 		FacilityInfo parentFacility = null;
 		ScopeInfo facility = null;
@@ -172,7 +169,8 @@ public class FacilityModifier {
 		/** メイン処理 */
 		m_log.debug("adding a scope...");
 
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// 入力値（ファシリティID）の格納
 			facilityId = property.getFacilityId();
 
@@ -197,9 +195,10 @@ public class FacilityModifier {
 			facility.setValid(true);
 			setFacilityEntityProperties(facility, property, modifyUserId, false);
 			
-			facility.persistSelf(jtm.getEntityManager());
+			facility.persistSelf();
+			em.persist(facility);
 			
-			jtm.getEntityManager().flush();
+			em.flush();
 
 			// ファシリティ関連インスタンスの生成
 			if (! ObjectValidator.isEmptyString(parentFacilityId)) {
@@ -314,6 +313,7 @@ public class FacilityModifier {
 
 		// 関連インスタンス、ファシリティインスタンスを削除する
 		deleteScopeRecursive(facility);
+		FacilityModifierUtil.deleteFacilityRelation(facilityId);
 
 		m_log.info("deleteScope() successful in deleting a owner role scope with sub scopes. (facilityId = " + facilityId + ")");
 	}
@@ -352,42 +352,44 @@ public class FacilityModifier {
 	 * @throws HinemosUnknown
 	 */
 	private static void deleteScopeRecursive(FacilityInfo scope) throws UsedFacility, HinemosUnknown, FacilityNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		/** ローカル変数 */
-		String facilityId = null;
+			/** ローカル変数 */
+			String facilityId = null;
 
-		/** メイン処理 */
-		facilityId = scope.getFacilityId();
+			/** メイン処理 */
+			facilityId = scope.getFacilityId();
 
-		// スコープでない場合はエラーとする
-		if (!FacilityUtil.isScope(scope)) {
-			HinemosUnknown e = new HinemosUnknown("this facility is not a scope. (facilityId = " + facilityId + ")");
-			m_log.info("deleteScopeRecursive() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
+			// スコープでない場合はエラーとする
+			if (!FacilityUtil.isScope(scope)) {
+				HinemosUnknown e = new HinemosUnknown("this facility is not a scope. (facilityId = " + facilityId + ")");
+				m_log.info("deleteScopeRecursive() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
 
-		// 直下にスコープを存在する場合、そのスコープおよびサブスコープを削除する
-		List<FacilityInfo> childEntities = QueryUtil.getChildFacilityEntity(scope.getFacilityId());
-		if (childEntities != null && childEntities.size() > 0) {
-			Iterator<FacilityInfo> iter = childEntities.iterator();
-			while(iter.hasNext()) {
-				FacilityInfo childEntity = iter.next();
-				if (FacilityUtil.isScope(childEntity)) {
-					childEntity.tranSetUncheckFlg(true);
-					// リレーションを削除する
-					FacilityRelationEntity facilityRelationEntity
-					= QueryUtil.getFacilityRelationPk(scope.getFacilityId(), childEntity.getFacilityId());
-					em.remove(facilityRelationEntity);
-					deleteScopeRecursive(childEntity);
+			// 直下にスコープを存在する場合、そのスコープおよびサブスコープを削除する
+			List<FacilityInfo> childEntities = QueryUtil.getChildFacilityEntity(scope.getFacilityId());
+			if (childEntities != null && childEntities.size() > 0) {
+				Iterator<FacilityInfo> iter = childEntities.iterator();
+				while(iter.hasNext()) {
+					FacilityInfo childEntity = iter.next();
+					if (FacilityUtil.isScope(childEntity)) {
+						childEntity.tranSetUncheckFlg(true);
+						// リレーションを削除する
+						FacilityRelationEntity facilityRelationEntity
+						= QueryUtil.getFacilityRelationPk(scope.getFacilityId(), childEntity.getFacilityId());
+						em.remove(facilityRelationEntity);
+						deleteScopeRecursive(childEntity);
+					}
 				}
 			}
-		}
-		em.remove(scope);
-		new NodeMapControllerBean().deleteMapInfo(null, scope.getFacilityId());
+			em.remove(scope);
+			new NodeMapControllerBean().deleteMapInfo(null, scope.getFacilityId());
 
-		m_log.info("deleteScopeRecursive() successful in deleting a scope. (facilityId = " + facilityId + ")");
+			m_log.info("deleteScopeRecursive() successful in deleting a scope. (facilityId = " + facilityId + ")");
+		}
 	}
 
 	/**
@@ -404,26 +406,25 @@ public class FacilityModifier {
 			throws EntityExistsException, FacilityNotFound, HinemosUnknown {
 		m_log.debug("adding a node...");
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
 		String facilityId = nodeInfo.getFacilityId();
 		Boolean valid = nodeInfo.getValid();
 
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// 重複チェック
-			jtm.checkEntityExists(NodeInfo.class, nodeInfo.getFacilityId());
+			jtm.checkEntityExists(FacilityInfo.class, nodeInfo.getFacilityId());
 			nodeInfo.setFacilityType(FacilityConstant.TYPE_NODE);
 			nodeInfo.setDisplaySortOrder(displaySortOrder);
 			nodeInfo.setValid(valid);
 			
 			setFacilityEntityProperties(nodeInfo, nodeInfo, modifyUserId, false);
 
-			// 重複チェック
-			jtm.checkEntityExists(NodeInfo.class, nodeInfo.getFacilityId());
+			nodeInfo.persistSelf();
+			em.persist(nodeInfo);
 			
-			nodeInfo.persistSelf(jtm.getEntityManager());
 			setNodeEntityProperties(nodeInfo, nodeInfo, false);
 			
-			jtm.getEntityManager().flush();
+			em.flush();
 			
 			// ファシリティ関連インスタンスの生成
 			long startTime = HinemosTime.currentTimeMillis();
@@ -510,24 +511,26 @@ public class FacilityModifier {
 	 */
 	public static void deleteNode(String facilityId, String modifyUserId, boolean topicSendFlg) throws FacilityNotFound, InvalidRole {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		m_log.debug("deleting a node...");
+			m_log.debug("deleting a node...");
 
-		// 該当するファシリティインスタンスを取得
-		FacilityInfo facility = QueryUtil.getFacilityPK(facilityId, ObjectPrivilegeMode.MODIFY);
+			// 該当するファシリティインスタンスを取得
+			FacilityInfo facility = QueryUtil.getFacilityPK(facilityId, ObjectPrivilegeMode.MODIFY);
 
-		// ノードでない場合はエラーとする
-		if (!FacilityUtil.isNode(facility)) {
-			FacilityNotFound e = new FacilityNotFound("this facility is not a node. (facilityId = " + facilityId + ")");
-			m_log.info("deleteNode() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+			// ノードでない場合はエラーとする
+			if (!FacilityUtil.isNode(facility)) {
+				FacilityNotFound e = new FacilityNotFound("this facility is not a node. (facilityId = " + facilityId + ")");
+				m_log.info("deleteNode() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+
+			em.remove(facility);
+			FacilityModifierUtil.deleteFacilityRelation(facilityId);
+			m_log.info("deleteNode() successful in deleting a node. (facilityId = " + facilityId + ")");
 		}
-
-		em.remove(facility);
-		FacilityModifierUtil.deleteFacilityRelation(facilityId);
-		m_log.info("deleteNode() successful in deleting a node. (facilityId = " + facilityId + ")");
 	}
 
 	/**
@@ -552,7 +555,8 @@ public class FacilityModifier {
 	public static void assignFacilitiesToScope(String scopeFacilityId, String[] facilityIds) throws FacilityNotFound {
 		m_log.debug("assigning facilities to a scope...");
 
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// スコープのファシリティインスタンスの取得
 			FacilityInfo scope = QueryUtil.getFacilityPK_NONE(scopeFacilityId);
 			scope.tranSetUncheckFlg(true);
@@ -569,7 +573,7 @@ public class FacilityModifier {
 					m_log.info("assignFacilitiesToScope() skipped assinging a facility to a scope. (parentFacilityId = " + scopeFacilityId + ", facilityId = " + facilityId + ")");
 				} else {
 					FacilityRelationEntity relation = new FacilityRelationEntity(scopeFacilityId, facilityId);
-					new JpaTransactionManager().getEntityManager().persist(relation);
+					em.persist(relation);
 					m_log.info("assignFacilitiesToScope() successful in assinging a facility to a scope. (parentFacilityId = " + scopeFacilityId + ", facilityId = " + facilityId + ")");
 				}
 			}
@@ -598,34 +602,36 @@ public class FacilityModifier {
 	 */
 	public static void releaseNodeFromScope(String parentFacilityId, String[] facilityIds, String modifyUserId, boolean topicSendFlg)
 			throws FacilityNotFound, InvalidRole {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		/** ローカル変数 */
-		FacilityInfo facility = null;
-		String facilityId = null;
+			/** ローカル変数 */
+			FacilityInfo facility = null;
+			String facilityId = null;
 
-		/** メイン処理 */
-		m_log.debug("releasing nodes from a scope...");
+			/** メイン処理 */
+			m_log.debug("releasing nodes from a scope...");
 
-		// 該当するファシリティインスタンスを取得
-		facility = QueryUtil.getFacilityPK(parentFacilityId);
+			// 該当するファシリティインスタンスを取得
+			facility = QueryUtil.getFacilityPK(parentFacilityId);
 
-		if (!FacilityUtil.isScope(facility)) {
-			FacilityNotFound e = new FacilityNotFound("parent's facility is not a scope. (parentFacilityId = " + parentFacilityId + ")");
-			m_log.info("releaseNodeFromScope() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+			if (!FacilityUtil.isScope(facility)) {
+				FacilityNotFound e = new FacilityNotFound("parent's facility is not a scope. (parentFacilityId = " + parentFacilityId + ")");
+				m_log.info("releaseNodeFromScope() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+
+			for (int i = 0; i < facilityIds.length; i++) {
+				facilityId = facilityIds[i];
+				FacilityRelationEntity relation
+				= QueryUtil.getFacilityRelationPk(parentFacilityId, facilityId);
+				em.remove(relation);
+				m_log.info("releaseNodeFromScope() successful in releaseing a node. (parentFacilityId = " + parentFacilityId + ", facilityId = " + facilityId + ")");
+			}
+
+			m_log.info("releaseNodeFromScope() successful in releasing nodes from a scope.");
 		}
-
-		for (int i = 0; i < facilityIds.length; i++) {
-			facilityId = facilityIds[i];
-			FacilityRelationEntity relation
-			= QueryUtil.getFacilityRelationPk(parentFacilityId, facilityId);
-			em.remove(relation);
-			m_log.info("releaseNodeFromScope() successful in releaseing a node. (parentFacilityId = " + parentFacilityId + ", facilityId = " + facilityId + ")");
-		}
-
-		m_log.info("releaseNodeFromScope() successful in releasing nodes from a scope.");
 	}
 
 	/**

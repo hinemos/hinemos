@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"MemoryList_funcName"}
+],
+"props":[
+	{
+	"propName":"MemoryInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

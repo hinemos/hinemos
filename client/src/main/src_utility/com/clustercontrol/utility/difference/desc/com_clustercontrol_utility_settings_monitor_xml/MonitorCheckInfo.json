@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitorId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCheckInfo_moitorId"}
+	]},
+
+	{
+	"propName":"monitorTypeId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCheckInfo_monitorTypeId"}
+	]}
+]
+}

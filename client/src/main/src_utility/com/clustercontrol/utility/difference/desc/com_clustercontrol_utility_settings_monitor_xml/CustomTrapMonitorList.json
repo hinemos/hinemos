@@ -1,0 +1,41 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"CustomTrapMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"CustomTrapInfo.Targetkey",
+			"CustomTrapInfo.ConvertFlg",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"NumericValue",
+			"StringValue",
+			"StringValue.*.Description",
+			"StringValue.*.OrderNo",
+			"StringValue.*.Pattern",
+			"StringValue.*.ProcessType",
+			"StringValue.*.CaseSensitivityFlg",
+			"StringValue.*.Message",
+			"StringValue.*.ValidFlg",
+			"StringValue.*.Priority"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"CustomTrapMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

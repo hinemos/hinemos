@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.util;
@@ -23,6 +16,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
@@ -33,7 +27,10 @@ import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JobInfo;
 import com.clustercontrol.jobmanagement.bean.JobTreeItem;
+import com.clustercontrol.jobmanagement.factory.CreateJobSession;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobMstEntity;
+import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
@@ -307,5 +304,32 @@ public class JobUtil {
 		} catch (JobInfoNotFound e) {
 			throw new HinemosUnknown(e.getMessage());
 		}
+	}
+
+	/**
+	 * ジョブユニットIDに対応したオーナーロールID
+	 * 
+	 * @param jobunitId ジョブユニットID
+	 * @return オーナーロールID
+	 */
+	public static String createSessioniOwnerRoleId(String jobunitId) {
+		String ownerRoleId = "";
+
+		if (CreateJobSession.TOP_JOBUNIT_ID.equals(jobunitId)) {
+			ownerRoleId = RoleIdConstant.ALL_USERS;
+		} else {
+			try {
+				JobMstEntity jobMstEntity
+				= QueryUtil.getJobMstPK_NONE(new JobMstEntityPK(jobunitId, jobunitId));
+				if (jobMstEntity.getOwnerRoleId() == null) {
+					ownerRoleId = RoleIdConstant.INTERNAL;
+				} else {
+					ownerRoleId = jobMstEntity.getOwnerRoleId();
+				}
+			} catch (JobMasterNotFound e) {
+				ownerRoleId = RoleIdConstant.INTERNAL;
+			}
+		}
+		return ownerRoleId;
 	}
 }

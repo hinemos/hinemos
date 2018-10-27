@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.session;
 
 import java.util.Iterator;
@@ -21,7 +15,7 @@ import java.util.function.Function;
 
 import javax.persistence.TypedQuery;
 
-import com.clustercontrol.hub.bean.PropertyConstants;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 
 /**
  * 以下の点に考慮したデータのイテレーションを行うためのクラス。
@@ -41,7 +35,7 @@ public class JpaRowIterable<T, R> implements Iterable<R>, AutoCloseable {
 	 *
 	 */
 	public class JpaRowIterator implements Iterator<R> {
-		private final int fetchSize = PropertyConstants.hub_transfer_fetch_size.number();
+		private final int fetchSize = HinemosPropertyCommon.hub_transfer_fetch_size.getIntegerValue();
 
 		private Iterator<TypedQuery<T>> queryIter;
 		private TypedQuery<T> currentQuery;

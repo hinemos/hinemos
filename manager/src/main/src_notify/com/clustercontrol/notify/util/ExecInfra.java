@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.util;
@@ -22,6 +15,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.NotifyNotFound;
@@ -50,7 +44,7 @@ public class ExecInfra implements Notifier {
 	private static Log m_log = LogFactory.getLog( ExecInfra.class );
 	
 	NotifyInfraInfo infraInfo = null;
-	
+
 	@Override
 	public void notify(NotifyRequestMessage requestMessage)
 			throws NotifyNotFound {
@@ -117,7 +111,8 @@ public class ExecInfra implements Notifier {
 			
 			// 環境構築設定を実行する
 			InfraControllerBean bean = new InfraControllerBean();
-			String session = bean.createSession(managementInfo.getManagementId(), moduleIdList, accessList);
+			int nodeInputType = HinemosPropertyCommon.infra_management_access_input_type.getIntegerValue();
+			String session = bean.createSession(managementInfo.getManagementId(), moduleIdList, nodeInputType, accessList);
 			
 			while (true) {
 				ModuleResult result = bean.runInfraModule(session);

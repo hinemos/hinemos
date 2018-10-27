@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.run.util;
 
 import java.io.Serializable;
@@ -34,7 +42,7 @@ public class NodeMonitorPollerController {
 	public static void init() throws HinemosUnknown {
 		try {
 			for (final NodeInfo node : new RepositoryControllerBean().getNodeList()) {
-				registNodeMonitorPoller(node);
+				registNodeMonitorPoller(node, true);
 			}
 			log.info("init() : regist all node to poller completed.");;
 		} catch (HinemosUnknown e) {
@@ -46,14 +54,19 @@ public class NodeMonitorPollerController {
 	private static final String[] targetMonitorTypes =
 			new String[] {HinemosModuleConstant.MONITOR_PROCESS, HinemosModuleConstant.MONITOR_PERFORMANCE};
 	
+	public static void registNodeMonitorPoller(NodeInfo node) {
+		registNodeMonitorPoller(node, false);
+	}
+	
 	/**
 	 * 指定したノードに対するノード単位で行なう監視（プロセス・リソースなど）のスケジュールを、Quartzに登録する。
 	 * 
 	 * Hinemosにノードを追加した際や、Hinemosの初期化の際に呼び出す。
 	 * 
 	 * @param node 対象のノード
+	 * @param isInitManager 起動直後の初期化のフラグ
 	 */
-	public static void registNodeMonitorPoller(NodeInfo node) {
+	public static void registNodeMonitorPoller(NodeInfo node, boolean isInitManager) {
 		// 各監視項目タイプごとにQuartz登録する（今のところ、プロセスと、リソース）
 		for (final String monitorTypeId : targetMonitorTypes) {
 			// Quartzからコールバックされる際に、コールバックメソッドに渡される引数を構築する
@@ -76,7 +89,7 @@ public class NodeMonitorPollerController {
 						SchedulerType.RAM,
 						node.getFacilityId(),
 						monitorTypeId,
-						ModifySchedule.calcSimpleTriggerStartTime(RunInterval.min(), node.getNodeMonitorDelaySec() % RunInterval.min()),
+						ModifySchedule.calcSimpleTriggerStartTime(RunInterval.min(), node.getNodeMonitorDelaySec() % RunInterval.min(), isInitManager),
 						RunInterval.min(),
 						true, 
 						MonitorRunManagementBean.class.getName(),

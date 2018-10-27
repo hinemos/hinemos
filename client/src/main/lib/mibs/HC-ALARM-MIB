@@ -1,0 +1,318 @@
+HC-ALARM-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+        Integer32, Counter32, Unsigned32
+                FROM SNMPv2-SMI
+        MODULE-COMPLIANCE, OBJECT-GROUP,
+        NOTIFICATION-GROUP
+                FROM SNMPv2-CONF
+        RowStatus, VariablePointer, StorageType,
+        TEXTUAL-CONVENTION
+                FROM SNMPv2-TC
+        CounterBasedGauge64
+                FROM HCNUM-TC
+        rmon, OwnerString, rmonEventGroup
+                FROM RMON-MIB;
+
+hcAlarmMIB MODULE-IDENTITY
+    LAST-UPDATED    "200212160000Z"
+    ORGANIZATION    "IETF RMONMIB Working Group"
+
+    ::= { rmon 29 }
+
+hcAlarmObjects       OBJECT IDENTIFIER ::= { hcAlarmMIB 1 }
+hcAlarmNotifications OBJECT IDENTIFIER ::= { hcAlarmMIB 2 }
+hcAlarmConformance   OBJECT IDENTIFIER ::= { hcAlarmMIB 3 }
+
+hcAlarmControlObjects OBJECT IDENTIFIER ::= { hcAlarmObjects 1 }
+hcAlarmCapabilitiesObjects OBJECT IDENTIFIER
+                                        ::= { hcAlarmObjects 2 }
+
+
+HcValueStatus ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX INTEGER {
+        valueNotAvailable(1),
+        valuePositive(2),
+        valueNegative(3)
+    }
+
+
+hcAlarmTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF HcAlarmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { hcAlarmControlObjects 1 }
+
+hcAlarmEntry OBJECT-TYPE
+    SYNTAX      HcAlarmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    INDEX { hcAlarmIndex }
+    ::= { hcAlarmTable 1 }
+
+HcAlarmEntry ::= SEQUENCE {
+    hcAlarmIndex                     Integer32,
+    hcAlarmInterval                  Integer32,
+    hcAlarmVariable                  VariablePointer,
+    hcAlarmSampleType                INTEGER,
+    hcAlarmAbsValue                  CounterBasedGauge64,
+    hcAlarmValueStatus               HcValueStatus,
+    hcAlarmStartupAlarm              INTEGER,
+    hcAlarmRisingThreshAbsValueLo    Unsigned32,
+    hcAlarmRisingThreshAbsValueHi    Unsigned32,
+    hcAlarmRisingThresholdValStatus  HcValueStatus,
+    hcAlarmFallingThreshAbsValueLo   Unsigned32,
+    hcAlarmFallingThreshAbsValueHi   Unsigned32,
+    hcAlarmFallingThresholdValStatus HcValueStatus,
+    hcAlarmRisingEventIndex          Integer32,
+    hcAlarmFallingEventIndex         Integer32,
+    hcAlarmValueFailedAttempts       Counter32,
+    hcAlarmOwner                     OwnerString,
+    hcAlarmStorageType               StorageType,
+    hcAlarmStatus                    RowStatus }
+
+hcAlarmIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { hcAlarmEntry 1 }
+
+hcAlarmInterval OBJECT-TYPE
+    SYNTAX      Integer32 (1..2147483647)
+    UNITS      "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 2 }
+
+hcAlarmVariable OBJECT-TYPE
+    SYNTAX      VariablePointer
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 3 }
+
+hcAlarmSampleType OBJECT-TYPE
+    SYNTAX INTEGER {
+               absoluteValue(1),
+               deltaValue(2)
+           }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 4 }
+
+hcAlarmAbsValue OBJECT-TYPE
+    SYNTAX      CounterBasedGauge64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { hcAlarmEntry 5 }
+
+hcAlarmValueStatus OBJECT-TYPE
+    SYNTAX      HcValueStatus
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { hcAlarmEntry 6 }
+
+hcAlarmStartupAlarm OBJECT-TYPE
+    SYNTAX     INTEGER {
+                  risingAlarm(1),
+                  fallingAlarm(2),
+                  risingOrFallingAlarm(3)
+               }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 7 }
+
+hcAlarmRisingThreshAbsValueLo OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+
+    ::= { hcAlarmEntry 8 }
+
+hcAlarmRisingThreshAbsValueHi OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 9 }
+
+hcAlarmRisingThresholdValStatus OBJECT-TYPE
+    SYNTAX      HcValueStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    ::= { hcAlarmEntry 10 }
+
+hcAlarmFallingThreshAbsValueLo OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 11 }
+
+hcAlarmFallingThreshAbsValueHi OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 12 }
+
+hcAlarmFallingThresholdValStatus OBJECT-TYPE
+    SYNTAX      HcValueStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 13 }
+
+hcAlarmRisingEventIndex OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 14 }
+
+hcAlarmFallingEventIndex OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 15 }
+
+hcAlarmValueFailedAttempts OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { hcAlarmEntry 16 }
+
+hcAlarmOwner OBJECT-TYPE
+    SYNTAX     OwnerString
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { hcAlarmEntry 17 }
+
+hcAlarmStorageType OBJECT-TYPE
+    SYNTAX     StorageType
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { hcAlarmEntry 18 }
+
+hcAlarmStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { hcAlarmEntry 19 }
+
+
+
+
+
+
+hcAlarmCapabilities OBJECT-TYPE
+    SYNTAX      BITS {
+       hcAlarmCreation(0),
+       hcAlarmNvStorage(1)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { hcAlarmCapabilitiesObjects 1 }
+
+
+hcAlarmNotifPrefix OBJECT IDENTIFIER
+      ::= { hcAlarmNotifications 0 }
+
+hcRisingAlarm NOTIFICATION-TYPE
+    OBJECTS  { hcAlarmVariable,
+               hcAlarmSampleType,
+               hcAlarmAbsValue,
+               hcAlarmValueStatus,
+               hcAlarmRisingThreshAbsValueLo,
+               hcAlarmRisingThreshAbsValueHi,
+               hcAlarmRisingThresholdValStatus,
+               hcAlarmRisingEventIndex }
+    STATUS   current
+     ::= { hcAlarmNotifPrefix 1 }
+
+hcFallingAlarm NOTIFICATION-TYPE
+    OBJECTS { hcAlarmVariable,
+              hcAlarmSampleType,
+              hcAlarmAbsValue,
+              hcAlarmValueStatus,
+              hcAlarmFallingThreshAbsValueLo,
+              hcAlarmFallingThreshAbsValueHi,
+              hcAlarmFallingThresholdValStatus,
+              hcAlarmFallingEventIndex }
+    STATUS    current
+     ::= { hcAlarmNotifPrefix 2 }
+
+
+hcAlarmCompliances OBJECT IDENTIFIER ::= { hcAlarmConformance 1 }
+hcAlarmGroups      OBJECT IDENTIFIER ::= { hcAlarmConformance 2 }
+
+hcAlarmCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+                           hcAlarmControlGroup,
+                           hcAlarmCapabilitiesGroup,
+                           hcAlarmNotificationsGroup
+                         }
+
+    MODULE RMON-MIB
+        MANDATORY-GROUPS { rmonEventGroup }
+
+    ::= { hcAlarmCompliances 1 }
+
+
+
+
+
+
+hcAlarmControlGroup OBJECT-GROUP
+    OBJECTS {
+             hcAlarmInterval,
+             hcAlarmVariable,
+             hcAlarmSampleType,
+             hcAlarmAbsValue,
+             hcAlarmValueStatus,
+             hcAlarmStartupAlarm,
+             hcAlarmRisingThreshAbsValueLo,
+             hcAlarmRisingThreshAbsValueHi,
+             hcAlarmRisingThresholdValStatus,
+             hcAlarmFallingThreshAbsValueLo,
+             hcAlarmFallingThreshAbsValueHi,
+             hcAlarmFallingThresholdValStatus,
+             hcAlarmRisingEventIndex,
+             hcAlarmFallingEventIndex,
+             hcAlarmValueFailedAttempts,
+             hcAlarmOwner,
+             hcAlarmStorageType,
+             hcAlarmStatus
+    }
+    STATUS  current
+    ::= { hcAlarmGroups 1 }
+
+hcAlarmCapabilitiesGroup OBJECT-GROUP
+    OBJECTS {
+             hcAlarmCapabilities
+    }
+    STATUS  current
+    ::= { hcAlarmGroups 2 }
+
+hcAlarmNotificationsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+            hcRisingAlarm,
+            hcFallingAlarm
+    }
+    STATUS  current
+    ::= { hcAlarmGroups 3 }
+
+END

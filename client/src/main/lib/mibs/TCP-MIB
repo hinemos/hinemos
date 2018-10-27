@@ -1,0 +1,461 @@
+TCP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32, Unsigned32,
+    Gauge32, Counter32, Counter64, IpAddress, mib-2
+                                       FROM SNMPv2-SMI
+    MODULE-COMPLIANCE, OBJECT-GROUP    FROM SNMPv2-CONF
+    InetAddress, InetAddressType,
+    InetPortNumber                     FROM INET-ADDRESS-MIB;
+
+tcpMIB MODULE-IDENTITY
+    LAST-UPDATED "200502180000Z"  -- 18 February 2005
+    ORGANIZATION
+           "IETF IPv6 MIB Revision Team
+            http://www.ietf.org/html.charters/ipv6-charter.html"
+    ::= { mib-2 49 }
+
+
+
+
+
+
+
+tcp      OBJECT IDENTIFIER ::= { mib-2 6 }
+
+
+tcpRtoAlgorithm OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    other(1),    -- none of the following
+                    constant(2), -- a constant rto
+                    rsre(3),     -- MIL-STD-1778, Appendix B
+                    vanj(4),     -- Van Jacobson's algorithm
+                    rfc2988(5)   -- RFC 2988
+                }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 1 }
+
+tcpRtoMin OBJECT-TYPE
+    SYNTAX     Integer32 (0..2147483647)
+    UNITS      "milliseconds"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 2 }
+
+tcpRtoMax OBJECT-TYPE
+    SYNTAX     Integer32 (0..2147483647)
+    UNITS      "milliseconds"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 3 }
+
+
+
+
+
+
+tcpMaxConn OBJECT-TYPE
+    SYNTAX     Integer32 (-1 | 0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 4 }
+
+tcpActiveOpens OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 5 }
+
+tcpPassiveOpens OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 6 }
+
+tcpAttemptFails OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { tcp 7 }
+
+tcpEstabResets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 8 }
+
+tcpCurrEstab OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 9 }
+
+tcpInSegs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 10 }
+
+tcpOutSegs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { tcp 11 }
+
+tcpRetransSegs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 12 }
+
+tcpInErrs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 14 }
+
+tcpOutRsts OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 15 }
+
+
+tcpHCInSegs OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 17 }
+
+tcpHCOutSegs OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcp 18 }
+
+
+
+tcpConnectionTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF TcpConnectionEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcp 19 }
+
+tcpConnectionEntry OBJECT-TYPE
+    SYNTAX     TcpConnectionEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { tcpConnectionLocalAddressType,
+              tcpConnectionLocalAddress,
+              tcpConnectionLocalPort,
+              tcpConnectionRemAddressType,
+
+
+
+
+
+              tcpConnectionRemAddress,
+              tcpConnectionRemPort }
+    ::= { tcpConnectionTable 1 }
+
+TcpConnectionEntry ::= SEQUENCE {
+        tcpConnectionLocalAddressType   InetAddressType,
+        tcpConnectionLocalAddress       InetAddress,
+        tcpConnectionLocalPort          InetPortNumber,
+        tcpConnectionRemAddressType     InetAddressType,
+        tcpConnectionRemAddress         InetAddress,
+        tcpConnectionRemPort            InetPortNumber,
+        tcpConnectionState              INTEGER,
+        tcpConnectionProcess            Unsigned32
+    }
+
+tcpConnectionLocalAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcpConnectionEntry 1 }
+
+tcpConnectionLocalAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcpConnectionEntry 2 }
+
+tcpConnectionLocalPort OBJECT-TYPE
+    SYNTAX     InetPortNumber
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcpConnectionEntry 3 }
+
+tcpConnectionRemAddressType OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcpConnectionEntry 4 }
+
+tcpConnectionRemAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcpConnectionEntry 5 }
+
+tcpConnectionRemPort OBJECT-TYPE
+    SYNTAX     InetPortNumber
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcpConnectionEntry 6 }
+
+tcpConnectionState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                    closed(1),
+                    listen(2),
+                    synSent(3),
+                    synReceived(4),
+                    established(5),
+                    finWait1(6),
+                    finWait2(7),
+                    closeWait(8),
+                    lastAck(9),
+                    closing(10),
+                    timeWait(11),
+                    deleteTCB(12)
+                }
+    MAX-ACCESS read-write
+    STATUS     current
+
+
+
+
+
+    ::= { tcpConnectionEntry 7 }
+
+tcpConnectionProcess OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcpConnectionEntry 8 }
+
+
+tcpListenerTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF TcpListenerEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcp 20 }
+
+tcpListenerEntry OBJECT-TYPE
+    SYNTAX     TcpListenerEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { tcpListenerLocalAddressType,
+              tcpListenerLocalAddress,
+              tcpListenerLocalPort }
+    ::= { tcpListenerTable 1 }
+
+TcpListenerEntry ::= SEQUENCE {
+        tcpListenerLocalAddressType       InetAddressType,
+        tcpListenerLocalAddress           InetAddress,
+        tcpListenerLocalPort              InetPortNumber,
+        tcpListenerProcess                Unsigned32
+    }
+
+tcpListenerLocalAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcpListenerEntry 1 }
+
+tcpListenerLocalAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcpListenerEntry 2 }
+
+tcpListenerLocalPort OBJECT-TYPE
+    SYNTAX     InetPortNumber
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { tcpListenerEntry 3 }
+
+
+
+
+
+tcpListenerProcess OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { tcpListenerEntry 4 }
+
+
+
+tcpConnTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF TcpConnEntry
+    MAX-ACCESS not-accessible
+    STATUS     deprecated
+    ::= { tcp 13 }
+
+tcpConnEntry OBJECT-TYPE
+    SYNTAX     TcpConnEntry
+    MAX-ACCESS not-accessible
+    STATUS     deprecated
+    INDEX   { tcpConnLocalAddress,
+              tcpConnLocalPort,
+              tcpConnRemAddress,
+              tcpConnRemPort }
+    ::= { tcpConnTable 1 }
+
+TcpConnEntry ::= SEQUENCE {
+        tcpConnState         INTEGER,
+        tcpConnLocalAddress  IpAddress,
+        tcpConnLocalPort     Integer32,
+        tcpConnRemAddress    IpAddress,
+        tcpConnRemPort       Integer32
+
+
+
+
+
+    }
+
+tcpConnState OBJECT-TYPE
+    SYNTAX     INTEGER {
+                    closed(1),
+                    listen(2),
+                    synSent(3),
+                    synReceived(4),
+                    established(5),
+                    finWait1(6),
+                    finWait2(7),
+                    closeWait(8),
+                    lastAck(9),
+                    closing(10),
+                    timeWait(11),
+                    deleteTCB(12)
+                }
+    MAX-ACCESS read-write
+    STATUS     deprecated
+    ::= { tcpConnEntry 1 }
+
+tcpConnLocalAddress OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS read-only
+    STATUS     deprecated
+    ::= { tcpConnEntry 2 }
+
+
+
+
+
+tcpConnLocalPort OBJECT-TYPE
+    SYNTAX     Integer32 (0..65535)
+    MAX-ACCESS read-only
+    STATUS     deprecated
+    ::= { tcpConnEntry 3 }
+
+tcpConnRemAddress OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS read-only
+    STATUS     deprecated
+    ::= { tcpConnEntry 4 }
+
+tcpConnRemPort OBJECT-TYPE
+    SYNTAX     Integer32 (0..65535)
+    MAX-ACCESS read-only
+    STATUS     deprecated
+    ::= { tcpConnEntry 5 }
+
+
+tcpMIBConformance OBJECT IDENTIFIER ::= { tcpMIB 2 }
+
+tcpMIBCompliances OBJECT IDENTIFIER ::= { tcpMIBConformance 1 }
+tcpMIBGroups      OBJECT IDENTIFIER ::= { tcpMIBConformance 2 }
+
+
+tcpMIBCompliance2 MODULE-COMPLIANCE
+    STATUS     current
+    MODULE  -- this module
+        MANDATORY-GROUPS { tcpBaseGroup, tcpConnectionGroup,
+                           tcpListenerGroup }
+        GROUP       tcpHCGroup
+        OBJECT      tcpConnectionState
+        SYNTAX      INTEGER { closed(1), listen(2), synSent(3),
+                              synReceived(4), established(5),
+                              finWait1(6), finWait2(7), closeWait(8),
+                              lastAck(9), closing(10), timeWait(11) }
+        MIN-ACCESS  read-only
+    ::= { tcpMIBCompliances 2 }
+
+tcpMIBCompliance MODULE-COMPLIANCE
+    STATUS     deprecated
+
+
+
+
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { tcpGroup }
+        OBJECT      tcpConnState
+        MIN-ACCESS  read-only
+    ::= { tcpMIBCompliances 1 }
+
+
+
+tcpGroup OBJECT-GROUP
+    OBJECTS   { tcpRtoAlgorithm, tcpRtoMin, tcpRtoMax,
+                tcpMaxConn, tcpActiveOpens,
+                tcpPassiveOpens, tcpAttemptFails,
+                tcpEstabResets, tcpCurrEstab, tcpInSegs,
+                tcpOutSegs, tcpRetransSegs, tcpConnState,
+                tcpConnLocalAddress, tcpConnLocalPort,
+                tcpConnRemAddress, tcpConnRemPort,
+                tcpInErrs, tcpOutRsts }
+    STATUS     deprecated
+    ::= { tcpMIBGroups 1 }
+
+tcpBaseGroup OBJECT-GROUP
+    OBJECTS   { tcpRtoAlgorithm, tcpRtoMin, tcpRtoMax,
+                tcpMaxConn, tcpActiveOpens,
+                tcpPassiveOpens, tcpAttemptFails,
+                tcpEstabResets, tcpCurrEstab, tcpInSegs,
+                tcpOutSegs, tcpRetransSegs,
+                tcpInErrs, tcpOutRsts }
+    STATUS     current
+    ::= { tcpMIBGroups 2 }
+
+tcpConnectionGroup OBJECT-GROUP
+    OBJECTS    { tcpConnectionState, tcpConnectionProcess }
+    STATUS     current
+    ::= { tcpMIBGroups 3 }
+
+tcpListenerGroup OBJECT-GROUP
+    OBJECTS    { tcpListenerProcess }
+
+
+
+
+
+    STATUS     current
+    ::= { tcpMIBGroups 4 }
+
+tcpHCGroup OBJECT-GROUP
+    OBJECTS    { tcpHCInSegs, tcpHCOutSegs }
+    STATUS     current
+    ::= { tcpMIBGroups 5 }
+
+END

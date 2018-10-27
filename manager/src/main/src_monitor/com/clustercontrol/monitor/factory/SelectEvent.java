@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.factory;
@@ -38,16 +31,18 @@ import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.EventLogNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.bean.CollectGraphFlgConstant;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.monitor.bean.EventDataInfo;
 import com.clustercontrol.monitor.bean.EventFilterInfo;
 import com.clustercontrol.monitor.bean.ViewListInfo;
+import com.clustercontrol.monitor.run.bean.CollectMonitorDisplayNameConstant;
+import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.EventCache;
 import com.clustercontrol.monitor.session.MonitorControllerBean;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
@@ -305,7 +300,7 @@ public class SelectEvent {
 		}
 		String debugMessage = "allSearch=" + allSearch;
 		// SQLでログ取得（試験時にキャッシュとSQLの比較をする場合もここを通る。）
-		if (allSearch || HinemosPropertyUtil.getHinemosPropertyBool("notify.event.diff", false)) {
+		if (allSearch || HinemosPropertyCommon.notify_event_diff.getBooleanValue()) {
 			start = HinemosTime.currentTimeMillis();
 			List<EventLogEntity> tmp = QueryUtil.getEventLogByFilter(
 					facilityIds,
@@ -335,7 +330,7 @@ public class SelectEvent {
 		}
 		
 		// キャッシュからログ取得
-		if (!allSearch || HinemosPropertyUtil.getHinemosPropertyBool("notify.event.diff", false)) {
+		if (!allSearch || HinemosPropertyCommon.notify_event_diff.getBooleanValue()) {
 			start = HinemosTime.currentTimeMillis();
 			cacheList = EventCache.getEventListByCache(
 					facilityIdList,
@@ -494,8 +489,7 @@ public class SelectEvent {
 	}
 
 	public void deleteEventFile(String filename) {
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir", 
-				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
+		String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
 		File file = new File(exportDirectory + "/" + filename);
 		if (!file.delete())
 			Logger.getLogger(this.getClass()).debug("Fail to delete " + file.getAbsolutePath());
@@ -547,11 +541,10 @@ public class SelectEvent {
 		Boolean collectGraphFlg = null;
 		String collectGraphStr = "";
 
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("performance.export.dir",
-				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
+		String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
 		String filepath = exportDirectory + "/" + filename;
 		File file = new File(filepath);
-		boolean UTF8_BOM = HinemosPropertyUtil.getHinemosPropertyBool("monitor.common.report.event.bom", true);
+		boolean UTF8_BOM = HinemosPropertyCommon.monitor_common_report_event_bom.getBooleanValue();
 		if (UTF8_BOM) {
 			FileOutputStream fos = new FileOutputStream(file);
 			fos.write( 0xef );
@@ -660,8 +653,8 @@ public class SelectEvent {
 			重要度,受信日時,出力日時,ファシリティID,アプリケーション,オーナーロールID,確認,確認ユーザ,メッセージ,,,,,,
 			,,,,,未,,,,,,,,
 			 */
-			String SEPARATOR = HinemosPropertyUtil.getHinemosPropertyStr("MONITOR_COMMON_REPORT_EVENT_SEPARATOR", ",");
-			String DATE_FORMAT = HinemosPropertyUtil.getHinemosPropertyStr("MONITOR_COMMON_REPORT_EVENT_FORMAT",  "yyyy/MM/dd HH:mm:ss");
+			String SEPARATOR = HinemosPropertyCommon.monitor_common_report_event_separator.getStringValue();
+			String DATE_FORMAT = HinemosPropertyCommon.monitor_common_report_event_format.getStringValue();
 
 			SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
 			sdf.setTimeZone(HinemosTime.getTimeZone());
@@ -782,7 +775,7 @@ public class SelectEvent {
 					collectGraphFlg,
 					ownerRoleId,
 					true,
-					HinemosPropertyUtil.getHinemosPropertyNum("monitor.common.report.event.count", Long.valueOf(2000)).intValue());
+					HinemosPropertyCommon.monitor_common_report_event_count.getIntegerValue());
 
 			// 帳票出力用に変換
 			collectionToFile(ct, filewriter, locale);
@@ -864,10 +857,12 @@ public class SelectEvent {
 		}
 		if (event.getGenerationDate() != null) {
 			eventInfo.setGenerationDate(event.getGenerationDate());
+			eventInfo.setPredictGenerationDate(event.getGenerationDate());
 		}
 		eventInfo.setPluginId(event.getId().getPluginId());
 		eventInfo.setMonitorId(event.getId().getMonitorId());
 		eventInfo.setMonitorDetailId(event.getId().getMonitorDetailId());
+		eventInfo.setParentMonitorDetailId(event.getId().getMonitorDetailId());
 		eventInfo.setFacilityId(event.getId().getFacilityId());
 		eventInfo.setScopeText(event.getScopeText());
 		eventInfo.setApplication(event.getApplication());
@@ -881,7 +876,30 @@ public class SelectEvent {
 		eventInfo.setCommentUser(event.getCommentUser());
 		eventInfo.setCollectGraphFlg(event.getCollectGraphFlg());
 		eventInfo.setOwnerRoleId(event.getOwnerRoleId());
-		
+
+		// 監視設定
+		if (event.getId().getPluginId().startsWith("MON_")) {
+			// 変化量
+			if (event.getId().getMonitorDetailId().startsWith(CollectMonitorDisplayNameConstant.CHANGE_MONITOR_DETAIL_PREFIX)) {
+				eventInfo.setParentMonitorDetailId(
+						event.getId().getMonitorDetailId().replace(CollectMonitorDisplayNameConstant.CHANGE_MONITOR_DETAIL_PREFIX, ""));
+			}
+			// 将来予測
+			if (event.getId().getMonitorDetailId().startsWith(CollectMonitorDisplayNameConstant.PREDICTION_MONITOR_DETAIL_PREFIX)) {
+				eventInfo.setParentMonitorDetailId(
+						event.getId().getMonitorDetailId().replace(CollectMonitorDisplayNameConstant.PREDICTION_MONITOR_DETAIL_PREFIX, ""));
+				if (event.getGenerationDate() != null) {
+					try {
+						MonitorInfo monitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK_NONE(event.getId().getMonitorId());
+						if (monitorInfo.getPredictionTarget() != null) {
+							eventInfo.setPredictGenerationDate(event.getGenerationDate() + monitorInfo.getPredictionTarget().longValue() * 60 * 1000);
+						}
+					} catch (MonitorNotFound e) {
+						m_log.warn("monitorInfo is not found. : monitorId=" + event.getId().getMonitorId());
+					}
+				}
+			}
+		}
 		return eventInfo;
 	}
 	
@@ -898,7 +916,7 @@ public class SelectEvent {
 	private void collectionToFile(Collection<EventLogEntity> ct, FileWriter filewriter, Locale locale) throws IOException {
 
 		int n = 0;
-		String SEPARATOR = HinemosPropertyUtil.getHinemosPropertyStr("monitor.common.report.event.separator", ",");
+		String SEPARATOR = HinemosPropertyCommon.monitor_common_report_event_separator.getStringValue();
 		
 		for (EventLogEntity event : ct) {
 			n ++;
@@ -937,7 +955,7 @@ public class SelectEvent {
 			return "";
 		}
 		// 日付フォーマットおよびタイムゾーンの設定
-		String DATE_FORMAT = HinemosPropertyUtil.getHinemosPropertyStr("monitor.common.report.event.format",  "yyyy/MM/dd HH:mm:ss");
+		String DATE_FORMAT = HinemosPropertyCommon.monitor_common_report_event_format.getStringValue();
 		SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
 		sdf.setTimeZone(HinemosTime.getTimeZone());
 		return sdf.format(new Date(l));

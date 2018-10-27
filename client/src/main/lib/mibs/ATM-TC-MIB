@@ -1,0 +1,200 @@
+     ATM-TC-MIB DEFINITIONS ::= BEGIN
+
+     IMPORTS
+        MODULE-IDENTITY, OBJECT-IDENTITY,
+        TimeTicks, mib-2
+            FROM SNMPv2-SMI
+        TEXTUAL-CONVENTION
+            FROM SNMPv2-TC;
+
+
+     atmTCMIB MODULE-IDENTITY
+          LAST-UPDATED "9810190200Z"
+          ORGANIZATION "IETF AToMMIB Working Group"
+          ::= { mib-2 37 3 } -- atmMIB 3 (see [3])
+
+
+
+     AtmAddr ::= TEXTUAL-CONVENTION
+             DISPLAY-HINT "1x"
+             STATUS  current
+            SYNTAX   OCTET STRING (SIZE(0..40))
+
+
+    AtmConnCastType ::= TEXTUAL-CONVENTION
+            STATUS  current
+            SYNTAX   INTEGER {
+               p2p(1),
+               p2mpRoot(2),
+               p2mpLeaf(3)
+               }
+
+    AtmConnKind ::= TEXTUAL-CONVENTION
+            STATUS  current
+        SYNTAX   INTEGER {
+           pvc(1),
+           svcIncoming(2),
+           svcOutgoing(3),
+           spvcInitiator(4),
+           spvcTarget(5)
+           }
+
+    AtmIlmiNetworkPrefix ::= TEXTUAL-CONVENTION
+        STATUS   current
+        SYNTAX   OCTET STRING (SIZE(8|13))
+
+AtmInterfaceType ::= TEXTUAL-CONVENTION
+        STATUS       current
+        SYNTAX  INTEGER  {
+                  other(1),
+                  autoConfig(2),
+                  ituDss2(3),
+                  atmfUni3Dot0(4),
+                  atmfUni3Dot1(5),
+                  atmfUni4Dot0(6),
+                  atmfIispUni3Dot0(7),
+                  atmfIispUni3Dot1(8),
+                  atmfIispUni4Dot0(9),
+        atmfPnni1Dot0(10),
+        atmfBici2Dot0(11),
+        atmfUniPvcOnly(12),
+        atmfNniPvcOnly(13)  }
+
+AtmServiceCategory ::= TEXTUAL-CONVENTION
+        STATUS  current
+        SYNTAX   INTEGER {
+           other(1),   -- none of the following
+           cbr(2),     -- constant bit rate
+           rtVbr(3),   -- real-time variable bit rate
+           nrtVbr(4),  -- non real-time variable bit rate
+           abr(5),     -- available bit rate
+           ubr(6)      -- unspecified bit rate
+           }
+
+AtmSigDescrParamIndex ::= TEXTUAL-CONVENTION
+        STATUS  current
+
+
+
+
+
+        SYNTAX  INTEGER (0..2147483647)
+
+AtmTrafficDescrParamIndex ::= TEXTUAL-CONVENTION
+        STATUS  current
+        SYNTAX  INTEGER (0..2147483647)
+
+AtmVcIdentifier ::= TEXTUAL-CONVENTION
+        STATUS  current
+        SYNTAX   INTEGER (0..65535)
+
+AtmVpIdentifier ::= TEXTUAL-CONVENTION
+        STATUS  current
+        SYNTAX    INTEGER (0..4095)
+
+AtmVorXAdminStatus ::= TEXTUAL-CONVENTION
+        STATUS  current
+        SYNTAX   INTEGER {
+           up(1),
+           down(2)
+            }
+
+AtmVorXLastChange ::= TEXTUAL-CONVENTION
+        STATUS  current
+
+
+
+
+
+        SYNTAX   TimeTicks
+
+AtmVorXOperStatus ::= TEXTUAL-CONVENTION
+        STATUS  current
+        SYNTAX   INTEGER {
+           up(1),
+           down(2),
+           unknown(3)
+           }
+
+
+
+
+
+
+atmTrafficDescriptorTypes OBJECT IDENTIFIER ::= {mib-2 37 1 1}
+
+
+    atmObjectIdentities OBJECT IDENTIFIER ::= {atmTCMIB 1}
+
+
+atmNoTrafficDescriptor  OBJECT-IDENTITY
+    STATUS  deprecated
+
+
+
+
+
+    ::= {atmTrafficDescriptorTypes 1}
+
+atmNoClpNoScr  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 2}
+
+atmClpNoTaggingNoScr  OBJECT-IDENTITY
+    STATUS  deprecated
+    ::= {atmTrafficDescriptorTypes 3}
+
+atmClpTaggingNoScr  OBJECT-IDENTITY
+    STATUS  deprecated
+    ::= {atmTrafficDescriptorTypes 4}
+
+atmNoClpScr  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 5}
+
+atmClpNoTaggingScr  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 6}
+
+atmClpTaggingScr  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 7}
+
+atmClpNoTaggingMcr  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 8}
+
+atmClpTransparentNoScr  OBJECT-IDENTITY
+    STATUS  current
+
+
+
+
+
+    ::= {atmTrafficDescriptorTypes 9}
+
+atmClpTransparentScr  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 10}
+
+atmNoClpTaggingNoScr  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 11}
+
+atmNoClpNoScrCdvt  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 12}
+
+atmNoClpScrCdvt  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 13}
+
+atmClpNoTaggingScrCdvt  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 14}
+
+atmClpTaggingScrCdvt  OBJECT-IDENTITY
+    STATUS  current
+    ::= {atmTrafficDescriptorTypes 15}
+
+END

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -23,6 +16,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.StatusConstant;
+import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -30,6 +24,7 @@ import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.util.JobSessionChangeDataCache;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 
@@ -88,6 +83,10 @@ public class OperateSuspendOfJob {
 				
 				//終了・中断日時を設定
 				sessionJob.setEndDate(HinemosTime.currentTimeMillis());
+				// ジョブ履歴用キャッシュ更新
+				JobSessionChangeDataCache.add(sessionJob);
+				// 収集データ更新
+				CollectDataUtil.put(sessionJob);
 
 				//セッションIDとジョブIDから、直下のジョブを取得（実行状態が実行中）
 				Collection<JobSessionJobEntity> collection

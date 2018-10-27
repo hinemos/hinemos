@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.session;
 
 import java.util.ArrayList;
@@ -45,7 +39,7 @@ import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
-import com.clustercontrol.platform.hub.HubQueryPertial;
+import com.clustercontrol.platform.hub.HubQueryDivergence;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -125,12 +119,11 @@ public abstract class JpaQueryUtil<T, R> {
 
 		String tableName = t.schema() + "." + t.name();
 		Query cycledPosQuery = em.createNativeQuery(
-				String.format("SELECT MIN(t0.position) FROM %s t0 WHERE t0.position > (SELECT last_value FROM %s) AND t0.position <= (SELECT max_value FROM %s)",
-						tableName, getSequenceTableName(), getSequenceTableName()));
+				String.format(HubQueryDivergence.getSequenceMinPosSql(), tableName, getSequenceTableName(), getSequenceTableName()));
 		Long cycled = (Long)cycledPosQuery.getSingleResult();
 		
 		// 位置情報の最新値と最大値を取得
-		Query posQuery = em.createNativeQuery(String.format(HubQueryPertial.getSequenceSql(), getSequenceTableName()));
+		Query posQuery = em.createNativeQuery(String.format(HubQueryDivergence.getSequenceSql(), getSequenceTableName()));
 		Object[] data = (Object[])posQuery.getSingleResult();
 		if (data == null || data.length <= 0) {
 			HubControllerBean.logger.warn("Fatal Error");
@@ -307,7 +300,7 @@ public abstract class JpaQueryUtil<T, R> {
 
 			@Override
 			protected String getSequenceTableName() {
-				return "log.cc_event_log_position_seq";
+				return HubQueryDivergence.getSequenceTableNameEventLog();
 			}
 		};
 	}
@@ -367,7 +360,7 @@ public abstract class JpaQueryUtil<T, R> {
 
 			@Override
 			protected String getSequenceTableName() {
-				return "log.cc_job_session_position_seq";
+				return HubQueryDivergence.getSequenceTableNameJobSession();
 			}
 		};
 	}
@@ -460,7 +453,7 @@ public abstract class JpaQueryUtil<T, R> {
 
 			@Override
 			protected String getSequenceTableName() {
-				return "log.cc_collect_data_raw_position_seq";
+				return HubQueryDivergence.getSequenceTableNameCollectDataRaw();
 			}
 		};
 	}

@@ -155,4 +155,12 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="CollectBinaryData.deleteByDateTimeAndMonitorId">
+		<query>
+			<![CDATA[
+				DELETE FROM CollectBinaryData a WHERE a.time < :dateTime
+					AND a.id.collectId IN (SELECT c.collectId FROM CollectStringKeyInfo c WHERE c.id.monitorId = :monitorId)
+			]]>
+		</query>
+	</named-query>
 </entity-mappings>

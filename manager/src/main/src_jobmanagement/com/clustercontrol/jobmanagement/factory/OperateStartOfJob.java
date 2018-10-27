@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -243,50 +236,51 @@ public class OperateStartOfJob {
 	 */
 	private void clearJob(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		m_log.debug("clearJob() : sessionId=" + sessionId + ", jobId=" + jobId);
+			m_log.debug("clearJob() : sessionId=" + sessionId + ", jobId=" + jobId);
 
-		//セッションIDとジョブIDから、セッションジョブを取得
-		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			//セッションIDとジョブIDから、セッションジョブを取得
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 
-		JobInfoEntity job = sessionJob.getJobInfoEntity();
+			JobInfoEntity job = sessionJob.getJobInfoEntity();
 
-		if(job.getJobType() != JobConstant.TYPE_JOB
-				&& job.getJobType() != JobConstant.TYPE_APPROVALJOB
-				&& job.getJobType() != JobConstant.TYPE_MONITORJOB){
-			//ジョブ以外の場合
+			if(job.getJobType() != JobConstant.TYPE_JOB
+					&& job.getJobType() != JobConstant.TYPE_APPROVALJOB
+					&& job.getJobType() != JobConstant.TYPE_MONITORJOB){
+				//ジョブ以外の場合
 
-			//セッションIDとジョブIDから、直下のジョブを取得
-			Collection<JobSessionJobEntity> collection = QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
-			for (JobSessionJobEntity relation : collection) {
+				//セッションIDとジョブIDから、直下のジョブを取得
+				Collection<JobSessionJobEntity> collection = QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
+				for (JobSessionJobEntity relation : collection) {
 
-				//ジョブを削除
-				clearJob(relation.getId().getSessionId(), relation.getId().getJobunitId(), relation.getId().getJobId());
-			}
-		} else {
-			List<JobSessionNodeEntity> list = sessionJob.getJobSessionNodeEntities();
-			for (JobSessionNodeEntity sessionNode : list) {
-				//実行中から他の状態に遷移した場合は、キャッシュを更新する。
-				if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
-					JpaTransactionManager jtm = new JpaTransactionManager();
-					jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
-				} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
-					JobMultiplicityCache.removeWait(sessionNode.getId());
+					//ジョブを削除
+					clearJob(relation.getId().getSessionId(), relation.getId().getJobunitId(), relation.getId().getJobId());
+				}
+			} else {
+				List<JobSessionNodeEntity> list = sessionJob.getJobSessionNodeEntities();
+				for (JobSessionNodeEntity sessionNode : list) {
+					//実行中から他の状態に遷移した場合は、キャッシュを更新する。
+					if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
+						jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
+					} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
+						JobMultiplicityCache.removeWait(sessionNode.getId());
+					}
 				}
 			}
+
+			try {
+				new NotifyControllerBean().deleteNotifyRelation(NotifyGroupIdGenerator.generate(job));
+			} catch (HinemosUnknown e) {
+				m_log.info("clearJob() : " + e.getMessage() + "," + job.getId());
+			}
+
+
+			// セッションジョブと関連するジョブ情報を削除
+			sessionJob.unchain();	// 削除前処理
+			em.remove(sessionJob);
 		}
-
-		try {
-			new NotifyControllerBean().deleteNotifyRelation(NotifyGroupIdGenerator.generate(job));
-		} catch (HinemosUnknown e) {
-			m_log.info("clearJob() : " + e.getMessage() + "," + job.getId());
-		}
-
-
-		// セッションジョブと関連するジョブ情報を削除
-		sessionJob.unchain();	// 削除前処理
-		em.remove(sessionJob);
 	}
 
 	/**

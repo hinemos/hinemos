@@ -1,0 +1,1177 @@
+MPLS-LSR-STD-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+   MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+   Integer32, Counter32, Unsigned32, Counter64, Gauge32,
+   zeroDotZero
+      FROM SNMPv2-SMI                                    -- [RFC2578]
+   MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+      FROM SNMPv2-CONF                                   -- [RFC2580]
+   TruthValue, RowStatus, StorageType, RowPointer,
+   TimeStamp, TEXTUAL-CONVENTION
+      FROM SNMPv2-TC                                     -- [RFC2579]
+   InterfaceIndexOrZero, ifGeneralInformationGroup,
+   ifCounterDiscontinuityGroup
+      FROM IF-MIB                                        -- [RFC2863]
+   mplsStdMIB, MplsLSPID, MplsLabel, MplsBitRate,
+   MplsOwner
+      FROM MPLS-TC-STD-MIB                               -- [RFC3811]
+   AddressFamilyNumbers
+      FROM IANA-ADDRESS-FAMILY-NUMBERS-MIB               -- [IANAFamily]
+   InetAddress, InetAddressType
+      FROM INET-ADDRESS-MIB                              -- [RFC3291]
+   ;
+
+mplsLsrStdMIB MODULE-IDENTITY
+   LAST-UPDATED "200406030000Z"  -- June 3, 2004
+   ORGANIZATION "Multiprotocol Label Switching (MPLS) Working Group"
+
+
+
+   ::= { mplsStdMIB 2 }
+
+
+MplsIndexType ::= TEXTUAL-CONVENTION
+   STATUS              current
+   SYNTAX              OCTET STRING (SIZE(1..24))
+
+MplsIndexNextType ::= TEXTUAL-CONVENTION
+   STATUS              current
+   SYNTAX              OCTET STRING (SIZE(1..24))
+
+
+mplsLsrNotifications OBJECT IDENTIFIER ::= { mplsLsrStdMIB 0 }
+
+mplsLsrObjects       OBJECT IDENTIFIER ::= { mplsLsrStdMIB 1 }
+
+mplsLsrConformance   OBJECT IDENTIFIER ::= { mplsLsrStdMIB 2 }
+
+mplsInterfaceTable  OBJECT-TYPE
+
+
+
+
+
+   SYNTAX        SEQUENCE OF MplsInterfaceEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsLsrObjects 1 }
+
+mplsInterfaceEntry OBJECT-TYPE
+   SYNTAX        MplsInterfaceEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   INDEX { mplsInterfaceIndex }
+   ::= { mplsInterfaceTable 1 }
+
+MplsInterfaceEntry ::= SEQUENCE {
+  mplsInterfaceIndex                  InterfaceIndexOrZero,
+  mplsInterfaceLabelMinIn             MplsLabel,
+  mplsInterfaceLabelMaxIn             MplsLabel,
+  mplsInterfaceLabelMinOut            MplsLabel,
+  mplsInterfaceLabelMaxOut            MplsLabel,
+  mplsInterfaceTotalBandwidth         MplsBitRate,
+
+
+
+
+
+  mplsInterfaceAvailableBandwidth     MplsBitRate,
+  mplsInterfaceLabelParticipationType BITS
+}
+
+mplsInterfaceIndex OBJECT-TYPE
+   SYNTAX        InterfaceIndexOrZero
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsInterfaceEntry 1 }
+
+mplsInterfaceLabelMinIn OBJECT-TYPE
+   SYNTAX        MplsLabel
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInterfaceEntry 2 }
+
+mplsInterfaceLabelMaxIn OBJECT-TYPE
+   SYNTAX        MplsLabel
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInterfaceEntry 3 }
+
+mplsInterfaceLabelMinOut OBJECT-TYPE
+   SYNTAX        MplsLabel
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInterfaceEntry 4 }
+
+mplsInterfaceLabelMaxOut OBJECT-TYPE
+   SYNTAX        MplsLabel
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInterfaceEntry 5 }
+
+mplsInterfaceTotalBandwidth OBJECT-TYPE
+   SYNTAX        MplsBitRate
+   UNITS         "kilobits per second"
+   MAX-ACCESS    read-only
+   STATUS        current
+::= { mplsInterfaceEntry 6 }
+
+mplsInterfaceAvailableBandwidth OBJECT-TYPE
+   SYNTAX        MplsBitRate
+   MAX-ACCESS    read-only
+   STATUS        current
+::= { mplsInterfaceEntry 7 }
+
+mplsInterfaceLabelParticipationType OBJECT-TYPE
+   SYNTAX  BITS {
+                  perPlatform (0),
+                  perInterface (1)
+              }
+   MAX-ACCESS    read-only
+
+
+
+
+
+   STATUS        current
+::= { mplsInterfaceEntry 8 }
+
+
+
+
+mplsInterfacePerfTable  OBJECT-TYPE
+   SYNTAX        SEQUENCE OF MplsInterfacePerfEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+
+
+
+
+
+   ::= { mplsLsrObjects 2 }
+
+mplsInterfacePerfEntry OBJECT-TYPE
+   SYNTAX        MplsInterfacePerfEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   AUGMENTS      { mplsInterfaceEntry }
+      ::= { mplsInterfacePerfTable 1 }
+
+MplsInterfacePerfEntry ::= SEQUENCE {
+      mplsInterfacePerfInLabelsInUse         Gauge32,
+      mplsInterfacePerfInLabelLookupFailures Counter32,
+
+      mplsInterfacePerfOutLabelsInUse      Gauge32,
+      mplsInterfacePerfOutFragmentedPkts   Counter32
+   }
+
+mplsInterfacePerfInLabelsInUse OBJECT-TYPE
+   SYNTAX        Gauge32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInterfacePerfEntry 1 }
+
+mplsInterfacePerfInLabelLookupFailures  OBJECT-TYPE
+   SYNTAX        Counter32
+
+
+
+
+
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInterfacePerfEntry 2 }
+
+mplsInterfacePerfOutLabelsInUse OBJECT-TYPE
+   SYNTAX        Gauge32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInterfacePerfEntry 3 }
+
+mplsInterfacePerfOutFragmentedPkts OBJECT-TYPE
+   SYNTAX        Counter32
+   MAX-ACCESS    read-only
+   STATUS        current
+::= { mplsInterfacePerfEntry 4 }
+
+
+mplsInSegmentIndexNext OBJECT-TYPE
+   SYNTAX        MplsIndexNextType
+   MAX-ACCESS    read-only
+   STATUS        current
+      ::= { mplsLsrObjects 3 }
+
+mplsInSegmentTable  OBJECT-TYPE
+   SYNTAX        SEQUENCE OF MplsInSegmentEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+      ::= { mplsLsrObjects 4 }
+
+mplsInSegmentEntry  OBJECT-TYPE
+   SYNTAX        MplsInSegmentEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   INDEX { mplsInSegmentIndex }
+   ::= { mplsInSegmentTable 1 }
+
+MplsInSegmentEntry ::= SEQUENCE {
+  mplsInSegmentIndex                MplsIndexType,
+  mplsInSegmentInterface            InterfaceIndexOrZero,
+  mplsInSegmentLabel                MplsLabel,
+  mplsInSegmentLabelPtr             RowPointer,
+  mplsInSegmentNPop                 Integer32,
+  mplsInSegmentAddrFamily           AddressFamilyNumbers,
+  mplsInSegmentXCIndex              MplsIndexType,
+  mplsInSegmentOwner                MplsOwner ,
+  mplsInSegmentTrafficParamPtr      RowPointer,
+  mplsInSegmentRowStatus            RowStatus,
+  mplsInSegmentStorageType          StorageType
+}
+
+mplsInSegmentIndex OBJECT-TYPE
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsInSegmentEntry 1 }
+
+mplsInSegmentInterface OBJECT-TYPE
+   SYNTAX        InterfaceIndexOrZero
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsInSegmentEntry 2 }
+
+mplsInSegmentLabel OBJECT-TYPE
+   SYNTAX        MplsLabel
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsInSegmentEntry 3 }
+
+mplsInSegmentLabelPtr OBJECT-TYPE
+   SYNTAX        RowPointer
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { zeroDotZero }
+   ::= { mplsInSegmentEntry 4 }
+
+mplsInSegmentNPop OBJECT-TYPE
+   SYNTAX        Integer32 (1..2147483647)
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL        { 1 }
+   ::= { mplsInSegmentEntry 5 }
+
+mplsInSegmentAddrFamily OBJECT-TYPE
+   SYNTAX        AddressFamilyNumbers
+   MAX-ACCESS    read-create
+
+
+
+
+
+   STATUS        current
+   DEFVAL        { other }
+   ::= { mplsInSegmentEntry 6 }
+
+mplsInSegmentXCIndex OBJECT-TYPE
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInSegmentEntry 7 }
+
+mplsInSegmentOwner OBJECT-TYPE
+   SYNTAX        MplsOwner
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInSegmentEntry 8 }
+
+mplsInSegmentTrafficParamPtr OBJECT-TYPE
+   SYNTAX            RowPointer
+   MAX-ACCESS        read-create
+   STATUS            current
+   DEFVAL { zeroDotZero }
+   ::= { mplsInSegmentEntry 9 }
+
+mplsInSegmentRowStatus OBJECT-TYPE
+   SYNTAX        RowStatus
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsInSegmentEntry 10 }
+
+mplsInSegmentStorageType OBJECT-TYPE
+   SYNTAX        StorageType
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { volatile }
+
+
+
+
+
+   ::= { mplsInSegmentEntry 11 }
+
+
+
+mplsInSegmentPerfTable  OBJECT-TYPE
+   SYNTAX        SEQUENCE OF MplsInSegmentPerfEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsLsrObjects 5 }
+
+mplsInSegmentPerfEntry  OBJECT-TYPE
+   SYNTAX        MplsInSegmentPerfEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   AUGMENTS  { mplsInSegmentEntry }
+   ::= { mplsInSegmentPerfTable 1 }
+
+MplsInSegmentPerfEntry ::= SEQUENCE {
+    mplsInSegmentPerfOctets             Counter32,
+    mplsInSegmentPerfPackets            Counter32,
+    mplsInSegmentPerfErrors             Counter32,
+    mplsInSegmentPerfDiscards           Counter32,
+
+    mplsInSegmentPerfHCOctets           Counter64,
+
+    mplsInSegmentPerfDiscontinuityTime  TimeStamp
+   }
+
+mplsInSegmentPerfOctets OBJECT-TYPE
+   SYNTAX        Counter32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInSegmentPerfEntry 1 }
+
+mplsInSegmentPerfPackets OBJECT-TYPE
+   SYNTAX        Counter32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInSegmentPerfEntry 2 }
+
+mplsInSegmentPerfErrors OBJECT-TYPE
+   SYNTAX        Counter32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInSegmentPerfEntry 3 }
+
+mplsInSegmentPerfDiscards OBJECT-TYPE
+   SYNTAX        Counter32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInSegmentPerfEntry 4 }
+
+mplsInSegmentPerfHCOctets OBJECT-TYPE
+   SYNTAX        Counter64
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInSegmentPerfEntry 5 }
+
+
+
+
+
+
+mplsInSegmentPerfDiscontinuityTime OBJECT-TYPE
+   SYNTAX      TimeStamp
+   MAX-ACCESS  read-only
+   STATUS      current
+   ::= { mplsInSegmentPerfEntry 6 }
+
+
+
+mplsOutSegmentIndexNext OBJECT-TYPE
+   SYNTAX        MplsIndexNextType
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsLsrObjects 6 }
+
+mplsOutSegmentTable  OBJECT-TYPE
+   SYNTAX        SEQUENCE OF MplsOutSegmentEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsLsrObjects 7 }
+
+mplsOutSegmentEntry  OBJECT-TYPE
+   SYNTAX        MplsOutSegmentEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   INDEX { mplsOutSegmentIndex }
+   ::= { mplsOutSegmentTable 1 }
+
+MplsOutSegmentEntry ::= SEQUENCE {
+  mplsOutSegmentIndex                MplsIndexType,
+  mplsOutSegmentInterface            InterfaceIndexOrZero,
+  mplsOutSegmentPushTopLabel         TruthValue,
+  mplsOutSegmentTopLabel             MplsLabel,
+  mplsOutSegmentTopLabelPtr          RowPointer,
+  mplsOutSegmentNextHopAddrType      InetAddressType,
+  mplsOutSegmentNextHopAddr          InetAddress,
+  mplsOutSegmentXCIndex              MplsIndexType,
+  mplsOutSegmentOwner                MplsOwner,
+  mplsOutSegmentTrafficParamPtr      RowPointer,
+  mplsOutSegmentRowStatus            RowStatus,
+  mplsOutSegmentStorageType          StorageType
+}
+
+mplsOutSegmentIndex OBJECT-TYPE
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsOutSegmentEntry 1 }
+
+mplsOutSegmentInterface OBJECT-TYPE
+   SYNTAX        InterfaceIndexOrZero
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsOutSegmentEntry 2 }
+
+mplsOutSegmentPushTopLabel OBJECT-TYPE
+   SYNTAX        TruthValue
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { true }
+   ::= { mplsOutSegmentEntry 3 }
+
+mplsOutSegmentTopLabel OBJECT-TYPE
+   SYNTAX        MplsLabel
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { 0 }
+   ::= { mplsOutSegmentEntry 4 }
+
+mplsOutSegmentTopLabelPtr OBJECT-TYPE
+   SYNTAX        RowPointer
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { zeroDotZero }
+   ::= { mplsOutSegmentEntry 5 }
+
+mplsOutSegmentNextHopAddrType OBJECT-TYPE
+   SYNTAX        InetAddressType
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsOutSegmentEntry 6 }
+
+mplsOutSegmentNextHopAddr OBJECT-TYPE
+   SYNTAX        InetAddress
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsOutSegmentEntry 7 }
+
+mplsOutSegmentXCIndex OBJECT-TYPE
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsOutSegmentEntry 8 }
+
+mplsOutSegmentOwner OBJECT-TYPE
+   SYNTAX        MplsOwner
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsOutSegmentEntry 9 }
+
+mplsOutSegmentTrafficParamPtr OBJECT-TYPE
+   SYNTAX        RowPointer
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { zeroDotZero }
+   ::= { mplsOutSegmentEntry 10 }
+
+mplsOutSegmentRowStatus OBJECT-TYPE
+   SYNTAX        RowStatus
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsOutSegmentEntry 11 }
+
+mplsOutSegmentStorageType OBJECT-TYPE
+   SYNTAX        StorageType
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { volatile }
+   ::= { mplsOutSegmentEntry 12 }
+
+
+
+
+mplsOutSegmentPerfTable  OBJECT-TYPE
+   SYNTAX        SEQUENCE OF MplsOutSegmentPerfEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsLsrObjects 8 }
+
+mplsOutSegmentPerfEntry  OBJECT-TYPE
+   SYNTAX        MplsOutSegmentPerfEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   AUGMENTS      { mplsOutSegmentEntry }
+      ::= { mplsOutSegmentPerfTable 1 }
+
+MplsOutSegmentPerfEntry ::= SEQUENCE {
+      mplsOutSegmentPerfOctets             Counter32,
+      mplsOutSegmentPerfPackets            Counter32,
+      mplsOutSegmentPerfErrors             Counter32,
+      mplsOutSegmentPerfDiscards           Counter32,
+
+      mplsOutSegmentPerfHCOctets           Counter64,
+
+      mplsOutSegmentPerfDiscontinuityTime  TimeStamp
+   }
+
+mplsOutSegmentPerfOctets OBJECT-TYPE
+   SYNTAX        Counter32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsOutSegmentPerfEntry 1 }
+
+mplsOutSegmentPerfPackets OBJECT-TYPE
+   SYNTAX        Counter32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsOutSegmentPerfEntry 2 }
+
+mplsOutSegmentPerfErrors OBJECT-TYPE
+   SYNTAX        Counter32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsOutSegmentPerfEntry 3 }
+
+mplsOutSegmentPerfDiscards OBJECT-TYPE
+   SYNTAX        Counter32
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsOutSegmentPerfEntry 4 }
+
+mplsOutSegmentPerfHCOctets OBJECT-TYPE
+   SYNTAX        Counter64
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsOutSegmentPerfEntry 5 }
+
+mplsOutSegmentPerfDiscontinuityTime OBJECT-TYPE
+   SYNTAX      TimeStamp
+   MAX-ACCESS  read-only
+   STATUS      current
+   ::= { mplsOutSegmentPerfEntry 6 }
+
+
+
+
+
+
+
+
+
+mplsXCIndexNext OBJECT-TYPE
+   SYNTAX        MplsIndexNextType
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsLsrObjects 9 }
+
+mplsXCTable  OBJECT-TYPE
+   SYNTAX        SEQUENCE OF MplsXCEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsLsrObjects 10 }
+
+mplsXCEntry  OBJECT-TYPE
+   SYNTAX        MplsXCEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   INDEX { mplsXCIndex, mplsXCInSegmentIndex,
+           mplsXCOutSegmentIndex }
+   ::= { mplsXCTable 1 }
+
+MplsXCEntry ::= SEQUENCE {
+      mplsXCIndex                  MplsIndexType,
+      mplsXCInSegmentIndex         MplsIndexType,
+      mplsXCOutSegmentIndex        MplsIndexType,
+      mplsXCLspId                  MplsLSPID,
+      mplsXCLabelStackIndex        MplsIndexType,
+      mplsXCOwner                  MplsOwner ,
+      mplsXCRowStatus              RowStatus,
+      mplsXCStorageType            StorageType,
+      mplsXCAdminStatus            INTEGER,
+      mplsXCOperStatus             INTEGER
+   }
+
+mplsXCIndex OBJECT-TYPE
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    not-accessible
+   STATUS        current
+
+
+
+
+
+   ::= { mplsXCEntry 1 }
+
+mplsXCInSegmentIndex OBJECT-TYPE
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsXCEntry 2 }
+
+mplsXCOutSegmentIndex OBJECT-TYPE
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsXCEntry 3 }
+
+mplsXCLspId OBJECT-TYPE
+   SYNTAX        MplsLSPID
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsXCEntry 4 }
+
+mplsXCLabelStackIndex OBJECT-TYPE
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    read-create
+   STATUS        current
+
+
+
+
+
+   ::= { mplsXCEntry 5 }
+
+mplsXCOwner OBJECT-TYPE
+   SYNTAX    MplsOwner
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsXCEntry 6 }
+
+mplsXCRowStatus OBJECT-TYPE
+   SYNTAX        RowStatus
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsXCEntry 7 }
+
+mplsXCStorageType OBJECT-TYPE
+   SYNTAX        StorageType
+   MAX-ACCESS    read-create
+   STATUS        current
+
+
+
+
+
+   DEFVAL { volatile }
+   ::= { mplsXCEntry 8 }
+
+mplsXCAdminStatus OBJECT-TYPE
+   SYNTAX   INTEGER {
+              up(1),     -- ready to pass packets
+              down(2),
+              testing(3) -- in some test mode
+      }
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { up }
+   ::= { mplsXCEntry 9 }
+
+mplsXCOperStatus OBJECT-TYPE
+   SYNTAX   INTEGER {
+             up(1),            -- ready to pass packets
+             down(2),
+             testing(3),       -- in some test mode
+             unknown(4),       -- status cannot be determined
+             dormant(5),
+             notPresent(6),    -- some component is missing
+             lowerLayerDown(7) -- down due to the state of
+      }
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsXCEntry 10 }
+
+
+
+
+mplsMaxLabelStackDepth  OBJECT-TYPE
+   SYNTAX        Unsigned32 (1..2147483647)
+   MAX-ACCESS    read-only
+   STATUS        current
+::= { mplsLsrObjects 11 }
+
+
+
+
+
+
+mplsLabelStackIndexNext  OBJECT-TYPE
+   SYNTAX        MplsIndexNextType
+   MAX-ACCESS    read-only
+   STATUS        current
+::= { mplsLsrObjects 12 }
+
+mplsLabelStackTable OBJECT-TYPE
+   SYNTAX        SEQUENCE OF MplsLabelStackEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsLsrObjects 13 }
+
+mplsLabelStackEntry OBJECT-TYPE
+   SYNTAX        MplsLabelStackEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   INDEX { mplsLabelStackIndex, mplsLabelStackLabelIndex }
+   ::= { mplsLabelStackTable 1 }
+
+MplsLabelStackEntry ::= SEQUENCE {
+      mplsLabelStackIndex             MplsIndexType,
+      mplsLabelStackLabelIndex        Unsigned32,
+      mplsLabelStackLabel             MplsLabel,
+      mplsLabelStackLabelPtr          RowPointer,
+      mplsLabelStackRowStatus         RowStatus,
+      mplsLabelStackStorageType       StorageType
+   }
+
+mplsLabelStackIndex OBJECT-TYPE
+
+
+
+
+
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsLabelStackEntry 1 }
+
+mplsLabelStackLabelIndex OBJECT-TYPE
+   SYNTAX        Unsigned32 (1..2147483647)
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsLabelStackEntry 2 }
+
+mplsLabelStackLabel OBJECT-TYPE
+   SYNTAX        MplsLabel
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsLabelStackEntry 3 }
+
+mplsLabelStackLabelPtr OBJECT-TYPE
+   SYNTAX        RowPointer
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { zeroDotZero }
+   ::= { mplsLabelStackEntry 4 }
+
+mplsLabelStackRowStatus OBJECT-TYPE
+
+
+
+
+
+   SYNTAX        RowStatus
+   MAX-ACCESS    read-create
+   STATUS        current
+   ::= { mplsLabelStackEntry 5 }
+
+mplsLabelStackStorageType OBJECT-TYPE
+   SYNTAX        StorageType
+   MAX-ACCESS    read-create
+   STATUS        current
+   DEFVAL { volatile }
+   ::= { mplsLabelStackEntry 6 }
+
+
+
+mplsInSegmentMapTable OBJECT-TYPE
+   SYNTAX        SEQUENCE OF MplsInSegmentMapEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsLsrObjects 14 }
+
+
+
+
+
+
+mplsInSegmentMapEntry OBJECT-TYPE
+   SYNTAX        MplsInSegmentMapEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   INDEX { mplsInSegmentMapInterface,
+           mplsInSegmentMapLabel,
+           mplsInSegmentMapLabelPtrIndex }
+   ::= { mplsInSegmentMapTable 1 }
+
+MplsInSegmentMapEntry ::= SEQUENCE {
+      mplsInSegmentMapInterface      InterfaceIndexOrZero,
+      mplsInSegmentMapLabel          MplsLabel,
+      mplsInSegmentMapLabelPtrIndex  RowPointer,
+      mplsInSegmentMapIndex          MplsIndexType
+   }
+
+mplsInSegmentMapInterface OBJECT-TYPE
+   SYNTAX        InterfaceIndexOrZero
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsInSegmentMapEntry 1 }
+
+mplsInSegmentMapLabel OBJECT-TYPE
+   SYNTAX        MplsLabel
+   MAX-ACCESS    not-accessible
+   STATUS        current
+
+
+
+
+
+   ::= { mplsInSegmentMapEntry 2 }
+
+mplsInSegmentMapLabelPtrIndex OBJECT-TYPE
+   SYNTAX        RowPointer
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { mplsInSegmentMapEntry 3 }
+
+mplsInSegmentMapIndex OBJECT-TYPE
+   SYNTAX        MplsIndexType
+   MAX-ACCESS    read-only
+   STATUS        current
+   ::= { mplsInSegmentMapEntry 4 }
+
+
+
+
+mplsXCNotificationsEnable OBJECT-TYPE
+   SYNTAX        TruthValue
+   MAX-ACCESS    read-write
+   STATUS        current
+   DEFVAL { false }
+   ::= { mplsLsrObjects 15 }
+
+
+mplsXCUp NOTIFICATION-TYPE
+   OBJECTS     { mplsXCOperStatus,  -- start of range
+                 mplsXCOperStatus   -- end of range
+   }
+   STATUS      current
+   ::= { mplsLsrNotifications 1 }
+
+mplsXCDown NOTIFICATION-TYPE
+   OBJECTS     {
+      mplsXCOperStatus,  -- start of range
+      mplsXCOperStatus   -- end of range
+   }
+   STATUS      current
+   ::= { mplsLsrNotifications 2 }
+
+
+
+
+mplsLsrGroups
+   OBJECT IDENTIFIER ::= { mplsLsrConformance 1 }
+
+mplsLsrCompliances
+   OBJECT IDENTIFIER ::= { mplsLsrConformance 2 }
+
+
+mplsLsrModuleFullCompliance MODULE-COMPLIANCE
+   STATUS       current
+
+   MODULE IF-MIB -- The Interfaces Group MIB, RFC 2863.
+   MANDATORY-GROUPS {
+      ifGeneralInformationGroup,
+      ifCounterDiscontinuityGroup
+   }
+
+   MODULE -- This module.
+   MANDATORY-GROUPS {
+         mplsInterfaceGroup,
+         mplsInSegmentGroup,
+         mplsOutSegmentGroup,
+
+
+
+
+
+         mplsXCGroup,
+         mplsPerfGroup
+   }
+
+   GROUP        mplsLabelStackGroup
+
+   GROUP        mplsHCInSegmentPerfGroup
+
+   GROUP        mplsHCOutSegmentPerfGroup
+
+   GROUP        mplsLsrNotificationGroup
+
+   OBJECT       mplsInSegmentRowStatus
+   SYNTAX       RowStatus { active(1), notInService(2) }
+   WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                            createAndGo(4), destroy(6)
+                          }
+
+   OBJECT       mplsOutSegmentNextHopAddrType
+   SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+   OBJECT       mplsOutSegmentNextHopAddr
+   SYNTAX       InetAddress (SIZE(0|4|16))
+
+   OBJECT       mplsOutSegmentRowStatus
+   SYNTAX       RowStatus { active(1), notInService(2) }
+
+
+
+
+
+   WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                            createAndGo(4), destroy(6)
+                          }
+
+   OBJECT       mplsLabelStackRowStatus
+   SYNTAX       RowStatus { active(1), notInService(2) }
+   WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                            createAndGo(4), destroy(6)
+                          }
+
+   OBJECT       mplsXCRowStatus
+   SYNTAX       RowStatus { active(1), notInService(2) }
+   WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                            createAndGo(4), destroy(6)
+                          }
+
+   ::= { mplsLsrCompliances 1 }
+
+
+mplsLsrModuleReadOnlyCompliance MODULE-COMPLIANCE
+   STATUS       current
+
+   MODULE IF-MIB -- The interfaces Group MIB, RFC 2863
+   MANDATORY-GROUPS {
+      ifGeneralInformationGroup,
+      ifCounterDiscontinuityGroup
+   }
+
+   MODULE -- This module
+   MANDATORY-GROUPS {
+         mplsInterfaceGroup,
+         mplsInSegmentGroup,
+         mplsOutSegmentGroup,
+         mplsXCGroup,
+         mplsPerfGroup
+     }
+
+
+
+
+
+   GROUP        mplsLabelStackGroup
+
+   GROUP        mplsHCInSegmentPerfGroup
+
+   GROUP        mplsHCOutSegmentPerfGroup
+
+   GROUP        mplsLsrNotificationGroup
+
+   OBJECT       mplsInSegmentLabel
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsInSegmentLabelPtr
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsInSegmentNPop
+   SYNTAX       Integer32 (1..1)
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsInSegmentAddrFamily
+   MIN-ACCESS   read-only
+
+
+
+
+
+   OBJECT       mplsInSegmentRowStatus
+   SYNTAX       RowStatus { active(1) }
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsInSegmentStorageType
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsOutSegmentInterface
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsOutSegmentPushTopLabel
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsOutSegmentTopLabel
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsOutSegmentTopLabelPtr
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsOutSegmentNextHopAddrType
+   SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsOutSegmentNextHopAddr
+   SYNTAX       InetAddress (SIZE(0|4|16))
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsOutSegmentRowStatus
+   SYNTAX       RowStatus { active(1) }
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsOutSegmentStorageType
+   MIN-ACCESS   read-only
+
+
+
+
+
+   OBJECT       mplsXCLabelStackIndex
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsXCAdminStatus
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsXCRowStatus
+   SYNTAX       RowStatus { active(1) }
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsXCStorageType
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsLabelStackLabel
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsLabelStackLabelPtr
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsLabelStackRowStatus
+   MIN-ACCESS   read-only
+
+   OBJECT       mplsLabelStackStorageType
+   MIN-ACCESS   read-only
+
+   ::= { mplsLsrCompliances 2 }
+
+
+mplsInterfaceGroup OBJECT-GROUP
+   OBJECTS {
+      mplsInterfaceLabelMinIn,
+      mplsInterfaceLabelMaxIn,
+      mplsInterfaceLabelMinOut,
+      mplsInterfaceLabelMaxOut,
+      mplsInterfaceTotalBandwidth,
+      mplsInterfaceAvailableBandwidth,
+      mplsInterfaceLabelParticipationType
+   }
+
+
+
+
+
+   STATUS  current
+   ::= { mplsLsrGroups 1 }
+
+mplsInSegmentGroup  OBJECT-GROUP
+   OBJECTS {
+      mplsInSegmentIndexNext,
+      mplsInSegmentInterface,
+      mplsInSegmentLabel,
+      mplsInSegmentLabelPtr,
+      mplsInSegmentNPop,
+      mplsInSegmentAddrFamily,
+      mplsInSegmentXCIndex,
+      mplsInSegmentOwner,
+      mplsInSegmentRowStatus,
+      mplsInSegmentStorageType,
+      mplsInSegmentTrafficParamPtr,
+      mplsInSegmentMapIndex
+   }
+   STATUS  current
+   ::= { mplsLsrGroups 2 }
+
+mplsOutSegmentGroup  OBJECT-GROUP
+   OBJECTS {
+      mplsOutSegmentIndexNext,
+      mplsOutSegmentInterface,
+      mplsOutSegmentPushTopLabel,
+      mplsOutSegmentTopLabel,
+      mplsOutSegmentTopLabelPtr,
+      mplsOutSegmentNextHopAddrType,
+      mplsOutSegmentNextHopAddr,
+      mplsOutSegmentXCIndex,
+      mplsOutSegmentOwner,
+      mplsOutSegmentPerfOctets,
+      mplsOutSegmentPerfDiscards,
+      mplsOutSegmentPerfErrors,
+      mplsOutSegmentRowStatus,
+      mplsOutSegmentStorageType,
+      mplsOutSegmentTrafficParamPtr
+   }
+   STATUS  current
+   ::= { mplsLsrGroups 3 }
+
+mplsXCGroup  OBJECT-GROUP
+   OBJECTS {
+      mplsXCIndexNext,
+      mplsXCLspId,
+      mplsXCLabelStackIndex,
+      mplsXCOwner,
+      mplsXCStorageType,
+      mplsXCAdminStatus,
+      mplsXCOperStatus,
+      mplsXCRowStatus,
+      mplsXCNotificationsEnable
+   }
+   STATUS  current
+   ::= { mplsLsrGroups 4 }
+
+mplsPerfGroup OBJECT-GROUP
+   OBJECTS {
+      mplsInSegmentPerfOctets,
+      mplsInSegmentPerfPackets,
+      mplsInSegmentPerfErrors,
+      mplsInSegmentPerfDiscards,
+      mplsInSegmentPerfDiscontinuityTime,
+      mplsOutSegmentPerfOctets,
+      mplsOutSegmentPerfPackets,
+      mplsOutSegmentPerfDiscards,
+      mplsOutSegmentPerfDiscontinuityTime,
+      mplsInterfacePerfInLabelsInUse,
+      mplsInterfacePerfInLabelLookupFailures,
+      mplsInterfacePerfOutFragmentedPkts,
+      mplsInterfacePerfOutLabelsInUse
+   }
+
+   STATUS  current
+   ::= { mplsLsrGroups 5 }
+
+mplsHCInSegmentPerfGroup OBJECT-GROUP
+   OBJECTS { mplsInSegmentPerfHCOctets }
+   STATUS  current
+
+
+
+
+
+   ::= { mplsLsrGroups 6 }
+
+mplsHCOutSegmentPerfGroup OBJECT-GROUP
+   OBJECTS { mplsOutSegmentPerfHCOctets }
+   STATUS  current
+   ::= { mplsLsrGroups 7 }
+
+mplsLabelStackGroup OBJECT-GROUP
+   OBJECTS {
+      mplsLabelStackLabel,
+      mplsLabelStackLabelPtr,
+      mplsLabelStackRowStatus,
+      mplsLabelStackStorageType,
+      mplsMaxLabelStackDepth,
+      mplsLabelStackIndexNext
+   }
+   STATUS current
+      ::= { mplsLsrGroups 8 }
+
+mplsLsrNotificationGroup NOTIFICATION-GROUP
+   NOTIFICATIONS {
+      mplsXCUp,
+      mplsXCDown
+   }
+   STATUS  current
+   ::= { mplsLsrGroups 9 }
+END

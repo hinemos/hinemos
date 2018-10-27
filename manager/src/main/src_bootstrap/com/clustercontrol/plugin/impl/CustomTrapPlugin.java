@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.plugin.impl;
@@ -27,9 +20,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.customtrap.service.CustomTrapMonitorService;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 
 /**
@@ -39,21 +32,8 @@ import com.clustercontrol.plugin.api.HinemosPlugin;
 public class CustomTrapPlugin implements HinemosPlugin {
 	private static final Logger logger = Logger.getLogger(CustomTrapPlugin.class);
 
-	/** CustomTrap URL */
-	public static final String _keyCustomTrapUrl = "monitor.customtrap.url";
-	public static final String _customtrapUrlDefault = "http://0.0.0.0:8082/";
-
 	/** CustomTrapのデフォルト文字コード */
-	public static final String _keyCharset = "monitor.customtrap.charset";
 	public static final Charset _charsetDefault = Charset.forName("UTF-8");
-
-	/** HttpServer受信Backlog */
-	private static final String _keyHttpServerBacklogSize = "monitor.customtrap.http.backlog.size";
-	private static final int _httpServerBacklogSizeDefault = 0;
-
-	/** HttpServerスレッド数 */
-	private static final String _keyHttpPoolSize = "monitor.customtrap.http.pool.size";
-	private static final int _httpPoolSizeDefault = 1;
 
 	private static CustomTrapMonitorService customtrapService;
 
@@ -62,6 +42,11 @@ public class CustomTrapPlugin implements HinemosPlugin {
 		Set<String> dependency = new HashSet<String>();
 		dependency.add(AsyncWorkerPlugin.class.getName());
 		return dependency;
+	}
+
+	@Override
+	public Set<String> getRequiredKeys() {
+		return null;
 	}
 
 	@Override
@@ -87,8 +72,7 @@ public class CustomTrapPlugin implements HinemosPlugin {
 	private static void createService() {
 
 		// URL取得
-		String customTrapUrlString = HinemosPropertyUtil.getHinemosPropertyStr(_keyCustomTrapUrl,
-				_customtrapUrlDefault);
+		String customTrapUrlString = HinemosPropertyCommon.monitor_customtrap_url.getStringValue();
 		URL customTrapUrl = null;
 		try {
 			customTrapUrl = new URL(customTrapUrlString);
@@ -99,21 +83,21 @@ public class CustomTrapPlugin implements HinemosPlugin {
 
 		Charset defaultCharset = _charsetDefault;
 		try {
-			defaultCharset = Charset.forName(HinemosPropertyUtil.getHinemosPropertyStr(_keyCharset, "UTF-8"));
+			defaultCharset = Charset.forName(HinemosPropertyCommon.monitor_customtrap_charset.getStringValue());
 		} catch (Exception e) {
 		}
 
-		int httpServerBacklog = HinemosPropertyUtil.getHinemosPropertyNum(_keyHttpServerBacklogSize,
-				Long.valueOf(_httpServerBacklogSizeDefault)).intValue();
-		int httpPoolSize = HinemosPropertyUtil.getHinemosPropertyNum(_keyHttpPoolSize, Long.valueOf(_httpPoolSizeDefault)).intValue();
+		int httpServerBacklog = HinemosPropertyCommon.monitor_customtrap_http_backlog_size.getIntegerValue();
+		int httpPoolSize = HinemosPropertyCommon.monitor_customtrap_http_pool_size.getIntegerValue();
+		int httpQueueSize = HinemosPropertyCommon.monitor_customtrap_http_queue_size.getIntegerValue();
 
 		logger.info(String.format(
-				"starting CustomTrapPlugin :url = %s, charset = %s, httpServerBacklog = %d, httpPoolSize = %d",
-				customTrapUrl.toString(), defaultCharset.name(), httpServerBacklog, httpPoolSize));
+				"starting CustomTrapPlugin :url = %s, charset = %s, httpServerBacklog = %d, httpPoolSize = %d, httpQueueSize = %d",
+				customTrapUrl.toString(), defaultCharset.name(), httpServerBacklog, httpPoolSize, httpQueueSize));
 
 		// HttpServerに設定するスレッドのプール
 		ThreadPoolExecutor httpPoolExecutor = new MonitoredThreadPoolExecutor(httpPoolSize, httpPoolSize, 0L,
-				TimeUnit.MICROSECONDS, new LinkedBlockingQueue<Runnable>(1), new ThreadFactory() {
+				TimeUnit.MICROSECONDS, new LinkedBlockingQueue<Runnable>(httpQueueSize), new ThreadFactory() {
 					private volatile int _count = 0;
 
 					@Override

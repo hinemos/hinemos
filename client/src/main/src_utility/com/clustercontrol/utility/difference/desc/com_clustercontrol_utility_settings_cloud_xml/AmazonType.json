@@ -1,0 +1,33 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"validCollect",
+	"annotations":[
+		{"type":"Column", "columnName":"AmazonType_validCollect"}
+	]},
+	
+	{
+	"propName":"term",
+	"annotations":[
+		{"type":"Column", "columnName":"AmazonType_term"}
+	]},
+
+	{
+	"propName":"s3packet",
+	"annotations":[
+		{"type":"Column", "columnName":"AmazonType_s3packet"}
+	]},
+	
+	{
+	"propName":"amazonUser",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudScopeBaseInfoType_accountId"},
+		{"type":"Array", "idType":"props", "props":["accountId"]},
+		{"type":"Ignore", "propNames":["accountId"]}
+	]}
+]
+}

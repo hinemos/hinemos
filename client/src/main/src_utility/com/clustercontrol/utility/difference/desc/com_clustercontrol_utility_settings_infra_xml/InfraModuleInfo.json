@@ -1,0 +1,146 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"moduleId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"name",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_name"}
+	]},
+
+	{
+	"propName":"orderNo",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_orderNo"}
+	]},
+
+	{
+	"propName":"moduleType",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_moduleType"}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_validFlg"}
+	]},
+
+	{
+	"propName":"stopIfFailCommandFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_stopIfFailCommandFlg"}
+	]},
+
+	{
+	"propName":"stopIfFailFileFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_stopIfFailFileFlg"}
+	]},
+
+	{
+	"propName":"precheckCommandFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_precheckCommandFlg"}
+	]},
+
+	{
+	"propName":"precheckFileFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_precheckFileFlg"}
+	]},
+
+	{
+	"propName":"accessMethodType",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_accessMethodType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_ssh"},
+				{"value":"1", "name":"name_winrm"}
+			]
+		}
+	]},
+
+	{
+	"propName":"execCommand",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_execCommand"}
+	]},
+
+	{
+	"propName":"checkCommand",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_checkCommand"}
+	]},
+	
+	{
+	"propName":"fileId",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_fileId"}
+	]},
+
+	{
+	"propName":"destPath",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_destPath"}
+	]},
+	
+	{
+	"propName":"sendMethodType",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_sendMethodType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_scp"},
+				{"value":"1", "name":"name_winrm"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"destOwner",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_destOwner"}
+	]},
+	
+	{
+	"propName":"destAttribute",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_destAttribute"}
+	]},
+	
+	{
+	"propName":"backupIfExistFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_backupIfExistFlg"}
+	]},
+
+	{
+	"propName":"fileTransferVariable",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"name"},
+		{"type":"Column", "columnName":"FileTransferVariableType_fileTransferVariable"},
+		{"type":"Ignore", "propNames":["name"]}
+	]},
+
+	{
+	"propName":"execReturnParamName",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_execReturnParamName"}
+	]},
+
+	{
+	"propName":"referManagementId",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraModuleInfo_referManagementId"}
+	]}
+]
+}

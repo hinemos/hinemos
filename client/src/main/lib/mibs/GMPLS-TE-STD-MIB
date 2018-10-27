@@ -1,0 +1,881 @@
+GMPLS-TE-STD-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+  MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+  Unsigned32, Counter32, Counter64, zeroDotZero, Gauge32
+    FROM SNMPv2-SMI                                   -- RFC 2578
+  MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+    FROM SNMPv2-CONF                                  -- RFC 2580
+  TruthValue, TimeStamp, RowPointer
+    FROM SNMPv2-TC                                    -- RFC 2579
+  InetAddress, InetAddressType
+    FROM INET-ADDRESS-MIB                             -- RFC 4001
+  SnmpAdminString
+    FROM SNMP-FRAMEWORK-MIB                           -- RFC 3411
+  mplsTunnelIndex, mplsTunnelInstance, mplsTunnelIngressLSRId,
+  mplsTunnelEgressLSRId, mplsTunnelHopListIndex,
+  mplsTunnelHopPathOptionIndex, mplsTunnelHopIndex,
+  mplsTunnelARHopListIndex, mplsTunnelARHopIndex,
+  mplsTunnelCHopListIndex, mplsTunnelCHopIndex,
+  mplsTunnelEntry,
+  mplsTunnelAdminStatus, mplsTunnelOperStatus,
+  mplsTunnelGroup, mplsTunnelScalarGroup
+    FROM MPLS-TE-STD-MIB                              -- RFC3812
+  IANAGmplsLSPEncodingTypeTC, IANAGmplsSwitchingTypeTC,
+  IANAGmplsGeneralizedPidTC, IANAGmplsAdminStatusInformationTC
+    FROM IANA-GMPLS-TC-MIB
+  mplsStdMIB
+    FROM MPLS-TC-STD-MIB                              -- RFC 3811
+;
+
+
+
+
+
+
+
+
+gmplsTeStdMIB MODULE-IDENTITY
+      LAST-UPDATED
+         "200702270000Z" -- 27 February 2007 00:00:00 GMT
+      ORGANIZATION
+        "IETF Common Control and Measurement Plane (CCAMP) Working
+         Group"
+
+::= { mplsStdMIB 13 }
+
+gmplsTeNotifications OBJECT IDENTIFIER ::= { gmplsTeStdMIB 0 }
+gmplsTeScalars OBJECT IDENTIFIER ::= { gmplsTeStdMIB 1 }
+gmplsTeObjects OBJECT IDENTIFIER ::= { gmplsTeStdMIB 2 }
+gmplsTeConformance OBJECT IDENTIFIER ::= { gmplsTeStdMIB 3 }
+
+gmplsTunnelsConfigured OBJECT-TYPE
+  SYNTAX  Gauge32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTeScalars 1 }
+
+gmplsTunnelsActive OBJECT-TYPE
+  SYNTAX  Gauge32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTeScalars 2 }
+
+gmplsTunnelTable OBJECT-TYPE
+  SYNTAX  SEQUENCE OF GmplsTunnelEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+::= { gmplsTeObjects 1 }
+
+
+
+
+
+
+
+
+gmplsTunnelEntry OBJECT-TYPE
+  SYNTAX  GmplsTunnelEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+  INDEX {
+    mplsTunnelIndex,
+    mplsTunnelInstance,
+    mplsTunnelIngressLSRId,
+    mplsTunnelEgressLSRId
+  }
+::= { gmplsTunnelTable 1 }
+
+  GmplsTunnelEntry ::= SEQUENCE {
+   gmplsTunnelUnnumIf                       TruthValue,
+   gmplsTunnelAttributes                    BITS,
+   gmplsTunnelLSPEncoding                   IANAGmplsLSPEncodingTypeTC,
+   gmplsTunnelSwitchingType                 IANAGmplsSwitchingTypeTC,
+   gmplsTunnelLinkProtection                BITS,
+   gmplsTunnelGPid                          IANAGmplsGeneralizedPidTC,
+   gmplsTunnelSecondary                     TruthValue,
+   gmplsTunnelDirection                     INTEGER,
+   gmplsTunnelPathComp                      INTEGER,
+   gmplsTunnelUpstreamNotifyRecipientType   InetAddressType,
+   gmplsTunnelUpstreamNotifyRecipient       InetAddress,
+   gmplsTunnelSendResvNotifyRecipientType   InetAddressType,
+   gmplsTunnelSendResvNotifyRecipient       InetAddress,
+   gmplsTunnelDownstreamNotifyRecipientType InetAddressType,
+   gmplsTunnelDownstreamNotifyRecipient     InetAddress,
+   gmplsTunnelSendPathNotifyRecipientType   InetAddressType,
+   gmplsTunnelSendPathNotifyRecipient       InetAddress,
+   gmplsTunnelAdminStatusFlags        IANAGmplsAdminStatusInformationTC,
+   gmplsTunnelExtraParamsPtr                RowPointer
+   }
+
+gmplsTunnelUnnumIf OBJECT-TYPE
+  SYNTAX  TruthValue
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL  { false }
+::= { gmplsTunnelEntry 1 }
+
+gmplsTunnelAttributes OBJECT-TYPE
+  SYNTAX BITS {
+    labelRecordingDesired(0)
+  }
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL  { { } }
+::= { gmplsTunnelEntry 2 }
+
+gmplsTunnelLSPEncoding OBJECT-TYPE
+  SYNTAX  IANAGmplsLSPEncodingTypeTC
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL  { tunnelLspNotGmpls }
+::= { gmplsTunnelEntry 3 }
+
+gmplsTunnelSwitchingType OBJECT-TYPE
+  SYNTAX  IANAGmplsSwitchingTypeTC
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL  { unknown }
+::= { gmplsTunnelEntry 4 }
+
+gmplsTunnelLinkProtection OBJECT-TYPE
+  SYNTAX  BITS {
+    extraTraffic(0),
+    unprotected(1),
+    shared(2),
+    dedicatedOneToOne(3),
+    dedicatedOnePlusOne(4),
+    enhanced(5)
+  }
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL  { { } }
+::= { gmplsTunnelEntry 5 }
+
+gmplsTunnelGPid OBJECT-TYPE
+  SYNTAX  IANAGmplsGeneralizedPidTC
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL  { unknown }
+::= { gmplsTunnelEntry 6 }
+
+
+
+
+
+
+gmplsTunnelSecondary OBJECT-TYPE
+  SYNTAX  TruthValue
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL  { false }
+::= { gmplsTunnelEntry 7 }
+
+gmplsTunnelDirection OBJECT-TYPE
+  SYNTAX  INTEGER {
+    forward(0),
+    bidirectional(1)
+  }
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL { forward }
+::= { gmplsTunnelEntry 8 }
+
+gmplsTunnelPathComp OBJECT-TYPE
+  SYNTAX  INTEGER {
+    dynamicFull(1),   -- CSPF fully computed
+    explicit(2),      -- fully specified path
+    dynamicPartial(3) -- CSPF partially computed
+  }
+  MAX-ACCESS read-create
+  STATUS current
+  DEFVAL { dynamicFull }
+::= { gmplsTunnelEntry 9 }
+
+gmplsTunnelUpstreamNotifyRecipientType OBJECT-TYPE
+  SYNTAX  InetAddressType
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL { unknown }
+::= { gmplsTunnelEntry 10 }
+
+gmplsTunnelUpstreamNotifyRecipient OBJECT-TYPE
+  SYNTAX  InetAddress
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL { '00000000'H } -- 0.0.0.0
+::= { gmplsTunnelEntry 11 }
+
+gmplsTunnelSendResvNotifyRecipientType OBJECT-TYPE
+  SYNTAX  InetAddressType
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL { unknown }
+::= { gmplsTunnelEntry 12 }
+
+gmplsTunnelSendResvNotifyRecipient OBJECT-TYPE
+  SYNTAX  InetAddress
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL { '00000000'H } -- 0.0.0.0
+::= { gmplsTunnelEntry 13 }
+
+gmplsTunnelDownstreamNotifyRecipientType OBJECT-TYPE
+  SYNTAX  InetAddressType
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL { unknown }
+::= { gmplsTunnelEntry 14 }
+
+gmplsTunnelDownstreamNotifyRecipient OBJECT-TYPE
+  SYNTAX  InetAddress
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL { '00000000'H } -- 0.0.0.0
+::= { gmplsTunnelEntry 15 }
+
+gmplsTunnelSendPathNotifyRecipientType OBJECT-TYPE
+  SYNTAX  InetAddressType
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL { unknown }
+::= { gmplsTunnelEntry 16 }
+
+gmplsTunnelSendPathNotifyRecipient OBJECT-TYPE
+  SYNTAX  InetAddress
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL { '00000000'H } -- 0.0.0.0
+::= { gmplsTunnelEntry 17 }
+
+gmplsTunnelAdminStatusFlags OBJECT-TYPE
+   SYNTAX   IANAGmplsAdminStatusInformationTC
+   MAX-ACCESS   read-create
+   STATUS       current
+  DEFVAL  { { } }
+  ::= { gmplsTunnelEntry 18 }
+
+gmplsTunnelExtraParamsPtr  OBJECT-TYPE
+  SYNTAX       RowPointer
+  MAX-ACCESS   read-create
+  STATUS       current
+  DEFVAL  { zeroDotZero }
+  ::= { gmplsTunnelEntry 19 }
+
+gmplsTunnelHopTable  OBJECT-TYPE
+  SYNTAX  SEQUENCE OF GmplsTunnelHopEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+::= { gmplsTeObjects 2 }
+
+gmplsTunnelHopEntry  OBJECT-TYPE
+  SYNTAX  GmplsTunnelHopEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+  INDEX {
+    mplsTunnelHopListIndex,
+    mplsTunnelHopPathOptionIndex,
+    mplsTunnelHopIndex
+  }
+::= { gmplsTunnelHopTable 1 }
+
+GmplsTunnelHopEntry ::= SEQUENCE {
+  gmplsTunnelHopLabelStatuses           BITS,
+  gmplsTunnelHopExplicitForwardLabel    Unsigned32,
+  gmplsTunnelHopExplicitForwardLabelPtr RowPointer,
+  gmplsTunnelHopExplicitReverseLabel    Unsigned32,
+  gmplsTunnelHopExplicitReverseLabelPtr RowPointer
+}
+
+gmplsTunnelHopLabelStatuses OBJECT-TYPE
+  SYNTAX  BITS {
+    forwardPresent(0),
+    reversePresent(1)
+  }
+  MAX-ACCESS read-only
+  STATUS  current
+  DEFVAL  { { } }
+::= { gmplsTunnelHopEntry 1 }
+
+gmplsTunnelHopExplicitForwardLabel OBJECT-TYPE
+  SYNTAX  Unsigned32
+  MAX-ACCESS read-create
+  STATUS  current
+::= { gmplsTunnelHopEntry 2 }
+
+gmplsTunnelHopExplicitForwardLabelPtr OBJECT-TYPE
+  SYNTAX  RowPointer
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL  { zeroDotZero }
+::= { gmplsTunnelHopEntry 3 }
+
+gmplsTunnelHopExplicitReverseLabel OBJECT-TYPE
+  SYNTAX  Unsigned32
+  MAX-ACCESS read-create
+  STATUS  current
+::= { gmplsTunnelHopEntry 4 }
+
+
+
+
+
+gmplsTunnelHopExplicitReverseLabelPtr OBJECT-TYPE
+  SYNTAX  RowPointer
+  MAX-ACCESS read-create
+  STATUS  current
+  DEFVAL  { zeroDotZero }
+::= { gmplsTunnelHopEntry 5 }
+
+gmplsTunnelARHopTable  OBJECT-TYPE
+  SYNTAX  SEQUENCE OF GmplsTunnelARHopEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+::= { gmplsTeObjects 3 }
+
+gmplsTunnelARHopEntry  OBJECT-TYPE
+  SYNTAX  GmplsTunnelARHopEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+  INDEX {
+    mplsTunnelARHopListIndex,
+    mplsTunnelARHopIndex
+  }
+::= { gmplsTunnelARHopTable 1 }
+
+GmplsTunnelARHopEntry ::= SEQUENCE {
+  gmplsTunnelARHopLabelStatuses           BITS,
+  gmplsTunnelARHopExplicitForwardLabel    Unsigned32,
+  gmplsTunnelARHopExplicitForwardLabelPtr RowPointer,
+  gmplsTunnelARHopExplicitReverseLabel    Unsigned32,
+  gmplsTunnelARHopExplicitReverseLabelPtr RowPointer,
+  gmplsTunnelARHopProtection              BITS
+}
+
+gmplsTunnelARHopLabelStatuses OBJECT-TYPE
+  SYNTAX  BITS {
+    forwardPresent(0),
+    reversePresent(1),
+    forwardGlobal(2),
+    reverseGlobal(3)
+  }
+
+
+
+
+
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelARHopEntry 1 }
+
+gmplsTunnelARHopExplicitForwardLabel OBJECT-TYPE
+  SYNTAX  Unsigned32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelARHopEntry 2 }
+
+gmplsTunnelARHopExplicitForwardLabelPtr OBJECT-TYPE
+  SYNTAX  RowPointer
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelARHopEntry 3 }
+
+
+
+
+
+
+
+gmplsTunnelARHopExplicitReverseLabel OBJECT-TYPE
+  SYNTAX  Unsigned32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelARHopEntry 4 }
+
+gmplsTunnelARHopExplicitReverseLabelPtr OBJECT-TYPE
+  SYNTAX  RowPointer
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelARHopEntry 5 }
+
+gmplsTunnelARHopProtection  OBJECT-TYPE
+  SYNTAX  BITS {
+    localAvailable(0),
+    localInUse(1)
+  }
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelARHopEntry 6 }
+
+gmplsTunnelCHopTable  OBJECT-TYPE
+  SYNTAX  SEQUENCE OF GmplsTunnelCHopEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+::= { gmplsTeObjects 4 }
+
+gmplsTunnelCHopEntry  OBJECT-TYPE
+  SYNTAX  GmplsTunnelCHopEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+  INDEX {
+    mplsTunnelCHopListIndex,
+    mplsTunnelCHopIndex
+  }
+::= { gmplsTunnelCHopTable 1 }
+
+GmplsTunnelCHopEntry ::= SEQUENCE {
+  gmplsTunnelCHopLabelStatuses           BITS,
+  gmplsTunnelCHopExplicitForwardLabel    Unsigned32,
+  gmplsTunnelCHopExplicitForwardLabelPtr RowPointer,
+  gmplsTunnelCHopExplicitReverseLabel    Unsigned32,
+  gmplsTunnelCHopExplicitReverseLabelPtr RowPointer
+}
+
+gmplsTunnelCHopLabelStatuses OBJECT-TYPE
+  SYNTAX  BITS {
+    forwardPresent(0),
+    reversePresent(1)
+  }
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelCHopEntry 1 }
+
+gmplsTunnelCHopExplicitForwardLabel OBJECT-TYPE
+  SYNTAX  Unsigned32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelCHopEntry 2 }
+
+gmplsTunnelCHopExplicitForwardLabelPtr OBJECT-TYPE
+  SYNTAX  RowPointer
+  MAX-ACCESS read-only
+
+
+
+
+
+  STATUS  current
+::= { gmplsTunnelCHopEntry 3 }
+
+gmplsTunnelCHopExplicitReverseLabel OBJECT-TYPE
+  SYNTAX  Unsigned32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelCHopEntry 4 }
+
+gmplsTunnelCHopExplicitReverseLabelPtr OBJECT-TYPE
+  SYNTAX  RowPointer
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelCHopEntry 5 }
+
+gmplsTunnelReversePerfTable  OBJECT-TYPE
+  SYNTAX  SEQUENCE OF GmplsTunnelReversePerfEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+::= { gmplsTeObjects 5 }
+
+gmplsTunnelReversePerfEntry OBJECT-TYPE
+  SYNTAX  GmplsTunnelReversePerfEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+  AUGMENTS { gmplsTunnelEntry }
+::= { gmplsTunnelReversePerfTable 1 }
+
+GmplsTunnelReversePerfEntry ::= SEQUENCE {
+  gmplsTunnelReversePerfPackets     Counter32,
+  gmplsTunnelReversePerfHCPackets   Counter64,
+  gmplsTunnelReversePerfErrors      Counter32,
+  gmplsTunnelReversePerfBytes       Counter32,
+  gmplsTunnelReversePerfHCBytes     Counter64
+}
+
+gmplsTunnelReversePerfPackets OBJECT-TYPE
+  SYNTAX  Counter32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelReversePerfEntry 1 }
+
+gmplsTunnelReversePerfHCPackets OBJECT-TYPE
+  SYNTAX  Counter64
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelReversePerfEntry 2 }
+
+gmplsTunnelReversePerfErrors OBJECT-TYPE
+  SYNTAX  Counter32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelReversePerfEntry 3 }
+
+gmplsTunnelReversePerfBytes OBJECT-TYPE
+  SYNTAX  Counter32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelReversePerfEntry 4 }
+
+gmplsTunnelReversePerfHCBytes OBJECT-TYPE
+  SYNTAX  Counter64
+
+
+
+
+
+  MAX-ACCESS read-only
+  STATUS  current
+
+::= { gmplsTunnelReversePerfEntry 5 }
+
+gmplsTunnelErrorTable  OBJECT-TYPE
+  SYNTAX  SEQUENCE OF GmplsTunnelErrorEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+::= { gmplsTeObjects 6 }
+
+gmplsTunnelErrorEntry OBJECT-TYPE
+  SYNTAX  GmplsTunnelErrorEntry
+  MAX-ACCESS not-accessible
+  STATUS  current
+
+
+
+
+
+  AUGMENTS { mplsTunnelEntry }
+::= { gmplsTunnelErrorTable 1 }
+
+GmplsTunnelErrorEntry ::= SEQUENCE {
+  gmplsTunnelErrorLastErrorType      INTEGER,
+  gmplsTunnelErrorLastTime           TimeStamp,
+  gmplsTunnelErrorReporterType       InetAddressType,
+  gmplsTunnelErrorReporter           InetAddress,
+  gmplsTunnelErrorCode               Unsigned32,
+  gmplsTunnelErrorSubcode            Unsigned32,
+  gmplsTunnelErrorTLVs               OCTET STRING,
+  gmplsTunnelErrorHelpString         SnmpAdminString
+}
+
+gmplsTunnelErrorLastErrorType OBJECT-TYPE
+  SYNTAX  INTEGER {
+    noError(0),
+    unknown(1),
+    protocol(2),
+    pathComputation(3),
+    localConfiguration(4),
+    localResources(5),
+    localOther(6)
+  }
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelErrorEntry 1 }
+
+
+
+
+
+gmplsTunnelErrorLastTime OBJECT-TYPE
+  SYNTAX  TimeStamp
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelErrorEntry 2 }
+
+gmplsTunnelErrorReporterType OBJECT-TYPE
+   SYNTAX     InetAddressType
+   MAX-ACCESS read-only
+   STATUS  current
+::= { gmplsTunnelErrorEntry 3 }
+
+gmplsTunnelErrorReporter OBJECT-TYPE
+  SYNTAX  InetAddress
+  MAX-ACCESS read-only
+  STATUS  current
+
+
+
+
+
+::= { gmplsTunnelErrorEntry 4 }
+
+gmplsTunnelErrorCode OBJECT-TYPE
+  SYNTAX  Unsigned32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelErrorEntry 5 }
+
+gmplsTunnelErrorSubcode OBJECT-TYPE
+  SYNTAX  Unsigned32
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelErrorEntry 6 }
+
+gmplsTunnelErrorTLVs OBJECT-TYPE
+  SYNTAX  OCTET STRING (SIZE(0..65535))
+  MAX-ACCESS read-only
+  STATUS  current
+
+
+
+
+
+::= { gmplsTunnelErrorEntry 7 }
+
+gmplsTunnelErrorHelpString OBJECT-TYPE
+  SYNTAX  SnmpAdminString
+  MAX-ACCESS read-only
+  STATUS  current
+::= { gmplsTunnelErrorEntry 8 }
+
+
+gmplsTunnelDown NOTIFICATION-TYPE
+OBJECTS  {
+  mplsTunnelAdminStatus,
+  mplsTunnelOperStatus,
+  gmplsTunnelErrorLastErrorType,
+  gmplsTunnelErrorReporterType,
+  gmplsTunnelErrorReporter,
+  gmplsTunnelErrorCode,
+  gmplsTunnelErrorSubcode
+}
+STATUS      current
+::= { gmplsTeNotifications 1 }
+
+gmplsTeGroups
+  OBJECT IDENTIFIER ::= { gmplsTeConformance 1 }
+
+gmplsTeCompliances
+  OBJECT IDENTIFIER ::= { gmplsTeConformance 2 }
+
+
+gmplsTeModuleFullCompliance MODULE-COMPLIANCE
+STATUS current
+
+  MODULE MPLS-TE-STD-MIB -- The MPLS-TE-STD-MIB, RFC 3812
+
+  MANDATORY-GROUPS {
+     mplsTunnelGroup,
+     mplsTunnelScalarGroup
+  }
+
+MODULE -- this module
+
+MANDATORY-GROUPS {
+  gmplsTunnelGroup,
+  gmplsTunnelScalarGroup
+}
+
+GROUP gmplsTunnelSignaledGroup
+
+GROUP gmplsTunnelOptionalGroup
+
+GROUP gmplsTeNotificationGroup
+
+::= { gmplsTeCompliances 1 }
+
+
+gmplsTeModuleReadOnlyCompliance MODULE-COMPLIANCE
+  STATUS current
+
+  MODULE -- this module
+
+
+
+
+
+
+
+MANDATORY-GROUPS {
+  gmplsTunnelGroup,
+  gmplsTunnelScalarGroup
+}
+
+GROUP gmplsTunnelSignaledGroup
+
+GROUP gmplsTunnelOptionalGroup
+
+GROUP gmplsTeNotificationGroup
+
+OBJECT gmplsTunnelUnnumIf
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelAttributes
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelLSPEncoding
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelSwitchingType
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelLinkProtection
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelGPid
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelSecondary
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelDirection
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelPathComp
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelUpstreamNotifyRecipientType
+  SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+  MIN-ACCESS   read-only
+
+OBJECT gmplsTunnelUpstreamNotifyRecipient
+  SYNTAX      InetAddress (SIZE(0|4|16))
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelSendResvNotifyRecipientType
+  SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+  MIN-ACCESS read-only
+
+OBJECT gmplsTunnelSendResvNotifyRecipient
+  SYNTAX      InetAddress (SIZE(0|4|16))
+  MIN-ACCESS read-only
+
+OBJECT gmplsTunnelDownstreamNotifyRecipientType
+  SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+
+
+
+
+  MIN-ACCESS read-only
+
+OBJECT gmplsTunnelDownstreamNotifyRecipient
+  SYNTAX      InetAddress (SIZE(0|4|16))
+  MIN-ACCESS read-only
+
+OBJECT gmplsTunnelSendPathNotifyRecipientType
+  SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+  MIN-ACCESS read-only
+
+OBJECT gmplsTunnelSendPathNotifyRecipient
+  SYNTAX      InetAddress (SIZE(0|4|16))
+  MIN-ACCESS read-only
+
+OBJECT gmplsTunnelAdminStatusFlags
+  MIN-ACCESS read-only
+
+OBJECT gmplsTunnelExtraParamsPtr
+  MIN-ACCESS read-only
+
+
+OBJECT gmplsTunnelHopExplicitForwardLabel
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelHopExplicitForwardLabelPtr
+  MIN-ACCESS  read-only
+
+OBJECT gmplsTunnelHopExplicitReverseLabel
+  MIN-ACCESS  read-only
+
+
+
+
+
+OBJECT gmplsTunnelHopExplicitReverseLabelPtr
+  MIN-ACCESS  read-only
+
+
+
+
+
+OBJECT gmplsTunnelErrorReporterType
+  SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+OBJECT gmplsTunnelErrorReporter
+  SYNTAX      InetAddress (SIZE(0|4|16))
+::= { gmplsTeCompliances 2 }
+
+gmplsTunnelGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsTunnelDirection,
+    gmplsTunnelReversePerfPackets,
+    gmplsTunnelReversePerfHCPackets,
+    gmplsTunnelReversePerfErrors,
+    gmplsTunnelReversePerfBytes,
+    gmplsTunnelReversePerfHCBytes,
+    gmplsTunnelErrorLastErrorType,
+    gmplsTunnelErrorLastTime,
+    gmplsTunnelErrorReporterType,
+    gmplsTunnelErrorReporter,
+    gmplsTunnelErrorCode,
+    gmplsTunnelErrorSubcode,
+    gmplsTunnelErrorTLVs,
+    gmplsTunnelErrorHelpString,
+    gmplsTunnelUnnumIf
+  }
+  STATUS  current
+::= { gmplsTeGroups 1 }
+
+gmplsTunnelSignaledGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsTunnelAttributes,
+    gmplsTunnelLSPEncoding,
+    gmplsTunnelSwitchingType,
+    gmplsTunnelLinkProtection,
+    gmplsTunnelGPid,
+    gmplsTunnelSecondary,
+    gmplsTunnelPathComp,
+    gmplsTunnelUpstreamNotifyRecipientType,
+    gmplsTunnelUpstreamNotifyRecipient,
+    gmplsTunnelSendResvNotifyRecipientType,
+    gmplsTunnelSendResvNotifyRecipient,
+    gmplsTunnelDownstreamNotifyRecipientType,
+    gmplsTunnelDownstreamNotifyRecipient,
+    gmplsTunnelSendPathNotifyRecipientType,
+    gmplsTunnelSendPathNotifyRecipient,
+    gmplsTunnelAdminStatusFlags,
+    gmplsTunnelHopLabelStatuses,
+    gmplsTunnelHopExplicitForwardLabel,
+    gmplsTunnelHopExplicitForwardLabelPtr,
+    gmplsTunnelHopExplicitReverseLabel,
+    gmplsTunnelHopExplicitReverseLabelPtr
+  }
+  STATUS  current
+::= { gmplsTeGroups 2 }
+
+gmplsTunnelScalarGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsTunnelsConfigured,
+    gmplsTunnelsActive
+  }
+  STATUS  current
+::= { gmplsTeGroups 3 }
+
+gmplsTunnelOptionalGroup OBJECT-GROUP
+  OBJECTS {
+
+
+
+
+
+    gmplsTunnelExtraParamsPtr,
+    gmplsTunnelARHopLabelStatuses,
+    gmplsTunnelARHopExplicitForwardLabel,
+    gmplsTunnelARHopExplicitForwardLabelPtr,
+    gmplsTunnelARHopExplicitReverseLabel,
+    gmplsTunnelARHopExplicitReverseLabelPtr,
+    gmplsTunnelARHopProtection,
+    gmplsTunnelCHopLabelStatuses,
+    gmplsTunnelCHopExplicitForwardLabel,
+    gmplsTunnelCHopExplicitForwardLabelPtr,
+    gmplsTunnelCHopExplicitReverseLabel,
+    gmplsTunnelCHopExplicitReverseLabelPtr
+  }
+  STATUS  current
+::= { gmplsTeGroups 4 }
+
+gmplsTeNotificationGroup NOTIFICATION-GROUP
+  NOTIFICATIONS {
+     gmplsTunnelDown
+  }
+  STATUS  current
+::= { gmplsTeGroups 5 }
+
+END

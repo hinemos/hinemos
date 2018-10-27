@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"vmwareUserName",
+	"annotations":[
+		{"type":"Column", "columnName":"VmwareUserType_vmwareUserName"}
+	]},
+	
+	{
+	"propName":"vmwarePassword",
+	"annotations":[
+		{"type":"Column", "columnName":"VmwareUserType_vmwareUserPassword"}
+	]}
+]
+}

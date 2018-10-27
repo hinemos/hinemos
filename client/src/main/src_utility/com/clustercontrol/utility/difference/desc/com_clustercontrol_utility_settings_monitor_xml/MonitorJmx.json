@@ -1,0 +1,43 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitor",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Ignore", "propNames":[]}
+	]},
+
+	{
+	"propName":"jmxInfo",
+	"annotations":[
+		{"type":"Ignore", "propNames":["MonitorId", "MonitorTypeId"]}
+	]},
+
+	{
+	"propName":"numericValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"priority"},
+		{
+		"type":"ColumnOverrides",
+		"values":[
+			{"p":"thresholdLowerLimit", "c":{"type":"Column", "columnName":"MonitorJmx_thresholdLowerLimit"}}, {"p":"thresholdUpperLimit", "c":{"type":"Column", "columnName":"MonitorJmx_thresholdUpperLimit"}}
+		]},
+		{"type":"Ignore", "propNames":["priority"]}
+	]},
+
+	{
+	"propName":"numericChangeAmount",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"priority"},
+		{
+		"type":"ColumnOverrides",
+		"values":[
+			{"p":"thresholdLowerLimit", "c":{"type":"Column", "columnName":"MonitorChangeValueInfo_thresholdLowerLimit"}}, {"p":"thresholdUpperLimit", "c":{"type":"Column", "columnName":"MonitorChangeValueInfo_thresholdUpperLimit"}}
+		]},
+		{"type":"Ignore", "propNames":["priority"]}
+	]}
+]
+}

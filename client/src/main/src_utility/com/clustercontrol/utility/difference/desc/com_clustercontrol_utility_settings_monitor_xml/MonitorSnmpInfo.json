@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"convertFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSnmpInfo_convertFlg"},
+		{"type":"Translate", "values":[{"value":"0", "name":"name_nothing"}, {"value":"1", "name":"name_takeDifference"}]}
+	]},
+
+	{
+	"propName":"snmpOid",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSnmpInfo_snmpOid"}
+	]}
+]
+}

@@ -1,0 +1,51 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"roleId",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"SystemPrivilegeInfo_roleId"}
+	]},
+
+	{
+	"propName":"systemFunction",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"SystemPrivilegeInfo_systemFunction"},
+		{"type":"Translate",
+			"values":[
+				{"value":"Repository", "name":"name_Function_Repository"},
+				{"value":"AccessControl", "name":"name_Function_AccessControl"},
+				{"value":"JobManagement", "name":"name_Function_JobManagement"},
+				{"value":"Performance", "name":"name_Function_Performance"},
+				{"value":"MonitorResult", "name":"name_Function_MonitorResult"},
+				{"value":"MonitorSetting", "name":"name_Function_MonitorSetting"},
+				{"value":"Calendar", "name":"name_Function_Calendar"},
+				{"value":"Notify", "name":"name_Function_Notify"},
+				{"value":"Maintenance", "name":"name_Function_Maintenance"},
+				{"value":"CollectiveRun", "name":"name_Function_CollectiveRun"},
+				{"value":"VmManagement", "name":"name_Function_VmManagement"}
+			]
+		}
+	]},
+
+	{
+	"propName":"systemPrivilege",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"SystemPrivilegeInfo_systemPrivilege"},
+		{"type":"Translate",
+			"values":[
+				{"value":"ADD", "name":"name_Privilege_Add"},
+				{"value":"READ", "name":"name_Privilege_Read"},
+				{"value":"MODIFY", "name":"name_Privilege_Modify"},
+				{"value":"EXEC", "name":"name_Privilege_Exec"},
+				{"value":"APPROVAL", "name":"name_Privilege_Approval"}
+			]
+		}
+	]}
+]
+}

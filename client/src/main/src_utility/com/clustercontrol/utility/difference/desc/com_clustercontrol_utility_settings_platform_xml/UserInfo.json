@@ -1,0 +1,37 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"userId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"name",
+	"annotations":[
+		{"type":"Column", "columnName":"UserInfo_name"}
+	]},
+
+	{
+	"propName":"password",
+	"annotations":[
+		{"type":"Column", "columnName":"UserInfo_password"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"UserInfo_description"}
+	]},
+	
+	{
+	"propName":"mailAddress",
+	"annotations":[
+		{"type":"Column", "columnName":"UserInfo_mailAddress"}
+	]}	
+	
+]
+}

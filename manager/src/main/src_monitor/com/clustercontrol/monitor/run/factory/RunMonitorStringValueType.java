@@ -1,23 +1,13 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.factory;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -25,11 +15,10 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorJudgementInfo;
-import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
-import com.clustercontrol.monitor.run.util.QueryUtil;
+import com.clustercontrol.monitor.run.util.MonitorJudgementInfoCache;
 
 /**
  * 文字列監視を実行する抽象クラス<BR>
@@ -59,6 +48,11 @@ abstract public class RunMonitorStringValueType extends RunMonitor{
 	 */
 	@Override
 	public abstract boolean collect(String facilityId) throws HinemosUnknown;
+
+	@Override
+	public int getCheckResult(boolean ret, Object value) {
+		throw new UnsupportedOperationException("forbidden to call getCheckResult() method");
+	}
 
 	/**
 	 * 判定結果を返します。
@@ -159,42 +153,9 @@ abstract public class RunMonitorStringValueType extends RunMonitor{
 	 */
 	@Override
 	protected void setJudgementInfo() {
-		m_log.debug("setJudgementInfo() start");
-
 		// 文字列監視判定値、ログ出力メッセージ情報を取得
-		Collection<MonitorStringValueInfo> ct
-		= QueryUtil.getMonitorStringValueInfoFindByMonitorId(m_monitorId, ObjectPrivilegeMode.NONE);
-		Iterator<MonitorStringValueInfo> itr = ct.iterator();
-
-		m_judgementInfoList = new TreeMap<Integer, MonitorJudgementInfo>();
-		MonitorStringValueInfo entity = null;
-		while(itr.hasNext()){
-
-			entity = itr.next();
-			MonitorJudgementInfo monitorJudgementInfo = new MonitorJudgementInfo();
-			monitorJudgementInfo.setMonitorId(entity.getId().getMonitorId());
-			monitorJudgementInfo.setPriority(entity.getPriority());
-			monitorJudgementInfo.setMessage(entity.getMessage());
-			monitorJudgementInfo.setCaseSensitivityFlg(entity.getCaseSensitivityFlg());
-			monitorJudgementInfo.setDescription(entity.getDescription());
-			monitorJudgementInfo.setPattern(entity.getPattern());
-			monitorJudgementInfo.setProcessType(entity.getProcessType());
-			monitorJudgementInfo.setValidFlg(entity.getValidFlg());
-			m_judgementInfoList.put(entity.getId().getOrderNo(), monitorJudgementInfo);
-
-			if(m_log.isDebugEnabled()){
-				m_log.debug("setJudgementInfo() MonitorStringValue OrderNo = " + entity.getId().getOrderNo().intValue());
-				m_log.debug("setJudgementInfo() MonitorStringValue Description = " + entity.getDescription());
-				m_log.debug("setJudgementInfo() MonitorStringValue Pattern = " + entity.getPattern());
-				m_log.debug("setJudgementInfo() MonitorStringValue ProcessType = " + entity.getProcessType().booleanValue());
-				m_log.debug("setJudgementInfo() MonitorStringValue Priority = " + entity.getPriority().intValue());
-				m_log.debug("setJudgementInfo() MonitorStringValue Message = " + entity.getMessage());
-				m_log.debug("setJudgementInfo() MonitorStringValue CaseSensitivityFlg = " + entity.getCaseSensitivityFlg());
-				m_log.debug("setJudgementInfo() MonitorStringValue ValidFlg = " + entity.getValidFlg());
-			}
-		}
-
-		m_log.debug("setJudgementInfo() end");
+		m_judgementInfoList = MonitorJudgementInfoCache.getMonitorJudgementMap(
+				m_monitorId, MonitorTypeConstant.TYPE_STRING);
 	}
 
 	/**

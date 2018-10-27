@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.calendar.composite;
@@ -63,6 +56,12 @@ public class CalendarIdListComposite extends Composite {
 	/** カレンダIDコンボボックス */
 	private Combo calIdCombo = null;
 
+	/** ラベル幅 */
+	private Integer labelWidth = null;
+
+	/** コンボボックス幅 */
+	private Integer comboWidth = null;
+
 	// ----- コンストラクタ ----- //
 
 	/**
@@ -75,6 +74,23 @@ public class CalendarIdListComposite extends Composite {
 	public CalendarIdListComposite(Composite parent, int style, boolean labelFlg) {
 		super(parent, style);
 
+		initialize(parent, labelFlg);
+	}
+
+	/**
+	 * インスタンスを返します。<BR>
+	 *
+	 * @param parent 親のコンポジット
+	 * @param style スタイル
+	 * @param labelFlg カレンダIDラベル表示フラグ
+	 * @param labelFlg カレンダIDラベル表示フラグ
+	 * @param labelFlg カレンダIDラベル表示フラグ
+	 */
+	public CalendarIdListComposite(Composite parent, int style, boolean labelFlg,
+			int labelWidth, int comboWidth) {
+		super(parent, style);
+		this.labelWidth = labelWidth;
+		this.comboWidth = comboWidth;
 		initialize(parent, labelFlg);
 	}
 
@@ -108,7 +124,9 @@ public class CalendarIdListComposite extends Composite {
 			labelCalendarId = new Label(this, SWT.NONE);
 			WidgetTestUtil.setTestId(this, "calendarid", labelCalendarId);
 			gridData = new GridData();
-			if (parent instanceof NotifyBasicComposite) {
+			if (this.labelWidth != null) {
+				gridData.horizontalSpan = this.labelWidth;
+			} else if (parent instanceof NotifyBasicComposite) {
 				gridData.horizontalSpan = NotifyBasicComposite.WIDTH_TITLE;
 			} else {
 				gridData.horizontalSpan = CommonMonitorDialog.WIDTH_TITLE;
@@ -124,7 +142,9 @@ public class CalendarIdListComposite extends Composite {
 		WidgetTestUtil.setTestId(this, null, calIdCombo);
 		gridData = new GridData();
 		if(labelFlg){
-			if (parent instanceof NotifyBasicComposite) {
+			if (this.comboWidth != null) {
+				gridData.horizontalSpan = this.comboWidth;
+			} else if (parent instanceof NotifyBasicComposite) {
 				gridData.horizontalSpan = CommonMonitorDialog.SMALL_UNIT;
 			} else {
 				gridData.horizontalSpan = CommonMonitorDialog.SHORT_UNIT;

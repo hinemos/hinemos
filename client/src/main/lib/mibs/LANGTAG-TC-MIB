@@ -1,0 +1,17 @@
+LANGTAG-TC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, mib-2             FROM SNMPv2-SMI      -- [RFC2578]
+    TEXTUAL-CONVENTION                 FROM SNMPv2-TC;      -- [RFC2579]
+
+langTagTcMIB MODULE-IDENTITY
+    LAST-UPDATED "200711090000Z" -- 9 November 2007
+    ORGANIZATION "IETF Operations and Management (OPS) Area"
+    ::= { mib-2 165 }
+
+LangTag ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "1a"
+   STATUS      current
+   SYNTAX      OCTET STRING (SIZE (0 | 2..63))
+
+END

@@ -1,0 +1,2 @@
+Cloud-Client-Base-Version: @VERSION@
+Build-Date: @BUILD_DATE@

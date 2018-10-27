@@ -1,0 +1,24 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"fileId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"fileName",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraFileInfo_fileName"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"InfraFileInfo_ownerRoleId"}
+	]}
+]
+}

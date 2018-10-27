@@ -1,0 +1,137 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"maintenanceId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_description"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_validFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"typeId",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_typeId"},
+		{"type":"Translate", "values":[
+			{"value":"DELETE_EVENT_LOG_ALL", "name":"name_maintenance_delete_event_log_all"}, 
+			{"value":"DELETE_EVENT_LOG", "name":"name_maintenance_delete_event_log"},
+			{"value":"DELETE_JOB_HISTORY_ALL", "name":"name_maintenance_delete_job_history_all"},
+			{"value":"DELETE_JOB_HISTORY", "name":"name_maintenance_delete_job_history"},
+			{"value":"DELETE_CRUN_HISTORY_ALL", "name":"name_maintenance_delete_crun_history_all"},
+			{"value":"DELETE_CRUN_HISTORY", "name":"name_maintenance_delete_crun_history"},
+			{"value":"DELETE_RERF_DATA_ALL", "name":"name_maintenance_delete_rerf_data_all"},
+			{"value":"DELETE_RERF_DATA", "name":"name_maintenance_delete_rerf_data"},
+			{"value":"DELETE_VM_LOG_ALL", "name":"name_maintenance_delete_vm_log_all"},
+			{"value":"DELETE_VM_LOG", "name":"name_maintenance_delete_vm_log"},
+			{"value":"DELETE_COLLECT_DATA_RAW", "name":"name_maintenance_delete_collect_data_raw"}, 
+			{"value":"DELETE_SUMMARY_DATA_HOUR", "name":"name_maintenance_delete_summary_data_hour"},
+			{"value":"DELETE_SUMMARY_DATA_DAY", "name":"name_maintenance_delete_summary_data_day"},
+			{"value":"DELETE_SUMMARY_DATA_MONTH", "name":"name_maintenance_delete_summary_data_month"},
+			{"value":"DELETE_COLLECT_STRING_DATA", "name":"name_maintenance_delete_collect_string_data"},
+			{"value":"DELETE_COLLECT_BINFILE_DATA", "name":"name_maintenance_delete_collect_binfile_data"},
+			{"value":"DELETE_COLLECT_PCAP_DATA", "name":"name_maintenance_delete_collect_pcap_data"}
+		]}
+	]},
+	
+	{
+	"propName":"dataRetentionPeriod",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_dataRetentionPeriod"}
+	]},
+
+	{
+	"propName":"calendarId",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_calendarId"}
+	]},
+
+	{
+	"propName":"type",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_type"},
+		{"type":"Translate", "values":[
+		    {"value":"1", "name":"name_maintenance_schedule_type_day"}, 
+		    {"value":"2", "name":"name_maintenance_schedule_type_weekday"}
+		]}
+	]},
+
+	{
+	"propName":"month",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_month"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":""}
+		]}
+	]},
+	
+	{
+	"propName":"mday",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_mday"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":""}
+		]}
+	]},
+
+	{
+	"propName":"hour",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_hour"}
+	]},
+
+	{
+	"propName":"min",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_min"}
+	]},
+	
+	{
+	"propName":"dayOfWeek",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_dayOfWeek"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":""},
+			{"value":"1", "name":"name_weekNo_sunday"},
+			{"value":"2", "name":"name_weekNo_monday"},
+			{"value":"3", "name":"name_weekNo_tuesday"},
+			{"value":"4", "name":"name_weekNo_wednesday"},
+			{"value":"5", "name":"name_weekNo_thursday"},
+			{"value":"6", "name":"name_weekNo_friday"},
+			{"value":"7", "name":"name_weekNo_Saturday"}
+		]}
+	]},
+
+	{
+	"propName":"notifyId",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_notifyId"},
+		{"type":"Array"}
+	]},
+	
+	{
+	"propName":"application",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_application"}
+	]}
+]
+}

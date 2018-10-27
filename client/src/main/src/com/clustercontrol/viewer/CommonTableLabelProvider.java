@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.viewer;
@@ -39,6 +32,7 @@ import com.clustercontrol.bean.PerformanceStatusImageConstant;
 import com.clustercontrol.bean.PriorityColorConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.ProcessMessage;
+import com.clustercontrol.bean.RunInterval;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.bean.StatusMessage;
 import com.clustercontrol.bean.TableColumnInfo;
@@ -55,7 +49,7 @@ import com.clustercontrol.jobmanagement.bean.JobRuntimeParamTypeMessage;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectMessage;
 import com.clustercontrol.jobmanagement.bean.ScheduleOnOffImageConstant;
 import com.clustercontrol.jobmanagement.bean.StatusImageConstant;
-import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
+import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.monitor.bean.ConfirmMessage;
 import com.clustercontrol.notify.util.NotifyTypeUtil;
 import com.clustercontrol.performance.bean.PerformanceStatusConstant;
@@ -115,25 +109,34 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			return "";
 		}
 
-		if (tableColumn.getType() == TableColumnInfo.JOB) {
+		switch(tableColumn.getType()){
+		case TableColumnInfo.JOB:
 			//データタイプが「ジョブ」の処理
 			return JobMessage.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.STATE) {
+		case TableColumnInfo.STATE:
 			//データタイプが「状態」の処理
 			return StatusMessage.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.PRIORITY) {
+		case TableColumnInfo.PRIORITY:
 			//データタイプが「重要度」の処理
 			return PriorityMessage.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.VALID) {
+		case TableColumnInfo.VALID:
 			//データタイプが「有効/無効」の処理
 			return ValidMessage.typeToString(((Boolean) item).booleanValue());
-		} else if (tableColumn.getType() == TableColumnInfo.JUDGMENT_OBJECT) {
+		case TableColumnInfo.RUN_INTERVAL:
+			//データタイプが「間隔」の処理
+			int runInterval = (Integer)item;
+			if(0 == runInterval){
+				return "-";
+			}else{
+				return RunInterval.valueOf(runInterval).toString();
+			}
+		case TableColumnInfo.JUDGMENT_OBJECT:
 			//データタイプが「判定対象」の処理
 			return JudgmentObjectMessage.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.NOTIFY_TYPE) {
+		case TableColumnInfo.NOTIFY_TYPE:
 			//データタイプが「判定対象」の処理
 			return NotifyTypeUtil.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.WAIT_RULE_VALUE) {
+		case TableColumnInfo.WAIT_RULE_VALUE:
 			//データタイプが「開始条件値」の処理
 			Class<?> itemClass = item.getClass();
 			if (itemClass == Date.class) {
@@ -144,7 +147,7 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			} else if (itemClass.getSuperclass() == Number.class) {
 				return ((Number) item).toString();
 			}
-		} else if (tableColumn.getType() == TableColumnInfo.SCHEDULE) {
+		case TableColumnInfo.SCHEDULE:
 			//データタイプが「スケジュール」の処理
 			Schedule schedule = (Schedule) item;
 			String scheduleString = null;
@@ -181,76 +184,70 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 				m_log.warn("CommonTableLabelProvider 165");
 			}
 			return scheduleString;
-		} else if (tableColumn.getType() == TableColumnInfo.CONFIRM) {
+		case TableColumnInfo.CONFIRM:
 			//データタイプが「確認/未確認」の処理
 			return ConfirmMessage.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.WAIT_RULE) {
+		case TableColumnInfo.WAIT_RULE:
 			//データタイプが「待ち条件」の処理
 			return YesNoMessage.typeToString(((Boolean) item).booleanValue());
-		} else if (tableColumn.getType() == TableColumnInfo.PROCESS) {
+		case TableColumnInfo.PROCESS:
 			//データタイプが「処理」の処理
 			return ProcessMessage.typeToString(((Boolean) item).booleanValue());
-		} else if (tableColumn.getType() == TableColumnInfo.END_STATUS) {
+		case TableColumnInfo.END_STATUS:
 			//データタイプが「終了状態」の処理
 			return EndStatusMessage.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.CHECKBOX) {
+		case TableColumnInfo.CHECKBOX:
 			//データタイプが「チェックボックス」の処理
 			return "";
-		} else if (tableColumn.getType() == TableColumnInfo.DAY_OF_WEEK) {
+		case TableColumnInfo.DAY_OF_WEEK:
 			//データタイプが「曜日」の処理
 			return DayOfWeekConstant.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.SCHEDULE_ON_OFF) {
+		case TableColumnInfo.SCHEDULE_ON_OFF:
 			//データタイプが「予定」の処理
 			return "";
-		} else if (tableColumn.getType() == TableColumnInfo.JOB_PARAM_TYPE) {
+		case TableColumnInfo.JOB_PARAM_TYPE:
 			//データタイプが「ジョブパラメータ種別」の処理
 			return JobParamTypeMessage.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.COLLECT_STATUS) {
+		case TableColumnInfo.COLLECT_STATUS:
 			//データタイプが「収集状態」の処理
 			return PerformanceStatusConstant.typeToString(((Boolean) item).booleanValue());
-		} else if (tableColumn.getType() == TableColumnInfo.JOB_RUNTIME_PARAM_TYPE) {
+		case TableColumnInfo.JOB_RUNTIME_PARAM_TYPE:
 			//データタイプが「ランタイムジョブ変数パ種別」の処理
 			return String.format("%s(%s)"
 					, JobParamTypeMessage.STRING_RUNTIME
 					, JobRuntimeParamTypeMessage.typeToString(((Number) item).intValue()));
-		} else if (tableColumn.getType() == TableColumnInfo.JOB_RUNTIME_PARAM_TYPE) {
-			//データタイプが「ランタイムジョブ変数パ種別」の処理
-			return String.format("%s(%s)"
-					, JobParamTypeMessage.STRING_RUNTIME
-					, JobRuntimeParamTypeMessage.typeToString(((Number) item).intValue()));
-		} else if (tableColumn.getType() == TableColumnInfo.JOBMAP_ICON_IMAGE) {
+		case TableColumnInfo.JOBMAP_ICON_IMAGE:
 			//データタイプが「ジョブマップアイコンイメージ」の処理
 			return "";
-		} else if (tableColumn.getType() == TableColumnInfo.APPROVAL_STATUS) {
+		case TableColumnInfo.APPROVAL_STATUS:
 			//データタイプが「承認状態」の処理
 			return JobApprovalStatusMessage.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.APPROVAL_RESULT) {
+		case TableColumnInfo.APPROVAL_RESULT:
 			//データタイプが「承認結果」の処理
 			return JobApprovalResultMessage.typeToString(((Number) item).intValue());
-		} else if (tableColumn.getType() == TableColumnInfo.DECISION_CONDITION) {
+		case TableColumnInfo.DECISION_CONDITION:
 			//データタイプが「判定条件」の処理
 			return DecisionObjectMessage.typeToString(((Number) item).intValue());
-		}  else {
+		default:
 			//上記以外のデータタイプの処理
-			Class<?> itemClass = item.getClass();
+			Class<?> itemClass2 = item.getClass();
 
-			if (itemClass == String.class) {
+			if (itemClass2 == String.class) {
 				return String.valueOf(item);
-			} else if (itemClass == Date.class) {
+			} else if (itemClass2 == Date.class) {
 				return TimezoneUtil.getSimpleDateFormat().format((Date) item);
-			} else if (itemClass == Time.class) {
+			} else if (itemClass2 == Time.class) {
 				SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
 				formatter.setTimeZone(TimezoneUtil.getTimeZone());
 				return formatter.format((Time) item);
-			} else if (itemClass.getSuperclass() == Number.class) {
+			} else if (itemClass2.getSuperclass() == Number.class) {
 				return ((Number) item).toString();
-			} else if (itemClass.isEnum()) {
+			} else if (itemClass2.isEnum()) {
 				return ((Enum<?>) item).toString();
 			} else {
 				return item.toString();
 			}
 		}
-		return "";
 	}
 
 	/**
@@ -318,7 +315,8 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			return JobApprovalResultImageConstant.typeToImage(((Number) item).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.JOBMAP_ICON_IMAGE) {
 			//データタイプが「ジョブマップアイコンイメージ」の処理
-			return JobmapIconImageUtil.getIconImage(((byte[]) item));
+			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
+			return iconCache.loadByteGraphicImage(((byte[]) item));
 		}
 
 		return null;

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.dialog;
@@ -21,6 +14,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -43,12 +37,13 @@ import com.clustercontrol.monitor.plugin.LoadMonitorPlugin;
 import com.clustercontrol.monitor.run.bean.MonitorTypeMessage;
 import com.clustercontrol.monitor.view.MonitorListView;
 import com.clustercontrol.monitor.view.action.MonitorModifyAction;
+import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 /**
  * 監視種別一覧を表示するダイアログクラス<BR>
  *
- * @version 4.0.0
+ * @version 6.1.0
  * @since 4.0.0
  */
 public class MonitorTypeDialog extends CommonDialog {
@@ -215,10 +210,14 @@ public class MonitorTypeDialog extends CommonDialog {
 	private Map<ArrayList<Object>, String> getMonitorTypeMstMap(ArrayList<ArrayList<Object>> monitorTypeMstList) {
 		Map<ArrayList<Object>, String> monitorTypeMstMap = new HashMap<>();
 		if (monitorTypeMstList != null) {
+
+			Set<String> activeOptions = EndpointManager.getAllOptions();
+
 			for (ArrayList<Object> monitorTypeMst : monitorTypeMstList) {
 				String label = "";
 				String pluginName = null;
 				String pluginId = (String)monitorTypeMst.get(0);
+
 				if (pluginId.equals(HinemosModuleConstant.MONITOR_AGENT)) {
 					pluginName = Messages.getString("agent.monitor");
 				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_HTTP_N)
@@ -243,6 +242,10 @@ public class MonitorTypeDialog extends CommonDialog {
 					pluginName = Messages.getString("systemlog.monitor");
 				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_LOGFILE)) {
 					pluginName = Messages.getString("logfile.monitor");
+				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)) {
+					pluginName = Messages.getString("binary.file.monitor");
+				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)) {
+					pluginName = Messages.getString("packet.capture.monitor");
 				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
 						|| pluginId.equals(HinemosModuleConstant.MONITOR_CUSTOM_S)) {
 					pluginName = Messages.getString("custom.monitor");
@@ -257,12 +260,28 @@ public class MonitorTypeDialog extends CommonDialog {
 				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
 						|| pluginId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)) {
 					pluginName = Messages.getString("customtrap.monitor");
+				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_LOGCOUNT)) {
+					pluginName = Messages.getString("logcount.monitor");
+				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CORRELATION)) {
+					pluginName = Messages.getString("correlation.monitor");
+				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_INTEGRATION)) {
+					pluginName = Messages.getString("integration.monitor");
 				} else {
+					// ExtensionMonitorはオプションによって追加される
+					String option = null;
 					for(IMonitorPlugin extensionMonitor: LoadMonitorPlugin.getExtensionMonitorList()){
 						if(pluginId.equals(extensionMonitor.getMonitorPluginId())){
 							pluginName = extensionMonitor.getMonitorName();
+							option = extensionMonitor.getOption();
+							break;
 						}
 					}
+					// TODO extension point(monitorPlugin)に直接activitiesを適用できるようにしたい
+					// 当該オプションがない場合、スキップ
+					if(!activeOptions.contains(option)){
+						continue;
+					}
+
 					if(pluginName == null){
 						pluginName = pluginId;
 					}

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: master_jmx.xsd 303 2015-02-02 19:00:00Z uchiyama $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd"/>
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="G">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="JmxMaster">
+		<xs:annotation>
+			<xs:documentation>JMX監視項目定義一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>JMX監視項目定義一覧のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLに付与する一般情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="JmxMasterInfo" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>JMX監視項目定義の配列</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="JmxMasterInfo">
+		<xs:annotation>
+			<xs:documentation>JMX監視項目定義情報</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>JMX監視項目定義情報です。</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="masterId" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>JMX監視項目のマスタIDです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="objectName" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>オブジェクト名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="attributeName" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>属性名です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="keys" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>キーです。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="name" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>マスタ名です。JMX監視を設定する際の監視項目リストに表示されます。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="measure" type="xs:string" use="required">
+				<xs:annotation>
+					<xs:documentation>単位です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

@@ -1,0 +1,63 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"scheduleType",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_scheduleType"},
+		{"type":"Translate", "values":[
+			{"value":"1", "name":"name_schedule_type_everyday"},
+			{"value":"2", "name":"name_schedule_type_weekday"},
+			{"value":"3", "name":"name_schedule_type_repeat"}
+		]}
+	]},
+	
+	{
+	"propName":"week",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_week"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":""},
+			{"value":"1", "name":"name_weekNo_sunday"},
+			{"value":"2", "name":"name_weekNo_monday"},
+			{"value":"3", "name":"name_weekNo_tuesday"},
+			{"value":"4", "name":"name_weekNo_wednesday"},
+			{"value":"5", "name":"name_weekNo_thursday"},
+			{"value":"6", "name":"name_weekNo_friday"},
+			{"value":"7", "name":"name_weekNo_Saturday"}
+		]}
+	]},
+	
+	{
+	"propName":"hour",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_hour"},
+		{"type":"Translate", "values":[
+			{"value":"-1", "name":"*"}
+		]}
+	]},
+	
+	{
+	"propName":"minute",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_minute"},
+		{"type":"Translate", "values":[
+			{"value":"-1", "name":"*"}
+		]}
+	]},
+	
+	{
+	"propName":"fromXminutes",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_fromXminutes"}
+	]},
+	
+	{
+	"propName":"everyXminutes",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_everyXminutes"}
+	]}
+]
+}

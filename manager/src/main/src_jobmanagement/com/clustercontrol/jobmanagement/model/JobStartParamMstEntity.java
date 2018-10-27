@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.jobmanagement.model;
 
 import java.io.Serializable;
@@ -14,9 +22,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 
 
 /**
@@ -36,12 +41,8 @@ public class JobStartParamMstEntity implements Serializable {
 	public JobStartParamMstEntity() {
 	}
 
-	public JobStartParamMstEntity(JobStartParamMstEntityPK pk,
-			JobMstEntity jobMstEntity) {
+	public JobStartParamMstEntity(JobStartParamMstEntityPK pk) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToJobMstEntity(jobMstEntity);
 	}
 
 	public JobStartParamMstEntity(JobMstEntity jobMstEntity,
@@ -55,7 +56,7 @@ public class JobStartParamMstEntity implements Serializable {
 				startDecisionValue01,
 				startDecisionValue02,
 				targetJobType,
-				startDecisionCondition), jobMstEntity);
+				startDecisionCondition));
 	}
 
 

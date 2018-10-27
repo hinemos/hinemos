@@ -1,0 +1,354 @@
+GMPLS-LABEL-STD-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+  MODULE-IDENTITY, OBJECT-TYPE, Unsigned32, Integer32
+    FROM SNMPv2-SMI                                   -- RFC 2578
+  MODULE-COMPLIANCE, OBJECT-GROUP
+    FROM SNMPv2-CONF                                  -- RFC 2580
+  RowStatus, StorageType
+    FROM SNMPv2-TC                                    -- RFC 2579
+  InterfaceIndexOrZero
+    FROM IF-MIB                                       -- RFC 2863
+  IndexIntegerNextFree
+    FROM DIFFSERV-MIB                                 -- RFC 3289
+  MplsLabel, mplsStdMIB
+    FROM MPLS-TC-STD-MIB                              -- RFC 3811
+  GmplsLabelTypeTC, GmplsFreeformLabelTC
+    FROM GMPLS-TC-STD-MIB                             -- RFC 4801
+;
+
+gmplsLabelStdMIB MODULE-IDENTITY
+  LAST-UPDATED
+    "200702270000Z" -- 27 February 2007 00:00:00 GMT
+  ORGANIZATION
+    "IETF Common Control and Measurement Plane (CCAMP) Working Group"
+
+  ::= { mplsStdMIB 16 }
+
+
+gmplsLabelObjects        OBJECT IDENTIFIER ::= { gmplsLabelStdMIB 1 }
+gmplsLabelConformance    OBJECT IDENTIFIER ::= { gmplsLabelStdMIB 2 }
+
+gmplsLabelIndexNext OBJECT-TYPE
+  SYNTAX        IndexIntegerNextFree
+  MAX-ACCESS    read-only
+  STATUS        current
+  ::= { gmplsLabelObjects 1 }
+
+gmplsLabelTable OBJECT-TYPE
+  SYNTAX        SEQUENCE OF GmplsLabelEntry
+  MAX-ACCESS    not-accessible
+  STATUS        current
+::= { gmplsLabelObjects 2 }
+
+gmplsLabelEntry OBJECT-TYPE
+  SYNTAX        GmplsLabelEntry
+  MAX-ACCESS    not-accessible
+  STATUS        current
+
+
+
+
+
+  INDEX {
+    gmplsLabelInterface,
+    gmplsLabelIndex,
+    gmplsLabelSubindex }
+::= { gmplsLabelTable 1 }
+
+GmplsLabelEntry ::= SEQUENCE {
+  gmplsLabelInterface           InterfaceIndexOrZero,
+  gmplsLabelIndex               Unsigned32,
+  gmplsLabelSubindex            Unsigned32,
+  gmplsLabelType                GmplsLabelTypeTC,
+  gmplsLabelMplsLabel           MplsLabel,
+  gmplsLabelPortWavelength      Unsigned32,
+  gmplsLabelFreeform            GmplsFreeformLabelTC,
+  gmplsLabelSonetSdhSignalIndex Integer32,
+  gmplsLabelSdhVc               Integer32,
+  gmplsLabelSdhVcBranch         Integer32,
+  gmplsLabelSonetSdhBranch      Integer32,
+  gmplsLabelSonetSdhGroupBranch Integer32,
+  gmplsLabelWavebandId          Unsigned32,
+  gmplsLabelWavebandStart       Unsigned32,
+  gmplsLabelWavebandEnd         Unsigned32,
+  gmplsLabelStorageType         StorageType,
+  gmplsLabelRowStatus           RowStatus
+}
+
+gmplsLabelInterface OBJECT-TYPE
+  SYNTAX        InterfaceIndexOrZero
+  MAX-ACCESS    not-accessible
+  STATUS        current
+::= { gmplsLabelEntry 1 }
+
+gmplsLabelIndex OBJECT-TYPE
+  SYNTAX        Unsigned32 (0..4294967295)
+  MAX-ACCESS    not-accessible
+  STATUS        current
+::= { gmplsLabelEntry 2 }
+
+gmplsLabelSubindex OBJECT-TYPE
+  SYNTAX        Unsigned32 (0..4294967295)
+  MAX-ACCESS    not-accessible
+  STATUS        current
+::= { gmplsLabelEntry 3 }
+
+gmplsLabelType OBJECT-TYPE
+  SYNTAX        GmplsLabelTypeTC
+  MAX-ACCESS    read-create
+  STATUS        current
+::= { gmplsLabelEntry 4 }
+
+gmplsLabelMplsLabel OBJECT-TYPE
+  SYNTAX         MplsLabel
+
+
+
+
+
+  MAX-ACCESS     read-create
+  STATUS         current
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 5 }
+
+gmplsLabelPortWavelength OBJECT-TYPE
+  SYNTAX        Unsigned32
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 6 }
+
+gmplsLabelFreeform OBJECT-TYPE
+  SYNTAX        GmplsFreeformLabelTC
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { '00'h }
+::= { gmplsLabelEntry 7 }
+
+gmplsLabelSonetSdhSignalIndex OBJECT-TYPE
+  SYNTAX        Integer32 (0..4095)
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 8 }
+
+gmplsLabelSdhVc OBJECT-TYPE
+  SYNTAX        Integer32 (0..15)
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 9 }
+
+gmplsLabelSdhVcBranch OBJECT-TYPE
+  SYNTAX        Integer32 (0..15)
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 10 }
+
+gmplsLabelSonetSdhBranch OBJECT-TYPE
+  SYNTAX        Integer32 (0..15)
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 11 }
+
+gmplsLabelSonetSdhGroupBranch OBJECT-TYPE
+  SYNTAX        Integer32 (0..15)
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 12 }
+
+gmplsLabelWavebandId OBJECT-TYPE
+  SYNTAX        Unsigned32
+  MAX-ACCESS    read-create
+  STATUS        current
+
+
+
+
+
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 13 }
+
+gmplsLabelWavebandStart OBJECT-TYPE
+  SYNTAX        Unsigned32
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 14 }
+
+gmplsLabelWavebandEnd OBJECT-TYPE
+  SYNTAX        Unsigned32
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { 0 }
+::= { gmplsLabelEntry 15 }
+
+gmplsLabelStorageType OBJECT-TYPE
+  SYNTAX        StorageType
+  MAX-ACCESS    read-create
+  STATUS        current
+  DEFVAL { volatile }
+::= { gmplsLabelEntry 16 }
+
+gmplsLabelRowStatus OBJECT-TYPE
+  SYNTAX        RowStatus
+  MAX-ACCESS    read-create
+  STATUS        current
+::= { gmplsLabelEntry 17 }
+
+gmplsLabelGroups
+  OBJECT IDENTIFIER ::= { gmplsLabelConformance 1 }
+
+
+
+
+
+
+gmplsLabelCompliances
+  OBJECT IDENTIFIER ::= { gmplsLabelConformance 2 }
+
+gmplsLabelModuleReadOnlyCompliance MODULE-COMPLIANCE
+  STATUS current
+
+  MODULE -- this module
+
+
+  MANDATORY-GROUPS {
+    gmplsLabelTableGroup
+  }
+
+  GROUP gmplsLabelPacketGroup
+
+  GROUP gmplsLabelPortWavelengthGroup
+
+  GROUP gmplsLabelFreeformGroup
+
+  GROUP gmplsLabelSonetSdhGroup
+
+  GROUP gmplsLabelWavebandGroup
+  OBJECT      gmplsLabelType
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelMplsLabel
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelPortWavelength
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelFreeform
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelSonetSdhSignalIndex
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelSdhVc
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelSdhVcBranch
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelSonetSdhBranch
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelSonetSdhGroupBranch
+  MIN-ACCESS  read-only
+
+
+
+
+
+
+  OBJECT      gmplsLabelWavebandId
+  MIN-ACCESS  read-only
+  OBJECT      gmplsLabelWavebandStart
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelWavebandEnd
+  MIN-ACCESS  read-only
+
+  OBJECT      gmplsLabelStorageType
+  MIN-ACCESS  read-only
+
+  OBJECT       gmplsLabelRowStatus
+  SYNTAX       RowStatus { active(1) }
+  MIN-ACCESS   read-only
+
+::= { gmplsLabelCompliances 1 }
+
+gmplsLabelModuleFullCompliance MODULE-COMPLIANCE
+  STATUS current
+
+  MODULE -- this module
+
+  MANDATORY-GROUPS {
+    gmplsLabelTableGroup
+  }
+
+::= { gmplsLabelCompliances 2 }
+
+
+
+
+
+
+gmplsLabelTableGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsLabelIndexNext,
+    gmplsLabelType,
+    gmplsLabelStorageType,
+    gmplsLabelRowStatus
+  }
+
+  STATUS  current
+::= { gmplsLabelGroups 1 }
+
+gmplsLabelPacketGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsLabelMplsLabel
+  }
+  STATUS  current
+::= { gmplsLabelGroups 2 }
+
+gmplsLabelPortWavelengthGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsLabelPortWavelength
+  }
+  STATUS  current
+::= { gmplsLabelGroups 3 }
+
+gmplsLabelFreeformGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsLabelFreeform
+  }
+  STATUS  current
+::= { gmplsLabelGroups 4 }
+
+
+
+
+
+gmplsLabelSonetSdhGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsLabelSonetSdhSignalIndex,
+    gmplsLabelSdhVc,
+    gmplsLabelSdhVcBranch,
+    gmplsLabelSonetSdhBranch,
+    gmplsLabelSonetSdhGroupBranch
+  }
+  STATUS  current
+::= { gmplsLabelGroups 5 }
+
+gmplsLabelWavebandGroup OBJECT-GROUP
+  OBJECTS {
+    gmplsLabelWavebandId,
+    gmplsLabelWavebandStart,
+    gmplsLabelWavebandEnd
+  }
+  STATUS  current
+::= { gmplsLabelGroups 6 }
+
+END

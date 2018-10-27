@@ -2,6 +2,7 @@
  *  RepeatingButton.java  - A push button that repeats selection event based on timer.
  *  Author: Sergey Prigogin
  *  swtcalendar.sourceforge.net
+ * Modified by: NTT DATA INTELLILINK Corporation <http://www.hinemos.info/>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License

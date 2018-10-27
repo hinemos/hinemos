@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.http.util;
@@ -36,67 +29,77 @@ public class QueryUtil {
 	private static Log m_log = LogFactory.getLog( QueryUtil.class );
 
 	public static HttpCheckInfo getMonitorHttpInfoPK(String monitorId) throws MonitorNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		HttpCheckInfo entity = em.find(HttpCheckInfo.class, monitorId, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			MonitorNotFound e = new MonitorNotFound("MonitorHttpInfoEntity.findByPrimaryKey"
-					+ ", monitorId = " + monitorId);
-			m_log.info("getMonitorHttpInfoPK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			HttpCheckInfo entity = em.find(HttpCheckInfo.class, monitorId, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				MonitorNotFound e = new MonitorNotFound("MonitorHttpInfoEntity.findByPrimaryKey"
+						+ ", monitorId = " + monitorId);
+				m_log.info("getMonitorHttpInfoPK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static HttpScenarioCheckInfo getMonitorHttpScenarioInfoPK(String monitorId) throws MonitorNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		HttpScenarioCheckInfo entity = em.find(HttpScenarioCheckInfo.class, monitorId, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			MonitorNotFound e = new MonitorNotFound("MonitorHttpInfoEntity.findByPrimaryKey"
-					+ ", monitorId = " + monitorId);
-			m_log.info("getMonitorHttpInfoPK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			HttpScenarioCheckInfo entity = em.find(HttpScenarioCheckInfo.class, monitorId, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				MonitorNotFound e = new MonitorNotFound("MonitorHttpInfoEntity.findByPrimaryKey"
+						+ ", monitorId = " + monitorId);
+				m_log.info("getMonitorHttpInfoPK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static Page getPagePK(PagePK pk) throws MonitorNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		Page entity = em.find(Page.class, pk, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			MonitorNotFound e = new MonitorNotFound("PageEntity.findByPrimaryKey"
-					+ pk.toString());
-			m_log.info("getPagePK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Page entity = em.find(Page.class, pk, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				MonitorNotFound e = new MonitorNotFound("PageEntity.findByPrimaryKey"
+						+ pk.toString());
+				m_log.info("getPagePK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static Pattern getPatternPK(PatternPK pk) throws MonitorNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		Pattern entity = em.find(Pattern.class, pk, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			MonitorNotFound e = new MonitorNotFound("PatternEntity.findByPrimaryKey"
-					+ pk.toString());
-			m_log.info("getPatternPK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Pattern entity = em.find(Pattern.class, pk, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				MonitorNotFound e = new MonitorNotFound("PatternEntity.findByPrimaryKey"
+						+ pk.toString());
+				m_log.info("getPatternPK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 
 	public static Variable getVariablePK(VariablePK pk) throws MonitorNotFound {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		Variable entity = em.find(Variable.class, pk, ObjectPrivilegeMode.READ);
-		if (entity == null) {
-			MonitorNotFound e = new MonitorNotFound("VariableEntity.findByPrimaryKey"
-					+ pk.toString());
-			m_log.info("getVariablePK() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Variable entity = em.find(Variable.class, pk, ObjectPrivilegeMode.READ);
+			if (entity == null) {
+				MonitorNotFound e = new MonitorNotFound("VariableEntity.findByPrimaryKey"
+						+ pk.toString());
+				m_log.info("getVariablePK() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return entity;
 		}
-		return entity;
 	}
 }

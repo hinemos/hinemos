@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.collect.util;
 
 import java.sql.PreparedStatement;
@@ -13,8 +21,8 @@ import com.clustercontrol.commons.util.JdbcBatchQuery;
  */
 public class CollectDataJdbcBatchInsert extends JdbcBatchQuery {
 	private static final String SQL = "INSERT INTO log.cc_collect_data_raw"
-			+ "(collector_id, time, value) "
-			+ "VALUES (?, ?, ?)";
+			+ "(collector_id, time, value, average, standard_deviation) "
+			+ "VALUES (?, ?, ?, ?, ?)";
 
 	private List<CollectData> entities = null;
 
@@ -30,11 +38,14 @@ public class CollectDataJdbcBatchInsert extends JdbcBatchQuery {
 	@Override
 	public void addBatch(PreparedStatement pstmt) throws SQLException {
 		for (CollectData entity : entities) {
+			size++;
 			CollectDataPK pk = entity.getId();
 			Object[] params = new Object[] {
 					pk.getCollectorid(),
 					pk.getTime(),
-					entity.getValue()
+					entity.getValue(),
+					entity.getAverage(),
+					entity.getStandardDeviation()
 			};
 			setParameters(pstmt, params);
 			pstmt.addBatch();

@@ -1,17 +1,11 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.infra.util;
 
 import java.io.File;
@@ -28,12 +22,12 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.infra.bean.ModuleNodeResult;
 import com.clustercontrol.infra.bean.OkNgConstant;
 import com.clustercontrol.infra.model.CommandModuleInfo;
 import com.clustercontrol.infra.model.FileTransferModuleInfo;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.XMLUtil;
 import com.jcraft.jsch.ChannelExec;
@@ -528,7 +522,7 @@ public class JschUtil {
 			 * Linux用のファイルセパレータを指定したいのに、Windowsのセパレータである「\」を指定してしまう。
 			 */
 			String dstFilePath = dstDir + "/" + dstFilename;
-			String md5command = HinemosPropertyUtil.getHinemosPropertyStr("infra.command.md5", "md5sum \"%s\" | awk '{print $1}'");
+			String md5command = HinemosPropertyCommon.infra_command_md5.getStringValue();
 			String dstMd5 = execCommandWithStdOut(session, String.format(md5command, dstFilePath), timeout);
 			m_log.debug("dstMd5: " + dstMd5);
 			

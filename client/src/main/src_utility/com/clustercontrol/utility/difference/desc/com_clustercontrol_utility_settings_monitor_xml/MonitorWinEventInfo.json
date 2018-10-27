@@ -1,0 +1,92 @@
+{
+"annotations":[
+	{"type":"Element"}
+
+],
+"props":[
+	{
+	"propName":"levelCritical",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_levelCritical"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_hyphen"}, 
+			{"value":"true", "name":"name_circle"}
+		]}
+	]},
+
+	{
+	"propName":"levelWarning",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_levelWarning"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_hyphen"}, 
+			{"value":"true", "name":"name_circle"}
+		]}
+	]},
+
+	{
+	"propName":"levelVerbose",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_levelVerbose"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_hyphen"}, 
+			{"value":"true", "name":"name_circle"}
+		]}
+	]},
+
+	{
+	"propName":"levelError",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_levelError"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_hyphen"}, 
+			{"value":"true", "name":"name_circle"}
+		]}
+	]},
+
+	{
+	"propName":"levelInformational",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_levelInformational"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_hyphen"}, 
+			{"value":"true", "name":"name_circle"}
+		]}
+	]},
+
+	{
+	"propName":"log",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_log"},
+		{"type":"Array", "idType":"props", "props":["log"]}
+	]},
+
+	{
+	"propName":"source",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_source"},
+		{"type":"Array", "idType":"props", "props":["source"]}
+	]},
+
+	{
+	"propName":"eventId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_eventId"},
+		{"type":"Array", "idType":"props", "props":["eventId"]}
+	]},
+
+	{
+	"propName":"category",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_category"},
+		{"type":"Array", "idType":"props", "props":["category"]}
+	]},
+
+	{
+	"propName":"keyword",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorWinEventInfo_keyword"},
+		{"type":"Array", "idType":"props", "props":["keyword"]}
+	]}
+]
+}

@@ -1,0 +1,28 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"tenantId",
+	"annotations":[
+		{"type":"Column", "columnName":"AzureUserType_tenantId"}
+	]},
+	{
+	"propName":"applicationId",
+	"annotations":[
+		{"type":"Column", "columnName":"AzureUserType_applicationId"}
+	]},
+	{
+	"propName":"subscriptionId",
+	"annotations":[
+		{"type":"Column", "columnName":"AzureUserType_subscriptionId"}
+	]},
+	{
+	"propName":"secretKey",
+	"annotations":[
+		{"type":"Column", "columnName":"AzureUserType_secretKey"}
+	]}
+]
+}

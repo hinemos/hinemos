@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.selfcheck.monitor;
@@ -24,8 +17,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.platform.selfcheck.TableSizeQueryExecuter;
 import com.clustercontrol.selfcheck.TableSizeConfig;
 import com.clustercontrol.util.MessageConstant;
@@ -63,16 +56,12 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 	 */
 	@Override
 	public void execute() {
-		if (!HinemosPropertyUtil.getHinemosPropertyBool("selfcheck.monitoring.table.size", true)) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_table_size.getBooleanValue()) {
 			m_log.debug("skip");
 			return;
 		}
 
-		String tableSizeRaw = HinemosPropertyUtil
-				.getHinemosPropertyStr(
-						"selfcheck.monitoring.table.size.list",
-						"log.cc_event_log:20480:MBYTE,log.cc_collect_data_raw:20480:MBYTE,log.cc_collect_data_string:40960:MBYTE,log.cc_job_session:100000:COUNT"
-						);
+		String tableSizeRaw = HinemosPropertyCommon.selfcheck_monitoring_table_size_list.getStringValue();
 		List<TableSizeConfig> tableSizes = new ArrayList<TableSizeConfig>();
 		for (String tableSize : tableSizeRaw.split(",")) {
 			String[] pair = tableSize.split(":");
@@ -157,7 +146,7 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 				m_log.info("log table's size is too high. (tableName=" + tableName + ", size=" + size + ", threshold=" + thresholdOrig + " " + getThresholdUnit(thresholdType) + ")");
 			}
 			if (!isNotify(subKey, warn)) {
-				return;
+				continue;
 			}
 			switch (thresholdType) {
 			case MBYTE :

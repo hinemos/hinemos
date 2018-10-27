@@ -1,23 +1,16 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.snmptrap.service;
 
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 
 /**
  * SNMP Trap 監視で処理したトラップの数を管理するクラス。
@@ -46,7 +39,7 @@ public class TrapProcCounter {
 
 	public synchronized void countupReceived() {
 		receivedCount = receivedCount >= Long.MAX_VALUE ? 0 : receivedCount + 1;
-		int _statsInterval = HinemosPropertyUtil.getHinemosPropertyNum("monitor.snmptrap.stats.interval", Long.valueOf(100)).intValue();
+		int _statsInterval = HinemosPropertyCommon.monitor_snmptrap_stats_interval.getIntegerValue();
 		if (receivedCount % _statsInterval == 0) {
 			logger.info("The number of snmptrap (received) : " + receivedCount);
 		}
@@ -54,7 +47,7 @@ public class TrapProcCounter {
 
 	public synchronized void countupDiscarded() {
 		discardedCount = discardedCount >= Long.MAX_VALUE ? 0 : discardedCount + 1;
-		int _statsInterval = HinemosPropertyUtil.getHinemosPropertyNum("monitor.snmptrap.stats.interval", Long.valueOf(100)).intValue();
+		int _statsInterval = HinemosPropertyCommon.monitor_snmptrap_stats_interval.getIntegerValue();
 		if (discardedCount % _statsInterval == 0) {
 			logger.info("The number of snmptrap (discarded) : " + discardedCount);
 		}
@@ -62,7 +55,7 @@ public class TrapProcCounter {
 
 	public synchronized void countupNotified() {
 		notifiedCount = notifiedCount >= Long.MAX_VALUE ? 0 : notifiedCount + 1;
-		int _statsInterval = HinemosPropertyUtil.getHinemosPropertyNum("monitor.snmptrap.stats.interval", Long.valueOf(100)).intValue();
+		int _statsInterval = HinemosPropertyCommon.monitor_snmptrap_stats_interval.getIntegerValue();
 		if (notifiedCount % _statsInterval == 0) {
 			logger.info("The number of snmptrap (notified) : " + notifiedCount);
 		}

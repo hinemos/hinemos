@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.logfile.dialog;
 
 import java.util.List;
@@ -138,17 +146,17 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		/*
 		 * チェック設定グループ（条件グループの子グループ）
 		 */
-		Composite groupCheckRule = new Composite(tabFolder, SWT.NONE);
-		WidgetTestUtil.setTestId(this, null, groupCheckRule);
+		Composite compositeCheckRule = new Composite(tabFolder, SWT.NONE);
+		WidgetTestUtil.setTestId(this, null, compositeCheckRule);
 		GridLayout layout = new GridLayout(1, true);
 		layout.marginWidth = 5;
 		layout.marginHeight = 5;
 		layout.numColumns = BASIC_UNIT;
-		groupCheckRule.setLayout(layout);
+		compositeCheckRule.setLayout(layout);
 		
 		//ディレクトリ
 		// ラベル
-		label = new Label(groupCheckRule, SWT.NONE);
+		label = new Label(compositeCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "directory", label);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH_TITLE_LONG;
@@ -157,7 +165,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		label.setLayoutData(gridData);
 		label.setText(Messages.getString("directory") + " : ");
 		// テキスト
-		this.m_directory = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
+		this.m_directory = new Text(compositeCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "directory", m_directory);
 		gridData = new GridData();
 		gridData.horizontalSpan = LONG_UNIT;
@@ -172,7 +180,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		});
 		//ファイル名
 		// ラベル
-		label = new Label(groupCheckRule, SWT.NONE);
+		label = new Label(compositeCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "filename", label);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH_TITLE_LONG;
@@ -181,7 +189,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		label.setLayoutData(gridData);
 		label.setText(Messages.getString("file.name") + "(" + Messages.getString("regex") + ") : ");
 		// テキスト
-		this.m_fileName = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
+		this.m_fileName = new Text(compositeCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "filename", m_fileName);
 		gridData = new GridData();
 		gridData.horizontalSpan = LONG_UNIT;
@@ -198,7 +206,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 
 		//ファイルエンコーディング
 		// ラベル
-		label = new Label(groupCheckRule, SWT.NONE);
+		label = new Label(compositeCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "fileencoding", label);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH_TITLE_LONG;
@@ -207,7 +215,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		label.setLayoutData(gridData);
 		label.setText(Messages.getString("file.encoding") + " : ");
 		// テキスト
-		this.m_fileEncoding = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
+		this.m_fileEncoding = new Text(compositeCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "fileencoding", m_fileEncoding);
 		gridData = new GridData();
 		gridData.horizontalSpan = LONG_UNIT;
@@ -221,7 +229,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 			}
 		});
 		
-		tabCheckRule.setControl(groupCheckRule);
+		tabCheckRule.setControl(compositeCheckRule);
 		
 		
 		// 区切り条件
@@ -238,7 +246,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		Label lblPrePattern = new Label(delimiter, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "txtPatternHead", lblPrePattern);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = WIDTH_TITLE_LONG + WIDTH_TITLE_MIDDLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		lblPrePattern.setLayoutData(gridData);
@@ -247,7 +255,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		txtPatternHead = new Text(delimiter, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "txtPatternHead", txtPatternHead);
 		gridData = new GridData();
-		gridData.horizontalSpan = LONG_UNIT;
+		gridData.horizontalSpan = LONG_UNIT - WIDTH_TITLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		txtPatternHead.setLayoutData(gridData);
@@ -263,7 +271,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		Label lblSufPattern = new Label(delimiter, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "txtPatternTail", lblSufPattern);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = WIDTH_TITLE_LONG + WIDTH_TITLE_MIDDLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		lblSufPattern.setLayoutData(gridData);
@@ -272,7 +280,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		txtPatternTail = new Text(delimiter, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "txtPatternTail", txtPatternTail);
 		gridData = new GridData();
-		gridData.horizontalSpan = LONG_UNIT;
+		gridData.horizontalSpan = LONG_UNIT - WIDTH_TITLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		txtPatternTail.setLayoutData(gridData);
@@ -304,7 +312,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		label = new Label(delimiter, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "filereturncode", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = WIDTH_TITLE_LONG + WIDTH_TITLE_MIDDLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -313,7 +321,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		this.m_fileReturnCode = new Combo(delimiter, SWT.DROP_DOWN | SWT.READ_ONLY);
 		WidgetTestUtil.setTestId(this, "filereturncode", m_fileReturnCode);
 		gridData = new GridData();
-		gridData.horizontalSpan = LONG_UNIT;
+		gridData.horizontalSpan = LONG_UNIT - WIDTH_TITLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_fileReturnCode.setLayoutData(gridData);
@@ -329,7 +337,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		// ラベル
 		Label lblReadByte = new Label(delimiter, SWT.LEFT);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = WIDTH_TITLE_LONG + WIDTH_TITLE_MIDDLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		lblReadByte.setLayoutData(gridData);
@@ -337,7 +345,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		// テキスト
 		txtMaxBytes = new Text(delimiter, SWT.BORDER);
 		gridData = new GridData();
-		gridData.horizontalSpan = LONG_UNIT;
+		gridData.horizontalSpan = LONG_UNIT - WIDTH_TITLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		txtMaxBytes.setLayoutData(gridData);
@@ -350,8 +358,15 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		});
 
 		tabFolder.setSelection(new TabItem[]{tabCheckRule});
-		
-		
+
+		// dummy
+		label = new Label(delimiter, SWT.NONE);
+		gridData = new GridData();
+		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		label.setLayoutData(gridData);
+
 		// 監視間隔の設定を利用不可とする
 		this.m_monitorRule.setRunIntervalEnabled(false);
 
@@ -519,7 +534,14 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		
 		logfileInfo.setPatternHead(this.txtPatternHead.getText());
 		logfileInfo.setPatternTail(this.txtPatternTail.getText());
-		logfileInfo.setMaxBytes(this.txtMaxBytes.getText() == null || this.txtMaxBytes.getText().isEmpty() ? null: Integer.valueOf(this.txtMaxBytes.getText()));
+		try {
+				Integer maxBytes = this.txtMaxBytes.getText() == null || this.txtMaxBytes.getText().isEmpty() ? null: Integer.valueOf(this.txtMaxBytes.getText());
+				logfileInfo.setMaxBytes(maxBytes);
+		} catch (NumberFormatException e) {
+				this.setValidateResult(Messages.getString("message.hinemos.1"), 
+								Messages.getString("message.logfile.6", new String[]{ Integer.toString(Integer.MAX_VALUE) }));
+				return null;
+		}
 		
 		monitorInfo.setLogfileCheckInfo(logfileInfo);
 

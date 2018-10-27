@@ -1,21 +1,16 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.util;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.binary.session.BinaryControllerBean;
+import com.clustercontrol.binary.util.BinaryManagerUtil;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.JpaTransactionCallback;
 import com.clustercontrol.custom.factory.SelectCustom;
@@ -34,12 +29,6 @@ public class MonitorChangedNotificationCallback implements JpaTransactionCallbac
 		this.monitorTypeId = monitorTypeId;
 	}
 	
-	@Override
-	public void preBegin() { }
-
-	@Override
-	public void postBegin() { }
-
 	@Override
 	public void preFlush() { }
 
@@ -66,6 +55,15 @@ public class MonitorChangedNotificationCallback implements JpaTransactionCallbac
 			
 			// 接続中のHinemosAgentに対する更新通知
 			LogfileManagerUtil.broadcastConfigured();
+			break;
+		case HinemosModuleConstant.MONITOR_BINARYFILE_BIN:
+		case HinemosModuleConstant.MONITOR_PCAP_BIN:
+			BinaryControllerBean.refreshCache();
+
+			SettingUpdateInfo.getInstance().setBinaryMonitorUpdateTime(HinemosTime.currentTimeMillis());
+			
+			// 接続中のHinemosAgentに対する更新通知
+			BinaryManagerUtil.broadcastConfigured();
 			break;
 		case HinemosModuleConstant.MONITOR_CUSTOM_N :
 			SelectCustom.refreshCache();

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.dialog;
@@ -29,6 +22,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
@@ -73,11 +67,11 @@ public class CommandModuleDialog extends CommonDialog {
 	 * 最背面のレイヤのカラム数のみを変更するとレイアウトがくずれるため、
 	 * グループ化されているレイヤは全てこれにあわせる
 	 */
-	private final int DIALOG_WIDTH = 12;
+	private final int DIALOG_WIDTH = 20;
 	/** タイトルラベルのカラム数 */
 	private final int TITLE_WIDTH = 4;
 	/** テキストフォームのカラム数 */
-	private final int FORM_WIDTH = 6;
+	private final int FORM_WIDTH = 16;
 	/*
 	 * 基本情報設定
 	 */
@@ -87,6 +81,8 @@ public class CommandModuleDialog extends CommonDialog {
 	private Text m_moduleName = null;
 	/** 実行コマンド用テキスト */
 	private Text m_commandExec = null;
+	/** 戻り値の変数名用テキスト */
+	private Text m_execReturnParamName = null;
 	/** チェックコマンド用テキスト */
 	private Text m_commandCheck = null;
 	/** チェックコマンドで事前に確認する用ボタン */
@@ -233,7 +229,7 @@ public class CommandModuleDialog extends CommonDialog {
 		//SSHボタン
 		m_methodSSH = new Button(commandModuleComposite, SWT.RADIO);
 		gridData = new GridData();
-		gridData.horizontalSpan = DIALOG_WIDTH;
+		gridData.horizontalSpan = 6;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalIndent = 15;
@@ -242,7 +238,7 @@ public class CommandModuleDialog extends CommonDialog {
 		//WinRMボタン
 		m_methodWinRM = new Button(commandModuleComposite, SWT.RADIO);
 		gridData = new GridData();
-		gridData.horizontalSpan = DIALOG_WIDTH;
+		gridData.horizontalSpan = 10;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalIndent = 15;
@@ -288,29 +284,40 @@ public class CommandModuleDialog extends CommonDialog {
 		m_proceedIfFailFlg.setText(Messages.getString("infra.module.inexec.after.exec.error"));
 		m_proceedIfFailFlg.setLayoutData(gridData);
 
-		// 空白
-		m_label = new Label(commandModuleComposite, SWT.NONE);
+
+		/*
+		 * 実行コマンドグループ
+		 */
+		Group groupCommandModuleComposite = new Group(commandModuleComposite, SWT.NONE);
+		groupCommandModuleComposite.setLayout(layout);
 		gridData = new GridData();
 		gridData.horizontalSpan = DIALOG_WIDTH;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
-		m_label.setLayoutData(gridData);
+		groupCommandModuleComposite.setLayoutData(gridData);
+		layout = new GridLayout(1, true);
+		layout.marginWidth = 5;
+		layout.marginHeight = 5;
+		layout.numColumns = DIALOG_WIDTH;
+		commandModuleComposite.setLayout(layout);
 
 		/*
 		 * 実行コマンド
 		 */
-		Label labelCommandExec = new Label(commandModuleComposite, SWT.LEFT);
+		Label labelCommandExec = new Label(groupCommandModuleComposite, SWT.LEFT);
 		gridData = new GridData();
-		gridData.horizontalSpan = TITLE_WIDTH;
+		gridData.horizontalSpan = DIALOG_WIDTH;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		labelCommandExec.setText(Messages.getString("infra.module.exec.command") + " : ");
 		labelCommandExec.setLayoutData(gridData);
-		m_commandExec = new Text(commandModuleComposite, SWT.BORDER);
-		gridData = new GridData();
-		gridData.horizontalSpan = 10;
+		m_commandExec = new Text(groupCommandModuleComposite, SWT.MULTI | SWT.BORDER | SWT.V_SCROLL | SWT.WRAP);
+		gridData = new GridData(500, 100);
+		gridData.horizontalSpan = DIALOG_WIDTH;
 		gridData.horizontalAlignment = GridData.FILL;
+		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
+		gridData.grabExcessVerticalSpace = true;
 		gridData.horizontalIndent = 25;
 		m_commandExec.setLayoutData(gridData);
 		m_commandExec.setToolTipText(Messages.getString("infra.command.tooltip"));
@@ -322,20 +329,46 @@ public class CommandModuleDialog extends CommonDialog {
 		});
 
 		/*
+		 * 戻り値変数
+		 */
+		Label label = new Label(groupCommandModuleComposite, SWT.LEFT);
+		gridData = new GridData();
+		gridData.horizontalSpan = 7;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		label.setText(Messages.getString("infra.module.exec.return.param.name") + " : ");
+		label.setLayoutData(gridData);
+		m_execReturnParamName = new Text(groupCommandModuleComposite, SWT.BORDER);
+		gridData = new GridData();
+		gridData.horizontalSpan = 13;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		gridData.horizontalIndent = 25;
+		m_execReturnParamName.setLayoutData(gridData);
+		m_execReturnParamName.addModifyListener(new ModifyListener(){
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+			}
+		});
+
+		/*
 		 * チェックコマンド
 		 */
 		Label labelCommandCheck = new Label(commandModuleComposite, SWT.LEFT);
 		gridData = new GridData();
-		gridData.horizontalSpan = TITLE_WIDTH;
+		gridData.horizontalSpan = DIALOG_WIDTH;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		labelCommandCheck.setText(Messages.getString("infra.module.check.command") + " : ");
 		labelCommandCheck.setLayoutData(gridData);
-		m_commandCheck = new Text(commandModuleComposite, SWT.BORDER);
-		gridData = new GridData();
-		gridData.horizontalSpan = 10;
+		m_commandCheck = new Text(commandModuleComposite, SWT.MULTI | SWT.BORDER | SWT.V_SCROLL | SWT.WRAP);
+		gridData = new GridData(500, 100);
+		gridData.horizontalSpan = DIALOG_WIDTH;
 		gridData.horizontalAlignment = GridData.FILL;
+		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
+		gridData.grabExcessVerticalSpace = true;
 		gridData.horizontalIndent = 25;
 		m_commandCheck.setLayoutData(gridData);
 		m_commandCheck.setToolTipText(Messages.getString("infra.command.tooltip"));
@@ -393,7 +426,7 @@ public class CommandModuleDialog extends CommonDialog {
 		// サイズを最適化
 		// グリッドレイアウトを用いた場合、こうしないと横幅が画面いっぱいになります。
 		m_shell.pack();
-		m_shell.setSize(new Point(500, m_shell.getSize().y));
+		m_shell.setSize(new Point(760, m_shell.getSize().y));
 
 		// 画面中央に配置
 		Display display = m_shell.getDisplay();
@@ -425,12 +458,6 @@ public class CommandModuleDialog extends CommonDialog {
 			this.m_commandExec.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		}else{
 			this.m_commandExec.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-		}
-		//チェックコマンド
-		if("".equals(this.m_commandCheck.getText())){
-			this.m_commandCheck.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
-			this.m_commandCheck.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
 	}
 
@@ -492,9 +519,15 @@ public class CommandModuleDialog extends CommonDialog {
 			//	エラーが起こったら後続モジュールを実行しない
 			m_proceedIfFailFlg.setSelection(module.isStopIfFailFlg());
 			//	チェックコマンドの取得
-			m_commandCheck.setText(module.getCheckCommand());
+			if (module.getCheckCommand() != null) {
+				m_commandCheck.setText(module.getCheckCommand());
+			}
 			//	実行コマンドの取得
 			m_commandExec.setText(module.getExecCommand());
+			//	戻り値の変数の取得
+			if (module.getExecReturnParamName() != null) {
+				m_execReturnParamName.setText(module.getExecReturnParamName());
+			}
 			//	設定の有効･無効
 			m_validFlg.setSelection(module.isValidFlg());
 
@@ -539,8 +572,15 @@ public class CommandModuleDialog extends CommonDialog {
 		//実行コマンド取得
 		moduleInfo.setExecCommand(m_commandExec.getText());
 
+		//戻り値の変数取得
+		if (m_execReturnParamName.getText() != null) {
+			moduleInfo.setExecReturnParamName(m_execReturnParamName.getText().trim());
+		}
+
 		//チェックコマンド取得
-		moduleInfo.setCheckCommand(m_commandCheck.getText());
+		if (m_commandCheck.getText() != null) {
+			moduleInfo.setCheckCommand(m_commandCheck.getText().trim());
+		}
 
 		//設定の有効
 		moduleInfo.setValidFlg(m_validFlg.getSelection());
@@ -569,26 +609,6 @@ public class CommandModuleDialog extends CommonDialog {
 
 	@Override
 	protected ValidateResult validate() {
-		if ("".equals((m_moduleId.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.id")}));
-		}
-		if ("".equals((m_moduleName.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.name")}));
-		}
-		if ("".equals((this.m_commandExec.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.exec.command")}));
-		}
-		if ("".equals((this.m_commandCheck.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.module.check.command")}));
-		}
 		return super.validate();
 	}
 

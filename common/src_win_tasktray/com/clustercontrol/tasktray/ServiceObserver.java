@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2017 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.tasktray;
 
 import java.awt.AWTException;
@@ -67,32 +61,55 @@ public class ServiceObserver {
 	private static String observMode;
 	
 	private ResourceBundle bundle;
-	
-	PopupMenu menu;
-	
+
+	public static void setRunCommand(String command) {
+		runCommand = command;
+	}
+	public static void setStopCommand(String command) {
+		stopCommand = command;
+	}
+	public static void setRestartCommand(String command) {
+		restartCommand = command;
+	}
+	public static void setObservCommand(String command) {
+		observCommand = command;
+	}
+	public static void setObservMode(String mode) {
+		observMode = mode;
+	}
+
 	public ServiceObserver() {
 		String homeDir = System.getProperty("homedir");
 		
-		runCommand = "cmd /c \"" + homeDir + "\\bin\\ManagerStart.cmd\"";
-		stopCommand = "cmd /c \"" + homeDir + "\\bin\\ManagerStop.cmd\"";
-		restartCommand = "cmd /c \"" + homeDir + "\\bin\\ManagerRestart.cmd\"";
-		observCommand = "cmd /c sc query Hinemos_Manager";
+		setRunCommand("cmd /c \"" + homeDir + "\\bin\\ManagerStart.cmd\"");
+		setStopCommand("cmd /c \"" + homeDir + "\\bin\\ManagerStop.cmd\"");
+		setRestartCommand("cmd /c \"" + homeDir + "\\bin\\ManagerRestart.cmd\"");
+		setObservCommand("cmd /c sc query Hinemos_Manager");
 		
 		Properties properties = new Properties();
+		FileInputStream stream = null;
 		try {
-			properties.load(new FileInputStream(homeDir + "\\etc\\hinemos_tasktray.properties"));
-			observMode = properties.getProperty("observe.mode");
+			stream = new FileInputStream(homeDir + "\\etc\\hinemos_tasktray.properties");
+			properties.load(stream);
+			setObservMode(properties.getProperty("observe.mode"));
 			if(observMode != null && "powershell".equals(observMode)) {
-				observCommand = "cmd /c powershell \"&\'" + homeDir + "\\sbin\\service_observer.ps1\'\"";
+				setObservCommand("cmd /c powershell \"&\'" + homeDir + "\\sbin\\service_observer.ps1\'\"");
 			}
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
+		} finally {
+			if (stream != null) {
+				try {
+					stream.close();
+				} catch (IOException e) {
+				}
+			}
 		}
 		
 		bundle = ResourceBundle.getBundle("messages_tasktray");
 	}
 	
-	public synchronized void start() throws SocketException, UnknownHostException, IOException {
+	public void start() throws SocketException, UnknownHostException, IOException {
 		
 		if (!SystemTray.isSupported()) {
 //			log.warn("SystemTray is not supported.");
@@ -229,7 +246,7 @@ public class ServiceObserver {
 		return executor;
 	}
 	
-	public synchronized void shutdown() {
+	public void shutdown() {
 		shutdown = true;
 		observer.shutdown();
 	}

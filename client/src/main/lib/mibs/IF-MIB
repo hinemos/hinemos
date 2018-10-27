@@ -1,0 +1,898 @@
+IF-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Counter32, Gauge32, Counter64,
+    Integer32, TimeTicks, mib-2,
+    NOTIFICATION-TYPE                        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION, DisplayString,
+    PhysAddress, TruthValue, RowStatus,
+    TimeStamp, AutonomousType, TestAndIncr   FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP                       FROM SNMPv2-CONF
+    snmpTraps                                FROM SNMPv2-MIB
+    IANAifType                               FROM IANAifType-MIB;
+
+
+ifMIB MODULE-IDENTITY
+    LAST-UPDATED "200006140000Z"
+    ORGANIZATION "IETF Interfaces MIB Working Group"
+
+
+
+
+
+    ::= { mib-2 31 }
+
+
+ifMIBObjects OBJECT IDENTIFIER ::= { ifMIB 1 }
+
+interfaces   OBJECT IDENTIFIER ::= { mib-2 2 }
+
+
+
+
+OwnerString ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "255a"
+    STATUS       deprecated
+    SYNTAX       OCTET STRING (SIZE(0..255))
+
+
+InterfaceIndex ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS       current
+    SYNTAX       Integer32 (1..2147483647)
+
+InterfaceIndexOrZero ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS       current
+    SYNTAX       Integer32 (0..2147483647)
+
+ifNumber  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { interfaces 1 }
+
+ifTableLastChange  OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifMIBObjects 5 }
+
+
+
+
+
+
+
+
+
+ifTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { interfaces 2 }
+
+ifEntry OBJECT-TYPE
+    SYNTAX      IfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { ifIndex }
+    ::= { ifTable 1 }
+
+IfEntry ::=
+    SEQUENCE {
+        ifIndex                 InterfaceIndex,
+        ifDescr                 DisplayString,
+        ifType                  IANAifType,
+        ifMtu                   Integer32,
+        ifSpeed                 Gauge32,
+        ifPhysAddress           PhysAddress,
+        ifAdminStatus           INTEGER,
+        ifOperStatus            INTEGER,
+        ifLastChange            TimeTicks,
+        ifInOctets              Counter32,
+        ifInUcastPkts           Counter32,
+        ifInNUcastPkts          Counter32,  -- deprecated
+        ifInDiscards            Counter32,
+        ifInErrors              Counter32,
+        ifInUnknownProtos       Counter32,
+        ifOutOctets             Counter32,
+        ifOutUcastPkts          Counter32,
+        ifOutNUcastPkts         Counter32,  -- deprecated
+        ifOutDiscards           Counter32,
+        ifOutErrors             Counter32,
+        ifOutQLen               Gauge32,    -- deprecated
+        ifSpecific              OBJECT IDENTIFIER -- deprecated
+    }
+
+
+
+
+
+
+ifIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 1 }
+
+ifDescr OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 2 }
+
+ifType OBJECT-TYPE
+    SYNTAX      IANAifType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 3 }
+
+ifMtu OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 4 }
+
+ifSpeed OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 5 }
+
+ifPhysAddress OBJECT-TYPE
+    SYNTAX      PhysAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 6 }
+
+ifAdminStatus OBJECT-TYPE
+    SYNTAX  INTEGER {
+                up(1),       -- ready to pass packets
+                down(2),
+                testing(3)   -- in some test mode
+            }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { ifEntry 7 }
+
+
+
+
+
+
+ifOperStatus OBJECT-TYPE
+    SYNTAX  INTEGER {
+                up(1),        -- ready to pass packets
+                down(2),
+                testing(3),   -- in some test mode
+                unknown(4),   -- status can not be determined
+                dormant(5),
+                notPresent(6),    -- some component is missing
+                lowerLayerDown(7) -- down due to state of
+            }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 8 }
+
+ifLastChange OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 9 }
+
+ifInOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 10 }
+
+ifInUcastPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 11 }
+
+ifInNUcastPkts OBJECT-TYPE
+    SYNTAX  Counter32
+    MAX-ACCESS  read-only
+    STATUS      deprecated
+    ::= { ifEntry 12 }
+
+ifInDiscards OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 13 }
+
+ifInErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 14 }
+
+ifInUnknownProtos OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 15 }
+
+
+
+
+
+ifOutOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 16 }
+
+ifOutUcastPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 17 }
+
+ifOutNUcastPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      deprecated
+    ::= { ifEntry 18 }
+
+
+
+
+
+ifOutDiscards OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 19 }
+
+ifOutErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifEntry 20 }
+
+ifOutQLen OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      deprecated
+    ::= { ifEntry 21 }
+
+ifSpecific OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-only
+    STATUS      deprecated
+    ::= { ifEntry 22 }
+
+
+
+
+ifXTable        OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IfXEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { ifMIBObjects 1 }
+
+ifXEntry        OBJECT-TYPE
+    SYNTAX      IfXEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    AUGMENTS    { ifEntry }
+    ::= { ifXTable 1 }
+
+IfXEntry ::=
+    SEQUENCE {
+        ifName                  DisplayString,
+        ifInMulticastPkts       Counter32,
+        ifInBroadcastPkts       Counter32,
+        ifOutMulticastPkts      Counter32,
+        ifOutBroadcastPkts      Counter32,
+        ifHCInOctets            Counter64,
+        ifHCInUcastPkts         Counter64,
+        ifHCInMulticastPkts     Counter64,
+
+
+
+
+
+        ifHCInBroadcastPkts     Counter64,
+        ifHCOutOctets           Counter64,
+        ifHCOutUcastPkts        Counter64,
+        ifHCOutMulticastPkts    Counter64,
+        ifHCOutBroadcastPkts    Counter64,
+        ifLinkUpDownTrapEnable  INTEGER,
+        ifHighSpeed             Gauge32,
+        ifPromiscuousMode       TruthValue,
+        ifConnectorPresent      TruthValue,
+        ifAlias                 DisplayString,
+        ifCounterDiscontinuityTime TimeStamp
+    }
+
+
+ifName OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 1 }
+
+ifInMulticastPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 2 }
+
+ifInBroadcastPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 3 }
+
+ifOutMulticastPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 4 }
+
+ifOutBroadcastPkts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 5 }
+
+
+ifHCInOctets OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 6 }
+
+ifHCInUcastPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 7 }
+
+ifHCInMulticastPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 8 }
+
+ifHCInBroadcastPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 9 }
+
+ifHCOutOctets OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 10 }
+
+ifHCOutUcastPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 11 }
+
+ifHCOutMulticastPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 12 }
+
+ifHCOutBroadcastPkts OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 13 }
+
+ifLinkUpDownTrapEnable  OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { ifXEntry 14 }
+
+ifHighSpeed OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 15 }
+
+ifPromiscuousMode  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { ifXEntry 16 }
+
+ifConnectorPresent   OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { ifXEntry 17 }
+
+ifAlias   OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE(0..64))
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { ifXEntry 18 }
+
+ifCounterDiscontinuityTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ifXEntry 19 }
+
+
+ifStackTable  OBJECT-TYPE
+     SYNTAX        SEQUENCE OF IfStackEntry
+     MAX-ACCESS    not-accessible
+     STATUS        current
+     ::= { ifMIBObjects 2 }
+
+
+ifStackEntry  OBJECT-TYPE
+     SYNTAX        IfStackEntry
+     MAX-ACCESS    not-accessible
+     STATUS        current
+
+
+
+
+
+     INDEX { ifStackHigherLayer, ifStackLowerLayer }
+     ::= { ifStackTable 1 }
+
+
+IfStackEntry ::=
+    SEQUENCE {
+        ifStackHigherLayer  InterfaceIndexOrZero,
+        ifStackLowerLayer   InterfaceIndexOrZero,
+        ifStackStatus       RowStatus
+     }
+
+
+ifStackHigherLayer  OBJECT-TYPE
+     SYNTAX        InterfaceIndexOrZero
+     MAX-ACCESS    not-accessible
+     STATUS        current
+     ::= { ifStackEntry 1 }
+
+
+ifStackLowerLayer  OBJECT-TYPE
+     SYNTAX        InterfaceIndexOrZero
+     MAX-ACCESS    not-accessible
+     STATUS        current
+     ::= { ifStackEntry 2 }
+
+
+ifStackStatus  OBJECT-TYPE
+    SYNTAX         RowStatus
+    MAX-ACCESS     read-create
+    STATUS         current
+    ::= { ifStackEntry 3 }
+
+ifStackLastChange OBJECT-TYPE
+    SYNTAX         TimeTicks
+    MAX-ACCESS     read-only
+    STATUS         current
+    ::= { ifMIBObjects 6 }
+
+
+
+ifRcvAddressTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IfRcvAddressEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { ifMIBObjects 4 }
+
+ifRcvAddressEntry  OBJECT-TYPE
+    SYNTAX      IfRcvAddressEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX  { ifIndex, ifRcvAddressAddress }
+    ::= { ifRcvAddressTable 1 }
+
+IfRcvAddressEntry ::=
+    SEQUENCE {
+        ifRcvAddressAddress   PhysAddress,
+        ifRcvAddressStatus    RowStatus,
+        ifRcvAddressType      INTEGER
+    }
+
+ifRcvAddressAddress OBJECT-TYPE
+    SYNTAX      PhysAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { ifRcvAddressEntry 1 }
+
+ifRcvAddressStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+
+    ::= { ifRcvAddressEntry 2 }
+
+ifRcvAddressType OBJECT-TYPE
+    SYNTAX      INTEGER {
+
+
+
+
+
+                    other(1),
+                    volatile(2),
+                    nonVolatile(3)
+                }
+
+    MAX-ACCESS  read-create
+    STATUS      current
+
+    DEFVAL  { volatile }
+    ::= { ifRcvAddressEntry 3 }
+
+
+linkDown NOTIFICATION-TYPE
+    OBJECTS { ifIndex, ifAdminStatus, ifOperStatus }
+    STATUS  current
+    ::= { snmpTraps 3 }
+
+linkUp NOTIFICATION-TYPE
+    OBJECTS { ifIndex, ifAdminStatus, ifOperStatus }
+    STATUS  current
+    ::= { snmpTraps 4 }
+
+
+
+
+
+
+
+ifConformance OBJECT IDENTIFIER ::= { ifMIB 2 }
+
+ifGroups      OBJECT IDENTIFIER ::= { ifConformance 1 }
+ifCompliances OBJECT IDENTIFIER ::= { ifConformance 2 }
+
+
+
+ifCompliance3 MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { ifGeneralInformationGroup,
+                           linkUpDownNotificationsGroup }
+
+
+
+        GROUP       ifFixedLengthGroup
+
+        GROUP       ifHCFixedLengthGroup
+
+        GROUP       ifPacketGroup
+
+        GROUP       ifHCPacketGroup
+
+        GROUP       ifVHCPacketGroup
+
+
+        GROUP       ifCounterDiscontinuityGroup
+
+
+        GROUP       ifRcvAddressGroup
+
+        OBJECT      ifLinkUpDownTrapEnable
+        MIN-ACCESS  read-only
+
+        OBJECT      ifPromiscuousMode
+        MIN-ACCESS  read-only
+
+        OBJECT       ifAdminStatus
+
+
+
+
+
+        SYNTAX       INTEGER { up(1), down(2) }
+        MIN-ACCESS   read-only
+
+        OBJECT       ifAlias
+        MIN-ACCESS   read-only
+
+    ::= { ifCompliances 3 }
+
+
+ifGeneralInformationGroup    OBJECT-GROUP
+    OBJECTS { ifIndex, ifDescr, ifType, ifSpeed, ifPhysAddress,
+              ifAdminStatus, ifOperStatus, ifLastChange,
+              ifLinkUpDownTrapEnable, ifConnectorPresent,
+              ifHighSpeed, ifName, ifNumber, ifAlias,
+              ifTableLastChange }
+    STATUS  current
+    ::= { ifGroups 10 }
+
+
+ifFixedLengthGroup    OBJECT-GROUP
+    OBJECTS { ifInOctets, ifOutOctets, ifInUnknownProtos,
+              ifInErrors, ifOutErrors }
+    STATUS  current
+    ::= { ifGroups 2 }
+
+ifHCFixedLengthGroup    OBJECT-GROUP
+    OBJECTS { ifHCInOctets, ifHCOutOctets,
+              ifInOctets, ifOutOctets, ifInUnknownProtos,
+              ifInErrors, ifOutErrors }
+    STATUS  current
+    ::= { ifGroups 3 }
+
+ifPacketGroup    OBJECT-GROUP
+    OBJECTS { ifInOctets, ifOutOctets, ifInUnknownProtos,
+              ifInErrors, ifOutErrors,
+              ifMtu, ifInUcastPkts, ifInMulticastPkts,
+              ifInBroadcastPkts, ifInDiscards,
+              ifOutUcastPkts, ifOutMulticastPkts,
+              ifOutBroadcastPkts, ifOutDiscards,
+              ifPromiscuousMode }
+    STATUS  current
+    ::= { ifGroups 4 }
+
+ifHCPacketGroup    OBJECT-GROUP
+    OBJECTS { ifHCInOctets, ifHCOutOctets,
+              ifInOctets, ifOutOctets, ifInUnknownProtos,
+              ifInErrors, ifOutErrors,
+              ifMtu, ifInUcastPkts, ifInMulticastPkts,
+              ifInBroadcastPkts, ifInDiscards,
+              ifOutUcastPkts, ifOutMulticastPkts,
+              ifOutBroadcastPkts, ifOutDiscards,
+              ifPromiscuousMode }
+    STATUS  current
+    ::= { ifGroups 5 }
+
+ifVHCPacketGroup    OBJECT-GROUP
+    OBJECTS { ifHCInUcastPkts, ifHCInMulticastPkts,
+              ifHCInBroadcastPkts, ifHCOutUcastPkts,
+              ifHCOutMulticastPkts, ifHCOutBroadcastPkts,
+              ifHCInOctets, ifHCOutOctets,
+              ifInOctets, ifOutOctets, ifInUnknownProtos,
+              ifInErrors, ifOutErrors,
+              ifMtu, ifInUcastPkts, ifInMulticastPkts,
+              ifInBroadcastPkts, ifInDiscards,
+              ifOutUcastPkts, ifOutMulticastPkts,
+
+
+
+
+
+              ifOutBroadcastPkts, ifOutDiscards,
+              ifPromiscuousMode }
+    STATUS  current
+    ::= { ifGroups 6 }
+
+ifRcvAddressGroup    OBJECT-GROUP
+    OBJECTS { ifRcvAddressStatus, ifRcvAddressType }
+    STATUS  current
+    ::= { ifGroups 7 }
+
+ifStackGroup2    OBJECT-GROUP
+    OBJECTS { ifStackStatus, ifStackLastChange }
+    STATUS  current
+    ::= { ifGroups 11 }
+
+ifCounterDiscontinuityGroup  OBJECT-GROUP
+    OBJECTS { ifCounterDiscontinuityTime }
+    STATUS  current
+    ::= { ifGroups 13 }
+
+linkUpDownNotificationsGroup  NOTIFICATION-GROUP
+    NOTIFICATIONS { linkUp, linkDown }
+    STATUS  current
+    ::= { ifGroups 14 }
+
+
+
+
+
+
+
+
+
+ifTestTable   OBJECT-TYPE
+    SYNTAX      SEQUENCE OF IfTestEntry
+    MAX-ACCESS  not-accessible
+    STATUS      deprecated
+    ::= { ifMIBObjects 3 }
+
+ifTestEntry OBJECT-TYPE
+    SYNTAX       IfTestEntry
+    MAX-ACCESS   not-accessible
+    STATUS       deprecated
+    AUGMENTS  { ifEntry }
+    ::= { ifTestTable 1 }
+
+IfTestEntry ::=
+
+
+
+
+
+    SEQUENCE {
+        ifTestId           TestAndIncr,
+        ifTestStatus       INTEGER,
+        ifTestType         AutonomousType,
+        ifTestResult       INTEGER,
+        ifTestCode         OBJECT IDENTIFIER,
+        ifTestOwner        OwnerString
+    }
+
+ifTestId         OBJECT-TYPE
+    SYNTAX       TestAndIncr
+    MAX-ACCESS   read-write
+    STATUS       deprecated
+    ::= { ifTestEntry 1 }
+
+ifTestStatus     OBJECT-TYPE
+    SYNTAX       INTEGER { notInUse(1), inUse(2) }
+    MAX-ACCESS   read-write
+    STATUS       deprecated
+    ::= { ifTestEntry 2 }
+
+ifTestType       OBJECT-TYPE
+    SYNTAX       AutonomousType
+    MAX-ACCESS   read-write
+    STATUS       deprecated
+    ::= { ifTestEntry 3 }
+
+ifTestResult  OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     none(1),          -- no test yet requested
+                     success(2),
+                     inProgress(3),
+                     notSupported(4),
+                     unAbleToRun(5),   -- due to state of system
+                     aborted(6),
+                     failed(7)
+                 }
+    MAX-ACCESS   read-only
+    STATUS       deprecated
+    ::= { ifTestEntry 4 }
+
+ifTestCode  OBJECT-TYPE
+    SYNTAX       OBJECT IDENTIFIER
+    MAX-ACCESS   read-only
+    STATUS       deprecated
+    ::= { ifTestEntry 5 }
+
+
+
+
+
+ifTestOwner      OBJECT-TYPE
+    SYNTAX       OwnerString
+    MAX-ACCESS   read-write
+    STATUS       deprecated
+    ::= { ifTestEntry 6 }
+
+
+
+ifGeneralGroup    OBJECT-GROUP
+    OBJECTS { ifDescr, ifType, ifSpeed, ifPhysAddress,
+              ifAdminStatus, ifOperStatus, ifLastChange,
+              ifLinkUpDownTrapEnable, ifConnectorPresent,
+              ifHighSpeed, ifName }
+    STATUS  deprecated
+    ::= { ifGroups 1 }
+
+
+ifTestGroup    OBJECT-GROUP
+    OBJECTS { ifTestId, ifTestStatus, ifTestType,
+              ifTestResult, ifTestCode, ifTestOwner }
+    STATUS  deprecated
+    ::= { ifGroups 8 }
+
+
+ifStackGroup    OBJECT-GROUP
+    OBJECTS { ifStackStatus }
+    STATUS  deprecated
+    ::= { ifGroups 9 }
+
+
+ifOldObjectsGroup    OBJECT-GROUP
+    OBJECTS { ifInNUcastPkts, ifOutNUcastPkts,
+              ifOutQLen, ifSpecific }
+    STATUS  deprecated
+    ::= { ifGroups 12 }
+
+
+ifCompliance MODULE-COMPLIANCE
+    STATUS  deprecated
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { ifGeneralGroup, ifStackGroup }
+
+        GROUP       ifFixedLengthGroup
+
+        GROUP       ifHCFixedLengthGroup
+
+        GROUP       ifPacketGroup
+
+        GROUP       ifHCPacketGroup
+
+        GROUP       ifTestGroup
+
+        GROUP       ifRcvAddressGroup
+
+        OBJECT      ifLinkUpDownTrapEnable
+        MIN-ACCESS  read-only
+
+        OBJECT      ifPromiscuousMode
+        MIN-ACCESS  read-only
+
+        OBJECT      ifStackStatus
+        SYNTAX      INTEGER { active(1) } -- subset of RowStatus
+        MIN-ACCESS  read-only
+
+        OBJECT       ifAdminStatus
+        SYNTAX       INTEGER { up(1), down(2) }
+        MIN-ACCESS   read-only
+    ::= { ifCompliances 1 }
+
+ifCompliance2 MODULE-COMPLIANCE
+    STATUS      deprecated
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { ifGeneralInformationGroup, ifStackGroup2,
+                           ifCounterDiscontinuityGroup }
+
+        GROUP       ifFixedLengthGroup
+
+        GROUP       ifHCFixedLengthGroup
+
+        GROUP       ifPacketGroup
+
+        GROUP       ifHCPacketGroup
+
+        GROUP       ifRcvAddressGroup
+
+        OBJECT      ifLinkUpDownTrapEnable
+        MIN-ACCESS  read-only
+
+        OBJECT      ifPromiscuousMode
+        MIN-ACCESS  read-only
+
+        OBJECT      ifStackStatus
+        SYNTAX      INTEGER { active(1) } -- subset of RowStatus
+        MIN-ACCESS  read-only
+
+
+
+
+
+        OBJECT       ifAdminStatus
+        SYNTAX       INTEGER { up(1), down(2) }
+        MIN-ACCESS   read-only
+
+        OBJECT       ifAlias
+        MIN-ACCESS   read-only
+
+    ::= { ifCompliances 2 }
+
+END

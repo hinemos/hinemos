@@ -1,0 +1,25 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"NodeMapType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"bgName",
+			"Association",
+			"Association.*.source",
+			"Association.*.target",
+			"Contents",
+			"Contents.*.facilityId",
+			"Contents.*.iconImage",
+			"Contents.*.x",
+			"Contents.*.y"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"NodeMapModel",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

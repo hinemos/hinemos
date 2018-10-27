@@ -1,8 +1,17 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.ws.util;
 
 import java.util.HashMap;
 import java.util.TreeMap;
 
+import com.clustercontrol.collect.model.CollectKeyInfo;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.performance.util.code.CollectorItemTreeItem;
@@ -20,6 +29,7 @@ public class HashMapInfo {
 	private TreeMap<String, String>map6 = new TreeMap<>();
 	private HashMap<String, ArrayListInfo> map7 = new HashMap<>();
 	private HashMap<RunInstructionInfo, MonitorInfo> map8 = new HashMap<>();
+	private HashMap<String, CollectKeyInfo> map9 = new HashMap<>();
 
 	public HashMapInfo(){}
 
@@ -70,13 +80,21 @@ public class HashMapInfo {
 	public void setMap7(HashMap<String, ArrayListInfo> map7) {
 		this.map7 = map7;
 	}
-	
+
 	// AgentEndpoint
 	public HashMap<RunInstructionInfo, MonitorInfo> getMap8() {
 		return map8;
 	}
 	public void setMap8(HashMap<RunInstructionInfo, MonitorInfo> map8) {
 		this.map8 = map8;
+	}
+
+	// CollectEndpoint
+	public HashMap<String, CollectKeyInfo> getMap9() {
+		return map9;
+	}
+	public void setMap9(HashMap<String, CollectKeyInfo> map9) {
+		this.map9 = map9;
 	}
 	
 }

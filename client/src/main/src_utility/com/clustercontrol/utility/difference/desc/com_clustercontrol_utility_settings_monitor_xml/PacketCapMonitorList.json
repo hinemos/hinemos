@@ -1,0 +1,37 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"PacketCapMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"PacketCapInfo.PromiscuousMode",
+			"PacketCapInfo.FilterStr",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"BinaryValue",
+			"BinaryValue.*.Pattern",
+			"BinaryValue.*.Description",
+			"BinaryValue.*.ProcessType",
+			"BinaryValue.*.TextEncoding",
+			"BinaryValue.*.Message",
+			"BinaryValue.*.ValidFlg",
+			"BinaryValue.*.Priority"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"PacketCapMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

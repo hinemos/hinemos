@@ -1,0 +1,678 @@
+T11-FC-FABRIC-ADDR-MGR-MIB  DEFINITIONS ::= BEGIN
+
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    NOTIFICATION-TYPE, Unsigned32,
+    Counter32, Gauge32, mib-2          FROM SNMPv2-SMI   -- [RFC2578]
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP                 FROM SNMPv2-CONF  -- [RFC2580]
+    TEXTUAL-CONVENTION, TruthValue,
+    RowStatus                          FROM SNMPv2-TC    -- [RFC2579]
+    ifIndex                            FROM IF-MIB       -- [IF-MIB]
+    fcmInstanceIndex, fcmSwitchIndex,
+    FcDomainIdOrZero, FcNameIdOrZero   FROM FC-MGMT-MIB  -- [FC-MGMT]
+    T11FabricIndex                     FROM T11-TC-MIB;
+
+t11FcFabricAddrMgrMIB MODULE-IDENTITY
+
+
+
+
+
+    LAST-UPDATED "200603020000Z"
+    ORGANIZATION "T11"
+    ::= { mib-2 137 }
+
+t11FamNotifications   OBJECT IDENTIFIER ::= { t11FcFabricAddrMgrMIB 0 }
+t11FamMIBObjects      OBJECT IDENTIFIER ::= { t11FcFabricAddrMgrMIB 1 }
+t11FamMIBConformance  OBJECT IDENTIFIER ::= { t11FcFabricAddrMgrMIB 2 }
+t11FamConfiguration   OBJECT IDENTIFIER ::= { t11FamMIBObjects 1 }
+t11FamInfo            OBJECT IDENTIFIER ::= { t11FamMIBObjects 2 }
+t11FamNotifyControl   OBJECT IDENTIFIER ::= { t11FamMIBObjects 3 }
+
+
+
+T11FamDomainPriority ::= TEXTUAL-CONVENTION
+
+
+
+
+
+    DISPLAY-HINT  "d"
+    STATUS    current
+    SYNTAX    Unsigned32 (1..255)
+
+T11FamDomainInterfaceRole ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+                       nonPrincipal (1),
+                       principalUpstream (2),
+                       principalDownsteam (3),
+                       isolated (4),
+                       down (5),
+                       unknown (6)
+              }
+
+T11FamState ::= TEXTUAL-CONVENTION
+    STATUS    current
+
+
+
+
+
+    SYNTAX    INTEGER {
+
+
+
+
+
+                       other(1),
+                       starting(2),
+                       unconfigured(3),
+                       principalSwitchSelection(4),
+                       domainIdDistribution(5),
+                       buildFabricPhase(6),
+                       reconfigureFabricPhase(7),
+                       stable(8),
+                       stableWithNoEports(9),
+                       noDomains(10),
+                       disabled(11),
+                       unknown(12)
+              }
+
+
+
+t11FamTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF T11FamEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { t11FamConfiguration 1 }
+
+t11FamEntry OBJECT-TYPE
+    SYNTAX     T11FamEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { fcmInstanceIndex, fcmSwitchIndex, t11FamFabricIndex }
+    ::= { t11FamTable 1 }
+
+T11FamEntry ::= SEQUENCE {
+    t11FamFabricIndex                       T11FabricIndex,
+    t11FamConfigDomainId                    FcDomainIdOrZero,
+
+
+
+
+
+    t11FamConfigDomainIdType                INTEGER,
+    t11FamAutoReconfigure                   TruthValue,
+    t11FamContiguousAllocation              TruthValue,
+    t11FamPriority                          T11FamDomainPriority,
+    t11FamPrincipalSwitchWwn                FcNameIdOrZero,
+    t11FamLocalSwitchWwn                    FcNameIdOrZero,
+    t11FamAssignedAreaIdList                OCTET STRING,
+    t11FamGrantedFcIds                      Counter32,
+    t11FamRecoveredFcIds                    Counter32,
+    t11FamFreeFcIds                         Gauge32,
+    t11FamAssignedFcIds                     Gauge32,
+    t11FamAvailableFcIds                    Gauge32,
+    t11FamRunningPriority                   T11FamDomainPriority,
+    t11FamPrincSwRunningPriority            T11FamDomainPriority,
+    t11FamState                             T11FamState,
+    t11FamLocalPrincipalSwitchSlctns        Counter32,
+    t11FamPrincipalSwitchSelections         Counter32,
+    t11FamBuildFabrics                      Counter32,
+    t11FamFabricReconfigures                Counter32,
+    t11FamDomainId                          FcDomainIdOrZero,
+    t11FamSticky                            TruthValue,
+    t11FamRestart                           INTEGER,
+    t11FamRcFabricNotifyEnable              TruthValue,
+    t11FamEnable                            TruthValue,
+    t11FamFabricName                        FcNameIdOrZero
+}
+
+t11FamFabricIndex OBJECT-TYPE
+    SYNTAX      T11FabricIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FamEntry 1 }
+
+
+
+
+
+
+t11FamConfigDomainId OBJECT-TYPE
+    SYNTAX      FcDomainIdOrZero
+    MAX-ACCESS  read-write
+    STATUS      current
+
+
+
+
+
+    DEFVAL      { 0 }
+    ::= { t11FamEntry 2 }
+
+t11FamConfigDomainIdType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                       preferred(1),
+                       insistent(2),
+                       static(3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL  { preferred }
+    ::= { t11FamEntry 3 }
+
+t11FamAutoReconfigure OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL  { false }
+    ::= { t11FamEntry 4 }
+
+
+
+
+
+
+t11FamContiguousAllocation OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { t11FamEntry 5 }
+
+t11FamPriority  OBJECT-TYPE
+    SYNTAX     T11FamDomainPriority
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { t11FamEntry 6 }
+
+t11FamPrincipalSwitchWwn OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL  { ''H }
+    ::= { t11FamEntry 7 }
+
+t11FamLocalSwitchWwn OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { t11FamEntry 8 }
+
+t11FamAssignedAreaIdList    OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE(0..256))
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 9 }
+
+t11FamGrantedFcIds OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 10 }
+
+t11FamRecoveredFcIds OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS      current
+
+
+
+
+
+    ::= { t11FamEntry 11 }
+
+t11FamFreeFcIds OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 12 }
+
+t11FamAssignedFcIds OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 13 }
+
+t11FamAvailableFcIds OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 14 }
+
+t11FamRunningPriority OBJECT-TYPE
+    SYNTAX     T11FamDomainPriority
+    MAX-ACCESS read-only
+    STATUS      current
+
+
+
+
+
+    ::= { t11FamEntry 15 }
+
+t11FamPrincSwRunningPriority OBJECT-TYPE
+    SYNTAX     T11FamDomainPriority
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 16 }
+
+t11FamState OBJECT-TYPE
+    SYNTAX     T11FamState
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 17 }
+
+t11FamLocalPrincipalSwitchSlctns OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 18 }
+
+t11FamPrincipalSwitchSelections OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 19 }
+
+
+
+
+
+
+t11FamBuildFabrics OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 20 }
+
+t11FamFabricReconfigures OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamEntry 21 }
+
+t11FamDomainId OBJECT-TYPE
+    SYNTAX      FcDomainIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FamEntry 22 }
+
+t11FamSticky   OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FamEntry 23 }
+
+
+
+
+
+t11FamRestart  OBJECT-TYPE
+    SYNTAX     INTEGER {
+                       nonDisruptive(1),
+                       disruptive(2),
+                       noOp(3)
+               }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { t11FamEntry 24 }
+
+t11FamRcFabricNotifyEnable OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-write
+    STATUS     current
+
+
+
+
+
+    DEFVAL { false }
+    ::= { t11FamEntry 25 }
+
+t11FamEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+  DEFVAL  { true }
+  ::= { t11FamEntry 26 }
+
+t11FamFabricName  OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { t11FamEntry 27 }
+
+
+
+t11FamIfTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF T11FamIfEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { t11FamConfiguration 2 }
+
+t11FamIfEntry OBJECT-TYPE
+    SYNTAX     T11FamIfEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { fcmInstanceIndex, fcmSwitchIndex,
+            t11FamFabricIndex, ifIndex}
+    ::= { t11FamIfTable 1 }
+
+T11FamIfEntry ::= SEQUENCE {
+    t11FamIfRcfReject    TruthValue,
+    t11FamIfRole         T11FamDomainInterfaceRole,
+    t11FamIfRowStatus    RowStatus
+}
+
+t11FamIfRcfReject    OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS      current
+    DEFVAL {false}
+    ::= { t11FamIfEntry 1 }
+
+t11FamIfRole    OBJECT-TYPE
+    SYNTAX     T11FamDomainInterfaceRole
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamIfEntry 2 }
+
+t11FamIfRowStatus    OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS      current
+    ::= { t11FamIfEntry 3 }
+
+
+
+
+
+
+
+
+t11FamAreaTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF T11FamAreaEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { t11FamInfo 1 }
+
+t11FamAreaEntry OBJECT-TYPE
+    SYNTAX     T11FamAreaEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { fcmInstanceIndex, fcmSwitchIndex,
+            t11FamFabricIndex, t11FamAreaAreaId}
+    ::= { t11FamAreaTable 1 }
+
+T11FamAreaEntry ::= SEQUENCE {
+    t11FamAreaAreaId                Unsigned32,
+    t11FamAreaAssignedPortIdList    OCTET STRING
+}
+
+t11FamAreaAreaId    OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..255)
+    MAX-ACCESS not-accessible
+    STATUS      current
+    ::= { t11FamAreaEntry 1 }
+
+t11FamAreaAssignedPortIdList    OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE(0..256))
+    MAX-ACCESS read-only
+    STATUS      current
+    ::= { t11FamAreaEntry 2 }
+
+
+
+t11FamDatabaseTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF T11FamDatabaseEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { t11FamInfo 2 }
+
+t11FamDatabaseEntry OBJECT-TYPE
+    SYNTAX     T11FamDatabaseEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { fcmInstanceIndex, fcmSwitchIndex,
+            t11FamFabricIndex , t11FamDatabaseDomainId}
+    ::= { t11FamDatabaseTable 1 }
+
+T11FamDatabaseEntry ::= SEQUENCE {
+    t11FamDatabaseDomainId              FcDomainIdOrZero,
+    t11FamDatabaseSwitchWwn             FcNameIdOrZero
+}
+
+t11FamDatabaseDomainId  OBJECT-TYPE
+    SYNTAX     FcDomainIdOrZero (1..239)
+
+
+
+
+
+    MAX-ACCESS not-accessible
+    STATUS      current
+    ::= { t11FamDatabaseEntry 1 }
+
+t11FamDatabaseSwitchWwn  OBJECT-TYPE
+    SYNTAX      FcNameIdOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FamDatabaseEntry 2 }
+
+
+
+t11FamMaxFcIdCacheSize  OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FamInfo 3 }
+
+
+
+t11FamFcIdCacheTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF T11FamFcIdCacheEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    ::= { t11FamInfo 4 }
+
+t11FamFcIdCacheEntry OBJECT-TYPE
+    SYNTAX     T11FamFcIdCacheEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX { fcmInstanceIndex, fcmSwitchIndex,
+            t11FamFabricIndex, t11FamFcIdCacheWwn}
+    ::= { t11FamFcIdCacheTable 1 }
+
+T11FamFcIdCacheEntry ::= SEQUENCE {
+    t11FamFcIdCacheWwn                  FcNameIdOrZero,
+    t11FamFcIdCacheAreaIdPortId         OCTET STRING,
+    t11FamFcIdCachePortIds              Unsigned32
+}
+
+t11FamFcIdCacheWwn  OBJECT-TYPE
+    SYNTAX     FcNameIdOrZero
+    MAX-ACCESS not-accessible
+    STATUS      current
+
+
+
+
+
+    ::= { t11FamFcIdCacheEntry 1 }
+
+t11FamFcIdCacheAreaIdPortId  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (2))
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FamFcIdCacheEntry 2 }
+
+t11FamFcIdCachePortIds  OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..65535)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FamFcIdCacheEntry 3 }
+
+
+
+t11FamNotifyFabricIndex OBJECT-TYPE
+    SYNTAX      T11FabricIndex
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { t11FamNotifyControl 1 }
+
+
+
+t11FamDomainIdNotAssignedNotify NOTIFICATION-TYPE
+    OBJECTS     { t11FamLocalSwitchWwn, t11FamNotifyFabricIndex }
+    STATUS      current
+    ::= { t11FamNotifications 1 }
+
+t11FamNewPrincipalSwitchNotify NOTIFICATION-TYPE
+    OBJECTS     { t11FamLocalSwitchWwn, t11FamNotifyFabricIndex }
+    STATUS      current
+    ::= { t11FamNotifications 2 }
+
+t11FamFabricChangeNotify NOTIFICATION-TYPE
+    OBJECTS     { t11FamLocalSwitchWwn, t11FamNotifyFabricIndex }
+    STATUS      current
+    ::= { t11FamNotifications 3 }
+
+
+
+t11FamMIBCompliances OBJECT IDENTIFIER ::= { t11FamMIBConformance 1 }
+t11FamMIBGroups OBJECT IDENTIFIER ::= { t11FamMIBConformance 2 }
+
+t11FamMIBCompliance MODULE-COMPLIANCE
+    STATUS   current
+    MODULE
+    MANDATORY-GROUPS { t11FamGroup,
+                       t11FamDatabaseGroup,
+                       t11FamAreaGroup,
+                       t11FamNotificationGroup
+                     }
+
+      OBJECT t11FamConfigDomainId
+      MIN-ACCESS read-only
+
+      OBJECT t11FamConfigDomainIdType
+      MIN-ACCESS read-only
+
+      OBJECT t11FamAutoReconfigure
+      MIN-ACCESS read-only
+
+      OBJECT t11FamContiguousAllocation
+      MIN-ACCESS read-only
+
+      OBJECT t11FamPriority
+
+
+
+
+
+      MIN-ACCESS read-only
+
+      OBJECT t11FamIfRcfReject
+      MIN-ACCESS read-only
+
+      OBJECT t11FamIfRowStatus
+      MIN-ACCESS read-only
+
+      OBJECT t11FamRcFabricNotifyEnable
+      MIN-ACCESS read-only
+
+      GROUP  t11FamCacheGroup
+
+      GROUP  t11FamCommandGroup
+
+    ::= { t11FamMIBCompliances 1 }
+
+
+
+t11FamGroup OBJECT-GROUP
+    OBJECTS  { t11FamConfigDomainId,
+               t11FamConfigDomainIdType,
+               t11FamAutoReconfigure,
+               t11FamContiguousAllocation,
+               t11FamPriority,
+               t11FamPrincipalSwitchWwn,
+               t11FamLocalSwitchWwn,
+               t11FamAssignedAreaIdList,
+               t11FamGrantedFcIds,
+               t11FamRecoveredFcIds,
+               t11FamFreeFcIds,
+               t11FamAssignedFcIds,
+
+
+
+
+
+               t11FamAvailableFcIds,
+               t11FamRunningPriority,
+               t11FamPrincSwRunningPriority,
+               t11FamState,
+               t11FamLocalPrincipalSwitchSlctns,
+               t11FamPrincipalSwitchSelections,
+               t11FamBuildFabrics,
+               t11FamFabricReconfigures,
+               t11FamDomainId,
+               t11FamSticky,
+               t11FamRestart,
+               t11FamRcFabricNotifyEnable,
+               t11FamEnable,
+               t11FamFabricName,
+               t11FamIfRcfReject,
+               t11FamIfRole,
+               t11FamIfRowStatus,
+               t11FamNotifyFabricIndex
+            }
+    STATUS   current
+    ::= { t11FamMIBGroups 1 }
+
+t11FamCommandGroup OBJECT-GROUP
+    OBJECTS  { t11FamRestart }
+    STATUS   current
+    ::= { t11FamMIBGroups 2 }
+
+t11FamDatabaseGroup OBJECT-GROUP
+    OBJECTS  { t11FamDatabaseSwitchWwn }
+    STATUS   current
+    ::= { t11FamMIBGroups 3 }
+
+t11FamAreaGroup OBJECT-GROUP
+    OBJECTS  { t11FamAreaAssignedPortIdList }
+    STATUS   current
+    ::= { t11FamMIBGroups 4 }
+
+
+
+
+
+t11FamCacheGroup OBJECT-GROUP
+    OBJECTS  { t11FamMaxFcIdCacheSize,
+               t11FamFcIdCacheAreaIdPortId,
+               t11FamFcIdCachePortIds
+             }
+    STATUS   current
+    ::= { t11FamMIBGroups 5 }
+
+t11FamNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS  { t11FamDomainIdNotAssignedNotify,
+                     t11FamNewPrincipalSwitchNotify,
+                     t11FamFabricChangeNotify }
+    STATUS   current
+    ::= { t11FamMIBGroups 6 }
+END

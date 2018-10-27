@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.systemlog.util;
 
 import java.io.Serializable;
@@ -9,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
@@ -72,8 +81,9 @@ public class SystemlogCache {
 			ArrayList<MonitorInfo> systemLogMonitorCache = new ArrayList<MonitorInfo>();
 			
 			long startTime = HinemosTime.currentTimeMillis();
-			try {
-				new JpaTransactionManager().getEntityManager().clear();
+			try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+				HinemosEntityManager em = jtm.getEntityManager();
+				em.clear();
 				systemLogMonitorCache = new SelectMonitor().getMonitorListObjectPrivilegeModeNONE(HinemosModuleConstant.MONITOR_SYSTEMLOG);
 			} catch (Exception e) {
 				m_log.error("getSystemlogList " + e.getMessage(), e);

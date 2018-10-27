@@ -1,0 +1,86 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"TransferId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+		"propName":"ownerRoleId",
+		"annotations":[
+		{"type":"Column", "columnName":"TransferTypeInfo_ownerRoleId"}
+	]},
+
+
+	{
+		"propName":"description",
+		"annotations":[
+			{"type":"Column", "columnName":"TransferTypeInfo_description"}
+	]},
+
+	{
+		"propName":"dataType",
+		"annotations":[
+			{"type":"Column", "columnName":"TransferTypeInfo_dataType"},
+			{"type":"Translate",
+				"values":[
+					{"value":"0", "name":"name_job_history"},
+					{"value":"1", "name":"name_event_history"},
+					{"value":"2", "name":"name_collect_num"},
+					{"value":"3", "name":"name_collect_string"}
+				]
+			}
+		]
+	},
+
+	{
+		"propName":"destTypeId",
+		"annotations":[
+			{"type":"Column", "columnName":"TransferTypeInfo_destTypeId"}
+	]},
+
+	{
+		"propName":"transType",
+		"annotations":[
+			{"type":"Column", "columnName":"TransferTypeInfo_transType"},
+			{"type":"Translate",
+			"values":[
+				{"value":"REALTIME", "name":"name_realtime"},
+				{"value":"BATCH", "name":"name_batch"},
+				{"value":"DELAY", "name":"name_delay"}
+			]
+		}
+	]},
+
+	{
+		"propName":"interval",
+		"annotations":[
+			{"type":"Column", "columnName":"TransferTypeInfo_interval"}
+	]},
+
+	{
+		"propName":"calendarId",
+		"annotations":[
+			{"type":"Column", "columnName":"TransferTypeInfo_calendarId"}
+	]},
+
+	{
+		"propName":"validFlg",
+		"annotations":[
+			{"type":"Column", "columnName":"TransferTypeInfo_validFlg"}
+	]},
+
+
+	{
+		"propName":"transferDestProp",
+		"annotations":[
+			{"type":"Column", "columnName":"TransferTypeInfo_destProp"},
+			{"type":"Array", "idType":"props", "props":["name"]},
+			{"type":"Ignore", "propNames":["name"]}
+	]}
+]
+}

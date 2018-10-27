@@ -1,0 +1,20 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"User_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Name",
+			"Password",
+			"Description",
+			"MailAddress"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"UserInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

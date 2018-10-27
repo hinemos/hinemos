@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"DeviceList_funcName"}
+],
+"props":[
+	{
+	"propName":"DeviceInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

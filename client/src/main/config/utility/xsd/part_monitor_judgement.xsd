@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: part_monitor_judgement.xsd 518 2013-05-13 16:00:00Z sekiyaman $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_notify_relation.xsd">
+		<xs:annotation>
+			<xs:documentation>
+				監視での判定情報(数値、文字列、真偽値、バイナリ)の継承元スキーマ
+			</xs:documentation>
+		</xs:annotation>
+	</xs:include>
+
+	<xs:complexType name="MonitorJudgementInfo" abstract="true">
+		<xs:annotation>
+			<xs:documentation>監視で用いる判定情報の基底クラスです。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="monitorId" type="xs:string" minOccurs="1"
+				maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視項目IDです。 PINGやエージェントなどの各監視項目内で一意である必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorTypeId" type="xs:string"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視項目ごとのタイプIDです。
+						監視項目ごとに
+						{
+						MON_AGT_B,
+						MON_HTP,
+						MON_PRF_N,
+						MON_PNG_N,
+						MON_PRT_N,
+						MON_PRC_N,
+						MON_SNMP,
+						MON_SNMP_TRP,
+						MON_SQL,
+						MON_LOG,
+						MON_CUSTOM,
+						MON_SYSLOG_S,
+						MON_LOGFILE_S,
+						MON_WINSERVICE_B,
+						MON_WINEVENT_S,
+						MON_CUSTOMTRAP,
+						MON_HTP_SCE,
+						MON_JMX_N,
+						MON_PCAP_BIN,
+						MON_BINARYFILE_BIN,
+						MON_LOGFILE_N
+						}
+						のどれかが入力されている必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="priority" type="xs:int" minOccurs="1"
+				maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						重要度(危険、警告、通知、不明)です。
+						{危険(0)、不明(1)、警告(2)、情報(3)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="MonitorNumericValueInfo">
+		<xs:annotation>
+			<xs:documentation>監視で用いる閾値判定情報(数値)です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="MonitorJudgementInfo">
+				<xs:sequence>
+					<xs:element name="numericType"
+						type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								数値設定の種類です。閾値判定は空文字('')、変化量はCAHNGEが入ります。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="thresholdLowerLimit"
+						type="xs:double" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								下限の閾値です。Ping監視については「応答時間（ミリ秒）未満」で使用します。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="thresholdUpperLimit"
+						type="xs:double" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								上限の閾値です。Ping監視については「パケット紛失（％）未満」で使用します。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="MonitorStringValueInfo">
+		<xs:annotation>
+			<xs:documentation>監視で用いる閾値判定情報(文字列)です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="MonitorJudgementInfo">
+				<xs:sequence>
+					<xs:element name="description" type="xs:string"
+						minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								この判定情報に対する説明文です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="orderNo" type="xs:int"
+						minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								閾値(文字列)の判定順序の値(１～)です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="pattern" type="xs:string"
+						minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								判定で用いるパターンマッチ表現(正規表現)です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="processType" type="xs:boolean"
+						minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								処理タイプです。判定結果に対し、{処理する(True)、処理しない(False)}のどちらかを入力します。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="caseSensitivityFlg"
+						type="xs:boolean" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								「大文字・小文字を区別しない」のフラグです。
+								{しない(True)、する(False)}の文字列が入ります。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="message" type="xs:string"
+						minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								判定後に出力するメッセージです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="validFlg" type="xs:boolean"
+						minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								この判定設定の有効・無効フラグです。
+								{有効(True)、無効(False)}の文字列が入ります。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="MonitorTruthValueInfo">
+		<xs:annotation>
+			<xs:documentation>監視で用いる閾値判定情報(真偽値)です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="MonitorJudgementInfo">
+				<xs:sequence>
+					<xs:element name="truthValue" type="xs:int"
+						minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								判定で用いる真偽値です。
+								{True(1)、False(0)}のindex番号が入ります。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="MonitorBinaryPatternInfo">
+		<xs:annotation>
+			<xs:documentation>監視で用いる閾値判定情報(バイナリ値)です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="MonitorJudgementInfo">
+				<xs:sequence>
+					<xs:element name="description" type="xs:string"
+						minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								この判定情報に対する説明文です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="orderNo" type="xs:int"
+						minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								閾値(文字列)の判定順序の値(１～)です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="pattern" type="xs:string"
+						minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								判定で用いるパターンマッチ表現(正規表現)です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="processType" type="xs:boolean"
+						minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								処理タイプです。判定結果に対し、{処理する(True)、処理しない(False)}のどちらかを入力します。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="message" type="xs:string"
+						minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								判定後に出力するメッセージです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="validFlg" type="xs:boolean"
+						minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								この判定設定の有効・無効フラグです。
+								{有効(True)、無効(False)}の文字列が入ります。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="textEncoding" type="xs:string"
+						minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								文字エンコードです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

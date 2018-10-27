@@ -1,0 +1,1332 @@
+Q-BRIDGE-MIB DEFINITIONS ::= BEGIN
+
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    Counter32, Counter64, Unsigned32, TimeTicks, Integer32
+        FROM SNMPv2-SMI
+    RowStatus, TruthValue, TEXTUAL-CONVENTION, MacAddress
+        FROM SNMPv2-TC
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
+    MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF
+    dot1dBridge, dot1dBasePortEntry, dot1dBasePort
+        FROM BRIDGE-MIB
+    EnabledStatus
+        FROM P-BRIDGE-MIB
+    TimeFilter
+        FROM RMON2-MIB;
+
+qBridgeMIB MODULE-IDENTITY
+    LAST-UPDATED "200601090000Z"
+    ORGANIZATION "IETF Bridge MIB Working Group"
+
+
+
+
+
+
+
+    ::= { dot1dBridge 7 }
+
+qBridgeMIBObjects OBJECT IDENTIFIER ::= { qBridgeMIB 1 }
+
+
+PortList ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      OCTET STRING
+
+VlanIndex ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS      current
+    SYNTAX      Unsigned32
+
+VlanId ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS      current
+    SYNTAX      Integer32 (1..4094)
+
+VlanIdOrAny ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS       current
+    SYNTAX       Integer32 (1..4094 | 4095)
+
+VlanIdOrNone ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS       current
+    SYNTAX       Integer32 (0 | 1..4094)
+
+
+
+
+
+VlanIdOrAnyOrNone ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS       current
+    SYNTAX       Integer32 (0 | 1..4094 | 4095)
+
+
+dot1qBase       OBJECT IDENTIFIER ::= { qBridgeMIBObjects 1 }
+dot1qTp         OBJECT IDENTIFIER ::= { qBridgeMIBObjects 2 }
+dot1qStatic     OBJECT IDENTIFIER ::= { qBridgeMIBObjects 3 }
+dot1qVlan       OBJECT IDENTIFIER ::= { qBridgeMIBObjects 4 }
+dot1vProtocol   OBJECT IDENTIFIER ::= { qBridgeMIBObjects 5 }
+
+
+dot1qVlanVersionNumber OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    version1(1)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qBase 1 }
+
+dot1qMaxVlanId OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qBase 2 }
+
+dot1qMaxSupportedVlans OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qBase 3 }
+
+dot1qNumVlans OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qBase 4 }
+
+dot1qGvrpStatus OBJECT-TYPE
+    SYNTAX      EnabledStatus
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL      { enabled }
+    ::= { dot1qBase 5 }
+
+
+
+
+
+
+
+
+dot1qFdbTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qFdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qTp 1 }
+
+dot1qFdbEntry OBJECT-TYPE
+    SYNTAX      Dot1qFdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1qFdbId }
+    ::= { dot1qFdbTable 1 }
+
+Dot1qFdbEntry ::=
+    SEQUENCE {
+        dot1qFdbId
+            Unsigned32,
+        dot1qFdbDynamicCount
+            Counter32
+    }
+
+dot1qFdbId OBJECT-TYPE
+    SYNTAX       Unsigned32
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { dot1qFdbEntry 1 }
+
+dot1qFdbDynamicCount OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    ::= { dot1qFdbEntry 2 }
+
+
+dot1qTpFdbTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qTpFdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qTp 2 }
+
+dot1qTpFdbEntry OBJECT-TYPE
+    SYNTAX      Dot1qTpFdbEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1qFdbId, dot1qTpFdbAddress }
+    ::= { dot1qTpFdbTable 1 }
+
+Dot1qTpFdbEntry ::=
+    SEQUENCE {
+        dot1qTpFdbAddress
+            MacAddress,
+        dot1qTpFdbPort
+            Integer32,
+        dot1qTpFdbStatus
+            INTEGER
+    }
+
+
+
+
+
+dot1qTpFdbAddress OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qTpFdbEntry 1 }
+
+dot1qTpFdbPort OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qTpFdbEntry 2 }
+
+dot1qTpFdbStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    other(1),
+                    invalid(2),
+                    learned(3),
+                    self(4),
+                    mgmt(5)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qTpFdbEntry 3 }
+
+
+dot1qTpGroupTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qTpGroupEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qTp 3 }
+
+dot1qTpGroupEntry OBJECT-TYPE
+    SYNTAX      Dot1qTpGroupEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1qVlanIndex, dot1qTpGroupAddress }
+    ::= { dot1qTpGroupTable 1 }
+
+Dot1qTpGroupEntry ::=
+    SEQUENCE {
+        dot1qTpGroupAddress
+
+
+
+
+
+            MacAddress,
+        dot1qTpGroupEgressPorts
+            PortList,
+        dot1qTpGroupLearnt
+            PortList
+    }
+
+dot1qTpGroupAddress OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qTpGroupEntry 1 }
+
+dot1qTpGroupEgressPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qTpGroupEntry 2 }
+
+dot1qTpGroupLearnt OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qTpGroupEntry 3 }
+
+
+dot1qForwardAllTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qForwardAllEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qTp 4 }
+
+dot1qForwardAllEntry OBJECT-TYPE
+    SYNTAX      Dot1qForwardAllEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1qVlanIndex }
+    ::= { dot1qForwardAllTable 1 }
+
+Dot1qForwardAllEntry ::=
+    SEQUENCE {
+        dot1qForwardAllPorts
+            PortList,
+        dot1qForwardAllStaticPorts
+            PortList,
+        dot1qForwardAllForbiddenPorts
+            PortList
+    }
+
+dot1qForwardAllPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qForwardAllEntry 1 }
+
+dot1qForwardAllStaticPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot1qForwardAllEntry 2 }
+
+dot1qForwardAllForbiddenPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot1qForwardAllEntry 3 }
+
+dot1qForwardUnregisteredTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qForwardUnregisteredEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    ::= { dot1qTp 5 }
+
+dot1qForwardUnregisteredEntry OBJECT-TYPE
+    SYNTAX      Dot1qForwardUnregisteredEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1qVlanIndex }
+    ::= { dot1qForwardUnregisteredTable 1 }
+
+Dot1qForwardUnregisteredEntry ::=
+    SEQUENCE {
+        dot1qForwardUnregisteredPorts
+            PortList,
+        dot1qForwardUnregisteredStaticPorts
+            PortList,
+        dot1qForwardUnregisteredForbiddenPorts
+            PortList
+    }
+
+dot1qForwardUnregisteredPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qForwardUnregisteredEntry 1 }
+
+dot1qForwardUnregisteredStaticPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot1qForwardUnregisteredEntry 2 }
+
+dot1qForwardUnregisteredForbiddenPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot1qForwardUnregisteredEntry 3 }
+
+
+dot1qStaticUnicastTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qStaticUnicastEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qStatic 1 }
+
+dot1qStaticUnicastEntry OBJECT-TYPE
+    SYNTAX      Dot1qStaticUnicastEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   {
+        dot1qFdbId,
+        dot1qStaticUnicastAddress,
+        dot1qStaticUnicastReceivePort
+    }
+    ::= { dot1qStaticUnicastTable 1 }
+
+Dot1qStaticUnicastEntry ::=
+    SEQUENCE {
+        dot1qStaticUnicastAddress
+            MacAddress,
+        dot1qStaticUnicastReceivePort
+            Integer32,
+        dot1qStaticUnicastAllowedToGoTo
+            PortList,
+        dot1qStaticUnicastStatus
+            INTEGER
+    }
+
+dot1qStaticUnicastAddress OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qStaticUnicastEntry 1 }
+
+
+
+
+
+dot1qStaticUnicastReceivePort OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qStaticUnicastEntry 2 }
+
+dot1qStaticUnicastAllowedToGoTo OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot1qStaticUnicastEntry 3 }
+
+dot1qStaticUnicastStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    other(1),
+                    invalid(2),
+                    permanent(3),
+                    deleteOnReset(4),
+                    deleteOnTimeout(5)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL      { permanent }
+    ::= { dot1qStaticUnicastEntry 4 }
+
+dot1qStaticMulticastTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qStaticMulticastEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qStatic 2 }
+
+dot1qStaticMulticastEntry OBJECT-TYPE
+    SYNTAX      Dot1qStaticMulticastEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   {
+        dot1qVlanIndex,
+        dot1qStaticMulticastAddress,
+        dot1qStaticMulticastReceivePort
+    }
+    ::= { dot1qStaticMulticastTable 1 }
+
+Dot1qStaticMulticastEntry ::=
+    SEQUENCE {
+        dot1qStaticMulticastAddress
+            MacAddress,
+        dot1qStaticMulticastReceivePort
+            Integer32,
+        dot1qStaticMulticastStaticEgressPorts
+            PortList,
+        dot1qStaticMulticastForbiddenEgressPorts
+            PortList,
+        dot1qStaticMulticastStatus
+            INTEGER
+    }
+
+dot1qStaticMulticastAddress OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qStaticMulticastEntry 1 }
+
+dot1qStaticMulticastReceivePort OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qStaticMulticastEntry 2 }
+
+dot1qStaticMulticastStaticEgressPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-write
+
+
+
+
+
+    STATUS      current
+    ::= { dot1qStaticMulticastEntry 3 }
+
+dot1qStaticMulticastForbiddenEgressPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot1qStaticMulticastEntry 4 }
+
+dot1qStaticMulticastStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    other(1),
+                    invalid(2),
+                    permanent(3),
+                    deleteOnReset(4),
+                    deleteOnTimeout(5)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL      { permanent }
+    ::= { dot1qStaticMulticastEntry 5 }
+
+
+dot1qVlanNumDeletes OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dot1qVlan 1 }
+
+dot1qVlanCurrentTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qVlanCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qVlan 2 }
+
+dot1qVlanCurrentEntry OBJECT-TYPE
+    SYNTAX      Dot1qVlanCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1qVlanTimeMark, dot1qVlanIndex }
+    ::= { dot1qVlanCurrentTable 1 }
+
+Dot1qVlanCurrentEntry ::=
+    SEQUENCE {
+        dot1qVlanTimeMark
+            TimeFilter,
+        dot1qVlanIndex
+            VlanIndex,
+        dot1qVlanFdbId
+            Unsigned32,
+        dot1qVlanCurrentEgressPorts
+            PortList,
+        dot1qVlanCurrentUntaggedPorts
+            PortList,
+        dot1qVlanStatus
+            INTEGER,
+        dot1qVlanCreationTime
+            TimeTicks
+    }
+
+dot1qVlanTimeMark OBJECT-TYPE
+    SYNTAX      TimeFilter
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qVlanCurrentEntry 1 }
+
+dot1qVlanIndex OBJECT-TYPE
+    SYNTAX      VlanIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qVlanCurrentEntry 2 }
+
+dot1qVlanFdbId OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qVlanCurrentEntry 3 }
+
+dot1qVlanCurrentEgressPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qVlanCurrentEntry 4 }
+
+dot1qVlanCurrentUntaggedPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qVlanCurrentEntry 5 }
+
+dot1qVlanStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    other(1),
+                    permanent(2),
+                    dynamicGvrp(3)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qVlanCurrentEntry 6 }
+
+dot1qVlanCreationTime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qVlanCurrentEntry 7 }
+
+
+dot1qVlanStaticTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qVlanStaticEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qVlan 3 }
+
+dot1qVlanStaticEntry OBJECT-TYPE
+    SYNTAX      Dot1qVlanStaticEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1qVlanIndex }
+    ::= { dot1qVlanStaticTable 1 }
+
+Dot1qVlanStaticEntry ::=
+    SEQUENCE {
+        dot1qVlanStaticName
+            SnmpAdminString,
+        dot1qVlanStaticEgressPorts
+            PortList,
+        dot1qVlanForbiddenEgressPorts
+            PortList,
+        dot1qVlanStaticUntaggedPorts
+            PortList,
+
+
+
+
+
+        dot1qVlanStaticRowStatus
+            RowStatus
+    }
+
+dot1qVlanStaticName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..32))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot1qVlanStaticEntry 1 }
+
+dot1qVlanStaticEgressPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot1qVlanStaticEntry 2 }
+
+dot1qVlanForbiddenEgressPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    ::= { dot1qVlanStaticEntry 3 }
+
+dot1qVlanStaticUntaggedPorts OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot1qVlanStaticEntry 4 }
+
+dot1qVlanStaticRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot1qVlanStaticEntry 5 }
+
+dot1qNextFreeLocalVlanIndex OBJECT-TYPE
+    SYNTAX      Integer32 (0|4096..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qVlan 4 }
+
+
+dot1qPortVlanTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qPortVlanEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qVlan 5 }
+
+dot1qPortVlanEntry OBJECT-TYPE
+    SYNTAX      Dot1qPortVlanEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    AUGMENTS { dot1dBasePortEntry }
+    ::= { dot1qPortVlanTable 1 }
+
+Dot1qPortVlanEntry ::=
+    SEQUENCE {
+        dot1qPvid
+            VlanIndex,
+        dot1qPortAcceptableFrameTypes
+            INTEGER,
+        dot1qPortIngressFiltering
+            TruthValue,
+        dot1qPortGvrpStatus
+            EnabledStatus,
+        dot1qPortGvrpFailedRegistrations
+            Counter32,
+        dot1qPortGvrpLastPduOrigin
+            MacAddress,
+        dot1qPortRestrictedVlanRegistration
+            TruthValue
+    }
+
+dot1qPvid OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      VlanIndex
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL      { 1 }
+    ::= { dot1qPortVlanEntry 1 }
+
+dot1qPortAcceptableFrameTypes OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    admitAll(1),
+                    admitOnlyVlanTagged(2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL      { admitAll }
+    ::= { dot1qPortVlanEntry 2 }
+
+dot1qPortIngressFiltering OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL      { false }
+    ::= { dot1qPortVlanEntry 3 }
+
+dot1qPortGvrpStatus OBJECT-TYPE
+    SYNTAX      EnabledStatus
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL      { enabled }
+    ::= { dot1qPortVlanEntry 4 }
+
+dot1qPortGvrpFailedRegistrations OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qPortVlanEntry 5 }
+
+dot1qPortGvrpLastPduOrigin OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { dot1qPortVlanEntry 6 }
+
+dot1qPortRestrictedVlanRegistration OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL      { false }
+    ::= { dot1qPortVlanEntry 7 }
+
+
+dot1qPortVlanStatisticsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qPortVlanStatisticsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qVlan 6 }
+
+dot1qPortVlanStatisticsEntry OBJECT-TYPE
+    SYNTAX      Dot1qPortVlanStatisticsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1dBasePort, dot1qVlanIndex }
+    ::= { dot1qPortVlanStatisticsTable 1 }
+
+Dot1qPortVlanStatisticsEntry ::=
+    SEQUENCE {
+        dot1qTpVlanPortInFrames
+            Counter32,
+        dot1qTpVlanPortOutFrames
+            Counter32,
+        dot1qTpVlanPortInDiscards
+            Counter32,
+        dot1qTpVlanPortInOverflowFrames
+            Counter32,
+        dot1qTpVlanPortOutOverflowFrames
+            Counter32,
+        dot1qTpVlanPortInOverflowDiscards
+            Counter32
+    }
+
+dot1qTpVlanPortInFrames OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qPortVlanStatisticsEntry 1 }
+
+dot1qTpVlanPortOutFrames OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { dot1qPortVlanStatisticsEntry 2 }
+
+dot1qTpVlanPortInDiscards OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qPortVlanStatisticsEntry 3 }
+
+dot1qTpVlanPortInOverflowFrames OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qPortVlanStatisticsEntry 4 }
+
+dot1qTpVlanPortOutOverflowFrames OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qPortVlanStatisticsEntry 5 }
+
+dot1qTpVlanPortInOverflowDiscards OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qPortVlanStatisticsEntry 6 }
+
+dot1qPortVlanHCStatisticsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qPortVlanHCStatisticsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qVlan 7 }
+
+dot1qPortVlanHCStatisticsEntry OBJECT-TYPE
+    SYNTAX      Dot1qPortVlanHCStatisticsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1dBasePort, dot1qVlanIndex }
+    ::= { dot1qPortVlanHCStatisticsTable 1 }
+
+Dot1qPortVlanHCStatisticsEntry ::=
+    SEQUENCE {
+        dot1qTpVlanPortHCInFrames
+            Counter64,
+        dot1qTpVlanPortHCOutFrames
+            Counter64,
+        dot1qTpVlanPortHCInDiscards
+            Counter64
+    }
+
+dot1qTpVlanPortHCInFrames OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qPortVlanHCStatisticsEntry 1 }
+
+dot1qTpVlanPortHCOutFrames OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qPortVlanHCStatisticsEntry 2 }
+
+dot1qTpVlanPortHCInDiscards OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot1qPortVlanHCStatisticsEntry 3 }
+
+
+dot1qLearningConstraintsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1qLearningConstraintsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qVlan 8 }
+
+dot1qLearningConstraintsEntry OBJECT-TYPE
+    SYNTAX      Dot1qLearningConstraintsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { dot1qConstraintVlan, dot1qConstraintSet }
+    ::= { dot1qLearningConstraintsTable 1 }
+
+Dot1qLearningConstraintsEntry ::=
+    SEQUENCE {
+        dot1qConstraintVlan
+            VlanIndex,
+        dot1qConstraintSet
+            Integer32,
+        dot1qConstraintType
+            INTEGER,
+        dot1qConstraintStatus
+            RowStatus
+    }
+
+dot1qConstraintVlan OBJECT-TYPE
+    SYNTAX      VlanIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qLearningConstraintsEntry 1 }
+
+dot1qConstraintSet OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1qLearningConstraintsEntry 2 }
+
+dot1qConstraintType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    independent(1),
+                    shared(2)
+                }
+
+
+
+
+
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot1qLearningConstraintsEntry 3 }
+
+dot1qConstraintStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot1qLearningConstraintsEntry 4 }
+
+dot1qConstraintSetDefault OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot1qVlan 9 }
+
+dot1qConstraintTypeDefault OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    independent(1),
+                    shared(2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot1qVlan 10 }
+
+
+dot1vProtocolGroupTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1vProtocolGroupEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1vProtocol 1 }
+
+dot1vProtocolGroupEntry OBJECT-TYPE
+    SYNTAX      Dot1vProtocolGroupEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { dot1vProtocolTemplateFrameType,
+                  dot1vProtocolTemplateProtocolValue }
+    ::= { dot1vProtocolGroupTable 1 }
+
+Dot1vProtocolGroupEntry ::=
+    SEQUENCE {
+        dot1vProtocolTemplateFrameType
+            INTEGER,
+        dot1vProtocolTemplateProtocolValue
+            OCTET STRING,
+        dot1vProtocolGroupId
+            Integer32,
+        dot1vProtocolGroupRowStatus
+            RowStatus
+    }
+
+dot1vProtocolTemplateFrameType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  ethernet  (1),
+                  rfc1042   (2),
+                  snap8021H (3),
+                  snapOther (4),
+
+
+
+
+
+                  llcOther  (5)
+                }
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1vProtocolGroupEntry 1 }
+
+dot1vProtocolTemplateProtocolValue OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (2 | 5))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1vProtocolGroupEntry 2 }
+
+dot1vProtocolGroupId OBJECT-TYPE
+    SYNTAX      Integer32 (0..2147483647)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot1vProtocolGroupEntry 3 }
+
+dot1vProtocolGroupRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+
+
+
+
+
+    STATUS      current
+    ::= { dot1vProtocolGroupEntry 4 }
+
+dot1vProtocolPortTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot1vProtocolPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1vProtocol 2 }
+
+dot1vProtocolPortEntry OBJECT-TYPE
+    SYNTAX      Dot1vProtocolPortEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { dot1dBasePort,
+                  dot1vProtocolPortGroupId }
+    ::= { dot1vProtocolPortTable 1 }
+
+Dot1vProtocolPortEntry ::=
+    SEQUENCE {
+        dot1vProtocolPortGroupId
+            Integer32,
+        dot1vProtocolPortGroupVid
+            Integer32,
+        dot1vProtocolPortRowStatus
+            RowStatus
+    }
+
+dot1vProtocolPortGroupId OBJECT-TYPE
+    SYNTAX      Integer32 (1..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot1vProtocolPortEntry 1 }
+
+dot1vProtocolPortGroupVid OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      Integer32 (1..4094)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot1vProtocolPortEntry 2 }
+
+dot1vProtocolPortRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { dot1vProtocolPortEntry 3 }
+
+
+qBridgeConformance OBJECT IDENTIFIER ::= { qBridgeMIB 2 }
+
+qBridgeGroups OBJECT IDENTIFIER ::= { qBridgeConformance 1 }
+
+qBridgeCompliances OBJECT IDENTIFIER ::= { qBridgeConformance 2 }
+
+
+qBridgeBaseGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qVlanVersionNumber,
+        dot1qMaxVlanId,
+        dot1qMaxSupportedVlans,
+        dot1qNumVlans,
+        dot1qGvrpStatus
+    }
+    STATUS      current
+    ::= { qBridgeGroups 1 }
+
+qBridgeFdbUnicastGroup OBJECT-GROUP
+
+
+
+
+
+    OBJECTS {
+        dot1qFdbDynamicCount,
+        dot1qTpFdbPort,
+        dot1qTpFdbStatus
+    }
+    STATUS      current
+    ::= { qBridgeGroups 2 }
+
+qBridgeFdbMulticastGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qTpGroupEgressPorts,
+        dot1qTpGroupLearnt
+    }
+    STATUS      current
+    ::= { qBridgeGroups 3 }
+
+qBridgeServiceRequirementsGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qForwardAllPorts,
+        dot1qForwardAllStaticPorts,
+        dot1qForwardAllForbiddenPorts,
+        dot1qForwardUnregisteredPorts,
+        dot1qForwardUnregisteredStaticPorts,
+        dot1qForwardUnregisteredForbiddenPorts
+    }
+    STATUS      current
+    ::= { qBridgeGroups 4 }
+
+qBridgeFdbStaticGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qStaticUnicastAllowedToGoTo,
+        dot1qStaticUnicastStatus,
+        dot1qStaticMulticastStaticEgressPorts,
+        dot1qStaticMulticastForbiddenEgressPorts,
+        dot1qStaticMulticastStatus
+    }
+
+
+
+
+
+    STATUS      current
+    ::= { qBridgeGroups 5 }
+
+qBridgeVlanGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qVlanNumDeletes,
+        dot1qVlanFdbId,
+        dot1qVlanCurrentEgressPorts,
+        dot1qVlanCurrentUntaggedPorts,
+        dot1qVlanStatus,
+        dot1qVlanCreationTime
+    }
+    STATUS      current
+    ::= { qBridgeGroups 6 }
+
+qBridgeVlanStaticGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qVlanStaticName,
+        dot1qVlanStaticEgressPorts,
+        dot1qVlanForbiddenEgressPorts,
+        dot1qVlanStaticUntaggedPorts,
+        dot1qVlanStaticRowStatus,
+        dot1qNextFreeLocalVlanIndex
+    }
+    STATUS      current
+    ::= { qBridgeGroups 7 }
+
+qBridgePortGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qPvid,
+        dot1qPortAcceptableFrameTypes,
+        dot1qPortIngressFiltering,
+        dot1qPortGvrpStatus,
+        dot1qPortGvrpFailedRegistrations,
+        dot1qPortGvrpLastPduOrigin
+    }
+    STATUS      deprecated
+    ::= { qBridgeGroups 8 }
+
+qBridgeVlanStatisticsGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qTpVlanPortInFrames,
+        dot1qTpVlanPortOutFrames,
+        dot1qTpVlanPortInDiscards
+    }
+    STATUS      current
+    ::= { qBridgeGroups 9 }
+
+qBridgeVlanStatisticsOverflowGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qTpVlanPortInOverflowFrames,
+        dot1qTpVlanPortOutOverflowFrames,
+        dot1qTpVlanPortInOverflowDiscards
+    }
+    STATUS      current
+    ::= { qBridgeGroups 10 }
+
+qBridgeVlanHCStatisticsGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qTpVlanPortHCInFrames,
+        dot1qTpVlanPortHCOutFrames,
+        dot1qTpVlanPortHCInDiscards
+    }
+    STATUS      current
+    ::= { qBridgeGroups 11 }
+
+qBridgeLearningConstraintsGroup OBJECT-GROUP
+
+
+
+
+
+    OBJECTS {
+        dot1qConstraintType,
+        dot1qConstraintStatus
+    }
+    STATUS      current
+    ::= { qBridgeGroups 12 }
+
+qBridgeLearningConstraintDefaultGroup OBJECT-GROUP
+    OBJECTS {
+        dot1qConstraintSetDefault,
+        dot1qConstraintTypeDefault
+    }
+    STATUS      current
+    ::= { qBridgeGroups 13 }
+
+qBridgeClassificationDeviceGroup OBJECT-GROUP
+    OBJECTS {
+        dot1vProtocolGroupId,
+        dot1vProtocolGroupRowStatus
+    }
+    STATUS      current
+    ::= { qBridgeGroups 14 }
+
+qBridgeClassificationPortGroup OBJECT-GROUP
+    OBJECTS {
+        dot1vProtocolPortGroupVid,
+        dot1vProtocolPortRowStatus
+    }
+    STATUS      current
+    ::= { qBridgeGroups 15 }
+
+qBridgePortGroup2 OBJECT-GROUP
+    OBJECTS {
+        dot1qPvid,
+        dot1qPortAcceptableFrameTypes,
+        dot1qPortIngressFiltering,
+        dot1qPortGvrpStatus,
+
+
+
+
+
+        dot1qPortGvrpFailedRegistrations,
+        dot1qPortGvrpLastPduOrigin,
+        dot1qPortRestrictedVlanRegistration
+    }
+    STATUS      current
+    ::= { qBridgeGroups 16 }
+
+
+qBridgeCompliance MODULE-COMPLIANCE
+    STATUS  deprecated
+
+    MODULE
+        MANDATORY-GROUPS {
+            qBridgeBaseGroup,
+            qBridgeVlanGroup,
+            qBridgeVlanStaticGroup,
+            qBridgePortGroup
+        }
+
+        GROUP       qBridgeFdbUnicastGroup
+
+        GROUP       qBridgeFdbMulticastGroup
+
+        GROUP       qBridgeServiceRequirementsGroup
+
+        GROUP       qBridgeFdbStaticGroup
+
+        GROUP       qBridgeVlanStatisticsGroup
+
+        GROUP       qBridgeVlanStatisticsOverflowGroup
+
+        GROUP       qBridgeVlanHCStatisticsGroup
+
+        GROUP       qBridgeLearningConstraintsGroup
+
+        GROUP       qBridgeLearningConstraintDefaultGroup
+
+        OBJECT      dot1qPortAcceptableFrameTypes
+        MIN-ACCESS  read-only
+
+        OBJECT      dot1qPortIngressFiltering
+
+
+
+
+
+        MIN-ACCESS  read-only
+
+        OBJECT      dot1qConstraintSetDefault
+        MIN-ACCESS  read-only
+
+        OBJECT      dot1qConstraintTypeDefault
+        MIN-ACCESS  read-only
+
+       ::= { qBridgeCompliances 1 }
+
+qBridgeCompliance2 MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE
+        MANDATORY-GROUPS {
+            qBridgeBaseGroup,
+            qBridgeVlanGroup,
+            qBridgeVlanStaticGroup,
+            qBridgePortGroup2
+        }
+
+        GROUP       qBridgeFdbUnicastGroup
+
+        GROUP       qBridgeFdbMulticastGroup
+
+
+
+
+
+        GROUP       qBridgeServiceRequirementsGroup
+
+        GROUP       qBridgeFdbStaticGroup
+
+        GROUP       qBridgeVlanStatisticsGroup
+
+        GROUP       qBridgeVlanStatisticsOverflowGroup
+
+        GROUP       qBridgeVlanHCStatisticsGroup
+
+        GROUP       qBridgeLearningConstraintsGroup
+
+        GROUP       qBridgeLearningConstraintDefaultGroup
+
+        GROUP       qBridgeClassificationDeviceGroup
+
+
+
+
+
+
+        GROUP       qBridgeClassificationPortGroup
+
+        OBJECT      dot1qPortAcceptableFrameTypes
+        MIN-ACCESS  read-only
+
+        OBJECT      dot1qPortIngressFiltering
+        MIN-ACCESS  read-only
+
+        OBJECT      dot1qConstraintSetDefault
+        MIN-ACCESS  read-only
+
+        OBJECT      dot1qConstraintTypeDefault
+        MIN-ACCESS  read-only
+
+        OBJECT      dot1vProtocolGroupId
+        MIN-ACCESS  read-only
+
+        OBJECT      dot1vProtocolGroupRowStatus
+        MIN-ACCESS  read-only
+
+        ::= { qBridgeCompliances 2 }
+
+END

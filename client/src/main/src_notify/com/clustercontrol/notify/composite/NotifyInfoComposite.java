@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.composite;
@@ -28,6 +21,7 @@ import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.monitor.run.bean.MonitorNumericType;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.monitor.MonitorInfo;
 import com.clustercontrol.ws.notify.NotifyRelationInfo;
@@ -59,6 +53,9 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 	/** 入力値チェック用 */
 	protected ValidateResult validateResult = null;
 
+	/** 数値監視モード  */
+	private String m_monitorNumericType = MonitorNumericType.TYPE_BASIC.getType();
+
 
 	/**
 	 * インスタンスを返します。
@@ -81,6 +78,12 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 	public NotifyInfoComposite(Composite parent, int style, int notifyIdType) {
 		super(parent, style, true, notifyIdType);
 
+		this.initialize(parent);
+	}
+
+	public NotifyInfoComposite(Composite parent, int style, int notifyIdType, String monitorNumericType) {
+		super(parent, style, true, notifyIdType);
+		this.m_monitorNumericType = monitorNumericType;
 		this.initialize(parent);
 	}
 
@@ -201,10 +204,16 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 
 		this.validateResult = null;
 		if(info != null){
-
 			if(getNotify() != null && getNotify().size() != 0){
 				//コンポジットから通知情報を取得します。
-				List<NotifyRelationInfo> notifyRelationInfoList = info.getNotifyRelationList();
+				List<NotifyRelationInfo> notifyRelationInfoList = null;
+				if (MonitorNumericType.TYPE_PREDICTION.getType().equals(m_monitorNumericType)) {
+					notifyRelationInfoList = info.getPredictionNotifyRelationList();
+				} else if (MonitorNumericType.TYPE_CHANGE.getType().equals(m_monitorNumericType)) {
+					notifyRelationInfoList = info.getChangeNotifyRelationList();
+				} else {
+					notifyRelationInfoList = info.getNotifyRelationList();
+				}
 				notifyRelationInfoList.clear();
 				if (this.getNotify() != null) {
 					notifyRelationInfoList.addAll(this.getNotify());
@@ -213,7 +222,13 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 
 			// アプリケーションの設定
 			if(this.getApplication() != null && !this.getApplication().equals("")){
-				info.setApplication(this.getApplication());
+				if (MonitorNumericType.TYPE_PREDICTION.getType().equals(m_monitorNumericType)) {
+					info.setPredictionApplication(this.getApplication());
+				} else if (MonitorNumericType.TYPE_CHANGE.getType().equals(m_monitorNumericType)) {
+					info.setChangeApplication(this.getApplication());
+				} else {
+					info.setApplication(this.getApplication());
+				}
 			}
 
 		}

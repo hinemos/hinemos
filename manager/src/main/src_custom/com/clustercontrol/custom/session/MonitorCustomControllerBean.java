@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.custom.session;
@@ -27,6 +20,8 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
+import com.clustercontrol.notify.bean.OutputBasicInfo;
+import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -99,6 +94,7 @@ public class MonitorCustomControllerBean {
 	public void evalCommandResult(List<CommandResultDTO> dtoList) throws HinemosUnknown, MonitorNotFound, CustomInvalid {
 		JpaTransactionManager jtm = null;
 		List<MonitorJobEndNode> monitorJobEndNodeList = new ArrayList<>();
+		List<OutputBasicInfo> notifyInfoList = new ArrayList<>();
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
@@ -106,23 +102,27 @@ public class MonitorCustomControllerBean {
 				
 				if (dto.getType() == Type.NUMBER){
 					RunCustom runner = new RunCustom(dto);
-					runner.monitor();
+					notifyInfoList = runner.monitor();
 					if (runner.getMonitorJobEndNodeList() != null 
 							&& runner.getMonitorJobEndNodeList().size() > 0) {
 						monitorJobEndNodeList.addAll(runner.getMonitorJobEndNodeList());
 					}
 				}else if (dto.getType() == Type.STRING){
 					RunCustomString runner = new RunCustomString(dto);
-					runner.monitor();
+					notifyInfoList.addAll(runner.monitor());
 					if (runner.getMonitorJobEndNodeList() != null 
 							&& runner.getMonitorJobEndNodeList().size() > 0) {
 						monitorJobEndNodeList.addAll(runner.getMonitorJobEndNodeList());
 					}
 				}else{
-					m_log.warn("CustomResultDTO() type error " );
+					m_log.warn("evalCommandResult() type error " );
 				}
 				
 			}
+
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(notifyInfoList));
+
 			jtm.commit();
 		} catch (HinemosUnknown | MonitorNotFound | CustomInvalid e) {
 			if (jtm != null){
@@ -130,13 +130,13 @@ public class MonitorCustomControllerBean {
 			}
 			throw e;
 		} catch (Exception e) {
-			m_log.warn("CustomResultDTO() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			m_log.warn("evalCommandResult() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
 				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
 			if (jtm != null)
-				jtm.close();
+				jtm.close(this.getClass().getName());
 		}
 
 		// 監視ジョブEndNode処理
@@ -156,11 +156,9 @@ public class MonitorCustomControllerBean {
 				CustomManagerUtil.broadcastConfigured();
 			}
 		} catch (Exception e) {
-			m_log.warn("CustomResultDTO() MonitorJobWorker.endMonitorJob() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			m_log.warn("evalCommandResult() MonitorJobWorker.endMonitorJob() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		}
-
-
 	}
 
 }

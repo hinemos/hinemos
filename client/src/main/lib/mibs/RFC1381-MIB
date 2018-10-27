@@ -1,0 +1,670 @@
+          RFC1381-MIB DEFINITIONS ::= BEGIN
+
+          IMPORTS
+                  Counter
+                          FROM RFC1155-SMI
+                  transmission
+                          FROM RFC1213-MIB
+                  OBJECT-TYPE
+                          FROM RFC-1212;
+
+
+
+          lapb    OBJECT IDENTIFIER ::= { transmission 16 }
+
+          PositiveInteger ::= INTEGER (0..2147483647)
+
+          IfIndexType     ::= INTEGER (1..2147483647)
+
+
+
+
+          lapbAdmnTable   OBJECT-TYPE
+                  SYNTAX  SEQUENCE OF LapbAdmnEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+
+
+
+
+
+                  ::= { lapb 1 }
+
+          lapbAdmnEntry   OBJECT-TYPE
+                  SYNTAX  LapbAdmnEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  INDEX { lapbAdmnIndex }
+                  ::= { lapbAdmnTable 1 }
+
+          LapbAdmnEntry ::= SEQUENCE {
+                  lapbAdmnIndex
+                          IfIndexType,
+                  lapbAdmnStationType
+                          INTEGER,
+                  lapbAdmnControlField
+                          INTEGER,
+                  lapbAdmnTransmitN1FrameSize
+                          PositiveInteger,
+                  lapbAdmnReceiveN1FrameSize
+                          PositiveInteger,
+                  lapbAdmnTransmitKWindowSize
+                          INTEGER,
+                  lapbAdmnReceiveKWindowSize
+                          INTEGER,
+                  lapbAdmnN2RxmitCount
+                  INTEGER,
+                  lapbAdmnT1AckTimer
+
+
+
+
+
+                          PositiveInteger,
+                  lapbAdmnT2AckDelayTimer
+                          PositiveInteger,
+                  lapbAdmnT3DisconnectTimer
+                          PositiveInteger,
+                  lapbAdmnT4IdleTimer
+                          PositiveInteger,
+                  lapbAdmnActionInitiate
+                          INTEGER,
+                  lapbAdmnActionRecvDM
+                          INTEGER
+                  }
+
+          lapbAdmnIndex   OBJECT-TYPE
+                  SYNTAX  IfIndexType
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbAdmnEntry 1 }
+
+          lapbAdmnStationType     OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                          dte (1),
+                          dce (2),
+                          dxe (3)
+                          }
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { dte }
+                  ::= { lapbAdmnEntry 2 }
+
+          lapbAdmnControlField OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                          modulo8 (1),
+                          modulo128 (2)
+                          }
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { modulo8 }
+
+
+
+
+
+                  ::= { lapbAdmnEntry 3 }
+
+          lapbAdmnTransmitN1FrameSize OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 36000 } -- 4500 * 8; 802.5 Frame size
+                  ::= { lapbAdmnEntry 4 }
+
+          lapbAdmnReceiveN1FrameSize OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 36000  } -- 4500 * 8; 802.5 Frame size
+                  ::= { lapbAdmnEntry 5 }
+
+          lapbAdmnTransmitKWindowSize OBJECT-TYPE
+                  SYNTAX  INTEGER (1..127)
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 7 }
+                  ::= { lapbAdmnEntry 6 }
+
+          lapbAdmnReceiveKWindowSize OBJECT-TYPE
+                  SYNTAX  INTEGER (1..127)
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 7 }
+                  ::= { lapbAdmnEntry 7 }
+
+          lapbAdmnN2RxmitCount    OBJECT-TYPE
+                  SYNTAX  INTEGER (0..65535)
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 20 }
+                  ::= { lapbAdmnEntry 8 }
+
+          lapbAdmnT1AckTimer      OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 3000 }
+                  ::= { lapbAdmnEntry 9 }
+
+          lapbAdmnT2AckDelayTimer         OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 0 }
+                  ::= { lapbAdmnEntry 10 }
+
+          lapbAdmnT3DisconnectTimer OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 60000 }
+                  ::= { lapbAdmnEntry 11 }
+
+          lapbAdmnT4IdleTimer OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { 2147483647 }
+                  ::= { lapbAdmnEntry 12 }
+
+          lapbAdmnActionInitiate OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                  sendSABM (1),
+                          sendDISC (2),
+                          sendDM (3),
+                          none (4),
+                          other (5)
+                          }
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { sendSABM }
+                  ::= { lapbAdmnEntry 13 }
+
+
+
+
+
+          lapbAdmnActionRecvDM OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                          sendSABM (1),
+                          sendDISC (2),
+                          other (3)
+                          }
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { sendSABM }
+                  ::= { lapbAdmnEntry 14 }
+
+
+
+
+          lapbOperTable   OBJECT-TYPE
+                  SYNTAX  SEQUENCE OF LapbOperEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  ::= { lapb 2 }
+
+          lapbOperEntry   OBJECT-TYPE
+                  SYNTAX  LapbOperEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  INDEX { lapbOperIndex }
+                  ::= { lapbOperTable 1 }
+
+          LapbOperEntry ::= SEQUENCE {
+                  lapbOperIndex
+                          IfIndexType,
+                  lapbOperStationType
+
+
+
+
+
+                          INTEGER,
+                  lapbOperControlField
+                          INTEGER,
+                  lapbOperTransmitN1FrameSize
+                          PositiveInteger,
+                  lapbOperReceiveN1FrameSize
+                          PositiveInteger,
+                  lapbOperTransmitKWindowSize
+                          INTEGER,
+                  lapbOperReceiveKWindowSize
+                          INTEGER,
+                  lapbOperN2RxmitCount
+                          INTEGER,
+                  lapbOperT1AckTimer
+                          PositiveInteger,
+                  lapbOperT2AckDelayTimer
+                          PositiveInteger,
+                  lapbOperT3DisconnectTimer
+                          PositiveInteger,
+                  lapbOperT4IdleTimer
+                          PositiveInteger,
+                  lapbOperPortId
+                          OBJECT IDENTIFIER,
+                  lapbOperProtocolVersionId
+                          OBJECT IDENTIFIER
+                  }
+
+          lapbOperIndex   OBJECT-TYPE
+             SYNTAX       IfIndexType
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 1 }
+
+          lapbOperStationType     OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                          dte (1),
+                          dce (2),
+                          dxe (3)
+                          }
+                  ACCESS  read-only
+                  STATUS  mandatory
+
+
+
+
+
+                  ::= { lapbOperEntry 2 }
+
+          lapbOperControlField OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                          modulo8 (1),
+                          modulo128 (2)
+                          }
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 3 }
+
+          lapbOperTransmitN1FrameSize OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 4 }
+
+          lapbOperReceiveN1FrameSize OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 5 }
+
+          lapbOperTransmitKWindowSize OBJECT-TYPE
+                  SYNTAX  INTEGER (1..127)
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 6 }
+
+          lapbOperReceiveKWindowSize OBJECT-TYPE
+                  SYNTAX  INTEGER (1..127)
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 7 }
+
+          lapbOperN2RxmitCount    OBJECT-TYPE
+                  SYNTAX  INTEGER (0..65535)
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 8 }
+
+          lapbOperT1AckTimer      OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 9 }
+
+          lapbOperT2AckDelayTimer         OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-only
+                  STATUS  mandatory
+
+
+
+
+
+                  ::= { lapbOperEntry 10 }
+
+          lapbOperT3DisconnectTimer OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 11 }
+
+          lapbOperT4IdleTimer OBJECT-TYPE
+                  SYNTAX  PositiveInteger
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 12 }
+
+          lapbOperPortId OBJECT-TYPE
+                  SYNTAX  OBJECT IDENTIFIER
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 13 }
+
+          lapbOperProtocolVersionId       OBJECT-TYPE
+                  SYNTAX  OBJECT IDENTIFIER
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbOperEntry 14 }
+
+
+
+
+          lapbFlowTable OBJECT-TYPE
+                  SYNTAX  SEQUENCE OF LapbFlowEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  ::= { lapb 3 }
+
+          lapbFlowEntry OBJECT-TYPE
+                  SYNTAX  LapbFlowEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                   INDEX { lapbFlowIfIndex }
+                  ::= { lapbFlowTable 1 }
+
+          LapbFlowEntry ::= SEQUENCE {
+                  lapbFlowIfIndex
+                          IfIndexType,
+                  lapbFlowStateChanges
+                          Counter,
+
+
+
+
+
+                  lapbFlowChangeReason
+                          INTEGER,
+                  lapbFlowCurrentMode
+                          INTEGER,
+                  lapbFlowBusyDefers
+                          Counter,
+                  lapbFlowRejOutPkts
+                          Counter,
+                  lapbFlowRejInPkts
+                          Counter,
+                  lapbFlowT1Timeouts
+                          Counter,
+                  lapbFlowFrmrSent
+                  OCTET STRING,
+                  lapbFlowFrmrReceived
+                          OCTET STRING,
+                  lapbFlowXidReceived
+                          OCTET STRING
+                  }
+
+          lapbFlowIfIndex OBJECT-TYPE
+                  SYNTAX  IfIndexType
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 1 }
+
+          lapbFlowStateChanges OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 2 }
+
+          lapbFlowChangeReason OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                          notStarted (1),    -- Initial state
+                          abmEntered (2),    -- SABM or UA
+                          abmeEntered (3),   -- SABME or UA
+                          abmReset (4),      -- SABM in ABM
+                          abmeReset (5),     -- SABME in ABME
+                          dmReceived (6),    -- DM Response
+                          dmSent (7),        -- DM sent
+                          discReceived (8),  -- DISC Response
+                          discSent (9),      -- DISC Sent
+
+
+
+
+
+                          frmrReceived (10), -- FRMR Received
+                          frmrSent (11),     -- FRMR Sent
+                          n2Timeout (12),    -- N2 Timer Expired
+                          other (13)
+                            }
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 3 }
+
+          lapbFlowCurrentMode OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                          disconnected (1),
+
+                          linkSetup (2),
+
+                          frameReject (3),
+
+                          disconnectRequest (4),
+
+                          informationTransfer (5),
+
+                          rejFrameSent (6),
+
+                          waitingAcknowledgement (7),
+
+
+
+
+
+
+                          stationBusy (8),
+
+                          remoteStationBusy (9),
+
+                          bothStationsBusy (10),
+
+                          waitingAckStationBusy (11),
+
+                          waitingAckRemoteBusy (12),
+
+                          waitingAckBothBusy (13),
+
+                          rejFrameSentRemoteBusy (14),
+
+                          xidFrameSent (15),
+
+                          error (16),
+
+                          other (17)
+                            }
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 4 }
+
+          lapbFlowBusyDefers OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 5 }
+
+          lapbFlowRejOutPkts OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 6 }
+
+          lapbFlowRejInPkts OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 7 }
+
+          lapbFlowT1Timeouts OBJECT-TYPE
+                  SYNTAX  Counter
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 8 }
+
+          lapbFlowFrmrSent OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..7))
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 9 }
+
+          lapbFlowFrmrReceived OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..7))
+
+
+
+
+
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 10 }
+
+          lapbFlowXidReceived OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..8206))
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbFlowEntry 11 }
+
+
+
+
+          lapbXidTable    OBJECT-TYPE
+                  SYNTAX  SEQUENCE OF LapbXidEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  ::= { lapb 4 }
+
+          lapbXidEntry    OBJECT-TYPE
+                  SYNTAX  LapbXidEntry
+
+
+
+
+
+             ACCESS       not-accessible
+                  STATUS  mandatory
+                  INDEX { lapbXidIndex }
+                  ::= { lapbXidTable 1 }
+
+
+          LapbXidEntry ::= SEQUENCE {
+                  lapbXidIndex
+                          IfIndexType,
+                  lapbXidAdRIdentifier
+                          OCTET STRING,
+                  lapbXidAdRAddress
+                          OCTET STRING,
+                  lapbXidParameterUniqueIdentifier
+                          OCTET STRING,
+                  lapbXidGroupAddress
+                          OCTET STRING,
+                  lapbXidPortNumber
+                          OCTET STRING,
+                  lapbXidUserDataSubfield
+                          OCTET STRING
+                  }
+
+          lapbXidIndex    OBJECT-TYPE
+                  SYNTAX  IfIndexType
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { lapbXidEntry 1 }
+
+          lapbXidAdRIdentifier OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..255))
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { ''h }
+                  ::= { lapbXidEntry 2 }
+
+          lapbXidAdRAddress OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..255))
+
+
+
+
+
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { ''h }
+                  ::= { lapbXidEntry 3 }
+
+          lapbXidParameterUniqueIdentifier OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..255))
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { ''h }
+                  ::= { lapbXidEntry 4 }
+
+          lapbXidGroupAddress OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..255))
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { ''h }
+                  ::= { lapbXidEntry 5 }
+
+          lapbXidPortNumber OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..255))
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { ''h }
+                  ::= { lapbXidEntry 6 }
+
+          lapbXidUserDataSubfield OBJECT-TYPE
+
+
+
+
+
+                  SYNTAX  OCTET STRING (SIZE (0..8206))
+                  ACCESS  read-write
+                  STATUS  mandatory
+                  DEFVAL { ''h }
+                  ::= { lapbXidEntry 7 }
+
+
+
+          lapbProtocolVersion OBJECT IDENTIFIER
+                  ::= { lapb 5 }
+
+          lapbProtocolIso7776v1986 OBJECT IDENTIFIER
+                  ::= { lapbProtocolVersion 1 }
+
+          lapbProtocolCcittV1980 OBJECT IDENTIFIER
+                  ::= { lapbProtocolVersion 2 }
+
+          lapbProtocolCcittV1984 OBJECT IDENTIFIER
+                  ::= { lapbProtocolVersion 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          END

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -71,32 +64,34 @@ public class SelectJobKick {
 	 */
 	public JobKick getJobKick(String jobkickId, Integer jobkickType) throws JobMasterNotFound, InvalidRole, HinemosUnknown {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		JobKick jobKick = null;
+			JobKick jobKick = null;
 
-		m_log.debug("getJobSchedule() jobkickId = " + jobkickId + ", jobkickType = " + jobkickType);
+			m_log.debug("getJobSchedule() jobkickId = " + jobkickId + ", jobkickType = " + jobkickType);
 
-		JobKickEntity jobKickEntity = em.find(JobKickEntity.class, jobkickId, ObjectPrivilegeMode.READ);
-		if (jobKickEntity == null || (jobkickType != null && jobKickEntity.getJobkickType().intValue() != jobkickType.intValue())) {
-			JobMasterNotFound je = new JobMasterNotFound("JobKickEntity.findByPrimaryKey"
-					+ ", jobkickId = " + jobkickId
-					+ ", jobkickType = " + jobkickType);
-			m_log.info("getJobKick() : "
-					+ je.getClass().getSimpleName() + ", " + je.getMessage());
-			throw je;
+			JobKickEntity jobKickEntity = em.find(JobKickEntity.class, jobkickId, ObjectPrivilegeMode.READ);
+			if (jobKickEntity == null || (jobkickType != null && jobKickEntity.getJobkickType().intValue() != jobkickType.intValue())) {
+				JobMasterNotFound je = new JobMasterNotFound("JobKickEntity.findByPrimaryKey"
+						+ ", jobkickId = " + jobkickId
+						+ ", jobkickType = " + jobkickType);
+				m_log.info("getJobKick() : "
+						+ je.getClass().getSimpleName() + ", " + je.getMessage());
+				throw je;
+			}
+			
+			if (jobKickEntity.getJobkickType() == JobKickConstant.TYPE_SCHEDULE) {
+				jobKick = createJobScheduleInfo(jobKickEntity);
+			} else if (jobKickEntity.getJobkickType() == JobKickConstant.TYPE_FILECHECK) {
+				jobKick = createJobFileCheckInfo(jobKickEntity);
+			} else if (jobKickEntity.getJobkickType() == JobKickConstant.TYPE_MANUAL) {
+				 jobKick = createJobManual(jobKickEntity);
+			} else {
+				// 処理なし
+			}
+			return jobKick;
 		}
-		
-		if (jobKickEntity.getJobkickType() == JobKickConstant.TYPE_SCHEDULE) {
-			jobKick = createJobScheduleInfo(jobKickEntity);
-		} else if (jobKickEntity.getJobkickType() == JobKickConstant.TYPE_FILECHECK) {
-			jobKick = createJobFileCheckInfo(jobKickEntity);
-		} else if (jobKickEntity.getJobkickType() == JobKickConstant.TYPE_MANUAL) {
-			 jobKick = createJobManual(jobKickEntity);
-		} else {
-			// 処理なし
-		}
-		return jobKick;
 	}
 
 	/**
@@ -108,33 +103,35 @@ public class SelectJobKick {
 	 */
 	public ArrayList<JobKick> getJobKickList() throws JobMasterNotFound, InvalidRole, HinemosUnknown {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		m_log.debug("getJobKickList()");
+			m_log.debug("getJobKickList()");
 
-		ArrayList<JobKick> list = new ArrayList<JobKick>();
-		//実行契機情報を取得する
-		Collection<JobKickEntity> jobKickList;
-		jobKickList = em.createNamedQuery("JobKickEntity.findAll", JobKickEntity.class).getResultList();
-		if (jobKickList == null) {
-			JobMasterNotFound je = new JobMasterNotFound("JobKickEntity.findAll");
-			m_log.info("getJobKickList() : "
-					+ je.getClass().getSimpleName() + ", " + je.getMessage());
-			throw je;
-		}
-		for(JobKickEntity jobKickBean : jobKickList){
-			if (jobKickBean.getJobkickType() == JobKickConstant.TYPE_SCHEDULE) {
-				// スケジュールを取得する
-				list.add(createJobScheduleInfo(jobKickBean));
-			} else if (jobKickBean.getJobkickType() == JobKickConstant.TYPE_FILECHECK) {
-				// ファイルチェックを取得する
-				list.add(createJobFileCheckInfo(jobKickBean));
-			} else if (jobKickBean.getJobkickType() == JobKickConstant.TYPE_MANUAL) {
-				// マニュアル実行契機の場合は追加の取得は不要。
-				list.add(createJobManual(jobKickBean));
+			ArrayList<JobKick> list = new ArrayList<JobKick>();
+			//実行契機情報を取得する
+			Collection<JobKickEntity> jobKickList;
+			jobKickList = em.createNamedQuery("JobKickEntity.findAll", JobKickEntity.class).getResultList();
+			if (jobKickList == null) {
+				JobMasterNotFound je = new JobMasterNotFound("JobKickEntity.findAll");
+				m_log.info("getJobKickList() : "
+						+ je.getClass().getSimpleName() + ", " + je.getMessage());
+				throw je;
 			}
+			for(JobKickEntity jobKickBean : jobKickList){
+				if (jobKickBean.getJobkickType() == JobKickConstant.TYPE_SCHEDULE) {
+					// スケジュールを取得する
+					list.add(createJobScheduleInfo(jobKickBean));
+				} else if (jobKickBean.getJobkickType() == JobKickConstant.TYPE_FILECHECK) {
+					// ファイルチェックを取得する
+					list.add(createJobFileCheckInfo(jobKickBean));
+				} else if (jobKickBean.getJobkickType() == JobKickConstant.TYPE_MANUAL) {
+					// マニュアル実行契機の場合は追加の取得は不要。
+					list.add(createJobManual(jobKickBean));
+				}
+			}
+			return list;
 		}
-		return list;
 	}
 
 	/**

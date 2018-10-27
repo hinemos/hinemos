@@ -1,0 +1,54 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"infoEventNormalState",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyEventInfoType_infoEventNormalState"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_unconfirmed"},
+				{"value":"1", "name":"name_confirmed"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"warnEventNormalState",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyEventInfoType_warnEventNormalState"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_unconfirmed"},
+				{"value":"1", "name":"name_confirmed"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"criticalEventNormalState",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyEventInfoType_criticalEventNormalState"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_unconfirmed"},
+				{"value":"1", "name":"name_confirmed"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"unknownEventNormalState",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyEventInfoType_unknownEventNormalState"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_unconfirmed"},
+				{"value":"1", "name":"name_confirmed"}
+			]
+		}
+	]}
+]
+}

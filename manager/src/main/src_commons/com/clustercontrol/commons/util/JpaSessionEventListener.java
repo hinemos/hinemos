@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.commons.util;
@@ -29,7 +22,6 @@ import org.eclipse.persistence.sessions.server.ServerSession;
 import com.clustercontrol.commons.util.DBConnectionPoolStats;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -101,8 +93,7 @@ public class JpaSessionEventListener extends SessionEventAdapter {
 		em = (HinemosEntityManager)HinemosSessionContext.instance().getProperty(JpaTransactionManager.EM);
 		
 		if (em != null) {
-			setMaxQueueSize(HinemosPropertyUtil.getHinemosPropertyNum(
-					"common.db.connectionpool.stats.threshold", Long.valueOf(12)).intValue());
+			setMaxQueueSize(HinemosPropertyCommon.common_db_connectionpool_stats_threshold.getIntegerValue());
 			
 			ServerSession ss = em.unwrap(ServerSession.class);
 			// Hinemos 6.0時点ではデフォルトのコネクションプールしか使用しないが、読込専用プール等、

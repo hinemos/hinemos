@@ -1,17 +1,11 @@
 /*
-
- Copyright (C) 2016 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.selfcheck.monitor;
 
 
@@ -22,9 +16,9 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
-import com.clustercontrol.platform.selfcheck.SelfCheckPertial;
+import com.clustercontrol.platform.selfcheck.SelfCheckDivergence;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -40,10 +34,7 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 	public final String monitorId = "SYS_DBTRAN";
 	public final String subKey = "";
 	public final String application = "SELFCHECK (DBTran)";
-	private static final String PROP_DBTRAN = "selfcheck.monitoring.dbtran";
-	private static final String PROP_INTERVAL = "selfcheck.monitoring.dbtran.interval";
-	private static final Integer DEFAULT_INTERVAL = 86400; // 1day
-	
+
 	/**
 	 * コンストラクタ
 	 * @param validationQuery 動作確認クエリ
@@ -74,7 +65,7 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void execute() {
-		if (!HinemosPropertyUtil.getHinemosPropertyBool(PROP_DBTRAN, true)) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_dbtran.getBooleanValue()) {
 			m_log.debug("skip");
 			return;
 		}
@@ -86,9 +77,9 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 		List<Object> list = null;
 
 		// 時間間隔（秒）
-		Integer intervalSec = HinemosPropertyUtil.getHinemosPropertyNum(PROP_INTERVAL, Long.valueOf(DEFAULT_INTERVAL)).intValue();
+		Integer intervalSec = HinemosPropertyCommon.selfcheck_monitoring_dbtran_interval.getIntegerValue();
 		// SQL
-		validationQuery = String.format(SelfCheckPertial.getDbLongTranValidationQuery(), intervalSec);
+		validationQuery = String.format(SelfCheckDivergence.getDbLongTranValidationQuery(), intervalSec);
 
 		/** メイン処理 */
 		m_log.debug("monitoring long running transaction query. (query = " + validationQuery + ")");
@@ -146,9 +137,9 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 		HinemosEntityManager em = null;
 
 		// 時間間隔（秒）
-		Integer intervalSec = HinemosPropertyUtil.getHinemosPropertyNum(PROP_INTERVAL, Long.valueOf(DEFAULT_INTERVAL)).intValue();
+		Integer intervalSec = HinemosPropertyCommon.selfcheck_monitoring_dbtran_interval.getIntegerValue();
 		// SQL
-		String query = String.format(SelfCheckPertial.getDbLongTranValidationQuery(), intervalSec);
+		String query = String.format(SelfCheckDivergence.getDbLongTranValidationQuery(), intervalSec);
 		
 		double duration = 0.0;
 

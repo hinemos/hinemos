@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.session;
@@ -38,6 +31,7 @@ import com.clustercontrol.bean.SnmpSecurityLevelConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.EmptyJpaTransactionCallback;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityDuplicate;
@@ -52,7 +46,6 @@ import com.clustercontrol.hinemosagent.bean.TopicInfo;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
 import com.clustercontrol.infra.session.InfraControllerBean;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.util.NodeMonitorPollerController;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCacheChangeCallback;
 import com.clustercontrol.monitor.session.MonitorControllerBean;
@@ -80,6 +73,7 @@ import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.util.FacilityIdCacheInitCallback;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityTreeCacheRefreshCallback;
+import com.clustercontrol.repository.util.JobCacheUpdateCallback;
 import com.clustercontrol.repository.util.JobMultiplicityCacheKickCallback;
 import com.clustercontrol.repository.util.NodeCacheRemoveCallback;
 import com.clustercontrol.repository.util.NodeCacheUpdateCallback;
@@ -105,6 +99,8 @@ public class RepositoryControllerBean {
 	public static final int ONE_LEVEL = 1;
 
 	private static final List<IRepositoryListener> _listenerList = new ArrayList<IRepositoryListener>();
+
+	public static final Long RESTART_AGENT_SLEEP_TIME = 500L;
 
 	/**
 	 * ファシリティIDを条件としてFacilityEntity を取得します。
@@ -1104,6 +1100,7 @@ public class RepositoryControllerBean {
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
+			jtm.addCallback(new JobCacheUpdateCallback());  // FacilityTreeCacheの更新より後に呼び出す必要がある
 			
 			// 変更前後で管理対象フラグの有無が異なる場合、ノードに対して実行すべき監視の情報を持つキャッシュを更新する
 			if (info.getValid().booleanValue() != this.getNode(info.getFacilityId()).getValid().booleanValue()) {
@@ -1480,7 +1477,8 @@ public class RepositoryControllerBean {
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
-
+			jtm.addCallback(new JobCacheUpdateCallback());  // FacilityTreeCacheの更新より後に呼び出す必要がある
+			
 			try {
 				ListenerReadWriteLock.readLock();
 				for (IRepositoryListener listener : _listenerList) {
@@ -2038,10 +2036,9 @@ public class RepositoryControllerBean {
 	 * @param facilityId　ファシリティID
 	 * @return true：ノード　false:ノードではない（スコープ）
 	 * @throws FacilityNotFound 指定されたIDに該当するファシリティが存在しない場合
-	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public boolean isNode(String facilityId) throws FacilityNotFound, InvalidRole, HinemosUnknown {
+	public boolean isNode(String facilityId) throws FacilityNotFound, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		boolean rtn = false;
 
@@ -2051,12 +2048,12 @@ public class RepositoryControllerBean {
 			jtm.begin();
 			rtn = FacilitySelector.isNode(facilityId);
 			jtm.commit();
-		} catch (FacilityNotFound | InvalidRole e) {
+		} catch (FacilityNotFound e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			m_log.warn("isNode() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
@@ -2251,9 +2248,9 @@ public class RepositoryControllerBean {
 		topicInfo.setAgentCommand(agentCommand);
 
 		// 同時にアップデートされると困るので、ずらす。
-		int restartSleep = 500;
+		int restartSleep = RepositoryControllerBean.RESTART_AGENT_SLEEP_TIME.intValue();
 		try {
-			restartSleep = HinemosPropertyUtil.getHinemosPropertyNum("repository.restart.sleep", Long.valueOf(restartSleep)).intValue();
+			restartSleep = HinemosPropertyCommon.repository_restart_sleep.getIntegerValue();
 			m_log.info("restartAgent() restart sleep = " + restartSleep);
 		} catch (Exception e) {
 			m_log.warn("restartAgent() : "
@@ -2292,10 +2289,10 @@ public class RepositoryControllerBean {
 	 * @throws HinemosUnknown
 	 * @see com.clustercontrol.repository.bean.AgentCommandConstant
 	 */
-	public HashMap<String, String> getAgentLibMap () throws HinemosUnknown {
+	public HashMap<String, String> getAgentLibMap (ArrayList<String> facilityIdList) throws HinemosUnknown {
 		HashMap<String, String> map = null;
 		try {
-			map = AgentLibDownloader.getAgentLibMap();
+			map = AgentLibDownloader.getAgentLibMap(facilityIdList, false);
 		} catch (Exception e) {
 			m_log.warn("getAgentLibMap() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);

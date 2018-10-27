@@ -1,0 +1,548 @@
+FR-ATM-PVC-SERVICE-IWF-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+              MODULE-IDENTITY, OBJECT-TYPE,
+              NOTIFICATION-TYPE,
+              mib-2, Integer32, Counter32             FROM SNMPv2-SMI
+
+
+
+
+
+
+              RowStatus, TimeStamp                    FROM SNMPv2-TC
+
+              MODULE-COMPLIANCE, OBJECT-GROUP,
+              NOTIFICATION-GROUP                      FROM SNMPv2-CONF
+
+              AtmVpIdentifier, AtmVcIdentifier        FROM ATM-TC-MIB
+
+              atmVclEntry                             FROM ATM-MIB
+
+              InterfaceIndex                          FROM IF-MIB;
+
+         frAtmIwfMIB MODULE-IDENTITY
+             LAST-UPDATED "200009280000Z" -- September 28, 2000
+             ORGANIZATION "IETF Frame Relay Service MIB Working Group"
+
+
+
+
+
+
+
+
+         ::= { mib-2 86 }
+
+            frAtmIwfMIBObjects      OBJECT IDENTIFIER
+                                         ::= { frAtmIwfMIB 1 }
+
+            frAtmIwfTraps           OBJECT IDENTIFIER
+                                         ::= { frAtmIwfMIB 2 }
+            frAtmIwfTrapsPrefix     OBJECT IDENTIFIER
+                                         ::= { frAtmIwfTraps 0 }
+
+            frAtmIwfConformance     OBJECT IDENTIFIER
+                                         ::= { frAtmIwfMIB 3 }
+            frAtmIwfGroups          OBJECT IDENTIFIER
+                                         ::= { frAtmIwfConformance 1 }
+            frAtmIwfCompliances     OBJECT IDENTIFIER
+                                         ::= { frAtmIwfConformance 2 }
+
+
+         frAtmIwfConnIndexNext OBJECT-TYPE
+              SYNTAX         Integer32 (0..2147483647)
+              MAX-ACCESS     read-only
+              STATUS         current
+              ::= { frAtmIwfMIBObjects 1 }
+
+
+
+
+
+         frAtmIwfConnectionTable OBJECT-TYPE
+             SYNTAX      SEQUENCE OF FrAtmIwfConnectionEntry
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { frAtmIwfMIBObjects 2 }
+
+         frAtmIwfConnectionEntry OBJECT-TYPE
+             SYNTAX      FrAtmIwfConnectionEntry
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             INDEX   { frAtmIwfConnIndex,
+                       frAtmIwfConnAtmPort,
+                       frAtmIwfConnVpi,
+                       frAtmIwfConnVci,
+                       frAtmIwfConnFrPort,
+                       frAtmIwfConnDlci
+                     }
+             ::= { frAtmIwfConnectionTable 1 }
+
+         FrAtmIwfConnectionEntry ::=
+             SEQUENCE {
+                 frAtmIwfConnIndex                      Integer32,
+                 frAtmIwfConnAtmPort                    InterfaceIndex,
+                 frAtmIwfConnVpi                        AtmVpIdentifier,
+                 frAtmIwfConnVci                        AtmVcIdentifier,
+                 frAtmIwfConnFrPort                     InterfaceIndex,
+                 frAtmIwfConnDlci                       Integer32,
+                 frAtmIwfConnRowStatus                  RowStatus,
+                 frAtmIwfConnAdminStatus                INTEGER,
+                 frAtmIwfConnAtm2FrOperStatus           INTEGER,
+                 frAtmIwfConnAtm2FrLastChange           TimeStamp,
+                 frAtmIwfConnFr2AtmOperStatus           INTEGER,
+                 frAtmIwfConnFr2AtmLastChange           TimeStamp,
+                 frAtmIwfConnectionDescriptor           Integer32,
+                 frAtmIwfConnFailedFrameTranslate       Counter32,
+                 frAtmIwfConnOverSizedFrames            Counter32,
+                 frAtmIwfConnFailedAal5PduTranslate     Counter32,
+                 frAtmIwfConnOverSizedSDUs              Counter32,
+                 frAtmIwfConnCrcErrors                  Counter32,
+                 frAtmIwfConnSarTimeOuts                Counter32
+         }
+
+         frAtmIwfConnIndex  OBJECT-TYPE
+             SYNTAX      Integer32  (1..2147483647)
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 1 }
+
+         frAtmIwfConnAtmPort OBJECT-TYPE
+             SYNTAX      InterfaceIndex
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 2 }
+
+         frAtmIwfConnVpi OBJECT-TYPE
+             SYNTAX      AtmVpIdentifier
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 3 }
+
+         frAtmIwfConnVci OBJECT-TYPE
+             SYNTAX      AtmVcIdentifier
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 4 }
+
+         frAtmIwfConnFrPort OBJECT-TYPE
+             SYNTAX      InterfaceIndex
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 5 }
+
+         frAtmIwfConnDlci OBJECT-TYPE
+             SYNTAX      Integer32 (16..4194303)
+             MAX-ACCESS  not-accessible
+             STATUS      current
+
+
+
+
+
+             ::= { frAtmIwfConnectionEntry 6 }
+
+         frAtmIwfConnRowStatus OBJECT-TYPE
+             SYNTAX      RowStatus
+             MAX-ACCESS  read-create
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 7 }
+
+         frAtmIwfConnAdminStatus OBJECT-TYPE
+             SYNTAX      INTEGER { up(1), down(2) }
+             MAX-ACCESS  read-create
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 8 }
+
+         frAtmIwfConnAtm2FrOperStatus     OBJECT-TYPE
+             SYNTAX      INTEGER { up(1), down(2) }
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 9 }
+
+         frAtmIwfConnAtm2FrLastChange  OBJECT-TYPE
+             SYNTAX      TimeStamp
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 10 }
+
+         frAtmIwfConnFr2AtmOperStatus     OBJECT-TYPE
+             SYNTAX      INTEGER { up(1), down(2) }
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 11 }
+
+         frAtmIwfConnFr2AtmLastChange  OBJECT-TYPE
+             SYNTAX      TimeStamp
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 12 }
+
+         frAtmIwfConnectionDescriptor  OBJECT-TYPE
+             SYNTAX      Integer32
+             MAX-ACCESS  read-create
+             STATUS      current
+             ::= { frAtmIwfConnectionEntry 13 }
+
+         frAtmIwfConnFailedFrameTranslate OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "Frames"
+             MAX-ACCESS  read-only
+             STATUS      current
+                       ::= { frAtmIwfConnectionEntry 14 }
+
+         frAtmIwfConnOverSizedFrames OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "Frames"
+             MAX-ACCESS  read-only
+             STATUS      current
+                       ::= { frAtmIwfConnectionEntry 15 }
+
+         frAtmIwfConnFailedAal5PduTranslate OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "PDUs"
+             MAX-ACCESS  read-only
+             STATUS      current
+                       ::= { frAtmIwfConnectionEntry 16 }
+
+         frAtmIwfConnOverSizedSDUs OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "SDUs"
+             MAX-ACCESS  read-only
+             STATUS      current
+                       ::= { frAtmIwfConnectionEntry 17 }
+
+         frAtmIwfConnCrcErrors OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "PDUs"
+             MAX-ACCESS  read-only
+             STATUS      current
+                       ::= { frAtmIwfConnectionEntry 18 }
+
+         frAtmIwfConnSarTimeOuts OBJECT-TYPE
+             SYNTAX      Counter32
+             UNITS       "PDUs"
+             MAX-ACCESS  read-only
+             STATUS      current
+                       ::= { frAtmIwfConnectionEntry 19 }
+
+
+         frAtmIwfConnectionDescriptorIndexNext OBJECT-TYPE
+              SYNTAX      Integer32 (0..2147483647)
+              MAX-ACCESS  read-only
+
+
+
+
+
+              STATUS      current
+              ::= { frAtmIwfMIBObjects 3 }
+
+         frAtmIwfConnectionDescriptorTable OBJECT-TYPE
+             SYNTAX      SEQUENCE OF FrAtmIwfConnectionDescriptorEntry
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { frAtmIwfMIBObjects 4 }
+
+         frAtmIwfConnectionDescriptorEntry OBJECT-TYPE
+             SYNTAX      FrAtmIwfConnectionDescriptorEntry
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             INDEX   { frAtmIwfConnectionDescriptorIndex  }
+             ::= { frAtmIwfConnectionDescriptorTable 1 }
+
+         FrAtmIwfConnectionDescriptorEntry ::=
+             SEQUENCE {
+                 frAtmIwfConnectionDescriptorIndex      Integer32,
+                 frAtmIwfConnDescriptorRowStatus        RowStatus,
+                 frAtmIwfConnDeToClpMappingMode         INTEGER,
+                 frAtmIwfConnClpToDeMappingMode         INTEGER,
+                 frAtmIwfConnCongestionMappingMode      INTEGER,
+                 frAtmIwfConnEncapsulationMappingMode   INTEGER,
+                 frAtmIwfConnEncapsulationMappings      BITS,
+                 frAtmIwfConnFragAndReassEnabled        INTEGER,
+
+
+
+
+
+                 frAtmIwfConnArpTranslationEnabled      INTEGER
+         }
+
+         frAtmIwfConnectionDescriptorIndex OBJECT-TYPE
+             SYNTAX      Integer32 (1..2147483647)
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { frAtmIwfConnectionDescriptorEntry 1 }
+
+         frAtmIwfConnDescriptorRowStatus OBJECT-TYPE
+             SYNTAX      RowStatus
+             MAX-ACCESS  read-create
+             STATUS      current
+             ::= { frAtmIwfConnectionDescriptorEntry 2 }
+
+         frAtmIwfConnDeToClpMappingMode OBJECT-TYPE
+             SYNTAX      INTEGER {
+                            mode1(1),
+                            mode2Const0(2),
+                            mode2Const1(3)
+                         }
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL { mode1 }
+             ::= { frAtmIwfConnectionDescriptorEntry 3 }
+
+         frAtmIwfConnClpToDeMappingMode OBJECT-TYPE
+             SYNTAX      INTEGER {
+                           mode1(1),
+                           mode2Const0(2),
+                           mode2Const1(3)
+                         }
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL { mode1 }
+             ::= { frAtmIwfConnectionDescriptorEntry 4 }
+
+         frAtmIwfConnCongestionMappingMode OBJECT-TYPE
+             SYNTAX      INTEGER {
+                            mode1(1),
+                            mode2(2)
+                         }
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL      { mode1 }
+             ::= { frAtmIwfConnectionDescriptorEntry 5 }
+
+         frAtmIwfConnEncapsulationMappingMode OBJECT-TYPE
+             SYNTAX      INTEGER {
+
+
+
+
+
+                            transparentMode(1),
+                            translationMode(2),
+                            translationModeAll(3)
+                         }
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL      { transparentMode }
+             ::= { frAtmIwfConnectionDescriptorEntry 6 }
+
+         frAtmIwfConnEncapsulationMappings OBJECT-TYPE
+             SYNTAX      BITS {
+                    none (0),
+                    bridgedPdus(1),
+                    bridged802dot6(2),
+                    bPdus(3),
+                    routedIp(4),
+                    routedOsi(5),
+                    otherRouted(6),
+                    x25Iso8202(7),
+                    q933q2931(8) }
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL      { { none } }
+             ::= { frAtmIwfConnectionDescriptorEntry 7 }
+
+         frAtmIwfConnFragAndReassEnabled OBJECT-TYPE
+             SYNTAX      INTEGER { enabled(1),  disabled(2)}
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL      { disabled }
+             ::= { frAtmIwfConnectionDescriptorEntry 8 }
+
+         frAtmIwfConnArpTranslationEnabled OBJECT-TYPE
+             SYNTAX      INTEGER { enabled(1),  disabled(2)}
+             MAX-ACCESS  read-create
+             STATUS      current
+             DEFVAL      { disabled }
+             ::= { frAtmIwfConnectionDescriptorEntry 9 }
+
+         frAtmIwfVclTable OBJECT-TYPE
+             SYNTAX      SEQUENCE OF FrAtmIwfVclEntry
+
+
+
+
+
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { frAtmIwfMIBObjects 5 }
+
+         frAtmIwfVclEntry OBJECT-TYPE
+             SYNTAX      FrAtmIwfVclEntry
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             AUGMENTS    { atmVclEntry }
+             ::= { frAtmIwfVclTable 1 }
+
+         FrAtmIwfVclEntry ::= SEQUENCE {
+             frAtmIwfVclCrossConnectIdentifier    Integer32
+         }
+
+         frAtmIwfVclCrossConnectIdentifier OBJECT-TYPE
+             SYNTAX      Integer32  (1..2147483647)
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { frAtmIwfVclEntry 1 }
+
+
+
+
+
+
+
+         frAtmIwfConnStatusChange NOTIFICATION-TYPE
+             OBJECTS {   frAtmIwfConnAdminStatus,
+                         frAtmIwfConnAtm2FrOperStatus,
+                         frAtmIwfConnFr2AtmOperStatus
+                      }
+             STATUS      current
+             ::= { frAtmIwfTrapsPrefix 1 }
+
+
+
+         frAtmIwfEquipmentCompliance MODULE-COMPLIANCE
+             STATUS      current
+
+             MODULE -- this module
+                 MANDATORY-GROUPS { frAtmIwfBasicGroup,
+                                    frAtmIwfConnectionDescriptorGroup,
+                                    frAtmIwfAtmVclTableAugmentGroup,
+                                    frAtmIwfNotificationsGroup }
+
+                 OBJECT      frAtmIwfConnDeToClpMappingMode
+                 SYNTAX      INTEGER { mode1(1) }
+
+                 OBJECT      frAtmIwfConnClpToDeMappingMode
+                 SYNTAX      INTEGER { mode1(1) }
+
+                 OBJECT      frAtmIwfConnCongestionMappingMode
+                 SYNTAX      INTEGER { mode1(1) }
+
+                 OBJECT      frAtmIwfConnEncapsulationMappingMode
+                 SYNTAX      INTEGER { transparentMode(1) }
+
+                 OBJECT      frAtmIwfConnEncapsulationMappings
+                 SYNTAX      BITS { none(0) }
+
+                 OBJECT      frAtmIwfConnFragAndReassEnabled
+                 SYNTAX      INTEGER { disabled(2) }
+
+                 OBJECT      frAtmIwfConnArpTranslationEnabled
+                 SYNTAX      INTEGER { disabled(2) }
+
+             ::= { frAtmIwfCompliances 1 }
+
+
+         frAtmIwfServiceCompliance MODULE-COMPLIANCE
+             STATUS  current
+
+             MODULE  -- this module
+                 MANDATORY-GROUPS { frAtmIwfBasicGroup,
+                                    frAtmIwfConnectionDescriptorGroup,
+                                    frAtmIwfAtmVclTableAugmentGroup,
+                                    frAtmIwfNotificationsGroup }
+
+                 OBJECT      frAtmIwfConnAdminStatus
+                 MIN-ACCESS  read-only
+
+
+
+
+
+
+                 OBJECT      frAtmIwfConnDeToClpMappingMode
+                 SYNTAX      INTEGER { mode1(1) }
+                 MIN-ACCESS  read-only
+
+                 OBJECT      frAtmIwfConnClpToDeMappingMode
+                 SYNTAX      INTEGER { mode1(1) }
+                 MIN-ACCESS  read-only
+
+                 OBJECT      frAtmIwfConnCongestionMappingMode
+                 SYNTAX      INTEGER { mode1(1) }
+                 MIN-ACCESS  read-only
+
+                 OBJECT      frAtmIwfConnEncapsulationMappingMode
+                 SYNTAX      INTEGER { transparentMode(1) }
+                 MIN-ACCESS  read-only
+
+                 OBJECT      frAtmIwfConnEncapsulationMappings
+                 SYNTAX      BITS { none(0) }
+                 MIN-ACCESS  read-only
+
+                 OBJECT      frAtmIwfConnFragAndReassEnabled
+                 SYNTAX      INTEGER { disabled(2) }
+                 MIN-ACCESS  read-only
+
+
+
+
+
+
+                 OBJECT      frAtmIwfConnArpTranslationEnabled
+                 SYNTAX      INTEGER { disabled(2) }
+                 MIN-ACCESS  read-only
+
+                 OBJECT      frAtmIwfConnRowStatus
+                 MIN-ACCESS  read-only
+
+             ::= { frAtmIwfCompliances 2 }
+
+
+         frAtmIwfBasicGroup    OBJECT-GROUP
+             OBJECTS { frAtmIwfConnIndexNext,
+                       frAtmIwfConnAdminStatus,
+                       frAtmIwfConnAtm2FrOperStatus,
+                       frAtmIwfConnAtm2FrLastChange,
+                       frAtmIwfConnFr2AtmOperStatus,
+                       frAtmIwfConnFr2AtmLastChange,
+                       frAtmIwfConnectionDescriptor,
+                       frAtmIwfConnFailedFrameTranslate,
+                       frAtmIwfConnOverSizedFrames,
+                       frAtmIwfConnFailedAal5PduTranslate,
+                       frAtmIwfConnOverSizedSDUs,
+                       frAtmIwfConnCrcErrors,
+                       frAtmIwfConnSarTimeOuts,
+                       frAtmIwfConnRowStatus }
+             STATUS  current
+             ::= { frAtmIwfGroups 1 }
+
+
+         frAtmIwfConnectionDescriptorGroup    OBJECT-GROUP
+             OBJECTS {
+
+
+
+
+
+                 frAtmIwfConnectionDescriptorIndexNext,
+                 frAtmIwfConnDeToClpMappingMode,
+                 frAtmIwfConnClpToDeMappingMode,
+                 frAtmIwfConnCongestionMappingMode,
+                 frAtmIwfConnEncapsulationMappingMode,
+                 frAtmIwfConnEncapsulationMappings,
+                 frAtmIwfConnFragAndReassEnabled,
+                 frAtmIwfConnArpTranslationEnabled,
+                 frAtmIwfConnDescriptorRowStatus
+                 }
+             STATUS  current
+             ::= { frAtmIwfGroups 2 }
+
+
+         frAtmIwfAtmVclTableAugmentGroup    OBJECT-GROUP
+             OBJECTS {
+                 frAtmIwfVclCrossConnectIdentifier
+                 }
+             STATUS  current
+             ::= { frAtmIwfGroups 3 }
+
+
+         frAtmIwfNotificationsGroup NOTIFICATION-GROUP
+             NOTIFICATIONS { frAtmIwfConnStatusChange }
+             STATUS  current
+             ::= { frAtmIwfGroups 4 }
+         END

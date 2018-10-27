@@ -1,17 +1,11 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.infra.util;
 
 import intel.management.wsman.WsmanException;
@@ -32,10 +26,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.bean.UserIdConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.infra.bean.ModuleNodeResult;
 import com.clustercontrol.infra.bean.OkNgConstant;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.XMLUtil;
 
@@ -139,7 +133,8 @@ public class WinRMUtil {
 			//一時ファイルをディコードして、送信先ファイルに保存
 			output = decodeTempFile(winRs, shellId, tempFilePath, dstFilePath, isBackupIfExistFlg);
 			msg = "out=" + output.getStdout().trim() + "\n" + "err=" + output.getStderr().trim();
-			if (output.getExitCode() != 0) {
+			// PowershellでOOME発生の場合、ExitCode=0で返ってくるのでエラー出力も確認している
+			if (output.getExitCode() != 0 || output.getStderr().trim().contains("System.OutOfMemoryException")) {
 				log.warn("sendFile() code="+output.getExitCode()+",out="+output.getStdout()+",err="+output.getStderr());
 				return new ModuleNodeResult(OkNgConstant.TYPE_NG, 1, XMLUtil.ignoreInvalidString(msg));
 			}
@@ -307,9 +302,25 @@ public class WinRMUtil {
 		buffer.append("    }" + winReturnCode);
 		buffer.append("    rm $dest_file_path" + winReturnCode);
 		buffer.append("}" + winReturnCode);
-		buffer.append("$xmlDoc = [XML](Get-Content $tmp_file_path)" + winReturnCode);
-		buffer.append("$bytes = [System.Convert]::FromBase64String($xmlDoc.Envelope.Body.downloadTransferFileResponse.return)" + winReturnCode);
-		buffer.append("[System.IO.File]::WriteAllBytes($dest_file_path, $bytes)" + winReturnCode);
+		buffer.append("$f = [System.Xml.XmlReader]::create($tmp_file_path)" + winReturnCode);
+		buffer.append("$writer = [System.IO.File]::OpenWrite($dest_file_path)" + winReturnCode);
+		buffer.append("$bufferSize = 10 * 1024 * 1024 # should be a multiplier of 4" + winReturnCode);
+		buffer.append("$buffer = New-Object char[] $bufferSize" + winReturnCode);
+		buffer.append("while ($f.read()) {" + winReturnCode);
+		buffer.append("    switch ($f.NodeType) {" + winReturnCode);
+		buffer.append("        ([System.Xml.XmlNodeType]::Element) {" + winReturnCode);
+		buffer.append("            if ($f.Name -eq \"return\") {" + winReturnCode);
+		buffer.append("                $null = $f.read()" + winReturnCode);
+		buffer.append("                while (($len = $f.ReadValueChunk($buffer, 0 ,$bufferSize)) -ne 0) {" + winReturnCode);
+		buffer.append("                    $bytes = [Convert]::FromBase64CharArray($buffer, 0, $len)" + winReturnCode);
+		buffer.append("                    $writer.Write($bytes, 0, $bytes.Length)" + winReturnCode);
+		buffer.append("                }" + winReturnCode);
+		buffer.append("            }" + winReturnCode);
+		buffer.append("            break" + winReturnCode);
+		buffer.append("        }" + winReturnCode);
+		buffer.append("    }" + winReturnCode);
+		buffer.append("}" + winReturnCode);
+		buffer.append("$writer.Dispose()" + winReturnCode);
 		String str = buffer.toString();
 		log.debug(str);
 		return str;
@@ -370,8 +381,8 @@ public class WinRMUtil {
 	
 	
 	private static String getDownloadScript(String tempFilePath, String fileName) throws HinemosUnknown {
-		String url = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.winrm.url", "");
-		String pass = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.agent.password", "HINEMOS_AGENT");
+		String url = HinemosPropertyCommon.infra_transfer_winrm_url.getStringValue();
+		String pass = HinemosPropertyCommon.infra_transfer_agent_password.getStringValue();
 		String account = UserIdConstant.AGENT + ":" + pass;
 		
 		if (!url.endsWith("/")) {

@@ -1,0 +1,28 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"WinServiceMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"WinServiceInfo.ServiceName",
+			"Monitor.MonitorFlg",
+			"TruthValue.*.Priority",
+			"Monitor.Application"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"WinServiceMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

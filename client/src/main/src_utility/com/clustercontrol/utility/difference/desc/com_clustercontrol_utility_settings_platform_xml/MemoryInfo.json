@@ -1,0 +1,54 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+
+	]},
+
+	{
+	"propName":"deviceIndex",
+	"annotations":[
+		{"type":"Column", "columnName":"MemoryInfo_deviceIndex"}
+	]},
+
+	{
+	"propName":"deviceType",
+	"annotations":[
+		{"type":"Column", "columnName":"MemoryInfo_deviceType"}
+	]},
+
+	{
+	"propName":"deviceName",
+	"annotations":[
+		{"type":"Column", "columnName":"MemoryInfo_deviceName"}
+	]},
+
+	{
+	"propName":"deviceDisplayName",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"deviceSize",
+	"annotations":[
+		{"type":"Column", "columnName":"MemoryInfo_deviceSize"}
+	]},
+
+	{
+	"propName":"deviceSizeUnit",
+	"annotations":[
+		{"type":"Column", "columnName":"MemoryInfo_deviceSizeUnit"}
+	]},
+
+	{
+	"propName":"deviceDescription",
+	"annotations":[
+		{"type":"Column", "columnName":"MemoryInfo_deviceDescription"}
+	]}
+]
+}

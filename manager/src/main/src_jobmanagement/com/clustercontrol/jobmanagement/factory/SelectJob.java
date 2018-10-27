@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -43,6 +36,7 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -66,6 +60,7 @@ import com.clustercontrol.jobmanagement.bean.JobHistory;
 import com.clustercontrol.jobmanagement.bean.JobHistoryFilter;
 import com.clustercontrol.jobmanagement.bean.JobHistoryList;
 import com.clustercontrol.jobmanagement.bean.JobInfo;
+import com.clustercontrol.jobmanagement.bean.JobNextJobOrderInfo;
 import com.clustercontrol.jobmanagement.bean.JobNodeDetail;
 import com.clustercontrol.jobmanagement.bean.JobObjectInfo;
 import com.clustercontrol.jobmanagement.bean.JobParameterInfo;
@@ -78,6 +73,7 @@ import com.clustercontrol.jobmanagement.model.JobStartParamInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobEnvVariableInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
+import com.clustercontrol.jobmanagement.model.JobNextJobOrderInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobParamInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
@@ -85,7 +81,6 @@ import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobStartJobInfoEntity;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
@@ -145,41 +140,43 @@ public class SelectJob {
 	 */
 	public JobTreeItem getJobTree(String ownerRoleId, boolean treeOnly, Locale locale, String userId) throws NotifyNotFound, JobMasterNotFound, UserNotFound {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		//JobTreeItemの最上位インスタンスを作成
-		JobInfo info = new JobInfo("", "", JobConstant.STRING_COMPOSITE, JobConstant.TYPE_COMPOSITE);
-		JobTreeItem tree = new JobTreeItem(null, info);
+			//JobTreeItemの最上位インスタンスを作成
+			JobInfo info = new JobInfo("", "", JobConstant.STRING_COMPOSITE, JobConstant.TYPE_COMPOSITE);
+			JobTreeItem tree = new JobTreeItem(null, info);
 
-		//ジョブツリーのルートを生成
-		info = new JobInfo("", "", MessageConstant.JOB.getMessage(), JobConstant.TYPE_COMPOSITE);
-		JobTreeItem item = new JobTreeItem(tree, info);
+			//ジョブツリーのルートを生成
+			info = new JobInfo("", "", MessageConstant.JOB.getMessage(), JobConstant.TYPE_COMPOSITE);
+			JobTreeItem item = new JobTreeItem(tree, info);
 
-		//親ジョブIDが"TOP"のジョブリレーションを取得
-		Collection<JobMstEntity> ct = null;
-		if (ownerRoleId != null && !ownerRoleId.isEmpty()) {
-			ct = em.createNamedQuery_OR("JobMstEntity.findByParentJobunitIdAndJobId", JobMstEntity.class, ownerRoleId)
-					.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
-					.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID)
-					.getResultList();
-		} else {
-			ct = em.createNamedQuery("JobMstEntity.findByParentJobunitIdAndJobId", JobMstEntity.class)
-					.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
-					.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID)
-					.getResultList();
+			//親ジョブIDが"TOP"のジョブリレーションを取得
+			Collection<JobMstEntity> ct = null;
+			if (ownerRoleId != null && !ownerRoleId.isEmpty()) {
+				ct = em.createNamedQuery_OR("JobMstEntity.findByParentJobunitIdAndJobId", JobMstEntity.class, ownerRoleId)
+						.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
+						.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID)
+						.getResultList();
+			} else {
+				ct = em.createNamedQuery("JobMstEntity.findByParentJobunitIdAndJobId", JobMstEntity.class)
+						.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
+						.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID)
+						.getResultList();
+			}
+
+			for (JobMstEntity childJob : ct) {
+				String jobunitId = childJob.getId().getJobunitId();
+
+				//ジョブツリーを作成する
+				HashMap<String, ArrayList<JobMstEntity>> map = getJobunitMap(jobunitId);
+				createJobTree(childJob, item, treeOnly, map);
+			}
+
+			// ソートする
+			JobUtil.sort(item);
+			return tree;
 		}
-
-		for (JobMstEntity childJob : ct) {
-			String jobunitId = childJob.getId().getJobunitId();
-
-			//ジョブツリーを作成する
-			HashMap<String, ArrayList<JobMstEntity>> map = getJobunitMap(jobunitId);
-			createJobTree(childJob, item, treeOnly, map);
-		}
-
-		// ソートする
-		JobUtil.sort(item);
-		return tree;
 	}
 
 	/**
@@ -188,24 +185,26 @@ public class SelectJob {
 	 * @return Map<parent_id, List<job_id>>
 	 */
 	private HashMap<String, ArrayList<JobMstEntity>> getJobunitMap(String jobunitId) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		HashMap<String, ArrayList<JobMstEntity>> map = new HashMap<String, ArrayList<JobMstEntity>>();
-		Collection<JobMstEntity> ct =
-				em.createNamedQuery("JobMstEntity.findByJobunitId", JobMstEntity.class)
-				.setParameter("jobunitId", jobunitId).getResultList();
+			HashMap<String, ArrayList<JobMstEntity>> map = new HashMap<String, ArrayList<JobMstEntity>>();
+			Collection<JobMstEntity> ct =
+					em.createNamedQuery("JobMstEntity.findByJobunitId", JobMstEntity.class)
+					.setParameter("jobunitId", jobunitId).getResultList();
 
-		for (JobMstEntity job : ct) {
-			String parentId = job.getParentJobId();
-			ArrayList<JobMstEntity> list = map.get(parentId);
-			if (list == null) {
-				list = new ArrayList<JobMstEntity>();
-				map.put(parentId, list);
+			for (JobMstEntity job : ct) {
+				String parentId = job.getParentJobId();
+				ArrayList<JobMstEntity> list = map.get(parentId);
+				if (list == null) {
+					list = new ArrayList<JobMstEntity>();
+					map.put(parentId, list);
+				}
+				list.add(job);
 			}
-			list.add(job);
-		}
 
-		return map;
+			return map;
+		}
 	}
 
 	/**
@@ -481,46 +480,47 @@ public class SelectJob {
 	 */
 	public JobTreeItem getDetailList(String sessionId) throws JobInfoNotFound, InvalidRole {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		JobTreeItem tree = null;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			JobTreeItem tree = null;
 
-
-		//セッションをセッションIDで検索し取得
-		JobSessionEntity session = em.find(JobSessionEntity.class, sessionId, ObjectPrivilegeMode.READ);
-		if (session == null) {
-			JobInfoNotFound je = new JobInfoNotFound("JobSessionEntity.findByPrimaryKey"
-					+ ", sessionId = " + sessionId);
-			m_log.info("getDetailList() : "
-					+ je.getClass().getSimpleName() + ", " + je.getMessage());
-			je.setSessionId(sessionId);
-			throw je;
-		}
-
-		//セッションジョブを取得
-		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(session.getSessionId(), session.getJobunitId(), session.getJobId());
-		m_log.debug("sessionJob = " + sessionJob);
-		
-
-		HashMap<String, List<JobSessionJobEntity>> map = new HashMap<>();
-		List<JobSessionJobEntity> jobList = QueryUtil.getJobSessionJobBySessionId(session.getSessionId());
-		for (JobSessionJobEntity e : jobList) {
-			String parentId = e.getParentJobId();
-			List<JobSessionJobEntity> list = map.get(parentId);
-			if (map.get(parentId) == null) {
-				list = new ArrayList<JobSessionJobEntity>();
-				map.put(parentId, list);
+			//セッションをセッションIDで検索し取得
+			JobSessionEntity session = em.find(JobSessionEntity.class, sessionId, ObjectPrivilegeMode.READ);
+			if (session == null) {
+				JobInfoNotFound je = new JobInfoNotFound("JobSessionEntity.findByPrimaryKey"
+						+ ", sessionId = " + sessionId);
+				m_log.info("getDetailList() : "
+						+ je.getClass().getSimpleName() + ", " + je.getMessage());
+				je.setSessionId(sessionId);
+				throw je;
 			}
-			list.add(e);
+
+			//セッションジョブを取得
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(session.getSessionId(), session.getJobunitId(), session.getJobId());
+			m_log.debug("sessionJob = " + sessionJob);
+			
+
+			HashMap<String, List<JobSessionJobEntity>> map = new HashMap<>();
+			List<JobSessionJobEntity> jobList = QueryUtil.getJobSessionJobBySessionId(session.getSessionId());
+			for (JobSessionJobEntity e : jobList) {
+				String parentId = e.getParentJobId();
+				List<JobSessionJobEntity> list = map.get(parentId);
+				if (map.get(parentId) == null) {
+					list = new ArrayList<JobSessionJobEntity>();
+					map.put(parentId, list);
+				}
+				list.add(e);
+			}
+
+			//CommonTableTreeItemの最上位インスタンスを作成
+			tree = new JobTreeItem();
+			//ジョブ詳細ツリーを作成
+			m_log.debug("createDetailTree start");
+			createDetailTree(sessionJob, tree, map);
+			m_log.debug("createDetailTree end");
+
+			return tree;
 		}
-
-		//CommonTableTreeItemの最上位インスタンスを作成
-		tree = new JobTreeItem();
-		//ジョブ詳細ツリーを作成
-		m_log.debug("createDetailTree start");
-		createDetailTree(sessionJob, tree, map);
-		m_log.debug("createDetailTree end");
-
-		return tree;
 	}
 
 	/**
@@ -563,7 +563,7 @@ public class SelectJob {
 
 		JobInfoEntity job = sessionJob.getJobInfoEntity();
 		/** ファイル転送ジョブ展開表示 */
-		boolean m_openForwardFileJob = HinemosPropertyUtil.getHinemosPropertyBool("job.open.forward.file.job", false);
+		boolean m_openForwardFileJob = HinemosPropertyCommon.job_open_forward_file_job.getBooleanValue();
 		if(m_openForwardFileJob || job.getJobType() != JobConstant.TYPE_FILEJOB){
 
 			//ジョブリレーションを親ジョブIDで検索
@@ -632,10 +632,19 @@ public class SelectJob {
 		if (sessionJob.getEndDate() != null){
 			detail.setEndDate(sessionJob.getEndDate());
 		}
+		detail.setRunCount(sessionJob.getRunCount());
 
 		return detail;
 	}
 
+	/**
+	 * セッションジョブ情報作成
+	 * ジョブ履歴[一覧]ビューでジョブを選択し、
+	 * ジョブ履歴[ジョブ詳細]を表示する際に呼ばれます。
+	 * 
+	 * @param sessionJob
+	 * @return
+	 */
 	private JobInfo createJobInfo(JobSessionJobEntity sessionJob) {
 
 		m_log.debug("createJobInfo>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
@@ -667,10 +676,16 @@ public class SelectJob {
 			waitRule.setSkip(jobInfo.getSkip());
 			waitRule.setSkipEndStatus(jobInfo.getSkipEndStatus());
 			waitRule.setSkipEndValue(jobInfo.getSkipEndValue());
+			waitRule.setExclusiveBranch(jobInfo.getExclusiveBranchFlg());
+			waitRule.setExclusiveBranchEndStatus(jobInfo.getExclusiveBranchEndStatus());
+			waitRule.setExclusiveBranchEndValue(jobInfo.getExclusiveBranchEndValue());
 			waitRule.setCalendar(jobInfo.getCalendar());
 			waitRule.setCalendarId(jobInfo.getCalendarId());
 			waitRule.setCalendarEndStatus(jobInfo.getCalendarEndStatus());
 			waitRule.setCalendarEndValue(jobInfo.getCalendarEndValue());
+			waitRule.setJobRetryFlg(jobInfo.getJobRetryFlg());
+			waitRule.setJobRetry(jobInfo.getJobRetry());
+			waitRule.setJobRetryEndStatus(jobInfo.getJobRetryEndStatus());
 
 			waitRule.setStart_delay(jobInfo.getStartDelay());
 			waitRule.setStart_delay_session(jobInfo.getStartDelaySession());
@@ -703,6 +718,8 @@ public class SelectJob {
 			waitRule.setEnd_delay_operation_type(jobInfo.getEndDelayOperationType());
 			waitRule.setEnd_delay_operation_end_status(jobInfo.getEndDelayOperationEndStatus());
 			waitRule.setEnd_delay_operation_end_value(jobInfo.getEndDelayOperationEndValue());
+			waitRule.setEnd_delay_change_mount(jobInfo.getEndDelayChangeMount());
+			waitRule.setEnd_delay_change_mount_value(jobInfo.getEndDelayChangeMountValue());
 			waitRule.setMultiplicityNotify(jobInfo.getMultiplicityNotify());
 			waitRule.setMultiplicityNotifyPriority(jobInfo.getMultiplicityNotifyPriority());
 			waitRule.setMultiplicityOperation(jobInfo.getMultiplicityOperation());
@@ -734,9 +751,11 @@ public class SelectJob {
 					objectInfo.setType(startJob.getId().getTargetJobType());
 					objectInfo.setValue(startJob.getId().getTargetJobEndValue());
 					objectInfo.setDescription(startJob.getTargetJobDescription());
+					objectInfo.setCrossSessionRange(startJob.getTargetJobCrossSessionRange());
 					m_log.debug("getTargetJobType = " + startJob.getId().getTargetJobType());
 					m_log.debug("getTargetJobId = " + startJob.getId().getTargetJobId());
 					m_log.debug("getTargetJobEndValue = " + startJob.getId().getTargetJobEndValue());
+					m_log.debug("getTargetJobCrossSessionRange = " + startJob.getTargetJobCrossSessionRange());
 					m_log.debug("getTargetJobDescription = " + startJob.getTargetJobDescription());
 					objectList.add(objectInfo);
 				}
@@ -789,7 +808,25 @@ public class SelectJob {
 				}
 			}
 		}
+
+		// 排他分岐後続ジョブ優先度設定
+		List<JobNextJobOrderInfoEntity> nextJobOrderEntityList = jobInfo.getJobNextJobOrderInfoEntities();
+		List<JobNextJobOrderInfo> nextJobOrderList = new ArrayList<>();
+		if (nextJobOrderEntityList != null) {
+			//優先度順にソート
+			//nextJobOrderListに優先度順で登録する
+			nextJobOrderEntityList.sort(Comparator.comparing(orderEntity -> orderEntity.getOrder()));
+			for (JobNextJobOrderInfoEntity nextJobOrderEntity: nextJobOrderEntityList) {
+				JobNextJobOrderInfo nextJobOrder = new JobNextJobOrderInfo();
+				nextJobOrder.setJobunitId(nextJobOrderEntity.getId().getJobunitId());
+				nextJobOrder.setJobId(nextJobOrderEntity.getId().getJobId());
+				nextJobOrder.setNextJobId(nextJobOrderEntity.getId().getNextJobId());
+				nextJobOrderList.add(nextJobOrder);
+			}
+		}
+
 		waitRule.setObject(objectList);
+		waitRule.setExclusiveBranchNextJobOrderList(nextJobOrderList);
 		info.setWaitRule(waitRule);
 		
 		//承認ジョブ
@@ -1646,6 +1683,8 @@ public class SelectJob {
 
 	/**
 	 * セッションジョブ情報作成
+	 * ジョブ履歴[ジョブ詳細]ビューでジョブをダブルクリックし、
+	 * 設定ダイアログを表示する際に呼ばれます。
 	 *
 	 * @param job ジョブ情報
 	 * @return ジョブ情報
@@ -1693,10 +1732,16 @@ public class SelectJob {
 			waitRule.setSkip(job.getSkip());
 			waitRule.setSkipEndStatus(job.getSkipEndStatus());
 			waitRule.setSkipEndValue(job.getSkipEndValue());
+			waitRule.setExclusiveBranch(job.getExclusiveBranchFlg());
+			waitRule.setExclusiveBranchEndStatus(job.getExclusiveBranchEndStatus());
+			waitRule.setExclusiveBranchEndValue(job.getExclusiveBranchEndValue());
 			waitRule.setCalendar(job.getCalendar());
 			waitRule.setCalendarId(job.getCalendarId());
 			waitRule.setCalendarEndStatus(job.getCalendarEndStatus());
 			waitRule.setCalendarEndValue(job.getCalendarEndValue());
+			waitRule.setJobRetryFlg(job.getJobRetryFlg());
+			waitRule.setJobRetry(job.getJobRetry());
+			waitRule.setJobRetryEndStatus(job.getJobRetryEndStatus());
 
 			waitRule.setStart_delay(job.getStartDelay());
 			waitRule.setStart_delay_session(job.getStartDelaySession());
@@ -1729,6 +1774,8 @@ public class SelectJob {
 			waitRule.setEnd_delay_operation_type(job.getEndDelayOperationType());
 			waitRule.setEnd_delay_operation_end_status(job.getEndDelayOperationEndStatus());
 			waitRule.setEnd_delay_operation_end_value(job.getEndDelayOperationEndValue());
+			waitRule.setEnd_delay_change_mount(job.getEndDelayChangeMount());
+			waitRule.setEnd_delay_change_mount_value(job.getEndDelayChangeMountValue());
 			waitRule.setMultiplicityNotify(job.getMultiplicityNotify());
 			waitRule.setMultiplicityNotifyPriority(job.getMultiplicityNotifyPriority());
 			waitRule.setMultiplicityOperation(job.getMultiplicityOperation());
@@ -1748,17 +1795,38 @@ public class SelectJob {
 					objectInfo.setJobId(startJob.getId().getTargetJobId());
 
 					//対象ジョブを取得
-					JobSessionJobEntity targetJobSessionJob = QueryUtil.getJobSessionJobPK(startJob.getId().getSessionId(),
-							startJob.getId().getJobunitId(),
-							startJob.getId().getTargetJobId());
-					JobInfoEntity targetJob = targetJobSessionJob.getJobInfoEntity();
-					objectInfo.setJobName(targetJob.getJobName());
+					String jobName;
+					try {
+						JobSessionJobEntity targetJobSessionJob = QueryUtil.getJobSessionJobPK(startJob.getId().getSessionId(),
+								startJob.getId().getJobunitId(),
+								startJob.getId().getTargetJobId());
+						JobInfoEntity targetJob = targetJobSessionJob.getJobInfoEntity();
+						jobName = targetJob.getJobName();
+					} catch (JobInfoNotFound e) {
+						jobName = "";
+					}
+
+					if (jobName.equals("") && (startJob.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS ||
+						startJob.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE)) {
+						//セッション横断待ち条件の場合JobSessionJobEntitiyが見つからない場合がある。
+						//その場合、JobMstEntitiyから待ち合わせジョブ名を取得する。
+						try {
+							JobMstEntity targetJob= QueryUtil.getJobMstPK(startJob.getId().getJobunitId(), startJob.getId().getJobId());
+							jobName = targetJob.getJobName();
+						} catch(JobMasterNotFound e) {
+							jobName = "";
+						}
+					}
+
+					objectInfo.setJobName(jobName);
 					objectInfo.setType(startJob.getId().getTargetJobType());
 					objectInfo.setValue(startJob.getId().getTargetJobEndValue());
 					objectInfo.setDescription(startJob.getTargetJobDescription());
+					objectInfo.setCrossSessionRange(startJob.getTargetJobCrossSessionRange());
 					m_log.debug("getTargetJobType = " + startJob.getId().getTargetJobType());
 					m_log.debug("getTargetJobId = " + startJob.getId().getTargetJobId());
 					m_log.debug("getTargetJobEndValue = " + startJob.getId().getTargetJobEndValue());
+					m_log.debug("getTargetJobCrossSessionRange = " + startJob.getTargetJobCrossSessionRange());
 					m_log.debug("getTargetJobDescription = " + startJob.getTargetJobDescription());
 					objectList.add(objectInfo);
 				}
@@ -1810,11 +1878,29 @@ public class SelectJob {
 				}
 			}
 		}
+
+		// 排他分岐後続ジョブ優先度設定
+		List<JobNextJobOrderInfoEntity> nextJobOrderEntityList = job.getJobNextJobOrderInfoEntities();
+		List<JobNextJobOrderInfo> nextJobOrderList = new ArrayList<>();
+		if (nextJobOrderEntityList != null) {
+			//優先度順にソート
+			//nextJobOrderListに優先度順で登録する
+			nextJobOrderEntityList.sort(Comparator.comparing(orderEntity -> orderEntity.getOrder()));
+			for (JobNextJobOrderInfoEntity nextJobOrderEntity: nextJobOrderEntityList) {
+				JobNextJobOrderInfo nextJobOrder = new JobNextJobOrderInfo();
+				nextJobOrder.setJobunitId(nextJobOrderEntity.getId().getJobunitId());
+				nextJobOrder.setJobId(nextJobOrderEntity.getId().getJobId());
+				nextJobOrder.setNextJobId(nextJobOrderEntity.getId().getNextJobId());
+				nextJobOrderList.add(nextJobOrder);
+			}
+		}
+
 		/*
 		 * ソート処理
 		 */
 		Collections.sort(objectList);
 		waitRule.setObject(objectList);
+		waitRule.setExclusiveBranchNextJobOrderList(nextJobOrderList);
 		info.setWaitRule(waitRule);
 
 		//実行コマンドを取得
@@ -1833,6 +1919,7 @@ public class SelectJob {
 			commandInfo.setMessageRetryEndValue(job.getMessageRetryEndValue());
 			commandInfo.setCommandRetryFlg(job.getCommandRetryFlg());
 			commandInfo.setCommandRetry(job.getCommandRetry());
+			commandInfo.setCommandRetryEndStatus(job.getCommandRetryEndStatus());
 			// コマンド終了時のジョブ変数が存在する場合は追加
 			ArrayList<JobCommandParam> jobCommandParamList = new ArrayList<>();
 			if (job.getJobCommandParamInfoEntities() != null && job.getJobCommandParamInfoEntities().size() > 0) {
@@ -2053,125 +2140,127 @@ public class SelectJob {
 				+ ", " + ownerRoleId
 				+ ", " + isCount + "]");
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// 「含まない」検索を行うかの判断に使う値
-		String notInclude = "NOT:";
+			// 「含まない」検索を行うかの判断に使う値
+			String notInclude = "NOT:";
 
-		StringBuffer sbJpql = new StringBuffer();
-		sbJpql.append("SELECT");
-		if (isCount) {
-			sbJpql.append(" COUNT(a)");
-		} else {
-			sbJpql.append(" a");
-		}
-		sbJpql.append(" FROM JobSessionJobEntity a JOIN a.jobSessionEntity b");
-		sbJpql.append(" WHERE a.id.jobunitId = b.jobunitId");
-		sbJpql.append(" AND a.id.jobId = b.jobId");
-		if(startFromDate != null) {
-			sbJpql.append(" AND a.startDate >= :startFromDate");
-		}
-		if(startToDate != null) {
-			sbJpql.append(" AND a.startDate <= :startToDate");
-		}
-		if(endFromDate != null) {
-			sbJpql.append(" AND a.endDate >= :endFromDate");
-		}
-		if(endToDate != null) {
-			sbJpql.append(" AND a.endDate <= :endToDate");
-		}
-		if(jobId != null && jobId.length() > 0) {
-			if(!jobId.startsWith(notInclude)) {
-				sbJpql.append(" AND a.id.jobId like :jobId");
-			}else {
-				sbJpql.append(" AND a.id.jobId not like :jobId");
+			StringBuffer sbJpql = new StringBuffer();
+			sbJpql.append("SELECT");
+			if (isCount) {
+				sbJpql.append(" COUNT(a)");
+			} else {
+				sbJpql.append(" a");
 			}
-		}
-		if(status != null && status != -1) {
-			sbJpql.append(" AND a.status = :status");
-		}
-		if(endStatus != null && endStatus != -1) {
-			sbJpql.append(" AND a.endStatus = :endStatus");
-		}
-		if(ownerRoleId != null && ownerRoleId.length() > 0) {
-			if(!ownerRoleId.startsWith(notInclude)) {
-				sbJpql.append(" AND a.ownerRoleId like :ownerRoleId");
-			}else {
-				sbJpql.append(" AND a.ownerRoleId not like :ownerRoleId");
+			sbJpql.append(" FROM JobSessionJobEntity a JOIN a.jobSessionEntity b");
+			sbJpql.append(" WHERE a.id.jobunitId = b.jobunitId");
+			sbJpql.append(" AND a.id.jobId = b.jobId");
+			if(startFromDate != null) {
+				sbJpql.append(" AND a.startDate >= :startFromDate");
 			}
-		}
-		if(triggerType != null && triggerType != -1) {
-			sbJpql.append(" AND b.triggerType = :triggerType");
-		}
-		if(triggerInfo != null && triggerInfo.length() > 0) {
-			if(!triggerInfo.startsWith(notInclude)) {
-				sbJpql.append(" AND b.triggerInfo like :triggerInfo");
-			}else {
-				sbJpql.append(" AND b.triggerInfo not like :triggerInfo");
+			if(startToDate != null) {
+				sbJpql.append(" AND a.startDate <= :startToDate");
 			}
-		}
-
-		// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
-		// オブジェクト権限チェック
-		sbJpql = getJpql(sbJpql);
-
-		TypedQuery<?> typedQuery = null;
-		m_log.debug("getHistoryFilterQuery() jpql = " + sbJpql.toString());
-		if (isCount) {
-			typedQuery = em.createQuery(sbJpql.toString(), Long.class, JobSessionJobEntity.class);
-		} else {
-			sbJpql.append(" ORDER BY a.id.sessionId DESC");
-			typedQuery = em.createQuery(sbJpql.toString(), JobSessionJobEntity.class);
-		}
-
-		if(startFromDate != null) {
-			typedQuery = typedQuery.setParameter("startFromDate", startFromDate);
-		}
-		if(startToDate != null) {
-			typedQuery = typedQuery.setParameter("startToDate", startToDate);
-		}
-		if(endFromDate != null) {
-			typedQuery = typedQuery.setParameter("endFromDate", endFromDate);
-		}
-		if(endToDate != null) {
-			typedQuery = typedQuery.setParameter("endToDate", endToDate);
-		}
-		if(jobId != null && jobId.length() > 0) {
-			if(!jobId.startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("jobId", jobId);
-			}else{
-				typedQuery = typedQuery.setParameter("jobId", jobId.substring(notInclude.length()));
+			if(endFromDate != null) {
+				sbJpql.append(" AND a.endDate >= :endFromDate");
 			}
-		}
-		if(status != null && status != -1) {
-			typedQuery = typedQuery.setParameter("status", status);
-		}
-		if(endStatus != null && endStatus != -1) {
-			typedQuery = typedQuery.setParameter("endStatus", endStatus);
-		}
-		if(ownerRoleId != null && ownerRoleId.length() > 0) {
-			if(!ownerRoleId.startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("ownerRoleId", ownerRoleId);
-			}else{
-				typedQuery = typedQuery.setParameter("ownerRoleId", ownerRoleId.substring(notInclude.length()));
+			if(endToDate != null) {
+				sbJpql.append(" AND a.endDate <= :endToDate");
 			}
-		}
-		if(triggerType != null && triggerType != -1) {
-			typedQuery = typedQuery.setParameter("triggerType", triggerType);
-		}
-		if(triggerInfo != null && triggerInfo.length() > 0) {
-			if(!triggerInfo.startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("triggerInfo", triggerInfo);
-			}else{
-				typedQuery = typedQuery.setParameter("triggerInfo", triggerInfo.substring(notInclude.length()));
+			if(jobId != null && jobId.length() > 0) {
+				if(!jobId.startsWith(notInclude)) {
+					sbJpql.append(" AND a.id.jobId like :jobId");
+				}else {
+					sbJpql.append(" AND a.id.jobId not like :jobId");
+				}
 			}
+			if(status != null && status != -1) {
+				sbJpql.append(" AND a.status = :status");
+			}
+			if(endStatus != null && endStatus != -1) {
+				sbJpql.append(" AND a.endStatus = :endStatus");
+			}
+			if(ownerRoleId != null && ownerRoleId.length() > 0) {
+				if(!ownerRoleId.startsWith(notInclude)) {
+					sbJpql.append(" AND a.ownerRoleId like :ownerRoleId");
+				}else {
+					sbJpql.append(" AND a.ownerRoleId not like :ownerRoleId");
+				}
+			}
+			if(triggerType != null && triggerType != -1) {
+				sbJpql.append(" AND b.triggerType = :triggerType");
+			}
+			if(triggerInfo != null && triggerInfo.length() > 0) {
+				if(!triggerInfo.startsWith(notInclude)) {
+					sbJpql.append(" AND b.triggerInfo like :triggerInfo");
+				}else {
+					sbJpql.append(" AND b.triggerInfo not like :triggerInfo");
+				}
+			}
+
+			// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
+			// オブジェクト権限チェック
+			sbJpql = getJpql(sbJpql);
+
+			TypedQuery<?> typedQuery = null;
+			m_log.debug("getHistoryFilterQuery() jpql = " + sbJpql.toString());
+			if (isCount) {
+				typedQuery = em.createQuery(sbJpql.toString(), Long.class, JobSessionJobEntity.class);
+			} else {
+				sbJpql.append(" ORDER BY a.id.sessionId DESC");
+				typedQuery = em.createQuery(sbJpql.toString(), JobSessionJobEntity.class);
+			}
+
+			if(startFromDate != null) {
+				typedQuery = typedQuery.setParameter("startFromDate", startFromDate);
+			}
+			if(startToDate != null) {
+				typedQuery = typedQuery.setParameter("startToDate", startToDate);
+			}
+			if(endFromDate != null) {
+				typedQuery = typedQuery.setParameter("endFromDate", endFromDate);
+			}
+			if(endToDate != null) {
+				typedQuery = typedQuery.setParameter("endToDate", endToDate);
+			}
+			if(jobId != null && jobId.length() > 0) {
+				if(!jobId.startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("jobId", jobId);
+				}else{
+					typedQuery = typedQuery.setParameter("jobId", jobId.substring(notInclude.length()));
+				}
+			}
+			if(status != null && status != -1) {
+				typedQuery = typedQuery.setParameter("status", status);
+			}
+			if(endStatus != null && endStatus != -1) {
+				typedQuery = typedQuery.setParameter("endStatus", endStatus);
+			}
+			if(ownerRoleId != null && ownerRoleId.length() > 0) {
+				if(!ownerRoleId.startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("ownerRoleId", ownerRoleId);
+				}else{
+					typedQuery = typedQuery.setParameter("ownerRoleId", ownerRoleId.substring(notInclude.length()));
+				}
+			}
+			if(triggerType != null && triggerType != -1) {
+				typedQuery = typedQuery.setParameter("triggerType", triggerType);
+			}
+			if(triggerInfo != null && triggerInfo.length() > 0) {
+				if(!triggerInfo.startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("triggerInfo", triggerInfo);
+				}else{
+					typedQuery = typedQuery.setParameter("triggerInfo", triggerInfo.substring(notInclude.length()));
+				}
+			}
+	
+			// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
+			// オブジェクト権限チェック
+			typedQuery = setObjectPrivilegeParameter(typedQuery);
+	
+			return typedQuery;
 		}
-
-		// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
-		// オブジェクト権限チェック
-		typedQuery = setObjectPrivilegeParameter(typedQuery);
-
-		return typedQuery;
 	}
 
 
@@ -2324,18 +2413,20 @@ public class SelectJob {
 	 */
 	public ArrayList<JobInfo> getRegisteredModule(String jobunitId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("getRegisteredModule()");
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		
-		ArrayList<JobInfo> list = new ArrayList<JobInfo>();
-		boolean registeredModule = true;
-		Collection<JobMstEntity> ct = em.createNamedQuery("JobMstEntity.findByJobunitIdAndRegisteredModule", JobMstEntity.class)
-										.setParameter("jobunitId", jobunitId)
-										.setParameter("registeredModule", registeredModule).getResultList();
-		
-		for (JobMstEntity job : ct) {
-			list.add(createJobData(job, false));
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			
+			ArrayList<JobInfo> list = new ArrayList<JobInfo>();
+			boolean registeredModule = true;
+			Collection<JobMstEntity> ct = em.createNamedQuery("JobMstEntity.findByJobunitIdAndRegisteredModule", JobMstEntity.class)
+											.setParameter("jobunitId", jobunitId)
+											.setParameter("registeredModule", registeredModule).getResultList();
+			
+			for (JobMstEntity job : ct) {
+				list.add(createJobData(job, false));
+			}
+			return list;
 		}
-		return list;
 	}
 
 	/**
@@ -2521,271 +2612,273 @@ public class SelectJob {
 
 		m_log.debug("getApprovalFilterQuery()");
 		
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		
-		// 「含まない」検索を行うかの判断に使う値
-		String notInclude = "NOT:";
-		
-		String[] userlist = {"*", loginUser};
-		
-		StringBuffer sbJpql = new StringBuffer();
-		sbJpql.append("SELECT b");
-		sbJpql.append(" FROM JobSessionJobEntity a, JobInfoEntity b, JobSessionNodeEntity c");
-		sbJpql.append(" WHERE a.id.sessionId = b.id.sessionId");
-		sbJpql.append(" AND a.id.jobunitId = b.id.jobunitId");
-		sbJpql.append(" AND a.id.jobId = b.id.jobId");
-		sbJpql.append(" AND a.id.sessionId = c.id.sessionId");
-		sbJpql.append(" AND a.id.jobunitId = c.id.jobunitId");
-		sbJpql.append(" AND a.id.jobId = c.id.jobId");
-		sbJpql.append(" AND b.jobType = :jobType");
-		
-		// 承認処理を開始していない状態(待機中等)は表示対象としない
-		sbJpql.append(" AND c.approvalStatus IS NOT NULL");
-		
-		if(property.getStartFromDate() != null) {
-			sbJpql.append(" AND c.startDate >= :startFromDate");
-		}
-		if(property.getStartToDate() != null) {
-			sbJpql.append(" AND c.startDate <= :startToDate");
-		}
-		if(property.getEndFromDate() != null) {
-			sbJpql.append(" AND c.endDate >= :endFromDate");
-		}
-		if(property.getEndToDate() != null) {
-			sbJpql.append(" AND c.endDate <= :endToDate");
-		}
-		
-		//依頼先ロール/ユーザ設定をSQL条件に追加するか否かで、ステータスの条件指定も変更
-		// ステータスは置換済みの情報(statuslist)を使用する
-		if(isPending != null){
-			//指定されたロール/ユーザリストに合致するものは"承認待"、合致しないものは"未承認"
-			if (isPending){
-				//"承認待"指定有、"未承認"指定無
-				if (statuslist != null && statuslist.size() > 0) {
-					//他のステータス指定有
-					sbJpql.append(" AND ((c.approvalStatus = :approvalPendingStatus");
-					sbJpql.append(" AND b.approvalReqRoleId IN (" + HinemosEntityManager.getParamNameString("approvalReqRoleId", new String[roleIdList.size()]) + ")");
-					sbJpql.append(" AND b.approvalReqUserId IN (" + HinemosEntityManager.getParamNameString("approvalReqUserId", userlist) + "))");
-					sbJpql.append(" OR c.approvalStatus IN (" + HinemosEntityManager.getParamNameString("approvalStatus", new String[statuslist.size()])+"))");
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			
+			// 「含まない」検索を行うかの判断に使う値
+			String notInclude = "NOT:";
+			
+			String[] userlist = {"*", loginUser};
+			
+			StringBuffer sbJpql = new StringBuffer();
+			sbJpql.append("SELECT b");
+			sbJpql.append(" FROM JobSessionJobEntity a, JobInfoEntity b, JobSessionNodeEntity c");
+			sbJpql.append(" WHERE a.id.sessionId = b.id.sessionId");
+			sbJpql.append(" AND a.id.jobunitId = b.id.jobunitId");
+			sbJpql.append(" AND a.id.jobId = b.id.jobId");
+			sbJpql.append(" AND a.id.sessionId = c.id.sessionId");
+			sbJpql.append(" AND a.id.jobunitId = c.id.jobunitId");
+			sbJpql.append(" AND a.id.jobId = c.id.jobId");
+			sbJpql.append(" AND b.jobType = :jobType");
+			
+			// 承認処理を開始していない状態(待機中等)は表示対象としない
+			sbJpql.append(" AND c.approvalStatus IS NOT NULL");
+			
+			if(property.getStartFromDate() != null) {
+				sbJpql.append(" AND c.startDate >= :startFromDate");
+			}
+			if(property.getStartToDate() != null) {
+				sbJpql.append(" AND c.startDate <= :startToDate");
+			}
+			if(property.getEndFromDate() != null) {
+				sbJpql.append(" AND c.endDate >= :endFromDate");
+			}
+			if(property.getEndToDate() != null) {
+				sbJpql.append(" AND c.endDate <= :endToDate");
+			}
+			
+			//依頼先ロール/ユーザ設定をSQL条件に追加するか否かで、ステータスの条件指定も変更
+			// ステータスは置換済みの情報(statuslist)を使用する
+			if(isPending != null){
+				//指定されたロール/ユーザリストに合致するものは"承認待"、合致しないものは"未承認"
+				if (isPending){
+					//"承認待"指定有、"未承認"指定無
+					if (statuslist != null && statuslist.size() > 0) {
+						//他のステータス指定有
+						sbJpql.append(" AND ((c.approvalStatus = :approvalPendingStatus");
+						sbJpql.append(" AND b.approvalReqRoleId IN (" + HinemosEntityManager.getParamNameString("approvalReqRoleId", new String[roleIdList.size()]) + ")");
+						sbJpql.append(" AND b.approvalReqUserId IN (" + HinemosEntityManager.getParamNameString("approvalReqUserId", userlist) + "))");
+						sbJpql.append(" OR c.approvalStatus IN (" + HinemosEntityManager.getParamNameString("approvalStatus", new String[statuslist.size()])+"))");
+					}else{
+						//"承認待"のみ指定
+						sbJpql.append(" AND c.approvalStatus = :approvalPendingStatus");
+						sbJpql.append(" AND b.approvalReqRoleId IN (" + HinemosEntityManager.getParamNameString("approvalReqRoleId", new String[roleIdList.size()]) + ")");
+						sbJpql.append(" AND b.approvalReqUserId IN (" + HinemosEntityManager.getParamNameString("approvalReqUserId", userlist) + ")");
+					}
 				}else{
-					//"承認待"のみ指定
-					sbJpql.append(" AND c.approvalStatus = :approvalPendingStatus");
-					sbJpql.append(" AND b.approvalReqRoleId IN (" + HinemosEntityManager.getParamNameString("approvalReqRoleId", new String[roleIdList.size()]) + ")");
-					sbJpql.append(" AND b.approvalReqUserId IN (" + HinemosEntityManager.getParamNameString("approvalReqUserId", userlist) + ")");
+					//"承認待"指定無、"未承認"指定有
+					if (statuslist != null && statuslist.size() > 0) {
+						//他のステータス指定有
+						sbJpql.append(" AND ((c.approvalStatus = :approvalPendingStatus");
+						sbJpql.append(" AND (b.approvalReqRoleId NOT IN (" + HinemosEntityManager.getParamNameString("approvalReqRoleId", new String[roleIdList.size()]) + ")");
+						sbJpql.append(" OR b.approvalReqUserId NOT IN (" + HinemosEntityManager.getParamNameString("approvalReqUserId", userlist) + ")))");
+						sbJpql.append(" OR c.approvalStatus IN (" + HinemosEntityManager.getParamNameString("approvalStatus", new String[statuslist.size()])+"))");
+					}else{
+						//"未承認"のみ指定
+						sbJpql.append(" AND c.approvalStatus = :approvalPendingStatus");
+						sbJpql.append(" AND (b.approvalReqRoleId NOT IN (" + HinemosEntityManager.getParamNameString("approvalReqRoleId", new String[roleIdList.size()]) + ")");
+						sbJpql.append(" OR b.approvalReqUserId NOT IN (" + HinemosEntityManager.getParamNameString("approvalReqUserId", userlist) + "))");
+					}
 				}
 			}else{
-				//"承認待"指定無、"未承認"指定有
-				if (statuslist != null && statuslist.size() > 0) {
-					//他のステータス指定有
-					sbJpql.append(" AND ((c.approvalStatus = :approvalPendingStatus");
-					sbJpql.append(" AND (b.approvalReqRoleId NOT IN (" + HinemosEntityManager.getParamNameString("approvalReqRoleId", new String[roleIdList.size()]) + ")");
-					sbJpql.append(" OR b.approvalReqUserId NOT IN (" + HinemosEntityManager.getParamNameString("approvalReqUserId", userlist) + ")))");
-					sbJpql.append(" OR c.approvalStatus IN (" + HinemosEntityManager.getParamNameString("approvalStatus", new String[statuslist.size()])+"))");
+				//依頼先ロール/ユーザ設定の条件追加不要("承認待"/"未承認"の区別不要)な場合は、ステータスのみ条件指定
+				//"未承認"以外でDBで持ち得るステータス(承認待/中断/取り下げ/承認済)全て指定されている場合は、ステータスを条件に指定しない
+				if (statuslist != null && statuslist.size() > 0 && statuslist.size() != 4) {
+					sbJpql.append(" AND c.approvalStatus IN (" + HinemosEntityManager.getParamNameString("approvalStatus", new String[statuslist.size()])+")");
+				}
+			}
+			
+			if(property.getResult() != null && property.getResult() != -1) {
+				sbJpql.append(" AND c.approvalResult = :approvalResult");
+			}
+			if(property.getSessionId() != null && property.getSessionId().length() > 0) {
+				if(!property.getSessionId().startsWith(notInclude)) {
+					sbJpql.append(" AND a.id.sessionId like :sessionId");
 				}else{
-					//"未承認"のみ指定
-					sbJpql.append(" AND c.approvalStatus = :approvalPendingStatus");
-					sbJpql.append(" AND (b.approvalReqRoleId NOT IN (" + HinemosEntityManager.getParamNameString("approvalReqRoleId", new String[roleIdList.size()]) + ")");
-					sbJpql.append(" OR b.approvalReqUserId NOT IN (" + HinemosEntityManager.getParamNameString("approvalReqUserId", userlist) + "))");
+					sbJpql.append(" AND a.id.sessionId not like :sessionId");
 				}
 			}
-		}else{
-			//依頼先ロール/ユーザ設定の条件追加不要("承認待"/"未承認"の区別不要)な場合は、ステータスのみ条件指定
-			//"未承認"以外でDBで持ち得るステータス(承認待/中断/取り下げ/承認済)全て指定されている場合は、ステータスを条件に指定しない
-			if (statuslist != null && statuslist.size() > 0 && statuslist.size() != 4) {
-				sbJpql.append(" AND c.approvalStatus IN (" + HinemosEntityManager.getParamNameString("approvalStatus", new String[statuslist.size()])+")");
-			}
-		}
-		
-		if(property.getResult() != null && property.getResult() != -1) {
-			sbJpql.append(" AND c.approvalResult = :approvalResult");
-		}
-		if(property.getSessionId() != null && property.getSessionId().length() > 0) {
-			if(!property.getSessionId().startsWith(notInclude)) {
-				sbJpql.append(" AND a.id.sessionId like :sessionId");
-			}else{
-				sbJpql.append(" AND a.id.sessionId not like :sessionId");
-			}
-		}
-		if(property.getJobunitId() != null && property.getJobunitId().length() > 0) {
-			if(!property.getJobunitId().startsWith(notInclude)) {
-				sbJpql.append(" AND a.id.jobunitId like :jobunitId");
-			}else{
-				sbJpql.append(" AND a.id.jobunitId not like :jobunitId");
-			}
-		}
-		if(property.getJobId() != null && property.getJobId().length() > 0) {
-			if(!property.getJobId().startsWith(notInclude)) {
-				sbJpql.append(" AND a.id.jobId like :jobId");
-			}else{
-				sbJpql.append(" AND a.id.jobId not like :jobId");
-			}
-		}
-		if(property.getJobName() != null && property.getJobName().length() > 0) {
-			if(!property.getJobName().startsWith(notInclude)) {
-				sbJpql.append(" AND b.jobName like :jobName");
-			}else{
-				sbJpql.append(" AND b.jobName not like :jobName");
-			}
-		}
-		if(property.getRequestUser() != null && property.getRequestUser().length() > 0) {
-			if(!property.getRequestUser().startsWith(notInclude)) {
-				sbJpql.append(" AND c.approvalRequestUser like :approvalRequestUser");
-			}else{
-				sbJpql.append(" AND c.approvalRequestUser not like :approvalRequestUser");
-			}
-		}
-		if(property.getApprovalUser() != null && property.getApprovalUser().length() > 0) {
-			if(!property.getApprovalUser().startsWith(notInclude)) {
-				sbJpql.append(" AND c.approvalUser like :approvalUser");
-			}else{
-				sbJpql.append(" AND c.approvalUser not like :approvalUser");
-			}
-		}
-		if(property.getRequestSentence() != null && property.getRequestSentence().length() > 0) {
-			if(!property.getRequestSentence().startsWith(notInclude)) {
-				sbJpql.append(" AND b.approvalReqSentence like :approvalReqSentence");
-			}else{
-				sbJpql.append(" AND b.approvalReqSentence not like :approvalReqSentence");
-			}
-		}
-		if(property.getComment() != null && property.getComment().length() > 0) {
-			if(!property.getComment().startsWith(notInclude)) {
-				sbJpql.append(" AND c.approvalComment like :approvalComment");
-			}else{
-				sbJpql.append(" AND c.approvalComment not like :approvalComment");
-			}
-		}
-		
-		// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
-		// オブジェクト権限チェック
-		sbJpql = getJpql(sbJpql);
-		
-		sbJpql.append(" ORDER BY c.approvalStatus DESC, a.id.sessionId DESC");
-		m_log.debug("getApprovalFilterQuery() jpql = " + sbJpql.toString());
-		
-		TypedQuery<?> typedQuery = null;
-		typedQuery = em.createQuery(sbJpql.toString(), JobInfoEntity.class);
-		
-		typedQuery = typedQuery.setParameter("jobType", JobConstant.TYPE_APPROVALJOB);
-		
-		if(property.getStartFromDate() != null) {
-			typedQuery = typedQuery.setParameter("startFromDate", property.getStartFromDate());
-		}
-		if(property.getStartToDate() != null) {
-			typedQuery = typedQuery.setParameter("startToDate", property.getStartToDate());
-		}
-		if(property.getEndFromDate() != null) {
-			typedQuery = typedQuery.setParameter("endFromDate", property.getEndFromDate());
-		}
-		if(property.getEndToDate() != null) {
-			typedQuery = typedQuery.setParameter("endToDate", property.getEndToDate());
-		}
-		
-		//依頼先ロール/ユーザ設定をSQL条件に追加するか否かで、ステータスの条件指定も変更
-		if(isPending != null) {
-			//指定されたロール/ユーザリストに合致するものは"承認待"、合致しないものは"未承認"
-			typedQuery = typedQuery.setParameter("approvalPendingStatus", JobApprovalStatusConstant.TYPE_PENDING);
-			int count = roleIdList.size();
-			if (count > 0) {
-				for (int i = 0 ; i < count ; i++) {
-					typedQuery = typedQuery.setParameter("approvalReqRoleId" + i, roleIdList.toArray()[i]);
+			if(property.getJobunitId() != null && property.getJobunitId().length() > 0) {
+				if(!property.getJobunitId().startsWith(notInclude)) {
+					sbJpql.append(" AND a.id.jobunitId like :jobunitId");
+				}else{
+					sbJpql.append(" AND a.id.jobunitId not like :jobunitId");
 				}
 			}
-			count = userlist.length;
-			if (count > 0) {
-				for (int i = 0 ; i < count ; i++) {
-					typedQuery = typedQuery.setParameter("approvalReqUserId" + i, userlist[i]);
+			if(property.getJobId() != null && property.getJobId().length() > 0) {
+				if(!property.getJobId().startsWith(notInclude)) {
+					sbJpql.append(" AND a.id.jobId like :jobId");
+				}else{
+					sbJpql.append(" AND a.id.jobId not like :jobId");
 				}
 			}
-			if (statuslist != null && statuslist.size() > 0){
-				count = statuslist.size();
+			if(property.getJobName() != null && property.getJobName().length() > 0) {
+				if(!property.getJobName().startsWith(notInclude)) {
+					sbJpql.append(" AND b.jobName like :jobName");
+				}else{
+					sbJpql.append(" AND b.jobName not like :jobName");
+				}
+			}
+			if(property.getRequestUser() != null && property.getRequestUser().length() > 0) {
+				if(!property.getRequestUser().startsWith(notInclude)) {
+					sbJpql.append(" AND c.approvalRequestUser like :approvalRequestUser");
+				}else{
+					sbJpql.append(" AND c.approvalRequestUser not like :approvalRequestUser");
+				}
+			}
+			if(property.getApprovalUser() != null && property.getApprovalUser().length() > 0) {
+				if(!property.getApprovalUser().startsWith(notInclude)) {
+					sbJpql.append(" AND c.approvalUser like :approvalUser");
+				}else{
+					sbJpql.append(" AND c.approvalUser not like :approvalUser");
+				}
+			}
+			if(property.getRequestSentence() != null && property.getRequestSentence().length() > 0) {
+				if(!property.getRequestSentence().startsWith(notInclude)) {
+					sbJpql.append(" AND b.approvalReqSentence like :approvalReqSentence");
+				}else{
+					sbJpql.append(" AND b.approvalReqSentence not like :approvalReqSentence");
+				}
+			}
+			if(property.getComment() != null && property.getComment().length() > 0) {
+				if(!property.getComment().startsWith(notInclude)) {
+					sbJpql.append(" AND c.approvalComment like :approvalComment");
+				}else{
+					sbJpql.append(" AND c.approvalComment not like :approvalComment");
+				}
+			}
+			
+			// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
+			// オブジェクト権限チェック
+			sbJpql = getJpql(sbJpql);
+			
+			sbJpql.append(" ORDER BY c.approvalStatus DESC, a.id.sessionId DESC");
+			m_log.debug("getApprovalFilterQuery() jpql = " + sbJpql.toString());
+			
+			TypedQuery<?> typedQuery = null;
+			typedQuery = em.createQuery(sbJpql.toString(), JobInfoEntity.class);
+			
+			typedQuery = typedQuery.setParameter("jobType", JobConstant.TYPE_APPROVALJOB);
+			
+			if(property.getStartFromDate() != null) {
+				typedQuery = typedQuery.setParameter("startFromDate", property.getStartFromDate());
+			}
+			if(property.getStartToDate() != null) {
+				typedQuery = typedQuery.setParameter("startToDate", property.getStartToDate());
+			}
+			if(property.getEndFromDate() != null) {
+				typedQuery = typedQuery.setParameter("endFromDate", property.getEndFromDate());
+			}
+			if(property.getEndToDate() != null) {
+				typedQuery = typedQuery.setParameter("endToDate", property.getEndToDate());
+			}
+			
+			//依頼先ロール/ユーザ設定をSQL条件に追加するか否かで、ステータスの条件指定も変更
+			if(isPending != null) {
+				//指定されたロール/ユーザリストに合致するものは"承認待"、合致しないものは"未承認"
+				typedQuery = typedQuery.setParameter("approvalPendingStatus", JobApprovalStatusConstant.TYPE_PENDING);
+				int count = roleIdList.size();
 				if (count > 0) {
 					for (int i = 0 ; i < count ; i++) {
-						typedQuery = typedQuery.setParameter("approvalStatus" + i, statuslist.toArray()[i]);
+						typedQuery = typedQuery.setParameter("approvalReqRoleId" + i, roleIdList.toArray()[i]);
+					}
+				}
+				count = userlist.length;
+				if (count > 0) {
+					for (int i = 0 ; i < count ; i++) {
+						typedQuery = typedQuery.setParameter("approvalReqUserId" + i, userlist[i]);
+					}
+				}
+				if (statuslist != null && statuslist.size() > 0){
+					count = statuslist.size();
+					if (count > 0) {
+						for (int i = 0 ; i < count ; i++) {
+							typedQuery = typedQuery.setParameter("approvalStatus" + i, statuslist.toArray()[i]);
+						}
+					}
+				}
+			}else{
+				//依頼先ロール/ユーザ設定の条件追加不要("承認待"/"未承認"の区別不要)の場合は、ステータスのみ条件指定
+				//"未承認"以外でDBで持ち得るステータス(承認待/中断/取り下げ/承認済)全て指定されている場合は、ステータスを条件に指定しない
+				if (statuslist != null && statuslist.size() > 0 && statuslist.size() != 4) {
+					int count = statuslist.size();
+					if (count > 0) {
+						for (int i = 0 ; i < count ; i++) {
+							typedQuery = typedQuery.setParameter("approvalStatus" + i, statuslist.toArray()[i]);
+						}
 					}
 				}
 			}
-		}else{
-			//依頼先ロール/ユーザ設定の条件追加不要("承認待"/"未承認"の区別不要)の場合は、ステータスのみ条件指定
-			//"未承認"以外でDBで持ち得るステータス(承認待/中断/取り下げ/承認済)全て指定されている場合は、ステータスを条件に指定しない
-			if (statuslist != null && statuslist.size() > 0 && statuslist.size() != 4) {
-				int count = statuslist.size();
-				if (count > 0) {
-					for (int i = 0 ; i < count ; i++) {
-						typedQuery = typedQuery.setParameter("approvalStatus" + i, statuslist.toArray()[i]);
-					}
+			
+			if(property.getResult() != null && property.getResult() != -1) {
+				typedQuery = typedQuery.setParameter("approvalResult", property.getResult());
+			}
+			if(property.getSessionId() != null && property.getSessionId().length() > 0) {
+				if(!property.getSessionId().startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("sessionId", property.getSessionId());
+				}else{
+					typedQuery = typedQuery.setParameter("sessionId", property.getSessionId().substring(notInclude.length()));
 				}
 			}
-		}
-		
-		if(property.getResult() != null && property.getResult() != -1) {
-			typedQuery = typedQuery.setParameter("approvalResult", property.getResult());
-		}
-		if(property.getSessionId() != null && property.getSessionId().length() > 0) {
-			if(!property.getSessionId().startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("sessionId", property.getSessionId());
-			}else{
-				typedQuery = typedQuery.setParameter("sessionId", property.getSessionId().substring(notInclude.length()));
+			if(property.getJobunitId() != null && property.getJobunitId().length() > 0) {
+				if(!property.getJobunitId().startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("jobunitId", property.getJobunitId());
+				}else{
+					typedQuery = typedQuery.setParameter("jobunitId", property.getJobunitId().substring(notInclude.length()));
+				}
 			}
-		}
-		if(property.getJobunitId() != null && property.getJobunitId().length() > 0) {
-			if(!property.getJobunitId().startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("jobunitId", property.getJobunitId());
-			}else{
-				typedQuery = typedQuery.setParameter("jobunitId", property.getJobunitId().substring(notInclude.length()));
+			if(property.getJobId() != null && property.getJobId().length() > 0) {
+				if(!property.getJobId().startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("jobId", property.getJobId());
+				}else{
+					typedQuery = typedQuery.setParameter("jobId", property.getJobId().substring(notInclude.length()));
+				}
 			}
-		}
-		if(property.getJobId() != null && property.getJobId().length() > 0) {
-			if(!property.getJobId().startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("jobId", property.getJobId());
-			}else{
-				typedQuery = typedQuery.setParameter("jobId", property.getJobId().substring(notInclude.length()));
+			if(property.getJobName() != null && property.getJobName().length() > 0) {
+				if(!property.getJobName().startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("jobName", property.getJobName());
+				}else{
+					typedQuery = typedQuery.setParameter("jobName", property.getJobName().substring(notInclude.length()));
+				}
 			}
-		}
-		if(property.getJobName() != null && property.getJobName().length() > 0) {
-			if(!property.getJobName().startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("jobName", property.getJobName());
-			}else{
-				typedQuery = typedQuery.setParameter("jobName", property.getJobName().substring(notInclude.length()));
+			if(property.getRequestUser() != null && property.getRequestUser().length() > 0) {
+				if(!property.getRequestUser().startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("approvalRequestUser", property.getRequestUser());
+				}else{
+					typedQuery = typedQuery.setParameter("approvalRequestUser", property.getRequestUser().substring(notInclude.length()));
+				}
 			}
-		}
-		if(property.getRequestUser() != null && property.getRequestUser().length() > 0) {
-			if(!property.getRequestUser().startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("approvalRequestUser", property.getRequestUser());
-			}else{
-				typedQuery = typedQuery.setParameter("approvalRequestUser", property.getRequestUser().substring(notInclude.length()));
+			if(property.getApprovalUser() != null && property.getApprovalUser().length() > 0) {
+				if(!property.getApprovalUser().startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("approvalUser", property.getApprovalUser());
+				}else{
+					typedQuery = typedQuery.setParameter("approvalUser", property.getApprovalUser().substring(notInclude.length()));
+				}
 			}
-		}
-		if(property.getApprovalUser() != null && property.getApprovalUser().length() > 0) {
-			if(!property.getApprovalUser().startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("approvalUser", property.getApprovalUser());
-			}else{
-				typedQuery = typedQuery.setParameter("approvalUser", property.getApprovalUser().substring(notInclude.length()));
+			if(property.getRequestSentence() != null && property.getRequestSentence().length() > 0) {
+				if(!property.getRequestSentence().startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("approvalReqSentence", property.getRequestSentence());
+				}else{
+					typedQuery = typedQuery.setParameter("approvalReqSentence", property.getRequestSentence().substring(notInclude.length()));
+				}
 			}
-		}
-		if(property.getRequestSentence() != null && property.getRequestSentence().length() > 0) {
-			if(!property.getRequestSentence().startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("approvalReqSentence", property.getRequestSentence());
-			}else{
-				typedQuery = typedQuery.setParameter("approvalReqSentence", property.getRequestSentence().substring(notInclude.length()));
+			if(property.getComment() != null && property.getComment().length() > 0) {
+				if(!property.getComment().startsWith(notInclude)) {
+					typedQuery = typedQuery.setParameter("approvalComment", property.getComment());
+				}else{
+					typedQuery = typedQuery.setParameter("approvalComment", property.getComment().substring(notInclude.length()));
+				}
 			}
-		}
-		if(property.getComment() != null && property.getComment().length() > 0) {
-			if(!property.getComment().startsWith(notInclude)) {
-				typedQuery = typedQuery.setParameter("approvalComment", property.getComment());
-			}else{
-				typedQuery = typedQuery.setParameter("approvalComment", property.getComment().substring(notInclude.length()));
+			
+			// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
+			// オブジェクト権限チェック
+			typedQuery = setObjectPrivilegeParameter(typedQuery);
+			
+			if (limit != null) {
+				typedQuery = typedQuery.setMaxResults(limit);
 			}
+			
+			return typedQuery;
 		}
-		
-		// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
-		// オブジェクト権限チェック
-		typedQuery = setObjectPrivilegeParameter(typedQuery);
-		
-		if (limit != null) {
-			typedQuery = typedQuery.setMaxResults(limit);
-		}
-		
-		return typedQuery;
 	}
 }

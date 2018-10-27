@@ -1,17 +1,11 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.infra.util;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -29,7 +23,7 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 
 import intel.management.wsman.ManagedInstance;
 import intel.management.wsman.ManagedReference;
@@ -161,7 +155,7 @@ public class WinRs {
 		conn.setUserpassword(password);
 		conn.setTimeout(90000);
 		
-		boolean sslTrustall = HinemosPropertyUtil.getHinemosPropertyBool("infra.winrm.ssl.trustall", true);
+		boolean sslTrustall = HinemosPropertyCommon.infra_winrm_ssl_trustall.getBooleanValue();
 		if(sslTrustall) {
 			X509TrustManager tm = new X509TrustManager() {
 				@Override

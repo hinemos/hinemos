@@ -1,23 +1,21 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.session;
 
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.analytics.factory.RunMonitorCorrelation;
+import com.clustercontrol.analytics.factory.RunMonitorIntegration;
+import com.clustercontrol.analytics.factory.RunMonitorLogcount;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.ObjectSharingService;
@@ -32,6 +30,8 @@ import com.clustercontrol.jmx.factory.RunMonitorJmx;
 import com.clustercontrol.monitor.plugin.factory.RunMonitorPluginSample;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
+import com.clustercontrol.notify.bean.OutputBasicInfo;
+import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.performance.monitor.factory.RunMonitorPerformance;
 import com.clustercontrol.ping.factory.RunMonitorPing;
 import com.clustercontrol.port.factory.RunMonitorPort;
@@ -172,7 +172,21 @@ public class MonitorRunManagementBean {
 				runMonitor = new RunMonitorJmx();
 				break;
 				
+			case HinemosModuleConstant.MONITOR_LOGCOUNT:
+				runMonitor = new RunMonitorLogcount();
+				break;
+				
+			case HinemosModuleConstant.MONITOR_CORRELATION:
+				runMonitor = new RunMonitorCorrelation();
+				break;
+				
+			case HinemosModuleConstant.MONITOR_INTEGRATION:
+				runMonitor = new RunMonitorIntegration();
+				break;
+				
 			case HinemosModuleConstant.MONITOR_LOGFILE:
+			case HinemosModuleConstant.MONITOR_BINARYFILE_BIN:
+			case HinemosModuleConstant.MONITOR_PCAP_BIN:
 			case HinemosModuleConstant.MONITOR_PROCESS:
 			case HinemosModuleConstant.MONITOR_PERFORMANCE:
 			case HinemosModuleConstant.MONITOR_SNMPTRAP:
@@ -211,16 +225,20 @@ public class MonitorRunManagementBean {
 			throw new HinemosUnknown(e.getMessage(), e);
 		}
 
+		List<OutputBasicInfo> notifyInfoList = null;
 		try{
 			// トランザクションがすでに開始されている場合は処理終了
 			jtm = new JpaTransactionManager();
 			jtm.begin(true);
 
 			if (runMonitor != null) {
-				runMonitor.runMonitor(monitorTypeId, monitorId);
+				notifyInfoList = runMonitor.runMonitor(monitorTypeId, monitorId);
 			} else {
 				throw new NullPointerException("runMonitor is null");
 			}
+
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(notifyInfoList));
 
 			jtm.commit();
 		}catch(FacilityNotFound | MonitorNotFound | HinemosUnknown e){
@@ -238,7 +256,7 @@ public class MonitorRunManagementBean {
 				jtm.close();
 		}
 	}
-
+	
 	/**
 	 * Quartzからのコールバックメソッド
 	 * 
@@ -296,11 +314,15 @@ public class MonitorRunManagementBean {
 			case HinemosModuleConstant.MONITOR_WINSERVICE:
 			case HinemosModuleConstant.MONITOR_JMX:
 			case HinemosModuleConstant.MONITOR_LOGFILE:
+			case HinemosModuleConstant.MONITOR_BINARYFILE_BIN:
+			case HinemosModuleConstant.MONITOR_PCAP_BIN:
+			case HinemosModuleConstant.MONITOR_LOGCOUNT:
 			case HinemosModuleConstant.MONITOR_SNMPTRAP:
 			case HinemosModuleConstant.MONITOR_SYSTEMLOG:
 			case HinemosModuleConstant.MONITOR_CUSTOM_N:
 			case HinemosModuleConstant.MONITOR_CUSTOM_S:
 			case HinemosModuleConstant.MONITOR_WINEVENT:
+			case HinemosModuleConstant.MONITOR_CORRELATION:
 				// 本来呼び出すべきではない
 				break;
 				
@@ -329,16 +351,20 @@ public class MonitorRunManagementBean {
 			throw new HinemosUnknown(e.getMessage(), e);
 		}
 
+		List<OutputBasicInfo> notifyInfoList = null;
 		try{
 			// トランザクションがすでに開始されている場合は処理終了
 			jtm = new JpaTransactionManager();
 			jtm.begin(true);
 
 			if (runMonitor != null) {
-				runMonitor.runMonitorAggregateByNode(monitorTypeId, facilityId);
+				notifyInfoList = runMonitor.runMonitorAggregateByNode(monitorTypeId, facilityId);
 			} else {
 				throw new NullPointerException("runMonitor is null");
 			}
+
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(notifyInfoList));
 
 			jtm.commit();
 		}catch(FacilityNotFound | MonitorNotFound | HinemosUnknown e){

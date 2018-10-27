@@ -1,0 +1,2222 @@
+DLSW-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        DisplayString, RowStatus,
+        RowPointer, TruthValue,
+        TEXTUAL-CONVENTION                FROM SNMPv2-TC
+        Counter32, Gauge32, TimeTicks,
+        OBJECT-TYPE, MODULE-IDENTITY,
+        mib-2,
+        NOTIFICATION-TYPE                 FROM SNMPv2-SMI
+        MODULE-COMPLIANCE, OBJECT-GROUP,
+        NOTIFICATION-GROUP                FROM SNMPv2-CONF
+        ifIndex                           FROM IF-MIB
+        sdlcLSAddress                     FROM SNA-SDLC-MIB;
+
+dlsw MODULE-IDENTITY
+    LAST-UPDATED  "9606040900Z"
+    ORGANIZATION  "AIW DLSw MIB RIGLET and IETF DLSw MIB Working Group"
+::= { mib-2 46 }
+
+dlswMIB         OBJECT IDENTIFIER ::= { dlsw 1 }
+dlswDomains     OBJECT IDENTIFIER ::= { dlsw 2 }
+
+
+NBName ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX  OCTET STRING (SIZE (0..16))
+
+MacAddressNC ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1x:"
+    STATUS       current
+    SYNTAX       OCTET STRING (SIZE (0 | 6))
+
+TAddress ::= TEXTUAL-CONVENTION
+    STATUS  current
+    SYNTAX  OCTET STRING (SIZE (0..255))
+
+EndStationLocation ::= TEXTUAL-CONVENTION
+    STATUS  current
+    SYNTAX  INTEGER  {
+                other          (1),
+                internal       (2),  -- local virtual MAC address
+                remote         (3),  -- via DLSw partner
+                local          (4)   -- locally attached
+            }
+
+DlcType ::= TEXTUAL-CONVENTION
+    STATUS  current
+    SYNTAX  INTEGER  {
+                other          (1),  -- not assigned yet
+                na             (2),  -- not applicable
+                llc            (3),  -- 802.2 Logical Link Control
+                sdlc           (4),  -- SDLC
+                qllc           (5)   -- QLLC
+            }
+
+LFSize  ::= TEXTUAL-CONVENTION
+    STATUS  current
+    SYNTAX  INTEGER  {
+               lfs516(516), lfs635(635), lfs754(754), lfs873(873),
+               lfs993(993), lfs1112(1112), lfs1231(1231),
+               lfs1350(1350), lfs1470(1470), lfs1542(1542),
+               lfs1615(1615), lfs1688(1688), lfs1761(1761),
+               lfs1833(1833), lfs1906(1906), lfs1979(1979),
+               lfs2052(2052), lfs2345(2345), lfs2638(2638),
+               lfs2932(2932), lfs3225(3225), lfs3518(3518),
+               lfs3812(3812), lfs4105(4105), lfs4399(4399),
+               lfs4865(4865), lfs5331(5331), lfs5798(5798),
+               lfs6264(6264), lfs6730(6730), lfs7197(7197),
+               lfs7663(7663), lfs8130(8130), lfs8539(8539),
+               lfs8949(8949), lfs9358(9358), lfs9768(9768),
+               lfs10178(10178), lfs10587(10587), lfs10997(10997),
+               lfs11407(11407), lfs12199(12199), lfs12992(12992),
+               lfs13785(13785), lfs14578(14578), lfs15370(15370),
+               lfs16163(16163), lfs16956(16956), lfs17749(17749),
+               lfs20730(20730), lfs23711(23711), lfs26693(26693),
+               lfs29674(29674), lfs32655(32655), lfs38618(38618),
+               lfs41600(41600), lfs44591(44591), lfs47583(47583),
+               lfs50575(50575), lfs53567(53567), lfs56559(56559),
+               lfs59551(59551), lfs65535(65535)
+            }
+
+null OBJECT IDENTIFIER ::= { 0 0 }
+
+
+
+dlswTCPDomain  OBJECT IDENTIFIER ::= { dlswDomains 1 }
+DlswTCPAddress ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1d.1d.1d.1d"
+    STATUS       current
+    SYNTAX       OCTET STRING (SIZE (4))
+
+
+
+
+dlswNode        OBJECT IDENTIFIER ::= { dlswMIB 1 }
+dlswTConn       OBJECT IDENTIFIER ::= { dlswMIB 2 }
+dlswInterface   OBJECT IDENTIFIER ::= { dlswMIB 3 }
+dlswDirectory   OBJECT IDENTIFIER ::= { dlswMIB 4 }
+dlswCircuit     OBJECT IDENTIFIER ::= { dlswMIB 5 }
+dlswSdlc        OBJECT IDENTIFIER ::= { dlswMIB 6 }  -- SDLC
+
+
+dlswNodeVersion  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (2))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswNode 1 }
+
+dlswNodeVendorID  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (3))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswNode 2 }
+
+dlswNodeVersionString  OBJECT-TYPE
+    SYNTAX     DisplayString
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswNode 3 }
+
+dlswNodeStdPacingSupport  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+       none              (1),  -- does not support DLSw
+       adaptiveRcvWindow (2),  -- the receive window size
+       fixedRcvWindow    (3)   -- the receive window size
+    }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswNode 4 }
+
+dlswNodeStatus  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        active        (1),
+
+
+
+
+
+        inactive      (2)
+    }
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { dlswNode 5 }
+
+dlswNodeUpTime  OBJECT-TYPE
+    SYNTAX     TimeTicks
+    UNITS      "hundredths of a second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswNode 6 }
+
+dlswNodeVirtualSegmentLFSize  OBJECT-TYPE
+    SYNTAX     LFSize
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL  { lfs65535 }
+    ::= { dlswNode 7 }
+
+
+dlswNodeResourceNBExclusivity  OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { dlswNode 8 }
+
+
+dlswNodeResourceMacExclusivity  OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { dlswNode 9 }
+
+
+
+
+dlswTConnStat    OBJECT IDENTIFIER ::= { dlswTConn 1 }
+
+dlswTConnStatActiveConnections  OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnStat 1 }
+
+dlswTConnStatCloseIdles  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnStat 2 }
+
+dlswTConnStatCloseBusys  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnStat 3 }
+
+dlswTConnConfigTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswTConnConfigEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswTConn 2 }
+
+dlswTConnConfigEntry  OBJECT-TYPE
+    SYNTAX     DlswTConnConfigEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { dlswTConnConfigIndex }
+    ::= { dlswTConnConfigTable 1 }
+
+DlswTConnConfigEntry ::= SEQUENCE {
+    dlswTConnConfigIndex              INTEGER,
+    dlswTConnConfigTDomain            OBJECT IDENTIFIER,
+    dlswTConnConfigLocalTAddr         TAddress,
+    dlswTConnConfigRemoteTAddr        TAddress,
+    dlswTConnConfigLastModifyTime     TimeTicks,
+    dlswTConnConfigEntryType          INTEGER,
+    dlswTConnConfigGroupDefinition    RowPointer,
+    dlswTConnConfigSetupType          INTEGER,
+    dlswTConnConfigSapList            OCTET STRING,
+    dlswTConnConfigAdvertiseMacNB     TruthValue,
+    dlswTConnConfigInitCirRecvWndw    INTEGER,
+    dlswTConnConfigOpens              Counter32,
+    dlswTConnConfigRowStatus          RowStatus
+    }
+
+dlswTConnConfigIndex  OBJECT-TYPE
+    SYNTAX     INTEGER (0..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswTConnConfigEntry 1 }
+
+
+
+
+
+dlswTConnConfigTDomain  OBJECT-TYPE
+    SYNTAX     OBJECT IDENTIFIER
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswTConnConfigEntry 2 }
+
+dlswTConnConfigLocalTAddr  OBJECT-TYPE
+    SYNTAX     TAddress
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswTConnConfigEntry 3 }
+
+dlswTConnConfigRemoteTAddr  OBJECT-TYPE
+    SYNTAX     TAddress
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswTConnConfigEntry 4 }
+
+dlswTConnConfigLastModifyTime  OBJECT-TYPE
+    SYNTAX     TimeTicks
+    UNITS      "hundredths of a second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnConfigEntry 5 }
+
+dlswTConnConfigEntryType  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+
+
+
+
+
+        individual     (1),
+        global         (2),
+        group          (3)
+    }
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswTConnConfigEntry 6 }
+
+dlswTConnConfigGroupDefinition OBJECT-TYPE
+    SYNTAX     RowPointer
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswTConnConfigEntry 7 }
+
+dlswTConnConfigSetupType  OBJECT-TYPE
+
+    SYNTAX     INTEGER  {
+        other              (1),
+        activePersistent   (2),
+        activeOnDemand     (3),
+        passive            (4),
+        excluded           (5)
+    }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL  { passive }
+    ::= { dlswTConnConfigEntry 8 }
+
+dlswTConnConfigSapList  OBJECT-TYPE
+    SYNTAX     OCTET STRING  (SIZE(16))
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL  { 'AA000000000000000000000000000000'H }
+    ::= { dlswTConnConfigEntry 9 }
+
+dlswTConnConfigAdvertiseMacNB  OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL  { true }
+    ::= { dlswTConnConfigEntry 10 }
+
+dlswTConnConfigInitCirRecvWndw  OBJECT-TYPE
+    SYNTAX     INTEGER (0..65535)
+    UNITS      "SSP messages"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL  { 1 }
+    ::= { dlswTConnConfigEntry 11 }
+
+dlswTConnConfigOpens  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { dlswTConnConfigEntry 12 }
+
+dlswTConnConfigRowStatus  OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswTConnConfigEntry 13 }
+
+
+dlswTConnOperTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswTConnOperEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswTConn 3 }
+
+dlswTConnOperEntry  OBJECT-TYPE
+    SYNTAX     DlswTConnOperEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { dlswTConnOperTDomain, dlswTConnOperRemoteTAddr }
+    ::= { dlswTConnOperTable 1 }
+
+DlswTConnOperEntry ::= SEQUENCE {
+    dlswTConnOperTDomain                  OBJECT IDENTIFIER,
+    dlswTConnOperLocalTAddr               TAddress,
+    dlswTConnOperRemoteTAddr              TAddress,
+
+    dlswTConnOperEntryTime                TimeTicks,
+    dlswTConnOperConnectTime              TimeTicks,
+    dlswTConnOperState                    INTEGER,
+    dlswTConnOperConfigIndex              INTEGER,
+    dlswTConnOperFlowCntlMode             INTEGER,
+
+    dlswTConnOperPartnerVersion           OCTET STRING,
+    dlswTConnOperPartnerVendorID          OCTET STRING,
+    dlswTConnOperPartnerVersionStr        DisplayString,
+    dlswTConnOperPartnerInitPacingWndw    INTEGER,
+
+    dlswTConnOperPartnerSapList           OCTET STRING,
+    dlswTConnOperPartnerNBExcl            TruthValue,
+    dlswTConnOperPartnerMacExcl           TruthValue,
+    dlswTConnOperPartnerNBInfo            INTEGER,
+    dlswTConnOperPartnerMacInfo           INTEGER,
+
+    dlswTConnOperDiscTime                 TimeTicks,
+    dlswTConnOperDiscReason               INTEGER,
+    dlswTConnOperDiscActiveCir            INTEGER,
+
+    dlswTConnOperInDataPkts               Counter32,
+    dlswTConnOperOutDataPkts              Counter32,
+    dlswTConnOperInDataOctets             Counter32,
+    dlswTConnOperOutDataOctets            Counter32,
+
+    dlswTConnOperInCntlPkts               Counter32,
+    dlswTConnOperOutCntlPkts              Counter32,
+
+    dlswTConnOperCURexSents               Counter32,
+    dlswTConnOperICRexRcvds               Counter32,
+    dlswTConnOperCURexRcvds               Counter32,
+    dlswTConnOperICRexSents               Counter32,
+
+    dlswTConnOperNQexSents                Counter32,
+    dlswTConnOperNRexRcvds                Counter32,
+    dlswTConnOperNQexRcvds                Counter32,
+    dlswTConnOperNRexSents                Counter32,
+
+
+
+
+
+
+    dlswTConnOperCirCreates               Counter32,
+    dlswTConnOperCircuits                 Gauge32
+    }
+
+dlswTConnOperTDomain  OBJECT-TYPE
+    SYNTAX     OBJECT IDENTIFIER
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswTConnOperEntry 1 }
+
+dlswTConnOperLocalTAddr  OBJECT-TYPE
+    SYNTAX     TAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 2 }
+
+dlswTConnOperRemoteTAddr  OBJECT-TYPE
+    SYNTAX     TAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswTConnOperEntry 3 }
+
+dlswTConnOperEntryTime  OBJECT-TYPE
+    SYNTAX     TimeTicks
+    UNITS      "hundredths of a second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 4 }
+
+
+dlswTConnOperConnectTime  OBJECT-TYPE
+    SYNTAX     TimeTicks
+
+
+
+
+
+    UNITS      "hundredths of a second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 5 }
+
+dlswTConnOperState  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        connecting         (1),
+        initCapExchange    (2),
+        connected          (3),
+        quiescing          (4),
+        disconnecting      (5),
+        disconnected       (6)
+    }
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { dlswTConnOperEntry 6 }
+
+dlswTConnOperConfigIndex  OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     INTEGER (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 7 }
+
+
+dlswTConnOperFlowCntlMode  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+       undetermined   (1),
+       pacing         (2),   -- DLSw standard flow control
+       other          (3)    -- non-DLSw standard flow control
+    }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 8 }
+
+
+dlswTConnOperPartnerVersion  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (0 | 2))
+
+
+
+
+
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 9 }
+
+dlswTConnOperPartnerVendorID  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (0 | 3))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 10 }
+
+dlswTConnOperPartnerVersionStr  OBJECT-TYPE
+    SYNTAX     DisplayString (SIZE (0..253))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 11 }
+
+dlswTConnOperPartnerInitPacingWndw  OBJECT-TYPE
+    SYNTAX     INTEGER (0..65535)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 12 }
+
+
+dlswTConnOperPartnerSapList  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (0 | 16))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 13 }
+
+dlswTConnOperPartnerNBExcl  OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 14 }
+
+dlswTConnOperPartnerMacExcl  OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 15 }
+
+dlswTConnOperPartnerNBInfo  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+       none           (1),  -- none is kept
+       partial        (2),  -- partial list is kept
+       complete       (3),  -- complete list is kept
+       notApplicable  (4)
+    }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 16 }
+
+dlswTConnOperPartnerMacInfo  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+       none           (1),  -- none is kept
+       partial        (2),  -- partial list is kept
+       complete       (3),  -- complete list is kept
+       notApplicable  (4)
+    }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 17 }
+
+dlswTConnOperDiscTime  OBJECT-TYPE
+    SYNTAX     TimeTicks
+    UNITS      "hundredths of a second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 18 }
+
+dlswTConnOperDiscReason  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        other              (1),
+        capExFailed        (2),
+        transportLayerDisc (3),
+
+
+
+
+
+        operatorCommand    (4),
+        lastCircuitDiscd   (5),
+        protocolError      (6)
+    }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 19 }
+
+dlswTConnOperDiscActiveCir  OBJECT-TYPE
+    SYNTAX     INTEGER (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 20 }
+
+dlswTConnOperInDataPkts  OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "SSP messages"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 21 }
+
+dlswTConnOperOutDataPkts  OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "SSP messages"
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { dlswTConnOperEntry 22 }
+
+dlswTConnOperInDataOctets  OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 23 }
+
+dlswTConnOperOutDataOctets  OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "octets"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 24 }
+
+dlswTConnOperInCntlPkts  OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "SSP messages"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 25 }
+
+dlswTConnOperOutCntlPkts  OBJECT-TYPE
+    SYNTAX     Counter32
+    UNITS      "SSP messages"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 26 }
+
+
+
+
+
+
+
+dlswTConnOperCURexSents  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 27 }
+
+dlswTConnOperICRexRcvds  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 28 }
+
+dlswTConnOperCURexRcvds  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 29 }
+
+dlswTConnOperICRexSents  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 30 }
+
+
+dlswTConnOperNQexSents  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 31 }
+
+dlswTConnOperNRexRcvds  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 32 }
+
+dlswTConnOperNQexRcvds  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 33 }
+
+dlswTConnOperNRexSents  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 34 }
+
+dlswTConnOperCirCreates  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 35 }
+
+dlswTConnOperCircuits  OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnOperEntry 36 }
+
+
+dlswTConnSpecific OBJECT IDENTIFIER ::= { dlswTConn 4 }
+dlswTConnTcp      OBJECT IDENTIFIER ::= { dlswTConnSpecific 1 }
+
+dlswTConnTcpConfigTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswTConnTcpConfigEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswTConnTcp 1 }
+
+dlswTConnTcpConfigEntry  OBJECT-TYPE
+    SYNTAX     DlswTConnTcpConfigEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { dlswTConnConfigIndex }
+    ::= { dlswTConnTcpConfigTable 1 }
+
+DlswTConnTcpConfigEntry ::= SEQUENCE {
+    dlswTConnTcpConfigKeepAliveInt       INTEGER,
+    dlswTConnTcpConfigTcpConnections     INTEGER,
+    dlswTConnTcpConfigMaxSegmentSize     INTEGER
+    }
+
+dlswTConnTcpConfigKeepAliveInt  OBJECT-TYPE
+    SYNTAX     INTEGER (0..1800)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL  { 0 }
+    ::= { dlswTConnTcpConfigEntry 1 }
+
+dlswTConnTcpConfigTcpConnections  OBJECT-TYPE
+    SYNTAX     INTEGER (1..16)
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL  { 2 }
+    ::= { dlswTConnTcpConfigEntry 2 }
+
+dlswTConnTcpConfigMaxSegmentSize  OBJECT-TYPE
+    SYNTAX     INTEGER (0..65535)
+    UNITS      "packets"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL  { 4096 }
+    ::= { dlswTConnTcpConfigEntry 3 }
+
+
+dlswTConnTcpOperTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswTConnTcpOperEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswTConnTcp 2 }
+
+dlswTConnTcpOperEntry  OBJECT-TYPE
+    SYNTAX     DlswTConnTcpOperEntry
+
+
+
+
+
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { dlswTConnOperTDomain, dlswTConnOperRemoteTAddr }
+    ::= { dlswTConnTcpOperTable 1 }
+
+DlswTConnTcpOperEntry ::= SEQUENCE {
+    dlswTConnTcpOperKeepAliveInt             INTEGER,
+    dlswTConnTcpOperPrefTcpConnections       INTEGER,
+    dlswTConnTcpOperTcpConnections           INTEGER
+    }
+
+dlswTConnTcpOperKeepAliveInt  OBJECT-TYPE
+    SYNTAX     INTEGER (0..1800)
+    UNITS      "seconds"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnTcpOperEntry 1 }
+
+dlswTConnTcpOperPrefTcpConnections  OBJECT-TYPE
+    SYNTAX     INTEGER (1..16)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnTcpOperEntry 2 }
+
+
+dlswTConnTcpOperTcpConnections  OBJECT-TYPE
+    SYNTAX     INTEGER (1..16)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswTConnTcpOperEntry 3 }
+
+
+dlswIfTable  OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     SEQUENCE OF DlswIfEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswInterface 1 }
+
+dlswIfEntry  OBJECT-TYPE
+    SYNTAX     DlswIfEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { ifIndex }
+    ::= { dlswIfTable 1 }
+
+DlswIfEntry ::= SEQUENCE {
+    dlswIfRowStatus      RowStatus,
+    dlswIfVirtualSegment INTEGER,
+    dlswIfSapList        OCTET STRING
+    }
+
+dlswIfRowStatus  OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswIfEntry 1 }
+
+dlswIfVirtualSegment  OBJECT-TYPE
+    SYNTAX     INTEGER (0..4095 | 65535)
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 65535 }
+    ::= { dlswIfEntry 2 }
+
+
+
+
+
+dlswIfSapList  OBJECT-TYPE
+    SYNTAX     OCTET STRING  (SIZE(16))
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL  { 'AA000000000000000000000000000000'H }
+    ::= { dlswIfEntry 3 }
+
+
+
+dlswDirStat     OBJECT IDENTIFIER ::= { dlswDirectory 1 }
+
+dlswDirMacEntries  OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswDirStat 1 }
+
+dlswDirMacCacheHits  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { dlswDirStat 2 }
+
+dlswDirMacCacheMisses  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswDirStat 3 }
+
+dlswDirMacCacheNextIndex  OBJECT-TYPE
+    SYNTAX     INTEGER (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswDirStat 4 }
+
+dlswDirNBEntries  OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswDirStat 5 }
+
+dlswDirNBCacheHits  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswDirStat 6 }
+
+dlswDirNBCacheMisses  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { dlswDirStat 7 }
+
+dlswDirNBCacheNextIndex  OBJECT-TYPE
+    SYNTAX     INTEGER (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswDirStat 8 }
+
+dlswDirCache     OBJECT IDENTIFIER ::= { dlswDirectory 2 }
+
+dlswDirMacTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswDirMacEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirCache 1 }
+
+dlswDirMacEntry  OBJECT-TYPE
+    SYNTAX     DlswDirMacEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { dlswDirMacIndex }
+    ::= { dlswDirMacTable 1 }
+
+DlswDirMacEntry ::= SEQUENCE {
+    dlswDirMacIndex          INTEGER,
+    dlswDirMacMac            MacAddressNC,
+    dlswDirMacMask           MacAddressNC,
+    dlswDirMacEntryType      INTEGER,
+    dlswDirMacLocationType   INTEGER,
+    dlswDirMacLocation       RowPointer,
+    dlswDirMacStatus         INTEGER,
+    dlswDirMacLFSize         LFSize,
+    dlswDirMacRowStatus      RowStatus
+    }
+
+dlswDirMacIndex  OBJECT-TYPE
+    SYNTAX     INTEGER (0..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirMacEntry 1 }
+
+dlswDirMacMac  OBJECT-TYPE
+    SYNTAX     MacAddressNC
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswDirMacEntry 2 }
+
+dlswDirMacMask  OBJECT-TYPE
+    SYNTAX     MacAddressNC
+    MAX-ACCESS read-create
+    STATUS     current
+
+
+
+
+
+    DEFVAL { 'FFFFFFFFFFFF'H }
+    ::= { dlswDirMacEntry 3 }
+
+dlswDirMacEntryType  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        other                    (1),
+        userConfiguredPublic     (2),
+        userConfiguredPrivate    (3),
+        partnerCapExMsg          (4),
+        dynamic                  (5)
+    }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { userConfiguredPublic }
+    ::= { dlswDirMacEntry 4 }
+
+dlswDirMacLocationType  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        other                 (1),
+        local                 (2),
+        remote                (3)
+    }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { local }
+    ::= { dlswDirMacEntry 5 }
+
+dlswDirMacLocation  OBJECT-TYPE
+    SYNTAX     RowPointer
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { null }
+    ::= { dlswDirMacEntry 6 }
+
+dlswDirMacStatus  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        unknown               (1),
+        reachable             (2),
+        notReachable          (3)
+    }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { unknown }
+    ::= { dlswDirMacEntry 7 }
+
+dlswDirMacLFSize  OBJECT-TYPE
+    SYNTAX     LFSize
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { lfs65535 }
+    ::= { dlswDirMacEntry 8 }
+
+dlswDirMacRowStatus  OBJECT-TYPE
+    SYNTAX     RowStatus
+
+
+
+
+
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswDirMacEntry 9 }
+
+dlswDirNBTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswDirNBEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirCache 2 }
+
+dlswDirNBEntry  OBJECT-TYPE
+    SYNTAX     DlswDirNBEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { dlswDirNBIndex }
+    ::= { dlswDirNBTable 1 }
+
+DlswDirNBEntry ::= SEQUENCE {
+    dlswDirNBIndex           INTEGER,
+
+
+
+
+
+    dlswDirNBName            NBName,
+    dlswDirNBNameType        INTEGER,
+    dlswDirNBEntryType       INTEGER,
+    dlswDirNBLocationType    INTEGER,
+    dlswDirNBLocation        RowPointer,
+    dlswDirNBStatus          INTEGER,
+    dlswDirNBLFSize          LFSize,
+    dlswDirNBRowStatus       RowStatus
+    }
+
+dlswDirNBIndex  OBJECT-TYPE
+    SYNTAX     INTEGER (0..2147483647)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirNBEntry 1 }
+
+dlswDirNBName  OBJECT-TYPE
+    SYNTAX     NBName
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswDirNBEntry 2 }
+
+dlswDirNBNameType  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        unknown       (1),
+        individual    (2),
+        group         (3)
+    }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { unknown }
+    ::= { dlswDirNBEntry 3 }
+
+dlswDirNBEntryType  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        other                    (1),
+        userConfiguredPublic     (2),
+        userConfiguredPrivate    (3),
+
+
+
+
+
+        partnerCapExMsg          (4),
+        dynamic                  (5)
+    }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { userConfiguredPublic }
+    ::= { dlswDirNBEntry 4 }
+
+dlswDirNBLocationType  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        other                 (1),
+        local                 (2),
+        remote                (3)
+    }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { local }
+    ::= { dlswDirNBEntry 5 }
+
+dlswDirNBLocation  OBJECT-TYPE
+    SYNTAX     RowPointer
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { null }
+    ::= { dlswDirNBEntry 6 }
+
+dlswDirNBStatus  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        unknown               (1),
+        reachable             (2),
+        notReachable          (3)
+    }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { unknown }
+    ::= { dlswDirNBEntry 7 }
+
+dlswDirNBLFSize  OBJECT-TYPE
+    SYNTAX     LFSize
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { lfs65535 }
+    ::= { dlswDirNBEntry 8 }
+
+dlswDirNBRowStatus  OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswDirNBEntry 9 }
+
+
+
+
+
+
+
+dlswDirLocate       OBJECT IDENTIFIER ::= { dlswDirectory 3 }
+
+dlswDirLocateMacTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswDirLocateMacEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirLocate 1 }
+
+dlswDirLocateMacEntry  OBJECT-TYPE
+    SYNTAX     DlswDirLocateMacEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { dlswDirLocateMacMac, dlswDirLocateMacMatch }
+    ::= { dlswDirLocateMacTable 1 }
+
+DlswDirLocateMacEntry ::= SEQUENCE {
+    dlswDirLocateMacMac            MacAddressNC,
+    dlswDirLocateMacMatch          INTEGER,
+    dlswDirLocateMacLocation       RowPointer
+    }
+
+dlswDirLocateMacMac  OBJECT-TYPE
+    SYNTAX     MacAddressNC
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirLocateMacEntry 1 }
+
+dlswDirLocateMacMatch  OBJECT-TYPE
+    SYNTAX     INTEGER (1..255)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirLocateMacEntry 2 }
+
+dlswDirLocateMacLocation  OBJECT-TYPE
+    SYNTAX     RowPointer
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswDirLocateMacEntry 3 }
+
+dlswDirLocateNBTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswDirLocateNBEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirLocate 2 }
+
+dlswDirLocateNBEntry  OBJECT-TYPE
+    SYNTAX     DlswDirLocateNBEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { dlswDirLocateNBName, dlswDirLocateNBMatch }
+    ::= { dlswDirLocateNBTable 1 }
+
+DlswDirLocateNBEntry ::= SEQUENCE {
+    dlswDirLocateNBName           NBName,
+    dlswDirLocateNBMatch          INTEGER,
+    dlswDirLocateNBLocation       RowPointer
+    }
+
+
+
+
+
+
+dlswDirLocateNBName  OBJECT-TYPE
+    SYNTAX     NBName
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirLocateNBEntry 1 }
+
+dlswDirLocateNBMatch  OBJECT-TYPE
+    SYNTAX     INTEGER (1..255)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswDirLocateNBEntry 2 }
+
+dlswDirLocateNBLocation  OBJECT-TYPE
+    SYNTAX     RowPointer
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswDirLocateNBEntry 3 }
+
+
+
+dlswCircuitStat      OBJECT IDENTIFIER ::= { dlswCircuit 1 }
+
+dlswCircuitStatActives  OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { dlswCircuitStat 1 }
+
+dlswCircuitStatCreates  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitStat 2 }
+
+
+dlswCircuitTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswCircuitEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswCircuit 2 }
+
+dlswCircuitEntry  OBJECT-TYPE
+    SYNTAX     DlswCircuitEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { dlswCircuitS1Mac,
+              dlswCircuitS1Sap,
+              dlswCircuitS2Mac,
+              dlswCircuitS2Sap }
+    ::= { dlswCircuitTable 1 }
+
+DlswCircuitEntry ::= SEQUENCE {
+    dlswCircuitS1Mac                MacAddressNC,
+    dlswCircuitS1Sap                OCTET STRING,
+    dlswCircuitS1IfIndex            INTEGER,
+    dlswCircuitS1DlcType            DlcType,
+    dlswCircuitS1RouteInfo          OCTET STRING,
+    dlswCircuitS1CircuitId          OCTET STRING,
+
+
+
+
+
+    dlswCircuitS1Dlc                RowPointer,
+
+    dlswCircuitS2Mac                MacAddressNC,
+    dlswCircuitS2Sap                OCTET STRING,
+    dlswCircuitS2Location           EndStationLocation,
+    dlswCircuitS2TDomain            OBJECT IDENTIFIER,
+    dlswCircuitS2TAddress           TAddress,
+    dlswCircuitS2CircuitId          OCTET STRING,
+
+    dlswCircuitOrigin               INTEGER,
+
+    dlswCircuitEntryTime            TimeTicks,
+    dlswCircuitStateTime            TimeTicks,
+    dlswCircuitState                INTEGER,
+
+    dlswCircuitPriority             INTEGER,
+
+    dlswCircuitFCSendGrantedUnits   INTEGER,
+    dlswCircuitFCSendCurrentWndw    INTEGER,
+    dlswCircuitFCRecvGrantedUnits   INTEGER,
+    dlswCircuitFCRecvCurrentWndw    INTEGER,
+    dlswCircuitFCLargestRecvGranted Gauge32,
+    dlswCircuitFCLargestSendGranted Gauge32,
+    dlswCircuitFCHalveWndwSents     Counter32,
+    dlswCircuitFCResetOpSents       Counter32,
+    dlswCircuitFCHalveWndwRcvds     Counter32,
+    dlswCircuitFCResetOpRcvds       Counter32,
+    dlswCircuitDiscReasonLocal      INTEGER,
+    dlswCircuitDiscReasonRemote     INTEGER,
+    dlswCircuitDiscReasonRemoteData OCTET STRING
+    }
+
+dlswCircuitS1Mac  OBJECT-TYPE
+    SYNTAX     MacAddressNC
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswCircuitEntry 1 }
+
+dlswCircuitS1Sap  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE(1))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswCircuitEntry 2 }
+
+dlswCircuitS1IfIndex  OBJECT-TYPE
+    SYNTAX     INTEGER (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 3 }
+
+dlswCircuitS1DlcType  OBJECT-TYPE
+    SYNTAX     DlcType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 4 }
+
+dlswCircuitS1RouteInfo  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (0..30))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 5 }
+
+dlswCircuitS1CircuitId  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (0 | 8))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 6 }
+
+dlswCircuitS1Dlc  OBJECT-TYPE
+    SYNTAX     RowPointer
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { dlswCircuitEntry 7 }
+
+dlswCircuitS2Mac  OBJECT-TYPE
+    SYNTAX     MacAddressNC
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswCircuitEntry 8 }
+
+dlswCircuitS2Sap  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE(1))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswCircuitEntry 9 }
+
+dlswCircuitS2Location  OBJECT-TYPE
+    SYNTAX     EndStationLocation
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 10 }
+
+dlswCircuitS2TDomain  OBJECT-TYPE
+    SYNTAX     OBJECT IDENTIFIER
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 11 }
+
+
+
+
+
+
+dlswCircuitS2TAddress  OBJECT-TYPE
+    SYNTAX     TAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 12 }
+
+dlswCircuitS2CircuitId  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (0 | 8))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 13 }
+
+dlswCircuitOrigin  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        s1             (1),
+        s2             (2)
+    }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 14 }
+
+dlswCircuitEntryTime  OBJECT-TYPE
+    SYNTAX     TimeTicks
+    UNITS      "hundredths of a second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 15 }
+
+
+
+
+
+
+dlswCircuitStateTime  OBJECT-TYPE
+    SYNTAX     TimeTicks
+    UNITS      "hundredths of a second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 16 }
+
+dlswCircuitState  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        disconnected           (1),
+        circuitStart           (2),
+        resolvePending         (3),
+        circuitPending         (4),
+        circuitEstablished     (5),
+        connectPending         (6),
+        contactPending         (7),
+        connected              (8),
+        disconnectPending      (9),
+        haltPending            (10),
+        haltPendingNoack       (11),
+        circuitRestart         (12),
+        restartPending         (13)
+    }
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { dlswCircuitEntry 17 }
+
+dlswCircuitPriority  OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     INTEGER  {
+        unsupported     (1),
+        low             (2),
+        medium          (3),
+        high            (4),
+        highest         (5)
+    }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 18 }
+
+dlswCircuitFCSendGrantedUnits  OBJECT-TYPE
+    SYNTAX     INTEGER (0..65535)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 19 }
+
+dlswCircuitFCSendCurrentWndw  OBJECT-TYPE
+    SYNTAX     INTEGER (0..65535)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 20 }
+
+dlswCircuitFCRecvGrantedUnits  OBJECT-TYPE
+    SYNTAX     INTEGER (0..65535)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 21 }
+
+dlswCircuitFCRecvCurrentWndw  OBJECT-TYPE
+    SYNTAX     INTEGER (0..65535)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 22 }
+
+dlswCircuitFCLargestRecvGranted  OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 23 }
+
+dlswCircuitFCLargestSendGranted  OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 24 }
+
+dlswCircuitFCHalveWndwSents  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 25 }
+
+dlswCircuitFCResetOpSents  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 26 }
+
+dlswCircuitFCHalveWndwRcvds  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 27 }
+
+
+
+
+
+
+dlswCircuitFCResetOpRcvds  OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 28 }
+
+
+dlswCircuitDiscReasonLocal  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        endStationDiscRcvd           (1),
+        endStationDlcError           (2),
+        protocolError                (3),
+        operatorCommand              (4),
+        haltDlRcvd                   (5),
+        haltDlNoAckRcvd              (6),
+        transportConnClosed          (7)
+    }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 29 }
+
+dlswCircuitDiscReasonRemote  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        unknown                      (1),
+        endStationDiscRcvd           (2),
+        endStationDlcError           (3),
+        protocolError                (4),
+        operatorCommand              (5)
+    }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 30 }
+
+dlswCircuitDiscReasonRemoteData  OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (0 | 4))
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswCircuitEntry 31 }
+
+
+
+
+dlswSdlcLsEntries  OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { dlswSdlc 1 }
+
+dlswSdlcLsTable  OBJECT-TYPE
+    SYNTAX     SEQUENCE OF DlswSdlcLsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { dlswSdlc 2 }
+
+dlswSdlcLsEntry  OBJECT-TYPE
+    SYNTAX     DlswSdlcLsEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX  { ifIndex, sdlcLSAddress }
+    ::= { dlswSdlcLsTable 1 }
+
+DlswSdlcLsEntry ::= SEQUENCE {
+    dlswSdlcLsLocalMac           MacAddressNC,
+    dlswSdlcLsLocalSap           OCTET STRING,
+    dlswSdlcLsLocalIdBlock       DisplayString,
+    dlswSdlcLsLocalIdNum         DisplayString,
+    dlswSdlcLsRemoteMac          MacAddressNC,
+    dlswSdlcLsRemoteSap          OCTET STRING,
+    dlswSdlcLsRowStatus          RowStatus
+    }
+
+dlswSdlcLsLocalMac    OBJECT-TYPE
+    SYNTAX     MacAddressNC
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswSdlcLsEntry 1 }
+
+dlswSdlcLsLocalSap    OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE(1))
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswSdlcLsEntry 2 }
+
+dlswSdlcLsLocalIdBlock OBJECT-TYPE
+    SYNTAX     DisplayString  (SIZE (0 | 3))
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { ''H }
+    ::= { dlswSdlcLsEntry 3 }
+
+dlswSdlcLsLocalIdNum OBJECT-TYPE
+    SYNTAX     DisplayString  (SIZE (0 | 5))
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { ''H }
+    ::= { dlswSdlcLsEntry 4 }
+
+dlswSdlcLsRemoteMac    OBJECT-TYPE
+    SYNTAX     MacAddressNC
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { ''H }
+    ::= { dlswSdlcLsEntry 5 }
+
+dlswSdlcLsRemoteSap    OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (0 | 1))
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { ''H }
+    ::= { dlswSdlcLsEntry 6 }
+
+dlswSdlcLsRowStatus    OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { dlswSdlcLsEntry 7 }
+
+
+dlswTrapControl OBJECT IDENTIFIER  ::= { dlswNode 10}
+
+dlswTrapCntlTConnPartnerReject  OBJECT-TYPE
+    SYNTAX     INTEGER  {
+        enabled     (1),
+        disabled    (2),
+        partial     (3)
+    }
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { dlswTrapControl 1 }
+
+dlswTrapCntlTConnProtViolation  OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { dlswTrapControl 2 }
+
+dlswTrapCntlTConn  OBJECT-TYPE
+    SYNTAX     INTEGER {
+        enabled     (1),
+        disabled    (2),
+        partial     (3)
+    }
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { dlswTrapControl 3 }
+
+dlswTrapCntlCircuit  OBJECT-TYPE
+    SYNTAX     INTEGER {
+        enabled     (1),
+        disabled    (2),
+        partial     (3)
+    }
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { dlswTrapControl 4 }
+
+dlswTraps              OBJECT IDENTIFIER ::= { dlswMIB 0 }
+
+
+
+
+
+
+
+dlswTrapTConnPartnerReject NOTIFICATION-TYPE
+    OBJECTS { dlswTConnOperTDomain, dlswTConnOperRemoteTAddr
+    }
+    STATUS     current
+    ::= { dlswTraps 1 }
+
+dlswTrapTConnProtViolation NOTIFICATION-TYPE
+    OBJECTS { dlswTConnOperTDomain, dlswTConnOperRemoteTAddr
+    }
+    STATUS     current
+    ::= { dlswTraps 2 }
+
+dlswTrapTConnUp NOTIFICATION-TYPE
+    OBJECTS { dlswTConnOperTDomain, dlswTConnOperRemoteTAddr
+    }
+    STATUS     current
+    ::= { dlswTraps 3 }
+
+dlswTrapTConnDown NOTIFICATION-TYPE
+    OBJECTS { dlswTConnOperTDomain, dlswTConnOperRemoteTAddr
+    }
+    STATUS     current
+    ::= { dlswTraps 4 }
+
+dlswTrapCircuitUp NOTIFICATION-TYPE
+    OBJECTS { dlswCircuitS1Mac, dlswCircuitS1Sap,
+              dlswCircuitS2Mac, dlswCircuitS2Sap
+
+
+
+
+
+    }
+    STATUS     current
+    ::= { dlswTraps 5 }
+
+dlswTrapCircuitDown NOTIFICATION-TYPE
+    OBJECTS { dlswCircuitS1Mac, dlswCircuitS1Sap,
+              dlswCircuitS2Mac, dlswCircuitS2Sap
+    }
+    STATUS     current
+    ::= { dlswTraps 6 }
+
+
+dlswConformance        OBJECT IDENTIFIER ::= { dlsw 3 }
+
+dlswCompliances        OBJECT IDENTIFIER ::= { dlswConformance 1 }
+dlswGroups             OBJECT IDENTIFIER ::= { dlswConformance 2 }
+
+
+dlswCoreCompliance MODULE-COMPLIANCE
+    STATUS current
+    MODULE
+        MANDATORY-GROUPS  {
+                dlswNodeGroup,
+                dlswTConnStatGroup,
+                dlswTConnConfigGroup,
+                dlswTConnOperGroup,
+                dlswInterfaceGroup,
+                dlswCircuitGroup,
+                dlswCircuitStatGroup,
+
+
+
+
+
+                dlswNotificationGroup }
+
+        GROUP dlswNodeNBGroup
+
+        GROUP dlswTConnNBGroup
+
+        OBJECT  dlswNodeStatus
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswNodeVirtualSegmentLFSize
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswNodeResourceNBExclusivity
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswNodeResourceMacExclusivity
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTrapCntlTConnPartnerReject
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTrapCntlTConnProtViolation
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTrapCntlTConn
+            MIN-ACCESS  read-only
+
+
+
+
+
+
+        OBJECT  dlswTrapCntlCircuit
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigTDomain
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigLocalTAddr
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigRemoteTAddr
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigEntryType
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigGroupDefinition
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigSetupType
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigSapList
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigAdvertiseMacNB
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigInitCirRecvWndw
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnConfigRowStatus
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnOperState
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswIfRowStatus
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswIfVirtualSegment
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswIfSapList
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswCircuitState
+            MIN-ACCESS  read-only
+
+    ::= { dlswCompliances 1 }
+
+dlswTConnTcpCompliance MODULE-COMPLIANCE
+    STATUS current
+    MODULE
+        MANDATORY-GROUPS  {
+                dlswTConnTcpConfigGroup,
+                dlswTConnTcpOperGroup }
+
+        OBJECT  dlswTConnTcpConfigKeepAliveInt
+
+
+
+
+
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnTcpConfigTcpConnections
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswTConnTcpConfigMaxSegmentSize
+            MIN-ACCESS  read-only
+
+    ::= { dlswCompliances 2 }
+
+dlswDirCompliance MODULE-COMPLIANCE
+    STATUS current
+    MODULE
+        MANDATORY-GROUPS  {
+                dlswDirGroup }
+
+        GROUP dlswDirNBGroup
+
+        OBJECT  dlswDirMacMac
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirMacMask
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirMacEntryType
+            MIN-ACCESS  read-only
+
+
+
+
+
+
+        OBJECT  dlswDirMacLocationType
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirMacLocation
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirMacStatus
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirMacLFSize
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirMacRowStatus
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirNBName
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirNBNameType
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirNBEntryType
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirNBLocationType
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirNBLocation
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirNBStatus
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirNBLFSize
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswDirNBRowStatus
+            MIN-ACCESS  read-only
+
+    ::= { dlswCompliances 3 }
+
+dlswDirLocateCompliance MODULE-COMPLIANCE
+    STATUS current
+    MODULE
+        MANDATORY-GROUPS  {
+                dlswDirLocateGroup }
+
+        GROUP dlswDirLocateNBGroup
+
+    ::= { dlswCompliances 4 }
+
+dlswSdlcCompliance MODULE-COMPLIANCE
+    STATUS current
+    MODULE
+        MANDATORY-GROUPS  {
+
+
+
+
+
+                dlswSdlcGroup }
+
+        OBJECT  dlswSdlcLsLocalMac
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswSdlcLsLocalSap
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswSdlcLsLocalIdBlock
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswSdlcLsLocalIdNum
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswSdlcLsRemoteMac
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswSdlcLsRemoteSap
+            MIN-ACCESS  read-only
+
+        OBJECT  dlswSdlcLsRowStatus
+            MIN-ACCESS  read-only
+
+    ::= { dlswCompliances 5 }
+
+
+dlswNodeGroup  OBJECT-GROUP
+    OBJECTS  {
+
+
+
+
+
+        dlswNodeVersion,
+        dlswNodeVendorID,
+        dlswNodeVersionString,
+        dlswNodeStdPacingSupport,
+        dlswNodeStatus,
+        dlswNodeUpTime,
+        dlswNodeVirtualSegmentLFSize,
+        dlswNodeResourceMacExclusivity,
+        dlswTrapCntlTConnPartnerReject,
+        dlswTrapCntlTConnProtViolation,
+        dlswTrapCntlTConn,
+        dlswTrapCntlCircuit
+        }
+    STATUS current
+    ::= { dlswGroups 1 }
+
+dlswNodeNBGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswNodeResourceNBExclusivity
+        }
+    STATUS current
+    ::= { dlswGroups 2 }
+
+dlswTConnStatGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswTConnStatActiveConnections,
+        dlswTConnStatCloseIdles,
+        dlswTConnStatCloseBusys
+        }
+    STATUS current
+    ::= { dlswGroups 3 }
+
+dlswTConnConfigGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswTConnConfigTDomain,
+        dlswTConnConfigLocalTAddr,
+        dlswTConnConfigRemoteTAddr,
+
+
+
+
+
+        dlswTConnConfigLastModifyTime,
+        dlswTConnConfigEntryType,
+        dlswTConnConfigGroupDefinition,
+        dlswTConnConfigSetupType,
+        dlswTConnConfigSapList,
+        dlswTConnConfigAdvertiseMacNB,
+        dlswTConnConfigInitCirRecvWndw,
+        dlswTConnConfigOpens,
+        dlswTConnConfigRowStatus
+        }
+    STATUS current
+    ::= { dlswGroups 4 }
+
+dlswTConnOperGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswTConnOperLocalTAddr,
+        dlswTConnOperEntryTime,
+        dlswTConnOperConnectTime,
+        dlswTConnOperState,
+        dlswTConnOperConfigIndex,
+        dlswTConnOperFlowCntlMode,
+        dlswTConnOperPartnerVersion,
+        dlswTConnOperPartnerVendorID,
+        dlswTConnOperPartnerVersionStr,
+        dlswTConnOperPartnerInitPacingWndw,
+        dlswTConnOperPartnerSapList,
+        dlswTConnOperPartnerMacExcl,
+        dlswTConnOperPartnerMacInfo,
+        dlswTConnOperDiscTime,
+        dlswTConnOperDiscReason,
+        dlswTConnOperDiscActiveCir,
+        dlswTConnOperInDataPkts,
+        dlswTConnOperOutDataPkts,
+        dlswTConnOperInDataOctets,
+        dlswTConnOperOutDataOctets,
+        dlswTConnOperInCntlPkts,
+        dlswTConnOperOutCntlPkts,
+        dlswTConnOperCURexSents,
+        dlswTConnOperICRexRcvds,
+        dlswTConnOperCURexRcvds,
+        dlswTConnOperICRexSents,
+        dlswTConnOperCirCreates,
+        dlswTConnOperCircuits
+        }
+
+
+
+
+
+    STATUS current
+    ::= { dlswGroups 5 }
+dlswTConnNBGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswTConnOperPartnerNBExcl,
+        dlswTConnOperPartnerNBInfo,
+        dlswTConnOperNQexSents,
+        dlswTConnOperNRexRcvds,
+        dlswTConnOperNQexRcvds,
+        dlswTConnOperNRexSents
+        }
+    STATUS current
+    ::= { dlswGroups 6 }
+
+dlswTConnTcpConfigGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswTConnTcpConfigKeepAliveInt,
+        dlswTConnTcpConfigTcpConnections,
+        dlswTConnTcpConfigMaxSegmentSize
+        }
+    STATUS current
+    ::= { dlswGroups 7 }
+
+dlswTConnTcpOperGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswTConnTcpOperKeepAliveInt,
+        dlswTConnTcpOperPrefTcpConnections,
+        dlswTConnTcpOperTcpConnections
+        }
+    STATUS current
+    ::= { dlswGroups 8 }
+
+
+
+
+
+
+dlswInterfaceGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswIfRowStatus,
+        dlswIfVirtualSegment,
+        dlswIfSapList
+        }
+    STATUS current
+    ::= { dlswGroups 9 }
+
+dlswDirGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswDirMacEntries,
+        dlswDirMacCacheHits,
+        dlswDirMacCacheMisses,
+        dlswDirMacCacheNextIndex,
+        dlswDirMacMac,
+        dlswDirMacMask,
+        dlswDirMacEntryType,
+        dlswDirMacLocationType,
+        dlswDirMacLocation,
+        dlswDirMacStatus,
+        dlswDirMacLFSize,
+        dlswDirMacRowStatus
+        }
+    STATUS current
+    ::= { dlswGroups 10 }
+
+dlswDirNBGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswDirNBEntries,
+        dlswDirNBCacheHits,
+        dlswDirNBCacheMisses,
+        dlswDirNBCacheNextIndex,
+        dlswDirNBName,
+        dlswDirNBNameType,
+        dlswDirNBEntryType,
+        dlswDirNBLocationType,
+        dlswDirNBLocation,
+        dlswDirNBStatus,
+        dlswDirNBLFSize,
+
+
+
+
+
+        dlswDirNBRowStatus
+        }
+    STATUS current
+    ::= { dlswGroups 11 }
+
+dlswDirLocateGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswDirLocateMacLocation
+        }
+    STATUS current
+    ::= { dlswGroups 12 }
+
+dlswDirLocateNBGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswDirLocateNBLocation
+        }
+    STATUS current
+    ::= { dlswGroups 13 }
+
+dlswCircuitStatGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswCircuitStatActives,
+        dlswCircuitStatCreates
+        }
+    STATUS current
+    ::= { dlswGroups 14 }
+
+dlswCircuitGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswCircuitS1IfIndex,
+        dlswCircuitS1DlcType,
+        dlswCircuitS1RouteInfo,
+        dlswCircuitS1CircuitId,
+
+
+
+
+
+        dlswCircuitS1Dlc,
+        dlswCircuitS2Location,
+        dlswCircuitS2TDomain,
+        dlswCircuitS2TAddress,
+        dlswCircuitS2CircuitId,
+        dlswCircuitOrigin,
+        dlswCircuitEntryTime,
+        dlswCircuitStateTime,
+        dlswCircuitState,
+        dlswCircuitPriority,
+        dlswCircuitFCSendGrantedUnits,
+        dlswCircuitFCSendCurrentWndw,
+        dlswCircuitFCRecvGrantedUnits,
+        dlswCircuitFCRecvCurrentWndw,
+        dlswCircuitFCLargestRecvGranted,
+        dlswCircuitFCLargestSendGranted,
+        dlswCircuitFCHalveWndwSents,
+        dlswCircuitFCResetOpSents,
+        dlswCircuitFCHalveWndwRcvds,
+        dlswCircuitFCResetOpRcvds,
+        dlswCircuitDiscReasonLocal,
+        dlswCircuitDiscReasonRemote,
+        dlswCircuitDiscReasonRemoteData
+        }
+    STATUS current
+    ::= { dlswGroups 15 }
+
+dlswSdlcGroup  OBJECT-GROUP
+    OBJECTS  {
+        dlswSdlcLsEntries,
+        dlswSdlcLsLocalMac,
+        dlswSdlcLsLocalSap,
+        dlswSdlcLsLocalIdBlock,
+        dlswSdlcLsLocalIdNum,
+        dlswSdlcLsRemoteMac,
+        dlswSdlcLsRemoteSap,
+        dlswSdlcLsRowStatus
+        }
+    STATUS current
+    ::= { dlswGroups 16 }
+
+dlswNotificationGroup  NOTIFICATION-GROUP
+
+
+
+
+
+    NOTIFICATIONS  {
+        dlswTrapTConnPartnerReject,
+        dlswTrapTConnProtViolation,
+        dlswTrapTConnUp,
+        dlswTrapTConnDown,
+        dlswTrapCircuitUp,
+        dlswTrapCircuitDown
+        }
+    STATUS current
+    ::= { dlswGroups 17 }
+
+END

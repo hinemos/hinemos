@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.process.dialog;
@@ -144,7 +137,7 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "command", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = 10;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -153,7 +146,7 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 		this.m_textCommand = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "command", m_textCommand);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TEXT_LONG;
+		gridData.horizontalSpan = 18;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textCommand.setLayoutData(gridData);
@@ -164,15 +157,6 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 			}
 		});
 
-		// 空白
-		label = new Label(groupCheckRule, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space1", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 4;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
-
 		/*
 		 * 引数
 		 */
@@ -180,7 +164,7 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "param", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = 10;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -189,39 +173,21 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 		this.m_textParam = new Text(groupCheckRule, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "param", m_textParam);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TEXT_LONG;
+		gridData.horizontalSpan = 18;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textParam.setLayoutData(gridData);
 		this.m_textParam.setText(".*");
 
-		// 空白
-		label = new Label(groupCheckRule, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space2", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 4;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
-
 		// 大文字・小文字をチェックしない
 		this.m_checkCaseSensitive = new Button(groupCheckRule, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "casesensitive", m_checkCaseSensitive);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TEXT_LONG;
+		gridData.horizontalSpan = 30;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_checkCaseSensitive.setLayoutData(gridData);
 		this.m_checkCaseSensitive.setText(Messages.getString("case.sensitive"));
-
-		// 空白
-		label = new Label(groupCheckRule, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space3", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = 14;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
 
 		// 収集値表示名のデフォルト値を設定
 		this.itemName.setText(Messages.getString("process.number"));

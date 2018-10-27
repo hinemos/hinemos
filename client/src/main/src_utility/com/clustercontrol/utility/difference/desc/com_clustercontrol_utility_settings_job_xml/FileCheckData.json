@@ -1,0 +1,45 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckData_facilityId"}
+	]},
+	
+	{
+	"propName":"directory",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckData_directory"}
+	]},
+	
+	{
+	"propName":"fileName",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckData_fileName"}
+	]},
+	
+	{
+	"propName":"eventType",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckData_eventType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_filecheck_event_type_create"},
+			{"value":"1", "name":"name_filecheck_event_type_delete"},
+			{"value":"2", "name":"name_filecheck_event_type_modify"}
+		]}
+	]},
+
+	{
+	"propName":"modifyType",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckData_modifyType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_filecheck_modify_type_timestamp"},
+			{"value":"1", "name":"name_filecheck_modify_type_filesize"}
+		]}
+	]}
+]
+}
