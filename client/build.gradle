@@ -133,7 +133,7 @@ sourceSets{
 					file('src/main/src_systemlog'),
 					file('src/main/src_winevent'),
 					file('src/main/src_winservice'),
-					file('src/main/src_client_rcp')]
+					file('src/main/java_client_rcp')]
 		}
 		resources{
 			srcDirs += [file('src/main/src_collect'), file('src/main/src_infra')]
