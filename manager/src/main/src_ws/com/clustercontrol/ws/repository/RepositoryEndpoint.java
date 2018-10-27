@@ -547,7 +547,11 @@ public class RepositoryEndpoint {
 				msg.append(", FacilityID=");
 				msg.append(facilityId);
 			}
-			new RepositoryControllerBean().deleteNode(facilityIds);
+			if( facilityIds.length > 0 ){//対象があれば削除を行う
+				new RepositoryControllerBean().deleteNode(facilityIds);
+			}else{ //対象がなければその旨をログに設定する。
+				msg.append(", no node deleted");
+			}
 		} catch (Exception e) {
 			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Delete Node Failed, Method=deleteNode, User="
 					+ HttpAuthenticator.getUserAccountString(wsctx)

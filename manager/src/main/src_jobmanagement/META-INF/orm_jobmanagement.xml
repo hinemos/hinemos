@@ -383,5 +383,40 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="JobParamMstEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobParamMstEntity a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobStartJobMstEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobStartJobMstEntity a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobCommandParamMstEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobCommandParamMstEntity a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobEnvVariableMstEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobEnvVariableMstEntity a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobStartParamMstEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobStartParamMstEntity a
+			]]>
+		</query>
+	</named-query>
 </entity-mappings>
 

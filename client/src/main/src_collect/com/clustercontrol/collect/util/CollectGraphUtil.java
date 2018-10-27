@@ -283,18 +283,18 @@ public class CollectGraphUtil {
 					String param =
 							"{"
 							+ "\'data\':" + plot + ", "
-							+ "\'realfacilityid\':\'" + facilityId + "\', "
-							+ "\'facilityid\':\'" + facilityDummyId + "\', " // DUMMY
-							+ "\'facilityname\':\'" + facilityName + "\', "
-							+ "\'monitorid\':\'" + monitorId + "\', "
-							+ "\'displayname\':\'" + displayName + "\', " 
-							+ "\'collectid\':\'" + collectId + "\', "
-							+ "\'realmanagername\':\'" + managerName + "\', "
-							+ "\'managername\':\'" + managerDummyName + "\', " // DUMMY
-							+ "\'itemname\':\'" + itemName2 + "\', "
-							+ "\'groupid\':\'" + groupId + "\', " // 複数線の場合は、ここを同じにする
-							+ "\'measure\':\'" + measure + "\', "
-							+ "\'pluginid\':\'" + pluginId + "\', "
+							+ "\'realfacilityid\':\'" + escapeParam(facilityId) + "\', "
+							+ "\'facilityid\':\'" + escapeParam(facilityDummyId) + "\', " // DUMMY
+							+ "\'facilityname\':\'" + escapeParam(facilityName) + "\', "
+							+ "\'monitorid\':\'" + escapeParam(monitorId) + "\', "
+							+ "\'displayname\':\'" + escapeParam(displayName) + "\', " 
+							+ "\'collectid\':\'" + escapeParam(collectId) + "\', "
+							+ "\'realmanagername\':\'" + escapeParam(managerName) + "\', "
+							+ "\'managername\':\'" + escapeParam(managerDummyName) + "\', " // DUMMY
+							+ "\'itemname\':\'" + escapeParam(itemName2) + "\', "
+							+ "\'groupid\':\'" + escapeParam(groupId) + "\', " // 複数線の場合は、ここを同じにする
+							+ "\'measure\':\'" + escapeParam(measure) + "\', "
+							+ "\'pluginid\':\'" + escapeParam(pluginId) + "\', "
 							+ "\'graphrange\':" + graphRange + ", "
 							+ "\'ishttpsce\':" + isHttpSce + ", "
 							+ "\'summarytype\':" + getInstance().m_summaryType + ", "
@@ -302,10 +302,10 @@ public class CollectGraphUtil {
 							+ "\'enddate\':\'" + selectEndDate + "\', "
 							+ "\'sliderstartdate\':\'" + getInstance().m_sliderStart + "\', "
 							+ "\'sliderenddate\':\'" + getInstance().m_sliderEnd + "\', "
-							+ "\'thresholdinfomin\':\'" + thresholdInfoMin + "\', "
-							+ "\'thresholdinfomax\':\'" + thresholdInfoMax + "\', "
-							+ "\'thresholdwarnmin\':\'" + thresholdWarnMin + "\', "
-							+ "\'thresholdwarnmax\':\'" + thresholdWarnMax + "\' "
+							+ "\'thresholdinfomin\':\'" + escapeParam(thresholdInfoMin) + "\', "
+							+ "\'thresholdinfomax\':\'" + escapeParam(thresholdInfoMax) + "\', "
+							+ "\'thresholdwarnmin\':\'" + escapeParam(thresholdWarnMin) + "\', "
+							+ "\'thresholdwarnmax\':\'" + escapeParam(thresholdWarnMax) + "\' "
 							+ "}";
 					sb.append(param);
 					sb.append(",");
@@ -669,9 +669,9 @@ public class CollectGraphUtil {
 					String param =
 						"{"
 						+ "\'count\':" + count + ", "
-						+ "\'itemname\':\'" + itemNameLocale + "\', "
-						+ "\'monitorid\':\'" + collectInfo.getMonitorId() + "\', "
-						+ "\'displayname\':\'" + collectInfo.getDisplayName() + "\'"
+						+ "\'itemname\':\'" + escapeParam(itemNameLocale) + "\', "
+						+ "\'monitorid\':\'" + escapeParam(collectInfo.getMonitorId()) + "\', "
+						+ "\'displayname\':\'" + escapeParam(collectInfo.getDisplayName()) + "\'"
 						+ "},";
 					sb.append(param);
 					count++;
@@ -935,16 +935,16 @@ public class CollectGraphUtil {
 		}
 		String param =
 				"{"
-				+ "\'managername\':\'" + managerDummyName + "\', "// DUMMY
-				+ "\'facilityid\':\'" + facilityDummyId + "\', " // DUMMY
-				+ "\'realmanagername\':\'" + managerName + "\', "
-				+ "\'realfacilityid\':\'" + facilityId + "\', "
-				+ "\'itemname\':\'" + itemName + "\', "
-				+ "\'monitorid\':\'" + monitorId + "\', "
-				+ "\'displayname\':\'" + displayName + "\', "
-				+ "\'facilityname\':\'" + facilityName + "\', "
-				+ "\'ylabel\':\'" + itemName + "(" + monitorId + ")\', "
-				+ "\'id\':\'" + id + "\', "
+				+ "\'managername\':\'" + escapeParam(managerDummyName) + "\', "// DUMMY
+				+ "\'facilityid\':\'" + escapeParam(facilityDummyId) + "\', " // DUMMY
+				+ "\'realmanagername\':\'" + escapeParam(managerName) + "\', "
+				+ "\'realfacilityid\':\'" + escapeParam(facilityId) + "\', "
+				+ "\'itemname\':\'" + escapeParam(itemName) + "\', "
+				+ "\'monitorid\':\'" + escapeParam(monitorId) + "\', "
+				+ "\'displayname\':\'" + escapeParam(displayName) + "\', "
+				+ "\'facilityname\':\'" + escapeParam(facilityName) + "\', "
+				+ "\'ylabel\':\'" + escapeParam(itemName) + "(" + escapeParam(monitorId) + ")\', "
+				+ "\'id\':\'" + escapeParam(id) + "\', "
 				+ "\'summarytype\':" + getInstance().m_summaryType + ", "
 				+ "\'sliderstartdate\':" + getInstance().m_sliderStart + ", " 
 				+ "\'sliderenddate\':" + getInstance().m_sliderEnd + ", " 
@@ -1093,20 +1093,20 @@ public class CollectGraphUtil {
 						String facilityName = getInstance().m_managerFacilityIdNameMap.get(managerName + SQUARE_SEPARATOR + facilityId);
 						String dummyFacilityId = getInstance().m_managerFacilityIdDummyNameMap.get(managerName + SQUARE_SEPARATOR + facilityId);
 						String dummyManagerName = getInstance().m_managerDummyNameMap.get(managerName);
-						String ret = "{\'managername\':\'" + dummyManagerName + "\', "// DUMMY
-								+ "\'realmanagername\':\'" + managerName + "\', "// real
+						String ret = "{\'managername\':\'" + escapeParam(dummyManagerName) + "\', "// DUMMY
+								+ "\'realmanagername\':\'" + escapeParam(managerName) + "\', "// real
 								+ "\'generationdate\':\'" + generationDate + "\', " // フラグが立つ日時
 								+ "\'outputdate\':\'" + outputDate + "\', "// イベント詳細画面を開くために必要な出力日時
 								+ "\'date\':\'" + generationDate + "\', "
-								+ "\'message\':\'" + message + "\', "
-								+ "\'monitorid\':\'" + monitorId + "\', "
-								+ "\'displayname\':\'" + monitorDetailId + "\', "
-								+ "\'priority\':\'" + PriorityMessage.typeToString(priority) + "\', "
-								+ "\'eventdetailid\':\'" + monitorId + facilityId + outputDate + "\', " // graph original value
-								+ "\'facilityname\':\'" + facilityName + "\', "
-								+ "\'pluginid\':\'" + pluginId + "\', "
-								+ "\'facilityid\':\'" + dummyFacilityId + "\', "
-								+ "\'realfacilityid\':\'" + facilityId + "\'}";
+								+ "\'message\':\'" + escapeParam(message) + "\', "
+								+ "\'monitorid\':\'" + escapeParam(monitorId) + "\', "
+								+ "\'displayname\':\'" + escapeParam(monitorDetailId) + "\', "
+								+ "\'priority\':\'" + escapeParam(PriorityMessage.typeToString(priority)) + "\', "
+								+ "\'eventdetailid\':\'" + escapeParam(monitorId) + escapeParam(facilityId) + outputDate + "\', " // graph original value
+								+ "\'facilityname\':\'" + escapeParam(facilityName) + "\', "
+								+ "\'pluginid\':\'" + escapeParam(pluginId) + "\', "
+								+ "\'facilityid\':\'" + escapeParam(dummyFacilityId) + "\', "
+								+ "\'realfacilityid\':\'" + escapeParam(facilityId) + "\'}";
 						sb.append(ret);
 						sb.append(",");
 
@@ -1322,5 +1322,14 @@ public class CollectGraphUtil {
 	
 	public static boolean getBarFlg() {
 		return getInstance().barFlg;
+	}
+
+	/**
+	 * JavaScriptにおけるエスケープが必要な文字列を置換する
+	 * @param param 返還前文字列
+	 * @return 返還後文字列
+	 */
+	public static String escapeParam(String param) {
+		return param.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"");
 	}
 }

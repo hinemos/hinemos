@@ -14,8 +14,8 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -45,6 +45,16 @@ public class KeyCheck {
 	 * ライセンスキーのファイル名(YYYY_MM_xcloud)
 	 */
 	private static final String TYPE_XCLOUD = "xcloud";
+
+	/**
+	 * ライセンスキーで有効となるファイル名の最新日付および年月比較結果
+	 */
+	private static String latestDateEnterprise = "";
+
+	/**
+	 * ライセンスキーで有効となるファイル名の最新日付および年月比較結果
+	 */
+	private static String latestDateXCloud = "";
 
 	/**
 	 * 以下のオプション使用可否チェック<br>
@@ -165,8 +175,6 @@ public class KeyCheck {
 			return false;
 		}
 		
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMM");
-		int yearMonth = Integer.parseInt(sdf.format(new Date()));
 		for (File file : files) {
 			FileReader fileReader = null;
 			try {
@@ -186,20 +194,6 @@ public class KeyCheck {
 				
 				/*
 				 * チェック1:
-				 * 現在日付と比較する。
-				 * ファイル名のprefixが有効期限となっている。
-				 * ファイル名の例としては、201401_001など。この例の場合、prefix=201401。
-				 */
-				m_log.trace("filename=" + filename + ", filePrefix=" + filenamePre);
-				if (yearMonth <= Integer.parseInt(filenamePre)) {
-					m_log.debug("OK time limit, filename=" + filename);
-				} else {
-					m_log.debug("NG time limit, filename=" + filename);
-					continue;
-				}
-				
-				/*
-				 * チェック2:
 				 * ファイルの中身を複合化したものが、ファイル名と一致していることを確認する。
 				 */
 				fileReader = new FileReader(file);
@@ -210,13 +204,42 @@ public class KeyCheck {
 				m_log.trace("filename=" + filename + ", contents=" + str);
 				if (filename.equals(str)) {
 					m_log.debug("OK valid file, filename=" + filename);
-					// 一回でも正常なファイルを見つけられたら、以降はチェックしない。
 					keyCheck = true;
-					break;
 				} else {
 					m_log.debug("NG valid file, filename=" + filename);
 					continue;
 				}
+
+				// typeにより日付を取得
+				String latestDate = "";
+				if (type.equals(TYPE_ENTERPRISE)) {
+					latestDate = getLatestDateEnterprise();
+				} else {
+					latestDate = getLatestDateXcloud();
+				}
+				
+
+				/*
+				 * ファイル名より日付を抽出する。
+				 * 最終的に最新のファイルの日付のみ残る。
+				 */				
+				if (latestDate.equals("")) {
+					latestDate = filenamePre;
+				} else {
+					if (Integer.parseInt(latestDate) < Integer.parseInt(filenamePre)) {
+						latestDate = filenamePre;
+					}
+				}
+
+				// typeにより日付を設定
+				if (type.equals(TYPE_ENTERPRISE)) {
+					setLatestDateEnterprise(latestDate);
+					m_log.debug("LatestDateEnterprise=" + latestDate);
+				} else {
+					setLatestDateXcloud(latestDate);
+					m_log.debug("LatestDateXcloud=" + latestDate);
+				}
+
 			} catch (Exception e) {
 				if (e instanceof NumberFormatException) {
 					m_log.info(e.getMessage());
@@ -357,4 +380,79 @@ public class KeyCheck {
 		}
 		throw new HinemosUnknown("encrypt error");
 	}
+
+	public static String getLatestDateEnterprise() {
+		return latestDateEnterprise;
+	}
+
+	private static void setLatestDateEnterprise(String latestDate) {
+		latestDateEnterprise = latestDate;
+	}
+
+	public static String getLatestDateXcloud() {
+		return latestDateXCloud;
+	}
+
+	private static void setLatestDateXcloud(String latestDate) {
+		latestDateXCloud = latestDate;
+	}
+
+	/**
+	 * Hinemos時刻と起動時にチェックしたキーファイルの時間の比較結果を返却する
+	 * @return result
+	 */
+	public static String getResultEnterprise() {
+
+		String result = "";
+		String nowYM = getNowYM();
+		if (!nowYM.equals("") && 
+				Integer.parseInt(getLatestDateEnterprise()) >= Integer.parseInt(nowYM)) {
+			result = getLatestDateEnterprise() + "_true";
+		} else {
+			result = getLatestDateEnterprise() + "_false";
+		}
+		return result;
+	}
+
+	/**
+	 * Hinemos時刻と起動時にチェックしたキーファイルの時間の比較結果を返却する
+	 * @return result
+	 */
+	public static String getResultXcloud() {
+
+		String result = "";
+		String nowYM = getNowYM();
+		if (!nowYM.equals("") && 
+				Integer.parseInt(getLatestDateXcloud()) >= Integer.parseInt(nowYM)) {
+			result = getLatestDateXcloud() + "_true";
+		} else {
+			result = getLatestDateXcloud() + "_false";
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * Hinemos時刻より現在年月を取得する
+	 * @return nowYM
+	 */
+	private static String getNowYM() {
+		Calendar cal = Calendar.getInstance(TimeZone.getDefault());
+		String nowYM = "";
+		String y = String.valueOf(cal.get(Calendar.YEAR));
+		String m = String.valueOf(cal.get(Calendar.MONTH) + 1);
+		
+		switch (m.length()) {
+		case 1 :
+			nowYM = y + "0" + m;
+			break;
+		case 2 :
+			nowYM = y + m;
+			break;
+		default :
+			break;
+		}
+		return nowYM;
+	}
+
 }

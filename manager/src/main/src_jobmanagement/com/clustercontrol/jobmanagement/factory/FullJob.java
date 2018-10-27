@@ -156,30 +156,77 @@ public class FullJob {
 	public static void initJobInfoCache() {
 		long startTime = System.currentTimeMillis();
 		HashMap<String, Map<String,JobInfo>> jobInfoCache = new HashMap<String, Map<String,JobInfo>>();
-		
-		Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCache();
-		
-		for(Map.Entry<String, Map<String, JobMstEntity>> jobunitEntry : jobMstCache.entrySet()) {
-			String jobunitId = jobunitEntry.getKey();
-			Map<String, JobInfo> jobunitMap = new HashMap<String, JobInfo>();
-			for(Map.Entry<String, JobMstEntity> jobEntry : jobunitEntry.getValue().entrySet()) {
-				String jobId = jobEntry.getKey();
-				try {
-					jobunitMap.put(jobId, createJobInfo(jobEntry.getValue()));
-				} catch (InvalidRole | JobMasterNotFound | HinemosUnknown e) {
-					m_log.warn("failed initCache jobunitId=" + jobunitId + " jobId=" + jobId + ". " 
-								+ e.getClass().getSimpleName() + ", " + e.getMessage());
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			EntityManager em = jtm.getEntityManager();
+			em.clear();
+			
+			List<JobParamMstEntity> paramList = ((HinemosEntityManager)em).createNamedQuery("JobParamMstEntity.findAll", 
+					JobParamMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
+			List<JobStartJobMstEntity> startJobList = ((HinemosEntityManager)em).createNamedQuery("JobStartJobMstEntity.findAll", 
+					JobStartJobMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
+			List<JobCommandParamMstEntity> commandParamList = ((HinemosEntityManager)em).createNamedQuery("JobCommandParamMstEntity.findAll", 
+					JobCommandParamMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
+			List<JobEnvVariableMstEntity> envVariableList = ((HinemosEntityManager)em).createNamedQuery("JobEnvVariableMstEntity.findAll", 
+					JobEnvVariableMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
+			List<JobStartParamMstEntity> startParamList = ((HinemosEntityManager)em).createNamedQuery("JobStartParamMstEntity.findAll", 
+					JobStartParamMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
+			
+			// ジョブ変数を保持するマップ <jobunitId, <jobId, List<JobParamMstEntity>>>
+			Map<String, Map<String, List<JobParamMstEntity>>> paramMap = new HashMap<String, Map<String, List<JobParamMstEntity>>>();
+			// 待ち条件を保持するマップ <jobunitId, <jobId, List<JobStartJobMstEntity>>>
+			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobMap = new HashMap<String, Map<String, List<JobStartJobMstEntity>>>();
+			// ジョブ終了時の変数設定を保持するマップ <jobunitId, <jobId, List<JobCommandParamMstEntity>>>
+			Map<String, Map<String, List<JobCommandParamMstEntity>>> commandParamMap = new HashMap<String, Map<String, List<JobCommandParamMstEntity>>>();
+			// 環境変数を保持するマップ <jobunitId, <jobId, List<JobEnvVariableMstEntity>>>
+			Map<String, Map<String, List<JobEnvVariableMstEntity>>> envVariableMap = new HashMap<String, Map<String, List<JobEnvVariableMstEntity>>>();
+			// 待ち条件(ジョブ変数)を保持するマップ <jobunitId, <jobId, List<JobStartParamMstEntity>>>
+			Map<String, Map<String, List<JobStartParamMstEntity>>> startParamMap = new HashMap<String, Map<String, List<JobStartParamMstEntity>>>();
+			
+			// ジョブ変数マップの作成
+			createParamMap(paramList, paramMap);
+			
+			// 待ち条件マップの作成
+			createStartJobMap(startJobList, startJobMap);
+			
+			// ジョブ終了時の変数設定マップの作成
+			createCommandParamMap(commandParamList, commandParamMap);
+			
+			// 環境変数マップの作成
+			createEnvVariableMap(envVariableList, envVariableMap);
+			
+			// 待ち条件(ジョブ変数)マップの作成
+			createStartParamMap(startParamList, startParamMap);
+			
+			Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCache();
+			
+			for(Map.Entry<String, Map<String, JobMstEntity>> jobunitEntry : jobMstCache.entrySet()) {
+				String jobunitId = jobunitEntry.getKey();
+				Map<String, JobInfo> jobunitMap = new HashMap<String, JobInfo>();
+				for(Map.Entry<String, JobMstEntity> jobEntry : jobunitEntry.getValue().entrySet()) {
+					String jobId = jobEntry.getKey();
+					try {
+						jobunitMap.put(jobId, createJobInfo(jobEntry.getValue(), paramMap, startJobMap, commandParamMap, envVariableMap, startParamMap));
+					} catch (InvalidRole | JobMasterNotFound | HinemosUnknown e) {
+						m_log.warn("failed initCache jobunitId=" + jobunitId + " jobId=" + jobId + ". " 
+									+ e.getClass().getSimpleName() + ", " + e.getMessage());
+					}
 				}
+				jobInfoCache.put(jobunitId, jobunitMap);
 			}
-			jobInfoCache.put(jobunitId, jobunitMap);
-		}
 		
-		m_log.info("init jobInfoCache " + (System.currentTimeMillis() - startTime) + "ms. size=" + jobInfoCache.size());
-		for(String jobunitId : jobMstCache.keySet()) {
-			m_log.info("jobInfoCache key(jobunitId)=" + jobunitId + " size=" + jobInfoCache.get(jobunitId).size());
-		}
+			m_log.info("init jobInfoCache " + (System.currentTimeMillis() - startTime) + "ms. size=" + jobInfoCache.size());
+			for(String jobunitId : jobMstCache.keySet()) {
+				m_log.info("jobInfoCache key(jobunitId)=" + jobunitId + " size=" + jobInfoCache.get(jobunitId).size());
+			}
 		
-		storeJobInfoCache(jobInfoCache);
+			storeJobInfoCache(jobInfoCache);
+		} finally {
+			if(jtm != null) {
+				jtm.close();
+			}
+		}
 	}
 	
 	/**
@@ -254,7 +301,7 @@ public class FullJob {
 				try {
 					JobMstEntity job = QueryUtil.getJobMstPK(jobunitId, jobId);
 					jobunitMstMap.put(jobId, job);
-					jobunitInfoMap.put(jobId, createJobInfo(job));
+					jobunitInfoMap.put(jobId, createJobInfo(job, null, null, null, null, null));
 				} catch (InvalidRole | JobMasterNotFound | HinemosUnknown e) {
 					m_log.warn("failed initCache jobunitId=" + jobunitId + " jobId=" + jobId + ". " 
 							+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -322,7 +369,7 @@ public class FullJob {
 			_lock.readUnlock();
 		}
 		
-		jobInfo = createJobInfo(jobMstEntity);
+		jobInfo = createJobInfo(jobMstEntity, null, null, null, null, null);
 		
 		return jobInfo;
 	}
@@ -347,10 +394,21 @@ public class FullJob {
 	 * jobMstEntityの情報に基づき、Jobパラメータ関連の情報をjobInfoに設定する。
 	 * @param jobInfo
 	 * @param jobMstEntity
+	 * @param paramMap
 	 */
-	private static void setJobParam(JobInfo jobInfo, JobMstEntity jobMstEntity) {
+	private static void setJobParam(JobInfo jobInfo, JobMstEntity jobMstEntity, Map<String, Map<String, List<JobParamMstEntity>>> paramMap) {
 		ArrayList<JobParameterInfo> paramList = new ArrayList<JobParameterInfo>();
-		Collection<JobParamMstEntity> params = jobMstEntity.getJobParamMstEntities();
+		
+		Collection<JobParamMstEntity> params = null;
+		if(paramMap == null) {
+			m_log.debug("params get Entities");
+			params = jobMstEntity.getJobParamMstEntities();
+		} else {
+			m_log.debug("params get map");
+			if(paramMap.get(jobMstEntity.getId().getJobunitId()) != null) {
+				params = paramMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
+			}
+		}
 		if(params != null){
 			for (JobParamMstEntity param : params) {
 				JobParameterInfo paramInfo = new JobParameterInfo();
@@ -458,9 +516,13 @@ public class FullJob {
 	 * jobMstEntityの情報に基づき、Jobのコマンド情報をjobInfoに設定する。
 	 * @param jobInfo
 	 * @param jobMstEntity
+	 * @param envVariableMap
+	 * @param commandParamMap
 	 * @throws HinemosUnknown
 	 */
-	private static void setJobCommand(JobInfo jobInfo, JobMstEntity jobMstEntity)
+	private static void setJobCommand(JobInfo jobInfo, JobMstEntity jobMstEntity, 
+			Map<String, Map<String, List<JobEnvVariableMstEntity>>> envVariableMap,
+			Map<String, Map<String, List<JobCommandParamMstEntity>>> commandParamMap)
 			throws HinemosUnknown {
 		JobCommandInfo commandInfo = new JobCommandInfo();
 		commandInfo.setFacilityID(jobMstEntity.getFacilityId());
@@ -477,9 +539,19 @@ public class FullJob {
 		commandInfo.setCommandRetryFlg(jobMstEntity.getCommandRetryFlg());
 		// ジョブ終了時のジョブ変数
 		ArrayList<JobCommandParam> jobCommandParamList = new ArrayList<>();
-		if (jobMstEntity.getJobCommandParamEntities() != null && jobMstEntity.getJobCommandParamEntities().size() > 0) {
-			for (JobCommandParamMstEntity jobCommandParamEntity : jobMstEntity.getJobCommandParamEntities()) {
-				if (jobMstEntity.getJobCommandParamEntities() != null) {
+		List<JobCommandParamMstEntity> commandParams = null;
+		if(commandParamMap == null) {
+			m_log.debug("commandParams get Entities");
+			commandParams = jobMstEntity.getJobCommandParamEntities();
+		} else {
+			m_log.debug("commandParams get map");
+			if(commandParamMap.get(jobMstEntity.getId().getJobunitId()) != null) {
+				commandParams = commandParamMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
+			}
+		}
+		if (commandParams != null && commandParams.size() > 0) {
+			for (JobCommandParamMstEntity jobCommandParamEntity : commandParams) {
+				if (commandParams != null) {
 					JobCommandParam jobCommandParam = new JobCommandParam();
 					jobCommandParam.setJobStandardOutputFlg(jobCommandParamEntity.getJobStandardOutputFlg());
 					jobCommandParam.setParamId(jobCommandParamEntity.getId().getParamId());
@@ -495,7 +567,16 @@ public class FullJob {
 		commandInfo.setScriptContent(jobMstEntity.getScriptContent());
 		
 		List<JobEnvVariableInfo> envVariableList = new ArrayList<JobEnvVariableInfo>();
-		List<JobEnvVariableMstEntity> envVariables = jobMstEntity.getJobEnvVariableMstEntities();
+		List<JobEnvVariableMstEntity> envVariables = null;
+		if(envVariableMap == null) {
+			m_log.debug("envVariables get Entities");
+			envVariables = jobMstEntity.getJobEnvVariableMstEntities();
+		} else {
+			m_log.debug("envVariables get map");
+			if(envVariableMap.get(jobMstEntity.getId().getJobunitId()) != null) {
+				envVariables = envVariableMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
+			}
+		}
 		if(envVariables != null){
 			for (JobEnvVariableMstEntity envVariable : envVariables) {
 				JobEnvVariableInfo envVariableInfo = new JobEnvVariableInfo();
@@ -544,10 +625,14 @@ public class FullJob {
 	 * jobMstEntityの情報に基づき、Jobの待ち条件をjobInfoに設定する。
 	 * @param jobInfo
 	 * @param jobMstEntity
+	 * @param startJobMap
+	 * @param startParamMap
 	 * @throws JobMasterNotFound
 	 * @throws InvalidRole
 	 */
-	private static void setJobWaitRule(JobInfo jobInfo, JobMstEntity jobMstEntity)
+	private static void setJobWaitRule(JobInfo jobInfo, JobMstEntity jobMstEntity, 
+			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobMap,
+			Map<String, Map<String, List<JobStartParamMstEntity>>> startParamMap)
 			throws JobMasterNotFound, InvalidRole {
 		//待ち条件を取得
 		JobWaitRuleInfo waitRule = null;
@@ -613,7 +698,16 @@ public class FullJob {
 		}
 
 		//待ち条件（ジョブ）を取得
-		Collection<JobStartJobMstEntity> startJobList = jobMstEntity.getJobStartJobMstEntities();
+		Collection<JobStartJobMstEntity> startJobList = null;
+		if(startJobMap == null) {
+			m_log.debug("startJobList get Entities");
+			startJobList = jobMstEntity.getJobStartJobMstEntities();
+		} else {
+			m_log.debug("startJobList get map");
+			if(startJobMap.get(jobMstEntity.getId().getJobunitId()) != null) {
+				startJobList = startJobMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
+			}
+		}
 		ArrayList<JobObjectInfo> objectList = new ArrayList<JobObjectInfo>();
 		if(startJobList != null && startJobList.size() > 0){
 			for (JobStartJobMstEntity startJob : startJobList){
@@ -660,7 +754,16 @@ public class FullJob {
 		}
 
 		// 待ち条件（ジョブ変数）を取得
-		List<JobStartParamMstEntity> decisionList = jobMstEntity.getJobStartParamMstEntities();
+		List<JobStartParamMstEntity> decisionList = null;
+		if(startParamMap == null) {
+			m_log.debug("decisionList get Entities");
+			decisionList = jobMstEntity.getJobStartParamMstEntities();
+		} else {
+			m_log.debug("decisionList get map");
+			if(startParamMap.get(jobMstEntity.getId().getJobunitId()) != null) {
+				decisionList = startParamMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
+			}
+		}
 		if (decisionList != null && decisionList.size() != 0) {
 			for (JobStartParamMstEntity decision : decisionList) {
 				if (decision != null) {
@@ -710,7 +813,14 @@ public class FullJob {
 		}
 	}
 	
-	private static JobInfo createJobInfo(JobMstEntity jobMstEntity) throws InvalidRole, JobMasterNotFound, HinemosUnknown {
+	// マップがnullでない場合はジョブ変数、待ち条件、ジョブ終了時の変数設定、環境変数、待ち条件(ジョブ変数)を引数のマップから取得する
+	private static JobInfo createJobInfo(JobMstEntity jobMstEntity,
+			Map<String, Map<String, List<JobParamMstEntity>>> paramMap,
+			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobMap,
+			Map<String, Map<String, List<JobCommandParamMstEntity>>> commandParamMap,
+			Map<String, Map<String, List<JobEnvVariableMstEntity>>> envVariableMap,
+			Map<String, Map<String, List<JobStartParamMstEntity>>> startParamMap) 
+					throws InvalidRole, JobMasterNotFound, HinemosUnknown {
 		JobInfo jobInfo = new JobInfo(jobMstEntity.getId().getJobunitId(), jobMstEntity.getId().getJobId(), jobMstEntity.getJobName(), jobMstEntity.getJobType());
 		
 		jobInfo.setDescription(jobMstEntity.getDescription());
@@ -729,17 +839,17 @@ public class FullJob {
 
 		jobInfo.setIconId(jobMstEntity.getIconId());
 
-		setJobWaitRule(jobInfo, jobMstEntity);
+		setJobWaitRule(jobInfo, jobMstEntity, startJobMap, startParamMap);
 
 		switch (jobMstEntity.getJobType()) {
 		case JobConstant.TYPE_JOB:
-			setJobCommand(jobInfo, jobMstEntity);
+			setJobCommand(jobInfo, jobMstEntity, envVariableMap, commandParamMap);
 			break;
 		case JobConstant.TYPE_FILEJOB:
 			setJobFile(jobInfo, jobMstEntity);
 			break;
 		case JobConstant.TYPE_JOBUNIT:
-			setJobParam(jobInfo, jobMstEntity);
+			setJobParam(jobInfo, jobMstEntity, paramMap);
 			break;
 		case JobConstant.TYPE_REFERJOB:
 		case JobConstant.TYPE_REFERJOBNET:
@@ -768,5 +878,125 @@ public class FullJob {
 
 		jobInfo.setPropertyFull(true);
 		return jobInfo;
+	}
+	
+	private static void createParamMap(List<JobParamMstEntity> paramList, 
+			Map<String, Map<String, List<JobParamMstEntity>>> paramMap) {
+		
+		for(JobParamMstEntity param : paramList) {
+			String jobunitId = param.getId().getJobunitId();
+			String jobId = param.getId().getJobId();
+			
+			Map<String, List<JobParamMstEntity>> map = paramMap.get(jobunitId);
+			if(map == null) {
+				map = new HashMap<String, List<JobParamMstEntity>>();
+			}
+			
+			List<JobParamMstEntity> list = map.get(jobId);
+			if(list == null) {
+				list = new ArrayList<JobParamMstEntity>();
+			}
+		
+			list.add(param);
+			map.put(jobId, list);
+			paramMap.put(jobunitId, map);
+		}
+		m_log.debug("paramMap size=" + paramMap.size());
+	}
+	
+	private static void createStartJobMap(List<JobStartJobMstEntity> startJobList, 
+			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobMap) {
+		
+		for(JobStartJobMstEntity startJob : startJobList) {
+			String jobunitId = startJob.getId().getJobunitId();
+			String jobId = startJob.getId().getJobId();
+			
+			Map<String, List<JobStartJobMstEntity>> map = startJobMap.get(jobunitId);
+			if(map == null) {
+				map = new HashMap<String, List<JobStartJobMstEntity>>();
+			}
+			
+			List<JobStartJobMstEntity> list = map.get(jobId);
+			if(list == null) {
+				list = new ArrayList<JobStartJobMstEntity>();
+			}
+		
+			list.add(startJob);
+			map.put(jobId, list);
+			startJobMap.put(jobunitId, map);
+		}
+		m_log.debug("startJobMap size=" + startJobMap.size());
+	}
+
+	private static void createCommandParamMap(List<JobCommandParamMstEntity> commandParamList, 
+			Map<String, Map<String, List<JobCommandParamMstEntity>>> commandParamMap) {
+		
+		for(JobCommandParamMstEntity commandParam : commandParamList) {
+			String jobunitId = commandParam.getId().getJobunitId();
+			String jobId = commandParam.getId().getJobId();
+			
+			Map<String, List<JobCommandParamMstEntity>> map = commandParamMap.get(jobunitId);
+			if(map == null) {
+				map = new HashMap<String, List<JobCommandParamMstEntity>>();
+			}
+			
+			List<JobCommandParamMstEntity> list = map.get(jobId);
+			if(list == null) {
+				list = new ArrayList<JobCommandParamMstEntity>();
+			}
+		
+			list.add(commandParam);
+			map.put(jobId, list);
+			commandParamMap.put(jobunitId, map);
+		}
+		m_log.debug("commandParamMap size=" + commandParamMap.size());
+	}
+
+	private static void createEnvVariableMap(List<JobEnvVariableMstEntity> envVariableList, 
+			Map<String, Map<String, List<JobEnvVariableMstEntity>>> envVariableMap) {
+		
+		for(JobEnvVariableMstEntity envVariable : envVariableList) {
+			String jobunitId = envVariable.getId().getJobunitId();
+			String jobId = envVariable.getId().getJobId();
+			
+			Map<String, List<JobEnvVariableMstEntity>> map = envVariableMap.get(jobunitId);
+			if(map == null) {
+				map = new HashMap<String, List<JobEnvVariableMstEntity>>();
+			}
+			
+			List<JobEnvVariableMstEntity> list = map.get(jobId);
+			if(list == null) {
+				list = new ArrayList<JobEnvVariableMstEntity>();
+			}
+		
+			list.add(envVariable);
+			map.put(jobId, list);
+			envVariableMap.put(jobunitId, map);
+		}
+		m_log.debug("envVariableMap size=" + envVariableMap.size());
+	}
+
+	private static void createStartParamMap(List<JobStartParamMstEntity> startParamList, 
+			Map<String, Map<String, List<JobStartParamMstEntity>>> startParamMap) {
+		
+		for(JobStartParamMstEntity startParam : startParamList) {
+			String jobunitId = startParam.getId().getJobunitId();
+			String jobId = startParam.getId().getJobId();
+			
+			Map<String, List<JobStartParamMstEntity>> map = startParamMap.get(jobunitId);
+			if(map == null) {
+				map = new HashMap<String, List<JobStartParamMstEntity>>();
+			}
+			
+			List<JobStartParamMstEntity> list = map.get(jobId);
+			if(list == null) {
+				list = new ArrayList<JobStartParamMstEntity>();
+			}
+		
+			list.add(startParam);
+			map.put(jobId, list);
+			startParamMap.put(jobunitId, map);
+		}
+		m_log.debug("startParamMap size=" + startParamMap.size());
 	}
 }

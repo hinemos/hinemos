@@ -15,6 +15,7 @@ PURPOSE.  See the GNU General Public License for more details.
 
 package com.clustercontrol.commons.util;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -62,6 +63,13 @@ public class JdbcBatchExecutor {
 			}
 		} catch (Exception e) {
 			log.warn(e);
+			if (e instanceof BatchUpdateException) {
+				BatchUpdateException bue = (BatchUpdateException)e;
+				SQLException sqe = bue.getNextException();
+				if (sqe != null) {
+					log.warn("SQLException: " + sqe);
+				}
+			}
 			if (conn != null) {
 				try {
 					conn.rollback();

@@ -184,7 +184,8 @@ public class LogfileMonitor {
 					}) {
 					LineSeparator separator = new LineSeparator(m_wrapper.monitorInfo.getLogfileCheckInfo());
 					
-					int maxBytes = m_wrapper.monitorInfo.getLogfileCheckInfo().getMaxBytes() != null ? m_wrapper.monitorInfo.getLogfileCheckInfo().getMaxBytes(): LogfileMonitorConfig.logfilMessageLength;
+					//最大読み取り文字数(未設定の場合は -1 とする)
+					int maxBytes = m_wrapper.monitorInfo.getLogfileCheckInfo().getMaxBytes() != null ? m_wrapper.monitorInfo.getLogfileCheckInfo().getMaxBytes(): -1;
 					int maxLines = LogfileMonitorConfig.logfilMessageLine;
 					
 					long start = System.currentTimeMillis();
@@ -203,7 +204,7 @@ public class LogfileMonitor {
 						String appendedBuf = new StringBuilder(status.carryover.length() + read).append(status.carryover).append(cbuf, 0, read).toString();
 						List<String> lines = new LinkedList<String>();
 						while (lines.size() <= maxLines) {
-							int pos = separator.search(appendedBuf);
+							int pos = separator.search(appendedBuf, maxBytes);
 							if (pos != -1) {
 								lines.add(appendedBuf.substring(0, pos));
 								appendedBuf = appendedBuf.substring(pos, appendedBuf.length());
@@ -216,7 +217,7 @@ public class LogfileMonitor {
 							status.carryover = appendedBuf;
 							
 							// 繰越データが非常に長い場合はバッファをカットする
-							if(status.carryover.length() > maxBytes){
+							if(status.carryover.length() > LogfileMonitorConfig.logfilMessageLength){
 								String message = "run() : " + getFilePath() + " carryOverBuf size = " + status.carryover.length() + 
 										". carryOverBuf is too long. it cut down .(see monitor.logfile.message.length)";
 								if (logFlag) {
@@ -226,7 +227,7 @@ public class LogfileMonitor {
 									m_log.debug(message);
 								}
 								
-								status.carryover = status.carryover.substring(0, maxBytes);
+								status.carryover = status.carryover.substring(0, LogfileMonitorConfig.logfilMessageLength);
 							}
 							
 							// デバッグログ
@@ -241,6 +242,7 @@ public class LogfileMonitor {
 						}
 						
 						for (String line : lines) {
+							m_log.debug("run() line=" + line);
 							// 旧バージョンとの互換性のため、syslogでも飛ばせるようにする。
 							if (m_syslog.isValid()) {
 								// v3.2 mode

@@ -58,7 +58,7 @@ public class RunMonitorPluginSample extends RunMonitorNumericValueType {
 			m_nodeDate = m_now.getTime();
 		}
 
-		m_value = 10;//監視対象の数値
+		m_value = (double) 10;//監視対象の数値
 		m_message = "sample message";
 		m_messageOrg = "sample original message";
 		m_unKnownMessage = "sample unknown message";//不明時

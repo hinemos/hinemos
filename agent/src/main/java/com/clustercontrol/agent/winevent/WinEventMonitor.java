@@ -63,7 +63,10 @@ public class WinEventMonitor {
 	public static final String POSTFIX_BOOKMARK = "-bookmark";
 	
 	// Windowsでファイル名として無効な文字「*、|、\、:、"、<、>、?、/」 
-		public static final String INVALID_FILE_CHARACTER = "[*|\\\\:\"<>?/]";
+	public static final String INVALID_FILE_CHARACTER = "[*|\\\\:\"<>?/]";
+	
+	// Hinemos監視用定義におけるイベントログ名のエンクロージャー 「 " 」
+	public static final String EVENT_LOG_NAME_ENCLOSURE_CHARACTER = "\"";
 	
 	private WinEventReader winEventReader;
 	
@@ -96,6 +99,10 @@ public class WinEventMonitor {
 	private static String tmpReturnCode = TMP_RETURN_CODE;	// 改行
 	private static String tmpGtCode = TMP_GT_CODE;			// ">"
 	private static String tmpLtCode = TMP_LT_CODE;			// "<"
+	
+	// レンダリングに失敗したイベントログがある場合に通知するかどうか
+	private static String RENDER_FAILED_IS_NOTIFY = "monitor.winevent.render.failed.notify";
+	private static boolean renderFailedIsNotify = true;
 	
 	// Windowsイベント監視設定
 	private MonitorInfo monitorInfo;
@@ -193,6 +200,14 @@ public class WinEventMonitor {
 			tmpLtCode = TMP_GT_CODE;
 			m_log.info("collector.winevent.lt.char.replace uses " + tmpLtCode + ". ");
 		}
+		
+		// レンダリングが失敗したイベントログがある場合に通知するかどうかのフラグを設定
+		String renderFailedIsNotifyStr = AgentProperties.getProperty(RENDER_FAILED_IS_NOTIFY, "true");
+		try {
+			renderFailedIsNotify = Boolean.parseBoolean(renderFailedIsNotifyStr);
+		} catch (Exception e) {
+			m_log.info("monitor.winevent.render.failed.notify uses " + renderFailedIsNotify + ". (" + renderFailedIsNotifyStr + " is not collect)");
+		}
 	}
 	
 	/**
@@ -249,20 +264,29 @@ public class WinEventMonitor {
 			
 				long readStart = HinemosTime.currentTimeMillis();
 				
-				String readEventResult;
+				String[] readEventResult;
 				// maxEventsずつイベントログの取得、パース、パターンマッチ、通知情報の送信を行う
 				while((readEventResult = winEventReader.readEventLog(entry.getValue(), query, maxEvents, timeout, logName)) != null) {
 			
 					// バッファのあふれをチェック
-					int eventLogLen = readEventResult.toString().getBytes(Charset.forName("MS932")).length;
+					int eventLogLen = readEventResult[0].toString().getBytes(Charset.forName("MS932")).length;
 					m_log.debug("eventLogLen : " + eventLogLen);
 					if(eventLogLen > bufferLength) {
 						sendMessage(PriorityConstant.TYPE_CRITICAL, MessageConstant.MESSAGE_WINEVENT_FAILED_TO_MONITOR_EVENTLOG_EXECUTION_STRING_MAXIMUM_VALUE.getMessage(), "read event log length=" + eventLogLen);
-						m_log.error("Discard part of eventLog : readEventResult=" + readEventResult + " eventLogLen=" + eventLogLen);
+						m_log.error("Discard part of eventLog : readEventResult=" + readEventResult[0] + " eventLogLen=" + eventLogLen);
 						continue;
 					}
-			
-					String formattedEventLog = "<Events><root>" + readEventResult + "</root></Events>";
+					
+					if(renderFailedIsNotify && readEventResult[1] != null) {
+						Date now = HinemosTime.getDateInstance();
+						SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+						sdf.setTimeZone(HinemosTime.getTimeZone());
+						sendMessage(PriorityConstant.TYPE_CRITICAL, 
+								MessageConstant.MESSAGE_WINEVENT_EVENTS_LOST.getMessage(new String[]{sdf.format(lastMonitorDate), sdf.format(now), logName}), 
+								"Events may have been lost");
+					}
+					
+					String formattedEventLog = "<Events><root>" + readEventResult[0] + "</root></Events>";
 					m_log.debug("formattedEventLog : " + (formattedEventLog));
 
 					// 実行結果をパースしてEventLogRecordクラスに格納
@@ -285,7 +309,7 @@ public class WinEventMonitor {
 				sdf.setTimeZone(HinemosTime.getTimeZone());
 				sendMessage(PriorityConstant.TYPE_CRITICAL, 
 						MessageConstant.MESSAGE_WINEVENT_EVENTS_LOST.getMessage(new String[]{sdf.format(lastMonitorDate), sdf.format(now), logName}), 
-						"Events may have been lost");
+						"Events may have been lost by windows api operation error. HRESULT=" + e.getHR() );
 				try {
 					winEventReader.updateBookmark(entry.getValue(), logName);
 				} catch (Win32Exception ex) {
@@ -312,7 +336,7 @@ public class WinEventMonitor {
 	private String createQuery(WinEventCheckInfo checkInfo, String logName){
 		m_log.debug("createQuery() start creating query for EvtQuery");
 		
-		String query = "<QueryList><Query><Select Path='" + logName + "'>*[System[";
+		String query = "<QueryList><Query><Select Path='" + pergeEventLogNameEnclosure(logName) + "'>*[System[";
 			
 		// ソース
 		if(checkInfo.getSource() != null && checkInfo.getSource().size() != 0){
@@ -590,4 +614,28 @@ public class WinEventMonitor {
 		}
 		return line;
 	}
+	
+	/**
+	 * イベントログ名の定義用の囲いを消す
+	 * ver5.0.X以前に用いられてたブランク入りログ名向けの囲い文字を削除する。
+	 * @param logName 
+	 * @return result String
+	 */
+	public static String pergeEventLogNameEnclosure(String logName){
+		// ３文字未満なら 囲い付きでないとする。
+		int strLen = logName.length();
+		if( strLen < 3 ) {
+			return logName;
+		}
+		// 先頭と末尾に囲い文字がある場合のみ囲い文字を除去する。
+		if( ! logName.substring(0,1).equals(EVENT_LOG_NAME_ENCLOSURE_CHARACTER )){
+			return logName;
+		}
+		if( ! logName.substring(strLen - 1, strLen).equals(EVENT_LOG_NAME_ENCLOSURE_CHARACTER )){
+			return logName;
+		}
+		
+		return logName.substring(1, strLen - 1);
+	}
+	
 }

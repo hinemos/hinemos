@@ -85,20 +85,28 @@ public class MonitorStatusCache {
 	}
 
 	public static void init() {
-		new JpaTransactionManager().getEntityManager().clear();
-		List<MonitorStatusEntity> entities = QueryUtil.getAllMonitorStatus();
-		long start = System.currentTimeMillis();
-		for (MonitorStatusEntity entity : entities) {
-			ILock lock = getLock(entity.getId());
-			try {
-				lock.writeLock();
-				
-				storeCache(entity.getId(), entity);
-			} finally {
-				lock.writeUnlock();
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.getEntityManager().clear();
+			List<MonitorStatusEntity> entities = QueryUtil.getAllMonitorStatus();
+			long start = System.currentTimeMillis();
+			for (MonitorStatusEntity entity : entities) {
+				ILock lock = getLock(entity.getId());
+				try {
+					lock.writeLock();
+					
+					storeCache(entity.getId(), entity);
+				} finally {
+					lock.writeUnlock();
+				}
+			}
+			log.info("init MonitorStatusCache " + (System.currentTimeMillis() - start) + "ms. size=" + cacheKeys().size());
+		} finally {
+			if(jtm != null) {
+				jtm.close();
 			}
 		}
-		log.info("init MonitorStatusCache " + (System.currentTimeMillis() - start) + "ms. size=" + cacheKeys().size());
 	}
 
 	public static void add(MonitorStatusEntity entity) {

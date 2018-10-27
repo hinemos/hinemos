@@ -554,8 +554,13 @@ abstract public class Operator {
 		} else {
 			// pollingでエラーが発生していないかチェックする
 			if (!entry.isValid()) {
-				String message = entry.getErrorDetail().getMessage();
-				throw new CollectedDataNotFoundException(message);
+				// エラーなら値取得失敗と判定し、対応する設定があれば値取得失敗時の返却値を返す
+				if (data.getFailureValue() == null) {
+					String message = entry.getErrorDetail().getMessage();
+					m_log.debug(message);
+					throw new CollectedDataNotFoundException(message);
+				}
+				return Long.parseLong(data.getFailureValue());
 			}
 			
 			long value = (Long)entry.getValue();

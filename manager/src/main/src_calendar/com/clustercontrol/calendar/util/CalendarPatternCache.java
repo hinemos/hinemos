@@ -111,8 +111,8 @@ public class CalendarPatternCache {
 			_lock.writeLock();
 			
 			HashMap<String, CalendarPatternInfo> cache = getCache();
-			new JpaTransactionManager().getEntityManager().clear();
 			CalendarPatternInfo pattern = getCalendarPatternInfoDB(id);
+			new JpaTransactionManager().getEntityManager().refresh(pattern);
 			cache.put(id, pattern);
 			storeCache(cache);
 			

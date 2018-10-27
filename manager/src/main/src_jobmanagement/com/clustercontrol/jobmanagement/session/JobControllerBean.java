@@ -36,6 +36,7 @@ import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.accesscontrol.model.UserInfo;
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
+import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
@@ -374,6 +375,10 @@ public class JobControllerBean implements CheckFacility {
 			if(replace){
 				lastUpdateTime = replaceJobunit(jobunit);
 			} else{
+				//登録の際はユーザがオーナーロールIDに所属しているかチェック
+				RoleValidator.validateUserBelongRole(jobunit.getData().getOwnerRoleId(),
+						(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+						(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 				lastUpdateTime = registerNewJobunit(jobunit);
 			}
 			
@@ -1239,6 +1244,12 @@ public class JobControllerBean implements CheckFacility {
 			jtm.begin();
 			// 入力チェック
 			JobValidator.validateJobSchedule(info);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
+			
 			ModifyJobKick modify = new ModifyJobKick();
 			modify.addJobKick(info, loginUser, JobKickConstant.TYPE_SCHEDULE);
 			jtm.commit();
@@ -1282,6 +1293,12 @@ public class JobControllerBean implements CheckFacility {
 			jtm.begin();
 			// 入力チェック
 			JobValidator.validateJobFileCheck(info);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
+			
 			ModifyJobKick modify = new ModifyJobKick();
 			modify.addJobKick(info, loginUser, JobKickConstant.TYPE_FILECHECK);
 			jtm.commit();
@@ -1326,6 +1343,12 @@ public class JobControllerBean implements CheckFacility {
 			jtm.begin();
 			// 入力チェック
 			JobValidator.validateJobKick(info);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
+			
 			ModifyJobKick modify = new ModifyJobKick();
 			modify.addJobKick(info, loginUser, JobKickConstant.TYPE_MANUAL);
 			jtm.commit();
@@ -1859,63 +1882,72 @@ public class JobControllerBean implements CheckFacility {
 		JobControllerBean bean = new JobControllerBean();
 
 		ArrayList<JobKick> jobKickList = null;
+		JpaTransactionManager jtm = new JpaTransactionManager();
 		try {
-			_lock.readLock();
+			jtm.begin();
 			
-			List<JobKick> jobKickCache = getJobKickCache();
-			if (jobKickCache != null) {
-				jobKickList = new ArrayList<JobKick>(jobKickCache);
-			}
-		} finally {
-			_lock.readUnlock();
-		}
-		
-		if (jobKickList == null) {
 			try {
-				_lock.writeLock();
-				
-				long startTime = System.currentTimeMillis();
-				new JpaTransactionManager().getEntityManager().clear();
-				jobKickList = bean.getJobKickList();
-				storeJobKickCache(jobKickList);
-				
-				m_log.info("refresh jobKickCache " + (System.currentTimeMillis() - startTime) +
-						"ms. size=" + jobKickList.size());
+				_lock.readLock();
+			
+				List<JobKick> jobKickCache = getJobKickCache();
+				if (jobKickCache != null) {
+					jobKickList = new ArrayList<JobKick>(jobKickCache);
+				}
 			} finally {
-				_lock.writeUnlock();
+				_lock.readUnlock();
 			}
-		}
-
-		for (JobKick jobKick : jobKickList) {
-			// タイプがスケジュールではなく、ファイルチェックであることを確認。
-			int type = jobKick.getType();
-			if (type != JobKickConstant.TYPE_FILECHECK) {
-				continue;
-			}
-			JobFileCheck jobFileCheck = new JobControllerBean().getJobFileCheck(jobKick.getId());
-
-			// ファイルチェック対象のファシリティIDであることを確認。
-			boolean flag = false;
-			for (String facilityId : facilityIdList) {
-				if(new RepositoryControllerBean().containsFaciliyId(jobFileCheck.getFacilityId(), facilityId, jobFileCheck.getOwnerRoleId())) {
-					flag = true;
-					break;
+		
+			if (jobKickList == null) {
+				try {
+					_lock.writeLock();
+				
+					long startTime = System.currentTimeMillis();
+					jtm.getEntityManager().clear();
+					jobKickList = bean.getJobKickList();
+					storeJobKickCache(jobKickList);
+					
+					m_log.info("refresh jobKickCache " + (System.currentTimeMillis() - startTime) +
+							"ms. size=" + jobKickList.size());
+				} finally {
+					_lock.writeUnlock();
 				}
 			}
-			if (!flag) {
-				continue;
-			}
 
-			// カレンダを作成
-			String calendarId = jobFileCheck.getCalendarId();
-			CalendarInfo calendarInfo = null;
-			try {
-				calendarInfo = new CalendarControllerBean().getCalendarFull(calendarId);
-			} catch (CalendarNotFound e) {
-				m_log.warn("CalendarNotFound " + e.getMessage() + " id=" + calendarId);
+			for (JobKick jobKick : jobKickList) {
+				// タイプがスケジュールではなく、ファイルチェックであることを確認。
+				int type = jobKick.getType();
+				if (type != JobKickConstant.TYPE_FILECHECK) {
+					continue;
+				}
+				JobFileCheck jobFileCheck = new JobControllerBean().getJobFileCheck(jobKick.getId());
+
+				// ファイルチェック対象のファシリティIDであることを確認。
+				boolean flag = false;
+				for (String facilityId : facilityIdList) {
+					if(new RepositoryControllerBean().containsFaciliyId(jobFileCheck.getFacilityId(), facilityId, jobFileCheck.getOwnerRoleId())) {
+						flag = true;
+						break;
+					}
+				}
+				if (!flag) {
+					continue;
+				}
+
+				// カレンダを作成
+				String calendarId = jobFileCheck.getCalendarId();
+				CalendarInfo calendarInfo = null;
+				try {
+					calendarInfo = new CalendarControllerBean().getCalendarFull(calendarId);
+				} catch (CalendarNotFound e) {
+					m_log.warn("CalendarNotFound " + e.getMessage() + " id=" + calendarId);
+				}
+				jobFileCheck.setCalendarInfo(calendarInfo);
+				ret.add(jobFileCheck);
 			}
-			jobFileCheck.setCalendarInfo(calendarInfo);
-			ret.add(jobFileCheck);
+			
+			jtm.commit();
+		} finally {
+			jtm.close();
 		}
 
 		return ret;
@@ -2589,6 +2621,12 @@ public class JobControllerBean implements CheckFacility {
 			jtm.begin();
 			// 入力チェック
 			JobValidator.validateJobmapIconImage(info);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
+			
 			ModifyJobmap modify = new ModifyJobmap();
 			modify.modifyJobmapIconImage(info, loginUser, true);
 			jtm.commit();

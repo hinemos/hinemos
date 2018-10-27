@@ -43,7 +43,7 @@ public class PerformanceCollectMasterEndpointWrapper {
 	}
 
 	public static PerformanceCollectMasterEndpointWrapper getWrapper(String managerName) {
-		return new PerformanceCollectMasterEndpointWrapper(EndpointManager.get(managerName));
+		return new PerformanceCollectMasterEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	/**

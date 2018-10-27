@@ -664,7 +664,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 					} else {
 						triggerBuilder.withMisfireHandlingInstructionIgnoreMisfires();
 					}
-					trigger = triggerBuilder.cronSchedule(entity.getCronExpression()).startAt(entity.getStartTime()).endAt(entity.getEndTime()).build();
+					trigger = triggerBuilder.cronSchedule(entity.getCronExpression()).startNow().endAt(entity.getEndTime()).build();
 					((AbstractTrigger)trigger).setNextFireTime(entity.getNextFireTime());
 					((AbstractTrigger)trigger).setPreviousFireTime(entity.getPrevFireTime());
 					

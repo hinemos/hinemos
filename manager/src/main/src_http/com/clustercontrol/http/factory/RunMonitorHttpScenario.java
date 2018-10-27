@@ -364,7 +364,6 @@ public class RunMonitorHttpScenario extends RunMonitor {
 		if (m_now != null){
 			m_nodeDate = m_now.getTime();
 		}
-		m_value = 0;
 
 		GetHttpResponse.GetHttpResponseBuilder builder = null;
 		try {

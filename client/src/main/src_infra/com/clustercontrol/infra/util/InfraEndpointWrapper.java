@@ -68,7 +68,7 @@ public class InfraEndpointWrapper {
 	}
 
 	public static InfraEndpointWrapper getWrapper(String managerName) {
-		return new InfraEndpointWrapper(EndpointManager.get(managerName));
+		return new InfraEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	private static List<EndpointSetting<InfraEndpoint>> getInfraEndpoint(EndpointUnit endpointUnit) {

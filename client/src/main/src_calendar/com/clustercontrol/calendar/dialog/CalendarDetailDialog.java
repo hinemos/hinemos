@@ -130,7 +130,7 @@ public class CalendarDetailDialog extends CommonDialog{
 	private String managerName = null;
 
 	// カレンダパターンマップ
-	private Map<String, String> calPatternMap = null;
+	private Map<String, Integer> calPatternMap = null;
 
 	/**
 	 *
@@ -550,12 +550,13 @@ public class CalendarDetailDialog extends CommonDialog{
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.widthHint = 150;
+		int index = 0;
 		this.calDetailCalPatternCombo.setLayoutData(gridData);
-		this.calDetailCalPatternCombo.add("");
+		this.calDetailCalPatternCombo.add("", index);
 		this.calPatternMap = new ConcurrentHashMap<>();
 		for(CalendarPatternInfo str : getCalendarPatternList(this.managerName, this.ownerRoleId)){
-			this.calDetailCalPatternCombo.add(str.getCalPatternName());
-			calPatternMap.put(str.getCalPatternId(), str.getCalPatternName());
+			this.calDetailCalPatternCombo.add(str.getCalPatternName(), ++index);
+			calPatternMap.put(str.getCalPatternId(), index);
 		}
 		this.calDetailCalPatternCombo.addModifyListener(new ModifyListener() {
 			@Override
@@ -1088,7 +1089,7 @@ public class CalendarDetailDialog extends CommonDialog{
 		else if(calDetailCalPatternRadio.getSelection()){
 			//カレンダパターンテキスト
 			if(calDetailCalPatternCombo.getText() != null && calDetailCalPatternCombo.getText().length() > 0){
-				this.inputData.setCalPatternId(getCalPatternId(calDetailCalPatternCombo.getText()));
+				this.inputData.setCalPatternId(getCalPatternId(calDetailCalPatternCombo.getSelectionIndex()));
 			}else {
 				String[] args = {"[ " +  Messages.getString("calendar.pattern") + " ]"};
 				this.setValidateResult(Messages.getString("message.hinemos.1"),
@@ -1294,7 +1295,7 @@ public class CalendarDetailDialog extends CommonDialog{
 				}
 				//カレンダパターン
 				if(detailInfo.getCalPatternId() != null){
-					this.calDetailCalPatternCombo.setText(calPatternMap.get(detailInfo.getCalPatternId()));
+					this.calDetailCalPatternCombo.setText(calDetailCalPatternCombo.getItem(calPatternMap.get(detailInfo.getCalPatternId())));
 				}
 				//上記の日程からx日後
 				if(detailInfo.getAfterday() != null){
@@ -1438,13 +1439,13 @@ public class CalendarDetailDialog extends CommonDialog{
 
 	/**
 	 * カレンダパターンのカレンダパターンIDを返す。
-	 * @param name カレンダパターン名
+	 * @param index コンボボックスのインデックス
 	 * @return カレンダパターンID
 	 */
-	private String getCalPatternId(String name) {
-		if (calPatternMap.containsValue(name)) {
-			for (Map.Entry<String, String> entry : calPatternMap.entrySet()) {
-				if (entry.getValue().equals(name)) {
+	private String getCalPatternId(int index) {
+		if (calPatternMap.containsValue(index)) {
+			for (Map.Entry<String, Integer> entry : calPatternMap.entrySet()) {
+				if (entry.getValue().equals(index)) {
 					return entry.getKey();
 				}
 			}

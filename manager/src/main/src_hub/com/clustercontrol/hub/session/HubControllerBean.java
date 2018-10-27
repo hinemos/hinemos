@@ -35,6 +35,7 @@ import javax.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
 
+import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.collect.model.CollectData;
 import com.clustercontrol.collect.model.CollectKeyInfo;
@@ -76,6 +77,8 @@ import com.clustercontrol.hub.session.TransferFactory.Property;
 import com.clustercontrol.hub.util.HubValidator;
 import com.clustercontrol.hub.util.QueryUtil;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
+import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.platform.QueryPertial;
 import com.clustercontrol.platform.hub.HubControllerUtil;
@@ -463,6 +466,11 @@ public class HubControllerBean {
 
 			//入力チェック
 			HubValidator.validateLogFormat(format);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(format.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 
 			String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 			new ModifyLogFormat().add(format, loginUser);
@@ -738,6 +746,11 @@ public class HubControllerBean {
 
 			//入力チェック
 			HubValidator.validateTransferInfo(transferInfo);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(transferInfo.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 
 			// 情報登録
 			String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
@@ -1158,6 +1171,7 @@ public class HubControllerBean {
 			// キーのクエリ
 			StringBuilder keyQueryStr = new StringBuilder("SELECT DISTINCT k FROM CollectStringKeyInfo k");
 			List<String> facilityIds = new ArrayList<>();
+			List<String> monitorIds = new ArrayList<>();
 			if (queryInfo.getFacilityId() != null ||
 					queryInfo.getMonitorId() != null) {
 				StringBuilder whereStr = new StringBuilder();
@@ -1195,6 +1209,18 @@ public class HubControllerBean {
 						whereStr.append(" AND ");
 					}
 					whereStr.append(String.format("k.id.monitorId = '%s'", queryInfo.getMonitorId()));
+				} else {
+					// 監視項目IDの指定がない場合は、ユーザがアクセス可能な全監視項目IDを条件に含める。
+					if (whereStr.length() != 0) {
+						whereStr.append(" AND ");
+					}
+					whereStr.append("k.id.monitorId IN :monitorIds");
+					
+					MonitorSettingControllerBean bean = new MonitorSettingControllerBean();
+					List<MonitorInfo> infos = bean.getMonitorListWithoutCheckInfo(null);
+					for(MonitorInfo info : infos) {
+						monitorIds.add(info.getMonitorId());
+					}
 				}
 
 				if (whereStr.length() != 0) {
@@ -1209,6 +1235,11 @@ public class HubControllerBean {
 			} else {
 				// 検索対象となるノードがないので終了。
 				throw new InvalidSetting(MessageConstant.MESSAGE_HUB_SEARCH_NO_NODE.getMessage());
+			}
+			
+			if(!monitorIds.isEmpty()) {
+				keyQuery.setParameter("monitorIds", monitorIds);
+				logger.debug(String.format("queryCollectStringData() : target monitorIds. monitorIds=%s, query=%s", monitorIds, queryInfo));
 			}
 
 			Map<Long, CollectStringKeyInfo> keys = new HashMap<>();

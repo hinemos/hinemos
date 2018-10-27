@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.scheduler.TriggerSchedulerException;
 import com.clustercontrol.commons.util.HinemosSessionContext;
@@ -103,6 +104,11 @@ public class MonitorSettingControllerBean {
 			//入力チェック
 			try{
 				MonitorValidator.validateMonitorInfo(info);
+				
+				//ユーザがオーナーロールIDに所属しているかチェック
+				RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
+						(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+						(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 			} catch (InvalidRole | InvalidSetting e) {
 				throw e;
 			} catch (Exception e) {

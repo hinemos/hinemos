@@ -313,13 +313,28 @@ public class RunCustom extends RunCustomBase{
 
 					if (!isMonitorJob && monitor.getCollectorFlg()) {	// collector each value
 						Sample sample = new Sample(result.getCollectDate()==null?null:new Date(result.getCollectDate()), monitor.getMonitorId());
+						boolean overlapCheck = false;
 						// 差分判定
 						if (monitor.getCustomCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_NO) {
 							sample.set(result.getFacilityId(), monitor.getItemName(), (Double)result.getResults().get(key), CollectedDataErrorTypeConstant.NOT_ERROR, key);
 						} else if (monitor.getCustomCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_DELTA) {
 							sample.set(result.getFacilityId(), monitor.getItemName(), value, CollectedDataErrorTypeConstant.NOT_ERROR, key);
 						}
-						sampleList.add(sample);
+						// keyの重複チェック
+						for (Sample lSample : sampleList){
+							// カスタム監視ではcollectedSamplesの1要素に対してperfDataは1つのため、以下で対応
+							if (!(lSample.getMonitorId().equals(monitor.getMonitorId())
+									&& lSample.getDateTime().getTime() == result.getCollectDate()
+									&& lSample.getPerfDataList().get(0).getFacilityId().equals(result.getFacilityId())
+									&& lSample.getPerfDataList().get(0).getDisplayName().equals(key)
+									&& lSample.getPerfDataList().get(0).getItemName().equals(monitor.getItemName()))) {
+								overlapCheck = true;
+								break;
+							}
+						}
+						if (!overlapCheck) {
+							sampleList.add(sample);
+						}
 					}
 				}
 				if(!sampleList.isEmpty()){

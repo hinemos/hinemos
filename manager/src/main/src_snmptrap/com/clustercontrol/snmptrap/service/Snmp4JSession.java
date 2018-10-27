@@ -248,8 +248,16 @@ public class Snmp4JSession implements SnmpTrapSession {
 			trapId = TrapId.createSnmpTrapV2Id(secondVarOid, enterpriseId);
 		}
 
+		int index;
+		if (pdu.getType() == PDU.V1TRAP && pdu instanceof PDUv1) {
+			index = 0;
+		} else {
+			// v2cの場合、index=0にsysUpTime、index=1にOIDが入り、varbindはindex=2以降に入るため、
+			// index=2からループさせる
+			index = 2;
+		}
 		List<SnmpVarBind> varbinds = new ArrayList<SnmpVarBind>();
-		for (int i = 0; i < pdu.getVariableBindings().size(); i++) {
+		for (int i = index; i < pdu.getVariableBindings().size(); i++) {
 			VariableBinding varbind = pdu.getVariableBindings().get(i);
 
 			SnmpVarBind.SyntaxType type;

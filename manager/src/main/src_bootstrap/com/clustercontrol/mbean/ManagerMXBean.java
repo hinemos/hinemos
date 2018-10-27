@@ -100,6 +100,18 @@ public interface ManagerMXBean {
 	public int getWebServiceQueueCount();
 	
 	/**
+	 * WS(ForAgent)のQueueサイズを取得
+	 * @return WSのQueueサイズ
+	 */
+	public int getWebServiceForAgentQueueCount();
+	
+	/**
+	 * WS(ForAgentHub)のQueueサイズを取得
+	 * @return WSのQueueサイズ
+	 */
+	public int getWebServiceForAgentHubQueueCount();
+	
+	/**
 	 * テーブルの物理サイズ（Byte）を取得
 	 * @return テーブルの物理サイズ（Byte）
 	 */

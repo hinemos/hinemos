@@ -402,12 +402,12 @@ public class CollectGraphComposite extends Composite {
 					
 					String param =
 							"ThresholdGraph.prototype.setThresholdParamMonitorId({"
-							+ "\'itemname\':\"" + itemName + "\", "
-							+ "\'monitorid\':\"" + monitorId + "\", "
-							+ "\'info_max\':" + infoMaxValue + ", "
-							+ "\'info_min\':" + infoMinValue + ", "
-							+ "\'warn_max\':" + warnMaxValue + ", " 
-							+ "\'warn_min\':" + warnMinValue 
+							+ "\'itemname\':\"" + CollectGraphUtil.escapeParam(itemName) + "\", "
+							+ "\'monitorid\':\"" + CollectGraphUtil.escapeParam(monitorId) + "\", "
+							+ "\'info_max\':" + CollectGraphUtil.escapeParam(infoMaxValue) + ", "
+							+ "\'info_min\':" + CollectGraphUtil.escapeParam(infoMinValue) + ", "
+							+ "\'warn_max\':" + CollectGraphUtil.escapeParam(warnMaxValue) + ", " 
+							+ "\'warn_min\':" + CollectGraphUtil.escapeParam(warnMinValue) 
 							+ "});";
 					executeScript(param, m_browserGraph);
 				}
@@ -859,24 +859,24 @@ public class CollectGraphComposite extends Composite {
 	 */
 	private void setGraphMessages() {
 		String param = "setGraphMessages({"
-				+ "\'autoadjust\':\'" + Messages.getString("collect.autoadjust") + "\', " // 自動調整
-				+ "\'autoupdate\':\'" + Messages.getString("collect.autoupdate") + "\', " // 自動更新
-				+ "\'bulkpng\':\'" + Messages.getString("collect.bulkpng") + "\', " // 一括PNG
-				+ "\'nodes\':\'" + Messages.getString("collect.nodes") + "\', " // ノード
-				+ "\'total\':\'" + Messages.getString("collect.total") + "\', " // 全
-				+ "\'time\':\'" + Messages.getString("time") + "\', " // 日時
-				+ "\'priority\':\'" + Messages.getString("priority") + "\', " // 重要度
-				+ "\'message\':\'" + Messages.getString("message") + "\', " // メッセージ
-				+ "\'total\':\'" + Messages.getString("collect.total") + "\', " // 全
-				+ "\'information\':\'" + Messages.getString("info") + "\', "
-				+ "\'warning\':\'" + Messages.getString("warning") + "\', "
-				+ "\'critical\':\'" + Messages.getString("critical") + "\', "
-				+ "\'unknown\':\'" + Messages.getString("unknown") + "\', "
-				+ "\'detail\':\'" + Messages.getString("detail") + "\', "// 詳細
+				+ "\'autoadjust\':\'" + CollectGraphUtil.escapeParam(Messages.getString("collect.autoadjust")) + "\', " // 自動調整
+				+ "\'autoupdate\':\'" + CollectGraphUtil.escapeParam(Messages.getString("collect.autoupdate")) + "\', " // 自動更新
+				+ "\'bulkpng\':\'" + CollectGraphUtil.escapeParam(Messages.getString("collect.bulkpng")) + "\', " // 一括PNG
+				+ "\'nodes\':\'" + CollectGraphUtil.escapeParam(Messages.getString("collect.nodes")) + "\', " // ノード
+				+ "\'total\':\'" + CollectGraphUtil.escapeParam(Messages.getString("collect.total")) + "\', " // 全
+				+ "\'time\':\'" + CollectGraphUtil.escapeParam(Messages.getString("time")) + "\', " // 日時
+				+ "\'priority\':\'" + CollectGraphUtil.escapeParam(Messages.getString("priority")) + "\', " // 重要度
+				+ "\'message\':\'" + CollectGraphUtil.escapeParam(Messages.getString("message")) + "\', " // メッセージ
+				+ "\'total\':\'" + CollectGraphUtil.escapeParam(Messages.getString("collect.total")) + "\', " // 全
+				+ "\'information\':\'" + CollectGraphUtil.escapeParam(Messages.getString("info")) + "\', "
+				+ "\'warning\':\'" + CollectGraphUtil.escapeParam(Messages.getString("warning")) + "\', "
+				+ "\'critical\':\'" + CollectGraphUtil.escapeParam(Messages.getString("critical")) + "\', "
+				+ "\'unknown\':\'" + CollectGraphUtil.escapeParam(Messages.getString("unknown")) + "\', "
+				+ "\'detail\':\'" + CollectGraphUtil.escapeParam(Messages.getString("detail")) + "\', "// 詳細
 				+ "\'timezoneoffset\':" + TimezoneUtil.getTimeZoneOffset()/(1000*60) + ", "// タイムゾーンオフセット(数値)
-				+ "\'captureerror\':\'" + Messages.getString("message.collection.graph.capture.morethan.displayed") + "\', "// キャプチャファイルが100以上あるため、実行できません
-				+ "\'unexpectederror\':\'" + Messages.getString("message.collection.graph.unexpected.error") + "\', "// 予期しないエラーが発生しました。
-				+ "\'datainsufficient\':\'" + Messages.getString("message.collection.6") + "\'" // 収集データが不足しています
+				+ "\'captureerror\':\'" + CollectGraphUtil.escapeParam(Messages.getString("message.collection.graph.capture.morethan.displayed")) + "\', "// キャプチャファイルが100以上あるため、実行できません
+				+ "\'unexpectederror\':\'" + CollectGraphUtil.escapeParam(Messages.getString("message.collection.graph.unexpected.error")) + "\', "// 予期しないエラーが発生しました。
+				+ "\'datainsufficient\':\'" + CollectGraphUtil.escapeParam(Messages.getString("message.collection.6")) + "\'" // 収集データが不足しています
 				+ "});"; 
 		executeScript(param, m_browserGraph);
 		executeScript(param, m_browserSlider);

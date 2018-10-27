@@ -23,14 +23,14 @@ import javax.persistence.EntityExistsException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
-import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.bean.RoleTypeConstant;
 import com.clustercontrol.accesscontrol.bean.UserTypeConstant;
-import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfoPK;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
+import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfoPK;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.accesscontrol.model.RoleInfo;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
@@ -38,11 +38,14 @@ import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfoPK;
 import com.clustercontrol.accesscontrol.model.UserInfo;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeUtil;
 import com.clustercontrol.accesscontrol.util.QueryUtil;
+import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.PrivilegeDuplicate;
 import com.clustercontrol.fault.PrivilegeNotFound;
 import com.clustercontrol.fault.RoleDuplicate;
@@ -309,7 +312,7 @@ public class RoleModifier {
 	 * @throws HinemosUnknown
 	 */
 	public static void replaceObjectPrivilegeInfo(String objectType, String objectId, List<ObjectPrivilegeInfo> list, String modifyUserId)
-			throws PrivilegeDuplicate, UsedObjectPrivilege, HinemosUnknown {
+			throws PrivilegeDuplicate, UsedObjectPrivilege, HinemosUnknown, InvalidSetting {
 
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		HinemosEntityManager em = jtm.getEntityManager();
@@ -360,6 +363,11 @@ public class RoleModifier {
 						deleteList.remove(infoPk);
 					} catch (PrivilegeNotFound e) {
 						// 新規作成
+						//ユーザがロールIDに所属しているかチェック
+						RoleValidator.validateUserBelongRole(info.getRoleId(),
+								(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+								(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
+						
 						modifyInfo = new ObjectPrivilegeInfo(infoPk);
 					}
 					modifyInfo.setCreateUserId(modifyUserId);
@@ -570,6 +578,9 @@ public class RoleModifier {
 		} catch (UsedObjectPrivilege | EntityExistsException e) {
 			m_log.debug("replaceObjectPrivilegeInfo() failure to add a entity. " + e.getMessage());
 			throw new PrivilegeDuplicate(e.getMessage(), e);
+		} catch (InvalidSetting e) {
+			m_log.debug("replaceObjectPrivilegeInfo() failure to add a entity. " + e.getMessage());
+			throw e;
 		} catch (Exception e) {
 			m_log.warn("replaceObjectPrivilegeInfo() failure to add a entity. " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);

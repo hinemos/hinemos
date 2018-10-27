@@ -124,7 +124,17 @@ public class EndpointManager {
 	public static EndpointUnit get( String managerName ){
 		return getInstance().endpointManagerMap.get(managerName);
 	}
-	
+
+	public static EndpointUnit getActive( String managerName ){
+		if (getInstance().getActiveManagerMap().get(managerName) != null) {
+			return getInstance().endpointManagerMap.get(managerName);
+		}
+		else {
+			m_log.warn(Messages.getString("message.accesscontrol.18"));
+			throw new IllegalStateException();
+		}
+	}
+
 	public static int getOrder(String managerName) {
 		int n = 0;
 		for (String key : getInstance().endpointManagerMap.keySet()) {

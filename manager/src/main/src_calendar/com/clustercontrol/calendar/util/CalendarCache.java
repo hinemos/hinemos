@@ -111,8 +111,8 @@ public class CalendarCache {
 			
 			ConcurrentHashMap<String, CalendarInfo> cache = getCache();
 			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-			em.clear();
 			CalendarInfo calendar = getCalendarInfoDB(id);
+			em.refresh(calendar);
 			em.detach(calendar);
 			cache.put(id, calendar);
 			storeCache(cache);
