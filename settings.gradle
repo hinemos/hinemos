@@ -1,0 +1,6 @@
+rootProject.name = 'hinemos'
+
+include 'common'
+include 'manager'
+include 'client'
+include 'webclient'

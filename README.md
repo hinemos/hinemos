@@ -6,9 +6,17 @@ Forked from [here](https://github.com/hinemos/hinemos).
 # HOWTO
 
 ## Build
-> cd common
-> gradle build
-> gradle export
+> SET JDK7_HOME=C:\Program Files\Java\jdk1.7.0_80
+
+> gradle :common:build
+> gradle :manager:build
+
+> gradle :manager:buildws
+
+
+
+Check Jar contents!!!
+
 
 > cd ..\manager
 > gradle build
@@ -19,3 +27,7 @@ Forked from [here](https://github.com/hinemos/hinemos).
 > gradle build
 > gradle export
 
+
+# MISC
+
+* -XDignore.symbol.file=true
