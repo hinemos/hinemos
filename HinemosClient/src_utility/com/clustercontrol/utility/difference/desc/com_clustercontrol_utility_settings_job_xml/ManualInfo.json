@@ -1,0 +1,50 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"id",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"name",
+	"annotations":[
+		{"type":"Column", "columnName":"ManualInfo_scheduleName"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"ManualInfo_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"ManualInfo_validFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"jobunitId",
+	"annotations":[
+		{"type":"Column", "columnName":"ManualInfo_jobunitId"}
+	]},
+
+	{
+	"propName":"jobId",
+	"annotations":[
+		{"type":"Column", "columnName":"ManualInfo_jobId"}
+	]},
+
+	{
+	"propName":"jobRuntimeInfos",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleInfo_jobRuntimeInfos"},
+		{"type":"Array", "idType":"prop", "propName":"paramId"}
+	]}
+]
+}

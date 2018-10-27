@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.hub.util;
@@ -34,10 +27,10 @@ import com.clustercontrol.fault.CollectKeyNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.hub.bean.CollectStringTag;
 import com.clustercontrol.hub.bean.StringSample;
 import com.clustercontrol.hub.bean.StringSampleData;
 import com.clustercontrol.hub.bean.StringSampleTag;
-import com.clustercontrol.hub.bean.ValueType;
 import com.clustercontrol.hub.model.CollectDataTag;
 import com.clustercontrol.hub.model.CollectDataTagPK;
 import com.clustercontrol.hub.model.CollectStringData;
@@ -65,7 +58,21 @@ public class CollectStringDataUtil {
 	private static Long maxId = null;
 	private static Object maxLock = new Object();
 
-	private static Long getCollectStringKeyInfoPK(String monitorId, String facilityId, String targetName, JpaTransactionManager jtm) {
+	/**
+	 * 収集IDの生成.<BR>
+	 * <br>
+	 * 引数を元に登録済の収集IDを取得、もしくは新規生成する.
+	 *
+	 * @param monitorId
+	 *            監視ID
+	 * @param facilityId
+	 *            FacilityID
+	 * @param targetName
+	 *            ファイルパス(上限512文字)
+	 * @param jtm
+	 *            トランザクション制御オブジェクト(新規生成エラー時ロールバック用)
+	 */
+	public static Long getCollectStringKeyInfoPK(String monitorId, String facilityId, String targetName, JpaTransactionManager jtm) {
 		CollectStringKeyInfo collectKeyInfo = null;
 		try {
 			// collectKeyInfo(のcollectorid)を取ってくることができるか確認
@@ -177,7 +184,7 @@ public class CollectStringDataUtil {
 					// KEY_TIMESTAMP_IN_LOG があれば、ログの時刻を受信日時から切り替えます。
 					CollectDataTag timestamp = null;
 					for (CollectDataTag tag: collectData.getTagList()) {
-						if (tag.getKey().equals(CollectStringDataParser.KEY_TIMESTAMP_IN_LOG)) {
+						if (tag.getKey().equals(CollectStringTag.TIMESTAMP_IN_LOG.name())) {
 							timestamp = tag;
 							break;
 						}
@@ -186,7 +193,8 @@ public class CollectStringDataUtil {
 						try {
 							Long time = collectData.getTime();
 							collectData.setTime(Long.valueOf(timestamp.getValue()));
-							collectData.getTagList().add(new CollectDataTag(new CollectDataTagPK(collectData.getCollectId(), collectData.getDataId(), CollectStringDataParser.KEY_TIMESTAMP_RECIEVED), ValueType.number, time.toString()));
+							collectData.getTagList().add(new CollectDataTag(new CollectDataTagPK(collectData.getCollectId(), collectData.getDataId(), 
+									CollectStringTag.TIMESTAMP_RECIEVED.name()), CollectStringTag.TIMESTAMP_RECIEVED.valueType(), time.toString()));
 						} catch(Exception e) {
 							m_log.warn("store() : fail to change to timestamp of log. time=" + timestamp.getValue(), e);
 						}

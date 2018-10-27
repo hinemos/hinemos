@@ -1,0 +1,46 @@
+   IANA-LANGUAGE-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-IDENTITY, mib-2
+           FROM SNMPv2-SMI;
+
+   ianaLanguages MODULE-IDENTITY
+       LAST-UPDATED "201405220000Z" -- May 22, 2014
+       ORGANIZATION "IANA"
+
+
+
+
+
+       ::= { mib-2 73 }
+
+
+   ianaLangJavaByteCode OBJECT-IDENTITY
+       STATUS  current
+       ::= { ianaLanguages 1 }
+
+   ianaLangTcl OBJECT-IDENTITY
+       STATUS  current
+       ::= { ianaLanguages 2 }
+
+   ianaLangPerl OBJECT-IDENTITY
+       STATUS  current
+       ::= { ianaLanguages 3 }
+
+   ianaLangScheme OBJECT-IDENTITY
+       STATUS  current
+       ::= { ianaLanguages 4 }
+
+   ianaLangSRSL OBJECT-IDENTITY
+       STATUS  current
+       ::= { ianaLanguages 5 }
+
+   ianaLangPSL OBJECT-IDENTITY
+       STATUS  current
+       ::= { ianaLanguages 6 }
+
+   ianaLangSMSL OBJECT-IDENTITY
+       STATUS  current
+       ::= { ianaLanguages 7 }
+
+   END

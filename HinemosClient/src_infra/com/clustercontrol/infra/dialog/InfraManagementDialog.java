@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.dialog;
@@ -32,9 +25,10 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
@@ -45,6 +39,7 @@ import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.infra.composite.InfraNoticeComposite;
+import com.clustercontrol.infra.composite.InfraParameterComposite;
 import com.clustercontrol.infra.composite.InfraScopeComposite;
 import com.clustercontrol.infra.util.InfraEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
@@ -86,8 +81,15 @@ public class InfraManagementDialog extends CommonDialog {
 	private RoleIdListComposite m_ownerRoleId = null;
 	/** スコープ用テキスト*/
 	private InfraScopeComposite m_scope = null;
+	
+	/** タブフォルダ */
+	private TabFolder m_tabFolder = null;
+
 	/** 通知用コンポジット */
 	private InfraNoticeComposite m_noticeComp = null;
+
+	/** 変数用コンポジット */
+	private InfraParameterComposite m_parameterComp = null;
 
 	/** 有効に変更用ボタン*/
 	private Button m_validFlg = null;
@@ -302,26 +304,34 @@ public class InfraManagementDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		m_scope.setLayoutData(gridData);
 
-		//通知設定
-		Group notificationGroup = new Group(infraInfoComposite, SWT.LEFT);
+		// タブ
+		this.m_tabFolder = new TabFolder(infraInfoComposite, SWT.NONE);
 		GridLayout groupLayout = new GridLayout(1, true);
 		groupLayout.marginWidth = 5;
 		groupLayout.marginHeight = 5;
 		groupLayout.numColumns = DIALOG_WIDTH;
-		notificationGroup.setLayout(groupLayout);
+		m_tabFolder.setLayout(groupLayout);
 		gridData = new GridData();
 		gridData.horizontalSpan = DIALOG_WIDTH;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
-		notificationGroup.setText(Messages.getString("notifications"));
-		notificationGroup.setLayoutData(gridData);
+		m_tabFolder.setLayoutData(gridData);
 
-		m_noticeComp = new InfraNoticeComposite(notificationGroup, SWT.NONE, this.m_managerComposite.getText());
-		gridData = new GridData();
-		gridData.horizontalSpan = DIALOG_WIDTH;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		m_noticeComp.setLayoutData(gridData);
+		//通知設定
+		m_noticeComp = new InfraNoticeComposite(this.m_tabFolder, SWT.NONE, this.m_managerComposite.getText());
+		TabItem notificationTabItem = new TabItem(this.m_tabFolder, SWT.NONE);
+		WidgetTestUtil.setTestId(this, "notificationTabItem", notificationTabItem);
+		notificationTabItem.setText(Messages.getString("notifications"));
+		notificationTabItem.setControl(m_noticeComp);
+		m_noticeComp.setLayoutData(new GridData());
+
+		// 変数設定
+		m_parameterComp = new InfraParameterComposite(this.m_tabFolder, SWT.NONE);
+		TabItem parameterTabItem = new TabItem(this.m_tabFolder, SWT.NONE);
+		WidgetTestUtil.setTestId(this, "parameterTabItem", parameterTabItem);
+		parameterTabItem.setText(Messages.getString("infra.parameter"));
+		parameterTabItem.setControl(m_parameterComp);
+		m_parameterComp.setLayoutData(new GridData());
 
 		// 設定の（有効／無効）
 		m_validFlg = new Button(infraInfoComposite, SWT.CHECK);
@@ -433,6 +443,11 @@ public class InfraManagementDialog extends CommonDialog {
 			m_validFlg.setSelection(info.isValidFlg());
 			// モジュール情報の引継ぎ用
 			m_modules = info.getModuleList();
+
+			// 環境構築変数情報を設定
+			this.m_parameterComp.setInfraManagementParamList(
+					info.getInfraManagementParamList());
+
 		} else {
 			// 作成の場合（デフォルト設定）
 			m_scope.setOwnerRoleId( m_managerComposite.getText(), m_ownerRoleId.getText() );
@@ -451,21 +466,6 @@ public class InfraManagementDialog extends CommonDialog {
 	 */
 	@Override
 	protected ValidateResult validate() {
-		if ("".equals((m_managementId.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.management.id")}));
-		}
-		if ("".equals((m_managementName.getText()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("infra.management.name")}));
-		}
-		if (m_scope.getFacilityId() != null && "".equals((m_scope.getFacilityId()).trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),
-					Messages.getString("message.infra.specify.item",
-							new Object[]{Messages.getString("scope")}));
-		}
 		return super.validate();
 	}
 
@@ -521,6 +521,11 @@ public class InfraManagementDialog extends CommonDialog {
 			List<NotifyRelationInfo> notifyList = info.getNotifyRelationList();
 			notifyList.addAll(m_noticeComp.getNotifyId().getNotify());
 		}
+
+		// 変数情報取得
+		info.getInfraManagementParamList().clear();
+		info.getInfraManagementParamList().addAll(this.m_parameterComp.getInfraManagementParamList());
+
 		//オーナーロールID
 		info.setOwnerRoleId(m_ownerRoleId.getText());
 		//有効・無効判定取得
@@ -573,6 +578,10 @@ public class InfraManagementDialog extends CommonDialog {
 			} catch (InfraManagementDuplicate_Exception e) {
 				m_log.info("action(); addInfraManagement, " + e.getMessage());
 				errMsg = Messages.getString("message.infra.module.duplicate", new String[]{m_managementId.getText()});
+			} catch (InfraManagementNotFound_Exception e) {
+				// コピーの場合の参照環境構築モジュールの環境構築設定未存在
+				m_log.info("action(); addInfraManagement, " + e.getMessage());
+				errMsg = HinemosMessage.replace(e.getMessage());
 			} catch (NotifyDuplicate_Exception | HinemosUnknown_Exception | InvalidUserPass_Exception | InvalidSetting_Exception e) {
 				m_log.info("action() addInfraManagement, " + e.getMessage());
 				errMsg = HinemosMessage.replace(e.getMessage());

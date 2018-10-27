@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.session;
 
 import java.io.ByteArrayOutputStream;
@@ -47,15 +41,14 @@ import org.apache.log4j.Logger;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.InvalidSetting;
-import com.clustercontrol.hub.bean.PropertyConstants;
 import com.clustercontrol.hub.model.CollectDataTag;
 import com.clustercontrol.hub.model.TransferDestProp;
 import com.clustercontrol.hub.model.TransferInfo;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -397,18 +390,18 @@ public class FluentdTransferFactory implements TransferFactory {
 				
 				try {
 					// Hinemos マネージャのプロキシ設定を参照
-					proxyHost = HinemosPropertyUtil.getHinemosPropertyStr("hub.fluentd.proxy.host", null);
-					Long proxyPortLong = HinemosPropertyUtil.getHinemosPropertyNum("hub.fluentd.proxy.port", null);
+					proxyHost = HinemosPropertyCommon.hub_fluentd_proxy_host.getStringValue();
+					Long proxyPortLong = HinemosPropertyCommon.hub_fluentd_proxy_port.getNumericValue();
 					if (proxyPortLong != null)
 						proxyPort = proxyPortLong.intValue();
 					if (proxyPort == null)
 						proxyPort = 80;
-					String proxyUser = HinemosPropertyUtil.getHinemosPropertyStr("hub.fluentd.proxy.user", null);
-					String proxyPassword = HinemosPropertyUtil.getHinemosPropertyStr("hub.fluentd.proxy.password", null);
+					String proxyUser = HinemosPropertyCommon.hub_fluentd_proxy_user.getStringValue();
+					String proxyPassword = HinemosPropertyCommon.hub_fluentd_proxy_password.getStringValue();
 					
 					if (proxyHost != null && proxyPort != null) {
 						logger.debug("initializing fluentd proxy : proxyHost = " + proxyHost + ", port = " + proxyPort);
-						String ignoreHostStr = HinemosPropertyUtil.getHinemosPropertyStr("hub.fluentd.proxy.ignorehosts", null);
+						String ignoreHostStr = HinemosPropertyCommon.hub_fluentd_proxy_ignorehosts.getStringValue();
 						if (ignoreHostStr != null) {
 							ignoreHostList = Arrays.asList(ignoreHostStr.split(","));
 						}
@@ -489,10 +482,16 @@ public class FluentdTransferFactory implements TransferFactory {
 					for (int i = 1; i < paths.length; ++i) {
 						paths[i] = URLEncoder.encode(paths[i], "utf-8");
 					}
-					url = "http://" + host + (port == null || port.isEmpty() ? "": (":" + port));
-					for (int i = 1; i < paths.length; ++i) {
-						url += "/" + paths[i];
+					StringBuilder sb = new StringBuilder();
+					sb.append("http://" + host);
+					if (port != null && !port.isEmpty()) {
+						sb.append(":" + port);
 					}
+					for (int i = 1; i < paths.length; ++i) {
+						sb.append("/");
+						sb.append(paths[i]);
+					}
+					url = sb.toString();
 				}
 				
 				HttpPost requestPost = new HttpPost(url);
@@ -502,7 +501,7 @@ public class FluentdTransferFactory implements TransferFactory {
 				logger.debug(String.format("send() : request start. url=%s", url));
 
 				int count = 0;
-				int maxTryCount = PropertyConstants.hub_transfer_max_try_count.number();
+				int maxTryCount = HinemosPropertyCommon.hub_transfer_max_try_count.getIntegerValue();
 				
 				while(count < maxTryCount) {
 					try {

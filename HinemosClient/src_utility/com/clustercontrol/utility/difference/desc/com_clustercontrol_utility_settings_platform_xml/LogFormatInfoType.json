@@ -1,0 +1,44 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"LogFormatId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+		"propName":"description",
+		"annotations":[
+			{"type":"Column", "columnName":"LogFormatTypeInfo_description"}
+	]},
+
+	{
+		"propName":"timestampregex",
+		"annotations":[
+			{"type":"Column", "columnName":"LogFormatTypeInfo_timestampregex"}
+	]},
+
+	{
+		"propName":"timestampformat",
+		"annotations":[
+			{"type":"Column", "columnName":"LogFormatTypeInfo_timestampformat"}
+	]},
+
+	{
+		"propName":"ownerRoleId",
+		"annotations":[
+		{"type":"Column", "columnName":"LogFormatTypeInfo_ownerRoleId"}
+	]},
+	
+	{
+		"propName":"logFormatKey",
+		"annotations":[
+			{"type":"Column", "columnName":"LogFormatTypeInfo_logFormatKey"},
+			{"type":"Array", "idType":"props", "props":["key"]},
+			{"type":"Ignore", "propNames":["key"]}
+	]}
+]
+}

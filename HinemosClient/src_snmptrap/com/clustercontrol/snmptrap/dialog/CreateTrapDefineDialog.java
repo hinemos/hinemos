@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.snmptrap.dialog;
@@ -596,11 +589,11 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
 
-		// 判定対象文字列　ラベル
+		// 判定対象文字列 ラベル
 		label = new Label(groupDetermine, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "tagetstring", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.horizontalIndent = 20;
 		gridData.grabExcessHorizontalSpace = true;
@@ -611,7 +604,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		this.txtTargetString = new Text(groupDetermine, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "targetstring", txtTargetString);
 		gridData = new GridData();
-		gridData.horizontalSpan = MAX_COLUMN - WIDTH_TITLE;
+		gridData.horizontalSpan = MAX_COLUMN - 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.txtTargetString.setLayoutData(gridData);
@@ -626,9 +619,10 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		label = new Label(groupDetermine, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "determinerule", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
+		gridData.horizontalIndent = 20;
 		label.setLayoutData(gridData);
 		label.setText(Messages.getString("monitor.snmptrap.determine.rule"));
 
@@ -638,7 +632,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		this.cmpPatternList = new TableItemInfoComposite<VarBindPattern>(groupDetermine, SWT.NONE , new VarBindPatternCompositeDefine());
 		WidgetTestUtil.setTestId(this, "patternlist", cmpPatternList);
 		gridData = new GridData();
-		gridData.horizontalSpan = MAX_COLUMN - WIDTH_TITLE;
+		gridData.horizontalSpan = MAX_COLUMN - 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
@@ -658,7 +652,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		this.btnValid = new Button(parent, SWT.CHECK | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "valid", btnValid);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalSpan = 15;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.btnValid.setLayoutData(gridData);

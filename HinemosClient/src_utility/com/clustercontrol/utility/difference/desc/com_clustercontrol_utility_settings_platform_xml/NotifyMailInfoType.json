@@ -1,0 +1,36 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"mailTemplateId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyMailInfoType_mailTemplateId"}
+	]},
+
+	{
+	"propName":"infoMailAddress",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyMailInfoType_infoMailAddress"}
+	]},
+
+	{
+	"propName":"warnMailAddress",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyMailInfoType_warnMailAddress"}
+	]},
+
+	{
+	"propName":"criticalMailAddress",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyMailInfoType_criticalMailAddress"}
+	]},
+
+	{
+	"propName":"unknownMailAddress",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyMailInfoType_unknownMailAddress"}
+	]}
+]
+}

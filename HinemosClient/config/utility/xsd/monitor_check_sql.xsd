@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: monitor_check_sql.xsd 295 2013-05-13 16:00:00Z sekiyaman $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_monitor_master.xsd" />
+	<xs:include schemaLocation="part_monitor_check.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+	
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="I">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="sqlMonitors" type="SqlMonitorList">
+		<xs:annotation>
+			<xs:documentation>SQL監視設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="SqlMonitorList">
+		<xs:annotation>
+			<xs:documentation>SQL監視設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="sqlMonitor" type="MonitorSql" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>SQL監視設定の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="sql" type="MonitorSql" />
+	<xs:complexType name="MonitorSql">
+		<xs:annotation>
+			<xs:documentation>SQL監視の1設定分です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="monitor" type="MonitorInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視設定情報（共通）です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="sqlInfo" type="MonitorSqlInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定情報（SQL監視固有部分）です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="numericValue" type="MonitorNumericValueInfo" minOccurs="0" maxOccurs="4">
+				<xs:annotation>
+					<xs:documentation>数値判定情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="numericChangeAmount" type="MonitorNumericValueInfo" minOccurs="0" maxOccurs="4">
+				<xs:annotation>
+					<xs:documentation>変化量判定情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="stringValue" type="MonitorStringValueInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>文字列判定情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="MonitorSqlInfo">
+		<xs:annotation>
+			<xs:documentation>SQL監視設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="MonitorCheckInfo">
+				<xs:sequence>
+					<xs:element name="connectionUrl" type="xs:string" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								監視対象とするDBのJDBC URLです。
+								"jdbc:"で始まる必要があります。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="jdbcDriver" type="xs:string" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								Hinemos内で管理されるJDBCドライバーの番号を指定します。
+								{PostgreSQL("1")、MySQL("2")、Oracle("3")}の何れかを指定します。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="user" type="xs:string" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								DB接続で用いるユーザ名です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="password" type="xs:string" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								DB接続で用いるパスワードです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="query" type="xs:string" minOccurs="1" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								監視に用いるSQL文（検索クエリー）です。
+								"SELECT"で始まる必要があります。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

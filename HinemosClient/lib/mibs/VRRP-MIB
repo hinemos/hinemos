@@ -1,0 +1,554 @@
+VRRP-MIB DEFINITIONS ::= BEGIN
+
+ IMPORTS
+     MODULE-IDENTITY, OBJECT-TYPE,
+     NOTIFICATION-TYPE, Counter32,
+     Integer32, IpAddress, mib-2         FROM SNMPv2-SMI
+
+     TEXTUAL-CONVENTION, RowStatus,
+     MacAddress, TruthValue, TimeStamp   FROM SNMPv2-TC
+
+     MODULE-COMPLIANCE, OBJECT-GROUP,
+     NOTIFICATION-GROUP                  FROM SNMPv2-CONF
+     ifIndex                             FROM IF-MIB;
+
+
+ vrrpMIB  MODULE-IDENTITY
+     LAST-UPDATED "200003030000Z"
+     ORGANIZATION "IETF VRRP Working Group"
+
+     ::= { mib-2 68 }
+
+
+ VrId ::= TEXTUAL-CONVENTION
+     STATUS       current
+     SYNTAX      Integer32 (1..255)
+
+
+
+
+
+
+
+ vrrpOperations      OBJECT IDENTIFIER ::= { vrrpMIB 1 }
+ vrrpStatistics      OBJECT IDENTIFIER ::= { vrrpMIB 2 }
+ vrrpConformance     OBJECT IDENTIFIER ::= { vrrpMIB 3 }
+
+
+
+ vrrpNodeVersion  OBJECT-TYPE
+     SYNTAX       Integer32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpOperations 1 }
+
+ vrrpNotificationCntl  OBJECT-TYPE
+     SYNTAX       INTEGER {
+         enabled     (1),
+         disabled    (2)
+     }
+     MAX-ACCESS   read-write
+     STATUS       current
+     DEFVAL { enabled }
+     ::= { vrrpOperations 2 }
+
+
+ vrrpOperTable OBJECT-TYPE
+     SYNTAX       SEQUENCE OF VrrpOperEntry
+     MAX-ACCESS   not-accessible
+     STATUS       current
+
+
+
+
+
+     ::= { vrrpOperations 3 }
+
+ vrrpOperEntry OBJECT-TYPE
+     SYNTAX       VrrpOperEntry
+     MAX-ACCESS   not-accessible
+     STATUS       current
+
+     INDEX    { ifIndex, vrrpOperVrId }
+     ::= { vrrpOperTable 1 }
+
+ VrrpOperEntry ::=
+     SEQUENCE {
+         vrrpOperVrId
+             VrId,
+         vrrpOperVirtualMacAddr
+             MacAddress,
+         vrrpOperState
+             INTEGER,
+         vrrpOperAdminState
+             INTEGER,
+         vrrpOperPriority
+             Integer32,
+         vrrpOperIpAddrCount
+             Integer32,
+         vrrpOperMasterIpAddr
+             IpAddress,
+         vrrpOperPrimaryIpAddr
+             IpAddress,
+         vrrpOperAuthType
+             INTEGER,
+         vrrpOperAuthKey
+             OCTET STRING,
+         vrrpOperAdvertisementInterval
+             Integer32,
+         vrrpOperPreemptMode
+             TruthValue,
+         vrrpOperVirtualRouterUpTime
+             TimeStamp,
+         vrrpOperProtocol
+
+
+
+
+
+             INTEGER,
+         vrrpOperRowStatus
+             RowStatus
+ }
+
+ vrrpOperVrId OBJECT-TYPE
+     SYNTAX       VrId
+     MAX-ACCESS   not-accessible
+     STATUS       current
+     ::= { vrrpOperEntry 1 }
+
+ vrrpOperVirtualMacAddr OBJECT-TYPE
+     SYNTAX       MacAddress
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpOperEntry 2 }
+
+ vrrpOperState OBJECT-TYPE
+     SYNTAX       INTEGER {
+         initialize(1),
+         backup(2),
+         master(3)
+     }
+     MAX-ACCESS   read-only
+     STATUS       current
+
+     ::= { vrrpOperEntry 3 }
+
+ vrrpOperAdminState OBJECT-TYPE
+     SYNTAX       INTEGER {
+         up(1),
+         down(2)
+     }
+     MAX-ACCESS   read-create
+     STATUS       current
+     DEFVAL    { down }
+     ::= { vrrpOperEntry 4 }
+
+ vrrpOperPriority OBJECT-TYPE
+     SYNTAX       Integer32 (0..255)
+     MAX-ACCESS   read-create
+     STATUS       current
+     DEFVAL       { 100 }
+     ::= { vrrpOperEntry 5 }
+
+
+
+
+
+
+ vrrpOperIpAddrCount OBJECT-TYPE
+     SYNTAX       Integer32 (0..255)
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpOperEntry 6 }
+
+ vrrpOperMasterIpAddr OBJECT-TYPE
+     SYNTAX       IpAddress
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpOperEntry 7 }
+
+ vrrpOperPrimaryIpAddr OBJECT-TYPE
+     SYNTAX       IpAddress
+     MAX-ACCESS   read-create
+     STATUS       current
+     DEFVAL       { '00000000'H } -- 0.0.0.0
+     ::= { vrrpOperEntry 8 }
+
+ vrrpOperAuthType OBJECT-TYPE
+     SYNTAX       INTEGER {
+         noAuthentication(1),       -- VRRP protocol exchanges are not
+         simpleTextPassword(2),     -- Exchanges are authenticated by a
+         ipAuthenticationHeader(3)  -- Exchanges are authenticated using
+     }
+     MAX-ACCESS   read-create
+     STATUS       current
+     DEFVAL       { noAuthentication }
+     ::= { vrrpOperEntry 9 }
+
+ vrrpOperAuthKey OBJECT-TYPE
+     SYNTAX       OCTET STRING (SIZE (0..16))
+     MAX-ACCESS   read-create
+     STATUS       current
+     ::= { vrrpOperEntry 10 }
+
+ vrrpOperAdvertisementInterval OBJECT-TYPE
+     SYNTAX       Integer32 (1..255)
+     UNITS        "seconds"
+     MAX-ACCESS   read-create
+     STATUS       current
+     DEFVAL       { 1 }
+     ::= { vrrpOperEntry 11 }
+
+ vrrpOperPreemptMode OBJECT-TYPE
+     SYNTAX       TruthValue
+     MAX-ACCESS   read-create
+     STATUS       current
+     DEFVAL       { true }
+     ::= { vrrpOperEntry 12 }
+
+ vrrpOperVirtualRouterUpTime OBJECT-TYPE
+
+
+
+
+
+     SYNTAX       TimeStamp
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpOperEntry 13 }
+
+ vrrpOperProtocol OBJECT-TYPE
+     SYNTAX   INTEGER {
+         ip (1),
+         bridge (2),
+         decnet (3),
+         other (4)
+     }
+     MAX-ACCESS read-create
+     STATUS     current
+     DEFVAL { ip }
+     ::= { vrrpOperEntry 14 }
+
+ vrrpOperRowStatus OBJECT-TYPE
+     SYNTAX       RowStatus
+     MAX-ACCESS   read-create
+     STATUS       current
+     ::= { vrrpOperEntry 15 }
+
+
+
+ vrrpAssoIpAddrTable OBJECT-TYPE
+     SYNTAX       SEQUENCE OF VrrpAssoIpAddrEntry
+     MAX-ACCESS   not-accessible
+     STATUS       current
+     ::= { vrrpOperations 4 }
+
+ vrrpAssoIpAddrEntry OBJECT-TYPE
+     SYNTAX       VrrpAssoIpAddrEntry
+     MAX-ACCESS   not-accessible
+     STATUS       current
+
+     INDEX    { ifIndex, vrrpOperVrId, vrrpAssoIpAddr }
+     ::= { vrrpAssoIpAddrTable 1 }
+
+ VrrpAssoIpAddrEntry ::=
+     SEQUENCE {
+         vrrpAssoIpAddr
+             IpAddress,
+         vrrpAssoIpAddrRowStatus
+             RowStatus
+ }
+
+ vrrpAssoIpAddr OBJECT-TYPE
+     SYNTAX       IpAddress
+
+
+
+
+
+     MAX-ACCESS   not-accessible
+     STATUS       current
+     ::= { vrrpAssoIpAddrEntry 1 }
+
+ vrrpAssoIpAddrRowStatus OBJECT-TYPE
+     SYNTAX       RowStatus
+     MAX-ACCESS   read-create
+     STATUS       current
+     ::= { vrrpAssoIpAddrEntry 2 }
+
+
+
+ vrrpRouterChecksumErrors OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpStatistics 1 }
+
+ vrrpRouterVersionErrors OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpStatistics 2 }
+
+ vrrpRouterVrIdErrors OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+
+
+
+
+
+     ::= { vrrpStatistics 3 }
+
+
+ vrrpRouterStatsTable OBJECT-TYPE
+     SYNTAX       SEQUENCE OF VrrpRouterStatsEntry
+     MAX-ACCESS   not-accessible
+     STATUS       current
+     ::= { vrrpStatistics 4 }
+
+ vrrpRouterStatsEntry OBJECT-TYPE
+     SYNTAX       VrrpRouterStatsEntry
+     MAX-ACCESS   not-accessible
+     STATUS       current
+     AUGMENTS    { vrrpOperEntry }
+     ::= { vrrpRouterStatsTable 1 }
+
+ VrrpRouterStatsEntry ::=
+     SEQUENCE {
+         vrrpStatsBecomeMaster
+             Counter32,
+         vrrpStatsAdvertiseRcvd
+             Counter32,
+         vrrpStatsAdvertiseIntervalErrors
+             Counter32,
+         vrrpStatsAuthFailures
+             Counter32,
+         vrrpStatsIpTtlErrors
+             Counter32,
+         vrrpStatsPriorityZeroPktsRcvd
+             Counter32,
+         vrrpStatsPriorityZeroPktsSent
+             Counter32,
+         vrrpStatsInvalidTypePktsRcvd
+             Counter32,
+         vrrpStatsAddressListErrors
+             Counter32,
+         vrrpStatsInvalidAuthType
+
+
+
+
+
+             Counter32,
+         vrrpStatsAuthTypeMismatch
+             Counter32,
+         vrrpStatsPacketLengthErrors
+             Counter32
+     }
+
+ vrrpStatsBecomeMaster OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 1 }
+
+ vrrpStatsAdvertiseRcvd OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 2 }
+
+ vrrpStatsAdvertiseIntervalErrors OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 3 }
+
+ vrrpStatsAuthFailures OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 4 }
+
+ vrrpStatsIpTtlErrors OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+
+
+
+
+
+     ::= { vrrpRouterStatsEntry 5 }
+
+ vrrpStatsPriorityZeroPktsRcvd OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 6 }
+
+ vrrpStatsPriorityZeroPktsSent OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 7 }
+
+ vrrpStatsInvalidTypePktsRcvd OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 8 }
+
+ vrrpStatsAddressListErrors OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 9 }
+
+ vrrpStatsInvalidAuthType OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 10 }
+
+ vrrpStatsAuthTypeMismatch OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 11 }
+
+ vrrpStatsPacketLengthErrors OBJECT-TYPE
+     SYNTAX       Counter32
+     MAX-ACCESS   read-only
+     STATUS       current
+     ::= { vrrpRouterStatsEntry 12 }
+
+
+ vrrpNotifications   OBJECT IDENTIFIER ::= { vrrpMIB 0 }
+
+ vrrpTrapPacketSrc OBJECT-TYPE
+     SYNTAX       IpAddress
+     MAX-ACCESS   accessible-for-notify
+     STATUS       current
+     ::= { vrrpOperations 5 }
+
+ vrrpTrapAuthErrorType OBJECT-TYPE
+     SYNTAX        INTEGER {
+         invalidAuthType (1),
+         authTypeMismatch (2),
+         authFailure (3)
+     }
+     MAX-ACCESS   accessible-for-notify
+     STATUS       current
+
+
+
+
+
+     ::= { vrrpOperations 6 }
+
+ vrrpTrapNewMaster NOTIFICATION-TYPE
+     OBJECTS      { vrrpOperMasterIpAddr
+                  }
+     STATUS       current
+     ::= { vrrpNotifications 1 }
+
+ vrrpTrapAuthFailure NOTIFICATION-TYPE
+     OBJECTS      { vrrpTrapPacketSrc,
+                    vrrpTrapAuthErrorType
+                  }
+     STATUS       current
+     ::= { vrrpNotifications 2 }
+
+
+
+ vrrpMIBCompliances  OBJECT IDENTIFIER ::= { vrrpConformance 1 }
+ vrrpMIBGroups       OBJECT IDENTIFIER ::= { vrrpConformance 2 }
+
+
+ vrrpMIBCompliance MODULE-COMPLIANCE
+     STATUS current
+     MODULE -- this module
+     MANDATORY-GROUPS  {
+         vrrpOperGroup,
+         vrrpStatsGroup
+     }
+     OBJECT        vrrpOperPriority
+     WRITE-SYNTAX  Integer32 (1..255)
+
+
+
+
+
+     ::= { vrrpMIBCompliances 1 }
+
+
+ vrrpOperGroup  OBJECT-GROUP
+     OBJECTS  {
+         vrrpNodeVersion,
+         vrrpNotificationCntl,
+         vrrpOperVirtualMacAddr,
+         vrrpOperState,
+         vrrpOperAdminState,
+         vrrpOperPriority,
+         vrrpOperIpAddrCount,
+         vrrpOperMasterIpAddr,
+         vrrpOperPrimaryIpAddr,
+         vrrpOperAuthType,
+         vrrpOperAuthKey,
+         vrrpOperAdvertisementInterval,
+         vrrpOperPreemptMode,
+         vrrpOperVirtualRouterUpTime,
+         vrrpOperProtocol,
+         vrrpOperRowStatus,
+         vrrpAssoIpAddrRowStatus
+         }
+     STATUS current
+     ::= { vrrpMIBGroups 1 }
+
+ vrrpStatsGroup  OBJECT-GROUP
+     OBJECTS  {
+         vrrpRouterChecksumErrors,
+         vrrpRouterVersionErrors,
+         vrrpRouterVrIdErrors,
+         vrrpStatsBecomeMaster,
+         vrrpStatsAdvertiseRcvd,
+         vrrpStatsAdvertiseIntervalErrors,
+         vrrpStatsAuthFailures,
+         vrrpStatsIpTtlErrors,
+         vrrpStatsPriorityZeroPktsRcvd,
+         vrrpStatsPriorityZeroPktsSent,
+         vrrpStatsInvalidTypePktsRcvd,
+         vrrpStatsAddressListErrors,
+         vrrpStatsInvalidAuthType,
+         vrrpStatsAuthTypeMismatch,
+         vrrpStatsPacketLengthErrors
+
+
+
+
+
+         }
+     STATUS current
+     ::= { vrrpMIBGroups 2 }
+
+ vrrpTrapGroup  OBJECT-GROUP
+     OBJECTS  {
+         vrrpTrapPacketSrc,
+         vrrpTrapAuthErrorType
+         }
+     STATUS current
+     ::= { vrrpMIBGroups 3 }
+
+ vrrpNotificationGroup NOTIFICATION-GROUP
+     NOTIFICATIONS {
+         vrrpTrapNewMaster,
+         vrrpTrapAuthFailure
+         }
+     STATUS current
+     ::= { vrrpMIBGroups 4 }
+
+END

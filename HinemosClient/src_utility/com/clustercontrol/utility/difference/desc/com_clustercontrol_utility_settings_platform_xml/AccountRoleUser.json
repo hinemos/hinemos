@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"AccountRoleUser_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"RoleId",
+			"UserId"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"RoleUserInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

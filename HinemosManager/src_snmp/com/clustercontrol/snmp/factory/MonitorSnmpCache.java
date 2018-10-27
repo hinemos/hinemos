@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.snmp.factory;
 
 import java.io.Serializable;
@@ -24,7 +32,6 @@ import com.clustercontrol.commons.util.LockManagerFactory;
 public class MonitorSnmpCache {
 	private static Log m_log = LogFactory.getLog(MonitorSnmpCache.class );
 
-	private static Object cacheLock = new Object();
 	private static final ILock _lock;
 
 	static {
@@ -169,14 +176,14 @@ public class MonitorSnmpCache {
 
 			MonitorSnmpValuePK valueEntityPk = new MonitorSnmpValuePK(m_monitorId, facilityId);
 
-			synchronized (cacheLock) {
-				if (valueEntityPk != null && getCache() != null) {
-					cache.putAll(getCache());
-					if (cache.containsKey(valueEntityPk)) cache.remove(valueEntityPk);
-					cache.put(valueEntityPk, valueEntity);
+			if (valueEntityPk != null && getCache() != null) {
+				cache.putAll(getCache());
+				if (cache.containsKey(valueEntityPk)) {
+					cache.remove(valueEntityPk);
 				}
-				storeCache(cache);
+				cache.put(valueEntityPk, valueEntity);
 			}
+			storeCache(cache);
 
 		} catch (Exception e) {
 			m_log.warn("update() : "

@@ -1,0 +1,294 @@
+   SNMP-TARGET-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY,
+       OBJECT-TYPE,
+       snmpModules,
+       Counter32,
+       Integer32
+           FROM SNMPv2-SMI
+
+       TEXTUAL-CONVENTION,
+       TDomain,
+       TAddress,
+       TimeInterval,
+       RowStatus,
+       StorageType,
+
+
+
+
+
+       TestAndIncr
+           FROM SNMPv2-TC
+
+       SnmpSecurityModel,
+       SnmpMessageProcessingModel,
+       SnmpSecurityLevel,
+       SnmpAdminString
+           FROM SNMP-FRAMEWORK-MIB
+
+       MODULE-COMPLIANCE,
+       OBJECT-GROUP
+           FROM SNMPv2-CONF;
+
+   snmpTargetMIB MODULE-IDENTITY
+       LAST-UPDATED "200210140000Z"
+       ORGANIZATION "IETF SNMPv3 Working Group"
+       ::= { snmpModules 12 }
+
+   snmpTargetObjects       OBJECT IDENTIFIER ::= { snmpTargetMIB 1 }
+   snmpTargetConformance   OBJECT IDENTIFIER ::= { snmpTargetMIB 3 }
+
+   SnmpTagValue ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "255t"
+       STATUS       current
+       SYNTAX       OCTET STRING (SIZE (0..255))
+
+   SnmpTagList ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "255t"
+       STATUS       current
+       SYNTAX       OCTET STRING (SIZE (0..255))
+
+
+   snmpTargetSpinLock OBJECT-TYPE
+       SYNTAX      TestAndIncr
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { snmpTargetObjects 1 }
+
+   snmpTargetAddrTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF SnmpTargetAddrEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { snmpTargetObjects 2 }
+
+   snmpTargetAddrEntry OBJECT-TYPE
+       SYNTAX      SnmpTargetAddrEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { IMPLIED snmpTargetAddrName }
+       ::= { snmpTargetAddrTable 1 }
+
+   SnmpTargetAddrEntry ::= SEQUENCE {
+       snmpTargetAddrName         SnmpAdminString,
+       snmpTargetAddrTDomain      TDomain,
+       snmpTargetAddrTAddress     TAddress,
+       snmpTargetAddrTimeout      TimeInterval,
+       snmpTargetAddrRetryCount   Integer32,
+       snmpTargetAddrTagList      SnmpTagList,
+       snmpTargetAddrParams       SnmpAdminString,
+       snmpTargetAddrStorageType  StorageType,
+       snmpTargetAddrRowStatus    RowStatus
+   }
+
+   snmpTargetAddrName OBJECT-TYPE
+       SYNTAX      SnmpAdminString (SIZE(1..32))
+
+
+
+
+
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { snmpTargetAddrEntry 1 }
+
+   snmpTargetAddrTDomain OBJECT-TYPE
+       SYNTAX      TDomain
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpTargetAddrEntry 2 }
+
+   snmpTargetAddrTAddress OBJECT-TYPE
+       SYNTAX      TAddress
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpTargetAddrEntry 3 }
+
+   snmpTargetAddrTimeout OBJECT-TYPE
+       SYNTAX      TimeInterval
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 1500 }
+       ::= { snmpTargetAddrEntry 4 }
+
+   snmpTargetAddrRetryCount OBJECT-TYPE
+       SYNTAX      Integer32 (0..255)
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 3 }
+       ::= { snmpTargetAddrEntry 5 }
+
+   snmpTargetAddrTagList OBJECT-TYPE
+       SYNTAX      SnmpTagList
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { "" }
+       ::= { snmpTargetAddrEntry 6 }
+
+   snmpTargetAddrParams OBJECT-TYPE
+       SYNTAX      SnmpAdminString (SIZE(1..32))
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpTargetAddrEntry 7 }
+
+   snmpTargetAddrStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-create
+       STATUS      current
+
+
+
+
+
+       DEFVAL { nonVolatile }
+       ::= { snmpTargetAddrEntry 8 }
+
+   snmpTargetAddrRowStatus OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpTargetAddrEntry 9 }
+
+   snmpTargetParamsTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF SnmpTargetParamsEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { snmpTargetObjects 3 }
+
+   snmpTargetParamsEntry OBJECT-TYPE
+       SYNTAX      SnmpTargetParamsEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { IMPLIED snmpTargetParamsName }
+       ::= { snmpTargetParamsTable 1 }
+
+   SnmpTargetParamsEntry ::= SEQUENCE {
+       snmpTargetParamsName           SnmpAdminString,
+       snmpTargetParamsMPModel        SnmpMessageProcessingModel,
+       snmpTargetParamsSecurityModel  SnmpSecurityModel,
+       snmpTargetParamsSecurityName   SnmpAdminString,
+       snmpTargetParamsSecurityLevel  SnmpSecurityLevel,
+       snmpTargetParamsStorageType    StorageType,
+       snmpTargetParamsRowStatus      RowStatus
+   }
+
+   snmpTargetParamsName OBJECT-TYPE
+       SYNTAX      SnmpAdminString (SIZE(1..32))
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { snmpTargetParamsEntry 1 }
+
+   snmpTargetParamsMPModel OBJECT-TYPE
+       SYNTAX      SnmpMessageProcessingModel
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpTargetParamsEntry 2 }
+
+   snmpTargetParamsSecurityModel OBJECT-TYPE
+       SYNTAX      SnmpSecurityModel (1..2147483647)
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpTargetParamsEntry 3 }
+
+   snmpTargetParamsSecurityName OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+
+
+
+
+
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpTargetParamsEntry 4 }
+
+   snmpTargetParamsSecurityLevel OBJECT-TYPE
+       SYNTAX      SnmpSecurityLevel
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpTargetParamsEntry 5 }
+
+   snmpTargetParamsStorageType OBJECT-TYPE
+       SYNTAX      StorageType
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { nonVolatile }
+       ::= { snmpTargetParamsEntry 6 }
+
+   snmpTargetParamsRowStatus OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { snmpTargetParamsEntry 7 }
+
+   snmpUnavailableContexts OBJECT-TYPE
+       SYNTAX       Counter32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { snmpTargetObjects 4 }
+
+   snmpUnknownContexts OBJECT-TYPE
+       SYNTAX       Counter32
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { snmpTargetObjects 5 }
+
+
+   snmpTargetCompliances OBJECT IDENTIFIER ::=
+                                           { snmpTargetConformance 1 }
+   snmpTargetGroups      OBJECT IDENTIFIER ::=
+                                           { snmpTargetConformance 2 }
+
+
+
+
+
+
+
+   snmpTargetCommandResponderCompliance MODULE-COMPLIANCE
+       STATUS      current
+       MODULE -- This Module
+           MANDATORY-GROUPS { snmpTargetCommandResponderGroup }
+       ::= { snmpTargetCompliances 1 }
+
+   snmpTargetBasicGroup OBJECT-GROUP
+       OBJECTS {
+           snmpTargetSpinLock,
+           snmpTargetAddrTDomain,
+           snmpTargetAddrTAddress,
+           snmpTargetAddrTagList,
+           snmpTargetAddrParams,
+           snmpTargetAddrStorageType,
+           snmpTargetAddrRowStatus,
+           snmpTargetParamsMPModel,
+           snmpTargetParamsSecurityModel,
+           snmpTargetParamsSecurityName,
+           snmpTargetParamsSecurityLevel,
+           snmpTargetParamsStorageType,
+           snmpTargetParamsRowStatus
+       }
+       STATUS      current
+       ::= { snmpTargetGroups 1 }
+
+   snmpTargetResponseGroup OBJECT-GROUP
+       OBJECTS {
+           snmpTargetAddrTimeout,
+           snmpTargetAddrRetryCount
+       }
+       STATUS      current
+       ::= { snmpTargetGroups 2 }
+
+   snmpTargetCommandResponderGroup OBJECT-GROUP
+
+
+
+
+
+       OBJECTS {
+           snmpUnavailableContexts,
+           snmpUnknownContexts
+       }
+       STATUS      current
+       ::= { snmpTargetGroups 3 }
+
+   END

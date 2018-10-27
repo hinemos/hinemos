@@ -1,0 +1,27 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"vmwareExiIp",
+	"annotations":[
+		{"type":"Column", "columnName":"VmwareType_vmwareExiIp"}
+	]},
+	
+	{
+	"propName":"vmwareExiProtocol",
+	"annotations":[
+		{"type":"Column", "columnName":"VmwareType_vmwareExiProtcol"}
+	]},
+
+	{
+	"propName":"vmwareUser",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudScopeBaseInfoType_accountId"},
+		{"type":"Array", "idType":"props", "props":["accountId"]},
+		{"type":"Ignore", "propNames":["accountId"]}
+	]}
+]
+}

@@ -1,0 +1,297 @@
+          SOURCE-ROUTING-MIB DEFINITIONS ::= BEGIN
+
+          IMPORTS
+                  Counter, Gauge
+                          FROM RFC1155-SMI
+                  dot1dBridge, dot1dSr
+                          FROM BRIDGE-MIB
+                  OBJECT-TYPE
+                          FROM RFC-1212;
+
+
+
+
+
+          dot1dPortPair   OBJECT IDENTIFIER ::= { dot1dBridge 10 }
+
+
+
+
+          dot1dSrPortTable OBJECT-TYPE
+              SYNTAX  SEQUENCE OF Dot1dSrPortEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              ::= { dot1dSr 1 }
+
+          dot1dSrPortEntry OBJECT-TYPE
+              SYNTAX  Dot1dSrPortEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              INDEX   { dot1dSrPort }
+
+
+
+
+
+              ::= { dot1dSrPortTable 1 }
+
+          Dot1dSrPortEntry ::=
+              SEQUENCE {
+                  dot1dSrPort
+                      INTEGER,
+                  dot1dSrPortHopCount
+                      INTEGER,
+                  dot1dSrPortLocalSegment
+                      INTEGER,
+                  dot1dSrPortBridgeNum
+                      INTEGER,
+                  dot1dSrPortTargetSegment
+                      INTEGER,
+                  dot1dSrPortLargestFrame
+                      INTEGER,
+                  dot1dSrPortSTESpanMode
+                      INTEGER,
+                  dot1dSrPortSpecInFrames
+                      Counter,
+                  dot1dSrPortSpecOutFrames
+                      Counter,
+                  dot1dSrPortApeInFrames
+                      Counter,
+                  dot1dSrPortApeOutFrames
+                      Counter,
+                  dot1dSrPortSteInFrames
+                      Counter,
+                  dot1dSrPortSteOutFrames
+                      Counter,
+                  dot1dSrPortSegmentMismatchDiscards
+                      Counter,
+                  dot1dSrPortDuplicateSegmentDiscards
+                      Counter,
+                  dot1dSrPortHopCountExceededDiscards
+                      Counter,
+                  dot1dSrPortDupLanIdOrTreeErrors
+                      Counter,
+                  dot1dSrPortLanIdMismatches
+                      Counter
+              }
+
+          dot1dSrPort OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 1 }
+
+          dot1dSrPortHopCount OBJECT-TYPE
+              SYNTAX  INTEGER
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 2 }
+
+          dot1dSrPortLocalSegment OBJECT-TYPE
+              SYNTAX  INTEGER
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 3 }
+
+          dot1dSrPortBridgeNum OBJECT-TYPE
+              SYNTAX  INTEGER
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 4 }
+
+          dot1dSrPortTargetSegment OBJECT-TYPE
+              SYNTAX  INTEGER
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 5 }
+
+
+          dot1dSrPortLargestFrame OBJECT-TYPE
+              SYNTAX  INTEGER
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 6 }
+
+          dot1dSrPortSTESpanMode OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          auto-span(1),
+                          disabled(2),
+                          forced(3)
+                      }
+              ACCESS  read-write
+
+
+
+
+
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 7 }
+
+          dot1dSrPortSpecInFrames OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 8 }
+
+          dot1dSrPortSpecOutFrames OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 9 }
+
+          dot1dSrPortApeInFrames OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+
+
+
+
+
+              ::= { dot1dSrPortEntry 10 }
+
+          dot1dSrPortApeOutFrames OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 11 }
+
+          dot1dSrPortSteInFrames OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 12 }
+
+          dot1dSrPortSteOutFrames OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 13 }
+
+          dot1dSrPortSegmentMismatchDiscards OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 14 }
+
+          dot1dSrPortDuplicateSegmentDiscards OBJECT-TYPE
+
+
+
+
+
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 15 }
+
+          dot1dSrPortHopCountExceededDiscards OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 16 }
+
+          dot1dSrPortDupLanIdOrTreeErrors OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 17 }
+
+          dot1dSrPortLanIdMismatches OBJECT-TYPE
+              SYNTAX  Counter
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dSrPortEntry 18 }
+
+
+
+          dot1dSrBridgeLfMode OBJECT-TYPE
+
+
+
+
+
+              SYNTAX  INTEGER {
+                          mode3(1),
+                          mode6(2)
+                      }
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dSr 2 }
+
+
+
+
+
+
+          dot1dPortPairTableSize OBJECT-TYPE
+              SYNTAX  Gauge
+              ACCESS  read-only
+              STATUS  mandatory
+              ::= { dot1dPortPair 1 }
+
+
+
+
+          dot1dPortPairTable OBJECT-TYPE
+              SYNTAX  SEQUENCE OF Dot1dPortPairEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              ::= { dot1dPortPair 2 }
+
+          dot1dPortPairEntry OBJECT-TYPE
+              SYNTAX  Dot1dPortPairEntry
+              ACCESS  not-accessible
+              STATUS  mandatory
+              INDEX   { dot1dPortPairLowPort, dot1dPortPairHighPort }
+              ::= { dot1dPortPairTable 1 }
+
+          Dot1dPortPairEntry ::=
+              SEQUENCE {
+                  dot1dPortPairLowPort
+                      INTEGER,
+                  dot1dPortPairHighPort
+                      INTEGER,
+                  dot1dPortPairBridgeNum
+                      INTEGER,
+                  dot1dPortPairBridgeState
+                      INTEGER
+              }
+
+          dot1dPortPairLowPort OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dPortPairEntry 1 }
+
+          dot1dPortPairHighPort OBJECT-TYPE
+              SYNTAX  INTEGER (1..65535)
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dPortPairEntry 2 }
+
+          dot1dPortPairBridgeNum OBJECT-TYPE
+              SYNTAX  INTEGER
+
+
+
+
+
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dPortPairEntry 3 }
+
+          dot1dPortPairBridgeState OBJECT-TYPE
+              SYNTAX  INTEGER {
+                          enabled(1),
+                          disabled(2),
+                          invalid(3)
+                      }
+              ACCESS  read-write
+              STATUS  mandatory
+              ::= { dot1dPortPairEntry 4 }
+
+
+
+
+          END

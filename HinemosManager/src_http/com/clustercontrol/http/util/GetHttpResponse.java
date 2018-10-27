@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.http.util;
@@ -76,7 +69,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.ssl.SSLContextBuilder;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -299,9 +292,6 @@ public class GetHttpResponse implements Closeable {
 
 	private static final Pattern chasetPattern = Pattern.compile("^\\s*.+\\s*;\\s*charset\\s*=\\s*(.*)\\s*$", Pattern.CASE_INSENSITIVE);
 
-	/** ボディ取得対象のContent-Type */
-	private static final String TARGET_CONTENT_TYPE_KEY = "monitor.http.content.type";
-
 	private static final int BUFF_SIZE = 1024 * 1024;
 	private static final int BODY_MAX_SIZE = 5 * BUFF_SIZE;
 
@@ -465,7 +455,7 @@ public class GetHttpResponse implements Closeable {
 				HttpPost requestPost = new HttpPost(url);
 				Charset charset = Consts.UTF_8;
 				try {
-					charset = Charset.forName(HinemosPropertyUtil.getHinemosPropertyStr("monitor.http.post.charset", "UTF-8"));
+					charset = Charset.forName(HinemosPropertyCommon.monitor_http_post_charset.getStringValue());
 				} catch (UnsupportedCharsetException e){
 					m_log.warn("UnsupportedCharsetException " + e.getMessage());
 				}
@@ -503,7 +493,7 @@ public class GetHttpResponse implements Closeable {
 					Header header = response.getFirstHeader(HTTP.CONTENT_TYPE);
 					
 					boolean contentTypeFlag = false;
-					String[] contentTypes = HinemosPropertyUtil.getHinemosPropertyStr(TARGET_CONTENT_TYPE_KEY, "text").split(",");
+					String[] contentTypes = HinemosPropertyCommon.monitor_http_content_type.getStringValue().split(",");
 					
 					if (header != null && header.getValue() != null) {
 						String value = header.getValue();

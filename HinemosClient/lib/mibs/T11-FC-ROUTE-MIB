@@ -1,0 +1,251 @@
+T11-FC-ROUTE-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    Unsigned32, mib-2                   FROM SNMPv2-SMI  -- [RFC2578]
+    MODULE-COMPLIANCE, OBJECT-GROUP     FROM SNMPv2-CONF -- [RFC2580]
+    RowStatus, TimeStamp,
+    StorageType                         FROM SNMPv2-TC   -- [RFC2579]
+    InterfaceIndex, InterfaceIndexOrZero  FROM IF-MIB    -- [RFC2863]
+    fcmInstanceIndex, fcmSwitchIndex,
+    FcAddressIdOrZero, FcDomainIdOrZero FROM FC-MGMT-MIB -- [FC-MGMT]
+    T11FabricIndex                      FROM T11-TC-MIB; -- [RFC4439]
+
+t11FcRouteMIB MODULE-IDENTITY
+    LAST-UPDATED "200608140000Z"
+    ORGANIZATION "T11"
+
+
+
+
+
+
+    ::= {mib-2 144 }
+
+t11FcRouteNotifications OBJECT IDENTIFIER ::= { t11FcRouteMIB 0 }
+t11FcRouteObjects       OBJECT IDENTIFIER ::= { t11FcRouteMIB 1 }
+t11FcRouteConformance   OBJECT IDENTIFIER ::= { t11FcRouteMIB 2 }
+
+t11FcRouteFabricTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF T11FcRouteFabricEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRouteObjects 1 }
+
+t11FcRouteFabricEntry OBJECT-TYPE
+    SYNTAX      T11FcRouteFabricEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX      { fcmInstanceIndex, fcmSwitchIndex,
+                 t11FcRouteFabricIndex }
+    ::= { t11FcRouteFabricTable 1 }
+
+T11FcRouteFabricEntry ::=
+    SEQUENCE {
+        t11FcRouteFabricIndex      T11FabricIndex,
+        t11FcRouteFabricLastChange TimeStamp
+    }
+
+t11FcRouteFabricIndex OBJECT-TYPE
+    SYNTAX      T11FabricIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRouteFabricEntry 1 }
+
+t11FcRouteFabricLastChange OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { t11FcRouteFabricEntry 2 }
+
+t11FcRouteTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF T11FcRouteEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRouteObjects 2 }
+
+t11FcRouteEntry OBJECT-TYPE
+    SYNTAX      T11FcRouteEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { fcmInstanceIndex, fcmSwitchIndex,
+                  t11FcRouteFabricIndex,
+                  t11FcRouteDestAddrId, t11FcRouteDestMask,
+                  t11FcRouteSrcAddrId, t11FcRouteSrcMask,
+                  t11FcRouteInInterface, t11FcRouteProto,
+                  t11FcRouteOutInterface }
+    ::= { t11FcRouteTable 1 }
+T11FcRouteEntry ::=
+    SEQUENCE {
+        t11FcRouteDestAddrId   FcAddressIdOrZero,
+        t11FcRouteDestMask     FcAddressIdOrZero,
+        t11FcRouteSrcAddrId    FcAddressIdOrZero,
+        t11FcRouteSrcMask      FcAddressIdOrZero,
+        t11FcRouteInInterface  InterfaceIndexOrZero,
+        t11FcRouteProto        INTEGER,
+        t11FcRouteOutInterface InterfaceIndex,
+        t11FcRouteDomainId     FcDomainIdOrZero,
+        t11FcRouteMetric       Unsigned32,
+        t11FcRouteType         INTEGER,
+        t11FcRouteIfDown       INTEGER,
+        t11FcRouteStorageType  StorageType,
+        t11FcRouteRowStatus    RowStatus
+    }
+
+t11FcRouteDestAddrId OBJECT-TYPE
+    SYNTAX      FcAddressIdOrZero (SIZE (3))
+
+
+
+
+
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRouteEntry 1 }
+
+t11FcRouteDestMask OBJECT-TYPE
+    SYNTAX      FcAddressIdOrZero
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRouteEntry 2 }
+
+t11FcRouteSrcAddrId OBJECT-TYPE
+    SYNTAX      FcAddressIdOrZero
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRouteEntry 3 }
+
+t11FcRouteSrcMask OBJECT-TYPE
+    SYNTAX      FcAddressIdOrZero
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRouteEntry 4 }
+
+t11FcRouteInInterface OBJECT-TYPE
+    SYNTAX      InterfaceIndexOrZero
+
+
+
+
+
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRouteEntry 5 }
+
+t11FcRouteProto OBJECT-TYPE
+    SYNTAX   INTEGER {
+                 other(1),
+                 local(2),
+                 netmgmt(3),
+                 fspf(4)
+              }
+    MAX-ACCESS not-accessible
+    STATUS   current
+    ::= { t11FcRouteEntry 6 }
+
+t11FcRouteOutInterface OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { t11FcRouteEntry 7 }
+
+t11FcRouteDomainId OBJECT-TYPE
+    SYNTAX      FcDomainIdOrZero
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { t11FcRouteEntry 8 }
+
+t11FcRouteMetric OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65536)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { t11FcRouteEntry 9 }
+
+t11FcRouteType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    local(1),
+                    remote(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL {local}
+    ::= { t11FcRouteEntry 10 }
+
+t11FcRouteIfDown OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    remove(1),
+                    retain(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL  { retain }
+    ::= { t11FcRouteEntry 11 }
+
+
+
+
+
+
+t11FcRouteStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+       DEFVAL { nonVolatile }
+    ::= { t11FcRouteEntry 12 }
+
+t11FcRouteRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { t11FcRouteEntry 13 }
+
+t11FcRouteCompliances OBJECT IDENTIFIER
+                         ::= { t11FcRouteConformance 1 }
+t11FcRouteGroups      OBJECT IDENTIFIER
+                         ::= { t11FcRouteConformance 2 }
+
+
+t11FcRouteCompliance  MODULE-COMPLIANCE
+    STATUS    current
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { t11FcRouteGroup }
+
+        OBJECT     t11FcRouteIfDown
+        MIN-ACCESS read-only
+
+        OBJECT     t11FcRouteDomainId
+        MIN-ACCESS read-only
+
+        OBJECT     t11FcRouteMetric
+        MIN-ACCESS read-only
+
+        OBJECT     t11FcRouteType
+        MIN-ACCESS read-only
+
+        OBJECT     t11FcRouteStorageType
+
+
+
+
+
+        MIN-ACCESS read-only
+
+        OBJECT     t11FcRouteRowStatus
+        SYNTAX     INTEGER { active(1) }
+        MIN-ACCESS read-only
+
+    ::= { t11FcRouteCompliances 1 }
+t11FcRouteGroup  OBJECT-GROUP
+    OBJECTS  { t11FcRouteFabricLastChange,
+               t11FcRouteDomainId,
+               t11FcRouteMetric,
+               t11FcRouteType,
+               t11FcRouteIfDown,
+               t11FcRouteStorageType,
+               t11FcRouteRowStatus
+             }
+    STATUS   current
+    ::= { t11FcRouteGroups 1 }
+
+END

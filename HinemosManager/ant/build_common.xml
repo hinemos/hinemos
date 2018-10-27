@@ -1,0 +1,219 @@
+<?xml version="1.0"?>
+<project name="CloudManagerBuildCommon" default="all" basedir=".">
+	<import file="build_common_props.xml"/>
+	
+	<target name="all" depends="clean, jar, webclient, src.zip">
+		<antcall target="refresh" />
+	</target>
+	
+	<target name="compile" description="Compile Java sources" depends="init">
+		<javac.mac compile.src.dir="${src.plugin.dir}" compile.dest.dir="${dest.plugin.dir}" compile.classpath="id.compile.classpath"/>
+	</target>
+
+	<macrodef name="javac.mac">
+		<attribute name="compile.dest.dir" />
+		<attribute name="compile.src.dir" />
+		<attribute name="compile.classpath" />
+		<sequential>
+			<mkdir dir="@{compile.dest.dir}" />
+			<javac 
+				destdir="@{compile.dest.dir}" 
+				failonerror="true" 
+				classpathref="@{compile.classpath}" 
+				source="${compile.version}" 
+				target="${compile.version}"
+				encoding="${compile.encode}"
+				debug="on">
+				<src path="@{compile.src.dir}" />
+				<compilerarg value="-XDignore.symbol.file" />
+			</javac>
+			
+			<copy todir="@{compile.dest.dir}" failonerror="true" overwrite="true">
+				<fileset dir="@{compile.src.dir}">
+					<include name="**/*.*"/>
+					<exclude name="**/*.java"/>
+					<exclude name="**/package.htm*"/>
+				</fileset>
+			</copy>
+			
+			<replace file="@{compile.dest.dir}/META-INF/MANIFEST.MF">
+				<replacefilter token="@BUILD_DATE@" value="${build.date}" />
+				<replacefilter token="@VERSION@" value="${rpm.version}" />
+			</replace>
+		</sequential>
+	</macrodef>
+	
+	<target name="jar" description="Generate JAR file" depends="compile" if="jar.plugin">
+		<mkdir dir="${jar.plugin.dir}" />
+		<jar jarfile="${jar.plugin.dir}/${jar.plugin}" manifest="${dest.plugin.dir}/META-INF/MANIFEST.MF">
+			<fileset dir="${dest.plugin.dir}">
+				<include name="**/*.*"/>
+			</fileset>
+			<fileset dir="${src.plugin.dir}">
+				<include name="**/*.java"/>
+			</fileset>
+		</jar>
+	</target>
+	
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+	</target>
+	
+	<!-- wsgen が、指定した jar のファイルハンドルを開放しないので、別の JVM に処理をフォークする -->
+	<target name="webclient" depends="jar" if="wsclient.jar">
+		<mkdir dir="${ws.dir}" />
+		<mkdir dir="${wsdl.dir}" />
+		<mkdir dir="${wsdlsrc.dir}" />
+
+		<java
+		        classname="org.apache.tools.ant.launch.Launcher"
+		        fork="true"
+		        failonerror="true"
+		        dir="${basedir}"
+		        timeout="4000000"
+		        taskname="startAnt"
+		        logError="true"
+		>
+		    <classpath>
+		        <pathelement location="${ant.home}/lib/ant-launcher.jar"/>
+		    </classpath>
+			<jvmarg value="-Dfile.encoding=${compile.encode}" />
+		    <arg value="-buildfile"/>
+		    <arg file="${ant.file}"/>
+		    <arg value="-Dthis=this"/>
+		    <arg value="-Dthat=that"/>
+		    <arg value="-Dbasedir=${basedir}"/>
+		    <arg value="-Dthe.other=the.other"/>
+		    <arg value="webclient_fork"/>
+		</java>
+		
+<!--		<antcall target="webclient_fork"/> -->
+		
+		<path id="project.class.path">
+			<!--			<path refid="id.webclient.classpath"/> -->
+<!--			<path refid="id.compile.classpath"/> -->
+			<fileset dir="${hinemos_common.dir}">
+				<include name="wslib/*.jar"/>
+			</fileset>
+		</path>
+
+		<taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
+			<classpath refid="project.class.path"/>
+		</taskdef>
+		<macrodef name="wsimport.mac">
+			<attribute name="dir" />
+			<attribute name="service.wsdl" />
+			<sequential>
+				<wsimport
+					keep="true"
+					destdir="@{dir}"
+					wsdl="${basedir}/${wsdl.dir}/@{service.wsdl}"
+					wsdllocation="file:../../lib/@{service.wsdl}">
+					<produces dir="@{dir}" includes="@{dir}/**/*.java" />
+				</wsimport>
+			</sequential>
+		</macrodef>
+		
+		<script language="javascript">
+			<![CDATA[
+			  var wsdls = project.getProperty("service.wsdls").split(",");
+			  for (var i = 0; i < wsdls.length; i++) {
+			    var task = project.createTask("wsimport.mac");
+			    task.setDynamicAttribute("dir", project.getProperty("ws.dir"));
+			    task.setDynamicAttribute("service.wsdl", wsdls[i].trim());
+			    task.perform();
+			  }
+			]]>
+		</script>
+
+		<jar jarfile="${jar.ws.dir}/${wsclient.jar}">
+			<fileset dir="${ws.dir}">
+				<include name="**/*.*"/>
+			</fileset>
+		</jar>
+	</target>
+	
+	<target name="webclient_fork" depends="init">
+		<path id="project.class.path">
+			<path refid="id.webclient.classpath"/>
+			<path refid="id.compile.classpath"/>
+			<fileset dir="${hinemos_common.dir}">
+				<include name="wslib/*.jar"/>
+			</fileset>
+		</path>
+		
+		<script language="javascript">
+			<![CDATA[
+			  var classes = project.getProperty("ws.sei.classes").split(",");
+			  for (var i = 0; i < classes.length; i++) {
+			    project.setProperty("ws.sei.class", classes[i].trim());
+			    project.executeTarget("wsgen.task");
+			  }
+			]]>
+		</script>
+	</target>
+	
+	<target name="wsgen.task">
+		<taskdef name="wsgen" classname="com.sun.tools.ws.ant.WsGen2">
+			<classpath refid="project.class.path"/>
+		</taskdef>
+		<macrodef name="wsgen.mac">
+			<attribute name="sei.class" />
+			<sequential>
+				<wsgen
+					fork="true"
+					destdir="${wsdlsrc.dir}"
+					resourcedestdir="${wsdl.dir}"
+					verbose="true"
+					keep="false"
+					genwsdl="true"
+					debug="true"
+					sei="@{sei.class}">
+					<classpath refid="project.class.path"/>
+					<jvmarg value="-Dfile.encoding=${compile.encode}" />
+				</wsgen>
+			</sequential>
+		</macrodef>
+		<wsgen.mac sei.class="${ws.sei.class}"/>
+	</target>
+		
+	<target name="src.zip" depends="init">
+		<fileset dir="${src.plugin.dir}" id="zip.fileset">
+			<exclude name ="**/*.class"/>
+			<exclude name ="**/*.jar"/>
+			<exclude name ="**/*.tar.gz"/>
+			<exclude name ="**/*build*.xml"/>
+			<exclude name ="**/META-INF/**"/>
+		</fileset>
+		
+		<zip.mac packageName="${plugin.name}-${rpm.version}" zip.dest.dir="${source.zip.dir}" fileset.refid="zip.fileset" />
+	</target>
+	
+	<macrodef name="zip.mac">
+		<attribute name="packageName" />
+		<attribute name="zip.dest.dir" />
+		<attribute name="fileset.refid" />
+		<sequential>
+			<mkdir dir="@{zip.dest.dir}/@{packageName}" />
+			
+			<copy todir="@{zip.dest.dir}/@{packageName}" >
+				<fileset refid="@{fileset.refid}"/>
+			</copy>
+			
+			<zip destfile="@{zip.dest.dir}/@{packageName}.source.zip" basedir="@{zip.dest.dir}" filesonly="true" whenempty="skip" update="false"/>
+			<antcall target="refresh" />
+		</sequential>
+	</macrodef>
+	
+	<condition property="refreshable">
+		<and>
+			<isset property="eclipse.running" />
+			<isset property="refresh.project.name" />
+		</and>
+	</condition>
+	
+	<target name="refresh" if="refreshable" >
+		<eclipse.refreshLocal resource="${refresh.project.name}" depth="infinite"/>
+<!--		<eclipse.incrementalBuild project="${project.name}" kind="clean" /> -->
+	</target>
+</project>

@@ -1,0 +1,299 @@
+   VDSL-LINE-EXT-SCM-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+
+   MODULE-IDENTITY,
+   OBJECT-TYPE,
+   Integer32,
+   transmission,
+   Unsigned32                      FROM SNMPv2-SMI         -- [RFC2578]
+   TEXTUAL-CONVENTION,
+   TruthValue,
+   RowStatus                       FROM SNMPv2-TC          -- [RFC2579]
+   MODULE-COMPLIANCE,
+   OBJECT-GROUP                    FROM SNMPv2-CONF        -- [RFC2580]
+   ifIndex                         FROM IF-MIB             -- [RFC2863]
+   vdslLineConfProfileName         FROM VDSL-LINE-MIB;     -- [RFC3728]
+
+   vdslExtSCMMIB MODULE-IDENTITY
+      LAST-UPDATED "200504280000Z" --     April 28, 2005
+      ORGANIZATION "ADSLMIB Working Group"
+
+          ::= { transmission 228 }
+
+          vdslLineExtSCMMib    OBJECT IDENTIFIER ::= { vdslExtSCMMIB 1 }
+          vdslLineExtSCMMibObjects OBJECT IDENTIFIER ::=
+                                                 { vdslLineExtSCMMib 1 }
+
+
+
+
+
+
+   VdslSCMBandId ::= TEXTUAL-CONVENTION
+       STATUS       current
+
+
+       SYNTAX      INTEGER       {  optionalBand (1),
+                                    firstDownstreamBand (2),
+                                    firstUpstreamBand (3),
+                                    secondDownstreamBand (4),
+                                    secondUpstreamBand (5),
+                                    thirdDownstreamBand (6),
+                                    thirdUpstreamBand(7) }
+
+
+   vdslLineSCMConfProfileBandTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineSCMConfProfileBandEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineExtSCMMibObjects 1 }
+
+   vdslLineSCMConfProfileBandEntry OBJECT-TYPE
+       SYNTAX       VdslLineSCMConfProfileBandEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+       INDEX { vdslLineConfProfileName,
+        vdslLineSCMConfProfileBandId }
+       ::= { vdslLineSCMConfProfileBandTable 1 }
+
+   VdslLineSCMConfProfileBandEntry ::=
+       SEQUENCE
+          {
+          vdslLineSCMConfProfileBandId                VdslSCMBandId,
+          vdslLineSCMConfProfileBandInUse             TruthValue,
+          vdslLineSCMConfProfileBandCenterFrequency   Unsigned32,
+          vdslLineSCMConfProfileBandSymbolRate        Unsigned32,
+          vdslLineSCMConfProfileBandConstellationSize Unsigned32,
+          vdslLineSCMConfProfileBandTransmitPSDLevel  Unsigned32,
+          vdslLineSCMConfProfileBandRowStatus         RowStatus
+          }
+
+   vdslLineSCMConfProfileBandId OBJECT-TYPE
+       SYNTAX      VdslSCMBandId
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       ::= { vdslLineSCMConfProfileBandEntry 1 }
+
+
+
+
+
+
+
+
+   vdslLineSCMConfProfileBandInUse OBJECT-TYPE
+       SYNTAX       TruthValue
+       MAX-ACCESS   read-create
+       STATUS  current
+       ::= { vdslLineSCMConfProfileBandEntry 2 }
+
+   vdslLineSCMConfProfileBandCenterFrequency OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "Hz"
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineSCMConfProfileBandEntry 3 }
+
+   vdslLineSCMConfProfileBandSymbolRate OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "baud"
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineSCMConfProfileBandEntry 4 }
+
+   vdslLineSCMConfProfileBandConstellationSize OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..16)
+       UNITS        "log2"
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineSCMConfProfileBandEntry 5 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   vdslLineSCMConfProfileBandTransmitPSDLevel OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "-0.25 dBm/Hz"
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineSCMConfProfileBandEntry 6  }
+
+   vdslLineSCMConfProfileBandRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+
+       ::= { vdslLineSCMConfProfileBandEntry 7 }
+
+
+   vdslLineSCMPhysBandTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineSCMPhysBandEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+
+
+
+
+       ::= { vdslLineExtSCMMibObjects 2 }
+
+   vdslLineSCMPhysBandEntry OBJECT-TYPE
+       SYNTAX        VdslLineSCMPhysBandEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ifIndex,
+               vdslLineSCMPhysBandId  }
+       ::= { vdslLineSCMPhysBandTable 1 }
+
+   VdslLineSCMPhysBandEntry ::=
+       SEQUENCE
+           {
+           vdslLineSCMPhysBandId                    VdslSCMBandId,
+           vdslLineSCMPhysBandInUse                 TruthValue,
+           vdslLineSCMPhysBandCurrCenterFrequency   Unsigned32,
+           vdslLineSCMPhysBandCurrSymbolRate        Unsigned32,
+           vdslLineSCMPhysBandCurrConstellationSize Unsigned32,
+           vdslLineSCMPhysBandCurrPSDLevel          Unsigned32,
+           vdslLineSCMPhysBandCurrSnrMgn            Integer32,
+           vdslLineSCMPhysBandCurrAtn               Unsigned32
+           }
+
+   vdslLineSCMPhysBandId OBJECT-TYPE
+       SYNTAX      VdslSCMBandId
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       ::= { vdslLineSCMPhysBandEntry 1 }
+
+   vdslLineSCMPhysBandInUse OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-only
+       STATUS  current
+       ::= { vdslLineSCMPhysBandEntry 2 }
+
+
+
+
+
+
+
+
+
+
+
+   vdslLineSCMPhysBandCurrCenterFrequency OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "Hz"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslLineSCMPhysBandEntry 3 }
+
+   vdslLineSCMPhysBandCurrSymbolRate    OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "baud"
+       MAX-ACCESS   read-only
+       STATUS       current
+      ::= { vdslLineSCMPhysBandEntry 4 }
+
+   vdslLineSCMPhysBandCurrConstellationSize OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..16)
+       UNITS        "log2"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslLineSCMPhysBandEntry 5 }
+
+   vdslLineSCMPhysBandCurrPSDLevel    OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "- 0.25 dBm/Hz"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslLineSCMPhysBandEntry 6 }
+
+
+
+
+
+
+
+
+
+
+
+
+   vdslLineSCMPhysBandCurrSnrMgn OBJECT-TYPE
+       SYNTAX        Integer32
+       UNITS         "0.25 dB"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslLineSCMPhysBandEntry 7 }
+
+   vdslLineSCMPhysBandCurrAtn OBJECT-TYPE
+       SYNTAX        Unsigned32 (0..255)
+       UNITS         "0.25 dB"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslLineSCMPhysBandEntry 8 }
+
+
+   vdslLineExtSCMConformance OBJECT IDENTIFIER ::=
+                                               { vdslLineExtSCMMib 2 }
+   vdslLineExtSCMGroups OBJECT IDENTIFIER ::=
+                                       { vdslLineExtSCMConformance 1 }
+   vdslLineExtSCMCompliances OBJECT IDENTIFIER ::=
+                                       { vdslLineExtSCMConformance 2 }
+
+   vdslLineExtSCMMibCompliance MODULE-COMPLIANCE
+       STATUS  current
+
+       MODULE  -- this module
+
+       MANDATORY-GROUPS
+       {
+         vdslLineExtSCMGroup
+       }
+
+       ::= { vdslLineExtSCMCompliances 1 }
+
+
+
+
+
+
+
+
+
+
+   vdslLineExtSCMGroup    OBJECT-GROUP
+       OBJECTS
+           {
+           vdslLineSCMConfProfileBandInUse,
+           vdslLineSCMConfProfileBandTransmitPSDLevel,
+           vdslLineSCMConfProfileBandSymbolRate,
+           vdslLineSCMConfProfileBandConstellationSize,
+           vdslLineSCMConfProfileBandCenterFrequency,
+           vdslLineSCMConfProfileBandRowStatus,
+           vdslLineSCMPhysBandInUse,
+           vdslLineSCMPhysBandCurrPSDLevel,
+           vdslLineSCMPhysBandCurrSymbolRate,
+           vdslLineSCMPhysBandCurrConstellationSize,
+           vdslLineSCMPhysBandCurrCenterFrequency,
+           vdslLineSCMPhysBandCurrSnrMgn,
+           vdslLineSCMPhysBandCurrAtn
+
+           }
+       STATUS      current
+       ::= { vdslLineExtSCMGroups 1 }
+
+   END

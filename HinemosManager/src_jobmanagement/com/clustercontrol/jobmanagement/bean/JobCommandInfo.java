@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.bean;
@@ -83,14 +76,18 @@ public class JobCommandInfo implements Serializable {
 	/** コマンド実行失敗時終了値 */
 	private Integer m_messageRetryEndValue = 0;
 
-	/** 正常終了するまでリトライフラグ */
+	/** 繰り返し実行フラグ */
 	private Boolean m_commandRetryFlg = false;
 
-	/** 正常終了するまでリトライ回数 */
+	/** 繰り返し実行回数 */
 	private Integer m_commandRetry;
+	
+	/** 繰り返し完了状態 */
+	private Integer m_commandRetryEndStatus;
 
 	/** ランタイムジョブ変数詳細情報 */
 	private ArrayList<JobCommandParam> m_jobCommandParamList;
+
 	/** 環境変数 */
 	private List<JobEnvVariableInfo> m_envVariable;
 
@@ -339,16 +336,16 @@ public class JobCommandInfo implements Serializable {
 
 
 	/**
-	 * 正常終了するまでリトライフラグを返す。<BR>
-	 * @return 正常終了するまでリトライフラグ
+	 * 繰り返し実行フラグを返す。<BR>
+	 * @return 繰り返し実行フラグ
 	 */
 	public Boolean getCommandRetryFlg() {
 		return m_commandRetryFlg;
 	}
 
 	/**
-	 * 正常終了するまでリトライフラグを設定する。<BR>
-	 * @param errorRetryFlg 正常終了するまでリトライフラグ
+	 * 繰り返し実行フラグを設定する。<BR>
+	 * @param commandRetryFlg 繰り返し実行フラグ
 	 */
 	public void setCommandRetryFlg(Boolean commandRetryFlg) {
 		this.m_commandRetryFlg = commandRetryFlg;
@@ -356,19 +353,35 @@ public class JobCommandInfo implements Serializable {
 
 
 	/**
-	 * 正常終了するまでリトライ回数を返す。<BR>
-	 * @return 正常終了するまでリトライ回数
+	 * 繰り返し実行回数を返す。<BR>
+	 * @return 繰り返し実行回数
 	 */
 	public Integer getCommandRetry() {
 		return m_commandRetry;
 	}
 
 	/**
-	 * 正常終了するまでリトライ回数を設定する。<BR>
-	 * @param commandRetry 正常終了するまでリトライ回数
+	 * 繰り返し実行回数を設定する。<BR>
+	 * @param commandRetry 繰り返し実行回数
 	 */
 	public void setCommandRetry(Integer commandRetry) {
 		this.m_commandRetry = commandRetry;
+	}
+	
+	/**
+	 * 繰り返し完了状態を返す。<BR>
+	 * @return
+	 */
+	public Integer getCommandRetryEndStatus() {
+		return m_commandRetryEndStatus;
+	}
+
+	/**
+	 * 繰り返し完了状態を設定する。<BR>
+	 * @param commandRetryEndStatus
+	 */
+	public void setCommandRetryEndStatus(Integer commandRetryEndStatus) {
+		this.m_commandRetryEndStatus = commandRetryEndStatus;
 	}
 	
 	/**
@@ -396,6 +409,10 @@ public class JobCommandInfo implements Serializable {
 		result = prime
 				* result
 				+ ((m_commandRetryFlg == null) ? 0 : m_commandRetryFlg
+						.hashCode());
+		result = prime
+				* result
+				+ ((m_commandRetryEndStatus == null) ? 0 : m_commandRetryEndStatus
 						.hashCode());
 		result = prime * result
 				+ ((m_facilityID == null) ? 0 : m_facilityID.hashCode());
@@ -446,6 +463,7 @@ public class JobCommandInfo implements Serializable {
 				equalsSub(o1.getMessageRetry(), o2.getMessageRetry()) &&
 				equalsSub(o1.getCommandRetryFlg(), o2.getCommandRetryFlg()) &&
 				equalsSub(o1.getCommandRetry(), o2.getCommandRetry()) &&
+				equalsSub(o1.getCommandRetryEndStatus(), o2.getCommandRetryEndStatus()) &&
 				equalsSub(o1.getProcessingMethod(), o2.getProcessingMethod()) &&
 				equalsSub(o1.getSpecifyUser(), o2.getSpecifyUser()) &&
 				equalsSub(o1.getStartCommand(), o2.getStartCommand()) &&

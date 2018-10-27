@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.commons.util;
@@ -24,6 +17,8 @@ import java.util.Date;
  */
 public abstract class JdbcBatchQuery {
 
+	protected int size = 0;
+	
 	/**
 	 * SQL文を取得
 	 * 
@@ -48,7 +43,7 @@ public abstract class JdbcBatchQuery {
 	 */
 	protected void setParameters(PreparedStatement pstmt, Object[] params) throws SQLException {
 		for (int i = 0; i < params.length; i++) {
-			// 3番目の Float が NaN なら、null に変換。
+			// NaN なら、null に変換。
 			if (params[i] instanceof Float && params[i].equals(Float.NaN)) {
 				pstmt.setNull(i + 1, java.sql.Types.FLOAT);
 			}else if (params[i] instanceof Double && params[i].equals(Double.NaN)) {
@@ -59,5 +54,9 @@ public abstract class JdbcBatchQuery {
 				pstmt.setObject(i + 1, params[i]);
 			}
 		}
+	}
+	
+	public int getSize() {
+		return size;
 	}
 }

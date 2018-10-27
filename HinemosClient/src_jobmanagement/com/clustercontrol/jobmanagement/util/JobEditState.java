@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
 
 package com.clustercontrol.jobmanagement.util;
 
@@ -308,12 +315,6 @@ public class JobEditState{
 	 * @throws UserNotFound_Exception
 	 */
 	public JobTreeItem updateJobTree( String ownerRoleId, boolean m_treeOnly ) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, JobMasterNotFound_Exception, NotifyNotFound_Exception, UserNotFound_Exception{
-		JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-
-		JobTreeItem orgTree = wrapper.getJobTree(ownerRoleId, m_treeOnly);
-
-		updateJobunitUpdateTime(orgTree);
-
 		// managerがルートとなる木を作成する
 		//     manager
 		//     |
@@ -328,6 +329,12 @@ public class JobEditState{
 		managerInfo.setJobunitId(managerName);
 		m_jobTreeItem.setData(managerInfo);
 		m_jobTreeItem.setParent(null);
+		
+		JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
+
+		JobTreeItem orgTree = wrapper.getJobTree(ownerRoleId, m_treeOnly);
+
+		updateJobunitUpdateTime(orgTree);
 
 		// Children
 		for( JobTreeItem childItem : orgTree.getChildren().get(0).getChildren() ){

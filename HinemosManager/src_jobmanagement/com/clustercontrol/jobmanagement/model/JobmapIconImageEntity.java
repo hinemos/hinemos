@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.jobmanagement.model;
 
 import javax.persistence.AttributeOverride;
@@ -10,8 +18,6 @@ import javax.persistence.Table;
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 
 
 
@@ -43,8 +49,6 @@ public class JobmapIconImageEntity extends ObjectPrivilegeTargetInfo {
 
 	public JobmapIconImageEntity(String iconId) {
 		this.setIconId(iconId);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
 		this.setObjectId(this.getIconId());
 	}
 

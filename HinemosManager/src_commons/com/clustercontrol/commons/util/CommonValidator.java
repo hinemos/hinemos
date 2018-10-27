@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.commons.util;
@@ -24,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.PatternConstant;
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.commons.bean.Schedule;
 import com.clustercontrol.fault.CalendarNotFound;
@@ -390,6 +384,75 @@ public class CommonValidator {
 		return;
 	}
 	
+	/**
+	 * 重要度が正しいか判定する
+	 * 
+	 */
+	public static void validatePriority(String name, Integer priority, boolean permitNonePriority) throws InvalidSetting {
+		if (priority == null) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_PRIORITY.getMessage(name));
+			m_log.info("validatePriority() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		if (priority == PriorityConstant.TYPE_NONE) {
+			if (permitNonePriority) {
+				return;
+			} else {
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_PRIORITY.getMessage(name));
+				m_log.info("validatePriority() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		}
+		if (priority != PriorityConstant.TYPE_CRITICAL &&
+				priority != PriorityConstant.TYPE_WARNING &&
+				priority != PriorityConstant.TYPE_INFO &&
+				priority != PriorityConstant.TYPE_UNKNOWN) {
+			if (permitNonePriority) {
+				return;
+			} else {
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_PRIORITY.getMessage(name));
+				m_log.info("validatePriority() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		}
+		return;
+	}
+	
+	/** 
+	 * 指定された数値系監視の収集値に関する値がHinemosの規則にマッチするかを確認する。 
+	 * [,、<、>、?、!、|、＠]は許可しない  
+	 *  
+	 * @param value 
+	 * @throws InvalidSetting 
+	 */ 
+	public static void validateCollect(String name, String value, int maxSize) throws InvalidSetting{
+
+		// null check
+		if(value == null || "".equals(value)){
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(name));
+			m_log.info("validateCollect() : "
+				+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+
+		// string check
+		validateString(name, value, false, 1, maxSize);
+
+		String errorPattern = "!,<>?|＠";
+		String errorStr = ".*[" + errorPattern + "].*";
+
+		/** メイン処理 */
+		if(value.matches(errorStr)){
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_ILLEGAL_CHARACTERS.getMessage(name, errorPattern));
+			m_log.info("validateCollect() : "
+				+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
+
 	/**
 	 * for debug
 	 * @param args

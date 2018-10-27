@@ -1,0 +1,31 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"targetMonitorId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorLogcountInfo_targetMonitorId"}
+	]},
+
+	{
+	"propName":"keyword",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorLogcountInfo_keyword"}
+	]},
+
+	{
+	"propName":"isAnd",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorLogcountInfo_isAnd"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_and"}, {"value":"false", "name":"name_or"}]}
+	]},
+
+	{
+	"propName":"tag",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorLogcountInfo_tag"}
+	]}
+]
+}

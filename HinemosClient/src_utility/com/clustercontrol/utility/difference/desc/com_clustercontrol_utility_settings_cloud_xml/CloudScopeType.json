@@ -1,0 +1,26 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"CloudUser_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"CloudPlatformId",
+			"CloudScopeId",
+			"CloudScopeName",
+			"OwnerRoleId",
+			"Description",
+			"CloudCheckInfo",
+			"AmazonType",
+			"VMwareType",
+			"HypervType",
+			"AzureType"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"ICloudScope",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

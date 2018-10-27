@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.util;
@@ -43,11 +36,12 @@ import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.JobApprovalResultConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.jobmanagement.bean.JobApprovalInfo;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
+import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.maintenance.HinemosPropertyTypeConstant;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
@@ -65,16 +59,6 @@ public class SendApprovalMail {
 	/** ログ出力のインスタンス */
 	private static Log m_log = LogFactory.getLog(SendApprovalMail.class);
 
-	/** アドレス文字コード */
-	public static final String _charsetAddressDefault = "UTF-8";
-
-	/** メール件名文字コード */
-	public static final String _charsetSubjectDefault = "UTF-8";
-
-	/** メール本文文字コード */
-	public static final String _charsetContentDefault = "UTF-8";
-
-	
 	/**
 	 * 承認依頼メールの送信を行います。
 	 *
@@ -88,6 +72,12 @@ public class SendApprovalMail {
 		
 		if(jobInfo.isUseApprovalReqSentence()){
 			request = jobInfo.getApprovalReqSentence();
+			// 承認依頼文を利用する場合リンクアドレスを付与する。取得に失敗しても処理は継続する。
+			try {
+				request += "\r\n\r\n" + new JobControllerBean().getApprovalPageLink();
+			} catch (HinemosUnknown e) {
+				m_log.warn("failed to get job.approval.page.link");
+			}
 		} else{
 			request = jobInfo.getApprovalReqMailBody();
 		}
@@ -121,6 +111,12 @@ public class SendApprovalMail {
 		}
 		if(jobInfo.isUseApprovalReqSentence()){
 			request = jobInfo.getApprovalReqSentence();
+			// 承認依頼文を利用する場合リンクアドレスを付与する。取得に失敗しても処理は継続する。
+			try {
+				request += "\r\n\r\n" + new JobControllerBean().getApprovalPageLink();
+			} catch (HinemosUnknown e) {
+				// 処理しない
+			}
 		} else{
 			request = jobInfo.getApprovalReqMailBody();
 		}
@@ -259,84 +255,84 @@ public class SendApprovalMail {
 		 *  https://javamail.java.net/nonav/docs/api/com/sun/mail/smtp/package-summary.html
 		 */
 		Properties _properties = new Properties();
-		_properties.setProperty("mail.debug", Boolean.toString(HinemosPropertyUtil.getHinemosPropertyBool("mail.debug", false)));
-		_properties.setProperty("mail.store.protocol", HinemosPropertyUtil.getHinemosPropertyStr("mail.store.protocol", "pop3"));
-		String protocol = HinemosPropertyUtil.getHinemosPropertyStr("mail.transport.protocol", "smtp");
+		_properties.setProperty("mail.debug", Boolean.toString(HinemosPropertyCommon.mail_debug.getBooleanValue()));
+		_properties.setProperty("mail.store.protocol", HinemosPropertyCommon.mail_store_protocol.getStringValue());
+		String protocol = HinemosPropertyCommon.mail_transport_protocol.getStringValue();
 		_properties.setProperty("mail.transport.protocol", protocol);
 		_properties.put("mail.smtp.socketFactory", javax.net.SocketFactory.getDefault());
 		_properties.put("mail.smtp.ssl.socketFactory", javax.net.ssl.SSLSocketFactory.getDefault());
 		
-		setProperties(_properties, "mail." + protocol + ".user", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".host", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".port", HinemosPropertyTypeConstant.TYPE_NUMERIC);
-		setProperties(_properties, "mail." + protocol + ".connectiontimeout", HinemosPropertyTypeConstant.TYPE_NUMERIC);
-		setProperties(_properties, "mail." + protocol + ".timeout", HinemosPropertyTypeConstant.TYPE_NUMERIC);
-		setProperties(_properties, "mail." + protocol + ".writetimeout", HinemosPropertyTypeConstant.TYPE_NUMERIC);
-		setProperties(_properties, "mail." + protocol + ".from", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".localhost", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".localaddress", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".localport", HinemosPropertyTypeConstant.TYPE_NUMERIC);
-		setProperties(_properties, "mail." + protocol + ".ehlo", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".auth", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".auth.mechanisms", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".auth.login.disable", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".auth.plain.disable", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".auth.digest-md5.disable", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".auth.ntlm.disable", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".auth.ntlm.domain", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".auth.ntlm.flags", HinemosPropertyTypeConstant.TYPE_NUMERIC);
-		setProperties(_properties, "mail." + protocol + ".submitter", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".dsn.notify", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".dsn.ret", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".allow8bitmime", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".sendpartial", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".sasl.enable", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".sasl.mechanisms", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".sasl.authorizationid", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".sasl.realm", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".sasl.usecanonicalhostname", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".quitwait", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".reportsuccess", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".socketFactory.class", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".socketFactory.fallback", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".socketFactory.port", HinemosPropertyTypeConstant.TYPE_NUMERIC);
-		setProperties(_properties, "mail." + protocol + ".starttls.enable", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".starttls.required", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".socks.host", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".socks.port", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".mailextension", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail." + protocol + ".userset", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail." + protocol + ".noop.strict", HinemosPropertyTypeConstant.TYPE_TRUTH);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_user, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_host, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_port, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_connectiontimeout, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_timeout, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_writetimeout, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_from, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_localhost, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_localaddress, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_localport, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_ehlo, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_auth, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_mechanisms, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_login_disable, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_plain_disable, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_digest_md5_disable, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_ntlm_disable, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_ntlm_domain, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_ntlm_flags, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_submitter, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_dsn_notify, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_dsn_ret, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_allow8bitmime, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_sendpartial, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_enable, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_mechanisms, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_authorizationid, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_realm, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_usecanonicalhostname, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_quitwait, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_reportsuccess, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_socketFactory_class, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_socketFactory_fallback, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_socketFactory_port, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_starttls_enable, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_starttls_required, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_socks_host, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_socks_port, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_mailextension, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_userset, protocol);
+		setProperties(_properties, HinemosPropertyCommon.mail_$_noop_strict, protocol);
 		
-		setProperties(_properties, "mail.smtp.ssl.enable", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail.smtp.ssl.checkserveridentity", HinemosPropertyTypeConstant.TYPE_TRUTH);
-		setProperties(_properties, "mail.smtp.ssl.trust", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail.smtp.ssl.socketFactory.class", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail.smtp.ssl.socketFactory.port", HinemosPropertyTypeConstant.TYPE_NUMERIC);
-		setProperties(_properties, "mail.smtp.ssl.protocols", HinemosPropertyTypeConstant.TYPE_STRING);
-		setProperties(_properties, "mail.smtp.ssl.ciphersuites", HinemosPropertyTypeConstant.TYPE_STRING);
+		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_enable, "");
+		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_checkserveridentity, "");
+		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_trust, "");
+		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_socketFactory_class, "");
+		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_socketFactory_port, "");
+		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_protocols, "");
+		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_ciphersuites, "");
 
 		/**
 		 * メールの設定をDBから取得
 		 */
-		String _loginUser = HinemosPropertyUtil.getHinemosPropertyStr("mail.transport.user", "nobody");
-		String _loginPassword = HinemosPropertyUtil.getHinemosPropertyStr("mail.transport.password", "password");
-		String _fromAddress = HinemosPropertyUtil.getHinemosPropertyStr("mail.from.address", "admin@hinemos.com");
-		String _fromPersonalName = HinemosPropertyUtil.getHinemosPropertyStr("mail.from.personal.name", "Hinemos Admin");
+		String _loginUser = HinemosPropertyCommon.mail_transport_user.getStringValue();
+		String _loginPassword = HinemosPropertyCommon.mail_transport_password.getStringValue();
+		String _fromAddress = HinemosPropertyCommon.mail_from_address.getStringValue();
+		String _fromPersonalName = HinemosPropertyCommon.mail_from_personal_name.getStringValue();
 		_fromPersonalName = convertNativeToAscii(_fromPersonalName);
 		
-		String _replyToAddress = HinemosPropertyUtil.getHinemosPropertyStr("mail.reply.to.address", "admin@hinemos.com");
-		String _replyToPersonalName =HinemosPropertyUtil.getHinemosPropertyStr("mail.reply.personal.name", "Hinemos Admin");
+		String _replyToAddress = HinemosPropertyCommon.mail_reply_to_address.getStringValue();
+		String _replyToPersonalName =HinemosPropertyCommon.mail_reply_personal_name.getStringValue();
 		_replyToPersonalName = convertNativeToAscii(_replyToPersonalName);
 		
-		String _errorsToAddress = HinemosPropertyUtil.getHinemosPropertyStr("mail.errors.to.address", "admin@hinemos.com");
+		String _errorsToAddress = HinemosPropertyCommon.mail_errors_to_address.getStringValue();
 
-		int _transportTries = HinemosPropertyUtil.getHinemosPropertyNum("mail.transport.tries", Long.valueOf(1)).intValue();
-		int _transportTriesInterval = HinemosPropertyUtil.getHinemosPropertyNum("mail.transport.tries.interval", Long.valueOf(10000)).intValue();
+		int _transportTries = HinemosPropertyCommon.mail_transport_tries.getIntegerValue();
+		int _transportTriesInterval = HinemosPropertyCommon.mail_transport_tries_interval.getIntegerValue();
 
-		String _charsetAddress = HinemosPropertyUtil.getHinemosPropertyStr("mail.charset.address", _charsetAddressDefault);
-		String _charsetSubject = HinemosPropertyUtil.getHinemosPropertyStr("mail.charset.subject", _charsetSubjectDefault);
-		String _charsetContent = HinemosPropertyUtil.getHinemosPropertyStr("mail.charset.content", _charsetContentDefault);
+		String _charsetAddress = HinemosPropertyCommon.mail_charset_address.getStringValue();
+		String _charsetSubject = HinemosPropertyCommon.mail_charset_subject.getStringValue();
+		String _charsetContent = HinemosPropertyCommon.mail_charset_content.getStringValue();
 
 		m_log.debug("initialized mail sender : from_address = " + _fromAddress
 				+ ", From = " + _fromPersonalName + " <" + _replyToAddress + ">"
@@ -412,7 +408,7 @@ public class SendApprovalMail {
 			try {
 				// メール送信
 				transport = session.getTransport();
-				boolean flag = HinemosPropertyUtil.getHinemosPropertyBool("mail." + protocol + ".auth", false);
+				boolean flag = HinemosPropertyCommon.mail_$_auth.getBooleanValue(protocol, false);
 				if(flag) {
 					transport.connect(_loginUser, _loginPassword);
 				} else {
@@ -444,7 +440,7 @@ public class SendApprovalMail {
 	}
 	
 	private String convertNativeToAscii(String nativeStr) {
-		if (HinemosPropertyUtil.getHinemosPropertyBool("mail.native.to.ascii", false)){
+		if (HinemosPropertyCommon.mail_native_to_ascii.getBooleanValue()){
 			final CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder();
 			final StringBuilder asciiStr = new StringBuilder();
 			for (final Character character : nativeStr.toCharArray()) {
@@ -491,24 +487,24 @@ public class SendApprovalMail {
 		return toAddress;
 	}
 
-	private void setProperties(Properties prop, String key, int type) {
-		switch (type) {
+	private void setProperties(Properties prop, HinemosPropertyCommon hinemosPropertyCommon, String replaceStr) {
+		switch (hinemosPropertyCommon.getBean().getType()) {
 		case HinemosPropertyTypeConstant.TYPE_STRING:
-			String strVal = HinemosPropertyUtil.getHinemosPropertyStr(key, null);
+			String strVal = hinemosPropertyCommon.getStringValue(replaceStr, null);
 			if (strVal != null) {
-				prop.setProperty(key, strVal);
+				prop.setProperty(hinemosPropertyCommon.getReplaceKey(replaceStr), strVal);
 			}
 			break;
 		case HinemosPropertyTypeConstant.TYPE_NUMERIC:
-			Long longVal = HinemosPropertyUtil.getHinemosPropertyNum(key, null);
+			Long longVal = hinemosPropertyCommon.getNumericValue(replaceStr, null);
 			if (longVal != null) {
-				prop.setProperty(key, longVal.toString());
+				prop.setProperty(hinemosPropertyCommon.getReplaceKey(replaceStr), longVal.toString());
 			}
 			break;
 		case HinemosPropertyTypeConstant.TYPE_TRUTH:
-			Boolean boolVal = HinemosPropertyUtil.getHinemosPropertyBool(key, null);
+			Boolean boolVal = hinemosPropertyCommon.getBooleanValue(replaceStr, null);
 			if (boolVal != null) {
-				prop.setProperty(key, boolVal.toString());
+				prop.setProperty(hinemosPropertyCommon.getReplaceKey(replaceStr), boolVal.toString());
 			}
 			break;
 		default:

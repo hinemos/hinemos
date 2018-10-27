@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.view.action;
@@ -44,6 +37,7 @@ import com.clustercontrol.util.UIManager;
 import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
 import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
 import com.clustercontrol.ws.infra.InvalidRole_Exception;
+import com.clustercontrol.ws.infra.InvalidSetting_Exception;
 import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
 import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
 
@@ -115,7 +109,7 @@ public class DeleteInfraManagementAction extends AbstractHandler implements IEle
 					} catch (InvalidRole_Exception e){
 						// 権限なし
 						errMsg.put(managerName, Messages.getString("message.accesscontrol.16"));
-					} catch (InfraManagementNotFound_Exception | HinemosUnknown_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception e) {
+					} catch (InfraManagementNotFound_Exception | HinemosUnknown_Exception | InvalidUserPass_Exception | InvalidSetting_Exception | NotifyNotFound_Exception e) {
 						m_log.debug("execute() : " + e.getClass() + e.getMessage());
 						String arg = Messages.getString(
 								"message.infra.action.result",

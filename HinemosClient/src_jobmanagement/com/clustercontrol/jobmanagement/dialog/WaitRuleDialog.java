@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.dialog;
@@ -303,6 +296,67 @@ public class WaitRuleDialog extends CommonDialog {
 				list.get(3).setValue(description);
 
 			}
+			if (type == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS) {
+				//判定対象がジョブの場合
+				property = new WaitRuleProperty().getProperty(m_jobTreeItem, JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS);
+				ArrayList<Property> propertyList = PropertyUtil.getProperty(property,
+						WaitRuleProperty.ID_JUDGMENT_OBJECT);
+				Property judgmentObject = (Property) propertyList.get(0);
+				Object values[][] = judgmentObject.getSelectValues();
+				judgmentObject.setValue(JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_STATUS);
+
+				@SuppressWarnings("unchecked")
+				HashMap<String, Object> map = (HashMap<String, Object>) values[PropertyDefineConstant.SELECT_VALUE][JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS];
+				@SuppressWarnings("unchecked")
+				ArrayList<Property> list = (ArrayList<Property>) map.get("property");
+
+				//ジョブIDを設定
+				String jobId = (String) m_startCondition.get(GetWaitRuleTableDefine.JOB_ID);
+				list.get(0).setValue(jobId);
+
+				//条件値
+				String value = (String) m_startCondition.get(GetWaitRuleTableDefine.START_VALUE);
+				list.get(1).setValue(value);
+
+				//セッション横断ジョブ履歴対象範囲
+				Integer crossSessionRange = (Integer) m_startCondition.get(GetWaitRuleTableDefine.CROSS_SESSION_RANGE);
+				list.get(2).setValue(crossSessionRange);
+
+				//説明
+				String description = (String) m_startCondition.get(GetWaitRuleTableDefine.DESCRIPTION);
+				list.get(3).setValue(description);
+			}
+			else if (type == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
+				//判定対象がジョブの場合
+				property = new WaitRuleProperty().getProperty(m_jobTreeItem, JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE);
+				ArrayList<Property> propertyList = PropertyUtil.getProperty(property, WaitRuleProperty.ID_JUDGMENT_OBJECT);
+				Property judgmentObject = (Property) propertyList.get(0);
+				Object values[][] = judgmentObject.getSelectValues();
+				judgmentObject.setValue(JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_VALUE);
+
+				@SuppressWarnings("unchecked")
+				HashMap<String, Object> map = (HashMap<String, Object>) values[PropertyDefineConstant.SELECT_VALUE][JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE];
+				@SuppressWarnings("unchecked")
+				ArrayList<Property> list = (ArrayList<Property>) map.get("property");
+
+				//ジョブIDを設定
+				String jobId = (String) m_startCondition
+						.get(GetWaitRuleTableDefine.JOB_ID);
+				((Property) list.get(0)).setValue(jobId);
+
+				//条件値
+				Integer value = (Integer) m_startCondition
+						.get(GetWaitRuleTableDefine.START_VALUE);
+				((Property) list.get(1)).setValue(value);
+
+				//セッション横断ジョブ履歴対象範囲
+				Integer crossSessionRange = (Integer) m_startCondition.get(GetWaitRuleTableDefine.CROSS_SESSION_RANGE);
+				list.get(2).setValue(crossSessionRange);
+
+				//説明
+				String description = (String) m_startCondition.get(GetWaitRuleTableDefine.DESCRIPTION);
+				list.get(3).setValue(description);
+			}
 			
 			if (property != null) {
 				m_viewer.setInput(property);
@@ -378,6 +432,9 @@ public class WaitRuleDialog extends CommonDialog {
 			//判別値2
 			m_startCondition.add(GetWaitRuleTableDefine.DECISION_VALUE_2, "");
 
+			//セッション横断待ち条件ジョブ履歴範囲
+			m_startCondition.add(GetWaitRuleTableDefine.CROSS_SESSION_RANGE, "");
+
 			//説明
 			values = PropertyUtil.getPropertyValue(property,
 					WaitRuleProperty.ID_DESCRIPTION);
@@ -427,6 +484,9 @@ public class WaitRuleDialog extends CommonDialog {
 			m_startCondition.add(GetWaitRuleTableDefine.DECISION_CONDITION, "");
 			//判別値2
 			m_startCondition.add(GetWaitRuleTableDefine.DECISION_VALUE_2, "");
+			
+			//セッション横断待ち条件ジョブ履歴範囲
+			m_startCondition.add(GetWaitRuleTableDefine.CROSS_SESSION_RANGE, "");
 
 			//説明
 			values = PropertyUtil.getPropertyValue(property,
@@ -465,6 +525,9 @@ public class WaitRuleDialog extends CommonDialog {
 			//判別値2
 			m_startCondition.add(GetWaitRuleTableDefine.DECISION_VALUE_2, "");
 
+			//セッション横断待ち条件ジョブ履歴範囲
+			m_startCondition.add(GetWaitRuleTableDefine.CROSS_SESSION_RANGE, "");
+
 			//説明
 			values = PropertyUtil.getPropertyValue(property,
 					WaitRuleProperty.ID_DESCRIPTION);
@@ -501,6 +564,9 @@ public class WaitRuleDialog extends CommonDialog {
 			//判別値2
 			m_startCondition.add(GetWaitRuleTableDefine.DECISION_VALUE_2, "");
 
+			//セッション横断待ち条件ジョブ履歴範囲
+			m_startCondition.add(GetWaitRuleTableDefine.CROSS_SESSION_RANGE, "");
+
 			//説明
 			values = PropertyUtil.getPropertyValue(property,
 					WaitRuleProperty.ID_DESCRIPTION);
@@ -510,7 +576,6 @@ public class WaitRuleDialog extends CommonDialog {
 			} else {
 				m_startCondition.add("");
 			}
-
 		}
 		else if (type.equals(JudgmentObjectMessage.STRING_JOB_PARAMETER)) {
 			//ジョブID
@@ -556,6 +621,9 @@ public class WaitRuleDialog extends CommonDialog {
 			}
 			m_startCondition.add(GetWaitRuleTableDefine.DECISION_VALUE_2, (String) decisionValue2);
 
+			//セッション横断待ち条件ジョブ履歴範囲
+			m_startCondition.add(GetWaitRuleTableDefine.CROSS_SESSION_RANGE, "");
+
 			//説明
 			values = PropertyUtil.getPropertyValue(property,
 					WaitRuleProperty.ID_DESCRIPTION);
@@ -565,7 +633,132 @@ public class WaitRuleDialog extends CommonDialog {
 			} else {
 				m_startCondition.add(GetWaitRuleTableDefine.DESCRIPTION, "");
 			}
+		}
+		else if (type.equals(JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_STATUS)) {
+			//ジョブID
+			String jobId = "";
+			values = PropertyUtil.getPropertyValue(property,
+					WaitRuleProperty.ID_CROSS_SESSION_JOB_ID);
+			if (values.get(0) instanceof JobTreeItem) {
+				JobTreeItem item = (JobTreeItem) values.get(0);
+				jobId = item.getData().getId();
+			} else if (values.get(0) instanceof String) {
+				jobId = (String) values.get(0);
+			}
+			if (jobId == null || jobId.length() == 0) {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.job.22"));
+				return result;
+			}
+			m_startCondition.add(jobId);
 
+			//条件値
+			values = PropertyUtil.getPropertyValue(property,
+					WaitRuleProperty.ID_CONDITION_END_STATUS);
+			String value = (String) values.get(0);
+			if (value == null || value.length() == 0) {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.job.17"));
+				return result;
+			}
+			m_startCondition.add(value);
+
+			//判別値1
+			m_startCondition.add(GetWaitRuleTableDefine.DECISION_VALUE_1, "");
+			//判別条件
+			m_startCondition.add(GetWaitRuleTableDefine.DECISION_CONDITION, "");
+			//判別値2
+			m_startCondition.add(GetWaitRuleTableDefine.DECISION_VALUE_2, "");
+
+			//セッション横断待ち条件ジョブ履歴範囲
+			values = PropertyUtil.getPropertyValue(property,
+					WaitRuleProperty.ID_CROSS_SESSION_RANGE);
+			Object crossSessionRange = values.get(0);
+			if (crossSessionRange == null || !(crossSessionRange instanceof Integer)) {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.job.168"));
+				return result;
+			}
+			m_startCondition.add(crossSessionRange);
+
+			//説明
+			values = PropertyUtil.getPropertyValue(property,
+					WaitRuleProperty.ID_DESCRIPTION);
+			String description = (String) values.get(0);
+			if (description != null && description.length() != 0) {
+				m_startCondition.add(description);
+			} else {
+				m_startCondition.add("");
+			}
+		}
+		else if (type.equals(JudgmentObjectMessage.STRING_CROSS_SESSION_JOB_END_VALUE)) {
+			//ジョブID
+			String jobId = "";
+			values = PropertyUtil.getPropertyValue(property,
+					WaitRuleProperty.ID_CROSS_SESSION_JOB_ID);
+			if (values.get(0) instanceof JobTreeItem) {
+				JobTreeItem item = (JobTreeItem) values.get(0);
+				jobId = item.getData().getId();
+			} else if (values.get(0) instanceof String) {
+				jobId = (String) values.get(0);
+			}
+			if (jobId == null || jobId.length() == 0) {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.job.22"));
+				return result;
+			}
+			m_startCondition.add(jobId);
+
+			//条件値
+			values = PropertyUtil.getPropertyValue(property,
+					WaitRuleProperty.ID_CONDITION_END_VALUE);
+			Object value = values.get(0);
+			if (value == null || !(value instanceof Integer)) {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.job.17"));
+				return result;
+			}
+			m_startCondition.add((Integer) value);
+
+			//判別値1
+			m_startCondition.add(GetWaitRuleTableDefine.DECISION_VALUE_1, "");
+			//判別条件
+			m_startCondition.add(GetWaitRuleTableDefine.DECISION_CONDITION, "");
+			//判別値2
+			m_startCondition.add(GetWaitRuleTableDefine.DECISION_VALUE_2, "");
+			
+			//セッション横断待ち条件ジョブ履歴範囲
+			values = PropertyUtil.getPropertyValue(property,
+					WaitRuleProperty.ID_CROSS_SESSION_RANGE);
+			Object crossSessionRange = values.get(0);
+			if (crossSessionRange == null || !(crossSessionRange instanceof Integer)) {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.job.168"));
+				return result;
+			}
+			m_startCondition.add(crossSessionRange);
+
+			//説明
+			values = PropertyUtil.getPropertyValue(property,
+					WaitRuleProperty.ID_DESCRIPTION);
+			String description = (String) values.get(0);
+			if (description != null && description.length() != 0) {
+				m_startCondition.add(description);
+			} else {
+				m_startCondition.add("");
+			}
 		}
 
 		return null;

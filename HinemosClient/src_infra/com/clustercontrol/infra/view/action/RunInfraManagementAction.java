@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.view.action;
@@ -37,6 +30,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.infra.action.GetInfraManagementTableDefine;
+import com.clustercontrol.infra.bean.InfraNodeInputConstant;
 import com.clustercontrol.infra.dialog.RunDialog;
 import com.clustercontrol.infra.util.InfraEndpointWrapper;
 import com.clustercontrol.infra.util.AccessUtil;
@@ -50,7 +44,6 @@ import com.clustercontrol.ws.infra.FacilityNotFound_Exception;
 import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
 import com.clustercontrol.ws.infra.InfraManagementInfo;
 import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
 import com.clustercontrol.ws.infra.InfraModuleNotFound_Exception;
 import com.clustercontrol.ws.infra.InvalidRole_Exception;
 import com.clustercontrol.ws.infra.InvalidSetting_Exception;
@@ -182,22 +175,21 @@ public class RunInfraManagementAction extends AbstractHandler implements IElemen
 		for(Map.Entry<String, List<InfraManagementInfo>> entry : managementMap.entrySet()) {
 			String managerName = entry.getKey();
 			for(InfraManagementInfo management : entry.getValue()) {
-				List<AccessInfo> accessInfoList = AccessUtil.getAccessInfoList(
-						viewPart.getSite().getShell(), management.getFacilityId(), management.getOwnerRoleId(), managerName, infraManagementView.isUseNodeProp());
-				// ユーザ、パスワード、ポートの入力画面でキャンセルをクリックすると、nullが返ってくる。
-				// その場合は、処理中断。
-				if (accessInfoList == null) {
-					continue;
-				}
-				List<String> moduleIdList = new ArrayList<String>();
-				for (InfraModuleInfo info : management.getModuleList()) {
-					moduleIdList.add(info.getModuleId());
+				List<AccessInfo> accessInfoList = null;
+				if (infraManagementView.getNodeInputType() == InfraNodeInputConstant.TYPE_DIALOG) {
+					accessInfoList = AccessUtil.getAccessInfoList(
+						viewPart.getSite().getShell(), management, null, managerName);
+					// ユーザ、パスワード、ポートの入力画面でキャンセルをクリックすると、nullが返ってくる。
+					// その場合は、処理中断。
+					if (accessInfoList == null) {
+						continue;
+					}
 				}
 				String managementId = management.getManagementId();
 
 				try {
 					InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
-					String sessionId = wrapper.createSession(managementId, moduleIdList, accessInfoList);
+					String sessionId = wrapper.createSession(managementId, null, infraManagementView.getNodeInputType(), accessInfoList);
 
 					while (true) {
 						ModuleResult moduleResult = wrapper.runInfraModule(sessionId);
@@ -209,7 +201,7 @@ public class RunInfraManagementAction extends AbstractHandler implements IElemen
 						}
 					}
 					wrapper.deleteSession(sessionId);
-					MessageDialog.openInformation(null, Messages.getString("message"), Messages.getString("message.infra.management.run.end"));
+					MessageDialog.openInformation(null, Messages.getString("message"), managerName + ":" + Messages.getString("message.infra.management.run.end"));
 				} catch (InvalidRole_Exception e) {
 					// 権限なし
 					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));

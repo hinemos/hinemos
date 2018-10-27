@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.plugin;
@@ -46,7 +39,7 @@ public class HinemosPluginService {
 	private final Map<String, PluginStatus> pluginStatusMap = new ConcurrentHashMap<String, PluginStatus>();
 
 	// activateした順序を保持しておく配列
-	private final List<HinemosPlugin> pluginActivatationOrder = new ArrayList<HinemosPlugin>();
+	private final List<HinemosPlugin> pluginActivationOrder = new ArrayList<HinemosPlugin>();
 
 	/**
 	 * privateコンストラクタ(Singletonクラス).
@@ -67,7 +60,6 @@ public class HinemosPluginService {
 			HinemosPlugin plugin = itr.next();
 
 			pluginMap.put(plugin.getClass().getName(), plugin);
-			pluginStatusMap.put(plugin.getClass().getName(), PluginStatus.NULL);
 		}
 
 	}
@@ -106,35 +98,39 @@ public class HinemosPluginService {
 	 */
 	public synchronized void activate() {
 		List<HinemosPlugin> waitingPlugin = new ArrayList<HinemosPlugin>(pluginMap.values());
-		pluginActivatationOrder.clear();
+		pluginActivationOrder.clear();
 
 		while (true) {
 			boolean nonActivatable = true;
 
 			for (HinemosPlugin plugin : waitingPlugin) {
-				if (pluginStatusMap.get(plugin.getClass().getName()) == PluginStatus.ACTIVATED) {
+				String pluginName = plugin.getClass().getName();
+				if (pluginStatusMap.get(pluginName) == PluginStatus.ACTIVATED) {
 					// 既にactivateが呼ばれたプラグインは処理しない
 					continue;
 				}
 
 				if (isPluginActivatable(plugin)) {
 					// 依存するプラグインが全て活性化されたプラグインのactivateを呼び出す
-					log.info("activating plugin - " + plugin.getClass().getName());
+					log.info("activating plugin - " + pluginName);
 
 					nonActivatable = false;
-					pluginStatusMap.put(plugin.getClass().getName(), PluginStatus.ACTIVATED);
-					pluginActivatationOrder.add(plugin);
+					pluginStatusMap.put(pluginName, PluginStatus.ACTIVATED);
+					pluginActivationOrder.add(plugin);
 
 					try {
 						plugin.activate();
 					} catch (Throwable t) {
 						log.warn("plugin activation failure.", t);
+
+						// 活性化中に例外が発生した場合、状態をDEACTIVATEDに戻す
+						pluginStatusMap.put(pluginName, PluginStatus.DEACTIVATED);
 					}
 				}
 			}
 
 			// 活性化したプラグインを活性化待ちプラグインのリストから除去する
-			waitingPlugin.removeAll(pluginActivatationOrder);
+			waitingPlugin.removeAll(pluginActivationOrder);
 
 			if (nonActivatable) {
 				if (waitingPlugin.size() == 0) {
@@ -183,7 +179,7 @@ public class HinemosPluginService {
 	 * </p>
 	 */
 	public synchronized void deactivate() {
-		List<HinemosPlugin> pluginDeactivationOrder = new ArrayList<HinemosPlugin>(pluginActivatationOrder);
+		List<HinemosPlugin> pluginDeactivationOrder = new ArrayList<HinemosPlugin>(pluginActivationOrder);
 		Collections.reverse(pluginDeactivationOrder);
 
 		for (HinemosPlugin plugin : pluginDeactivationOrder) {
@@ -211,4 +207,13 @@ public class HinemosPluginService {
 			}
 		}
 	}
+
+	/**
+	 * Plug-inが活性化されているかどうかをチェックするメソッド.
+	 */
+	public static boolean isActive(Class<?> pluginClass) {
+		PluginStatus status = getInstance().pluginStatusMap.get(pluginClass.getName());
+		return( status != null && status == PluginStatus.ACTIVATED);
+	}
+
 }

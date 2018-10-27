@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2015 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.commons.util;
@@ -20,6 +13,8 @@ public abstract class AbstractCacheManager implements ICacheManager {
 	public static final String KEY_ACCESS_ROLE_USER = "ACCESS_ROLE_USER";
 	public static final String KEY_ACCESS_USER_ROLE = "ACCESS_USER_ROLE";
 	public static final String KEY_ACCESS_ROLE_SYSTEMPRIVILEGE = "ACCESS_ROLE_SYSTEMPRIVILEGE";
+	
+	public static final String KEY_BINARY = "BINARY";
 	
 	public static final String KEY_NOTIFY_INFO = "NOTIFY_INFO";
 	public static final String KEY_NOTIFY_DETAIL = "NOTIFY_DETAIL";
@@ -74,7 +69,10 @@ public abstract class AbstractCacheManager implements ICacheManager {
 	public static final String KEY_SNMP_VALUE = "SNMP_VALUE";
 	public static final String KEY_CUSTOM_VALUE = "CUSTOM_VALUE";
 	public static final String KEY_JMX_VALUE = "JMX_VALUE";
-	
+	public static final String KEY_MONITOR_COLLECT_DATA = "MONITOR_COLLECT_DATA";
+	public static final String KEY_MONITOR_JUDGEMENT_INFO = "MONITOR_JUDGEMENT_INFO";
+	public static final String KEY_JOB_SESSION_CHANGE_DATA = "JOB_SESSION_CHANGE_DATA";
+
 	public static final String KEY_WINEVENT = "WINEVENT";
 	
 }

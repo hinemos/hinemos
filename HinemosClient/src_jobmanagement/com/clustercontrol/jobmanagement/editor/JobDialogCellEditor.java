@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.editor;
@@ -33,6 +26,8 @@ public class JobDialogCellEditor extends DialogCellEditor {
 	private boolean m_treeOnly = false;
 
 	private JobTreeItem m_jobTreeItem = null;
+	
+	private Integer m_mode = null;
 
 	/**
 	 * コンストラクタ
@@ -67,6 +62,19 @@ public class JobDialogCellEditor extends DialogCellEditor {
 	}
 
 	/**
+	 * コンストラクタ
+	 *
+	 * @param parentJobId 親ジョブID
+	 * @param jobId ジョブID
+	 */
+	public JobDialogCellEditor(JobTreeItem jobTreeItem, Integer mode) {
+		super();
+		m_treeOnly = true;
+		m_jobTreeItem = jobTreeItem;
+		m_mode = mode;
+	}
+
+	/**
 	 * ジョブ選択ダイアログを表示します。
 	 *
 	 * @see org.eclipse.jface.viewers.DialogCellEditor#openDialogBox(org.eclipse.swt.widgets.Control)
@@ -78,6 +86,8 @@ public class JobDialogCellEditor extends DialogCellEditor {
 		if (m_jobTreeItem == null) {
 			//TODO: 修正
 			dialog = new JobTreeDialog(cellEditorWindow.getShell(), null, null, m_treeOnly);
+		} else if (m_mode != null) {
+			dialog = new JobTreeDialog(cellEditorWindow.getShell(), null, m_jobTreeItem, m_mode);
 		} else {
 			dialog = new JobTreeDialog(cellEditorWindow.getShell(), null, m_jobTreeItem);
 		}

@@ -1,0 +1,596 @@
+ENTITY-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, mib-2, NOTIFICATION-TYPE,
+    Integer32
+        FROM SNMPv2-SMI
+    TDomain, TAddress, TEXTUAL-CONVENTION,
+    AutonomousType, RowPointer, TimeStamp, TruthValue,
+    DateAndTime
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+        FROM SNMPv2-CONF
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB;
+
+entityMIB MODULE-IDENTITY
+    LAST-UPDATED "200508100000Z"
+    ORGANIZATION "IETF ENTMIB Working Group"
+
+
+
+
+    ::= { mib-2 47 }
+
+entityMIBObjects OBJECT IDENTIFIER ::= { entityMIB 1 }
+
+entityPhysical OBJECT IDENTIFIER ::= { entityMIBObjects 1 }
+entityLogical  OBJECT IDENTIFIER ::= { entityMIBObjects 2 }
+entityMapping  OBJECT IDENTIFIER ::= { entityMIBObjects 3 }
+entityGeneral  OBJECT IDENTIFIER ::= { entityMIBObjects 4 }
+
+
+
+
+
+
+
+PhysicalIndex ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT      "d"
+    STATUS            current
+    SYNTAX Integer32 (1..2147483647)
+
+PhysicalIndexOrZero ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT      "d"
+    STATUS            current
+    SYNTAX Integer32 (0..2147483647)
+
+PhysicalClass ::= TEXTUAL-CONVENTION
+    STATUS            current
+    SYNTAX      INTEGER  {
+       other(1),
+       unknown(2),
+       chassis(3),
+       backplane(4),
+       container(5),     -- e.g., chassis slot or daughter-card holder
+       powerSupply(6),
+       fan(7),
+       sensor(8),
+       module(9),        -- e.g., plug-in card or daughter-card
+       port(10),
+       stack(11),        -- e.g., stack of multiple chassis entities
+       cpu(12)
+    }
+
+SnmpEngineIdOrNone ::= TEXTUAL-CONVENTION
+    STATUS            current
+    SYNTAX OCTET STRING (SIZE(0..32)) -- empty string or SnmpEngineID
+
+
+entPhysicalTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF EntPhysicalEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { entityPhysical 1 }
+
+entPhysicalEntry       OBJECT-TYPE
+    SYNTAX      EntPhysicalEntry
+    MAX-ACCESS  not-accessible
+
+
+
+
+
+    STATUS      current
+    INDEX   { entPhysicalIndex }
+    ::= { entPhysicalTable 1 }
+
+EntPhysicalEntry ::= SEQUENCE {
+      entPhysicalIndex          PhysicalIndex,
+      entPhysicalDescr          SnmpAdminString,
+      entPhysicalVendorType     AutonomousType,
+      entPhysicalContainedIn    PhysicalIndexOrZero,
+      entPhysicalClass          PhysicalClass,
+      entPhysicalParentRelPos   Integer32,
+      entPhysicalName           SnmpAdminString,
+      entPhysicalHardwareRev    SnmpAdminString,
+      entPhysicalFirmwareRev    SnmpAdminString,
+      entPhysicalSoftwareRev    SnmpAdminString,
+      entPhysicalSerialNum      SnmpAdminString,
+      entPhysicalMfgName        SnmpAdminString,
+      entPhysicalModelName      SnmpAdminString,
+      entPhysicalAlias          SnmpAdminString,
+      entPhysicalAssetID        SnmpAdminString,
+      entPhysicalIsFRU          TruthValue,
+      entPhysicalMfgDate        DateAndTime,
+      entPhysicalUris           OCTET STRING
+
+}
+
+entPhysicalIndex    OBJECT-TYPE
+    SYNTAX      PhysicalIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { entPhysicalEntry 1 }
+
+entPhysicalDescr OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 2 }
+
+entPhysicalVendorType OBJECT-TYPE
+    SYNTAX      AutonomousType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 3 }
+
+entPhysicalContainedIn OBJECT-TYPE
+    SYNTAX      PhysicalIndexOrZero
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 4 }
+
+entPhysicalClass OBJECT-TYPE
+    SYNTAX      PhysicalClass
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { entPhysicalEntry 5 }
+
+entPhysicalParentRelPos OBJECT-TYPE
+    SYNTAX      Integer32 (-1..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 6 }
+
+entPhysicalName OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 7 }
+
+
+
+
+
+entPhysicalHardwareRev    OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 8 }
+
+entPhysicalFirmwareRev    OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 9 }
+
+entPhysicalSoftwareRev    OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 10 }
+
+entPhysicalSerialNum   OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..32))
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { entPhysicalEntry 11 }
+
+entPhysicalMfgName   OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 12 }
+
+entPhysicalModelName   OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 13 }
+
+entPhysicalAlias    OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..32))
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { entPhysicalEntry 14 }
+
+entPhysicalAssetID OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..32))
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { entPhysicalEntry 15 }
+
+entPhysicalIsFRU OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 16 }
+
+entPhysicalMfgDate  OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalEntry 17 }
+
+entPhysicalUris OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-write
+    STATUS      current
+
+    ::= { entPhysicalEntry 18 }
+
+
+entLogicalTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF EntLogicalEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { entityLogical 1 }
+
+entLogicalEntry       OBJECT-TYPE
+    SYNTAX      EntLogicalEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { entLogicalIndex }
+    ::= { entLogicalTable 1 }
+
+EntLogicalEntry ::= SEQUENCE {
+      entLogicalIndex            Integer32,
+      entLogicalDescr            SnmpAdminString,
+      entLogicalType             AutonomousType,
+      entLogicalCommunity        OCTET STRING,
+      entLogicalTAddress         TAddress,
+      entLogicalTDomain          TDomain,
+      entLogicalContextEngineID  SnmpEngineIdOrNone,
+      entLogicalContextName      SnmpAdminString
+}
+
+entLogicalIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { entLogicalEntry 1 }
+
+entLogicalDescr OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entLogicalEntry 2 }
+
+entLogicalType OBJECT-TYPE
+    SYNTAX      AutonomousType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entLogicalEntry 3 }
+
+entLogicalCommunity OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      deprecated
+    ::= { entLogicalEntry 4 }
+
+entLogicalTAddress OBJECT-TYPE
+    SYNTAX      TAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+
+
+
+
+
+    ::= { entLogicalEntry 5 }
+
+entLogicalTDomain OBJECT-TYPE
+    SYNTAX      TDomain
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entLogicalEntry 6 }
+
+entLogicalContextEngineID    OBJECT-TYPE
+    SYNTAX      SnmpEngineIdOrNone
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entLogicalEntry 7 }
+
+entLogicalContextName    OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entLogicalEntry 8 }
+
+entLPMappingTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF EntLPMappingEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { entityMapping 1 }
+
+entLPMappingEntry       OBJECT-TYPE
+    SYNTAX      EntLPMappingEntry
+    MAX-ACCESS  not-accessible
+
+
+
+
+
+    STATUS      current
+    INDEX       { entLogicalIndex, entLPPhysicalIndex }
+    ::= { entLPMappingTable 1 }
+
+EntLPMappingEntry ::= SEQUENCE {
+      entLPPhysicalIndex         PhysicalIndex
+}
+
+entLPPhysicalIndex OBJECT-TYPE
+    SYNTAX      PhysicalIndex
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entLPMappingEntry 1 }
+
+
+entAliasMappingTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF EntAliasMappingEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { entityMapping 2 }
+
+entAliasMappingEntry       OBJECT-TYPE
+    SYNTAX      EntAliasMappingEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { entPhysicalIndex, entAliasLogicalIndexOrZero }
+    ::= { entAliasMappingTable 1 }
+
+EntAliasMappingEntry ::= SEQUENCE {
+      entAliasLogicalIndexOrZero        Integer32,
+      entAliasMappingIdentifier         RowPointer
+}
+
+entAliasLogicalIndexOrZero OBJECT-TYPE
+    SYNTAX      Integer32 (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { entAliasMappingEntry 1 }
+
+entAliasMappingIdentifier OBJECT-TYPE
+    SYNTAX      RowPointer
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entAliasMappingEntry 2 }
+
+
+entPhysicalContainsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF EntPhysicalContainsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    ::= { entityMapping 3 }
+
+entPhysicalContainsEntry OBJECT-TYPE
+    SYNTAX      EntPhysicalContainsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { entPhysicalIndex, entPhysicalChildIndex }
+    ::= { entPhysicalContainsTable 1 }
+
+EntPhysicalContainsEntry ::= SEQUENCE {
+      entPhysicalChildIndex     PhysicalIndex
+}
+
+entPhysicalChildIndex OBJECT-TYPE
+    SYNTAX      PhysicalIndex
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entPhysicalContainsEntry 1 }
+
+entLastChangeTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { entityGeneral 1 }
+
+
+entityMIBTraps      OBJECT IDENTIFIER ::= { entityMIB 2 }
+entityMIBTrapPrefix OBJECT IDENTIFIER ::= { entityMIBTraps 0 }
+
+entConfigChange NOTIFICATION-TYPE
+    STATUS             current
+   ::= { entityMIBTrapPrefix 1 }
+
+
+entityConformance OBJECT IDENTIFIER ::= { entityMIB 3 }
+
+entityCompliances OBJECT IDENTIFIER ::= { entityConformance 1 }
+entityGroups      OBJECT IDENTIFIER ::= { entityConformance 2 }
+
+
+entityCompliance MODULE-COMPLIANCE
+    STATUS  deprecated
+
+
+
+
+
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+                           entityPhysicalGroup,
+                           entityLogicalGroup,
+                           entityMappingGroup,
+                           entityGeneralGroup,
+                           entityNotificationsGroup
+        }
+    ::= { entityCompliances 1 }
+
+entity2Compliance MODULE-COMPLIANCE
+    STATUS  deprecated
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+                           entityPhysicalGroup,
+                           entityPhysical2Group,
+                           entityGeneralGroup,
+                           entityNotificationsGroup
+        }
+        GROUP entityLogical2Group
+
+        GROUP entityMappingGroup
+
+        OBJECT entPhysicalSerialNum
+        MIN-ACCESS   not-accessible
+
+        OBJECT entPhysicalAlias
+        MIN-ACCESS   read-only
+
+        OBJECT entPhysicalAssetID
+        MIN-ACCESS   not-accessible
+
+        OBJECT entPhysicalClass
+        SYNTAX INTEGER {
+            other(1),
+            unknown(2),
+            chassis(3),
+            backplane(4),
+            container(5),
+            powerSupply(6),
+            fan(7),
+            sensor(8),
+            module(9),
+            port(10),
+            stack(11)
+        }
+
+    ::= { entityCompliances 2 }
+
+
+
+
+
+
+entity3Compliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+                           entityPhysicalGroup,
+                           entityPhysical2Group,
+                           entityPhysical3Group,
+                           entityGeneralGroup,
+                           entityNotificationsGroup
+        }
+        GROUP entityLogical2Group
+
+        GROUP entityMappingGroup
+
+        OBJECT entPhysicalSerialNum
+        MIN-ACCESS   not-accessible
+
+        OBJECT entPhysicalAlias
+
+
+
+
+
+        MIN-ACCESS   read-only
+
+        OBJECT entPhysicalAssetID
+        MIN-ACCESS   not-accessible
+    ::= { entityCompliances 3 }
+
+
+entityPhysicalGroup    OBJECT-GROUP
+    OBJECTS {
+              entPhysicalDescr,
+              entPhysicalVendorType,
+              entPhysicalContainedIn,
+              entPhysicalClass,
+              entPhysicalParentRelPos,
+              entPhysicalName
+            }
+    STATUS  current
+    ::= { entityGroups 1 }
+
+entityLogicalGroup    OBJECT-GROUP
+    OBJECTS {
+              entLogicalDescr,
+              entLogicalType,
+              entLogicalCommunity,
+              entLogicalTAddress,
+              entLogicalTDomain
+            }
+    STATUS  deprecated
+
+
+
+
+
+    ::= { entityGroups 2 }
+
+entityMappingGroup    OBJECT-GROUP
+    OBJECTS {
+              entLPPhysicalIndex,
+              entAliasMappingIdentifier,
+              entPhysicalChildIndex
+            }
+    STATUS  current
+    ::= { entityGroups 3 }
+
+entityGeneralGroup    OBJECT-GROUP
+    OBJECTS {
+              entLastChangeTime
+            }
+    STATUS  current
+    ::= { entityGroups 4 }
+
+entityNotificationsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { entConfigChange }
+    STATUS        current
+    ::= { entityGroups 5 }
+
+entityPhysical2Group    OBJECT-GROUP
+    OBJECTS {
+              entPhysicalHardwareRev,
+              entPhysicalFirmwareRev,
+              entPhysicalSoftwareRev,
+              entPhysicalSerialNum,
+              entPhysicalMfgName,
+              entPhysicalModelName,
+              entPhysicalAlias,
+              entPhysicalAssetID,
+              entPhysicalIsFRU
+            }
+    STATUS  current
+
+
+
+
+
+    ::= { entityGroups 6 }
+
+entityLogical2Group    OBJECT-GROUP
+    OBJECTS {
+              entLogicalDescr,
+              entLogicalType,
+              entLogicalTAddress,
+              entLogicalTDomain,
+              entLogicalContextEngineID,
+              entLogicalContextName
+            }
+    STATUS  current
+    ::= { entityGroups 7 }
+
+entityPhysical3Group    OBJECT-GROUP
+    OBJECTS {
+              entPhysicalMfgDate,
+              entPhysicalUris
+            }
+    STATUS  current
+    ::= { entityGroups 8 }
+
+
+END

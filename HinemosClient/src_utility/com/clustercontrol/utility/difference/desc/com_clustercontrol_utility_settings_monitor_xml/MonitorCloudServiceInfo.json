@@ -1,0 +1,15 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"pluginStringValue",
+	"annotations":[
+		{"type":"Ignore", "propNames":["monitorId"]}
+	]}
+	
+	
+]
+}

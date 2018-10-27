@@ -1,0 +1,2007 @@
+   VDSL-LINE-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+
+   MODULE-IDENTITY,
+   OBJECT-TYPE,
+   Gauge32,
+   Integer32,
+   Unsigned32,
+   NOTIFICATION-TYPE,
+   transmission                    FROM SNMPv2-SMI          -- [RFC2578]
+   ZeroBasedCounter64              FROM HCNUM-TC            -- [RFC2856]
+   TEXTUAL-CONVENTION,
+   RowStatus,
+   TruthValue                      FROM SNMPv2-TC           -- [RFC2579]
+   HCPerfValidIntervals,
+   HCPerfInvalidIntervals,
+   HCPerfTimeElapsed,
+
+
+
+
+
+   HCPerfIntervalThreshold,
+   HCPerfCurrentCount,
+   HCPerfIntervalCount             FROM HC-PerfHist-TC-MIB  -- [RFC3705]
+   MODULE-COMPLIANCE,
+   OBJECT-GROUP,
+   NOTIFICATION-GROUP              FROM SNMPv2-CONF         -- [RFC2580]
+   ifIndex                         FROM IF-MIB              -- [RFC2863]
+   SnmpAdminString                 FROM SNMP-FRAMEWORK-MIB; -- [RFC3411]
+
+   vdslMIB MODULE-IDENTITY
+      LAST-UPDATED "200402190000Z" -- February 19, 2004
+      ORGANIZATION "ADSLMIB Working Group"
+      ::= { transmission 97 }
+
+   vdslLineMib    OBJECT IDENTIFIER ::= { vdslMIB 1 }
+   vdslMibObjects OBJECT IDENTIFIER ::= { vdslLineMib 1 }
+
+
+
+
+
+
+
+   VdslLineCodingType ::= TEXTUAL-CONVENTION
+       STATUS       current
+       SYNTAX  INTEGER
+           {
+           other(1),
+           mcm(2),
+           scm(3)
+           }
+
+   VdslLineEntity ::= TEXTUAL-CONVENTION
+       STATUS       current
+       SYNTAX  INTEGER
+           {
+           vtuc(1),
+           vtur(2)
+           }
+
+
+   vdslLineTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslMibObjects 1 }
+
+
+
+
+
+
+   vdslLineEntry OBJECT-TYPE
+       SYNTAX       VdslLineEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX { ifIndex }
+       ::= { vdslLineTable 1 }
+
+   VdslLineEntry ::=
+       SEQUENCE
+           {
+           vdslLineCoding                 VdslLineCodingType,
+           vdslLineType                   INTEGER,
+           vdslLineConfProfile            SnmpAdminString,
+           vdslLineAlarmConfProfile       SnmpAdminString
+           }
+
+   vdslLineCoding OBJECT-TYPE
+       SYNTAX       VdslLineCodingType
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslLineEntry 1 }
+
+   vdslLineType OBJECT-TYPE
+       SYNTAX       INTEGER
+           {
+           noChannel(1),         -- no channels exist
+           fastOnly(2),          -- only fast channel exists
+           interleavedOnly(3),   -- only interleaved channel exists
+           fastOrInterleaved(4), -- either fast or interleaved channel
+           fastAndInterleaved(5) -- both fast and interleaved channels
+           }
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslLineEntry 2 }
+
+   vdslLineConfProfile OBJECT-TYPE
+       SYNTAX       SnmpAdminString (SIZE(1..32))
+       MAX-ACCESS   read-write
+       STATUS       current
+       DEFVAL       { "DEFVAL" }
+       ::= { vdslLineEntry 3 }
+
+   vdslLineAlarmConfProfile OBJECT-TYPE
+       SYNTAX       SnmpAdminString (SIZE(1..32))
+       MAX-ACCESS   read-write
+       STATUS       current
+       DEFVAL       { "DEFVAL" }
+       ::= { vdslLineEntry 4 }
+
+   vdslPhysTable OBJECT-TYPE
+
+
+
+
+
+       SYNTAX       SEQUENCE OF VdslPhysEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslMibObjects 2 }
+
+   vdslPhysEntry OBJECT-TYPE
+       SYNTAX       VdslPhysEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX { ifIndex,
+               vdslPhysSide }
+       ::= { vdslPhysTable 1 }
+
+   VdslPhysEntry ::=
+       SEQUENCE
+           {
+           vdslPhysSide                   VdslLineEntity,
+           vdslPhysInvSerialNumber        SnmpAdminString,
+           vdslPhysInvVendorID            SnmpAdminString,
+           vdslPhysInvVersionNumber       SnmpAdminString,
+           vdslPhysCurrSnrMgn             Integer32,
+           vdslPhysCurrAtn                Gauge32,
+           vdslPhysCurrStatus             BITS,
+           vdslPhysCurrOutputPwr          Integer32,
+           vdslPhysCurrAttainableRate     Gauge32,
+           vdslPhysCurrLineRate           Gauge32
+           }
+
+   vdslPhysSide OBJECT-TYPE
+       SYNTAX       VdslLineEntity
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslPhysEntry 1 }
+
+   vdslPhysInvSerialNumber OBJECT-TYPE
+       SYNTAX       SnmpAdminString(SIZE (0..32))
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPhysEntry 2 }
+
+   vdslPhysInvVendorID OBJECT-TYPE
+       SYNTAX       SnmpAdminString (SIZE (0..16))
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPhysEntry 3 }
+
+   vdslPhysInvVersionNumber OBJECT-TYPE
+       SYNTAX       SnmpAdminString (SIZE (0..16))
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPhysEntry 4 }
+
+   vdslPhysCurrSnrMgn OBJECT-TYPE
+       SYNTAX       Integer32 (-127..127)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-only
+       STATUS       current
+        ::= { vdslPhysEntry 5 }
+
+   vdslPhysCurrAtn OBJECT-TYPE
+       SYNTAX       Gauge32 (0..255)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-only
+       STATUS       current
+
+
+
+
+
+        ::= { vdslPhysEntry 6 }
+
+   vdslPhysCurrStatus OBJECT-TYPE
+       SYNTAX       BITS
+           {
+           noDefect(0),
+           lossOfFraming(1),
+           lossOfSignal(2),
+           lossOfPower(3),
+           lossOfSignalQuality(4),
+           lossOfLink(5),
+           dataInitFailure(6),
+           configInitFailure(7),
+           protocolInitFailure(8),
+           noPeerVtuPresent(9)
+           }
+       MAX-ACCESS  read-only
+       STATUS      current
+        ::= { vdslPhysEntry 7 }
+
+   vdslPhysCurrOutputPwr OBJECT-TYPE
+       SYNTAX       Integer32 (0..160)
+       UNITS        "0.1dBm"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPhysEntry 8 }
+
+   vdslPhysCurrAttainableRate OBJECT-TYPE
+       SYNTAX       Gauge32
+       UNITS        "kbps"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPhysEntry 9 }
+
+   vdslPhysCurrLineRate OBJECT-TYPE
+       SYNTAX       Gauge32
+       UNITS        "kbps"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPhysEntry 10 }
+
+   vdslChanTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslChanEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslMibObjects 3 }
+
+   vdslChanEntry OBJECT-TYPE
+       SYNTAX       VdslChanEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX { ifIndex,
+               vdslPhysSide }
+       ::= { vdslChanTable 1 }
+
+   VdslChanEntry ::=
+       SEQUENCE
+           {
+           vdslChanInterleaveDelay        Gauge32,
+           vdslChanCrcBlockLength         Gauge32,
+           vdslChanCurrTxRate             Gauge32,
+           vdslChanCurrTxSlowBurstProtect Gauge32,
+           vdslChanCurrTxFastFec          Gauge32
+           }
+
+   vdslChanInterleaveDelay OBJECT-TYPE
+       SYNTAX       Gauge32
+       UNITS        "milliseconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslChanEntry 1 }
+
+   vdslChanCrcBlockLength OBJECT-TYPE
+       SYNTAX       Gauge32
+       UNITS        "bytes"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslChanEntry 2 }
+
+   vdslChanCurrTxRate OBJECT-TYPE
+       SYNTAX       Gauge32
+       UNITS        "kbps"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslChanEntry 3 }
+
+   vdslChanCurrTxSlowBurstProtect OBJECT-TYPE
+       SYNTAX       Gauge32 (0..1275)
+       UNITS        "microseconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslChanEntry 4 }
+
+   vdslChanCurrTxFastFec OBJECT-TYPE
+       SYNTAX       Gauge32 (0..50)
+
+
+
+
+
+       UNITS        "%"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslChanEntry 5 }
+
+   vdslPerfDataTable       OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslPerfDataEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslMibObjects 4 }
+
+   vdslPerfDataEntry       OBJECT-TYPE
+       SYNTAX        VdslPerfDataEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ifIndex,
+               vdslPhysSide }
+       ::= { vdslPerfDataTable 1 }
+
+   VdslPerfDataEntry ::=
+       SEQUENCE
+           {
+           vdslPerfDataValidIntervals         HCPerfValidIntervals,
+           vdslPerfDataInvalidIntervals       HCPerfInvalidIntervals,
+           vdslPerfDataLofs                   Unsigned32,
+           vdslPerfDataLoss                   Unsigned32,
+           vdslPerfDataLprs                   Unsigned32,
+           vdslPerfDataLols                   Unsigned32,
+           vdslPerfDataESs                    Unsigned32,
+           vdslPerfDataSESs                   Unsigned32,
+           vdslPerfDataUASs                   Unsigned32,
+           vdslPerfDataInits                  Unsigned32,
+           vdslPerfDataCurr15MinTimeElapsed   HCPerfTimeElapsed,
+           vdslPerfDataCurr15MinLofs          HCPerfCurrentCount,
+           vdslPerfDataCurr15MinLoss          HCPerfCurrentCount,
+           vdslPerfDataCurr15MinLprs          HCPerfCurrentCount,
+
+
+
+
+
+           vdslPerfDataCurr15MinLols          HCPerfCurrentCount,
+           vdslPerfDataCurr15MinESs           HCPerfCurrentCount,
+           vdslPerfDataCurr15MinSESs          HCPerfCurrentCount,
+           vdslPerfDataCurr15MinUASs          HCPerfCurrentCount,
+           vdslPerfDataCurr15MinInits         HCPerfCurrentCount,
+           vdslPerfData1DayValidIntervals     HCPerfValidIntervals,
+           vdslPerfData1DayInvalidIntervals   HCPerfInvalidIntervals,
+           vdslPerfDataCurr1DayTimeElapsed    HCPerfTimeElapsed,
+           vdslPerfDataCurr1DayLofs           Unsigned32,
+           vdslPerfDataCurr1DayLoss           Unsigned32,
+           vdslPerfDataCurr1DayLprs           Unsigned32,
+           vdslPerfDataCurr1DayLols           Unsigned32,
+           vdslPerfDataCurr1DayESs            Unsigned32,
+           vdslPerfDataCurr1DaySESs           Unsigned32,
+           vdslPerfDataCurr1DayUASs           Unsigned32,
+           vdslPerfDataCurr1DayInits          Unsigned32
+           }
+
+   vdslPerfDataValidIntervals OBJECT-TYPE
+       SYNTAX       HCPerfValidIntervals
+       UNITS        "intervals"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 1 }
+
+   vdslPerfDataInvalidIntervals OBJECT-TYPE
+       SYNTAX       HCPerfInvalidIntervals
+       UNITS        "intervals"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 2 }
+
+   vdslPerfDataLofs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 3 }
+
+
+
+
+
+   vdslPerfDataLoss OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 4 }
+
+   vdslPerfDataLprs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+
+       ::= { vdslPerfDataEntry 5 }
+
+   vdslPerfDataLols OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 6 }
+
+   vdslPerfDataESs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 7 }
+
+   vdslPerfDataSESs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+
+
+
+
+
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 8 }
+
+   vdslPerfDataUASs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 9 }
+
+   vdslPerfDataInits OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "occurrences"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 10 }
+
+   vdslPerfDataCurr15MinTimeElapsed OBJECT-TYPE
+       SYNTAX       HCPerfTimeElapsed
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 11 }
+
+   vdslPerfDataCurr15MinLofs OBJECT-TYPE
+       SYNTAX       HCPerfCurrentCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 12 }
+
+
+
+
+
+   vdslPerfDataCurr15MinLoss OBJECT-TYPE
+       SYNTAX       HCPerfCurrentCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 13 }
+
+   vdslPerfDataCurr15MinLprs OBJECT-TYPE
+       SYNTAX       HCPerfCurrentCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 14 }
+
+   vdslPerfDataCurr15MinLols OBJECT-TYPE
+       SYNTAX       HCPerfCurrentCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 15 }
+
+   vdslPerfDataCurr15MinESs OBJECT-TYPE
+       SYNTAX       HCPerfCurrentCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 16 }
+
+   vdslPerfDataCurr15MinSESs OBJECT-TYPE
+       SYNTAX       HCPerfCurrentCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+
+
+
+
+
+       STATUS       current
+       ::= { vdslPerfDataEntry 17 }
+
+   vdslPerfDataCurr15MinUASs OBJECT-TYPE
+       SYNTAX       HCPerfCurrentCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 18 }
+
+   vdslPerfDataCurr15MinInits OBJECT-TYPE
+       SYNTAX       HCPerfCurrentCount
+       UNITS        "occurrences"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 19 }
+
+   vdslPerfData1DayValidIntervals OBJECT-TYPE
+       SYNTAX       HCPerfValidIntervals
+       UNITS        "intervals"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 20 }
+
+   vdslPerfData1DayInvalidIntervals OBJECT-TYPE
+       SYNTAX       HCPerfInvalidIntervals
+       UNITS        "intervals"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 21 }
+
+   vdslPerfDataCurr1DayTimeElapsed OBJECT-TYPE
+       SYNTAX       HCPerfTimeElapsed
+
+
+
+
+
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 22 }
+
+   vdslPerfDataCurr1DayLofs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 23 }
+
+   vdslPerfDataCurr1DayLoss OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 24 }
+
+   vdslPerfDataCurr1DayLprs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 25 }
+
+   vdslPerfDataCurr1DayLols OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 26 }
+
+
+
+
+
+
+   vdslPerfDataCurr1DayESs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 27 }
+
+   vdslPerfDataCurr1DaySESs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 28 }
+
+   vdslPerfDataCurr1DayUASs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 29 }
+
+   vdslPerfDataCurr1DayInits OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfDataEntry 30 }
+
+   vdslPerfIntervalTable       OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslPerfIntervalEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslMibObjects 5 }
+
+   vdslPerfIntervalEntry       OBJECT-TYPE
+       SYNTAX        VdslPerfIntervalEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ifIndex,
+               vdslPhysSide,
+               vdslPerfIntervalNumber }
+       ::= { vdslPerfIntervalTable 1 }
+
+   VdslPerfIntervalEntry ::=
+       SEQUENCE
+           {
+           vdslPerfIntervalNumber             Unsigned32,
+           vdslPerfIntervalLofs               HCPerfIntervalCount,
+           vdslPerfIntervalLoss               HCPerfIntervalCount,
+           vdslPerfIntervalLprs               HCPerfIntervalCount,
+           vdslPerfIntervalLols               HCPerfIntervalCount,
+           vdslPerfIntervalESs                HCPerfIntervalCount,
+           vdslPerfIntervalSESs               HCPerfIntervalCount,
+           vdslPerfIntervalUASs               HCPerfIntervalCount,
+           vdslPerfIntervalInits              HCPerfIntervalCount
+           }
+
+   vdslPerfIntervalNumber OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..96)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslPerfIntervalEntry 1 }
+
+   vdslPerfIntervalLofs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfIntervalEntry 2 }
+
+
+
+
+
+   vdslPerfIntervalLoss OBJECT-TYPE
+       SYNTAX       HCPerfIntervalCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfIntervalEntry 3 }
+
+   vdslPerfIntervalLprs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfIntervalEntry 4 }
+
+   vdslPerfIntervalLols OBJECT-TYPE
+       SYNTAX       HCPerfIntervalCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfIntervalEntry 5 }
+
+   vdslPerfIntervalESs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfIntervalEntry 6 }
+
+   vdslPerfIntervalSESs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+
+
+
+
+
+       STATUS       current
+       ::= { vdslPerfIntervalEntry 7 }
+
+   vdslPerfIntervalUASs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalCount
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfIntervalEntry 8 }
+
+   vdslPerfIntervalInits OBJECT-TYPE
+       SYNTAX       HCPerfIntervalCount
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerfIntervalEntry 9 }
+
+   vdslPerf1DayIntervalTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslPerf1DayIntervalEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslMibObjects 6 }
+
+   vdslPerf1DayIntervalEntry OBJECT-TYPE
+       SYNTAX       VdslPerf1DayIntervalEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX { ifIndex,
+               vdslPhysSide,
+               vdslPerf1DayIntervalNumber }
+       ::= { vdslPerf1DayIntervalTable 1 }
+
+   VdslPerf1DayIntervalEntry ::=
+       SEQUENCE
+
+
+
+
+
+       {
+       vdslPerf1DayIntervalNumber             Unsigned32,
+       vdslPerf1DayIntervalMoniSecs           HCPerfTimeElapsed,
+       vdslPerf1DayIntervalLofs               Unsigned32,
+       vdslPerf1DayIntervalLoss               Unsigned32,
+       vdslPerf1DayIntervalLprs               Unsigned32,
+       vdslPerf1DayIntervalLols               Unsigned32,
+       vdslPerf1DayIntervalESs                Unsigned32,
+       vdslPerf1DayIntervalSESs               Unsigned32,
+       vdslPerf1DayIntervalUASs               Unsigned32,
+       vdslPerf1DayIntervalInits              Unsigned32
+       }
+
+   vdslPerf1DayIntervalNumber OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..30)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 1 }
+
+   vdslPerf1DayIntervalMoniSecs OBJECT-TYPE
+       SYNTAX       HCPerfTimeElapsed
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 2 }
+
+   vdslPerf1DayIntervalLofs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 3 }
+
+   vdslPerf1DayIntervalLoss OBJECT-TYPE
+
+
+
+
+
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 4 }
+
+   vdslPerf1DayIntervalLprs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 5 }
+
+   vdslPerf1DayIntervalLols OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 6 }
+
+   vdslPerf1DayIntervalESs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 7 }
+
+   vdslPerf1DayIntervalSESs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 8 }
+
+   vdslPerf1DayIntervalUASs OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 9 }
+
+   vdslPerf1DayIntervalInits OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslPerf1DayIntervalEntry 10 }
+
+   vdslChanPerfDataTable       OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslChanPerfDataEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslMibObjects 7 }
+
+   vdslChanPerfDataEntry OBJECT-TYPE
+       SYNTAX        VdslChanPerfDataEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ifIndex,
+               vdslPhysSide }
+       ::= { vdslChanPerfDataTable 1 }
+
+   VdslChanPerfDataEntry ::=
+       SEQUENCE
+
+
+
+
+
+           {
+           vdslChanValidIntervals         HCPerfValidIntervals,
+           vdslChanInvalidIntervals       HCPerfInvalidIntervals,
+           vdslChanFixedOctets            ZeroBasedCounter64,
+           vdslChanBadBlks                ZeroBasedCounter64,
+           vdslChanCurr15MinTimeElapsed   HCPerfTimeElapsed,
+           vdslChanCurr15MinFixedOctets   HCPerfCurrentCount,
+           vdslChanCurr15MinBadBlks       HCPerfCurrentCount,
+           vdslChan1DayValidIntervals     HCPerfValidIntervals,
+           vdslChan1DayInvalidIntervals   HCPerfInvalidIntervals,
+           vdslChanCurr1DayTimeElapsed    HCPerfTimeElapsed,
+           vdslChanCurr1DayFixedOctets    HCPerfCurrentCount,
+           vdslChanCurr1DayBadBlks        HCPerfCurrentCount
+           }
+
+   vdslChanValidIntervals OBJECT-TYPE
+       SYNTAX        HCPerfValidIntervals
+       UNITS        "intervals"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 1 }
+
+   vdslChanInvalidIntervals OBJECT-TYPE
+       SYNTAX        HCPerfInvalidIntervals
+       UNITS        "intervals"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 2 }
+
+   vdslChanFixedOctets OBJECT-TYPE
+       SYNTAX        ZeroBasedCounter64
+       UNITS         "octets"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 3 }
+
+   vdslChanBadBlks OBJECT-TYPE
+       SYNTAX        ZeroBasedCounter64
+       UNITS         "blocks"
+
+
+
+
+
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 4 }
+
+   vdslChanCurr15MinTimeElapsed OBJECT-TYPE
+       SYNTAX        HCPerfTimeElapsed
+       UNITS         "seconds"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 5 }
+
+   vdslChanCurr15MinFixedOctets OBJECT-TYPE
+       SYNTAX        HCPerfCurrentCount
+       UNITS         "octets"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 6 }
+
+   vdslChanCurr15MinBadBlks OBJECT-TYPE
+       SYNTAX        HCPerfCurrentCount
+       UNITS         "blocks"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 7 }
+
+   vdslChan1DayValidIntervals OBJECT-TYPE
+       SYNTAX        HCPerfValidIntervals
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 8 }
+
+   vdslChan1DayInvalidIntervals OBJECT-TYPE
+       SYNTAX        HCPerfInvalidIntervals
+
+
+
+
+
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 9 }
+
+   vdslChanCurr1DayTimeElapsed OBJECT-TYPE
+       SYNTAX       HCPerfTimeElapsed
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::= { vdslChanPerfDataEntry 10 }
+
+   vdslChanCurr1DayFixedOctets OBJECT-TYPE
+       SYNTAX        HCPerfCurrentCount
+       UNITS         "octets"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 11 }
+
+   vdslChanCurr1DayBadBlks OBJECT-TYPE
+       SYNTAX        HCPerfCurrentCount
+       UNITS         "blocks"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanPerfDataEntry 12 }
+
+   vdslChanIntervalTable       OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslChanIntervalEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+
+
+
+
+       ::= { vdslMibObjects 8 }
+
+   vdslChanIntervalEntry OBJECT-TYPE
+       SYNTAX        VdslChanIntervalEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ifIndex,
+               vdslPhysSide,
+               vdslChanIntervalNumber }
+       ::= { vdslChanIntervalTable 1 }
+
+   VdslChanIntervalEntry ::=
+       SEQUENCE
+           {
+           vdslChanIntervalNumber         Unsigned32,
+           vdslChanIntervalFixedOctets    HCPerfIntervalCount,
+           vdslChanIntervalBadBlks        HCPerfIntervalCount
+           }
+
+   vdslChanIntervalNumber OBJECT-TYPE
+       SYNTAX        Unsigned32 (1..96)
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       ::= { vdslChanIntervalEntry 1 }
+
+   vdslChanIntervalFixedOctets OBJECT-TYPE
+       SYNTAX        HCPerfIntervalCount
+       UNITS        "octets"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChanIntervalEntry 2 }
+
+   vdslChanIntervalBadBlks OBJECT-TYPE
+       SYNTAX        HCPerfIntervalCount
+       UNITS        "blocks"
+       MAX-ACCESS    read-only
+       STATUS        current
+
+
+
+
+
+       ::= { vdslChanIntervalEntry 3 }
+
+   vdslChan1DayIntervalTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslChan1DayIntervalEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslMibObjects 9 }
+
+   vdslChan1DayIntervalEntry OBJECT-TYPE
+       SYNTAX       VdslChan1DayIntervalEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX { ifIndex,
+               vdslPhysSide,
+               vdslChan1DayIntervalNumber }
+       ::= { vdslChan1DayIntervalTable 1 }
+
+   VdslChan1DayIntervalEntry ::=
+       SEQUENCE
+       {
+       vdslChan1DayIntervalNumber         Unsigned32,
+       vdslChan1DayIntervalMoniSecs       HCPerfTimeElapsed,
+       vdslChan1DayIntervalFixedOctets    HCPerfCurrentCount,
+       vdslChan1DayIntervalBadBlks        HCPerfCurrentCount
+       }
+
+   vdslChan1DayIntervalNumber OBJECT-TYPE
+       SYNTAX       Unsigned32 (1..30)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslChan1DayIntervalEntry 1 }
+
+   vdslChan1DayIntervalMoniSecs OBJECT-TYPE
+       SYNTAX       HCPerfTimeElapsed
+       UNITS        "seconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+
+
+
+
+
+       ::= { vdslChan1DayIntervalEntry 2 }
+
+   vdslChan1DayIntervalFixedOctets OBJECT-TYPE
+       SYNTAX        HCPerfCurrentCount
+       UNITS        "octets"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChan1DayIntervalEntry 3 }
+
+   vdslChan1DayIntervalBadBlks OBJECT-TYPE
+       SYNTAX        HCPerfCurrentCount
+       UNITS        "blocks"
+       MAX-ACCESS    read-only
+       STATUS        current
+       ::= { vdslChan1DayIntervalEntry 4 }
+
+
+   vdslLineConfProfileTable OBJECT-TYPE
+       SYNTAX         SEQUENCE OF VdslLineConfProfileEntry
+       MAX-ACCESS     not-accessible
+       STATUS         current
+       ::= { vdslMibObjects 11 }
+
+   vdslLineConfProfileEntry OBJECT-TYPE
+       SYNTAX         VdslLineConfProfileEntry
+
+
+
+
+
+       MAX-ACCESS     not-accessible
+       STATUS         current
+       INDEX { vdslLineConfProfileName }
+       ::= { vdslLineConfProfileTable 1 }
+
+   VdslLineConfProfileEntry ::=
+       SEQUENCE
+           {
+           vdslLineConfProfileName            SnmpAdminString,
+           vdslLineConfDownRateMode           INTEGER,
+           vdslLineConfUpRateMode             INTEGER,
+           vdslLineConfDownMaxPwr             Unsigned32,
+           vdslLineConfUpMaxPwr               Unsigned32,
+           vdslLineConfDownMaxSnrMgn          Unsigned32,
+           vdslLineConfDownMinSnrMgn          Unsigned32,
+           vdslLineConfDownTargetSnrMgn       Unsigned32,
+           vdslLineConfUpMaxSnrMgn            Unsigned32,
+           vdslLineConfUpMinSnrMgn            Unsigned32,
+           vdslLineConfUpTargetSnrMgn         Unsigned32,
+           vdslLineConfDownFastMaxDataRate    Unsigned32,
+           vdslLineConfDownFastMinDataRate    Unsigned32,
+           vdslLineConfDownSlowMaxDataRate    Unsigned32,
+           vdslLineConfDownSlowMinDataRate    Unsigned32,
+           vdslLineConfUpFastMaxDataRate      Unsigned32,
+           vdslLineConfUpFastMinDataRate      Unsigned32,
+           vdslLineConfUpSlowMaxDataRate      Unsigned32,
+           vdslLineConfUpSlowMinDataRate      Unsigned32,
+           vdslLineConfDownRateRatio          Unsigned32,
+           vdslLineConfUpRateRatio            Unsigned32,
+           vdslLineConfDownMaxInterDelay      Unsigned32,
+           vdslLineConfUpMaxInterDelay        Unsigned32,
+           vdslLineConfDownPboControl         INTEGER,
+           vdslLineConfUpPboControl           INTEGER,
+           vdslLineConfDownPboLevel           Unsigned32,
+           vdslLineConfUpPboLevel             Unsigned32,
+           vdslLineConfDeploymentScenario     INTEGER,
+           vdslLineConfAdslPresence           INTEGER,
+           vdslLineConfApplicableStandard     INTEGER,
+           vdslLineConfBandPlan               INTEGER,
+           vdslLineConfBandPlanFx             Unsigned32,
+
+
+
+
+
+           vdslLineConfBandOptUsage           INTEGER,
+           vdslLineConfUpPsdTemplate          INTEGER,
+           vdslLineConfDownPsdTemplate        INTEGER,
+           vdslLineConfHamBandMask            BITS,
+           vdslLineConfCustomNotch1Start      Unsigned32,
+           vdslLineConfCustomNotch1Stop       Unsigned32,
+           vdslLineConfCustomNotch2Start      Unsigned32,
+           vdslLineConfCustomNotch2Stop       Unsigned32,
+           vdslLineConfDownTargetSlowBurst    Unsigned32,
+           vdslLineConfUpTargetSlowBurst      Unsigned32,
+           vdslLineConfDownMaxFastFec         Unsigned32,
+           vdslLineConfUpMaxFastFec           Unsigned32,
+           vdslLineConfLineType               INTEGER,
+           vdslLineConfProfRowStatus          RowStatus
+           }
+
+   vdslLineConfProfileName OBJECT-TYPE
+       SYNTAX       SnmpAdminString (SIZE (1..32))
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineConfProfileEntry 1 }
+
+   vdslLineConfDownRateMode OBJECT-TYPE
+       SYNTAX       INTEGER
+                    {
+                    manual(1),
+                    adaptAtInit(2)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { adaptAtInit }
+       ::= { vdslLineConfProfileEntry 2 }
+
+   vdslLineConfUpRateMode OBJECT-TYPE
+       SYNTAX       INTEGER
+
+
+
+
+
+                    {
+                    manual(1),
+                    adaptAtInit(2)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { adaptAtInit }
+       ::= { vdslLineConfProfileEntry 3 }
+
+   vdslLineConfDownMaxPwr OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..58)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 4 }
+
+   vdslLineConfUpMaxPwr OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..58)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 5 }
+
+   vdslLineConfDownMaxSnrMgn OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..127)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-create
+       STATUS       current
+
+
+
+
+
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 6 }
+
+   vdslLineConfDownMinSnrMgn OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..127)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 7 }
+
+   vdslLineConfDownTargetSnrMgn OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..127)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 8 }
+
+   vdslLineConfUpMaxSnrMgn OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..127)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 9 }
+
+   vdslLineConfUpMinSnrMgn OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..127)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 10 }
+
+   vdslLineConfUpTargetSnrMgn OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..127)
+       UNITS        "0.25dBm"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 11 }
+
+   vdslLineConfDownFastMaxDataRate OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kbps"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 12 }
+
+   vdslLineConfDownFastMinDataRate OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kbps"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 13 }
+
+   vdslLineConfDownSlowMaxDataRate OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kbps"
+       MAX-ACCESS   read-create
+       STATUS       current
+
+
+
+
+
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 14 }
+
+   vdslLineConfDownSlowMinDataRate OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kbps"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 15 }
+
+   vdslLineConfUpFastMaxDataRate OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kbps"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 16 }
+
+   vdslLineConfUpFastMinDataRate OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kbps"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 17 }
+
+   vdslLineConfUpSlowMaxDataRate OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kbps"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 18 }
+
+   vdslLineConfUpSlowMinDataRate OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kbps"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 19 }
+
+   vdslLineConfDownRateRatio OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..100)
+       UNITS        "percent"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 20 }
+
+   vdslLineConfUpRateRatio OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..100)
+       UNITS        "percent"
+       MAX-ACCESS   read-create
+
+
+
+
+
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 21 }
+
+   vdslLineConfDownMaxInterDelay OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..255)
+       UNITS        "milliseconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 22 }
+
+   vdslLineConfUpMaxInterDelay OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..255)
+       UNITS        "milliseconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 23 }
+
+   vdslLineConfDownPboControl OBJECT-TYPE
+       SYNTAX       INTEGER
+                       {
+                    disabled(1),
+                    auto(2),
+                    manual(3)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { disabled }
+       ::= { vdslLineConfProfileEntry 24 }
+
+   vdslLineConfUpPboControl OBJECT-TYPE
+       SYNTAX       INTEGER
+                    {
+                    disabled(1),
+                    auto(2),
+                    manual(3)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { disabled }
+       ::= { vdslLineConfProfileEntry 25 }
+
+   vdslLineConfDownPboLevel OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..160)
+       UNITS        "0.25dB"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 26 }
+
+   vdslLineConfUpPboLevel OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..160)
+       UNITS        "0.25dB"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 27 }
+
+   vdslLineConfDeploymentScenario OBJECT-TYPE
+
+
+
+
+
+       SYNTAX       INTEGER
+                    {
+                    fttCab(1),
+                    fttEx(2),
+                    other(3)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { fttCab }
+       ::= { vdslLineConfProfileEntry 28 }
+
+   vdslLineConfAdslPresence OBJECT-TYPE
+       SYNTAX       INTEGER
+                    {
+                    none(1),
+                    adslOverPots(2),
+                    adslOverISDN(3)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { none }
+       ::= { vdslLineConfProfileEntry 29 }
+
+   vdslLineConfApplicableStandard OBJECT-TYPE
+       SYNTAX       INTEGER
+                    {
+                    ansi(1),
+                    etsi(2),
+                    itu(3),
+                    other(4)
+                    }
+       MAX-ACCESS   read-create
+
+
+
+
+
+       STATUS       current
+       DEFVAL       { ansi }
+       ::= { vdslLineConfProfileEntry 30 }
+
+   vdslLineConfBandPlan OBJECT-TYPE
+       SYNTAX       INTEGER
+                    {
+                    bandPlan997(1),
+                    bandPlan998(2),
+                    bandPlanFx(3),
+                    other(4)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { bandPlan997 }
+       ::= { vdslLineConfProfileEntry 31 }
+
+   vdslLineConfBandPlanFx OBJECT-TYPE
+       SYNTAX       Unsigned32 (3750..12000)
+       UNITS        "kHz"
+       MAX-ACCESS   read-create
+
+
+
+
+
+       STATUS       current
+       DEFVAL       { 3750 }
+       ::= { vdslLineConfProfileEntry 32 }
+
+      vdslLineConfBandOptUsage OBJECT-TYPE
+       SYNTAX       INTEGER
+                    {
+                    unused(1),
+                    upstream(2),
+                    downstream(3)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { unused }
+       ::= { vdslLineConfProfileEntry 33 }
+
+   vdslLineConfUpPsdTemplate OBJECT-TYPE
+       SYNTAX       INTEGER
+                    {
+                    templateMask1(1),
+                    templateMask2(2)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { templateMask1 }
+       ::= { vdslLineConfProfileEntry 34 }
+
+
+
+
+
+
+   vdslLineConfDownPsdTemplate OBJECT-TYPE
+       SYNTAX       INTEGER
+                    {
+                    templateMask1(1),
+                    templateMask2(2)
+                    }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { templateMask1 }
+       ::= { vdslLineConfProfileEntry 35 }
+
+   vdslLineConfHamBandMask OBJECT-TYPE
+       SYNTAX       BITS
+           {
+           customNotch1(0),     -- custom (region-specific) notch
+           customNotch2(1),     -- custom (region-specific) notch
+           amateurBand30m(2),   -- amateur radio band notch
+           amateurBand40m(3),   -- amateur radio band notch
+           amateurBand80m(4),   -- amateur radio band notch
+           amateurBand160m(5)   -- amateur radio band notch
+           }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { { } }
+       ::= { vdslLineConfProfileEntry 36 }
+
+   vdslLineConfCustomNotch1Start OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kHz"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 37 }
+
+   vdslLineConfCustomNotch1Stop OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kHz"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 38 }
+
+   vdslLineConfCustomNotch2Start OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kHz"
+       MAX-ACCESS   read-create
+
+
+
+
+
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 39 }
+
+   vdslLineConfCustomNotch2Stop OBJECT-TYPE
+       SYNTAX       Unsigned32
+       UNITS        "kHz"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 40 }
+
+   vdslLineConfDownTargetSlowBurst OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..1275)
+       UNITS        "microseconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 41 }
+
+   vdslLineConfUpTargetSlowBurst OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..1275)
+       UNITS        "microseconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 42 }
+
+   vdslLineConfDownMaxFastFec OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..50)
+       UNITS        "%"
+       MAX-ACCESS   read-create
+
+
+
+
+
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 43 }
+
+   vdslLineConfUpMaxFastFec OBJECT-TYPE
+       SYNTAX       Unsigned32 (0..50)
+       UNITS        "%"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineConfProfileEntry 44 }
+
+   vdslLineConfLineType OBJECT-TYPE
+       SYNTAX       INTEGER
+           {
+           noChannel(1),         -- no channels exist
+           fastOnly(2),          -- only fast channel exists
+           interleavedOnly(3),   -- only interleaved channel exists
+           fastOrInterleaved(4), -- either fast or interleaved channel
+           fastAndInterleaved(5) -- both fast and interleaved channels
+           }
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { noChannel }
+       ::= { vdslLineConfProfileEntry 45 }
+
+   vdslLineConfProfRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineConfProfileEntry 46 }
+
+
+   vdslLineAlarmConfProfileTable OBJECT-TYPE
+       SYNTAX       SEQUENCE OF VdslLineAlarmConfProfileEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslMibObjects 20 }
+
+   vdslLineAlarmConfProfileEntry OBJECT-TYPE
+       SYNTAX       VdslLineAlarmConfProfileEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX { vdslLineAlarmConfProfileName }
+       ::= { vdslLineAlarmConfProfileTable 1 }
+
+   VdslLineAlarmConfProfileEntry ::=
+       SEQUENCE
+           {
+           vdslLineAlarmConfProfileName       SnmpAdminString,
+           vdslLineAlarmConfThresh15MinLofs   HCPerfIntervalThreshold,
+           vdslLineAlarmConfThresh15MinLoss   HCPerfIntervalThreshold,
+           vdslLineAlarmConfThresh15MinLprs   HCPerfIntervalThreshold,
+           vdslLineAlarmConfThresh15MinLols   HCPerfIntervalThreshold,
+           vdslLineAlarmConfThresh15MinESs    HCPerfIntervalThreshold,
+           vdslLineAlarmConfThresh15MinSESs   HCPerfIntervalThreshold,
+           vdslLineAlarmConfThresh15MinUASs   HCPerfIntervalThreshold,
+           vdslLineAlarmConfInitFailure       TruthValue,
+           vdslLineAlarmConfProfRowStatus     RowStatus
+           }
+
+   vdslLineAlarmConfProfileName OBJECT-TYPE
+       SYNTAX       SnmpAdminString (SIZE (1..32))
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::= { vdslLineAlarmConfProfileEntry 1 }
+
+   vdslLineAlarmConfThresh15MinLofs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalThreshold
+       UNITS        "seconds"
+       MAX-ACCESS   read-create
+
+
+
+
+
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineAlarmConfProfileEntry 2 }
+
+   vdslLineAlarmConfThresh15MinLoss OBJECT-TYPE
+       SYNTAX       HCPerfIntervalThreshold
+       UNITS        "seconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineAlarmConfProfileEntry 3 }
+
+   vdslLineAlarmConfThresh15MinLprs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalThreshold
+       UNITS        "seconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineAlarmConfProfileEntry 4 }
+
+   vdslLineAlarmConfThresh15MinLols OBJECT-TYPE
+
+
+
+
+
+       SYNTAX       HCPerfIntervalThreshold
+       UNITS        "seconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineAlarmConfProfileEntry 5 }
+
+   vdslLineAlarmConfThresh15MinESs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalThreshold
+       UNITS        "seconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineAlarmConfProfileEntry 6 }
+
+   vdslLineAlarmConfThresh15MinSESs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalThreshold
+       UNITS        "seconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+
+
+
+
+
+       ::= { vdslLineAlarmConfProfileEntry 7 }
+
+   vdslLineAlarmConfThresh15MinUASs OBJECT-TYPE
+       SYNTAX       HCPerfIntervalThreshold
+       UNITS        "seconds"
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { 0 }
+       ::= { vdslLineAlarmConfProfileEntry 8 }
+
+   vdslLineAlarmConfInitFailure OBJECT-TYPE
+       SYNTAX       TruthValue
+       MAX-ACCESS   read-create
+       STATUS       current
+       DEFVAL       { false }
+       ::= { vdslLineAlarmConfProfileEntry 9 }
+
+   vdslLineAlarmConfProfRowStatus OBJECT-TYPE
+       SYNTAX       RowStatus
+       MAX-ACCESS   read-create
+       STATUS       current
+       ::= { vdslLineAlarmConfProfileEntry 10 }
+
+
+
+
+
+
+
+   vdslNotifications OBJECT IDENTIFIER ::= { vdslLineMib 0 }
+
+   vdslPerfLofsThreshNotification NOTIFICATION-TYPE
+       OBJECTS      {
+                    vdslPerfDataCurr15MinLofs
+                    }
+       STATUS       current
+       ::= { vdslNotifications 1 }
+
+   vdslPerfLossThreshNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPerfDataCurr15MinLoss
+                     }
+       STATUS        current
+       ::= { vdslNotifications 2 }
+
+   vdslPerfLprsThreshNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPerfDataCurr15MinLprs
+                     }
+       STATUS        current
+       ::= { vdslNotifications 3 }
+
+   vdslPerfLolsThreshNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPerfDataCurr15MinLols
+                     }
+       STATUS        current
+       ::= { vdslNotifications 4 }
+
+   vdslPerfESsThreshNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPerfDataCurr15MinESs
+                     }
+
+
+
+
+
+       STATUS        current
+       ::= { vdslNotifications 5 }
+
+   vdslPerfSESsThreshNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPerfDataCurr15MinSESs
+                     }
+       STATUS        current
+       ::= { vdslNotifications 6 }
+
+   vdslPerfUASsThreshNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPerfDataCurr15MinUASs
+                     }
+       STATUS        current
+       ::= { vdslNotifications 7 }
+
+   vdslDownMaxSnrMgnNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPhysCurrSnrMgn
+                     }
+       STATUS        current
+       ::= { vdslNotifications 8 }
+
+   vdslDownMinSnrMgnNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPhysCurrSnrMgn
+                     }
+       STATUS        current
+
+
+
+
+
+       ::= { vdslNotifications 9 }
+
+   vdslUpMaxSnrMgnNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPhysCurrSnrMgn
+                     }
+       STATUS        current
+       ::= { vdslNotifications 10 }
+
+   vdslUpMinSnrMgnNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPhysCurrSnrMgn
+                     }
+       STATUS        current
+       ::= { vdslNotifications 11 }
+
+   vdslInitFailureNotification NOTIFICATION-TYPE
+       OBJECTS       {
+                     vdslPhysCurrStatus
+                     }
+       STATUS        current
+       ::= { vdslNotifications 12 }
+
+
+   vdslConformance OBJECT IDENTIFIER ::= { vdslLineMib 3 }
+   vdslGroups OBJECT IDENTIFIER ::= { vdslConformance 1 }
+   vdslCompliances OBJECT IDENTIFIER ::= { vdslConformance 2 }
+
+   vdslLineMibCompliance MODULE-COMPLIANCE
+       STATUS  current
+
+
+
+
+
+
+       MODULE  -- this module
+       MANDATORY-GROUPS
+           {
+           vdslGroup,
+           vdslNotificationGroup
+           }
+       ::= { vdslCompliances 1 }
+
+
+       vdslGroup OBJECT-GROUP
+           OBJECTS
+               {
+               vdslLineCoding,
+               vdslLineType,
+               vdslLineConfProfile,
+               vdslLineAlarmConfProfile,
+               vdslPhysInvSerialNumber,
+               vdslPhysInvVendorID,
+               vdslPhysInvVersionNumber,
+               vdslPhysCurrSnrMgn,
+               vdslPhysCurrAtn,
+               vdslPhysCurrStatus,
+               vdslPhysCurrOutputPwr,
+               vdslPhysCurrAttainableRate,
+               vdslPhysCurrLineRate,
+               vdslChanInterleaveDelay,
+               vdslChanCrcBlockLength,
+               vdslChanCurrTxRate,
+               vdslChanCurrTxSlowBurstProtect,
+               vdslChanCurrTxFastFec,
+               vdslPerfDataValidIntervals,
+               vdslPerfDataInvalidIntervals,
+               vdslPerfDataLofs,
+               vdslPerfDataLoss,
+               vdslPerfDataLprs,
+               vdslPerfDataLols,
+               vdslPerfDataESs,
+               vdslPerfDataSESs,
+               vdslPerfDataUASs,
+               vdslPerfDataInits,
+               vdslPerfDataCurr15MinTimeElapsed,
+               vdslPerfDataCurr15MinLofs,
+               vdslPerfDataCurr15MinLoss,
+               vdslPerfDataCurr15MinLprs,
+               vdslPerfDataCurr15MinLols,
+               vdslPerfDataCurr15MinESs,
+               vdslPerfDataCurr15MinSESs,
+
+
+
+
+
+               vdslPerfDataCurr15MinUASs,
+               vdslPerfDataCurr15MinInits,
+               vdslPerfData1DayValidIntervals,
+               vdslPerfData1DayInvalidIntervals,
+               vdslPerfDataCurr1DayTimeElapsed,
+               vdslPerfDataCurr1DayLofs,
+               vdslPerfDataCurr1DayLoss,
+               vdslPerfDataCurr1DayLprs,
+               vdslPerfDataCurr1DayLols,
+               vdslPerfDataCurr1DayESs,
+               vdslPerfDataCurr1DaySESs,
+               vdslPerfDataCurr1DayUASs,
+               vdslPerfDataCurr1DayInits,
+               vdslPerfIntervalLofs,
+               vdslPerfIntervalLoss,
+               vdslPerfIntervalLprs,
+               vdslPerfIntervalLols,
+               vdslPerfIntervalESs,
+               vdslPerfIntervalSESs,
+               vdslPerfIntervalUASs,
+               vdslPerfIntervalInits,
+               vdslPerf1DayIntervalMoniSecs,
+               vdslPerf1DayIntervalLofs,
+               vdslPerf1DayIntervalLoss,
+               vdslPerf1DayIntervalLprs,
+               vdslPerf1DayIntervalLols,
+               vdslPerf1DayIntervalESs,
+               vdslPerf1DayIntervalSESs,
+               vdslPerf1DayIntervalUASs,
+               vdslPerf1DayIntervalInits,
+               vdslChanValidIntervals,
+               vdslChanInvalidIntervals,
+               vdslChanFixedOctets,
+               vdslChanBadBlks,
+               vdslChanCurr15MinTimeElapsed,
+               vdslChanCurr15MinFixedOctets,
+               vdslChanCurr15MinBadBlks,
+               vdslChan1DayValidIntervals,
+               vdslChan1DayInvalidIntervals,
+               vdslChanCurr1DayTimeElapsed,
+               vdslChanCurr1DayFixedOctets,
+               vdslChanCurr1DayBadBlks,
+               vdslChanIntervalFixedOctets,
+               vdslChanIntervalBadBlks,
+               vdslChan1DayIntervalMoniSecs,
+               vdslChan1DayIntervalFixedOctets,
+               vdslChan1DayIntervalBadBlks,
+               vdslLineConfDownRateMode,
+
+
+
+
+
+               vdslLineConfUpRateMode,
+               vdslLineConfDownMaxPwr,
+               vdslLineConfUpMaxPwr,
+               vdslLineConfDownMaxSnrMgn,
+               vdslLineConfDownMinSnrMgn,
+               vdslLineConfDownTargetSnrMgn,
+               vdslLineConfUpMaxSnrMgn,
+               vdslLineConfUpMinSnrMgn,
+               vdslLineConfUpTargetSnrMgn,
+               vdslLineConfDownFastMaxDataRate,
+               vdslLineConfDownFastMinDataRate,
+               vdslLineConfDownSlowMaxDataRate,
+               vdslLineConfDownSlowMinDataRate,
+               vdslLineConfUpFastMaxDataRate,
+               vdslLineConfUpFastMinDataRate,
+               vdslLineConfUpSlowMaxDataRate,
+               vdslLineConfUpSlowMinDataRate,
+               vdslLineConfDownRateRatio,
+               vdslLineConfUpRateRatio,
+               vdslLineConfDownMaxInterDelay,
+               vdslLineConfUpMaxInterDelay,
+               vdslLineConfDownPboControl,
+               vdslLineConfUpPboControl,
+               vdslLineConfDownPboLevel,
+               vdslLineConfUpPboLevel,
+               vdslLineConfDeploymentScenario,
+               vdslLineConfAdslPresence,
+               vdslLineConfApplicableStandard,
+               vdslLineConfBandPlan,
+               vdslLineConfBandPlanFx,
+               vdslLineConfBandOptUsage,
+               vdslLineConfUpPsdTemplate,
+               vdslLineConfDownPsdTemplate,
+               vdslLineConfHamBandMask,
+               vdslLineConfCustomNotch1Start,
+               vdslLineConfCustomNotch1Stop,
+               vdslLineConfCustomNotch2Start,
+               vdslLineConfCustomNotch2Stop,
+               vdslLineConfDownTargetSlowBurst,
+               vdslLineConfUpTargetSlowBurst,
+               vdslLineConfDownMaxFastFec,
+               vdslLineConfUpMaxFastFec,
+               vdslLineConfLineType,
+               vdslLineConfProfRowStatus,
+               vdslLineAlarmConfThresh15MinLofs,
+               vdslLineAlarmConfThresh15MinLoss,
+               vdslLineAlarmConfThresh15MinLprs,
+               vdslLineAlarmConfThresh15MinLols,
+
+
+
+
+
+               vdslLineAlarmConfThresh15MinESs,
+               vdslLineAlarmConfThresh15MinSESs,
+               vdslLineAlarmConfThresh15MinUASs,
+               vdslLineAlarmConfInitFailure,
+               vdslLineAlarmConfProfRowStatus
+               }
+           STATUS     current
+           ::= { vdslGroups 1 }
+
+       vdslNotificationGroup    NOTIFICATION-GROUP
+           NOTIFICATIONS
+               {
+               vdslPerfLofsThreshNotification,
+               vdslPerfLossThreshNotification,
+               vdslPerfLprsThreshNotification,
+               vdslPerfLolsThreshNotification,
+               vdslPerfESsThreshNotification,
+               vdslPerfSESsThreshNotification,
+               vdslPerfUASsThreshNotification,
+               vdslDownMaxSnrMgnNotification,
+               vdslDownMinSnrMgnNotification,
+               vdslUpMaxSnrMgnNotification,
+               vdslUpMinSnrMgnNotification,
+               vdslInitFailureNotification
+               }
+           STATUS      current
+       ::= { vdslGroups 2 }
+
+   END

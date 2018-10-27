@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.sql.util;
@@ -24,7 +17,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.sql.bean.JdbcDriverInfo;
 
 /**
@@ -37,36 +30,29 @@ public class JdbcDriverUtil {
 
 	private static Log m_log = LogFactory.getLog( JdbcDriverUtil.class );
 
-	private static final String JDBC_DRIVER = "monitor.sql.jdbc.driver";
-	private static final String JDBC_DRIVER_NAME = "monitor.sql.jdbc.driver.name.";
-	private static final String JDBC_DRIVER_CLASSNAME = "monitor.sql.jdbc.driver.classname.";
-	private static final String JDBC_DRIVER_LOGINTIMEOUT = "monitor.sql.jdbc.driver.logintimeout.";
-	private static final String JDBC_DRIVER_PROPERTIES = "monitor.sql.jdbc.driver.properties.";
-
-
 	private HashMap<String, JdbcDriverProperties> jdbcProperties = new HashMap<String, JdbcDriverProperties>();
 
 	public JdbcDriverUtil() {
 		m_log.debug("initializing configuration for sql monitoring...");
 
 		//JDBCドライバ数取得
-		Integer count = HinemosPropertyUtil.getHinemosPropertyNum(JDBC_DRIVER, Long.valueOf(3)).intValue();
+		Integer count = HinemosPropertyCommon.monitor_sql_jdbc_driver.getIntegerValue();
 		m_log.debug("use " + count + " jdbc drivers for sql monitoring.");
 
 		for(int i = 1; i <= count.intValue(); i++){
-			String name = HinemosPropertyUtil.getHinemosPropertyStr(JDBC_DRIVER_NAME + i, "");
+			String name = HinemosPropertyCommon.monitor_sql_jdbc_driver_name_$.getStringValue(Integer.toString(i), "");
 			if ("".equals(name)) {
 				continue;
 			}
-			String classname = HinemosPropertyUtil.getHinemosPropertyStr(JDBC_DRIVER_CLASSNAME + i, "");
+			String classname = HinemosPropertyCommon.monitor_sql_jdbc_driver_classname_$.getStringValue(Integer.toString(i), "");
 			if ("".equals(classname)) {
 				continue;
 			}
-			Long loginTimeout = HinemosPropertyUtil.getHinemosPropertyNum(JDBC_DRIVER_LOGINTIMEOUT + i, null);
+			Long loginTimeout = HinemosPropertyCommon.monitor_sql_jdbc_driver_logintimeout_$.getNumericValue(Integer.toString(i), null);
 			if (loginTimeout == null) {
 				continue;
 			}
-			String properties = HinemosPropertyUtil.getHinemosPropertyStr(JDBC_DRIVER_PROPERTIES + i, "");
+			String properties = HinemosPropertyCommon.monitor_sql_jdbc_driver_properties_$.getStringValue(Integer.toString(i), "");
 			// JDBC_DRIVER_PROPERTIESは空欄でもよい。
 			
 			m_log.debug("setting jdbc driver " + i + " : " + name + "(classname = " + classname + ", login_timeout = " + loginTimeout + ")");

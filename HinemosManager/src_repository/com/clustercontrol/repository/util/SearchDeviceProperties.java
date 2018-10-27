@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.util;
@@ -18,7 +11,7 @@ package com.clustercontrol.repository.util;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 
 /**
  * SNMPでノードの情報を埋める際の定義情報のクラス<BR>
@@ -28,59 +21,6 @@ import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
  */
 public class SearchDeviceProperties {
 	private static SearchDeviceProperties m_instance = null;
-
-	private static final int DEFAULT_TIMEOUT = 5000;
-	private static final int DEFAULT_RETRY = 1;
-	// サブツリーなし
-	private static final String DEFAULT_OID_NAME      =".1.3.6.1.2.1.1.5.0";
-	private static final String DEFAULT_OID_DESCR     =".1.3.6.1.2.1.1.1.0";
-	private static final String DEFAULT_OID_CONTACT   =".1.3.6.1.2.1.1.4.0";
-	// サブツリーあり
-	private static final String DEFAULT_OID_CPU_INDEX = ".1.3.6.1.2.1.25.3.3.1.2";
-	private static final String DEFAULT_OID_DISK_INDEX =".1.3.6.1.4.1.2021.13.15.1.1.1";
-	private static final String DEFAULT_OID_DISK_NAME =".1.3.6.1.4.1.2021.13.15.1.1.2";
-	private static final String DEFAULT_OID_DISK_ION_READ = ".1.3.6.1.4.1.2021.13.15.1.1.3";
-	private static final String DEFAULT_OID_DISK_ION_WRITE = ".1.3.6.1.4.1.2021.13.15.1.1.4";
-	private static final String DEFAULT_OID_DISK_IO_READ = ".1.3.6.1.4.1.2021.13.15.1.1.5";
-	private static final String DEFAULT_OID_DISK_IO_WRITE = ".1.3.6.1.4.1.2021.13.15.1.1.6";
-	private static final String DEFAULT_OID_NIC_INDEX =".1.3.6.1.2.1.2.2.1.1";
-	private static final String DEFAULT_OID_NIC_NAME =".1.3.6.1.2.1.2.2.1.2";
-	private static final String DEFAULT_OID_NIC_MAC_ADDRESS = ".1.3.6.1.2.1.2.2.1.6";
-	private static final String DEFAULT_OID_NIC_IP_ADDRESSV4 = ".1.3.6.1.2.1.4.34.1.3.1.4";
-	private static final String DEFAULT_OID_NIC_IP_ADDRESSV6 = ".1.3.6.1.2.1.4.34.1.3.2.16";
-	private static final String DEFAULT_OID_NIC_IP_ADDRESSV4_TYPE = ".1.3.6.1.2.1.4.34.1.4.1.4";
-	private static final String DEFAULT_OID_NIC_IP_ADDRESSV6_TYPE = ".1.3.6.1.2.1.4.34.1.4.2.16";
-	private static final String DEFAULT_OID_NIC_IN_OCTET = ".1.3.6.1.2.1.2.2.1.10";
-	private static final String DEFAULT_OID_NIC_OUT_OCTET = ".1.3.6.1.2.1.2.2.1.16";
-	private static final String DEFAULT_OID_FILESYSTEM_INDEX = ".1.3.6.1.2.1.25.2.3.1.1";
-	private static final String DEFAULT_OID_FILESYSTEM_TYPE = ".1.3.6.1.2.1.25.2.3.1.2";
-	private static final String DEFAULT_OID_FILESYSTEM_NAME  = ".1.3.6.1.2.1.25.2.3.1.3";
-	private static final String DEFAULT_OID_FILESYSTEM_SIZE  = ".1.3.6.1.2.1.25.2.3.1.5";
-
-	private static final String TIMEOUT_KEY       = "repository.snmp.timeout";
-	private static final String RETRY_KEY         = "repository.snmp.retry";
-	private static final String OID_NAME_KEY      = "repository.snmp.oid.name";
-	private static final String OID_DESCR_KEY     = "repository.snmp.oid.descr";
-	private static final String OID_CONTACT_KEY   = "repository.snmp.oid.contact";
-	private static final String OID_CPU_INDEX_KEY = "repository.snmp.oid.cpu.index";
-	private static final String OID_DISK_INDEX_KEY= "repository.snmp.oid.disk.index";
-	private static final String OID_DISK_NAME_KEY = "repository.snmp.oid.disk.name";
-	private static final String OID_DISK_ION_READ_KEY = "repository.snmp.oid.disk.ion.read";
-	private static final String OID_DISK_ION_WRITE_KEY = "repository.snmp.oid.disk.ion.write";
-	private static final String OID_DISK_IO_READ_KEY = "repository.snmp.oid.disk.io.read";
-	private static final String OID_DISK_IO_WRITE_KEY = "repository.snmp.oid.disk.io.write";
-	private static final String OID_NIC_INDEX_KEY = "repository.snmp.oid.nic.index";
-	private static final String OID_NIC_NAME_KEY  = "repository.snmp.oid.nic.name";
-	private static final String OID_NIC_MAC_ADDRESS_KEY  = "repository.snmp.oid.nic.mac.address";
-	private static final String OID_NIC_IP_ADDRESSV4_KEY = "repository.snmp.oid.nic.ipv4.address";
-	private static final String OID_NIC_IP_ADDRESSV6_KEY = "repository.snmp.oid.nic.ipv6.address";
-	private static final String OID_NIC_IN_OCTET_KEY = "repository.snmp.oid.nic.in.octet";
-	private static final String OID_NIC_OUT_OCTET_KEY = "repository.snmp.oid.nic.out.octet";
-	private static final String OID_FILESYSTEM_INDEX_KEY = "repository.snmp.oid.filesystem.index";
-	private static final String OID_FILESYSTEM_TYPE_KEY = "repository.snmp.oid.filesystem.type";
-	private static final String OID_FILESYSTEM_NAME_KEY  = "repository.snmp.oid.filesystem.name";
-	private static final String OID_FILESYSTEM_SIZE_KEY  = "repository.snmp.oid.filesystem.size";
-
 
 	/**
 	 * プロパティのデータセットをシングルトンで返します。
@@ -97,11 +37,11 @@ public class SearchDeviceProperties {
 	}
 
 	public int getTimeOut(){
-		return HinemosPropertyUtil.getHinemosPropertyNum(TIMEOUT_KEY, Long.valueOf(DEFAULT_TIMEOUT)).intValue();
+		return HinemosPropertyCommon.repository_snmp_timeout.getIntegerValue();
 	}
 
 	public int getRetry(){
-		return HinemosPropertyUtil.getHinemosPropertyNum(RETRY_KEY, Long.valueOf(DEFAULT_RETRY)).intValue();
+		return HinemosPropertyCommon.repository_snmp_retry.getIntegerValue();
 	}
 
 	/*
@@ -139,95 +79,95 @@ public class SearchDeviceProperties {
 	}
 	
 	public static String getOidName() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NAME_KEY, DEFAULT_OID_NAME);
+		 return HinemosPropertyCommon.repository_snmp_oid_name.getStringValue();
 	}
 
 	public static String getOidDescr() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_DESCR_KEY, DEFAULT_OID_DESCR);
+		 return HinemosPropertyCommon.repository_snmp_oid_descr.getStringValue();
 	}
 
 	public static String getOidContact() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_CONTACT_KEY, DEFAULT_OID_CONTACT);
+		 return HinemosPropertyCommon.repository_snmp_oid_contact.getStringValue();
 	}
 
 	public static String getOidCpuIndex() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_CPU_INDEX_KEY, DEFAULT_OID_CPU_INDEX);
+		 return HinemosPropertyCommon.repository_snmp_oid_cpu_index.getStringValue();
 	}
 
 	public static String getOidDiskIndex() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_DISK_INDEX_KEY, DEFAULT_OID_DISK_INDEX);
+		 return HinemosPropertyCommon.repository_snmp_oid_disk_index.getStringValue();
 	}
 
 	public static String getOidDiskName() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_DISK_NAME_KEY, DEFAULT_OID_DISK_NAME);
+		 return HinemosPropertyCommon.repository_snmp_oid_disk_name.getStringValue();
 	}
 
 	public static String getOidDiskIonRead() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_DISK_ION_READ_KEY, DEFAULT_OID_DISK_ION_READ);
+		 return HinemosPropertyCommon.repository_snmp_oid_disk_ion_read.getStringValue();
 	}
 
 	public static String getOidDiskIonWrite() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_DISK_ION_WRITE_KEY, DEFAULT_OID_DISK_ION_WRITE);
+		 return HinemosPropertyCommon.repository_snmp_oid_disk_ion_write.getStringValue();
 	}
 
 	public static String getOidDiskIoRead() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_DISK_IO_READ_KEY, DEFAULT_OID_DISK_IO_READ);
+		 return HinemosPropertyCommon.repository_snmp_oid_disk_io_read.getStringValue();
 	}
 
 	public static String getOidDiskIoWrite() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_DISK_IO_WRITE_KEY, DEFAULT_OID_DISK_IO_WRITE);
+		 return HinemosPropertyCommon.repository_snmp_oid_disk_io_write.getStringValue();
 	}
 
 	public static String getOidFilesystemIndex() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_FILESYSTEM_INDEX_KEY, DEFAULT_OID_FILESYSTEM_INDEX );
+		 return HinemosPropertyCommon.repository_snmp_oid_filesystem_index.getStringValue();
 	}
 
 	public static String getOidFilesystemType() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_FILESYSTEM_TYPE_KEY , DEFAULT_OID_FILESYSTEM_TYPE);
+		 return HinemosPropertyCommon.repository_snmp_oid_filesystem_type.getStringValue();
 	}
 
 	public static String getOidFilesystemName() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_FILESYSTEM_NAME_KEY, DEFAULT_OID_FILESYSTEM_NAME);
+		 return HinemosPropertyCommon.repository_snmp_oid_filesystem_name.getStringValue();
 	}
 
 	public static String getOidFilesystemSize() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_FILESYSTEM_SIZE_KEY, DEFAULT_OID_FILESYSTEM_SIZE);
+		 return HinemosPropertyCommon.repository_snmp_oid_filesystem_size.getStringValue();
 	}
 
 	public static String getOidNicIndex() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NIC_INDEX_KEY, DEFAULT_OID_NIC_INDEX);
+		 return HinemosPropertyCommon.repository_snmp_oid_nic_index.getStringValue();
 	}
 
 	public static String getOidNicName() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NIC_NAME_KEY, DEFAULT_OID_NIC_NAME);
+		 return HinemosPropertyCommon.repository_snmp_oid_nic_name.getStringValue();
 	}
 
 	public static String getOidNicMacAddress() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NIC_MAC_ADDRESS_KEY, DEFAULT_OID_NIC_MAC_ADDRESS);
+		 return HinemosPropertyCommon.repository_snmp_oid_nic_mac_address.getStringValue();
 	}
 
 	public static String getOidNicIpAddressv4() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NIC_IP_ADDRESSV4_KEY, DEFAULT_OID_NIC_IP_ADDRESSV4);
+		 return HinemosPropertyCommon.repository_snmp_oid_nic_ipv4_address.getStringValue();
 	}
 
 	public static String getOidNicIpAddressv6() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NIC_IP_ADDRESSV6_KEY, DEFAULT_OID_NIC_IP_ADDRESSV6);
+		 return HinemosPropertyCommon.repository_snmp_oid_nic_ipv6_address.getStringValue();
 	}
 
 	public static String getOidNicIpAddressv4Type() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NIC_IP_ADDRESSV4_KEY, DEFAULT_OID_NIC_IP_ADDRESSV4_TYPE);
+		 return HinemosPropertyCommon.repository_snmp_oid_nic_ipv4_address_type.getStringValue();
 	}
 
 	public static String getOidNicIpAddressv6Type() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NIC_IP_ADDRESSV6_KEY, DEFAULT_OID_NIC_IP_ADDRESSV6_TYPE);
+		 return HinemosPropertyCommon.repository_snmp_oid_nic_ipv6_address_type.getStringValue();
 	}
 
 	public static String getOidNicInOctet() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NIC_IN_OCTET_KEY, DEFAULT_OID_NIC_IN_OCTET);
+		 return HinemosPropertyCommon.repository_snmp_oid_nic_in_octet.getStringValue();
 	}
 
 	public static String getOidNicOutOctet() {
-		 return HinemosPropertyUtil.getHinemosPropertyStr(OID_NIC_OUT_OCTET_KEY, DEFAULT_OID_NIC_OUT_OCTET);
+		 return HinemosPropertyCommon.repository_snmp_oid_nic_out_octet.getStringValue();
 	}
 
 }

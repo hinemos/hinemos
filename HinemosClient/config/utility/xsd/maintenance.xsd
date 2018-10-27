@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: maintenance.xsd 295 2013-05-13 16:00:00Z sekiyaman $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_notify_relation.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="maintenance" type="MaintenanceType">
+		<xs:annotation>
+			<xs:documentation>メンテナンス[履歴削除」定義一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="MaintenanceType">
+		<xs:annotation>
+			<xs:documentation>メンテナンス[履歴削除]一覧のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="maintenanceInfo" type="MaintenanceInfoType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>履歴削除定義情報の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="MaintenanceInfoType">
+		<xs:annotation>
+			<xs:documentation>履歴削除定義情報です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="notifyGroupId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>通知グループID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>通知IDのコレクション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="maintenanceId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>履歴削除定義のIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="description" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>この設定の説明です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="typeId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					メンテナンス種別です。
+					以下いずれかの種別IDが入ります。（種別名：種別ID）
+					DELETE_EVENT_LOG_ALL:監視(イベント) 履歴削除
+					DELETE_EVENT_LOG:監視(イベント) 確認済み履歴削除
+					DELETE_JOB_HISTORY_ALL:ジョブ実行 履歴削除
+					DELETE_JOB_HISTORY:ジョブ実行 終了済み履歴削除
+					DELETE_COLLECT_DATA_RAW:性能実績 収集データ削除
+					DELETE_SUMMARY_DATA_HOUR:性能実績 サマリデータ(時単位)削除
+					DELETE_SUMMARY_DATA_DAY:性能実績 サマリデータ(日単位)削除
+					DELETE_SUMMARY_DATA_MONTH:性能実績 サマリデータ(月単位)削除
+					DELETE_COLLECT_STRING_DATA:収集蓄積 収集データ削除
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="dataRetentionPeriod" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					履歴の保存期間（日）です。
+					-32768以上32767以下の数値を設定してください。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="calendarId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					カレンダIDです。 登録済みカレンダIDを指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="calendarName" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					カレンダIDで指定された設定のカレンダ定義名です。
+					通常は既に登録されている情報が格納されるため、本項目への入力はマネージャへの登録時には無視されます。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="type" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					スケジュール種別です。 {日時実行(1)、週次実行(2)}のどちらかを指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="month" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					月の値です。 {1から12}の値を指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="mday" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					日の値です。 {1から31}の値を指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="hour" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					時の値です。 {0から23}の値を指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="min" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					分の値です。 {0から59}の値を指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="dayOfWeek" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					曜日です。
+					{日(1)、月(2)、火(3)、水(4)、木(5)、金(6)、土(7)}のどれかを指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="application" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>アプリケーション文字列です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="validFlg" type="xs:boolean" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					この設定の有効/無効フラグです。 {有効(True)、無効(False)}のどちらかを指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="ownerRoleId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					オーナーロールIDです。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+</xs:schema>

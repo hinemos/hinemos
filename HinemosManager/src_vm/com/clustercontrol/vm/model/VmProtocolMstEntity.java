@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.vm.model;
 
 import java.io.Serializable;
@@ -7,9 +15,6 @@ import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 
 
 /**
@@ -26,16 +31,6 @@ public class VmProtocolMstEntity implements Serializable {
 
 	@Deprecated
 	public VmProtocolMstEntity() {
-	}
-
-	public VmProtocolMstEntity(VmProtocolMstEntityPK pk) {
-		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-	}
-
-	public VmProtocolMstEntity(String subPlatformId, String protocol) {
-		this(new VmProtocolMstEntityPK(subPlatformId, protocol));
 	}
 
 	@EmbeddedId

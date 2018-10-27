@@ -1,0 +1,22 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"CalendarPatternType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"CalendarPatternName",
+			"OwnerRoleId",
+			"CalendarPatternDetailInfo",
+			"CalendarPatternDetailInfo.*.YearNo",
+			"CalendarPatternDetailInfo.*.MonthNo",
+			"CalendarPatternDetailInfo.*.DayNo"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"CalendarPatternInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

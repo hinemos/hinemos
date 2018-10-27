@@ -1,0 +1,205 @@
+SNMP-USM-DH-OBJECTS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    experimental, Integer32
+        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF
+    usmUserEntry
+        FROM SNMP-USER-BASED-SM-MIB
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB;
+
+snmpUsmDHObjectsMIB MODULE-IDENTITY
+    LAST-UPDATED "200003060000Z"  -- 6 March 2000, Midnight
+    ORGANIZATION "Excite@Home"
+
+
+
+
+    ::= { experimental 101 }  -- IANA DHKEY-CHANGE 101
+
+
+usmDHKeyObjects OBJECT IDENTIFIER ::= { snmpUsmDHObjectsMIB 1 }
+usmDHKeyConformance OBJECT IDENTIFIER ::= { snmpUsmDHObjectsMIB 2 }
+
+
+
+
+
+
+
+DHKeyChange ::=         TEXTUAL-CONVENTION
+    STATUS              current
+    SYNTAX              OCTET STRING
+
+
+
+
+
+
+usmDHPublicObjects      OBJECT IDENTIFIER ::= { usmDHKeyObjects 1 }
+
+usmDHParameters OBJECT-TYPE
+    SYNTAX  OCTET STRING
+    MAX-ACCESS read-write
+    STATUS  current
+    ::= { usmDHPublicObjects 1 }
+
+usmDHUserKeyTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF UsmDHUserKeyEntry
+    MAX-ACCESS not-accessible
+    STATUS  current
+
+
+
+
+
+    ::= { usmDHPublicObjects 2 }
+
+usmDHUserKeyEntry OBJECT-TYPE
+    SYNTAX  UsmDHUserKeyEntry
+    MAX-ACCESS not-accessible
+    STATUS  current
+    AUGMENTS { usmUserEntry }
+    ::= {usmDHUserKeyTable 1 }
+
+UsmDHUserKeyEntry ::= SEQUENCE {
+        usmDHUserAuthKeyChange          DHKeyChange,
+    usmDHUserOwnAuthKeyChange   DHKeyChange,
+        usmDHUserPrivKeyChange          DHKeyChange,
+        usmDHUserOwnPrivKeyChange       DHKeyChange
+        }
+
+usmDHUserAuthKeyChange OBJECT-TYPE
+    SYNTAX  DHKeyChange
+    MAX-ACCESS read-create
+    STATUS  current
+    ::= { usmDHUserKeyEntry 1 }
+
+usmDHUserOwnAuthKeyChange OBJECT-TYPE
+    SYNTAX  DHKeyChange
+    MAX-ACCESS read-create
+    STATUS  current
+    ::= { usmDHUserKeyEntry 2 }
+
+usmDHUserPrivKeyChange OBJECT-TYPE
+
+
+
+
+
+    SYNTAX  DHKeyChange
+    MAX-ACCESS read-create
+    STATUS  current
+    ::= { usmDHUserKeyEntry 3 }
+
+usmDHUserOwnPrivKeyChange OBJECT-TYPE
+    SYNTAX  DHKeyChange
+    MAX-ACCESS read-create
+    STATUS  current
+    ::= { usmDHUserKeyEntry 4 }
+
+usmDHKickstartGroup OBJECT IDENTIFIER ::= { usmDHKeyObjects 2 }
+
+usmDHKickstartTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF UsmDHKickstartEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { usmDHKickstartGroup 1 }
+
+usmDHKickstartEntry OBJECT-TYPE
+    SYNTAX      UsmDHKickstartEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+    INDEX   { usmDHKickstartIndex }
+    ::= {usmDHKickstartTable 1 }
+
+UsmDHKickstartEntry ::= SEQUENCE  {
+        usmDHKickstartIndex     Integer32,
+        usmDHKickstartMyPublic  OCTET STRING,
+        usmDHKickstartMgrPublic OCTET STRING,
+        usmDHKickstartSecurityName      SnmpAdminString
+        }
+
+usmDHKickstartIndex OBJECT-TYPE
+    SYNTAX      Integer32  (1..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { usmDHKickstartEntry 1 }
+
+usmDHKickstartMyPublic OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { usmDHKickstartEntry 2 }
+
+usmDHKickstartMgrPublic OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { usmDHKickstartEntry 3 }
+
+usmDHKickstartSecurityName OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { usmDHKickstartEntry 4 }
+
+
+usmDHKeyMIBCompliances  OBJECT IDENTIFIER ::= { usmDHKeyConformance 1 }
+usmDHKeyMIBGroups       OBJECT IDENTIFIER ::= { usmDHKeyConformance 2 }
+
+
+usmDHKeyMIBCompliance   MODULE-COMPLIANCE
+    STATUS      current
+    MODULE
+        GROUP usmDHKeyMIBBasicGroup
+
+        GROUP usmDHKeyParamGroup
+
+        GROUP usmDHKeyKickstartGroup
+
+        OBJECT usmDHParameters
+        MIN-ACCESS      read-only
+
+    ::= { usmDHKeyMIBCompliances 1 }
+
+
+usmDHKeyMIBBasicGroup OBJECT-GROUP
+    OBJECTS     {
+                  usmDHUserAuthKeyChange,
+                  usmDHUserOwnAuthKeyChange,
+                  usmDHUserPrivKeyChange,
+                  usmDHUserOwnPrivKeyChange
+                }
+    STATUS      current
+    ::= { usmDHKeyMIBGroups 1 }
+
+usmDHKeyParamGroup OBJECT-GROUP
+    OBJECTS     {
+                  usmDHParameters
+                }
+    STATUS      current
+    ::= { usmDHKeyMIBGroups 2 }
+
+usmDHKeyKickstartGroup OBJECT-GROUP
+    OBJECTS     {
+                  usmDHKickstartMyPublic,
+                  usmDHKickstartMgrPublic,
+
+
+
+
+
+                  usmDHKickstartSecurityName
+                }
+    STATUS      current
+    ::= { usmDHKeyMIBGroups 3 }
+
+
+END

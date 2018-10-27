@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.jobmanagement.model;
 
 import java.io.Serializable;
@@ -42,18 +50,14 @@ public class JobRuntimeParamEntity implements Serializable {
 	public JobRuntimeParamEntity() {
 	}
 
-	public JobRuntimeParamEntity(JobRuntimeParamEntityPK pk,
-		JobKickEntity jobKickEntity) {
+	public JobRuntimeParamEntity(JobRuntimeParamEntityPK pk) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToJobKickEntity(jobKickEntity);
 	}
 
 	public JobRuntimeParamEntity(JobKickEntity jobKickEntity, String paramId) {
 		this(new JobRuntimeParamEntityPK(
 				jobKickEntity.getJobkickId(),
-				paramId), jobKickEntity);
+				paramId));
 	}
 
 	@EmbeddedId
@@ -165,14 +169,16 @@ public class JobRuntimeParamEntity implements Serializable {
 	 * 
 	 */
 	public void deleteJobRuntimeParamDetailEntities(List<JobRuntimeParamDetailEntityPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<JobRuntimeParamDetailEntity> list = this.getJobRuntimeParamDetailEntities();
-		Iterator<JobRuntimeParamDetailEntity> iter = list.iterator();
-		while(iter.hasNext()) {
-			JobRuntimeParamDetailEntity entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<JobRuntimeParamDetailEntity> list = this.getJobRuntimeParamDetailEntities();
+			Iterator<JobRuntimeParamDetailEntity> iter = list.iterator();
+			while(iter.hasNext()) {
+				JobRuntimeParamDetailEntity entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}

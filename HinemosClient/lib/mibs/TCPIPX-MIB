@@ -1,0 +1,238 @@
+           TCPIPX-MIB DEFINITIONS ::= BEGIN
+
+           IMPORTS
+                   OBJECT-TYPE
+                           FROM RFC-1212;
+
+
+
+
+
+
+
+        IpxAddress ::= OCTET STRING (SIZE (10))
+
+
+        novell        OBJECT IDENTIFIER ::= { enterprises 23 }
+        mibDoc        OBJECT IDENTIFIER ::= { novell 2 }
+        tcpx          OBJECT IDENTIFIER ::= { mibDoc 29 }
+        tcpxTcp       OBJECT IDENTIFIER ::= { tcpx 1 }
+        tcpxUdp       OBJECT IDENTIFIER ::= { tcpx 2 }
+
+
+
+
+
+           tcpIpxConnTable OBJECT-TYPE
+               SYNTAX  SEQUENCE OF TcpIpxConnEntry
+               ACCESS  not-accessible
+               STATUS  mandatory
+
+               ::= { tcpxTcp 1 }
+
+           tcpIpxConnEntry OBJECT-TYPE
+               SYNTAX  TcpIpxConnEntry
+               ACCESS  not-accessible
+               STATUS  mandatory
+               INDEX   { tcpIpxConnLocalAddress,
+                         tcpIpxConnLocalPort,
+                         tcpIpxConnRemAddress,
+                         tcpIpxConnRemPort }
+              ::= { tcpIpxConnTable 1 }
+
+           TcpIpxConnEntry ::=
+               SEQUENCE {
+
+
+
+
+
+                   tcpIpxConnState
+                       INTEGER,
+                   tcpIpxConnLocalAddress
+                       IpxAddress
+                   ,
+                   tcpIpxConnLocalPort
+                       INTEGER (0..65535),
+                   tcpIpxConnRemAddress
+                       IpxAddress,
+                   tcpIpxConnRemPort
+                       INTEGER (0..65535)
+               }
+
+           tcpIpxConnState OBJECT-TYPE
+               SYNTAX  INTEGER {
+                           closed(1),
+                           listen(2),
+                           synSent(3),
+                           synReceived(4),
+                           established(5),
+                           finWait1(6),
+                           finWait2(7),
+                           closeWait(8),
+                           lastAck(9),
+                           closing(10),
+                           timeWait(11),
+                           deleteTCB(12)
+                       }
+               ACCESS  read-write
+               STATUS  mandatory
+               ::= { tcpIpxConnEntry 1 }
+
+           tcpIpxConnLocalAddress OBJECT-TYPE
+               SYNTAX  IpxAddress
+               ACCESS  read-only
+               STATUS  mandatory
+               ::= { tcpIpxConnEntry 2 }
+
+
+           tcpIpxConnLocalPort OBJECT-TYPE
+               SYNTAX  INTEGER (0..65535)
+               ACCESS  read-only
+               STATUS  mandatory
+               ::= { tcpIpxConnEntry 3 }
+
+           tcpIpxConnRemAddress OBJECT-TYPE
+               SYNTAX  IpxAddress
+               ACCESS  read-only
+               STATUS  mandatory
+               ::= { tcpIpxConnEntry 4 }
+
+           tcpIpxConnRemPort OBJECT-TYPE
+               SYNTAX  INTEGER (0..65535)
+               ACCESS  read-only
+               STATUS  mandatory
+               ::= { tcpIpxConnEntry 5 }
+
+
+
+
+
+
+
+
+
+
+
+           udpIpxTable OBJECT-TYPE
+               SYNTAX  SEQUENCE OF UdpIpxEntry
+               ACCESS  not-accessible
+               STATUS  mandatory
+               ::= { tcpxUdp 1 }
+
+           udpIpxEntry OBJECT-TYPE
+               SYNTAX  UdpIpxEntry
+               ACCESS  not-accessible
+               STATUS  mandatory
+               INDEX   { udpIpxLocalAddress, udpIpxLocalPort }
+               ::= { udpIpxTable 1 }
+
+           UdpIpxEntry ::=
+               SEQUENCE {
+                   udpIpxLocalAddress
+            IpxAddress
+            ,
+                   udpIpxLocalPort
+                       INTEGER (0..65535)
+               }
+
+           udpIpxLocalAddress OBJECT-TYPE
+               SYNTAX  IpxAddress
+               ACCESS  read-only
+               STATUS  mandatory
+               ::= { udpIpxEntry 1 }
+
+           udpIpxLocalPort OBJECT-TYPE
+               SYNTAX  INTEGER (0..65535)
+
+
+
+
+
+               ACCESS  read-only
+               STATUS  mandatory
+               ::= { udpIpxEntry 2 }
+
+
+
+
+           tcpUnspecConnTable OBJECT-TYPE
+               SYNTAX  SEQUENCE OF TcpIpxConnEntry
+               ACCESS  not-accessible
+               STATUS  mandatory
+
+               ::= { tcpxTcp 2 }
+
+           tcpUnspecConnEntry OBJECT-TYPE
+               SYNTAX  TcpUnspecConnEntry
+               ACCESS  not-accessible
+               STATUS  mandatory
+
+               INDEX   { tcpUnspecConnLocalPort }
+               ::= { tcpUnspecConnTable 1 }
+
+           TcpUnspecConnEntry ::=
+               SEQUENCE {
+                   tcpUnspecConnState
+                       INTEGER,
+                   tcpUnspecConnLocalPort
+
+
+
+
+
+                       INTEGER (0..65535)
+               }
+
+           tcpUnspecConnState OBJECT-TYPE
+               SYNTAX  INTEGER {
+                           closed(1),
+                           listen(2),
+                           deleteTCB(12)
+                       }
+               ACCESS  read-write
+               STATUS  mandatory
+               ::= { tcpUnspecConnEntry 1 }
+
+           tcpUnspecConnLocalPort OBJECT-TYPE
+               SYNTAX  INTEGER (0..65535)
+               ACCESS  read-only
+               STATUS  mandatory
+               ::= { tcpUnspecConnEntry 2 }
+
+
+
+
+
+
+
+
+
+
+
+           udpUnspecTable OBJECT-TYPE
+               SYNTAX  SEQUENCE OF UdpUnspecEntry
+               ACCESS  not-accessible
+               STATUS  mandatory
+               ::= { tcpxUdp 2 }
+
+           udpUnspecEntry OBJECT-TYPE
+               SYNTAX  UdpUnspecEntry
+               ACCESS  not-accessible
+               STATUS  mandatory
+               INDEX   { udpUnspecLocalPort }
+               ::= { udpUnspecTable 1 }
+
+           UdpUnspecEntry ::=
+               SEQUENCE {
+                   udpUnspecLocalPort
+                       INTEGER (0..65535)
+               }
+
+           udpUnspecLocalPort OBJECT-TYPE
+               SYNTAX  INTEGER (0..65535)
+               ACCESS  read-only
+               STATUS  mandatory
+               ::= { udpUnspecEntry 1 }
+
+            END

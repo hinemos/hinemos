@@ -1,0 +1,57 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[	
+	
+	{
+	"propName":"key",
+	"annotations":[
+		{"type":"Column", "columnName":"LogFormatKey_key"}
+	]},		
+	
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"LogFormatKey_description"}
+	]},
+	
+	{
+	"propName":"valueType",
+	"annotations":[
+		{"type":"Column", "columnName":"LogFormatKey_value_type"},
+		{"type":"Translate",
+			"values":[
+						{"value":"0", "name":"LogFormatKey_string"},
+						{"value":"1", "name":"LogFormatKey_numeric"},
+						{"value":"2", "name":"LogFormatKey_bool"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"keyType",
+	"annotations":[
+		{"type":"Column", "columnName":"LogFormatKey_key_type"},
+		{"type":"Translate",
+			"values":[
+						{"value":"0", "name":"LogFormatKey_parsing"},
+						{"value":"1", "name":"LogFormatKey_fixed"}
+			]
+		}
+	]},	
+	
+	{
+		"propName":"pattern",
+		"annotations":[
+			{"type":"Column", "columnName":"LogFormatKey_pattern"}
+	]},
+	
+	{
+		"propName":"value",
+		"annotations":[
+			{"type":"Column", "columnName":"LogFormatKey_value"}
+	]}
+	
+]
+}

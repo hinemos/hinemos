@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.view.action;
@@ -25,7 +18,6 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -43,6 +35,7 @@ import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
 import com.clustercontrol.monitor.view.StatusView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.UIManager;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
@@ -146,6 +139,8 @@ public class StatusDeleteAction extends AbstractHandler implements IElementUpdat
 
 			// 選択しているステータス情報を削除して、再描画します。
 			ArrayList<StatusDataInfo> statusList = ConvertListUtil.listToStatusInfoDataList(records);
+			
+			ConcurrentHashMap<String, String>errMsg = new ConcurrentHashMap<>();
 
 			if (statusList != null && statusList.size()>0) {
 				try {
@@ -153,21 +148,19 @@ public class StatusDeleteAction extends AbstractHandler implements IElementUpdat
 					statusView.update(false);
 				} catch (InvalidRole_Exception e) {
 					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(null, Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
+					errMsg.put(managerName, Messages.getString("message.accesscontrol.16"));
 				} catch (MonitorNotFound_Exception e) {
-					MessageDialog.openError(null, Messages.getString("message"),
-							Messages.getString("message.monitor.61") + ", " + HinemosMessage.replace(e.getMessage()));
+					errMsg.put(managerName, Messages.getString("message.monitor.61") + ", " + HinemosMessage.replace(e.getMessage()));
 				} catch (HinemosUnknown_Exception e) {
-					MessageDialog.openError(null, Messages.getString("message"),
-							Messages.getString("message.monitor.61") + ", " + HinemosMessage.replace(e.getMessage()));
+					errMsg.put(managerName, Messages.getString("message.monitor.61") + ", " + HinemosMessage.replace(e.getMessage()));
 				} catch (Exception e) {
 					m_log.warn("run(), " + e.getMessage(), e);
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
-							Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					errMsg.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 				}
+			}
+			
+			if (!errMsg.isEmpty()) {
+				UIManager.showMessageBox(errMsg, true);
 			}
 		}
 		return null;

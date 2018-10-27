@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.composite;
@@ -83,6 +76,8 @@ public class MonitorComposite extends Composite {
 	private Text m_scope = null;
 	/** ジョブ変数用ラジオボタン */
 	private Button m_scopeJobParam = null;
+	/** ジョブ変数用テキスト */
+	private Text m_scopeJobParamText = null;
 	/** 固定値用ラジオボタン */
 	private Button m_scopeFixedValue = null;
 	/** スコープ参照用ボタン */
@@ -165,6 +160,7 @@ public class MonitorComposite extends Composite {
 				Button check = (Button) e.getSource();
 				WidgetTestUtil.setTestId(this, null, check);
 				if (check.getSelection()) {
+					m_scopeJobParamText.setEditable(true);
 					m_scopeFixedValue.setSelection(false);
 					m_scopeSelect.setEnabled(false);
 				}
@@ -177,11 +173,19 @@ public class MonitorComposite extends Composite {
 			}
 		});
 		
-		// スコープ：ジョブ変数（ラベル）
-		label = new Label(cmdScopeGroup, SWT.LEFT);
-		label.setText(SystemParameterConstant.getParamText(SystemParameterConstant.FACILITY_ID));
-		label.setLayoutData(
-				new GridData(100, SizeConstant.SIZE_LABEL_HEIGHT));
+		// スコープ：ジョブ変数（テキスト）
+		this.m_scopeJobParamText = new Text(cmdScopeGroup, SWT.BORDER);
+		WidgetTestUtil.setTestId(this, "m_scopeJobParamText", this.m_scopeJobParamText);
+		this.m_scopeJobParamText.setLayoutData(new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT));
+		this.m_scopeJobParamText.addModifyListener(new ModifyListener(){
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+				if (m_scopeJobParam.getSelection()) {
+					m_facilityId = m_scopeJobParamText.getText();
+				}
+			}
+		});
 
 		//dummy
 		new Label(cmdScopeGroup, SWT.LEFT);
@@ -200,6 +204,7 @@ public class MonitorComposite extends Composite {
 				if (check.getSelection()) {
 					m_scopeJobParam.setSelection(false);
 					m_scopeSelect.setEnabled(true);
+					m_scopeJobParamText.setEditable(false);
 				}
 				update();
 			}
@@ -289,6 +294,8 @@ public class MonitorComposite extends Composite {
 					&& (monitorTypeId.equals(HinemosModuleConstant.MONITOR_SNMPTRAP)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_SYSTEMLOG)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_LOGFILE)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S))) {
@@ -472,6 +479,11 @@ public class MonitorComposite extends Composite {
 		}else{
 			this.m_scope.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
+		if(this.m_scopeJobParam.getSelection() && "".equals(this.m_scopeJobParamText.getText())){
+			this.m_scopeJobParamText.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		}else{
+			this.m_scopeJobParamText.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		}
 		if("".equals(this.m_infoEndValue.getText())){
 			this.m_infoEndValue.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		}else{
@@ -498,6 +510,8 @@ public class MonitorComposite extends Composite {
 				&& (monitorTypeId.equals(HinemosModuleConstant.MONITOR_SNMPTRAP)
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_SYSTEMLOG)
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_LOGFILE)
+						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
+						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S));
@@ -521,7 +535,9 @@ public class MonitorComposite extends Composite {
 	public void reflectMonitorJobInfo() {
 
 		// 初期値
+		//スコープ（ジョブ変数）の初期値は"#[FACILITY_ID]"とする
 		this.m_scopeJobParam.setSelection(false);
+		this.m_scopeJobParamText.setText(SystemParameterConstant.getParamText(SystemParameterConstant.FACILITY_ID));
 		this.m_scopeFixedValue.setSelection(true);
 		this.m_scope.setText("");
 		this.m_allNode.setSelection(true);
@@ -567,14 +583,12 @@ public class MonitorComposite extends Composite {
 			//スコープ設定
 			this.m_facilityPath = HinemosMessage.replace(this.m_monitor.getScope());
 			this.m_facilityId = this.m_monitor.getFacilityID();
-			if(SystemParameterConstant.isParam(
-					this.m_facilityId,
-				SystemParameterConstant.FACILITY_ID)){
+			if (isParamFormat(this.m_facilityId)) {
 				//ファシリティIDがジョブ変数の場合
-				this.m_facilityId = "";
 				this.m_facilityPath = "";
 				this.m_scope.setText(this.m_facilityPath);
 				this.m_scopeJobParam.setSelection(true);
+				this.m_scopeJobParamText.setText(this.m_facilityId);
 				this.m_scopeFixedValue.setSelection(false);
 			} else{
 				if (this.m_facilityPath != null && this.m_facilityPath.length() > 0) {
@@ -665,9 +679,17 @@ public class MonitorComposite extends Composite {
 		//スコープ取得
 		if(m_scopeJobParam.getSelection()){
 			//ジョブ変数の場合
-			m_monitor.setFacilityID(
-					SystemParameterConstant.getParamText(SystemParameterConstant.FACILITY_ID));
-			m_monitor.setScope("");
+			if (isParamFormat(m_scopeJobParamText.getText())) {
+				//ジョブ変数の場合
+				m_monitor.setFacilityID(m_scopeJobParamText.getText());
+				m_monitor.setScope("");
+			} else {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.hinemos.4"));
+				return result;
+			}
 		}
 		else{
 			//固定値の場合
@@ -759,6 +781,8 @@ public class MonitorComposite extends Composite {
 			&& (monitorTypeId.equals(HinemosModuleConstant.MONITOR_SNMPTRAP)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_SYSTEMLOG)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_LOGFILE)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S))) {
@@ -877,6 +901,12 @@ public class MonitorComposite extends Composite {
 			pluginName = Messages.getString("systemlog.monitor");
 		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_LOGFILE)) {
 			pluginName = Messages.getString("logfile.monitor");
+		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_LOGCOUNT)) {
+			pluginName = Messages.getString("logcount.monitor");
+		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)) {
+			pluginName = Messages.getString("binary.file.monitor");
+		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_PCAP_BIN)) {
+			pluginName = Messages.getString("packet.capture.monitor");
 		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_S)) {
 			pluginName = Messages.getString("custom.monitor");
@@ -907,6 +937,7 @@ public class MonitorComposite extends Composite {
 	public void setEnabled(boolean enabled) {
 		this.m_scope.setEditable(false);
 		this.m_scopeJobParam.setEnabled(enabled);
+		this.m_scopeJobParamText.setEditable(m_scopeJobParam.getSelection() && enabled);
 		this.m_scopeFixedValue.setEnabled(enabled);
 		this.m_scopeSelect.setEnabled(enabled);
 		this.m_allNode.setEnabled(enabled);
@@ -921,6 +952,8 @@ public class MonitorComposite extends Composite {
 			&& (monitorTypeId.equals(HinemosModuleConstant.MONITOR_SNMPTRAP)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_SYSTEMLOG)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_LOGFILE)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S))) {
@@ -930,5 +963,19 @@ public class MonitorComposite extends Composite {
 			this.m_waitTimeText.setEditable(false);
 			this.m_waitEndValueText.setEditable(false);
 		}
+	}
+
+	/**
+	 * strがジョブ変数の書式(#[xxx])かどうかを判定する
+	 * 
+	 * @param str
+	 * @return
+	 */
+	private boolean isParamFormat(String str) {
+		if (str == null) {
+			return false;
+		}
+		return str.startsWith(SystemParameterConstant.PREFIX)
+				&& str.endsWith(SystemParameterConstant.SUFFIX);
 	}
 }

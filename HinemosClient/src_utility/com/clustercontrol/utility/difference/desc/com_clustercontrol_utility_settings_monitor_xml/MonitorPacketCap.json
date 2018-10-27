@@ -1,0 +1,26 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitor",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"packetCapInfo",
+	"annotations":[
+		{"type":"Ignore", "propNames":["MonitorId", "MonitorTypeId"]}
+	]},
+
+	{
+	"propName":"binaryValue",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"orderNo"},
+		{"type":"Column", "columnName":"MonitorBinaryValueInfo_binaryValue"},
+		{"type":"Ignore", "propNames":["orderNo"]}
+	]}
+]
+}

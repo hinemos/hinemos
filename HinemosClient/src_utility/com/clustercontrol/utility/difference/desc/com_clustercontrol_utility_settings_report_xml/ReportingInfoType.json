@@ -1,0 +1,168 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"reportScheduleId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_description"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_facilityId"}
+	]},
+	
+	{
+	"propName":"calendarId",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_calendarId"}
+	]},
+
+	{
+	"propName":"outputPeriodType",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_outputPeriodType"},
+		{"type":"Translate",
+			"values":[
+				{"value":0, "name":"name_Reporting_Day"},
+				{"value":1, "name":"name_Reporting_Month"},
+				{"value":2, "name":"name_Reporting_Year"}
+			]
+		}
+	]},
+
+
+	{
+	"propName":"outputPeriodBefore",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_outputPeriodBefore"}
+	]},
+
+	{
+	"propName":"outputPeriodFor",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_outputPeriodFor"}
+	]},
+
+	{
+	"propName":"templateSetId",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_templateSetId"}
+	]},
+
+
+	{
+	"propName":"reportTitle",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_reportTitle"}
+	]},
+
+	{
+	"propName":"logoValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_logoValidFlg"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_circle"}, {"value":"false", "name":"name_hyphen"}]}
+	]},
+
+	{
+	"propName":"logoFilename",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_logoFilename"}
+	]},
+
+	{
+	"propName":"pageValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_pageValidFlg"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_circle"}, {"value":"false", "name":"name_hyphen"}]}
+	]},
+
+	{
+	"propName":"outputType",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_outputType"},
+		{"type":"Translate",
+			"values":[
+				{"value":0, "name":"name_Reporting_Pdf"},
+				{"value":1, "name":"name_Reporting_Xlsx"}
+			]
+		}
+	]},
+
+	{
+	"propName":"scheduleType",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_scheduleType"},
+		{"type":"Translate",
+			"values":[
+				{"value":0, "name":"name_Reporting_Daily"},
+				{"value":1, "name":"name_Reporting_Weekly"},
+				{"value":2, "name":"name_Reporting_Monthly"}
+			]
+		}
+	]},
+
+	{
+	"propName":"day",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_day"}
+	]},
+
+	{
+	"propName":"week",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_week"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":""},
+			{"value":"1", "name":"name_weekNo_sunday"},
+			{"value":"2", "name":"name_weekNo_monday"},
+			{"value":"3", "name":"name_weekNo_tuesday"},
+			{"value":"4", "name":"name_weekNo_wednesday"},
+			{"value":"5", "name":"name_weekNo_thursday"},
+			{"value":"6", "name":"name_weekNo_friday"},
+			{"value":"7", "name":"name_weekNo_Saturday"}
+		]}
+	]},
+
+	{
+	"propName":"hour",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_hour"}
+	]},
+
+	{
+	"propName":"minute",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_minute"}
+	]},
+
+	{
+	"propName":"notifyId",
+	"annotations":[
+		{"type":"Column", "columnName":"MaintenanceInfoType_notifyId"},
+		{"type":"Array"}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"ReportingInfoType_validFlg"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_circle"}, {"value":"false", "name":"name_hyphen"}]}
+	]}
+]
+}

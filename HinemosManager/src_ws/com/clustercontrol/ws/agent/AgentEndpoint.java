@@ -1,15 +1,11 @@
 /*
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.ws.agent;
 
 import java.io.File;
@@ -507,17 +503,16 @@ public class AgentEndpoint {
 	 * @throws InvalidUserPass
 	 */
 	@XmlMimeType("application/octet-stream")
-	public DataHandler downloadModule(String filename) throws InvalidUserPass, InvalidRole, HinemosUnknown
+	public DataHandler downloadModule(String libPath) throws InvalidUserPass, InvalidRole, HinemosUnknown
 	{
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
 		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HINEMOS_AGENT, SystemPrivilegeMode.MODIFY));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
 		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		String filepath= homeDir + "/lib/agent/" + filename;
-		File file = new File(filepath);
+		File file = new File(new File(homeDir + "/lib/agent"), libPath);
 		if(!file.exists()) {
-			m_log.info("file not found : " + filepath);
+			m_log.info("file not found : " + file.getAbsolutePath());
 			return null;
 		}
 		FileDataSource source = new FileDataSource(file);
@@ -535,14 +530,15 @@ public class AgentEndpoint {
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
 	 */
-	public ArrayList<String> getAgentLibMap() throws HinemosUnknown, InvalidRole, InvalidUserPass {
+	public ArrayList<String> getAgentLibMap(AgentInfo agentInfo) throws HinemosUnknown, InvalidRole, InvalidUserPass {
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
 		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HINEMOS_AGENT, SystemPrivilegeMode.MODIFY));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
 		// TODO HashMapが利用できないのでArrayList<String>で実装。
 		// あとで調査すること。
-		Map<String, String> map = new RepositoryControllerBean().getAgentLibMap();
+		ArrayList<String> facilityIdList = agentInfo == null ? null : getFacilityId(agentInfo);
+		Map<String, String> map = new RepositoryControllerBean().getAgentLibMap(facilityIdList);
 		ArrayList<String> ret = new ArrayList<String>();
 		for (Map.Entry<String, String> entry : map.entrySet()) {
 			ret.add(entry.getKey());
@@ -574,7 +570,7 @@ public class AgentEndpoint {
 		HashMap<String, String> map = new HashMap<String, String>();
 		Iterator<String> itr = filenameMd5.iterator();
 		while(itr.hasNext()) {
-			map.put(itr.next(), itr.next());
+			map.put(itr.next().replace("/", File.separator).replace("\\", File.separator), itr.next());
 		}
 
 		ArrayList<String> facilityIdList = getFacilityId(agentInfo);

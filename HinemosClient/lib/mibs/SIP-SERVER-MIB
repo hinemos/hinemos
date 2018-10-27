@@ -1,0 +1,513 @@
+SIP-SERVER-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Counter32,
+    Unsigned32,
+    Gauge32,
+    mib-2
+          FROM SNMPv2-SMI             -- RFC 2578
+
+    TruthValue,
+    TimeStamp, DateAndTime
+          FROM SNMPv2-TC              -- RFC 2579
+
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+          FROM SNMPv2-CONF            -- RFC 2580
+
+    SnmpAdminString
+          FROM SNMP-FRAMEWORK-MIB     -- RFC 3411
+
+
+
+
+
+    applIndex
+          FROM NETWORK-SERVICES-MIB   -- RFC 2788
+
+    InetAddressType,
+    InetAddress
+          FROM INET-ADDRESS-MIB;      -- RFC 4001
+
+sipServerMIB MODULE-IDENTITY
+    LAST-UPDATED   "200704200000Z"
+    ORGANIZATION   "IETF Session Initiation Protocol
+                    Working Group"
+  ::= { mib-2 151 }
+
+
+sipServerMIBObjects     OBJECT IDENTIFIER ::= { sipServerMIB 1 }
+sipServerMIBConformance OBJECT IDENTIFIER ::= { sipServerMIB 2 }
+
+sipServerCfg            OBJECT IDENTIFIER ::= { sipServerMIBObjects 1 }
+
+sipServerCfgTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SipServerCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipServerCfg 1 }
+
+sipServerCfgEntry OBJECT-TYPE
+    SYNTAX      SipServerCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { applIndex }
+    ::= { sipServerCfgTable 1 }
+
+SipServerCfgEntry ::=
+    SEQUENCE {
+        sipServerCfgHostAddressType       InetAddressType,
+        sipServerCfgHostAddress           InetAddress
+    }
+
+sipServerCfgHostAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+
+    STATUS      current
+    ::= { sipServerCfgEntry 1 }
+
+sipServerCfgHostAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerCfgEntry 2 }
+
+sipServerProxyCfg      OBJECT IDENTIFIER ::= { sipServerMIBObjects 3 }
+
+
+
+
+
+sipServerProxyStats    OBJECT IDENTIFIER ::= { sipServerMIBObjects 4 }
+
+sipServerProxyCfgTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SipServerProxyCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipServerProxyCfg 1 }
+
+sipServerProxyCfgEntry OBJECT-TYPE
+    SYNTAX      SipServerProxyCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { applIndex }
+    ::= { sipServerProxyCfgTable 1 }
+
+SipServerProxyCfgEntry ::=
+    SEQUENCE {
+        sipServerCfgProxyStatefulness     INTEGER,
+        sipServerCfgProxyRecursion        TruthValue,
+        sipServerCfgProxyRecordRoute      TruthValue,
+        sipServerCfgProxyAuthMethod       BITS,
+        sipServerCfgProxyAuthDefaultRealm SnmpAdminString
+    }
+
+sipServerCfgProxyStatefulness OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  stateless(1),
+                  transactionStateful(2),
+                  callStateful(3)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+
+    ::= { sipServerProxyCfgEntry 1 }
+
+sipServerCfgProxyRecursion OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerProxyCfgEntry 2 }
+
+sipServerCfgProxyRecordRoute OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { sipServerProxyCfgEntry 3 }
+
+sipServerCfgProxyAuthMethod OBJECT-TYPE
+    SYNTAX      BITS {
+                  none(0),
+                  tls(1),
+                  digest(2)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerProxyCfgEntry 4 }
+
+sipServerCfgProxyAuthDefaultRealm OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerProxyCfgEntry 5 }
+
+
+
+
+
+sipServerProxyStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SipServerProxyStatsEntry
+    MAX-ACCESS  not-accessible
+
+    STATUS      current
+    ::= { sipServerProxyStats 1 }
+
+sipServerProxyStatsEntry OBJECT-TYPE
+    SYNTAX      SipServerProxyStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { applIndex }
+    ::= { sipServerProxyStatsTable 1 }
+
+SipServerProxyStatsEntry ::=
+    SEQUENCE {
+        sipServerProxyStatProxyReqFailures Counter32,
+        sipServerProxyStatsDisconTime      TimeStamp
+    }
+
+sipServerProxyStatProxyReqFailures OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerProxyStatsEntry 1 }
+
+sipServerProxyStatsDisconTime OBJECT-TYPE
+ SYNTAX      TimeStamp
+ MAX-ACCESS  read-only
+ STATUS      current
+ ::= { sipServerProxyStatsEntry 2 }
+
+sipServerRegCfg         OBJECT IDENTIFIER ::= { sipServerMIBObjects 5 }
+sipServerRegStats       OBJECT IDENTIFIER ::= { sipServerMIBObjects 6 }
+
+sipServerRegCfgTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SipServerRegCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipServerRegCfg 1 }
+
+sipServerRegCfgEntry OBJECT-TYPE
+    SYNTAX      SipServerRegCfgEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { applIndex }
+    ::= { sipServerRegCfgTable 1 }
+
+SipServerRegCfgEntry ::=
+
+
+
+
+
+    SEQUENCE {
+        sipServerRegMaxContactExpiryDuration  Unsigned32,
+        sipServerRegMaxUsers                  Unsigned32,
+        sipServerRegCurrentUsers              Gauge32,
+        sipServerRegDfltRegActiveInterval     Unsigned32
+    }
+
+sipServerRegMaxContactExpiryDuration OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    UNITS      "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegCfgEntry 1 }
+
+sipServerRegMaxUsers OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegCfgEntry 2 }
+
+sipServerRegCurrentUsers OBJECT-TYPE
+    SYNTAX      Gauge32 (0..4294967295)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegCfgEntry 3 }
+
+sipServerRegDfltRegActiveInterval OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    UNITS      "seconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegCfgEntry 4 }
+sipServerRegUserTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SipServerRegUserEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipServerRegCfg 2 }
+
+sipServerRegUserEntry OBJECT-TYPE
+    SYNTAX      SipServerRegUserEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { applIndex, sipServerRegUserIndex }
+    ::= { sipServerRegUserTable 1 }
+
+SipServerRegUserEntry ::=
+    SEQUENCE {
+        sipServerRegUserIndex                  Unsigned32,
+        sipServerRegUserUri                    SnmpAdminString,
+        sipServerRegUserAuthenticationFailures Counter32,
+        sipServerRegUserDisconTime             TimeStamp
+    }
+
+
+
+
+
+sipServerRegUserIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipServerRegUserEntry 1 }
+
+sipServerRegUserUri OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegUserEntry 2 }
+
+sipServerRegUserAuthenticationFailures OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegUserEntry 3 }
+
+sipServerRegUserDisconTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegUserEntry 4 }
+sipServerRegContactTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SipServerRegContactEntry
+
+
+
+
+
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipServerRegCfg 3 }
+
+sipServerRegContactEntry OBJECT-TYPE
+    SYNTAX      SipServerRegContactEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+    INDEX { applIndex,
+            sipServerRegUserIndex,
+            sipServerRegContactIndex
+          }
+    ::= { sipServerRegContactTable 1 }
+
+SipServerRegContactEntry ::=
+    SEQUENCE {
+        sipServerRegContactIndex        Unsigned32,
+        sipServerRegContactDisplayName  SnmpAdminString,
+        sipServerRegContactURI          SnmpAdminString,
+        sipServerRegContactLastUpdated  TimeStamp,
+        sipServerRegContactExpiry       DateAndTime,
+        sipServerRegContactPreference   SnmpAdminString
+    }
+
+sipServerRegContactIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipServerRegContactEntry 1 }
+
+
+
+
+
+sipServerRegContactDisplayName OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegContactEntry 2 }
+
+sipServerRegContactURI OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegContactEntry 3 }
+
+sipServerRegContactLastUpdated OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegContactEntry 4 }
+
+sipServerRegContactExpiry OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegContactEntry 5 }
+
+sipServerRegContactPreference OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { sipServerRegContactEntry 6 }
+
+sipServerRegStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SipServerRegStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipServerRegStats 1 }
+
+sipServerRegStatsEntry OBJECT-TYPE
+    SYNTAX      SipServerRegStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { applIndex }
+    ::= { sipServerRegStatsTable 1 }
+
+SipServerRegStatsEntry ::=
+    SEQUENCE {
+        sipServerRegStatsAcceptedRegs     Counter32,
+        sipServerRegStatsRejectedRegs     Counter32,
+        sipServerRegStatsDisconTime       TimeStamp
+    }
+
+
+
+
+
+sipServerRegStatsAcceptedRegs OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipServerRegStatsEntry 1 }
+
+sipServerRegStatsRejectedRegs OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+  ::= { sipServerRegStatsEntry 2 }
+
+sipServerRegStatsDisconTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+ ::= { sipServerRegStatsEntry 3 }
+
+sipServerMIBCompliances
+         OBJECT IDENTIFIER ::= { sipServerMIBConformance 1 }
+
+
+
+
+
+sipServerMIBGroups
+         OBJECT IDENTIFIER ::= { sipServerMIBConformance 2 }
+
+sipServerProxyServerCompliance MODULE-COMPLIANCE
+    STATUS      current
+    MODULE -- this module
+        MANDATORY-GROUPS { sipServerConfigGroup,
+                           sipServerProxyConfigGroup,
+                           sipServerProxyStatsGroup
+                         }
+    ::= { sipServerMIBCompliances 1 }
+
+sipRedirectServerCompliance MODULE-COMPLIANCE
+    STATUS      current
+    MODULE -- this module
+        MANDATORY-GROUPS { sipServerConfigGroup }
+    ::= { sipServerMIBCompliances 2 }
+
+sipServerRegistrarServerCompliance MODULE-COMPLIANCE
+    STATUS      current
+    MODULE -- this module
+        MANDATORY-GROUPS { sipServerConfigGroup,
+                           sipServerRegistrarConfigGroup,
+                           sipServerRegistrarStatsGroup }
+    GROUP sipServerRegistrarUsersGroup
+    ::= { sipServerMIBCompliances 3 }
+
+sipServerConfigGroup OBJECT-GROUP
+    OBJECTS {
+            sipServerCfgHostAddressType,
+            sipServerCfgHostAddress
+
+
+
+
+
+    }
+    STATUS      current
+    ::= { sipServerMIBGroups 1 }
+
+sipServerProxyConfigGroup OBJECT-GROUP
+    OBJECTS {
+            sipServerCfgProxyStatefulness,
+            sipServerCfgProxyRecursion,
+            sipServerCfgProxyRecordRoute,
+            sipServerCfgProxyAuthMethod,
+            sipServerCfgProxyAuthDefaultRealm
+    }
+    STATUS      current
+    ::= { sipServerMIBGroups 2 }
+
+sipServerProxyStatsGroup OBJECT-GROUP
+    OBJECTS {
+            sipServerProxyStatProxyReqFailures,
+            sipServerProxyStatsDisconTime
+    }
+    STATUS      current
+    ::= { sipServerMIBGroups 3 }
+
+sipServerRegistrarConfigGroup OBJECT-GROUP
+    OBJECTS {
+            sipServerRegMaxContactExpiryDuration,
+            sipServerRegMaxUsers,
+            sipServerRegCurrentUsers,
+            sipServerRegDfltRegActiveInterval
+    }
+    STATUS      current
+    ::= { sipServerMIBGroups 4 }
+
+sipServerRegistrarStatsGroup OBJECT-GROUP
+    OBJECTS {
+            sipServerRegStatsAcceptedRegs,
+
+
+
+
+
+            sipServerRegStatsRejectedRegs,
+            sipServerRegStatsDisconTime
+    }
+    STATUS      current
+    ::= { sipServerMIBGroups 5 }
+
+sipServerRegistrarUsersGroup OBJECT-GROUP
+    OBJECTS {
+            sipServerRegUserUri,
+            sipServerRegUserAuthenticationFailures,
+            sipServerRegUserDisconTime,
+            sipServerRegContactDisplayName,
+            sipServerRegContactURI,
+            sipServerRegContactLastUpdated,
+            sipServerRegContactExpiry,
+            sipServerRegContactPreference
+    }
+    STATUS      current
+    ::= { sipServerMIBGroups 6 }
+
+END

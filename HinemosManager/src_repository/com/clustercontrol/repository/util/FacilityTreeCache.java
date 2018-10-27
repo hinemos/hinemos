@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.repository.util;
@@ -34,6 +27,7 @@ import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
@@ -417,53 +411,54 @@ public class FacilityTreeCache {
 
 	/** ファシリティ関連情報をリフレッシュする */
 	public static synchronized void refresh() {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		if (!jtm.isNestedEm()) {
-			m_log.warn("refresh() : transactioin has not been begined.");
-			jtm.close();
-			return;
-		}
-
-		try {
-			_lock.writeLock();
-			
-			/*
-			 * FacilityInfoMap のリフレッシュ
-			 */
-			long startTime = HinemosTime.currentTimeMillis();
-			new JpaTransactionManager().getEntityManager().clear();
-			
-			// FacilityInfoはFacilityTreeItem再構築時に参照されるため、先に反映させる
-			HashMap<String, FacilityInfo>facilityInfoMap = createFacilityInfoMap();
-			if (facilityInfoMap == null) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			if (!jtm.isNestedEm()) {
+				m_log.warn("refresh() : transactioin has not been begined.");
 				return;
 			}
-			long infoMapRefreshTime = HinemosTime.currentTimeMillis() - startTime;
-			m_log.info("refresh() : FacilityInfoMap(Cache) " + infoMapRefreshTime + "ms. size=" + facilityInfoMap.size());
 
-			/*
-			 * FacilityTreeItem のリフレッシュ
-			 */
-			startTime = HinemosTime.currentTimeMillis();
-			FacilityTreeItem facilityTreeItem = createFacilityTreeItem(facilityInfoMap);
-			if (facilityTreeItem == null) {
-				return;
+			try {
+				_lock.writeLock();
+				
+				/*
+				 * FacilityInfoMap のリフレッシュ
+				 */
+				long startTime = HinemosTime.currentTimeMillis();
+				em.clear();
+				
+				// FacilityInfoはFacilityTreeItem再構築時に参照されるため、先に反映させる
+				HashMap<String, FacilityInfo>facilityInfoMap = createFacilityInfoMap();
+				if (facilityInfoMap == null) {
+					return;
+				}
+				long infoMapRefreshTime = HinemosTime.currentTimeMillis() - startTime;
+				m_log.info("refresh() : FacilityInfoMap(Cache) " + infoMapRefreshTime + "ms. size=" + facilityInfoMap.size());
+
+				/*
+				 * FacilityTreeItem のリフレッシュ
+				 */
+				startTime = HinemosTime.currentTimeMillis();
+				FacilityTreeItem facilityTreeItem = createFacilityTreeItem(facilityInfoMap);
+				if (facilityTreeItem == null) {
+					return;
+				}
+				long treeItemRefreshTime = HinemosTime.currentTimeMillis() - startTime;
+				m_log.info("refresh() : FacilityTreeItem(Cache) " + treeItemRefreshTime + "ms");
+
+				//FacilityTreeItemMapのリフレッシュ
+				startTime = HinemosTime.currentTimeMillis();
+				HashMap<String, ArrayList<FacilityTreeItem>> facilityTreeItemMap = createFacilityTreeItemMap(
+						facilityInfoMap, facilityTreeItem);
+				long treeItemMapRefreshTime = HinemosTime.currentTimeMillis() - startTime;
+				m_log.info("refresh() : FacilityTreeItemMap(Cache) " + treeItemMapRefreshTime + "ms");
+
+				storeFacilityCache(facilityInfoMap);
+				storeFacilityTreeRootCache(facilityTreeItem);
+				storeFacilityTreeItemCache(facilityTreeItemMap);
+			} finally {
+				_lock.writeUnlock();
 			}
-			long treeItemRefreshTime = HinemosTime.currentTimeMillis() - startTime;
-			m_log.info("refresh() : FacilityTreeItem(Cache) " + treeItemRefreshTime + "ms");
-
-			//FacilityTreeItemMapのリフレッシュ
-			startTime = HinemosTime.currentTimeMillis();
-			HashMap<String, ArrayList<FacilityTreeItem>> facilityTreeItemMap = createFacilityTreeItemMap(
-					facilityInfoMap, facilityTreeItem);
-			long treeItemMapRefreshTime = HinemosTime.currentTimeMillis() - startTime;
-			m_log.info("refresh() : FacilityTreeItemMap(Cache) " + treeItemMapRefreshTime + "ms");
-
-			storeFacilityCache(facilityInfoMap);
-			storeFacilityTreeRootCache(facilityTreeItem);
-			storeFacilityTreeItemCache(facilityTreeItemMap);
-		} finally {
-			_lock.writeUnlock();
 		}
 	}
 
@@ -588,34 +583,35 @@ public class FacilityTreeCache {
 	 * @return ConcurrentHashMap<String, FacilityInfo>
 	 */
 	private static HashMap<String, FacilityInfo> createFacilityInfoMap() {
-		// トランザクションが開始されていない場合には処理を終了する
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		if (!jtm.isNestedEm()) {
-			m_log.warn("refresh() : transactioin has not been begined.");
-			return null;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			// トランザクションが開始されていない場合には処理を終了する
+			if (!jtm.isNestedEm()) {
+				m_log.warn("refresh() : transactioin has not been begined.");
+				return null;
+			}
+
+			HashMap<String, FacilityInfo> facilityInfoMap = new HashMap<String, FacilityInfo>();
+
+			// ファシリティ情報を全件取得する
+			List<FacilityInfo> facilityEntities = QueryUtil.getAllFacility_NONE();
+			for (FacilityInfo facilityEntity : facilityEntities) {
+				// ファシリティの格納
+				FacilityInfo facilityInfo = new FacilityInfo();
+				facilityInfo.setFacilityId(facilityEntity.getFacilityId());
+				facilityInfo.setFacilityName(facilityEntity.getFacilityName());
+				facilityInfo.setFacilityType(facilityEntity.getFacilityType());
+				facilityInfo.setDisplaySortOrder(facilityEntity.getDisplaySortOrder());
+				facilityInfo.setIconImage(facilityEntity.getIconImage());
+				facilityInfo.setBuiltInFlg(facilityEntity instanceof ScopeInfo ? FacilitySelector.isBuildinScope((ScopeInfo)facilityEntity): false);
+				facilityInfo.setValid(FacilityUtil.isValid(facilityEntity));
+				facilityInfo.setOwnerRoleId(facilityEntity.getOwnerRoleId());
+				facilityInfo.setDescription(facilityEntity.getDescription());
+
+				facilityInfoMap.put(facilityEntity.getFacilityId(), facilityInfo);
+			}
+
+			return facilityInfoMap;
 		}
-
-		HashMap<String, FacilityInfo> facilityInfoMap = new HashMap<String, FacilityInfo>();
-
-		// ファシリティ情報を全件取得する
-		List<FacilityInfo> facilityEntities = QueryUtil.getAllFacility_NONE();
-		for (FacilityInfo facilityEntity : facilityEntities) {
-			// ファシリティの格納
-			FacilityInfo facilityInfo = new FacilityInfo();
-			facilityInfo.setFacilityId(facilityEntity.getFacilityId());
-			facilityInfo.setFacilityName(facilityEntity.getFacilityName());
-			facilityInfo.setFacilityType(facilityEntity.getFacilityType());
-			facilityInfo.setDisplaySortOrder(facilityEntity.getDisplaySortOrder());
-			facilityInfo.setIconImage(facilityEntity.getIconImage());
-			facilityInfo.setBuiltInFlg(facilityEntity instanceof ScopeInfo ? FacilitySelector.isBuildinScope((ScopeInfo)facilityEntity): false);
-			facilityInfo.setValid(FacilityUtil.isValid(facilityEntity));
-			facilityInfo.setOwnerRoleId(facilityEntity.getOwnerRoleId());
-			facilityInfo.setDescription(facilityEntity.getDescription());
-
-			facilityInfoMap.put(facilityEntity.getFacilityId(), facilityInfo);
-		}
-
-		return facilityInfoMap;
 	}
 
 	/**
@@ -624,54 +620,55 @@ public class FacilityTreeCache {
 	 * @return FacilityTreeItem
 	 */
 	private static FacilityTreeItem createFacilityTreeItem(Map<String, FacilityInfo> facilityInfoMap) {
-		// トランザクションが開始されていない場合には処理を終了する
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		if (!jtm.isNestedEm()) {
-			m_log.warn("refresh() : transactioin has not been begined.");
-			return null;
-		}
-
-		m_log.debug("getting tree data of facilities...");
-
-		//Objectにアクセスできるロールの情報を取得
-		HashMap<String, ArrayList<String>> objectRoleMap = getObjectRoleMap();
-
-		// 木構造最上位インスタンスの生成
-		FacilityInfo rootFacilityInfo = new FacilityInfo();
-		rootFacilityInfo.setFacilityId(ReservedFacilityIdConstant.ROOT_SCOPE);
-		rootFacilityInfo.setFacilityName(MessageConstant.ROOT.getMessage());
-		rootFacilityInfo.setFacilityType(FacilityConstant.TYPE_COMPOSITE);
-		FacilityTreeItem rootTreeItem = new FacilityTreeItem(null, rootFacilityInfo);
-
-		// 親子であるFacilityのIDのマップを生成
-		List<FacilityRelationEntity> facilityRelationList = QueryUtil.getAllFacilityRelations_NONE();
-		Map<String, ArrayList<String>> facilityRelationMap = new HashMap<String, ArrayList<String>>();
-		for (FacilityRelationEntity facilityRelationEntity : facilityRelationList) {
-			String parentFacilityId = facilityRelationEntity.getParentFacilityId();
-			String childFacilityId = facilityRelationEntity.getChildFacilityId();
-			ArrayList<String> childFacilityIdList = facilityRelationMap.get(parentFacilityId);
-			if (childFacilityIdList == null) {
-				childFacilityIdList = new ArrayList<String>();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			// トランザクションが開始されていない場合には処理を終了する
+			if (!jtm.isNestedEm()) {
+				m_log.warn("refresh() : transactioin has not been begined.");
+				return null;
 			}
-			childFacilityIdList.add(childFacilityId);
-			facilityRelationMap.put(parentFacilityId, childFacilityIdList);
-		}
 
-		try {
-			for (FacilityInfo facilityEntity : FacilitySelector.getRootScopeList()) {
-				createFacilityTreeItemRecursive(rootTreeItem,
-						facilityEntity.getFacilityId(), facilityInfoMap,
-						facilityRelationMap, objectRoleMap);
+			m_log.debug("getting tree data of facilities...");
+
+			//Objectにアクセスできるロールの情報を取得
+			HashMap<String, ArrayList<String>> objectRoleMap = getObjectRoleMap();
+
+			// 木構造最上位インスタンスの生成
+			FacilityInfo rootFacilityInfo = new FacilityInfo();
+			rootFacilityInfo.setFacilityId(ReservedFacilityIdConstant.ROOT_SCOPE);
+			rootFacilityInfo.setFacilityName(MessageConstant.ROOT.getMessage());
+			rootFacilityInfo.setFacilityType(FacilityConstant.TYPE_COMPOSITE);
+			FacilityTreeItem rootTreeItem = new FacilityTreeItem(null, rootFacilityInfo);
+
+			// 親子であるFacilityのIDのマップを生成
+			List<FacilityRelationEntity> facilityRelationList = QueryUtil.getAllFacilityRelations_NONE();
+			Map<String, ArrayList<String>> facilityRelationMap = new HashMap<String, ArrayList<String>>();
+			for (FacilityRelationEntity facilityRelationEntity : facilityRelationList) {
+				String parentFacilityId = facilityRelationEntity.getParentFacilityId();
+				String childFacilityId = facilityRelationEntity.getChildFacilityId();
+				ArrayList<String> childFacilityIdList = facilityRelationMap.get(parentFacilityId);
+				if (childFacilityIdList == null) {
+					childFacilityIdList = new ArrayList<String>();
+				}
+				childFacilityIdList.add(childFacilityId);
+				facilityRelationMap.put(parentFacilityId, childFacilityIdList);
 			}
-			FacilityTreeItem.completeParent(rootTreeItem); // createFacilityTreeItemRecursiveでは親が設定されないので。
-		} catch (FacilityNotFound e) {
-		} catch (Exception e) {
-			m_log.warn("createFacilityTreeItem() failure to get a tree data of facilities. : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-		}
 
-		m_log.debug("successful in getting tree data of facilities.");
-		return rootTreeItem;
+			try {
+				for (FacilityInfo facilityEntity : FacilitySelector.getRootScopeList()) {
+					createFacilityTreeItemRecursive(rootTreeItem,
+							facilityEntity.getFacilityId(), facilityInfoMap,
+							facilityRelationMap, objectRoleMap);
+				}
+				FacilityTreeItem.completeParent(rootTreeItem); // createFacilityTreeItemRecursiveでは親が設定されないので。
+			} catch (FacilityNotFound e) {
+			} catch (Exception e) {
+				m_log.warn("createFacilityTreeItem() failure to get a tree data of facilities. : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			}
+
+			m_log.debug("successful in getting tree data of facilities.");
+			return rootTreeItem;
+		}
 	}
 
 	private static HashMap<String, ArrayList<String>> getObjectRoleMap() {

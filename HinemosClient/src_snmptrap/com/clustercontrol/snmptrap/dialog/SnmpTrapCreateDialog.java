@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.snmptrap.dialog;
@@ -242,7 +235,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		WidgetTestUtil.setTestId(this, "confirmmonitorvalid", confirmMonitorValid);
 
 		gridData = new GridData();
-		gridData.horizontalSpan = 2;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
@@ -273,7 +266,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		layout.numColumns = MAX_COLUMN;
 		groupCheckRule.setLayout(layout);
 		gridData = new GridData();
-		gridData.horizontalSpan = MAX_COLUMN - 2;
+		gridData.horizontalSpan = MAX_COLUMN - 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
@@ -289,10 +282,10 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		layout = new GridLayout(1, true);
 		layout.marginWidth = 5;
 		layout.marginHeight = 5;
-		layout.numColumns = MAX_COLUMN;
+		layout.numColumns = 18;
 		groupCommunity.setLayout(layout);
 		gridData = new GridData();
-		gridData.horizontalSpan = MAX_COLUMN / 2;
+		gridData.horizontalSpan = 9;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
@@ -321,7 +314,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		label = new Label(groupCommunity, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "communityname", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = 6;
+		gridData.horizontalSpan = 9;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -331,7 +324,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		this.textCommunityName = new Text(groupCommunity, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "communitiname", textCommunityName);
 		gridData = new GridData();
-		gridData.horizontalSpan = 10;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.textCommunityName.setLayoutData(gridData);
@@ -351,10 +344,10 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		layout = new GridLayout(1, true);
 		layout.marginWidth = 5;
 		layout.marginHeight = 5;
-		layout.numColumns = MAX_COLUMN;
+		layout.numColumns = 22;
 		groupCharset.setLayout(layout);
 		gridData = new GridData();
-		gridData.horizontalSpan = MAX_COLUMN / 2;
+		gridData.horizontalSpan = 11;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
@@ -383,7 +376,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		label = new Label(groupCharset, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "snmptrapcode", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = 12;
+		gridData.horizontalSpan = 13;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -393,7 +386,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		this.textCharsetName = new Text(groupCharset, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "charsetname", textCharsetName);
 		gridData = new GridData();
-		gridData.horizontalSpan = 4;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.textCharsetName.setLayoutData(gridData);
@@ -491,7 +484,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		groupNotifyAttribute.setLayoutData(gridData);
 		groupNotifyAttribute.setText(Messages.getString("notify.attribute"));
-		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE);
+		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE, 65);
 		gridData = new GridData();
 		gridData.horizontalSpan = 1;
 		gridData.horizontalAlignment = GridData.FILL;

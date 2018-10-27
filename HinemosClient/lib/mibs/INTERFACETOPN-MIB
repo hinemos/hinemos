@@ -1,0 +1,439 @@
+INTERFACETOPN-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE, Integer32, Gauge32
+                FROM SNMPv2-SMI
+        RowStatus, TimeStamp, TruthValue
+                FROM SNMPv2-TC
+        rmon, OwnerString
+                FROM RMON-MIB
+        CounterBasedGauge64
+                FROM HCNUM-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP
+                FROM SNMPv2-CONF;
+
+   interfaceTopNMIB MODULE-IDENTITY
+        LAST-UPDATED "200103270000Z"
+        ORGANIZATION "IETF RMON MIB Working Group"
+
+      ::= { rmon 27 }
+interfaceTopNObjects       OBJECT IDENTIFIER ::= { interfaceTopNMIB 1 }
+interfaceTopNNotifications OBJECT IDENTIFIER ::= { interfaceTopNMIB 2 }
+interfaceTopNConformance   OBJECT IDENTIFIER ::= { interfaceTopNMIB 3 }
+
+
+
+
+
+
+
+interfaceTopNCaps   OBJECT-TYPE
+    SYNTAX      BITS {
+               ifInOctets(0),
+               ifInUcastPkts(1),
+               ifInNUcastPkts(2),
+               ifInDiscards(3),
+               ifInErrors(4),
+               ifInUnknownProtos(5),
+               ifOutOctets(6),
+               ifOutUcastPkts(7),
+               ifOutNUcastPkts(8),
+               ifOutDiscards(9),
+               ifOutErrors(10),
+               ifInMulticastPkts(11),
+               ifInBroadcastPkts(12),
+               ifOutMulticastPkts(13),
+               ifOutBroadcastPkts(14),
+               ifHCInOctets(15),
+               ifHCInUcastPkts(16),
+               ifHCInMulticastPkts(17),
+               ifHCInBroadcastPkts(18),
+               ifHCOutOctets(19),
+               ifHCOutUcastPkts(20),
+               ifHCOutMulticastPkts(21),
+               ifHCOutBroadcastPkts(22),
+               dot3StatsAlignmentErrors(23),
+               dot3StatsFCSErrors(24),
+               dot3StatsSingleCollisionFrames(25),
+               dot3StatsMultipleCollisionFrames(26),
+               dot3StatsSQETestErrors(27),
+               dot3StatsDeferredTransmissions(28),
+               dot3StatsLateCollisions(29),
+               dot3StatsExcessiveCollisions(30),
+               dot3StatsInternalMacTxErrors(31),
+
+
+
+
+
+               dot3StatsCarrierSenseErrors(32),
+               dot3StatsFrameTooLongs(33),
+               dot3StatsInternalMacRxErrors(34),
+               dot3StatsSymbolErrors(35),
+               dot3InPauseFrames(36),
+               dot3OutPauseFrames(37),
+               dot5StatsLineErrors(38),
+               dot5StatsBurstErrors(39),
+               dot5StatsACErrors(40),
+               dot5StatsAbortTransErrors(41),
+               dot5StatsInternalErrors(42),
+               dot5StatsLostFrameErrors(43),
+               dot5StatsReceiveCongestions(44),
+               dot5StatsFrameCopiedErrors(45),
+               dot5StatsTokenErrors(46),
+               dot5StatsSoftErrors(47),
+               dot5StatsHardErrors(48),
+               dot5StatsSignalLoss(49),
+               dot5StatsTransmitBeacons(50),
+               dot5StatsRecoverys(51),
+               dot5StatsLobeWires(52),
+               dot5StatsRemoves(53),
+               dot5StatsSingles(54),
+               dot5StatsFreqErrors(55),
+               etherStatsDropEvents(56),
+               etherStatsOctets(57),
+               etherStatsPkts(58),
+               etherStatsBroadcastPkts(59),
+               etherStatsMulticastPkts(60),
+               etherStatsCRCAlignErrors(61),
+               etherStatsUndersizePkts(62),
+               etherStatsOversizePkts(63),
+               etherStatsFragments(64),
+               etherStatsJabbers(65),
+               etherStatsCollisions(66),
+               etherStatsPkts64Octets(67),
+               etherStatsPkts65to127Octets(68),
+               etherStatsPkts128to255Octets(69),
+               etherStatsPkts256to511Octets(70),
+               etherStatsPkts512to1023Octets(71),
+               etherStatsPkts1024to1518Octets(72),
+               dot1dTpPortInFrames(73),
+               dot1dTpPortOutFrames(74),
+               dot1dTpPortInDiscards(75)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+
+    ::= { interfaceTopNObjects 1 }
+
+
+
+  interfaceTopNControlTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF InterfaceTopNControlEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+     ::= { interfaceTopNObjects 2 }
+
+   interfaceTopNControlEntry OBJECT-TYPE
+       SYNTAX      InterfaceTopNControlEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX    { interfaceTopNControlIndex }
+       ::= { interfaceTopNControlTable 1 }
+
+   InterfaceTopNControlEntry ::= SEQUENCE {
+       interfaceTopNControlIndex
+           Integer32,
+       interfaceTopNObjectVariable
+           INTEGER,
+
+
+
+
+
+       interfaceTopNObjectSampleType
+           INTEGER,
+       interfaceTopNNormalizationReq
+           TruthValue,
+       interfaceTopNNormalizationFactor
+           Integer32,
+       interfaceTopNTimeRemaining
+           Integer32,
+       interfaceTopNDuration
+           Integer32,
+       interfaceTopNRequestedSize
+           Integer32,
+       interfaceTopNGrantedSize
+           Integer32,
+       interfaceTopNStartTime
+           TimeStamp,
+       interfaceTopNOwner
+           OwnerString,
+       interfaceTopNLastCompletionTime
+           TimeStamp,
+       interfaceTopNRowStatus
+           RowStatus
+   }
+
+   interfaceTopNControlIndex OBJECT-TYPE
+       SYNTAX      Integer32 (1 .. 65535)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { interfaceTopNControlEntry 1 }
+
+
+interfaceTopNObjectVariable OBJECT-TYPE
+    SYNTAX INTEGER   {
+               ifInOctets(0),
+               ifInUcastPkts(1),
+               ifInNUcastPkts(2),
+               ifInDiscards(3),
+               ifInErrors(4),
+               ifInUnknownProtos(5),
+               ifOutOctets(6),
+               ifOutUcastPkts(7),
+               ifOutNUcastPkts(8),
+               ifOutDiscards(9),
+               ifOutErrors(10),
+
+
+
+
+
+               ifInMulticastPkts(11),
+               ifInBroadcastPkts(12),
+               ifOutMulticastPkts(13),
+               ifOutBroadcastPkts(14),
+               ifHCInOctets(15),
+               ifHCInUcastPkts(16),
+               ifHCInMulticastPkts(17),
+               ifHCInBroadcastPkts(18),
+               ifHCOutOctets(19),
+               ifHCOutUcastPkts(20),
+               ifHCOutMulticastPkts(21),
+               ifHCOutBroadcastPkts(22),
+               dot3StatsAlignmentErrors(23),
+               dot3StatsFCSErrors(24),
+               dot3StatsSingleCollisionFrames(25),
+               dot3StatsMultipleCollisionFrames(26),
+               dot3StatsSQETestErrors(27),
+               dot3StatsDeferredTransmissions(28),
+               dot3StatsLateCollisions(29),
+               dot3StatsExcessiveCollisions(30),
+               dot3StatsInternalMacTxErrors(31),
+               dot3StatsCarrierSenseErrors(32),
+               dot3StatsFrameTooLongs(33),
+               dot3StatsInternalMacRxErrors(34),
+               dot3StatsSymbolErrors(35),
+               dot3InPauseFrames(36),
+               dot3OutPauseFrames(37),
+               dot5StatsLineErrors(38),
+               dot5StatsBurstErrors(39),
+               dot5StatsACErrors(40),
+               dot5StatsAbortTransErrors(41),
+               dot5StatsInternalErrors(42),
+               dot5StatsLostFrameErrors(43),
+               dot5StatsReceiveCongestions(44),
+               dot5StatsFrameCopiedErrors(45),
+               dot5StatsTokenErrors(46),
+               dot5StatsSoftErrors(47),
+               dot5StatsHardErrors(48),
+               dot5StatsSignalLoss(49),
+               dot5StatsTransmitBeacons(50),
+               dot5StatsRecoverys(51),
+               dot5StatsLobeWires(52),
+               dot5StatsRemoves(53),
+               dot5StatsSingles(54),
+               dot5StatsFreqErrors(55),
+               etherStatsDropEvents(56),
+               etherStatsOctets(57),
+               etherStatsPkts(58),
+
+
+
+
+
+               etherStatsBroadcastPkts(59),
+               etherStatsMulticastPkts(60),
+               etherStatsCRCAlignErrors(61),
+               etherStatsUndersizePkts(62),
+               etherStatsOversizePkts(63),
+               etherStatsFragments(64),
+               etherStatsJabbers(65),
+               etherStatsCollisions(66),
+               etherStatsPkts64Octets(67),
+               etherStatsPkts65to127Octets(68),
+               etherStatsPkts128to255Octets(69),
+               etherStatsPkts256to511Octets(70),
+               etherStatsPkts512to1023Octets(71),
+               etherStatsPkts1024to1518Octets(72),
+               dot1dTpPortInFrames(73),
+               dot1dTpPortOutFrames(74),
+               dot1dTpPortInDiscards(75)
+}
+    MAX-ACCESS read-create
+    STATUS current
+ ::= { interfaceTopNControlEntry 2 }
+
+interfaceTopNObjectSampleType OBJECT-TYPE
+    SYNTAX INTEGER {
+               absoluteValue(1),
+               deltaValue(2),
+               bandwidthPercentage(3)
+           }
+    MAX-ACCESS read-create
+    STATUS current
+  ::= { interfaceTopNControlEntry 3 }
+
+
+interfaceTopNNormalizationReq OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS read-create
+    STATUS current
+  ::= { interfaceTopNControlEntry 4 }
+
+interfaceTopNNormalizationFactor OBJECT-TYPE
+    SYNTAX Integer32 (1..2147483647)
+    MAX-ACCESS read-create
+    STATUS current
+::= { interfaceTopNControlEntry 5 }
+
+interfaceTopNTimeRemaining OBJECT-TYPE
+       SYNTAX      Integer32 (0..2147483647)
+       MAX-ACCESS  read-create
+       STATUS      current
+     DEFVAL { 0 }
+     ::= { interfaceTopNControlEntry 6 }
+
+   interfaceTopNDuration OBJECT-TYPE
+       SYNTAX      Integer32 (0..2147483647)
+       MAX-ACCESS  read-only
+       STATUS      current
+     ::= { interfaceTopNControlEntry 7 }
+
+   interfaceTopNRequestedSize OBJECT-TYPE
+       SYNTAX      Integer32
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 10 }
+       ::= { interfaceTopNControlEntry 8 }
+
+   interfaceTopNGrantedSize OBJECT-TYPE
+       SYNTAX      Integer32 (0.. 2147483647)
+       MAX-ACCESS  read-only
+       STATUS      current
+     ::= { interfaceTopNControlEntry 9 }
+
+   interfaceTopNStartTime OBJECT-TYPE
+       SYNTAX      TimeStamp
+       MAX-ACCESS  read-only
+       STATUS      current
+  ::= { interfaceTopNControlEntry 10 }
+
+   interfaceTopNOwner OBJECT-TYPE
+       SYNTAX      OwnerString
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { interfaceTopNControlEntry 11 }
+
+   interfaceTopNLastCompletionTime OBJECT-TYPE
+       SYNTAX      TimeStamp
+       MAX-ACCESS  read-only
+       STATUS      current
+     ::= { interfaceTopNControlEntry 12 }
+
+
+   interfaceTopNRowStatus OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { interfaceTopNControlEntry 13 }
+
+
+
+   interfaceTopNTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF InterfaceTopNEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { interfaceTopNObjects 3 }
+
+   interfaceTopNEntry OBJECT-TYPE
+       SYNTAX      InterfaceTopNEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX    { interfaceTopNControlIndex,
+                  interfaceTopNIndex }
+       ::= { interfaceTopNTable 1 }
+
+   InterfaceTopNEntry ::= SEQUENCE {
+       interfaceTopNIndex
+           Integer32,
+       interfaceTopNDataSourceIndex
+           Integer32,
+       interfaceTopNValue
+           Gauge32,
+       interfaceTopNValue64
+           CounterBasedGauge64
+   }
+
+   interfaceTopNIndex OBJECT-TYPE
+       SYNTAX      Integer32 (1..65535)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+     ::= { interfaceTopNEntry 1 }
+
+   interfaceTopNDataSourceIndex OBJECT-TYPE
+       SYNTAX      Integer32  (1..2147483647)
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { interfaceTopNEntry 2 }
+
+   interfaceTopNValue OBJECT-TYPE
+       SYNTAX      Gauge32
+       MAX-ACCESS  read-only
+       STATUS      current
+
+
+
+
+
+       ::= { interfaceTopNEntry 3 }
+
+   interfaceTopNValue64 OBJECT-TYPE
+       SYNTAX      CounterBasedGauge64
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { interfaceTopNEntry 4 }
+
+
+
+
+interfaceTopNCompliances OBJECT IDENTIFIER ::=
+                                           {interfaceTopNConformance 1 }
+interfaceTopNGroups      OBJECT IDENTIFIER ::=
+                                           {interfaceTopNConformance 2 }
+
+interfaceTopNCompliance MODULE-COMPLIANCE
+    STATUS  current
+        MODULE  -- this module
+        MANDATORY-GROUPS { interfaceTopNGroup }
+      ::= { interfaceTopNCompliances 1 }
+
+interfaceTopNGroup OBJECT-GROUP
+    OBJECTS {
+       interfaceTopNCaps,
+       interfaceTopNObjectVariable,
+       interfaceTopNObjectSampleType,
+
+
+
+
+
+       interfaceTopNNormalizationReq,
+       interfaceTopNNormalizationFactor,
+       interfaceTopNTimeRemaining,
+       interfaceTopNDuration,
+       interfaceTopNRequestedSize,
+       interfaceTopNGrantedSize,
+       interfaceTopNStartTime,
+       interfaceTopNOwner,
+       interfaceTopNLastCompletionTime,
+       interfaceTopNRowStatus,
+       interfaceTopNDataSourceIndex,
+       interfaceTopNValue,
+       interfaceTopNValue64
+    }
+    STATUS  current
+::= { interfaceTopNGroups 1 }
+
+END

@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.bean;
 
 import java.util.ArrayList;
@@ -18,6 +26,7 @@ import com.clustercontrol.util.Messages;
  */
 public enum RunInterval {
 	
+	TYPE_SEC_30(30,   30 + Messages.getString("second")),
 	TYPE_MIN_01(60,   1 + Messages.getString("minute")),
 	TYPE_MIN_05(300,  5 + Messages.getString("minute")),
 	TYPE_MIN_10(600,  10 + Messages.getString("minute")),

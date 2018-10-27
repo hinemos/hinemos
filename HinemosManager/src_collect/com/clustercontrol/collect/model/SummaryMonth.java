@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.collect.model;
 
 import java.io.Serializable;
@@ -30,6 +38,10 @@ public class SummaryMonth implements Serializable, Cloneable {
 	private Float min;
 	private Float max;
 	private Integer count;
+	private Float averageAvg;
+	private Integer averageCount;
+	private Float standardDeviationAvg;
+	private Integer standardDeviationCount;
 
 	public SummaryMonth() {
 	}
@@ -42,12 +54,17 @@ public class SummaryMonth implements Serializable, Cloneable {
 	}
 
 	
-	public SummaryMonth(CollectDataPK pk,Float avg, Float min,Float max,Integer count){
+	public SummaryMonth(CollectDataPK pk,Float avg, Float min, Float max, Integer count,
+			Float averageAvg, Integer averageCount, Float standardDeviationAvg, Integer standardDeviationCount){
 		this.setId(pk);
 		this.setAvg(avg);
 		this.setMin(min);
 		this.setMax(max);
 		this.setCount(count);
+		this.setAverageAvg(averageAvg);
+		this.setAverageCount(averageCount);
+		this.setStandardDeviationAvg(standardDeviationAvg);
+		this.setStandardDeviationCount(standardDeviationCount);
 	}
 	
 	@XmlTransient
@@ -117,6 +134,42 @@ public class SummaryMonth implements Serializable, Cloneable {
 	}
 	public void setCount(Integer count) {
 		this.count = count;
+	}
+	@Column(name="average_avg")
+	public Float getAverageAvg() {
+		if (averageAvg == null) {
+			return Float.NaN;
+		} else {
+			return averageAvg;
+		}
+	}
+	public void setAverageAvg(Float averageAvg) {
+		this.averageAvg = averageAvg;
+	}
+	@Column(name="average_count")
+	public Integer getAverageCount() {
+		return averageCount;
+	}
+	public void setAverageCount(Integer averageCount) {
+		this.averageCount = averageCount;
+	}
+	@Column(name="standard_deviation_avg")
+	public Float getStandardDeviationAvg() {
+		if (standardDeviationAvg == null) {
+			return Float.NaN;
+		} else {
+			return standardDeviationAvg;
+		}
+	}
+	public void setStandardDeviationAvg(Float standardDeviationAvg) {
+		this.standardDeviationAvg = standardDeviationAvg;
+	}
+	@Column(name="standard_deviation_count")
+	public Integer getStandardDeviationCount() {
+		return standardDeviationCount;
+	}
+	public void setStandardDeviationCount(Integer standardDeviationCount) {
+		this.standardDeviationCount = standardDeviationCount;
 	}
 	
 	@Override

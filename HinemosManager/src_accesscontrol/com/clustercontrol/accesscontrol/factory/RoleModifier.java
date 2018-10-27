@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) since 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.accesscontrol.factory;
@@ -90,9 +83,8 @@ public class RoleModifier {
 		}
 		m_log.debug("modifyRoleInfo() start (roleId = " + roleInfo.getRoleId() 
 			+ ", modifyUserId = " + modifyUserId + ", isNew = " + isNew + ")");
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			long currentTimeMillis = HinemosTime.currentTimeMillis();
-			JpaTransactionManager jtm = new JpaTransactionManager();
 			if (isNew) {
 				// 新規登録
 				// 重複チェック
@@ -150,35 +142,39 @@ public class RoleModifier {
 	 * @throws HinemosUnknown
 	 */
 	public static void deleteRoleInfo(String roleId, String modifyUserId) throws RoleNotFound, UnEditableRole, UsedRole, HinemosUnknown {
-		if(roleId != null && roleId.compareTo("") != 0 && modifyUserId != null && modifyUserId.compareTo("") != 0){
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 
-			try {
-				// 該当するロールを検索して取得
-				RoleInfo role = QueryUtil.getRolePK(roleId);
-				// システムロール、内部モジュールロールは削除不可
-				if (role != null && !role.getRoleType().equals(RoleTypeConstant.USER_ROLE)) {
-					throw new UnEditableRole();
-				}
-				if (role.getUserInfoList() != null && role.getUserInfoList().size() > 0) {
-					throw new UsedRole();
-				}
+		if(roleId == null || roleId.compareTo("") == 0 
+				|| modifyUserId == null || modifyUserId.compareTo("") == 0){
+			return;
+		}
 
-				// リレーションを削除する
-				role.unchainUserInfoList();
-				role.unchainSystemPrivilegeInfoList();
-				// ロールを削除する
-				em.remove(role);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-			} catch (RoleNotFound | UnEditableRole | UsedRole e) {
-				throw e;
-			} catch (Exception e) {
-				m_log.warn("deleteRoleInfo() failure to delete a role. (roleId = " + roleId + ")", e);
-				throw new HinemosUnknown(e.getMessage(), e);
+			// 該当するロールを検索して取得
+			RoleInfo role = QueryUtil.getRolePK(roleId);
+			// システムロール、内部モジュールロールは削除不可
+			if (role != null && !role.getRoleType().equals(RoleTypeConstant.USER_ROLE)) {
+				throw new UnEditableRole();
+			}
+			if (role.getUserInfoList() != null && role.getUserInfoList().size() > 0) {
+				throw new UsedRole();
 			}
 
-			m_log.info("successful in deleting a role. (roleId = " + roleId + ")");
+			// リレーションを削除する
+			role.unchainUserInfoList();
+			role.unchainSystemPrivilegeInfoList();
+			// ロールを削除する
+			em.remove(role);
+
+		} catch (RoleNotFound | UnEditableRole | UsedRole e) {
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("deleteRoleInfo() failure to delete a role. (roleId = " + roleId + ")", e);
+			throw new HinemosUnknown(e.getMessage(), e);
 		}
+
+		m_log.info("successful in deleting a role. (roleId = " + roleId + ")");
 	}
 
 	/**
@@ -314,10 +310,8 @@ public class RoleModifier {
 	public static void replaceObjectPrivilegeInfo(String objectType, String objectId, List<ObjectPrivilegeInfo> list, String modifyUserId)
 			throws PrivilegeDuplicate, UsedObjectPrivilege, HinemosUnknown, InvalidSetting {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		HinemosEntityManager em = jtm.getEntityManager();
-
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// オブジェクト種別、オブジェクトIDに該当する既存のオブジェクト権限を取得し、削除
 			List<ObjectPrivilegeInfoPK> deleteList = new ArrayList<ObjectPrivilegeInfoPK>();
 			List<ObjectPrivilegeInfo> oldList = QueryUtil.getAllObjectPrivilegeByFilter(
@@ -369,6 +363,7 @@ public class RoleModifier {
 								(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 						
 						modifyInfo = new ObjectPrivilegeInfo(infoPk);
+						em.persist(modifyInfo);
 					}
 					modifyInfo.setCreateUserId(modifyUserId);
 					modifyInfo.setCreateDate(HinemosTime.currentTimeMillis());
@@ -575,7 +570,10 @@ public class RoleModifier {
 				}
 			}
 
-		} catch (UsedObjectPrivilege | EntityExistsException e) {
+		} catch (UsedObjectPrivilege e) {
+			m_log.debug("replaceObjectPrivilegeInfo() failure to add a entity. " + e.getMessage());
+			throw e;
+		} catch (EntityExistsException e) {
 			m_log.debug("replaceObjectPrivilegeInfo() failure to add a entity. " + e.getMessage());
 			throw new PrivilegeDuplicate(e.getMessage(), e);
 		} catch (InvalidSetting e) {

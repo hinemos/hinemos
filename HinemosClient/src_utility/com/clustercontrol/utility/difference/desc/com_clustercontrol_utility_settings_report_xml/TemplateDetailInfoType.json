@@ -1,0 +1,32 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"OrderNo",
+	"annotations":[
+		{"type":"Column", "columnName":"ReporingTemplateDetailType_orderNo"}
+	]},
+	
+	{
+	"propName":"Description",
+	"annotations":[
+		{"type":"Column", "columnName":"ReporingTemplateDetailType_description"}
+	]},
+	
+	{
+	"propName":"TemplateId",
+	"annotations":[
+		{"type":"Column", "columnName":"ReporingTemplateDetailType_templateId"}
+	]},
+	
+	{
+	"propName":"TitleName",
+	"annotations":[
+		{"type":"Column", "columnName":"ReporingTemplateDetailType_titleName"}
+	]}
+	
+	
+]
+}

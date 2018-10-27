@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"SystemPrivilege_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"RoleId",
+			"SystemFunction",
+			"SystemPrivilege"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"SystemPrivilegeInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

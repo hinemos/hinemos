@@ -1,15 +1,11 @@
 /*
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.ws.jobmanagement;
 
 import java.text.SimpleDateFormat;
@@ -28,6 +24,7 @@ import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.IconFileNotFound;
@@ -64,7 +61,6 @@ import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
 import com.clustercontrol.jobmanagement.bean.JobmapIconImage;
 import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.util.HinemosTime;
@@ -1734,7 +1730,7 @@ public class JobEndpoint {
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 		
 		int maxsize = 0;
-		maxsize = HinemosPropertyUtil.getHinemosPropertyNum("job.script.maxsize", Long.valueOf(8192)).intValue();
+		maxsize = HinemosPropertyCommon.job_script_maxsize.getIntegerValue();
 		
 		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getScriptContentMaxSize, User="
 				+ HttpAuthenticator.getUserAccountString(wsctx));

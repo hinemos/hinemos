@@ -1,0 +1,306 @@
+RADIUS-AUTH-SERVER-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY,
+       Counter32, Integer32,
+       IpAddress, TimeTicks, mib-2      FROM SNMPv2-SMI
+       SnmpAdminString                  FROM SNMP-FRAMEWORK-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP  FROM SNMPv2-CONF;
+
+radiusAuthServMIB MODULE-IDENTITY
+       LAST-UPDATED "9906110000Z"
+       ORGANIZATION "IETF RADIUS Working Group."
+       ::= { radiusAuthentication 1 }
+
+radiusMIB OBJECT-IDENTITY
+       STATUS  current
+        ::= { mib-2 67 }
+
+radiusAuthentication  OBJECT IDENTIFIER ::= {radiusMIB 1}
+
+radiusAuthServMIBObjects     OBJECT IDENTIFIER ::=
+                                                 { radiusAuthServMIB 1 }
+
+radiusAuthServ      OBJECT IDENTIFIER ::= { radiusAuthServMIBObjects 1 }
+
+radiusAuthServIdent OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= {radiusAuthServ 1}
+
+radiusAuthServUpTime OBJECT-TYPE
+       SYNTAX      TimeTicks
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= {radiusAuthServ 2}
+
+
+
+
+
+radiusAuthServResetTime OBJECT-TYPE
+       SYNTAX      TimeTicks
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= {radiusAuthServ 3}
+
+radiusAuthServConfigReset OBJECT-TYPE
+       SYNTAX INTEGER { other(1),
+                        reset(2),
+                        initializing(3),
+                        running(4)}
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= {radiusAuthServ 4}
+
+
+radiusAuthServTotalAccessRequests OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        ::= { radiusAuthServ 5}
+
+radiusAuthServTotalInvalidRequests OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+
+
+
+
+
+        ::= { radiusAuthServ 6 }
+
+radiusAuthServTotalDupAccessRequests OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { radiusAuthServ 7 }
+
+radiusAuthServTotalAccessAccepts OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { radiusAuthServ 8 }
+
+radiusAuthServTotalAccessRejects OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= { radiusAuthServ 9 }
+
+radiusAuthServTotalAccessChallenges OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= { radiusAuthServ 10 }
+
+radiusAuthServTotalMalformedAccessRequests OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= { radiusAuthServ 11 }
+
+
+
+
+
+radiusAuthServTotalBadAuthenticators OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= { radiusAuthServ 12 }
+
+radiusAuthServTotalPacketsDropped OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= { radiusAuthServ 13 }
+
+radiusAuthServTotalUnknownTypes OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= { radiusAuthServ 14 }
+
+
+radiusAuthClientTable OBJECT-TYPE
+       SYNTAX     SEQUENCE OF RadiusAuthClientEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { radiusAuthServ 15 }
+
+radiusAuthClientEntry OBJECT-TYPE
+       SYNTAX     RadiusAuthClientEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+
+
+
+
+
+       INDEX      { radiusAuthClientIndex }
+       ::= { radiusAuthClientTable 1 }
+
+RadiusAuthClientEntry ::= SEQUENCE {
+       radiusAuthClientIndex                           Integer32,
+       radiusAuthClientAddress                         IpAddress,
+       radiusAuthClientID                        SnmpAdminString,
+       radiusAuthServAccessRequests                    Counter32,
+       radiusAuthServDupAccessRequests                 Counter32,
+       radiusAuthServAccessAccepts                     Counter32,
+       radiusAuthServAccessRejects                     Counter32,
+       radiusAuthServAccessChallenges                  Counter32,
+       radiusAuthServMalformedAccessRequests           Counter32,
+       radiusAuthServBadAuthenticators                 Counter32,
+       radiusAuthServPacketsDropped                    Counter32,
+       radiusAuthServUnknownTypes                      Counter32
+}
+
+radiusAuthClientIndex OBJECT-TYPE
+       SYNTAX     Integer32 (1..2147483647)
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { radiusAuthClientEntry 1 }
+
+radiusAuthClientAddress OBJECT-TYPE
+       SYNTAX     IpAddress
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { radiusAuthClientEntry 2 }
+
+radiusAuthClientID OBJECT-TYPE
+       SYNTAX     SnmpAdminString
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { radiusAuthClientEntry 3 }
+
+
+
+
+
+
+
+radiusAuthServAccessRequests OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { radiusAuthClientEntry  4 }
+
+radiusAuthServDupAccessRequests OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { radiusAuthClientEntry  5 }
+
+radiusAuthServAccessAccepts OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { radiusAuthClientEntry  6 }
+
+radiusAuthServAccessRejects OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+       ::= { radiusAuthClientEntry  7 }
+
+radiusAuthServAccessChallenges OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+
+
+
+
+
+       STATUS current
+       ::= { radiusAuthClientEntry  8 }
+
+radiusAuthServMalformedAccessRequests OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { radiusAuthClientEntry  9 }
+
+radiusAuthServBadAuthenticators OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { radiusAuthClientEntry  10 }
+
+radiusAuthServPacketsDropped OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+       ::= { radiusAuthClientEntry  11 }
+
+radiusAuthServUnknownTypes OBJECT-TYPE
+       SYNTAX Counter32
+       MAX-ACCESS read-only
+       STATUS current
+       ::= { radiusAuthClientEntry  12 }
+
+
+
+
+
+
+
+
+radiusAuthServMIBConformance
+              OBJECT IDENTIFIER ::= { radiusAuthServMIB 2 }
+radiusAuthServMIBCompliances
+              OBJECT IDENTIFIER ::= { radiusAuthServMIBConformance 1 }
+radiusAuthServMIBGroups
+              OBJECT IDENTIFIER ::= { radiusAuthServMIBConformance 2 }
+
+
+
+radiusAuthServMIBCompliance MODULE-COMPLIANCE
+            STATUS  current
+            MODULE  -- this module
+            MANDATORY-GROUPS { radiusAuthServMIBGroup }
+
+            OBJECT        radiusAuthServConfigReset
+            WRITE-SYNTAX  INTEGER { reset(2) }
+
+            ::= { radiusAuthServMIBCompliances 1 }
+
+
+radiusAuthServMIBGroup OBJECT-GROUP
+      OBJECTS {radiusAuthServIdent,
+               radiusAuthServUpTime,
+               radiusAuthServResetTime,
+               radiusAuthServConfigReset,
+               radiusAuthServTotalAccessRequests,
+               radiusAuthServTotalInvalidRequests,
+               radiusAuthServTotalDupAccessRequests,
+               radiusAuthServTotalAccessAccepts,
+               radiusAuthServTotalAccessRejects,
+               radiusAuthServTotalAccessChallenges,
+               radiusAuthServTotalMalformedAccessRequests,
+               radiusAuthServTotalBadAuthenticators,
+               radiusAuthServTotalPacketsDropped,
+               radiusAuthServTotalUnknownTypes,
+               radiusAuthClientAddress,
+               radiusAuthClientID,
+               radiusAuthServAccessRequests,
+               radiusAuthServDupAccessRequests,
+               radiusAuthServAccessAccepts,
+
+
+
+
+
+               radiusAuthServAccessRejects,
+               radiusAuthServAccessChallenges,
+               radiusAuthServMalformedAccessRequests,
+               radiusAuthServBadAuthenticators,
+               radiusAuthServPacketsDropped,
+               radiusAuthServUnknownTypes
+              }
+      STATUS  current
+      ::= { radiusAuthServMIBGroups 1 }
+
+END

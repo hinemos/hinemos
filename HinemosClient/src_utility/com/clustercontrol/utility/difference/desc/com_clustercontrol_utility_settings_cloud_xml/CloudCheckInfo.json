@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"accountId",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudScopeBaseInfoType_accountId"}
+	]},
+	
+	{
+	"propName":"displayName",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudScopeBaseInfoType_displayName"}
+	]}
+]
+}

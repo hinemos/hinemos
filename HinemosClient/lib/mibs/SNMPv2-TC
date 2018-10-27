@@ -1,0 +1,187 @@
+SNMPv2-TC DEFINITIONS ::= BEGIN
+
+IMPORTS
+    TimeTicks         FROM SNMPv2-SMI;
+
+
+
+TEXTUAL-CONVENTION MACRO ::=
+
+
+
+
+
+
+
+
+BEGIN
+    TYPE NOTATION ::=
+                  DisplayPart
+                  "STATUS" Status
+                  "DESCRIPTION" Text
+                  ReferPart
+                  "SYNTAX" Syntax
+
+    VALUE NOTATION ::=
+                   value(VALUE Syntax)      -- adapted ASN.1
+
+    DisplayPart ::=
+                  "DISPLAY-HINT" Text
+                | empty
+
+    Status ::=
+                  "current"
+                | "deprecated"
+                | "obsolete"
+
+    ReferPart ::=
+                  "REFERENCE" Text
+                | empty
+
+    Text ::= value(IA5String)
+
+    Syntax ::=   -- Must be one of the following:
+                  type
+                | "BITS" "{" NamedBits "}"
+
+    NamedBits ::= NamedBit
+                | NamedBits "," NamedBit
+
+    NamedBit ::=  identifier "(" number ")" -- number is nonnegative
+
+END
+
+
+
+
+DisplayString ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "255a"
+    STATUS       current
+    SYNTAX       OCTET STRING (SIZE (0..255))
+
+PhysAddress ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1x:"
+    STATUS       current
+    SYNTAX       OCTET STRING
+
+
+MacAddress ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1x:"
+    STATUS       current
+    SYNTAX       OCTET STRING (SIZE (6))
+
+
+
+
+
+
+
+
+
+TruthValue ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       INTEGER { true(1), false(2) }
+
+TestAndIncr ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       INTEGER (0..2147483647)
+
+AutonomousType ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       OBJECT IDENTIFIER
+
+
+InstancePointer ::= TEXTUAL-CONVENTION
+    STATUS       obsolete
+
+
+
+
+
+
+
+
+    SYNTAX       OBJECT IDENTIFIER
+
+
+VariablePointer ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       OBJECT IDENTIFIER
+
+
+RowPointer ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       OBJECT IDENTIFIER
+
+RowStatus ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       INTEGER {
+                     active(1),
+                     notInService(2),
+
+                     notReady(3),
+
+                     createAndGo(4),
+                     createAndWait(5),
+                     destroy(6)
+                 }
+
+TimeStamp ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       TimeTicks
+
+
+TimeInterval ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       INTEGER (0..2147483647)
+
+DateAndTime ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "2d-1d-1d,1d:1d:1d.1d,1a1d:1d"
+    STATUS       current
+    SYNTAX       OCTET STRING (SIZE (8 | 11))
+
+
+StorageType ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       INTEGER {
+                     other(1),       -- eh?
+                     volatile(2),    -- e.g., in RAM
+                     nonVolatile(3), -- e.g., in NVRAM
+                     permanent(4),   -- e.g., partially in ROM
+                     readOnly(5)     -- e.g., completely in ROM
+                 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+TDomain ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       OBJECT IDENTIFIER
+
+
+TAddress ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       OCTET STRING (SIZE (1..255))
+
+
+END

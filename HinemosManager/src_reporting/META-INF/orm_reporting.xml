@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0" 
+	xmlns="http://java.sun.com/xml/ns/persistence/orm" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	
+	<!-- ReportingInfoEntity -->
+	<named-query name="ReportingInfoEntity.findAllOrderByReportId">
+		<query>
+			<![CDATA[
+				SELECT a FROM ReportingInfoEntity a ORDER BY a.reportScheduleId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingInfoEntity.findByCalendarId">
+		<query>
+			<![CDATA[
+				SELECT a FROM ReportingInfoEntity a
+				WHERE a.calendarId = :calendarId
+			]]>
+		</query>
+	</named-query>
+	
+	<!-- TemplateSetInfoEntity -->
+	<named-query name="TemplateSetInfoEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM TemplateSetInfoEntity a
+				ORDER BY a.templateSetId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="TemplateSetInfoEntity.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM TemplateSetInfoEntity a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.templateSetId
+			]]>
+		</query>
+	</named-query>
+	
+	<!-- TemplateSetDetailInfoEntity -->
+	<named-query name="TemplateSetDetailInfoEntity.findByTemplateSetId">
+		<query>
+			<![CDATA[
+				SELECT a FROM TemplateSetDetailInfoEntity a
+				WHERE a.id.templateSetId = :templateSetId
+				ORDER BY a.id.orderNo
+			]]>
+		</query>
+	</named-query>
+	
+</entity-mappings>

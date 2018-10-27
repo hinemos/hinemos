@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.composite;
@@ -67,13 +60,14 @@ public class NotifyIdListComposite extends Composite {
 
 	private Table m_NotifyIdTable = null;
 
+	/** 通知テーブルの高さ */
+	private int m_tableHeight = 100;
+
 	/**選　択 ボタン。 */
 	private Button m_buttonRefer = null;
 
 	/**　通知ID一覧　フィールド*/
 	private List<NotifyRelationInfo> notify ;
-
-	private int notifyIdType = 0;
 
 	private String m_ownerRoleId = null;
 
@@ -99,11 +93,20 @@ public class NotifyIdListComposite extends Composite {
 		this.initialize(parent, labelFlg);
 	}
 
-	public NotifyIdListComposite(Composite parent, int style, boolean labelFlg, int notifyIdType) {
+	/**
+	 * インスタンスを返します。
+	 * <p>
+	 * 初期処理を呼び出し、コンポジットを配置します。
+	 *
+	 * @param parent 親のコンポジット
+	 * @param style スタイル
+	 * @param labelFlg 通知IDラベル表示フラグ（表示する場合、<code> true </code>）。
+	 * @param tableHeight 通知テーブルの高さ
+	 */
+	public NotifyIdListComposite(Composite parent, int style, boolean labelFlg, int tableHeight) {
 		super(parent, style);
 		m_text = Messages.getString("notify.id"); //$NON-NLS-1$
-		this.notifyIdType = notifyIdType;
-
+		m_tableHeight = tableHeight;
 		this.initialize(parent, labelFlg);
 	}
 
@@ -189,7 +192,7 @@ public class NotifyIdListComposite extends Composite {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.grabExcessVerticalSpace = true;
-		gridData.heightHint = 100; //通知IDのテーブルの高さ
+		gridData.heightHint = m_tableHeight; //通知IDのテーブルの高さ
 		this.m_NotifyIdTable.setLayoutData(gridData);
 
 
@@ -209,7 +212,7 @@ public class NotifyIdListComposite extends Composite {
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 
 				// ダイアログ表示及び終了処理
-				NotifyListDialog dialog = new NotifyListDialog(shell, m_managerName, true, notifyIdType, m_ownerRoleId);
+				NotifyListDialog dialog = new NotifyListDialog(shell, m_managerName, true, m_ownerRoleId);
 				if (notify != null) {
 					dialog.setSelectNotify(notify);
 				}

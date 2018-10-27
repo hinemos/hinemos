@@ -1,0 +1,61 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"notifyofReceivingUnspecifiedFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSnmpTrapInfo_notifyofReceivingUnspecifiedFlg"}
+	]},
+	
+	{
+	"propName":"priorityUnspecified",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSnmpTrapInfo_priorityUnspecified"},
+		{
+			"type":"Translate", 
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"communityCheck",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSnmpTrapInfo_communityCheck"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_specify"}, {"value":"false", "name":"name_notSpecify"}]}
+	]},
+
+	{
+	"propName":"communityName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSnmpTrapInfo_communityName"}
+	]},
+
+	{
+	"propName":"charsetConvert",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSnmpTrapInfo_charsetConvert"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_specify"}, {"value":"false", "name":"name_not"}]}
+	]},
+
+	{
+	"propName":"charsetName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorSnmpTrapInfo_charsetName"}
+	]},
+
+	{
+	"propName":"trapValueInfos",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"uei"},
+		{"type":"Column", "columnName":"TrapValueInfo_trapValueInfos"},
+		{"type":"Ignore", "propNames":["uei"]}
+	]}
+]
+}

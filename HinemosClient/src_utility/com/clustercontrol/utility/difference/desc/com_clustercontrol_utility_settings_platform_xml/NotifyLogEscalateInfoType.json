@@ -1,0 +1,253 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"infoEscalateMessage",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_infoEscalateMessage"}
+	]},
+
+	{
+	"propName":"warnEscalateMessage",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_warnEscalateMessage"}
+	]},
+
+	{
+	"propName":"criticalEscalateMessage",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_criticalEscalateMessage"}
+	]},
+
+	{
+	"propName":"unknownEscalateMessage",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_unknownEscalateMessage"}
+	]},
+
+	{
+	"propName":"infoSyslogPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_infoSyslogPriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_emergency"},
+				{"value":"1", "name":"name_alert"},
+				{"value":"2", "name":"name_critical"},
+				{"value":"3", "name":"name_error"},
+				{"value":"4", "name":"name_warning_en"},
+				{"value":"5", "name":"name_notice"},
+				{"value":"6", "name":"name_information_en"},
+				{"value":"7", "name":"name_debug"}
+			]
+		}
+	]},
+
+	{
+	"propName":"warnSyslogPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_warnSyslogPriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_emergency"},
+				{"value":"1", "name":"name_alert"},
+				{"value":"2", "name":"name_critical"},
+				{"value":"3", "name":"name_error"},
+				{"value":"4", "name":"name_warning_en"},
+				{"value":"5", "name":"name_notice"},
+				{"value":"6", "name":"name_information_en"},
+				{"value":"7", "name":"name_debug"}
+			]
+		}
+	]},
+
+	{
+	"propName":"criticalSyslogPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_criticalSyslogPriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_emergency"},
+				{"value":"1", "name":"name_alert"},
+				{"value":"2", "name":"name_critical"},
+				{"value":"3", "name":"name_error"},
+				{"value":"4", "name":"name_warning_en"},
+				{"value":"5", "name":"name_notice"},
+				{"value":"6", "name":"name_information_en"},
+				{"value":"7", "name":"name_debug"}
+			]
+		}
+	]},
+
+	{
+	"propName":"unknownSyslogPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_unknownSyslogPriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_emergency"},
+				{"value":"1", "name":"name_alert"},
+				{"value":"2", "name":"name_critical"},
+				{"value":"3", "name":"name_error"},
+				{"value":"4", "name":"name_warning_en"},
+				{"value":"5", "name":"name_notice"},
+				{"value":"6", "name":"name_information_en"},
+				{"value":"7", "name":"name_debug"}
+			]
+		}
+	]},
+
+	{
+	"propName":"infoSyslogFacility",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_infoSyslogFacility"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_kern"},
+				{"value":"8", "name":"name_user"},
+				{"value":"16", "name":"name_mail"},
+				{"value":"24", "name":"name_daemon"},
+				{"value":"32", "name":"name_auth"},
+				{"value":"40", "name":"name_syslog"},
+				{"value":"48", "name":"name_lpr"},
+				{"value":"56", "name":"name_news"},
+				{"value":"64", "name":"name_uucp"},
+				{"value":"72", "name":"name_cron"},
+				{"value":"80", "name":"name_authpriv"},
+				{"value":"88", "name":"name_ftp_small"},
+				{"value":"128", "name":"name_local0"},
+				{"value":"136", "name":"name_local1"},
+				{"value":"144", "name":"name_local2"},
+				{"value":"152", "name":"name_local3"},
+				{"value":"160", "name":"name_local4"},
+				{"value":"168", "name":"name_local5"},
+				{"value":"176", "name":"name_local6"},
+				{"value":"184", "name":"name_local7"}
+			]
+		}
+	]},
+
+	{
+	"propName":"warnSyslogFacility",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_warnSyslogFacility"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_kern"},
+				{"value":"8", "name":"name_user"},
+				{"value":"16", "name":"name_mail"},
+				{"value":"24", "name":"name_daemon"},
+				{"value":"32", "name":"name_auth"},
+				{"value":"40", "name":"name_syslog"},
+				{"value":"48", "name":"name_lpr"},
+				{"value":"56", "name":"name_news"},
+				{"value":"64", "name":"name_uucp"},
+				{"value":"72", "name":"name_cron"},
+				{"value":"80", "name":"name_authpriv"},
+				{"value":"88", "name":"name_ftp_small"},
+				{"value":"128", "name":"name_local0"},
+				{"value":"136", "name":"name_local1"},
+				{"value":"144", "name":"name_local2"},
+				{"value":"152", "name":"name_local3"},
+				{"value":"160", "name":"name_local4"},
+				{"value":"168", "name":"name_local5"},
+				{"value":"176", "name":"name_local6"},
+				{"value":"184", "name":"name_local7"}
+			]
+		}
+	]},
+
+	{
+	"propName":"criticalSyslogFacility",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_criticalSyslogFacility"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_kern"},
+				{"value":"8", "name":"name_user"},
+				{"value":"16", "name":"name_mail"},
+				{"value":"24", "name":"name_daemon"},
+				{"value":"32", "name":"name_auth"},
+				{"value":"40", "name":"name_syslog"},
+				{"value":"48", "name":"name_lpr"},
+				{"value":"56", "name":"name_news"},
+				{"value":"64", "name":"name_uucp"},
+				{"value":"72", "name":"name_cron"},
+				{"value":"80", "name":"name_authpriv"},
+				{"value":"88", "name":"name_ftp_small"},
+				{"value":"128", "name":"name_local0"},
+				{"value":"136", "name":"name_local1"},
+				{"value":"144", "name":"name_local2"},
+				{"value":"152", "name":"name_local3"},
+				{"value":"160", "name":"name_local4"},
+				{"value":"168", "name":"name_local5"},
+				{"value":"176", "name":"name_local6"},
+				{"value":"184", "name":"name_local7"}
+			]
+		}
+	]},
+
+	{
+	"propName":"unknownSyslogFacility",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_unknownSyslogFacility"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_kern"},
+				{"value":"8", "name":"name_user"},
+				{"value":"16", "name":"name_mail"},
+				{"value":"24", "name":"name_daemon"},
+				{"value":"32", "name":"name_auth"},
+				{"value":"40", "name":"name_syslog"},
+				{"value":"48", "name":"name_lpr"},
+				{"value":"56", "name":"name_news"},
+				{"value":"64", "name":"name_uucp"},
+				{"value":"72", "name":"name_cron"},
+				{"value":"80", "name":"name_authpriv"},
+				{"value":"88", "name":"name_ftp_small"},
+				{"value":"128", "name":"name_local0"},
+				{"value":"136", "name":"name_local1"},
+				{"value":"144", "name":"name_local2"},
+				{"value":"152", "name":"name_local3"},
+				{"value":"160", "name":"name_local4"},
+				{"value":"168", "name":"name_local5"},
+				{"value":"176", "name":"name_local6"},
+				{"value":"184", "name":"name_local7"}
+			]
+		}
+	]},
+
+	{
+	"propName":"esaclateFacilityFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_esaclateFacilityFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_scopeEventOccurs"},
+				{"value":"1", "name":"name_fixedScope"}
+			]
+		}
+	]},
+
+	{
+	"propName":"escalateFacility",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_escalateFacility"}
+	]},
+
+	{
+	"propName":"escalateScope",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_escalateScope"}
+	]},
+
+	{
+	"propName":"escalatePort",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyLogEscalateInfoType_escalatePort"}
+	]}
+
+]
+}

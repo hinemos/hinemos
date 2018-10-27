@@ -1,15 +1,9 @@
 /*
-
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.custom.factory;
@@ -26,6 +20,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.custom.bean.CommandResultDTO;
 import com.clustercontrol.custom.bean.CustomConstant.CommandExecType;
 import com.clustercontrol.fault.CustomInvalid;
@@ -36,10 +31,10 @@ import com.clustercontrol.hub.util.CollectStringDataUtil;
 import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
+import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -77,7 +72,10 @@ public class RunCustomString extends RunCustomBase {
 	 *             監視設定に不整合が存在する場合
 	 */
 	@Override
-	public void monitor() throws HinemosUnknown, MonitorNotFound, CustomInvalid {
+	public List<OutputBasicInfo> monitor() throws HinemosUnknown, MonitorNotFound, CustomInvalid {
+
+		List<OutputBasicInfo> rtn = new ArrayList<>();
+
 		// Local Variables
  		MonitorInfo monitor = null;
 
@@ -121,8 +119,8 @@ public class RunCustomString extends RunCustomBase {
 					
 					// 監視ジョブ以外
 					if (!isMonitorJob) {
-						notify(PriorityConstant.TYPE_UNKNOWN, monitor, result.getFacilityId(), facilityPath, null, msg,
-								msgOrig, HinemosModuleConstant.MONITOR_CUSTOM_S);
+						rtn.add(createOutputBasicInfo(PriorityConstant.TYPE_UNKNOWN, monitor, result.getFacilityId(), facilityPath, null, msg,
+								msgOrig, HinemosModuleConstant.MONITOR_CUSTOM_S, null, null));
 					} else {
 						// 監視ジョブ
 						this.monitorJobEndNodeList.add(new MonitorJobEndNode(
@@ -209,9 +207,9 @@ public class RunCustomString extends RunCustomBase {
 									priority=stringValueInfo.getPriority();
 									if (!isMonitorJob) {
 										// 監視ジョブ以外
-										notify(priority, monitor, result.getFacilityId(), facilityPath,
+										rtn.add(createOutputBasicInfo(priority, monitor, result.getFacilityId(), facilityPath,
 												stringValueInfo.getPattern(), msg, msgOrig,
-												HinemosModuleConstant.MONITOR_CUSTOM_S);
+												HinemosModuleConstant.MONITOR_CUSTOM_S, null, null));
 									} else {
 										// 監視ジョブ
 										this.monitorJobEndNodeList.add(new MonitorJobEndNode(
@@ -236,6 +234,8 @@ public class RunCustomString extends RunCustomBase {
 					}
 				}
 			}
+			// 通知情報を返す
+			return rtn;
 		} catch (MonitorNotFound | CustomInvalid | HinemosUnknown e) {
 			m_log.warn("unexpected internal failure occurred. [" + result + "]");
 			throw e;
@@ -257,7 +257,7 @@ public class RunCustomString extends RunCustomBase {
 		if (null != msg) {
 			updateMsg = stringValueInfo.getMessage().replace("#[LOG_LINE]", msg);
 			// DBよりオリジナルメッセージ出力文字数を取得
-			int maxLen = HinemosPropertyUtil.getHinemosPropertyNum("monitor.log.line.max.length", Long.valueOf(256)).intValue();
+			int maxLen = HinemosPropertyCommon.monitor_log_line_max_length.getIntegerValue();
 			if (maxStringLen == null || maxStringLen != maxLen) {
 				synchronized(RunCustomString.class) {
 					if (maxStringLen == null || maxStringLen != maxLen) {

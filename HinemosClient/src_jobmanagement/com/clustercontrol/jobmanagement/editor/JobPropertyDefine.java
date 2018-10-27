@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.editor;
@@ -58,6 +51,18 @@ public class JobPropertyDefine extends PropertyDefine {
 	 */
 	public JobPropertyDefine(JobTreeItem item) {
 		m_cellEditor = new JobDialogCellEditor(item);
+	}
+
+	/**
+	 * コンストラクタ
+	 *
+	 * @param parentJobId 親ジョブID
+	 * @param jobId ジョブID
+	 *
+	 * @see com.clustercontrol.jobmanagement.editor.JobDialogCellEditor#JobDialogCellEditor(String, String)
+	 */
+	public JobPropertyDefine(JobTreeItem item, Integer mode) {
+		m_cellEditor = new JobDialogCellEditor(item, mode);
 	}
 
 	/**

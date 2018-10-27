@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.snmptrap.service;
@@ -41,6 +34,7 @@ import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -49,9 +43,10 @@ import com.clustercontrol.hub.bean.StringSample;
 import com.clustercontrol.hub.util.CollectStringDataUtil;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.QueryUtil;
+import com.clustercontrol.notify.bean.OutputBasicInfo;
+import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.snmptrap.bean.SnmpTrap;
@@ -199,6 +194,7 @@ public class ReceivedTrapFilterTask implements Runnable {
 	public void run() {
 		JpaTransactionManager tm = null;
 		boolean warn = true;
+		List<OutputBasicInfo> notifyInfoList = new ArrayList<>();
 
 		try {
 			tm = new JpaTransactionManager();
@@ -284,7 +280,8 @@ public class ReceivedTrapFilterTask implements Runnable {
 			if (!collectedSamples.isEmpty()) {
 				CollectStringDataUtil.store(collectedSamples);
 			}
-			notifier.put(receivedTrapBuffer, monitorBuffer, priorityBuffer, facilityIdBuffer, msgsBuffer, null);
+			notifyInfoList.addAll(notifier.createOutputBasicInfoList(
+					receivedTrapBuffer, monitorBuffer, priorityBuffer, facilityIdBuffer, msgsBuffer, null));
 
 			/* 監視ジョブ */
 			receivedTrapBuffer = new ArrayList<SnmpTrap>();
@@ -336,7 +333,11 @@ public class ReceivedTrapFilterTask implements Runnable {
 				}//while monitorIter
 			}//for
 
-			notifier.put(receivedTrapBuffer, monitorBuffer, priorityBuffer, facilityIdBuffer, msgsBuffer, runInstructionBuffer);
+			notifyInfoList.addAll(notifier.createOutputBasicInfoList(
+					receivedTrapBuffer, monitorBuffer, priorityBuffer, facilityIdBuffer, msgsBuffer, runInstructionBuffer));
+
+			// 通知設定
+			tm.addCallback(new NotifyCallback(notifyInfoList));
 
 			tm.commit();
 			warn = false;
@@ -718,10 +719,10 @@ public class ReceivedTrapFilterTask implements Runnable {
 		}
 
 		StringBuilder detail = new StringBuilder();
-		if (HinemosPropertyUtil.getHinemosPropertyBool("monitor.snmptrap.org.message.community", true))
+		if (HinemosPropertyCommon.monitor_snmptrap_org_message_community.getBooleanValue())
 			detail.append(MessageConstant.COMMUNITY_NAME.getMessage()).append("=").append(receivedTrap.getCommunity()).append(" \n");
 
-		if (HinemosPropertyUtil.getHinemosPropertyBool("monitor.snmptrap.org.message.varbind", true)) {
+		if (HinemosPropertyCommon.monitor_snmptrap_org_message_varbind.getBooleanValue()) {
 			boolean first = true;
 			for (String value: varBindStrs) {
 				if (first) {
@@ -741,10 +742,10 @@ public class ReceivedTrapFilterTask implements Runnable {
 
 	private String[] createMessages(TrapCheckInfo checkInfo, String[] varBindStrs, SnmpTrap receivedTrap) {
 		StringBuilder orgMessage = new StringBuilder();
-		if (HinemosPropertyUtil.getHinemosPropertyBool("monitor.snmptrap.org.message.community", true))
+		if (HinemosPropertyCommon.monitor_snmptrap_org_message_community.getBooleanValue())
 			orgMessage.append(MessageConstant.COMMUNITY_NAME.getMessage()).append("=").append(receivedTrap.getCommunity()).append(" \n");
 
-		if (HinemosPropertyUtil.getHinemosPropertyBool("monitor.snmptrap.org.message.varbind", true)) {
+		if (HinemosPropertyCommon.monitor_snmptrap_org_message_varbind.getBooleanValue()) {
 			boolean first = true;
 			for (String value: varBindStrs) {
 				if (first) {

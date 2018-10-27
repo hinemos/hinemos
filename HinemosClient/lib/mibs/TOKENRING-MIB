@@ -1,0 +1,549 @@
+TOKENRING-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY,
+    Counter32, Integer32                 FROM SNMPv2-SMI
+    transmission                         FROM RFC1213-MIB
+    MacAddress,TimeStamp                 FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP      FROM SNMPv2-CONF;
+
+dot5 MODULE-IDENTITY
+    LAST-UPDATED "9410231150Z"
+    ORGANIZATION "IETF Interfaces MIB Working Group"
+    ::= { transmission 9 }
+
+
+
+
+dot5Table       OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot5Entry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot5 1 }
+
+dot5Entry       OBJECT-TYPE
+    SYNTAX      Dot5Entry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { dot5IfIndex }
+    ::= { dot5Table 1 }
+
+Dot5Entry ::= SEQUENCE {
+     dot5IfIndex              Integer32,
+     dot5Commands             INTEGER,
+     dot5RingStatus           INTEGER,
+     dot5RingState            INTEGER,
+     dot5RingOpenStatus       INTEGER,
+     dot5RingSpeed            INTEGER,
+     dot5UpStream             MacAddress,
+     dot5ActMonParticipate    INTEGER,
+     dot5Functional           MacAddress,
+     dot5LastBeaconSent       TimeStamp
+}
+
+
+
+
+
+dot5IfIndex     OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5Entry 1 }
+
+dot5Commands    OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    noop(1),
+                    open(2),
+                    reset(3),
+                    close(4)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot5Entry 2 }
+
+dot5RingStatus  OBJECT-TYPE
+    SYNTAX      INTEGER (0..262143)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5Entry 3 }
+
+dot5RingState   OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    opened(1),
+                    closed(2),
+                    opening(3),
+                    closing(4),
+                    openFailure(5),
+                    ringFailure(6)
+                }
+
+
+
+
+
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5Entry 4 }
+
+dot5RingOpenStatus  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    noOpen(1),     -- no open attempted
+                    badParam(2),
+                    lobeFailed(3),
+                    signalLoss(4),
+                    insertionTimeout(5),
+                    ringFailed(6),
+                    beaconing(7),
+                    duplicateMAC(8),
+                    requestFailed(9),
+                    removeReceived(10),
+                    open(11)      -- last open successful
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5Entry 5 }
+
+dot5RingSpeed   OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    unknown(1),
+                    oneMegabit(2),
+                    fourMegabit(3),
+                    sixteenMegabit(4)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+
+
+
+
+
+    ::= { dot5Entry 6 }
+
+dot5UpStream    OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5Entry 7 }
+
+dot5ActMonParticipate OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    true(1),
+                    false(2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot5Entry 8 }
+
+dot5Functional  OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { dot5Entry 9 }
+
+dot5LastBeaconSent OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5Entry 10 }
+
+
+
+
+
+
+
+dot5StatsTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot5StatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { dot5 2 }
+
+dot5StatsEntry  OBJECT-TYPE
+    SYNTAX      Dot5StatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { dot5StatsIfIndex }
+    ::= { dot5StatsTable 1 }
+
+
+Dot5StatsEntry ::= SEQUENCE {
+     dot5StatsIfIndex              Integer32,
+     dot5StatsLineErrors           Counter32,
+     dot5StatsBurstErrors          Counter32,
+     dot5StatsACErrors             Counter32,
+     dot5StatsAbortTransErrors     Counter32,
+     dot5StatsInternalErrors       Counter32,
+     dot5StatsLostFrameErrors      Counter32,
+     dot5StatsReceiveCongestions   Counter32,
+     dot5StatsFrameCopiedErrors    Counter32,
+     dot5StatsTokenErrors          Counter32,
+     dot5StatsSoftErrors           Counter32,
+     dot5StatsHardErrors           Counter32,
+     dot5StatsSignalLoss           Counter32,
+
+
+
+
+
+     dot5StatsTransmitBeacons      Counter32,
+     dot5StatsRecoverys            Counter32,
+     dot5StatsLobeWires            Counter32,
+     dot5StatsRemoves              Counter32,
+     dot5StatsSingles              Counter32,
+     dot5StatsFreqErrors           Counter32
+}
+
+
+dot5StatsIfIndex  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 1 }
+
+dot5StatsLineErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 2 }
+
+dot5StatsBurstErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 3 }
+
+
+
+
+
+
+
+dot5StatsACErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 4 }
+
+dot5StatsAbortTransErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 5 }
+
+dot5StatsInternalErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 6 }
+
+dot5StatsLostFrameErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 7 }
+
+
+
+
+
+
+
+
+dot5StatsReceiveCongestions OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 8 }
+
+dot5StatsFrameCopiedErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 9 }
+
+dot5StatsTokenErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 10 }
+
+dot5StatsSoftErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 11 }
+
+
+
+
+
+
+dot5StatsHardErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 12 }
+
+dot5StatsSignalLoss OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 13 }
+
+dot5StatsTransmitBeacons OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 14 }
+
+dot5StatsRecoverys OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 15 }
+
+dot5StatsLobeWires OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { dot5StatsEntry 16 }
+
+dot5StatsRemoves OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 17 }
+
+dot5StatsSingles OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 18 }
+
+dot5StatsFreqErrors OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { dot5StatsEntry 19 }
+
+
+
+
+
+
+
+
+
+
+dot5TimerTable  OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Dot5TimerEntry
+    MAX-ACCESS  not-accessible
+    STATUS      obsolete
+    ::= { dot5 5 }
+
+dot5TimerEntry  OBJECT-TYPE
+    SYNTAX      Dot5TimerEntry
+    MAX-ACCESS  not-accessible
+    STATUS      obsolete
+    INDEX       { dot5TimerIfIndex }
+    ::= { dot5TimerTable 1 }
+
+Dot5TimerEntry ::= SEQUENCE {
+    dot5TimerIfIndex          Integer32,
+    dot5TimerReturnRepeat     Integer32,
+    dot5TimerHolding          Integer32,
+    dot5TimerQueuePDU         Integer32,
+    dot5TimerValidTransmit    Integer32,
+    dot5TimerNoToken          Integer32,
+    dot5TimerActiveMon        Integer32,
+    dot5TimerStandbyMon       Integer32,
+    dot5TimerErrorReport      Integer32,
+    dot5TimerBeaconTransmit   Integer32,
+    dot5TimerBeaconReceive    Integer32
+}
+
+dot5TimerIfIndex  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 1 }
+
+dot5TimerReturnRepeat  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 2 }
+
+dot5TimerHolding  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 3 }
+
+dot5TimerQueuePDU  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 4 }
+
+dot5TimerValidTransmit OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+
+
+
+
+
+    ::= { dot5TimerEntry 5 }
+
+dot5TimerNoToken  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 6 }
+
+dot5TimerActiveMon  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 7 }
+
+dot5TimerStandbyMon  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 8 }
+
+dot5TimerErrorReport  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 9 }
+
+
+
+
+
+dot5TimerBeaconTransmit  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 10 }
+
+dot5TimerBeaconReceive  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      obsolete
+    ::= { dot5TimerEntry 11 }
+
+
+
+dot5Tests   OBJECT IDENTIFIER ::= { dot5 3 }
+
+
+
+dot5TestInsertFunc  OBJECT-IDENTITY
+    STATUS       current
+    ::= { dot5Tests 1 }
+
+
+
+
+
+
+
+
+dot5TestFullDuplexLoopBack OBJECT-IDENTITY
+    STATUS       current
+    ::= { dot5Tests 2 }
+
+
+
+
+dot5ChipSets   OBJECT IDENTIFIER ::= { dot5 4 }
+
+dot5ChipSetIBM16  OBJECT-IDENTITY
+    STATUS        current
+    ::= { dot5ChipSets 1 }
+
+dot5ChipSetTItms380 OBJECT-IDENTITY
+    STATUS        current
+    ::= { dot5ChipSets 2 }
+
+dot5ChipSetTItms380c16 OBJECT-IDENTITY
+    STATUS        current
+    ::= { dot5ChipSets 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+dot5Conformance OBJECT IDENTIFIER ::= { dot5 5 }
+
+dot5Groups      OBJECT IDENTIFIER ::= { dot5Conformance 1 }
+dot5Compliances OBJECT IDENTIFIER ::= { dot5Conformance 2 }
+
+
+
+dot5Compliance MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { dot5StateGroup, dot5StatsGroup }
+
+        OBJECT     dot5ActMonParticipate
+        MIN-ACCESS read-only
+
+        OBJECT     dot5Functional
+        MIN-ACCESS read-only
+
+    ::= { dot5Compliances 1 }
+
+
+
+dot5StateGroup  OBJECT-GROUP
+    OBJECTS   { dot5Commands, dot5RingStatus, dot5RingState,
+                dot5RingOpenStatus, dot5RingSpeed, dot5UpStream,
+                dot5ActMonParticipate, dot5Functional,
+                dot5LastBeaconSent
+              }
+    STATUS    current
+    ::= { dot5Groups 1 }
+
+dot5StatsGroup  OBJECT-GROUP
+    OBJECTS   { dot5StatsLineErrors, dot5StatsBurstErrors,
+
+
+
+
+
+                dot5StatsACErrors, dot5StatsAbortTransErrors,
+                dot5StatsInternalErrors, dot5StatsLostFrameErrors,
+                dot5StatsReceiveCongestions,
+                dot5StatsFrameCopiedErrors, dot5StatsTokenErrors,
+                dot5StatsSoftErrors, dot5StatsHardErrors,
+                dot5StatsSignalLoss, dot5StatsTransmitBeacons,
+                dot5StatsRecoverys, dot5StatsLobeWires,
+                dot5StatsRemoves, dot5StatsSingles,
+                dot5StatsFreqErrors
+              }
+    STATUS    current
+    ::= { dot5Groups 2 }
+
+END

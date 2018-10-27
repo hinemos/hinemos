@@ -1,0 +1,50 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"facilityName",
+	"annotations":[
+		{"type":"Column", "columnName":"ScopeInfo_facilityName"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"ScopeInfo_description"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"ScopeInfo_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"iconImage",
+	"annotations":[
+		{"type":"Column", "columnName":"ScopeInfo_iconImage"}
+	]},
+
+	{
+	"propName":"scopeInfo",
+	"annotations":[
+		{"type":"Comparison"},
+		{"type":"Column", "columnName":"ScopeInfo_scopeInfo"},
+		{"type":"Array", "terminate":"true"}
+	]},
+
+	{
+	"propName":"parentFacilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"ScopeInfo_parentFacilityId"}
+	]}
+]
+}

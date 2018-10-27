@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.bean;
@@ -18,6 +11,7 @@ package com.clustercontrol.jobmanagement.bean;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlType;
 
@@ -27,6 +21,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.StatusConstant;
+import com.clustercontrol.jobmanagement.bean.JobNextJobOrderInfo;
 
 /**
  * ジョブの待ち条件に関する情報を保持するクラス<BR>
@@ -69,6 +64,18 @@ public class JobWaitRuleInfo implements Serializable {
 	/** 条件を満たさない時の終了値 */
 	private Integer endValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
 
+	/** 排他分岐 */
+	private Boolean exclusiveBranch = false;
+
+	/** 排他分岐の終了状態 */
+	private Integer exclusiveBranchEndStatus = 0;
+
+	/** 排他分岐の終了値 */
+	private Integer exclusiveBranchEndValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
+
+	/** 後続ジョブ優先度 */
+	private List<JobNextJobOrderInfo> exclusiveBranchNextJobOrderList;
+
 	/** カレンダ */
 	private Boolean calendar = false;
 
@@ -80,6 +87,15 @@ public class JobWaitRuleInfo implements Serializable {
 
 	/** カレンダにより未実行時の終了値 */
 	private Integer calendarEndValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
+	
+	/** 繰り返し実行フラグ */
+	private Boolean jobRetryFlg = false;
+
+	/** 繰り返し完了状態 */
+	private Integer jobRetryEndStatus = null;
+
+	/** 繰り返し回数 */
+	private Integer jobRetry = 10;
 
 	/** 開始遅延 */
 	private Boolean start_delay = false;
@@ -109,7 +125,7 @@ public class JobWaitRuleInfo implements Serializable {
 	private Boolean start_delay_operation = false;
 
 	/** 開始遅延操作種別 */
-	private Integer start_delay_operation_type = 0;
+	private Integer start_delay_operation_type = OperationConstant.TYPE_STOP_SKIP;
 
 	/** 開始遅延操作終了状態 */
 	private Integer start_delay_operation_end_status = EndStatusConstant.INITIAL_VALUE_ABNORMAL;
@@ -151,7 +167,7 @@ public class JobWaitRuleInfo implements Serializable {
 	private Boolean end_delay_operation = false;
 
 	/** 終了遅延操作種別 */
-	private Integer end_delay_operation_type = 0;
+	private Integer end_delay_operation_type = OperationConstant.TYPE_STOP_AT_ONCE;
 
 	/** 終了遅延操作終了状態 */
 	private Integer end_delay_operation_end_status = EndStatusConstant.INITIAL_VALUE_ABNORMAL;
@@ -159,12 +175,18 @@ public class JobWaitRuleInfo implements Serializable {
 	/** 終了遅延操作終了値 */
 	private Integer end_delay_operation_end_value = EndStatusConstant.INITIAL_VALUE_NORMAL;
 
+	/** 終了遅延実行履歴からの変化量 */
+	private Boolean end_delay_change_mount = false;
+
+	/** 終了遅延実行履歴からの変化量の値 */
+	private Double end_delay_change_mount_value = 1D;
+
 	/** 多重度 */
 	private Boolean multiplicity_notify = true;
 	private Integer multiplicity_notify_priority = PriorityConstant.TYPE_WARNING;
 	private Integer multiplicity_operation = StatusConstant.TYPE_WAIT;
 	private Integer multiplicity_end_value = -1;
-
+	
 	/**
 	 * ジョブのスキップをするかしないかを返す。<BR>
 	 * @return スキップをするかしないか
@@ -303,6 +325,77 @@ public class JobWaitRuleInfo implements Serializable {
 	}
 
 	/**
+	 * 後続ジョブを1つだけ実行するかどうかを返す。<BR>
+	 * 
+	 * @return 後続ジョブを1つだけ実行するかどうか
+	 */
+	public Boolean isExclusiveBranch() {
+		return exclusiveBranch;
+	}
+
+	/**
+	 * 後続ジョブを1つだけ実行するかどうか設定する。<BR>
+	 * @param exclusiveBranch 後続ジョブを1つだけ実行するかどうか
+	 */
+	public void setExclusiveBranch(Boolean exclusiveBranch) {
+		this.exclusiveBranch = exclusiveBranch;
+	}
+
+	/**
+	 * 実行されなかった後続ジョブの終了状態を返す。<BR>
+	 * 
+	 * @return 実行されなかった後続ジョブの終了状態
+	 */
+	public Integer getExclusiveBranchEndStatus() {
+		return exclusiveBranchEndStatus;
+	}
+
+	/**
+	 * 実行されなかった後続ジョブの終了状態を設定する。<BR>
+	 * 
+	 * @param exclusiveBranchEndStatus 実行されなかった後続ジョブの終了状態
+	 */
+	public void setExclusiveBranchEndStatus(Integer exclusiveBranchEndStatus) {
+		this.exclusiveBranchEndStatus = exclusiveBranchEndStatus;
+	}
+
+	/**
+	 * 実行されなかった後続ジョブの終了値を返す。<BR>
+	 * 
+	 * @return 実行されなかった後続ジョブの終了値
+	 */
+	public Integer getExclusiveBranchEndValue() {
+		return exclusiveBranchEndValue;
+	}
+
+	/**
+	 * 実行されなかった後続ジョブの終了値を設定する。<BR>
+	 * 
+	 * @param exclusiveBranchEndStatus 実行されなかった後続ジョブの終了値
+	 */
+	public void setExclusiveBranchEndValue(Integer exclusiveBranchEndValue) {
+		this.exclusiveBranchEndValue = exclusiveBranchEndValue;
+	}
+
+	/**
+	 * 実行する後続ジョブの優先度リストを返す。<BR>
+	 * 
+	 * @return  実行する後続ジョブの優先度リスト
+	 */
+	public List<JobNextJobOrderInfo> getExclusiveBranchNextJobOrderList() {
+		return this.exclusiveBranchNextJobOrderList;
+	}
+
+	/**
+	 * 実行する後続ジョブの優先度リストを設定する。<BR>
+	 * 
+	 * @param exclusiveBranchNextJobOrderList 実行する後続ジョブの優先度リスト
+	 */
+	public void setExclusiveBranchNextJobOrderList(List<JobNextJobOrderInfo> exclusiveBranchNextJobOrderList) {
+		this.exclusiveBranchNextJobOrderList = exclusiveBranchNextJobOrderList;
+	}
+
+	/**
 	 * 保留するかどうかを返す。<BR>
 	 * @return 保留するかどうか
 	 */
@@ -380,6 +473,54 @@ public class JobWaitRuleInfo implements Serializable {
 	 */
 	public void setCalendarEndValue(Integer calendarEndValue) {
 		this.calendarEndValue = calendarEndValue;
+	}
+
+	/**
+	 * 繰り返し実行フラグを返す。<BR>
+	 * @return 繰り返し実行フラグ
+	 */
+	public Boolean getJobRetryFlg() {
+		return jobRetryFlg;
+	}
+
+	/**
+	 * 繰り返し実行フラグを設定する。<BR>
+	 * @param jobRetryFlg 繰り返し実行フラグ
+	 */
+	public void setJobRetryFlg(Boolean jobRetryFlg) {
+		this.jobRetryFlg = jobRetryFlg;
+	}
+
+	/**
+	 * 繰り返し完了状態を返す。<BR>
+	 * @return
+	 */
+	public Integer getJobRetryEndStatus() {
+		return jobRetryEndStatus;
+	}
+
+	/**
+	 * 繰り返し完了状態を設定する。<BR>
+	 * @param jobRetryEndStatus
+	 */
+	public void setJobRetryEndStatus(Integer jobRetryEndStatus) {
+		this.jobRetryEndStatus = jobRetryEndStatus;
+	}
+
+	/**
+	 * 繰り返し実行回数を返す。<BR>
+	 * @return 繰り返し実行回数
+	 */
+	public Integer getJobRetry() {
+		return jobRetry;
+	}
+
+	/**
+	 * 繰り返し実行回数を設定する。<BR>
+	 * @param jobRetry 繰り返し実行回数
+	 */
+	public void setJobRetry(Integer jobRetry) {
+		this.jobRetry = jobRetry;
 	}
 
 	/**
@@ -626,6 +767,42 @@ public class JobWaitRuleInfo implements Serializable {
 	 */
 	public void setEnd_delay_time_value(Long end_delay_time_value) {
 		this.end_delay_time_value = end_delay_time_value;
+	}
+
+	/**
+	 * 終了遅延の判定条件のうち、<BR>
+	 * 実行履歴の変化量で判定するかを返す。<BR>
+	 * @return 実行履歴の変化量で判定するか
+	 */
+	public Boolean isEnd_delay_change_mount() {
+		return end_delay_change_mount;
+	}
+
+	/**
+	 * 終了遅延の判定条件のうち、<BR>
+	 * 実行履歴の変化量で判定するか設定する。<BR>
+	 * @param end_delay_change_mount 実行履歴の変化量で判定するか
+	 */
+	public void setEnd_delay_change_mount(Boolean end_delay_change_mount) {
+		this.end_delay_change_mount = end_delay_change_mount;
+	}
+
+	/**
+	 * 終了遅延の判定条件のうち、<BR>
+	 * 実行履歴の変化量の値を返す。<BR>
+	 * @return 実行履歴の変化量の値
+	 */
+	public Double getEnd_delay_change_mount_value() {
+		return end_delay_change_mount_value;
+	}
+
+	/**
+	 * 終了遅延の判定条件のうち、<BR>
+	 * 実行履歴の変化量の値を設定する。<BR>
+	 * @param end_delay_change_mount_value 実行履歴の変化量の値
+	 */
+	public void setEnd_delay_change_mount_value(Double end_delay_change_mount_value) {
+		this.end_delay_change_mount_value = end_delay_change_mount_value;
 	}
 
 	/**
@@ -894,6 +1071,14 @@ public class JobWaitRuleInfo implements Serializable {
 		result = prime * result
 				+ ((endValue == null) ? 0 : endValue.hashCode());
 		result = prime * result
+				+ ((exclusiveBranch == null) ? 0 : exclusiveBranch.hashCode());
+		result = prime * result
+				+ ((exclusiveBranchEndStatus == null) ? 0 : exclusiveBranchEndStatus.hashCode());
+		result = prime * result
+				+ ((exclusiveBranchEndValue == null) ? 0 : exclusiveBranchEndValue.hashCode());
+		result = prime * result
+				+ ((exclusiveBranchNextJobOrderList == null) ? 0 : exclusiveBranchNextJobOrderList.hashCode());
+		result = prime * result
 				+ ((end_delay == null) ? 0 : end_delay.hashCode());
 		result = prime
 				* result
@@ -964,6 +1149,11 @@ public class JobWaitRuleInfo implements Serializable {
 				+ ((skipEndStatus == null) ? 0 : skipEndStatus.hashCode());
 		result = prime * result
 				+ ((skipEndValue == null) ? 0 : skipEndValue.hashCode());
+		result = prime * result + ((jobRetryFlg == null) ? 0 : jobRetryFlg.hashCode());
+		result = prime * result
+				+ ((jobRetryEndStatus == null) ? 0 : jobRetryEndStatus.hashCode());
+		result = prime * result
+				+ ((jobRetry== null) ? 0 : jobRetry.hashCode());
 		result = prime * result
 				+ ((start_delay == null) ? 0 : start_delay.hashCode());
 		result = prime
@@ -1026,11 +1216,19 @@ public class JobWaitRuleInfo implements Serializable {
 				equalsSub(o1.isSkip(), o2.isSkip()) &&
 				equalsSub(o1.getSkipEndStatus(), o2.getSkipEndStatus()) &&
 				equalsSub(o1.getSkipEndValue(), o2.getSkipEndValue()) &&
+				equalsSub(o1.getJobRetryFlg(), o2.getJobRetryFlg()) &&
+				equalsSub(o1.getJobRetryEndStatus(), o2.getJobRetryEndStatus()) &&
+				equalsSub(o1.getJobRetry(), o2.getJobRetry()) &&
 				equalsSub(o1.getCondition(), o2.getCondition()) &&
-				equalsArray(o1.getObject(), o2.getObject()) &&
+				equalsComparable(o1.getObject(), o2.getObject()) &&
 				equalsSub(o1.isEndCondition(), o2.isEndCondition()) &&
 				equalsSub(o1.getEndStatus(), o2.getEndStatus()) &&
 				equalsSub(o1.getEndValue(), o2.getEndValue()) &&
+
+				equalsSub(o1.isExclusiveBranch(), o2.isExclusiveBranch()) &&
+				equalsSub(o1.getExclusiveBranchEndStatus(), o2.getExclusiveBranchEndStatus()) &&
+				equalsSub(o1.getExclusiveBranchEndValue(), o2.getExclusiveBranchEndValue()) &&
+				equalsList(o1.getExclusiveBranchNextJobOrderList(), o2.getExclusiveBranchNextJobOrderList()) &&
 
 				equalsSub(o1.isCalendar(), o2.isCalendar()) &&
 				equalsSub(o1.getCalendarId(), o2.getCalendarId()) &&
@@ -1064,6 +1262,8 @@ public class JobWaitRuleInfo implements Serializable {
 				equalsSub(o1.getEnd_delay_operation_type(), o2.getEnd_delay_operation_type()) &&
 				equalsSub(o1.getEnd_delay_operation_end_status(), o2.getEnd_delay_operation_end_status()) &&
 				equalsSub(o1.getEnd_delay_operation_end_value(), o2.getEnd_delay_operation_end_value()) &&
+				equalsSub(o1.isEnd_delay_change_mount(), o2.isEnd_delay_change_mount()) &&
+				equalsSub(o1.getEnd_delay_change_mount_value(), o2.getEnd_delay_change_mount_value()) &&
 
 				equalsSub(o1.isMultiplicityNotify(), o2.isMultiplicityNotify()) &&
 				equalsSub(o1.getMultiplicityNotifyPriority(), o2.getMultiplicityNotifyPriority()) &&
@@ -1088,8 +1288,27 @@ public class JobWaitRuleInfo implements Serializable {
 		}
 		return ret;
 	}
+	
+	private <T> boolean equalsList(List<T> list1, List<T> list2) {
+		if (list1 != null && !list1.isEmpty()) {
+			if (list2 != null && list1.size() == list2.size()) {
+				for (int i = 0; i < list1.size(); i++) {
+					if (!list1.get(i).equals(list2.get(i))) {
+						if (m_log.isTraceEnabled()) {
+							m_log.trace("equalsList : " + list1.get(i) + "!=" + list2.get(i));
+						}
+						return false;
+					}
+				}
+				return true;
+			}
+		} else if (list2 == null || list2.isEmpty()) {
+			return true;
+		}
+		return false;
+	}
 
-	private boolean equalsArray(ArrayList<JobObjectInfo> list1, ArrayList<JobObjectInfo> list2) {
+	private <T extends Comparable<T>> boolean equalsComparable(List<T> list1, List<T> list2) {
 		if (list1 != null && !list1.isEmpty()) {
 			if (list2 != null && list1.size() == list2.size()) {
 				Collections.sort(list1);
@@ -1097,7 +1316,7 @@ public class JobWaitRuleInfo implements Serializable {
 				for (int i = 0; i < list1.size(); i++) {
 					if (!list1.get(i).equals(list2.get(i))) {
 						if (m_log.isTraceEnabled()) {
-							m_log.trace("equalsArray : " + list1.get(i) + "!=" + list2.get(i));
+							m_log.trace("equalsComparable : " + list1.get(i) + "!=" + list2.get(i));
 						}
 						return false;
 					}
@@ -1130,6 +1349,9 @@ public class JobWaitRuleInfo implements Serializable {
 				"スキップ",
 				"スキップ時終了状態",
 				"スキップ時終了値",
+				"繰り返し実行",
+				"繰り返し実行回数",
+				"繰り返し実行完了状態",
 				"判定対象の条件関係",
 				"ジョブの判定対象情報",
 				"条件を満たさなければ終了する",
@@ -1165,13 +1387,19 @@ public class JobWaitRuleInfo implements Serializable {
 				"終了遅延操作種別",
 				"終了遅延操作終了状態",
 				"終了遅延操作終了値",
+				"終了遅延実行履歴からの変化量",
+				"終了遅延実行履歴からの変化量値",
 				"多重度の通知",
 				"多重度の重要度",
 				"多重度の状態種別",
-				"多重度の終了値"
+				"多重度の終了値",
+				"後続ジョブは１つだけ実行する",
+				"実行されなかった後続ジョブの終了状態",
+				"実行されなかった後続ジョブの終了値",
+				"実行する後続ジョブの優先順位",
 		};
 
-		for (int i = 0; i < 43 ; i++) {
+		for (int i = 0; i < 52 ; i++) {
 			System.out.println("*** Only " + str[i] + " is different ***");
 			info2 = createSampleInfo2(i);
 			judge(false, info1.equals(info2));
@@ -1190,6 +1418,10 @@ public class JobWaitRuleInfo implements Serializable {
 		info1.setSkip(false);
 		info1.setSkipEndStatus(0);
 		info1.setSkipEndValue(0);
+
+		info1.setJobRetryFlg(false);
+		info1.setJobRetryEndStatus(0);
+		info1.setJobRetry(0);
 
 		info1.setCondition(0);
 		ArrayList<JobObjectInfo> objList = new ArrayList<JobObjectInfo>();
@@ -1250,10 +1482,32 @@ public class JobWaitRuleInfo implements Serializable {
 		info1.setEnd_delay_operation_end_status(0);
 		info1.setEnd_delay_operation_end_value(0);
 
+		info1.setEnd_delay_change_mount(false);
+		info1.setEnd_delay_change_mount_value(1D);
+
 		info1.setMultiplicityNotify(false);
 		info1.setMultiplicityNotifyPriority(0);
 		info1.setMultiplicityOperation(0);
 		info1.setMultiplicityEndValue(0);
+
+		info1.setExclusiveBranch(false);
+		info1.setExclusiveBranchEndStatus(0);
+		info1.setExclusiveBranchEndValue(0);
+		ArrayList<JobNextJobOrderInfo> nextJobOrderInfos = new ArrayList<>();
+		{
+			JobNextJobOrderInfo nextJobOrderInfo1 = new JobNextJobOrderInfo();
+			nextJobOrderInfo1.setJobId("job_id");
+			nextJobOrderInfo1.setJobunitId("jobunit_id");
+			nextJobOrderInfo1.setNextJobId("next_job_id1");
+			nextJobOrderInfos.add(nextJobOrderInfo1);
+
+			JobNextJobOrderInfo nextJobOrderInfo2 = new JobNextJobOrderInfo();
+			nextJobOrderInfo2.setJobId("job_id");
+			nextJobOrderInfo2.setJobunitId("jobunit_id");
+			nextJobOrderInfo2.setNextJobId("next_job_id2");
+			nextJobOrderInfos.add(nextJobOrderInfo2);
+		}
+		info1.setExclusiveBranchNextJobOrderList(nextJobOrderInfos);
 
 		return info1;
 	}
@@ -1394,16 +1648,57 @@ public class JobWaitRuleInfo implements Serializable {
 			info2.setEnd_delay_operation_end_value(1);
 			break;
 		case 39 :
-			info2.setMultiplicityNotify(true);
+			info2.setEnd_delay_change_mount(true);
 			break;
 		case 40 :
-			info2.setMultiplicityNotifyPriority(1);
+			info2.setEnd_delay_change_mount_value(2D);
 			break;
 		case 41 :
-			info2.setMultiplicityOperation(1);
+			info2.setMultiplicityNotify(true);
 			break;
 		case 42 :
+			info2.setMultiplicityNotifyPriority(1);
+			break;
+		case 43 :
+			info2.setMultiplicityOperation(1);
+			break;
+		case 44 :
 			info2.setMultiplicityEndValue(1);
+			break;
+		case 45 :
+			info2.setExclusiveBranch(true);
+			break;
+		case 46 :
+			info2.setExclusiveBranchEndStatus(1);
+			break;
+		case 47 :
+			info2.setExclusiveBranchEndValue(1);
+			break;
+		case 48 :
+			ArrayList<JobNextJobOrderInfo> nextJobOrderInfos = new ArrayList<>();
+			{
+			JobNextJobOrderInfo nextJobOrderInfo2 = new JobNextJobOrderInfo();
+			nextJobOrderInfo2.setJobId("job_id");
+			nextJobOrderInfo2.setJobunitId("jobunit_id");
+			nextJobOrderInfo2.setNextJobId("next_job_id2");
+			nextJobOrderInfos.add(nextJobOrderInfo2);
+
+			JobNextJobOrderInfo nextJobOrderInfo1 = new JobNextJobOrderInfo();
+			nextJobOrderInfo1.setJobId("job_id");
+			nextJobOrderInfo1.setJobunitId("jobunit_id");
+			nextJobOrderInfo1.setNextJobId("next_job_id1");
+			nextJobOrderInfos.add(nextJobOrderInfo1);
+			}
+			info2.setExclusiveBranchNextJobOrderList(nextJobOrderInfos);
+			break;
+		case 49 :
+			info2.setJobRetryFlg(true);
+			break;
+		case 50 :
+			info2.setJobRetryEndStatus(1);
+			break;
+		case 51 :
+			info2.setJobRetry(1);
 			break;
 		default:
 			break;
@@ -1415,12 +1710,12 @@ public class JobWaitRuleInfo implements Serializable {
 
 		ArrayList<JobWaitRuleInfo> retList = new ArrayList<JobWaitRuleInfo>();
 		/**
-		 * JobWaitRuleInfo内のパラメータは43種類のため、
+		 * JobWaitRuleInfo内のパラメータは51種類のため、
 		 * その回数繰り返す
 		 * カウントアップするごとに、パラメータの値を変える。
 		 * 常に、いずれか１つのパラメータがcreateSampleInfo()にて作成されたデータと違う
 		 */
-		for (int i = 0; i < 43 ; i++) {
+		for (int i = 0; i < 52 ; i++) {
 			JobWaitRuleInfo info2 = createSampleInfo2(i);
 			retList.add(info2);
 		}

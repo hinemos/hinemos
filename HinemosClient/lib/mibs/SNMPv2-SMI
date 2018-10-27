@@ -1,0 +1,342 @@
+SNMPv2-SMI DEFINITIONS ::= BEGIN
+
+
+
+org            OBJECT IDENTIFIER ::= { iso 3 }  --  "iso" = 1
+dod            OBJECT IDENTIFIER ::= { org 6 }
+internet       OBJECT IDENTIFIER ::= { dod 1 }
+
+directory      OBJECT IDENTIFIER ::= { internet 1 }
+
+mgmt           OBJECT IDENTIFIER ::= { internet 2 }
+mib-2          OBJECT IDENTIFIER ::= { mgmt 1 }
+transmission   OBJECT IDENTIFIER ::= { mib-2 10 }
+
+experimental   OBJECT IDENTIFIER ::= { internet 3 }
+
+private        OBJECT IDENTIFIER ::= { internet 4 }
+enterprises    OBJECT IDENTIFIER ::= { private 1 }
+
+security       OBJECT IDENTIFIER ::= { internet 5 }
+
+snmpV2         OBJECT IDENTIFIER ::= { internet 6 }
+
+snmpDomains    OBJECT IDENTIFIER ::= { snmpV2 1 }
+
+snmpProxys     OBJECT IDENTIFIER ::= { snmpV2 2 }
+
+snmpModules    OBJECT IDENTIFIER ::= { snmpV2 3 }
+
+ExtUTCTime ::= OCTET STRING(SIZE(11 | 13))
+
+
+
+
+
+
+
+
+
+
+MODULE-IDENTITY MACRO ::=
+BEGIN
+    TYPE NOTATION ::=
+                  "LAST-UPDATED" value(Update ExtUTCTime)
+                  "ORGANIZATION" Text
+                  "CONTACT-INFO" Text
+                  "DESCRIPTION" Text
+                  RevisionPart
+
+    VALUE NOTATION ::=
+                  value(VALUE OBJECT IDENTIFIER)
+
+    RevisionPart ::=
+                  Revisions
+                | empty
+    Revisions ::=
+                  Revision
+                | Revisions Revision
+    Revision ::=
+                  "REVISION" value(Update ExtUTCTime)
+                  "DESCRIPTION" Text
+
+    Text ::= value(IA5String)
+END
+
+
+OBJECT-IDENTITY MACRO ::=
+BEGIN
+    TYPE NOTATION ::=
+                  "STATUS" Status
+                  "DESCRIPTION" Text
+
+
+
+
+
+
+
+
+                  ReferPart
+
+    VALUE NOTATION ::=
+                  value(VALUE OBJECT IDENTIFIER)
+
+    Status ::=
+                  "current"
+                | "deprecated"
+                | "obsolete"
+
+    ReferPart ::=
+                  "REFERENCE" Text
+                | empty
+
+    Text ::= value(IA5String)
+END
+
+
+
+ObjectName ::=
+    OBJECT IDENTIFIER
+
+NotificationName ::=
+    OBJECT IDENTIFIER
+
+
+
+ObjectSyntax ::=
+    CHOICE {
+        simple
+            SimpleSyntax,
+
+
+        application-wide
+            ApplicationSyntax
+    }
+
+
+
+
+
+
+
+
+
+
+SimpleSyntax ::=
+    CHOICE {
+        integer-value               -- includes Integer32
+            INTEGER (-2147483648..2147483647),
+
+        string-value
+            OCTET STRING (SIZE (0..65535)),
+
+        objectID-value
+            OBJECT IDENTIFIER
+    }
+
+Integer32 ::=
+        INTEGER (-2147483648..2147483647)
+
+
+
+ApplicationSyntax ::=
+    CHOICE {
+        ipAddress-value
+            IpAddress,
+
+        counter-value
+            Counter32,
+
+        timeticks-value
+            TimeTicks,
+
+        arbitrary-value
+            Opaque,
+
+        big-counter-value
+            Counter64,
+
+        unsigned-integer-value  -- includes Gauge32
+            Unsigned32
+    }
+
+
+
+
+
+
+
+
+
+IpAddress ::=
+    [APPLICATION 0]
+        IMPLICIT OCTET STRING (SIZE (4))
+
+Counter32 ::=
+    [APPLICATION 1]
+        IMPLICIT INTEGER (0..4294967295)
+
+Gauge32 ::=
+    [APPLICATION 2]
+        IMPLICIT INTEGER (0..4294967295)
+
+Unsigned32 ::=
+    [APPLICATION 2]
+        IMPLICIT INTEGER (0..4294967295)
+
+TimeTicks ::=
+    [APPLICATION 3]
+        IMPLICIT INTEGER (0..4294967295)
+
+Opaque ::=
+    [APPLICATION 4]
+        IMPLICIT OCTET STRING
+
+Counter64 ::=
+    [APPLICATION 6]
+        IMPLICIT INTEGER (0..18446744073709551615)
+
+
+
+OBJECT-TYPE MACRO ::=
+BEGIN
+    TYPE NOTATION ::=
+                  "SYNTAX" Syntax
+                  UnitsPart
+                  "MAX-ACCESS" Access
+                  "STATUS" Status
+                  "DESCRIPTION" Text
+                  ReferPart
+
+
+
+
+
+
+
+
+                  IndexPart
+                  DefValPart
+
+    VALUE NOTATION ::=
+                  value(VALUE ObjectName)
+
+    Syntax ::=   -- Must be one of the following:
+                   type
+                | "BITS" "{" NamedBits "}"
+
+    NamedBits ::= NamedBit
+                | NamedBits "," NamedBit
+
+    NamedBit ::=  identifier "(" number ")" -- number is nonnegative
+
+    UnitsPart ::=
+                  "UNITS" Text
+                | empty
+
+    Access ::=
+                  "not-accessible"
+                | "accessible-for-notify"
+                | "read-only"
+                | "read-write"
+                | "read-create"
+
+    Status ::=
+                  "current"
+                | "deprecated"
+                | "obsolete"
+
+    ReferPart ::=
+                  "REFERENCE" Text
+                | empty
+
+    IndexPart ::=
+                  "INDEX"    "{" IndexTypes "}"
+                | "AUGMENTS" "{" Entry      "}"
+                | empty
+    IndexTypes ::=
+                  IndexType
+                | IndexTypes "," IndexType
+    IndexType ::=
+                  "IMPLIED" Index
+                | Index
+
+
+
+
+
+
+
+
+    Index ::=
+                  value(ObjectName)
+    Entry ::=
+                  value(ObjectName)
+
+    DefValPart ::= "DEFVAL" "{" Defvalue "}"
+                | empty
+
+    Defvalue ::=  -- must be valid for the type specified in
+                  value(ObjectSyntax)
+                | "{" BitsValue "}"
+
+    BitsValue ::= BitNames
+                | empty
+
+    BitNames ::=  BitName
+                | BitNames "," BitName
+
+    BitName ::= identifier
+
+    Text ::= value(IA5String)
+END
+
+
+
+NOTIFICATION-TYPE MACRO ::=
+BEGIN
+    TYPE NOTATION ::=
+                  ObjectsPart
+                  "STATUS" Status
+                  "DESCRIPTION" Text
+                  ReferPart
+
+    VALUE NOTATION ::=
+                  value(VALUE NotificationName)
+
+    ObjectsPart ::=
+                  "OBJECTS" "{" Objects "}"
+                | empty
+    Objects ::=
+                  Object
+
+
+
+
+
+
+
+
+                | Objects "," Object
+    Object ::=
+                  value(ObjectName)
+
+    Status ::=
+                  "current"
+                | "deprecated"
+                | "obsolete"
+
+    ReferPart ::=
+                  "REFERENCE" Text
+                | empty
+
+    Text ::= value(IA5String)
+END
+
+
+zeroDotZero    OBJECT-IDENTITY
+    STATUS     current
+    ::= { 0 0 }
+
+END

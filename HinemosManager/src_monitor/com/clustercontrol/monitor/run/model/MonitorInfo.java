@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.run.model;
 
 import java.util.ArrayList;
@@ -26,7 +34,13 @@ import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
+import com.clustercontrol.analytics.model.CorrelationCheckInfo;
+import com.clustercontrol.analytics.model.IntegrationCheckInfo;
+import com.clustercontrol.analytics.model.LogcountCheckInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.binary.model.BinaryCheckInfo;
+import com.clustercontrol.binary.model.BinaryPatternInfo;
+import com.clustercontrol.binary.model.PacketCheckInfo;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -91,6 +105,14 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	private String calendarId;
 	private String logFormatId;
 	private String facilityId;
+	private Boolean predictionFlg;
+	private String predictionMethod;
+	private Integer predictionAnalysysRange;
+	private Integer predictionTarget;
+	private String predictionApplication;
+	private Boolean changeFlg;
+	private Integer changeAnalysysRange;
+	private String changeApplication;
 	private List<MonitorNumericValueInfo> monitorNumericValueInfoEntities = new ArrayList<>();
 	private PerfCheckInfo monitorPerfInfoEntity;
 	private PingCheckInfo monitorPingInfoEntity;
@@ -102,10 +124,16 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	private WinServiceCheckInfo monitorWinserviceInfoEntity;
 	private WinEventCheckInfo monitorWinEventInfoEntity;
 	private LogfileCheckInfo monitorLogfileInfoEntity;
+	private BinaryCheckInfo monitorBinaryInfoEntity;
+	private PacketCheckInfo monitorPacketInfoEntity;
 	private PluginCheckInfo monitorPluginInfoEntity;
 	private HttpScenarioCheckInfo monitorHttpScenarioInfoEntity;
 	private JmxCheckInfo monitorJmxInfoEntity;
+	private LogcountCheckInfo monitorLogcountInfoEntity;
+	private CorrelationCheckInfo monitorCorrelationInfoEntity;
+	private IntegrationCheckInfo monitorIntegrationInfoEntity;
 	private List<MonitorStringValueInfo> monitorStringValueInfoEntities = new ArrayList<>();
+	private List<BinaryPatternInfo> binaryPatternInfoEntities = new ArrayList<>();
 	private List<MonitorTruthValueInfo> monitorTruthValueInfoEntities = new ArrayList<>();
 	private LogFormat logformat;
 	
@@ -115,6 +143,12 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 
 	/** 通知 */
 	private List<NotifyRelationInfo> m_notifyRelationList;
+
+	/** 通知(将来予測用) */
+	private List<NotifyRelationInfo> m_predictionNotifyRelationList;
+
+	/** 通知(変化点監視用) */
+	private List<NotifyRelationInfo> m_changeNotifyRelationList;
 
 	public MonitorInfo() {
 		super();
@@ -365,6 +399,79 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 		this.logFormatId = logFormatId;
 	}
 
+	@Column(name="prediction_flg")
+	public Boolean getPredictionFlg() {
+		return predictionFlg;
+	}
+
+	public void setPredictionFlg(Boolean predictionFlg) {
+		this.predictionFlg = predictionFlg;
+	}
+
+	@Column(name="prediction_method")
+	public String getPredictionMethod() {
+		return predictionMethod;
+	}
+
+	public void setPredictionMethod(String predictionMethod) {
+		this.predictionMethod = predictionMethod;
+	}
+
+	@Column(name="prediction_analysys_range")
+	public Integer getPredictionAnalysysRange() {
+		return predictionAnalysysRange;
+	}
+
+	public void setPredictionAnalysysRange(Integer predictionAnalysysRange) {
+		this.predictionAnalysysRange = predictionAnalysysRange;
+	}
+
+	@Column(name="prediction_target")
+	public Integer getPredictionTarget() {
+		return predictionTarget;
+	}
+
+	public void setPredictionTarget(Integer predictionTarget) {
+		this.predictionTarget = predictionTarget;
+	}
+
+	@Column(name="prediction_application")
+	public String getPredictionApplication() {
+		return this.predictionApplication;
+	}
+
+	public void setPredictionApplication(String predictionApplication) {
+		this.predictionApplication = predictionApplication;
+	}
+
+	@Column(name="change_flg")
+	public Boolean getChangeFlg() {
+		return changeFlg;
+	}
+
+	public void setChangeFlg(Boolean changeFlg) {
+		this.changeFlg = changeFlg;
+	}
+
+	@Column(name="change_analysys_range")
+	public Integer getChangeAnalysysRange() {
+		return changeAnalysysRange;
+	}
+
+	public void setChangeAnalysysRange(Integer changeAnalysysRange) {
+		this.changeAnalysysRange = changeAnalysysRange;
+	}
+
+	@Column(name="change_application")
+	public String getChangeApplication() {
+		return this.changeApplication;
+	}
+
+	public void setChangeApplication(String changeApplication) {
+		this.changeApplication = changeApplication;
+	}
+
+
 	//bi-directional many-to-one association to MonitorNumericValueInfoEntity
 	@OneToMany(mappedBy="monitorInfo", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<MonitorNumericValueInfo> getNumericValueInfo() {
@@ -484,8 +591,27 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 		this.monitorLogfileInfoEntity = monitorLogfileInfoEntity;
 	}
 
+	//bi-directional one-to-one association to MonitorBinaryInfoEntity
+	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	public BinaryCheckInfo getBinaryCheckInfo() {
+		return this.monitorBinaryInfoEntity;
+	}
 
-	//bi-directional one-to-one association to MonitorLogfileInfoEntity
+	public void setBinaryCheckInfo(BinaryCheckInfo monitorBinaryInfoEntity) {
+		this.monitorBinaryInfoEntity = monitorBinaryInfoEntity;
+	}
+
+	//bi-directional one-to-one association to MonitorPacketInfoEntity
+	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	public PacketCheckInfo getPacketCheckInfo() {
+		return this.monitorPacketInfoEntity;
+	}
+
+	public void setPacketCheckInfo(PacketCheckInfo monitorPacketInfoEntity) {
+		this.monitorPacketInfoEntity = monitorPacketInfoEntity;
+	}
+
+	//bi-directional one-to-one association to MonitorHttpScenarioInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public HttpScenarioCheckInfo getHttpScenarioCheckInfo() {
 		return monitorHttpScenarioInfoEntity;
@@ -496,7 +622,7 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 		this.monitorHttpScenarioInfoEntity = monitorHttpScenarioInfoEntity;
 	}
 
-	//bi-directional one-to-one association to MonitorLogfileInfoEntity
+	//bi-directional one-to-one association to MonitorJmxInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public JmxCheckInfo getJmxCheckInfo() {
 		return monitorJmxInfoEntity;
@@ -505,6 +631,39 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	public void setJmxCheckInfo(
 			JmxCheckInfo monitorJmxInfoEntity) {
 		this.monitorJmxInfoEntity = monitorJmxInfoEntity;
+	}
+
+	//bi-directional one-to-one association to MonitorLogcountInfoEntity
+	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	public LogcountCheckInfo getLogcountCheckInfo() {
+		return monitorLogcountInfoEntity;
+	}
+
+	public void setLogcountCheckInfo(
+			LogcountCheckInfo monitorLogcountInfoEntity) {
+		this.monitorLogcountInfoEntity = monitorLogcountInfoEntity;
+	}
+
+	//bi-directional one-to-one association to MonitorCorrelationInfoEntity
+	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	public CorrelationCheckInfo getCorrelationCheckInfo() {
+		return monitorCorrelationInfoEntity;
+	}
+
+	public void setCorrelationCheckInfo(
+			CorrelationCheckInfo monitorCorrelationInfoEntity) {
+		this.monitorCorrelationInfoEntity = monitorCorrelationInfoEntity;
+	}
+
+	//bi-directional one-to-one association to MonitorIntegrationInfoEntity
+	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	public IntegrationCheckInfo getIntegrationCheckInfo() {
+		return monitorIntegrationInfoEntity;
+	}
+
+	public void setIntegrationCheckInfo(
+			IntegrationCheckInfo monitorIntegrationInfoEntity) {
+		this.monitorIntegrationInfoEntity = monitorIntegrationInfoEntity;
 	}
 
 
@@ -537,6 +696,23 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 		this.monitorStringValueInfoEntities = monitorStringValueInfoEntities;
 	}
 
+	//bi-directional many-to-one association to BinaryPatternInfoEntity
+	@OneToMany(mappedBy="monitorInfo", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<BinaryPatternInfo> getBinaryPatternInfo() {
+		return this.binaryPatternInfoEntities;
+	}
+
+	public void setBinaryPatternInfo(List<BinaryPatternInfo> binaryPatternInfoEntities) {
+		if (binaryPatternInfoEntities != null && binaryPatternInfoEntities.size() > 0) {
+			Collections.sort(binaryPatternInfoEntities, new Comparator<BinaryPatternInfo>() {
+				@Override
+				public int compare(BinaryPatternInfo o1, BinaryPatternInfo o2) {
+					return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
+				}
+			});
+		}
+		this.binaryPatternInfoEntities = binaryPatternInfoEntities;
+	}
 
 	//bi-directional many-to-one association to MonitorTruthValueInfoEntity
 	@OneToMany(mappedBy="monitorInfo", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
@@ -555,14 +731,16 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	 * 
 	 */
 	public void deleteMonitorNumericValueInfoEntities(List<MonitorNumericValueInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MonitorNumericValueInfo> list = this.getNumericValueInfo();
-		Iterator<MonitorNumericValueInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			MonitorNumericValueInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MonitorNumericValueInfo> list = this.getNumericValueInfo();
+			Iterator<MonitorNumericValueInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				MonitorNumericValueInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -574,14 +752,38 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	 * 
 	 */
 	public void deleteMonitorStringValueInfoEntities(List<MonitorStringValueInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MonitorStringValueInfo> list = this.getStringValueInfo();
-		Iterator<MonitorStringValueInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			MonitorStringValueInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MonitorStringValueInfo> list = this.getStringValueInfo();
+			Iterator<MonitorStringValueInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				MonitorStringValueInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
+			}
+		}
+	}
+	
+
+	/**
+	 * BinaryPatternInfo削除<BR>
+	 * 
+	 * 指定されたPK以外の子Entityを削除する。
+	 * 
+	 */
+	public void deleteBinaryPatternInfoEntities(List<MonitorStringValueInfoPK> notDelPkList) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<BinaryPatternInfo> list = this.getBinaryPatternInfo();
+			Iterator<BinaryPatternInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				BinaryPatternInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -593,14 +795,16 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	 * 
 	 */
 	public void deleteMonitorTruthValueInfoEntities(List<MonitorTruthValueInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MonitorTruthValueInfo> list = this.getTruthValueInfo();
-		Iterator<MonitorTruthValueInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			MonitorTruthValueInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MonitorTruthValueInfo> list = this.getTruthValueInfo();
+			Iterator<MonitorTruthValueInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				MonitorTruthValueInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}
@@ -623,7 +827,45 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	public void setNotifyRelationList(List<NotifyRelationInfo> m_notifyRelationList ){
 		this.m_notifyRelationList = m_notifyRelationList;
 	}
-	
+
+	/**
+	 * 通知情報リスト（将来通知用）を取得します。
+	 * 
+	 * @return 通知情報リスト（将来通知用）
+	 */
+	@Transient
+	public List<NotifyRelationInfo> getPredictionNotifyRelationList(){
+		return this.m_predictionNotifyRelationList;
+	}
+
+	/**
+	 * 通知情報リスト（将来通知用）を設定します。
+	 * 
+	 * @param m_predictionNotifyRelationList 通知情報リスト（将来通知用）
+	 */
+	public void setPredictionNotifyRelationList(List<NotifyRelationInfo> m_predictionNotifyRelationList ){
+		this.m_predictionNotifyRelationList = m_predictionNotifyRelationList;
+	}
+
+	/**
+	 * 通知情報リスト（変化点監視用）を取得します。
+	 * 
+	 * @return 通知情報リスト（変化点監視用）
+	 */
+	@Transient
+	public List<NotifyRelationInfo> getChangeNotifyRelationList(){
+		return this.m_changeNotifyRelationList;
+	}
+
+	/**
+	 * 通知情報リスト（変化点監視用）を設定します。
+	 * 
+	 * @param m_changeNotifyRelationList 通知情報リスト（変化点監視用）
+	 */
+	public void setChangeNotifyRelationList(List<NotifyRelationInfo> m_changeNotifyRelationList ){
+		this.m_changeNotifyRelationList = m_changeNotifyRelationList;
+	}
+
 	@Transient
 	public String getScope() {
 		if (scope == null)

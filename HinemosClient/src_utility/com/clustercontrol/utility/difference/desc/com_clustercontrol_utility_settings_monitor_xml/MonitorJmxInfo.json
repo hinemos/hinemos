@@ -1,0 +1,40 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"masterId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorJmxInfo_masterId"}
+	]},
+	
+	{
+	"propName":"authUser",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorJmxInfo_authUser"}
+	]},
+	
+	{
+	"propName":"authPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorJmxInfo_authPassword"}
+	]},
+	
+	{
+	"propName":"port",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorJmxInfo_port"}
+	]},
+
+	{
+	"propName":"convertFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorJmxInfo_convertFlg"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_nothing"},
+			{"value":"1", "name":"name_takeDifference"}
+		]}
+	]}
+]
+}

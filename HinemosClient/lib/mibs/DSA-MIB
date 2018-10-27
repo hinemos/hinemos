@@ -1,0 +1,462 @@
+DSA-MIB DEFINITIONS ::= BEGIN
+
+        IMPORTS
+          MODULE-IDENTITY,  OBJECT-TYPE,
+          NOTIFICATION-TYPE
+          , Counter32, Gauge32
+                     FROM SNMPv2-SMI
+          DisplayString,    TimeStamp,
+          TEXTUAL-CONVENTION
+                     FROM SNMPv2-TC
+          mib-2
+                     FROM RFC1213-MIB
+          applIndex, DistinguishedName
+                     FROM NETWORK-SERVICES-MIB;
+        dsaMIB MODULE-IDENTITY
+           LAST-UPDATED "9311250000Z"
+           ORGANIZATION "IETF Mail and Directory Management Working
+                         Group"
+
+
+
+
+
+         ::= { mib-2 29 }
+
+
+        dsaOpsTable OBJECT-TYPE
+            SYNTAX SEQUENCE OF DsaOpsEntry
+            MAX-ACCESS not-accessible
+            STATUS current
+            ::= {dsaMIB 1}
+
+        dsaOpsEntry OBJECT-TYPE
+            SYNTAX DsaOpsEntry
+            MAX-ACCESS not-accessible
+            STATUS current
+            INDEX { applIndex }
+            ::= {dsaOpsTable 1}
+
+        DsaOpsEntry ::= SEQUENCE {
+
+            dsaAnonymousBinds
+                Counter32,
+            dsaUnauthBinds
+                Counter32,
+            dsaSimpleAuthBinds
+                Counter32,
+            dsaStrongAuthBinds
+                Counter32,
+            dsaBindSecurityErrors
+                Counter32,
+
+
+
+
+
+
+            dsaInOps
+                Counter32,
+            dsaReadOps
+                Counter32,
+            dsaCompareOps
+                Counter32,
+            dsaAddEntryOps
+                Counter32,
+            dsaRemoveEntryOps
+                Counter32,
+            dsaModifyEntryOps
+                Counter32,
+            dsaModifyRDNOps
+                Counter32,
+            dsaListOps
+                Counter32,
+            dsaSearchOps
+                Counter32,
+            dsaOneLevelSearchOps
+                Counter32,
+            dsaWholeTreeSearchOps
+                Counter32,
+
+
+            dsaReferrals
+                Counter32,
+            dsaChainings
+                Counter32,
+
+
+            dsaSecurityErrors
+                Counter32,
+            dsaErrors
+                Counter32
+        }
+
+        dsaAnonymousBinds OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 1}
+
+
+
+
+
+        dsaUnauthBinds OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 2}
+
+        dsaSimpleAuthBinds OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 3}
+
+
+        dsaStrongAuthBinds OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 4}
+
+        dsaBindSecurityErrors OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+
+
+
+
+
+            ::= {dsaOpsEntry 5}
+
+        dsaInOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 6}
+
+        dsaReadOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 7}
+
+        dsaCompareOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 8}
+
+        dsaAddEntryOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 9}
+
+
+
+
+
+
+        dsaRemoveEntryOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 10}
+
+        dsaModifyEntryOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 11}
+
+        dsaModifyRDNOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 12}
+
+        dsaListOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 13}
+
+
+
+
+
+
+        dsaSearchOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 14}
+
+        dsaOneLevelSearchOps OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 15}
+
+        dsaWholeTreeSearchOps   OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 16}
+
+        dsaReferrals OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 17}
+
+
+
+
+
+        dsaChainings OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 18}
+
+        dsaSecurityErrors OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 19}
+
+        dsaErrors        OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaOpsEntry 20}
+
+        dsaEntriesTable OBJECT-TYPE
+            SYNTAX SEQUENCE OF DsaEntriesEntry
+            MAX-ACCESS not-accessible
+            STATUS current
+            ::= {dsaMIB 2}
+
+        dsaEntriesEntry OBJECT-TYPE
+            SYNTAX DsaEntriesEntry
+            MAX-ACCESS not-accessible
+            STATUS current
+            INDEX { applIndex }
+            ::= {dsaEntriesTable 1}
+
+        DsaEntriesEntry ::= SEQUENCE {
+            dsaMasterEntries
+                Gauge32,
+            dsaCopyEntries
+                Gauge32,
+            dsaCacheEntries
+                Gauge32,
+            dsaCacheHits
+                Counter32,
+            dsaSlaveHits
+                Counter32
+        }
+
+        dsaMasterEntries OBJECT-TYPE
+            SYNTAX Gauge32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaEntriesEntry 1}
+
+        dsaCopyEntries OBJECT-TYPE
+            SYNTAX Gauge32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaEntriesEntry 2}
+
+        dsaCacheEntries OBJECT-TYPE
+            SYNTAX Gauge32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaEntriesEntry 3}
+
+        dsaCacheHits OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaEntriesEntry 4}
+
+        dsaSlaveHits  OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaEntriesEntry 5}
+
+
+
+          dsaIntTable OBJECT-TYPE
+                  SYNTAX  SEQUENCE OF DsaIntEntry
+                  MAX-ACCESS  not-accessible
+                  STATUS  current
+                  ::= { dsaMIB 3 }
+
+          dsaIntEntry OBJECT-TYPE
+                  SYNTAX  DsaIntEntry
+                  MAX-ACCESS  not-accessible
+
+
+
+
+
+                  STATUS  current
+                  INDEX { applIndex,dsaIntIndex }
+                  ::= { dsaIntTable 1 }
+
+          DsaIntEntry ::= SEQUENCE {
+              dsaIntIndex
+                  INTEGER,
+              dsaName
+                  DistinguishedName,
+              dsaTimeOfCreation
+                  TimeStamp,
+              dsaTimeOfLastAttempt
+                  TimeStamp,
+              dsaTimeOfLastSuccess
+                  TimeStamp,
+              dsaFailuresSinceLastSuccess
+                  Counter32,
+              dsaFailures
+                  Counter32,
+              dsaSuccesses
+                  Counter32
+          }
+
+        dsaIntIndex  OBJECT-TYPE
+            SYNTAX INTEGER (1..2147483647)
+            MAX-ACCESS not-accessible
+            STATUS current
+            ::= {dsaIntEntry 1}
+
+        dsaName  OBJECT-TYPE
+            SYNTAX DistinguishedName
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaIntEntry 2}
+
+        dsaTimeOfCreation  OBJECT-TYPE
+            SYNTAX TimeStamp
+
+
+
+
+
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaIntEntry 3}
+
+        dsaTimeOfLastAttempt  OBJECT-TYPE
+            SYNTAX TimeStamp
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaIntEntry 4}
+
+        dsaTimeOfLastSuccess  OBJECT-TYPE
+            SYNTAX TimeStamp
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaIntEntry 5}
+
+        dsaFailuresSinceLastSuccess  OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaIntEntry 6}
+
+        dsaFailures  OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+
+
+
+
+
+            STATUS current
+            ::= {dsaIntEntry 7}
+
+        dsaSuccesses  OBJECT-TYPE
+            SYNTAX Counter32
+            MAX-ACCESS read-only
+            STATUS current
+            ::= {dsaIntEntry 8}
+
+
+
+        dsaConformance OBJECT IDENTIFIER ::= { dsaMIB 4 }
+
+        dsaGroups      OBJECT IDENTIFIER ::= { dsaConformance 1 }
+        dsaCompliances OBJECT IDENTIFIER ::= { dsaConformance 2 }
+
+
+        dsaOpsCompliance MODULE-COMPLIANCE
+            STATUS  current
+
+            MODULE  -- this module
+                MANDATORY-GROUPS { dsaOpsGroup }
+
+            ::= { dsaCompliances 1 }
+
+        dsaEntryCompliance MODULE-COMPLIANCE
+            STATUS  current
+
+            MODULE  -- this module
+                MANDATORY-GROUPS { dsaOpsGroup,dsaEntryGroup }
+
+
+
+
+
+
+            ::= { dsaCompliances 2 }
+
+        dsaIntCompliance MODULE-COMPLIANCE
+            STATUS  current
+
+            MODULE  -- this module
+                MANDATORY-GROUPS { dsaOpsGroup, dsaIntGroup }
+
+            ::= { dsaCompliances 3 }
+
+
+
+        dsaOpsGroup    OBJECT-GROUP
+            OBJECTS {
+              dsaAnonymousBinds,  dsaUnauthBinds,       dsaSimpleAuthBinds,
+              dsaStrongAuthBinds, dsaBindSecurityErrors,dsaInOps,
+              dsaReadOps,         dsaCompareOps,        dsaAddEntryOps,
+              dsaRemoveEntryOps,  dsaModifyEntryOps,    dsaModifyRDNOps,
+              dsaListOps,         dsaSearchOps,         dsaOneLevelSearchOps,
+              dsaWholeTreeSearchOps,dsaReferrals,       dsaChainings,
+              dsaSecurityErrors,  dsaErrors}
+            STATUS  current
+            ::= { dsaGroups 1 }
+
+        dsaEntryGroup    OBJECT-GROUP
+            OBJECTS {dsaMasterEntries,   dsaCopyEntries,       dsaCacheEntries,
+                     dsaCacheHits,       dsaSlaveHits}
+            STATUS  current
+            ::= { dsaGroups 2 }
+
+        dsaIntGroup    OBJECT-GROUP
+            OBJECTS {
+              dsaName,             dsaTimeOfCreation, dsaTimeOfLastAttempt,
+              dsaTimeOfLastSuccess,dsaFailuresSinceLastSuccess,dsaFailures,
+              dsaSuccesses}
+            STATUS  current
+
+
+
+
+
+            ::= { dsaGroups 3 }
+
+
+END

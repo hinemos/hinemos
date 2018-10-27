@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.plugin.util;
@@ -35,9 +28,9 @@ public class QueryUtil {
 
 	public static DbmsSchedulerEntity getDbmsSchedulerPK(DbmsSchedulerEntityPK pk, ObjectPrivilegeMode mode) throws DbmsSchedulerNotFound, InvalidRole {
 		m_log.debug("getDbmsSchedulerPK() call.");
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 		DbmsSchedulerEntity entity = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			entity = em.find(DbmsSchedulerEntity.class, pk, mode);
 			if (entity == null) {
 				DbmsSchedulerNotFound je = new DbmsSchedulerNotFound("DbmsSchedulerEntity.getDbmsSchedulerPK");
@@ -73,7 +66,9 @@ public class QueryUtil {
 
 	public static List<DbmsSchedulerEntity> getAllDbmsScheduler() {
 		m_log.debug("getAllDbmsScheduler() call.");
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		return em.createNamedQuery("DbmsSchedulerEntity.findAll", DbmsSchedulerEntity.class).getResultList();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			return em.createNamedQuery("DbmsSchedulerEntity.findAll", DbmsSchedulerEntity.class).getResultList();
+		}
 	}
 }

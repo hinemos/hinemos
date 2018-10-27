@@ -1,15 +1,11 @@
 /*
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.ws.collect;
 
 import java.io.File;
@@ -42,11 +38,12 @@ import com.clustercontrol.collect.model.SummaryDay;
 import com.clustercontrol.collect.model.SummaryHour;
 import com.clustercontrol.collect.model.SummaryMonth;
 import com.clustercontrol.collect.session.CollectControllerBean;
+import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.bean.EventDataInfo;
+import com.clustercontrol.monitor.run.util.MonitorCollectDataCache;
 import com.clustercontrol.performance.monitor.entity.CollectorItemCodeMstData;
 import com.clustercontrol.performance.session.PerformanceCollectMasterControllerBean;
 import com.clustercontrol.platform.HinemosPropertyDefault;
@@ -128,7 +125,6 @@ public class CollectEndpoint {
 				map.put(facilityId, id); 
 			}
 		}else{
-			//実際はこっち
 			for(String facilityId : facilityIdList){
 				m_log.debug("itemName:" + itemName + ", displayName:"+displayName + ", monitorId:" + monitorId + ", facilityId:" + facilityId);
 				Integer id = null;
@@ -140,7 +136,6 @@ public class CollectEndpoint {
 				}
 				map.put(facilityId, id);
 			}
-			
 		}
 		HashMapInfo ret = new HashMapInfo();
 		ret.setMap4(map);
@@ -160,11 +155,12 @@ public class CollectEndpoint {
 	 * @param fromTime 取得するデータの時間(起点)
 	 * @param toTime 取得するデータの時間(終点)
 	 * @return 収集IDをキーとし、収集IDと時間とデータが格納されているHashMap
+	 * @throws HinemosDbTimeout
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
 	 * @throws HinemosUnknown
 	 */
-	public HashMapInfo getCollectData (List<Integer> idList, Integer summaryType, Long fromTime, Long toTime) throws InvalidUserPass, InvalidRole, HinemosUnknown {
+	public HashMapInfo getCollectData (List<Integer> idList, Integer summaryType, Long fromTime, Long toTime) throws HinemosDbTimeout, InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("getCollectData");
 
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
@@ -244,6 +240,8 @@ public class CollectEndpoint {
 						data.setId(summary.getId());
 						data.setTime(summary.getTime());
 						data.setValue(summary.getAvg());
+						data.setAverage(summary.getAverageAvg());
+						data.setStandardDeviation(summary.getStandardDeviationAvg());
 						if (map.get(data.getId().getCollectorid()) == null) {
 							list = new ArrayListInfo();
 							map.put(data.getId().getCollectorid(), list);
@@ -260,6 +258,8 @@ public class CollectEndpoint {
 						data.setId(summary.getId());
 						data.setTime(summary.getTime());
 						data.setValue(summary.getMin());
+						data.setAverage(summary.getAverageAvg());
+						data.setStandardDeviation(summary.getStandardDeviationAvg());
 						if (map.get(data.getId().getCollectorid()) == null) {
 							list = new ArrayListInfo();
 							map.put(data.getId().getCollectorid(), list);
@@ -276,6 +276,8 @@ public class CollectEndpoint {
 						data.setId(summary.getId());
 						data.setTime(summary.getTime());
 						data.setValue(summary.getMax());
+						data.setAverage(summary.getAverageAvg());
+						data.setStandardDeviation(summary.getStandardDeviationAvg());
 						if (map.get(data.getId().getCollectorid()) == null) {
 							list = new ArrayListInfo();
 							map.put(data.getId().getCollectorid(), list);
@@ -292,6 +294,8 @@ public class CollectEndpoint {
 						data.setId(summary.getId());
 						data.setTime(summary.getTime());
 						data.setValue(summary.getAvg());
+						data.setAverage(summary.getAverageAvg());
+						data.setStandardDeviation(summary.getStandardDeviationAvg());
 						if (map.get(data.getId().getCollectorid()) == null) {
 							list = new ArrayListInfo();
 							map.put(data.getId().getCollectorid(), list);
@@ -308,6 +312,8 @@ public class CollectEndpoint {
 						data.setId(summary.getId());
 						data.setTime(summary.getTime());
 						data.setValue(summary.getMin());
+						data.setAverage(summary.getAverageAvg());
+						data.setStandardDeviation(summary.getStandardDeviationAvg());
 						if (map.get(data.getId().getCollectorid()) == null) {
 							list = new ArrayListInfo();
 							map.put(data.getId().getCollectorid(), list);
@@ -324,6 +330,8 @@ public class CollectEndpoint {
 						data.setId(summary.getId());
 						data.setTime(summary.getTime());
 						data.setValue(summary.getMax());
+						data.setAverage(summary.getAverageAvg());
+						data.setStandardDeviation(summary.getStandardDeviationAvg());
 						if (map.get(data.getId().getCollectorid()) == null) {
 							list = new ArrayListInfo();
 							map.put(data.getId().getCollectorid(), list);
@@ -340,6 +348,8 @@ public class CollectEndpoint {
 						data.setId(summary.getId());
 						data.setTime(summary.getTime());
 						data.setValue(summary.getAvg());
+						data.setAverage(summary.getAverageAvg());
+						data.setStandardDeviation(summary.getStandardDeviationAvg());
 						if (map.get(data.getId().getCollectorid()) == null) {
 							list = new ArrayListInfo();
 							map.put(data.getId().getCollectorid(), list);
@@ -356,6 +366,8 @@ public class CollectEndpoint {
 						data.setId(summary.getId());
 						data.setTime(summary.getTime());
 						data.setValue(summary.getMin());
+						data.setAverage(summary.getAverageAvg());
+						data.setStandardDeviation(summary.getStandardDeviationAvg());
 						if (map.get(data.getId().getCollectorid()) == null) {
 							list = new ArrayListInfo();
 							map.put(data.getId().getCollectorid(), list);
@@ -372,6 +384,8 @@ public class CollectEndpoint {
 						data.setId(summary.getId());
 						data.setTime(summary.getTime());
 						data.setValue(summary.getMax());
+						data.setAverage(summary.getAverageAvg());
+						data.setStandardDeviation(summary.getStandardDeviationAvg());
 						if (map.get(data.getId().getCollectorid()) == null) {
 							list = new ArrayListInfo();
 							map.put(data.getId().getCollectorid(), list);
@@ -409,14 +423,14 @@ public class CollectEndpoint {
 		ret.setMap3(map);
 		return ret;
 	}
-	
-	
+
 	/**
 	 * 
 	 * 収集項目コードのリストを取得します
 	 *
 	 * CollectRead権限が必要
 	 *
+	 * @param facilityIdList ファシリティIDリスト
 	 * @return 収集項目コードのリスト
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
@@ -527,8 +541,7 @@ public class CollectEndpoint {
 		msg.append(", FileName=");
 		msg.append(fileName);
 
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr(
-				"performance.export.dir", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.PERFORMANCE_EXPORT_DIR));
+		String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
 		File file = new File(exportDirectory + fileName);
 		if(!file.exists()) {
 			m_log.info("file is not found : " + exportDirectory + fileName);
@@ -614,4 +627,42 @@ public class CollectEndpoint {
 		return new PerformanceCollectMasterControllerBean().getCollectItemCodeMasterList();
 	}
 
+	/**
+	 * 以下の条件に一致する収集値キーの一覧を取得します。
+	 *　　オーナーロールIDが参照可能
+	 *　　数値監視
+	 *　　指定されたファシリティIDもしくはその配下のノードに一致する
+	 *　※サイレント監視で使用する。
+	 *　※権限はMonitorSettingのREAD権限
+	 * 
+	 * @param facilityId　ファシリティID
+	 * @param ownerRoleId　オーナーロールID
+	 * @return Map(名称, 収集値キーリスト)
+	 * @throws HinemosUnknown
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 */
+	public HashMapInfo getCollectKeyMapForAnalytics(String facilityId, String ownerRoleId)
+			throws HinemosUnknown, InvalidUserPass, InvalidRole {
+		m_log.debug("getCollectKeyMapForAnalytics");
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.MONITOR_SETTING, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+		// 認証済み操作ログ
+		StringBuffer msg = new StringBuffer();
+		msg.append(", FacilityID=");
+		msg.append(facilityId);
+		msg.append(", OwnerRoleID=");
+		msg.append(ownerRoleId);
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_PERFORMANCE + " Get Master, Method=getCollectKeyMapForAnalytics, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+		HashMapInfo info = new HashMapInfo();
+		info.getMap9().putAll(new CollectControllerBean().getCollectKeyMapForAnalytics(facilityId, ownerRoleId));
+		return info;
+	}
+	
+	public Double[] getCoefficients(String monitorId, String facilityId, String displayName, String itemName) {
+		return MonitorCollectDataCache.getCoefficients(monitorId, facilityId, displayName, itemName);
+	}
 }

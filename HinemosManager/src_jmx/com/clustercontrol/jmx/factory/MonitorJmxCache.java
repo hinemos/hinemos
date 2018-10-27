@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.jmx.factory;
 
 import java.io.Serializable;
@@ -24,7 +32,6 @@ public class MonitorJmxCache {
 
 	private static Log m_log = LogFactory.getLog( MonitorJmxCache.class );
 
-	private static Object cacheLock = new Object();
 	private static final ILock _lock;
 
 	
@@ -170,14 +177,14 @@ public class MonitorJmxCache {
 
 			MonitorJmxValuePK valueEntityPk = new MonitorJmxValuePK(m_monitorId, facilityId);
 
-			synchronized (cacheLock) {
-				if (valueEntityPk != null && getCache() != null) {
-					cache.putAll(getCache());
-					if (cache.containsKey(valueEntityPk)) cache.remove(valueEntityPk);
-					cache.put(valueEntityPk, valueEntity);
+			if (valueEntityPk != null && getCache() != null) {
+				cache.putAll(getCache());
+				if (cache.containsKey(valueEntityPk)) {
+					cache.remove(valueEntityPk);
 				}
-				storeCache(cache);
+				cache.put(valueEntityPk, valueEntity);
 			}
+			storeCache(cache);
 
 		} catch (Exception e) {
 			m_log.warn("update() : "

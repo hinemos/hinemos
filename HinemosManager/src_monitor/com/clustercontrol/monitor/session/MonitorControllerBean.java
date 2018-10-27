@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.session;
@@ -735,11 +728,13 @@ public class MonitorControllerBean implements CheckFacility {
 			= QueryUtil.getMonitorInfoByFacilityId_NONE(facilityId);
 			if (infoCollection != null && infoCollection.size() > 0) {
 				// ID名を取得する
-				String listID = (MessageConstant.MONITOR_SETTING.getMessage() + " : ");
+				StringBuilder sb = new StringBuilder();
+				sb.append(MessageConstant.MONITOR_SETTING.getMessage() + " : ");
 				for (MonitorInfo entity : infoCollection) {
-					listID += (entity.getMonitorId() + ", ");
+					sb.append(entity.getMonitorId());
+					sb.append(", ");
 				}
-				UsedFacility e = new UsedFacility(listID);
+				UsedFacility e = new UsedFacility(sb.toString());
 				m_log.info("isUseFacilityId() : " + e.getClass().getSimpleName() +
 						", " + facilityId + ", " + e.getMessage());
 				throw e;

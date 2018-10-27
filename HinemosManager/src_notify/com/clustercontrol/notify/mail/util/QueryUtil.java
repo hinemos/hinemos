@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.mail.util;
@@ -37,9 +30,9 @@ public class QueryUtil {
 	}
 
 	public static MailTemplateInfo getMailTemplateInfoPK(String mailTemplateId, ObjectPrivilegeMode mode) throws MailTemplateNotFound, InvalidRole {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 		MailTemplateInfo entity = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			entity = em.find(MailTemplateInfo.class, mailTemplateId, mode);
 			if (entity == null) {
 				MailTemplateNotFound e = new MailTemplateNotFound("MailTemplateInfoEntity.findByPrimaryKey"
@@ -57,9 +50,9 @@ public class QueryUtil {
 	}
 
 	public static MailTemplateInfo getMailTemplateInfoPK_OR(String mailTemplateId, String ownerRoleId) throws MailTemplateNotFound, InvalidRole {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 		MailTemplateInfo entity = null;
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			entity = em.find_OR(MailTemplateInfo.class, mailTemplateId, ownerRoleId);
 			if (entity == null) {
 				MailTemplateNotFound e = new MailTemplateNotFound("MailTemplateInfoEntity.findByPrimaryKey"
@@ -77,35 +70,43 @@ public class QueryUtil {
 	}
 
 	public static List<MailTemplateInfo> getAllMailTemplateInfo() {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MailTemplateInfo> list
-		= em.createNamedQuery("MailTemplateInfoEntity.findAll", MailTemplateInfo.class)
-		.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MailTemplateInfo> list
+			= em.createNamedQuery("MailTemplateInfoEntity.findAll", MailTemplateInfo.class)
+			.getResultList();
+			return list;
+		}
 	}
 
 	public static List<MailTemplateInfo> getAllMailTemplateInfoOrderByMailTemplateId() {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MailTemplateInfo> list
-		= em.createNamedQuery("MailTemplateInfoEntity.findAllOrderByMailTemplateId", MailTemplateInfo.class)
-		.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MailTemplateInfo> list
+			= em.createNamedQuery("MailTemplateInfoEntity.findAllOrderByMailTemplateId", MailTemplateInfo.class)
+			.getResultList();
+			return list;
+		}
 	}
 
 	public static List<MailTemplateInfo> getAllMailTemplateInfoOrderByMailTemplateId_OR(String ownerRoleId) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MailTemplateInfo> list
-		= em.createNamedQuery_OR("MailTemplateInfoEntity.findAllOrderByMailTemplateId", MailTemplateInfo.class, ownerRoleId)
-		.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MailTemplateInfo> list
+			= em.createNamedQuery_OR("MailTemplateInfoEntity.findAllOrderByMailTemplateId", MailTemplateInfo.class, ownerRoleId)
+			.getResultList();
+			return list;
+		}
 	}
 
 	public static List<MailTemplateInfo> getMailTemplateInfoFindByOwnerRoleId_NONE(String roleId) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<MailTemplateInfo> list
-		= em.createNamedQuery("MailTemplateInfoEntity.findByOwnerRoleId", MailTemplateInfo.class, ObjectPrivilegeMode.NONE)
-		.setParameter("ownerRoleId", roleId)
-		.getResultList();
-		return list;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MailTemplateInfo> list
+			= em.createNamedQuery("MailTemplateInfoEntity.findByOwnerRoleId", MailTemplateInfo.class, ObjectPrivilegeMode.NONE)
+			.setParameter("ownerRoleId", roleId)
+			.getResultList();
+			return list;
+		}
 	}
 }

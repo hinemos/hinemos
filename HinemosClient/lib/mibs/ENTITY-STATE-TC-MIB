@@ -1,0 +1,75 @@
+   ENTITY-STATE-TC-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+      MODULE-IDENTITY, mib-2       FROM SNMPv2-SMI
+      TEXTUAL-CONVENTION           FROM SNMPv2-TC;
+
+    entityStateTc MODULE-IDENTITY
+        LAST-UPDATED "200511220000Z"
+        ORGANIZATION "IETF Entity MIB Working Group"
+        ::= { mib-2 130 }
+
+     EntityAdminState  ::=  TEXTUAL-CONVENTION
+       STATUS         current
+       SYNTAX         INTEGER
+                 {
+                 unknown (1),
+                 locked (2),
+                 shuttingDown (3),
+                 unlocked (4)
+                 }
+
+     EntityOperState  ::=  TEXTUAL-CONVENTION
+       STATUS         current
+       SYNTAX         INTEGER
+                 {
+                 unknown (1),
+                 disabled (2),
+                 enabled (3),
+                 testing (4)
+                 }
+
+     EntityUsageState  ::=  TEXTUAL-CONVENTION
+       STATUS         current
+       SYNTAX         INTEGER
+
+
+
+
+
+                 {
+                 unknown (1),
+                 idle (2),
+                 active (3),
+                 busy (4)
+                 }
+
+
+    EntityAlarmStatus  ::=  TEXTUAL-CONVENTION
+       STATUS         current
+             SYNTAX         BITS
+                {
+                unknown (0),
+                underRepair (1),
+                critical(2),
+                major(3),
+                minor(4),
+                warning (5),
+                indeterminate (6)
+                              }
+
+
+
+
+
+     EntityStandbyStatus  ::=  TEXTUAL-CONVENTION
+       STATUS         current
+             SYNTAX         INTEGER
+               {
+               unknown (1),
+               hotStandby (2),
+               coldStandby (3),
+               providingService (4)
+               }
+
+   END

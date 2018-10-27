@@ -1,0 +1,1527 @@
+    MIP-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        Counter32, Gauge32, Integer32, IpAddress, experimental,
+        MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE
+        , mib-2, Unsigned32
+                                        FROM SNMPv2-SMI
+        RowStatus, TruthValue, TimeStamp,
+        TEXTUAL-CONVENTION
+                                        FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP
+        ,  NOTIFICATION-GROUP
+                                        FROM SNMPv2-CONF;
+
+    mipMIB    MODULE-IDENTITY
+        LAST-UPDATED    "9606040000Z"
+        ORGANIZATION    "IETF Mobile IP Working Group"
+        ::= { mib-2 44 }
+
+    mipMIBObjects    OBJECT IDENTIFIER ::= { mipMIB 1 }
+
+
+    mipSystem    OBJECT IDENTIFIER ::= { mipMIBObjects 1 }
+    mipSecurity    OBJECT IDENTIFIER ::= { mipMIBObjects 2 }
+    mipMN    OBJECT IDENTIFIER ::= { mipMIBObjects 3 }
+    mipMA    OBJECT IDENTIFIER ::= { mipMIBObjects 4 }
+    mipFA    OBJECT IDENTIFIER ::= { mipMIBObjects 5 }
+    mipHA    OBJECT IDENTIFIER ::= { mipMIBObjects 6 }
+
+    mnSystem    OBJECT IDENTIFIER ::= { mipMN 1 }
+    mnDiscovery    OBJECT IDENTIFIER ::= { mipMN 2 }
+    mnRegistration    OBJECT IDENTIFIER ::= { mipMN 3 }
+
+    maAdvertisement    OBJECT IDENTIFIER ::= { mipMA 2 }
+
+    faSystem   OBJECT IDENTIFIER ::= { mipFA 1 }
+    faAdvertisement   OBJECT IDENTIFIER ::= { mipFA 2 }
+    faRegistration    OBJECT IDENTIFIER ::= { mipFA 3 }
+
+
+
+
+
+    haRegistration    OBJECT IDENTIFIER ::= { mipHA 3 }
+
+
+    RegistrationFlags  ::= TEXTUAL-CONVENTION
+        STATUS      current
+        SYNTAX      BITS {
+                         vjCompression(0),
+                         gre(1),
+                         minEnc(2),
+                         decapsulationbyMN(3),
+                         broadcastDatagram(4),
+                         simultaneousBindings(5)
+                    }
+
+
+    mipEntities OBJECT-TYPE
+        SYNTAX      BITS {
+                         mobileNode(0),
+                         foreignAgent(1),
+                         homeAgent(2)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mipSystem 1 }
+
+
+
+
+
+    mipEnable OBJECT-TYPE
+        SYNTAX      INTEGER { enabled(1), disabled(2) }
+        MAX-ACCESS  read-write
+        STATUS      current
+        ::= { mipSystem 2 }
+
+    mipEncapsulationSupported   OBJECT-TYPE
+        SYNTAX      BITS {
+                         ipInIp(0),
+                         gre(1),
+                         minEnc(2),
+                         other(3)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mipSystem 3 }
+
+
+    mipSecAssocTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF MipSecAssocEntry
+        MAX-ACCESS      not-accessible
+        STATUS      current
+        ::= { mipSecurity 1 }
+
+    mipSecAssocEntry OBJECT-TYPE
+        SYNTAX      MipSecAssocEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX   { mipSecPeerAddress, mipSecSPI }
+        ::= { mipSecAssocTable 1 }
+
+
+
+
+
+    MipSecAssocEntry ::=
+        SEQUENCE {
+            mipSecPeerAddress IpAddress,
+            mipSecSPI Unsigned32,
+            mipSecAlgorithmType INTEGER,
+            mipSecAlgorithmMode INTEGER,
+            mipSecKey OCTET STRING,
+            mipSecReplayMethod INTEGER
+        }
+
+    mipSecPeerAddress  OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { mipSecAssocEntry 1 }
+
+    mipSecSPI OBJECT-TYPE
+        SYNTAX      Unsigned32 (0..4294967295)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { mipSecAssocEntry 2 }
+
+    mipSecAlgorithmType OBJECT-TYPE
+        SYNTAX      INTEGER {
+                            other(1),
+                            md5(2)
+                    }
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { mipSecAssocEntry 3 }
+
+    mipSecAlgorithmMode OBJECT-TYPE
+        SYNTAX      INTEGER {
+                            other(1),
+                            prefixSuffix(2)
+                    }
+        MAX-ACCESS  read-create
+
+
+
+
+
+        STATUS      current
+        ::= { mipSecAssocEntry 4 }
+
+    mipSecKey  OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(16))
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { mipSecAssocEntry 5 }
+
+    mipSecReplayMethod OBJECT-TYPE
+        SYNTAX      INTEGER {
+                             other(1),
+                             timestamps(2),
+                             nonces(3)
+                    }
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { mipSecAssocEntry 6 }
+
+
+    mipSecTotalViolations OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+           ::= { mipSecurity 2 }
+
+
+    mipSecViolationTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF MipSecViolationEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { mipSecurity 3 }
+
+
+
+
+
+    mipSecViolationEntry  OBJECT-TYPE
+        SYNTAX      MipSecViolationEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX   { mipSecViolatorAddress }
+        ::= { mipSecViolationTable 1 }
+
+    MipSecViolationEntry ::=
+        SEQUENCE {
+            mipSecViolatorAddress IpAddress,
+            mipSecViolationCounter Counter32,
+            mipSecRecentViolationSPI Integer32,
+            mipSecRecentViolationTime TimeStamp,
+            mipSecRecentViolationIDLow Integer32,
+            mipSecRecentViolationIDHigh Integer32,
+            mipSecRecentViolationReason INTEGER
+        }
+
+    mipSecViolatorAddress  OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        ::= { mipSecViolationEntry 1 }
+
+    mipSecViolationCounter OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mipSecViolationEntry 2 }
+
+    mipSecRecentViolationSPI  OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mipSecViolationEntry 3 }
+
+    mipSecRecentViolationTime OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mipSecViolationEntry 4 }
+
+    mipSecRecentViolationIDLow  OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mipSecViolationEntry 5 }
+
+    mipSecRecentViolationIDHigh  OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mipSecViolationEntry 6 }
+
+    mipSecRecentViolationReason   OBJECT-TYPE
+        SYNTAX      INTEGER {
+                            noMobilitySecurityAssociation(1),
+                            badAuthenticator(2),
+                            badIdentifier(3),
+                            badSPI(4),
+                            missingSecurityExtension(5),
+                            other(6)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mipSecViolationEntry 7 }
+
+
+
+
+
+
+
+
+    mnState OBJECT-TYPE
+        SYNTAX      INTEGER {
+                            home(1),
+                            registered(2),
+                            pending(3),
+                            isolated(4),
+                            unknown(5)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnSystem 1 }
+
+    mnHomeAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnSystem 2 }
+
+
+    mnHATable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF MnHAEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { mnSystem 3 }
+
+    mnHAEntry OBJECT-TYPE
+        SYNTAX MnHAEntry
+        MAX-ACCESS not-accessible
+        STATUS      current
+        INDEX { mnHAAddress }
+        ::= { mnHATable 1 }
+
+    MnHAEntry ::= SEQUENCE {
+        mnHAAddress IpAddress,
+        mnCurrentHA TruthValue,
+        mnHAStatus  RowStatus
+    }
+
+    mnHAAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { mnHAEntry 1 }
+
+    mnCurrentHA OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnHAEntry 2 }
+
+    mnHAStatus  OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+
+
+
+
+
+        ::= { mnHAEntry 3 }
+
+    mnFATable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF MnFAEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { mnDiscovery 1 }
+
+    mnFAEntry OBJECT-TYPE
+        SYNTAX      MnFAEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { mnFAAddress, mnCOA }
+        ::= { mnFATable 1 }
+
+    MnFAEntry ::= SEQUENCE {
+        mnFAAddress IpAddress,
+        mnCOA IpAddress
+    }
+
+    mnFAAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnFAEntry 1 }
+
+    mnCOA   OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnFAEntry 2 }
+
+
+    mnRecentAdvReceived OBJECT IDENTIFIER ::= { mnDiscovery 2 }
+
+    mnAdvSourceAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRecentAdvReceived 1 }
+
+    mnAdvSequence OBJECT-TYPE
+        SYNTAX      INTEGER (0..65535)
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRecentAdvReceived 2 }
+
+    mnAdvFlags OBJECT-TYPE
+        SYNTAX      BITS {
+                         vjCompression(0),
+                         gre(1),
+                         minEnc(2),
+                         foreignAgent(3),
+                         homeAgent(4),
+                         busy(5),
+                         regRequired(6)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRecentAdvReceived 3 }
+
+    mnAdvMaxRegLifetime OBJECT-TYPE
+        SYNTAX      INTEGER (0..65535)
+        UNITS       "seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRecentAdvReceived 4 }
+
+    mnAdvMaxAdvLifetime OBJECT-TYPE
+        SYNTAX      INTEGER (0..65535)
+        UNITS       "seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRecentAdvReceived 5 }
+
+    mnAdvTimeReceived OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRecentAdvReceived 6 }
+
+
+
+
+
+
+
+    mnSolicitationsSent OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnDiscovery 3 }
+
+    mnAdvertisementsReceived OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnDiscovery 4 }
+
+    mnAdvsDroppedInvalidExtension OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnDiscovery 5 }
+
+    mnAdvsIgnoredUnknownExtension OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnDiscovery 6 }
+
+    mnMoveFromHAToFA OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnDiscovery 7 }
+
+    mnMoveFromFAToFA OBJECT-TYPE
+
+
+
+
+
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnDiscovery 8 }
+
+    mnMoveFromFAToHA OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnDiscovery 9 }
+
+    mnGratuitousARPsSend OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnDiscovery 10 }
+
+    mnAgentRebootsDectected OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnDiscovery 11 }
+
+
+
+    mnRegistrationTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF MnRegistrationEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { mnRegistration 1 }
+
+    mnRegistrationEntry OBJECT-TYPE
+        SYNTAX      MnRegistrationEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { mnRegAgentAddress, mnRegCOA}
+        ::= { mnRegistrationTable 1 }
+
+    MnRegistrationEntry ::= SEQUENCE {
+        mnRegAgentAddress IpAddress,
+        mnRegCOA IpAddress,
+        mnRegFlags RegistrationFlags,
+        mnRegIDLow Integer32,
+        mnRegIDHigh Integer32,
+        mnRegTimeRequested Integer32,
+        mnRegTimeRemaining  Gauge32,
+        mnRegTimeSent    TimeStamp,
+        mnRegIsAccepted  TruthValue,
+        mnCOAIsLocal     TruthValue
+        }
+
+    mnRegAgentAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 1 }
+
+    mnRegCOA OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 2 }
+
+    mnRegFlags OBJECT-TYPE
+
+
+
+
+
+        SYNTAX      RegistrationFlags
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 3 }
+
+    mnRegIDLow OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 4 }
+
+    mnRegIDHigh OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 5 }
+
+    mnRegTimeRequested OBJECT-TYPE
+        SYNTAX      Integer32
+        UNITS       "seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 6 }
+
+    mnRegTimeRemaining OBJECT-TYPE
+        SYNTAX      Gauge32
+        UNITS       "seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 7 }
+
+    mnRegTimeSent OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 8 }
+
+    mnRegIsAccepted OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 9 }
+
+    mnCOAIsLocal OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistrationEntry 10 }
+
+
+    mnRegRequestsSent OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 2 }
+
+    mnDeRegRequestsSent OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+
+
+
+
+
+        STATUS      current
+        ::= { mnRegistration 3 }
+
+    mnRegRepliesRecieved OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 4 }
+
+    mnDeRegRepliesRecieved OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 5 }
+
+    mnRepliesInvalidHomeAddress OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 6 }
+
+    mnRepliesUnknownHA OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 7 }
+
+    mnRepliesUnknownFA OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+
+
+
+
+
+        ::= { mnRegistration 8 }
+
+    mnRepliesInvalidID OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 9 }
+
+    mnRepliesDroppedInvalidExtension OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 10 }
+
+    mnRepliesIgnoredUnknownExtension OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 11 }
+
+    mnRepliesHAAuthenticationFailure OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 12 }
+
+    mnRepliesFAAuthenticationFailure OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+
+
+
+
+
+        ::= { mnRegistration 13 }
+
+    mnRegRequestsAccepted OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 14 }
+
+    mnRegRequestsDeniedByHA OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 15 }
+
+    mnRegRequestsDeniedByFA OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 16 }
+
+    mnRegRequestsDeniedByHADueToID OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 17 }
+
+    mnRegRequestsWithDirectedBroadcast OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { mnRegistration 18 }
+
+
+
+    maAdvConfigTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF MaAdvConfigEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { maAdvertisement 1 }
+
+    maAdvConfigEntry OBJECT-TYPE
+        SYNTAX      MaAdvConfigEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX   { maInterfaceAddress }
+        ::= { maAdvConfigTable 1 }
+
+    MaAdvConfigEntry    ::= SEQUENCE {
+          maInterfaceAddress IpAddress,
+          maAdvMaxRegLifetime Integer32,
+          maAdvPrefixLengthInclusion TruthValue,
+          maAdvAddress IpAddress,
+          maAdvMaxInterval Integer32,
+          maAdvMinInterval Integer32,
+          maAdvMaxAdvLifetime Integer32,
+          maAdvResponseSolicitationOnly TruthValue,
+          maAdvStatus RowStatus
+        }
+
+    maInterfaceAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { maAdvConfigEntry 1 }
+
+
+
+
+
+
+    maAdvMaxRegLifetime OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { maAdvConfigEntry 2 }
+
+    maAdvPrefixLengthInclusion OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { maAdvConfigEntry 3 }
+
+    maAdvAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { maAdvConfigEntry 4 }
+
+    maAdvMaxInterval OBJECT-TYPE
+        SYNTAX      Integer32 (4..1800)
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { maAdvConfigEntry 5 }
+
+
+
+
+
+
+    maAdvMinInterval OBJECT-TYPE
+        SYNTAX      Integer32 (3..1800)
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { maAdvConfigEntry 6 }
+
+    maAdvMaxAdvLifetime OBJECT-TYPE
+        SYNTAX      Integer32 (4..9000)
+        UNITS       "seconds"
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { maAdvConfigEntry 7 }
+
+    maAdvResponseSolicitationOnly OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL      { false }
+        ::= { maAdvConfigEntry 8 }
+
+    maAdvStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { maAdvConfigEntry 9 }
+
+
+
+
+
+
+    maAdvertisementsSent OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { maAdvertisement 2 }
+
+    maAdvsSentForSolicitation OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { maAdvertisement 3 }
+
+    maSolicitationsReceived OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { maAdvertisement 4 }
+
+
+
+    faCOATable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF FaCOAEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+           ::= { faSystem 1 }
+
+    faCOAEntry OBJECT-TYPE
+        SYNTAX      FaCOAEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX { faSupportedCOA }
+        ::= { faCOATable 1 }
+
+    FaCOAEntry     ::=
+        SEQUENCE {
+                 faSupportedCOA IpAddress,
+                 faCOAStatus    RowStatus
+        }
+
+    faSupportedCOA OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { faCOAEntry 1 }
+
+    faCOAStatus  OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        ::= { faCOAEntry 2 }
+
+
+    faIsBusy OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faAdvertisement 1 }
+
+    faRegistrationRequired OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        ::= { faAdvertisement 2 }
+
+
+
+    faVisitorTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF FaVisitorEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { faRegistration 1 }
+
+    faVisitorEntry OBJECT-TYPE
+        SYNTAX      FaVisitorEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX   { faVisitorIPAddress }
+        ::= { faVisitorTable 1 }
+
+    FaVisitorEntry     ::= SEQUENCE {
+        faVisitorIPAddress IpAddress,
+        faVisitorHomeAddress IpAddress,
+        faVisitorHomeAgentAddress IpAddress,
+        faVisitorTimeGranted Integer32,
+        faVisitorTimeRemaining Gauge32,
+        faVisitorRegFlags RegistrationFlags,
+        faVisitorRegIDLow Integer32,
+        faVisitorRegIDHigh Integer32,
+        faVisitorRegIsAccepted TruthValue
+        }
+
+    faVisitorIPAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faVisitorEntry 1 }
+
+
+
+
+
+
+    faVisitorHomeAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faVisitorEntry 2 }
+
+    faVisitorHomeAgentAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faVisitorEntry 3 }
+
+    faVisitorTimeGranted OBJECT-TYPE
+        SYNTAX      Integer32
+        UNITS       "seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faVisitorEntry 4 }
+
+    faVisitorTimeRemaining OBJECT-TYPE
+        SYNTAX      Gauge32
+        UNITS       "seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faVisitorEntry 5 }
+
+    faVisitorRegFlags OBJECT-TYPE
+        SYNTAX      RegistrationFlags
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faVisitorEntry 6 }
+
+    faVisitorRegIDLow OBJECT-TYPE
+
+
+
+
+
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faVisitorEntry 7 }
+
+    faVisitorRegIDHigh OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faVisitorEntry 8 }
+
+    faVisitorRegIsAccepted OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faVisitorEntry 9 }
+
+
+    faRegRequestsReceived OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 2 }
+
+    faRegRequestsRelayed OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 3 }
+
+    faReasonUnspecified OBJECT-TYPE
+
+
+
+
+
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 4 }
+
+    faAdmProhibited OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 5 }
+
+    faInsufficientResource OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 6 }
+
+    faMNAuthenticationFailure OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 7 }
+
+    faRegLifetimeTooLong OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 8 }
+
+    faPoorlyFormedRequests OBJECT-TYPE
+
+
+
+
+
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 9 }
+
+    faEncapsulationUnavailable OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 10 }
+
+    faVJCompressionUnavailable OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 11 }
+
+    faHAUnreachable OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 12 }
+
+    faRegRepliesRecieved OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 13 }
+
+    faRegRepliesRelayed OBJECT-TYPE
+
+
+
+
+
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 14 }
+
+    faHAAuthenticationFailure OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 15 }
+
+    faPoorlyFormedReplies OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { faRegistration 16 }
+
+
+
+
+    haMobilityBindingTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HaMobilityBindingEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { haRegistration 1 }
+
+    haMobilityBindingEntry OBJECT-TYPE
+        SYNTAX      HaMobilityBindingEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX   { haMobilityBindingMN, haMobilityBindingCOA }
+        ::= { haMobilityBindingTable 1 }
+
+    HaMobilityBindingEntry ::= SEQUENCE {
+         haMobilityBindingMN    IpAddress,
+         haMobilityBindingCOA   IpAddress,
+         haMobilityBindingSourceAddress    IpAddress,
+         haMobilityBindingRegFlags    RegistrationFlags,
+         haMobilityBindingRegIDLow Integer32,
+         haMobilityBindingRegIDHigh Integer32,
+         haMobilityBindingTimeGranted Integer32,
+         haMobilityBindingTimeRemaining Gauge32
+         }
+
+    haMobilityBindingMN    OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haMobilityBindingEntry 1 }
+
+    haMobilityBindingCOA   OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haMobilityBindingEntry 2 }
+
+    haMobilityBindingSourceAddress    OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haMobilityBindingEntry 3 }
+
+    haMobilityBindingRegFlags OBJECT-TYPE
+        SYNTAX      RegistrationFlags
+        MAX-ACCESS  read-only
+        STATUS      current
+
+
+
+
+
+        ::= { haMobilityBindingEntry 4 }
+
+    haMobilityBindingRegIDLow OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haMobilityBindingEntry 5 }
+
+    haMobilityBindingRegIDHigh OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haMobilityBindingEntry 6 }
+
+    haMobilityBindingTimeGranted OBJECT-TYPE
+        SYNTAX      Integer32
+        UNITS       "seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haMobilityBindingEntry 7 }
+
+    haMobilityBindingTimeRemaining OBJECT-TYPE
+        SYNTAX      Gauge32
+        UNITS       "seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haMobilityBindingEntry 8 }
+
+
+
+
+
+
+
+
+    haCounterTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HaCounterEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { haRegistration 2 }
+
+    haCounterEntry  OBJECT-TYPE
+        SYNTAX      HaCounterEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX   { haMobilityBindingMN }
+        ::= { haCounterTable 1 }
+
+    HaCounterEntry      ::= SEQUENCE {
+        haServiceRequestsAccepted Counter32,
+        haServiceRequestsDenied Counter32,
+        haOverallServiceTime Gauge32,
+        haRecentServiceAcceptedTime TimeStamp,
+        haRecentServiceDeniedTime TimeStamp,
+        haRecentServiceDeniedCode INTEGER
+        }
+
+    haServiceRequestsAccepted OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haCounterEntry 2 }
+
+    haServiceRequestsDenied   OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haCounterEntry 3 }
+
+    haOverallServiceTime   OBJECT-TYPE
+        SYNTAX      Gauge32
+
+
+
+
+
+        UNITS       "seconds"
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haCounterEntry 4 }
+
+    haRecentServiceAcceptedTime  OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haCounterEntry 5 }
+
+    haRecentServiceDeniedTime  OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haCounterEntry 6 }
+
+    haRecentServiceDeniedCode  OBJECT-TYPE
+        SYNTAX      INTEGER {
+                            reasonUnspecified(128),
+                            admProhibited(129),
+                            insufficientResource(130),
+                            mnAuthenticationFailure(131),
+                            faAuthenticationFailure(132),
+                            idMismatch(133),
+                            poorlyFormedRequest(134),
+                            tooManyBindings(135),
+                            unknownHA(136)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haCounterEntry 7 }
+
+
+
+
+
+
+    haRegistrationAccepted   OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 3 }
+
+    haMultiBindingUnsupported OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 4 }
+
+    haReasonUnspecified   OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 5 }
+
+    haAdmProhibited   OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 6 }
+
+    haInsufficientResource  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 7 }
+
+
+
+
+
+
+    haMNAuthenticationFailure OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 8 }
+
+    haFAAuthenticationFailure OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 9 }
+
+    haIDMismatch OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 10 }
+
+    haPoorlyFormedRequest OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 11 }
+
+    haTooManyBindings    OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 12 }
+
+
+
+
+
+
+    haUnknownHA   OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 13 }
+
+    haGratuitiousARPsSent OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 14 }
+
+    haProxyARPsSent   OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 15 }
+
+    haRegRequestsReceived OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 16 }
+
+    haDeRegRequestsReceived OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 17 }
+
+    haRegRepliesSent  OBJECT-TYPE
+        SYNTAX      Counter32
+
+
+
+
+
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 18 }
+
+    haDeRegRepliesSent OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { haRegistration 19 }
+
+    mipMIBNotificationPrefix    OBJECT IDENTIFIER ::= { mipMIB 2 }
+
+    mipMIBNotifications  OBJECT IDENTIFIER ::=
+                         { mipMIBNotificationPrefix 0 }
+
+    mipAuthFailure NOTIFICATION-TYPE
+        OBJECTS   {    mipSecViolatorAddress,
+                       mipSecRecentViolationSPI,
+                       mipSecRecentViolationIDLow,
+                       mipSecRecentViolationIDHigh,
+                       mipSecRecentViolationReason
+                  }
+
+        STATUS    current
+        ::= { mipMIBNotifications 1 }
+
+
+    mipMIBConformance OBJECT IDENTIFIER ::= { mipMIB 3 }
+
+    mipGroups     OBJECT IDENTIFIER ::= { mipMIBConformance 1 }
+    mipCompliances    OBJECT IDENTIFIER ::= { mipMIBConformance 2 }
+
+
+    mipCompliance    MODULE-COMPLIANCE
+        STATUS    current
+        MODULE
+            MANDATORY-GROUPS { mipSystemGroup }
+
+            GROUP    mipSecAssociationGroup
+
+            GROUP    mipSecViolationGroup
+
+            GROUP     mnSystemGroup
+
+            GROUP     mnDiscoveryGroup
+
+            GROUP     mnRegistrationGroup
+
+            GROUP    maAdvertisementGroup
+
+            GROUP     faSystemGroup
+
+            GROUP     faAdvertisementGroup
+
+            GROUP     faRegistrationGroup
+
+
+
+
+
+
+            GROUP    haRegistrationGroup
+
+            GROUP    haRegNodeCountersGroup
+
+            GROUP    mipSecNotificationsGroup
+
+       ::= { mipCompliances 1 }
+
+
+    mipSystemGroup     OBJECT-GROUP
+        OBJECTS    { mipEntities, mipEnable, mipEncapsulationSupported }
+        STATUS     current
+        ::= { mipGroups 1 }
+
+    mipSecAssociationGroup OBJECT-GROUP
+        OBJECTS   { mipSecAlgorithmType, mipSecAlgorithmMode,
+                    mipSecKey, mipSecReplayMethod }
+        STATUS    current
+        ::= { mipGroups 2 }
+
+    mipSecViolationGroup     OBJECT-GROUP
+        OBJECTS   { mipSecTotalViolations,
+                    mipSecViolationCounter, mipSecRecentViolationSPI,
+                    mipSecRecentViolationTime,
+                    mipSecRecentViolationIDLow,
+                    mipSecRecentViolationIDHigh,
+                    mipSecRecentViolationReason }
+        STATUS    current
+        ::= { mipGroups 3 }
+
+    mnSystemGroup    OBJECT-GROUP
+        OBJECTS   { mnState, mnCurrentHA, mnHomeAddress,
+                    mnHAStatus }
+        STATUS    current
+        ::= { mipGroups 4 }
+
+    mnDiscoveryGroup    OBJECT-GROUP
+        OBJECTS   { mnFAAddress, mnCOA, mnAdvSourceAddress,
+                    mnAdvSequence, mnAdvFlags, mnAdvMaxRegLifetime,
+                    mnAdvMaxAdvLifetime, mnAdvTimeReceived,
+                    mnSolicitationsSent, mnAdvertisementsReceived,
+                    mnAdvsDroppedInvalidExtension,
+                    mnAdvsIgnoredUnknownExtension, mnMoveFromHAToFA,
+                    mnMoveFromFAToFA, mnMoveFromFAToHA,
+                    mnGratuitousARPsSend, mnAgentRebootsDectected }
+        STATUS    current
+        ::= { mipGroups 5 }
+
+    mnRegistrationGroup    OBJECT-GROUP
+        OBJECTS   { mnRegAgentAddress, mnRegCOA, mnRegFlags, mnRegIDLow,
+                    mnRegIDHigh, mnRegTimeRequested, mnRegTimeRemaining,
+                    mnRegTimeSent, mnRegIsAccepted, mnCOAIsLocal,
+                    mnRegRequestsSent, mnRegRepliesRecieved,
+                    mnDeRegRequestsSent, mnDeRegRepliesRecieved,
+                    mnRepliesInvalidHomeAddress, mnRepliesUnknownHA,
+                    mnRepliesUnknownFA, mnRepliesInvalidID,
+                    mnRepliesDroppedInvalidExtension,
+                    mnRepliesIgnoredUnknownExtension,
+                    mnRepliesHAAuthenticationFailure,
+                    mnRepliesFAAuthenticationFailure,
+                    mnRegRequestsAccepted, mnRegRequestsDeniedByHA,
+                    mnRegRequestsDeniedByFA,
+                    mnRegRequestsDeniedByHADueToID,
+                    mnRegRequestsWithDirectedBroadcast }
+        STATUS    current
+        ::= { mipGroups 6 }
+
+    maAdvertisementGroup    OBJECT-GROUP
+        OBJECTS   { maAdvMaxRegLifetime,
+                    maAdvPrefixLengthInclusion, maAdvAddress,
+                    maAdvMaxInterval, maAdvMinInterval,
+                    maAdvMaxAdvLifetime,
+                    maAdvResponseSolicitationOnly, maAdvStatus,
+                    maAdvertisementsSent, maAdvsSentForSolicitation,
+                    maSolicitationsReceived }
+        STATUS    current
+        ::= { mipGroups 7 }
+
+    faSystemGroup       OBJECT-GROUP
+        OBJECTS   { faCOAStatus}
+        STATUS      current
+        ::= { mipGroups 8 }
+
+    faAdvertisementGroup OBJECT-GROUP
+        OBJECTS   { faIsBusy, faRegistrationRequired }
+        STATUS      current
+        ::= { mipGroups 9 }
+
+    faRegistrationGroup    OBJECT-GROUP
+        OBJECTS   {  faVisitorIPAddress, faVisitorHomeAddress,
+                     faVisitorHomeAgentAddress, faVisitorTimeGranted,
+                     faVisitorTimeRemaining, faVisitorRegFlags,
+                     faVisitorRegIDLow, faVisitorRegIDHigh,
+                     faVisitorRegIsAccepted, faRegRequestsReceived,
+                     faRegRequestsRelayed, faReasonUnspecified,
+                     faAdmProhibited, faInsufficientResource,
+                     faMNAuthenticationFailure, faRegLifetimeTooLong,
+                     faPoorlyFormedRequests,
+                     faEncapsulationUnavailable,
+                     faVJCompressionUnavailable, faHAUnreachable,
+
+
+
+
+
+                     faRegRepliesRecieved, faRegRepliesRelayed,
+                     faHAAuthenticationFailure, faPoorlyFormedReplies }
+        STATUS    current
+        ::= { mipGroups 10 }
+
+    haRegistrationGroup    OBJECT-GROUP
+        OBJECTS   { haMobilityBindingMN, haMobilityBindingCOA,
+                    haMobilityBindingSourceAddress,
+                    haMobilityBindingRegFlags,
+                    haMobilityBindingRegIDLow,
+                    haMobilityBindingRegIDHigh,
+                    haMobilityBindingTimeGranted,
+                    haMobilityBindingTimeRemaining,
+                    haRegistrationAccepted, haMultiBindingUnsupported,
+                    haReasonUnspecified, haAdmProhibited,
+                    haInsufficientResource, haMNAuthenticationFailure,
+                    haFAAuthenticationFailure, haIDMismatch,
+                    haPoorlyFormedRequest, haTooManyBindings,
+                    haUnknownHA, haGratuitiousARPsSent,
+                    haProxyARPsSent, haRegRequestsReceived,
+                    haDeRegRequestsReceived, haRegRepliesSent,
+                    haDeRegRepliesSent }
+        STATUS    current
+        ::= { mipGroups 11 }
+
+    haRegNodeCountersGroup  OBJECT-GROUP
+        OBJECTS   { haServiceRequestsAccepted,
+                    haServiceRequestsDenied, haOverallServiceTime,
+                    haRecentServiceAcceptedTime,
+                    haRecentServiceDeniedTime,
+                    haRecentServiceDeniedCode }
+        STATUS      current
+        ::= { mipGroups 12 }
+    mipSecNotificationsGroup NOTIFICATION-GROUP
+        NOTIFICATIONS { mipAuthFailure }
+
+
+
+
+
+        STATUS      current
+        ::= { mipGroups 13 }
+
+END

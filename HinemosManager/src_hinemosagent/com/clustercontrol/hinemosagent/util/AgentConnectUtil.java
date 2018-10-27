@@ -1,14 +1,9 @@
 /*
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.hinemosagent.util;
@@ -36,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
@@ -47,7 +43,6 @@ import com.clustercontrol.hinemosagent.bean.AgentInfo;
 import com.clustercontrol.hinemosagent.bean.TopicInfo;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.jobmanagement.factory.JobSessionNodeImpl;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -703,20 +698,18 @@ public class AgentConnectUtil {
 		int pingPort;
 
 		// 接続先ポートの決定（プロパティファイルから読み込み、正しくないポートレンジの場合には何も実施せず終了する
-		pingPort = HinemosPropertyUtil.getHinemosPropertyNum("common.agent.discovery.pingport", Long.valueOf(24005)).intValue();
+		pingPort = HinemosPropertyCommon.common_agent_discovery_pingport.getIntegerValue();
 		if (pingPort < 1 || pingPort > 65535) {
 			return false;
 		}
 		// エージェントが接続するためのマネージャのIPを調べる
 		try {
 			// DNS名接続の場合(agent.connection.dnsnameに文字列が指定) Hinemos ver 4.0.2以降対応
-			managerIpAddr = HinemosPropertyUtil.getHinemosPropertyStr("agent.connection.dnsname","");
+			managerIpAddr = HinemosPropertyCommon.agent_connection_dnsname.getStringValue();
 			
 			// IPアドレス接続の場合(agent.connection.dnsnameが未指定)
 			if(managerIpAddr == null || "".equals(managerIpAddr)){
-				managerIpAddr = HinemosPropertyUtil.getHinemosPropertyStr(
-						"agent.connection.ipaddres", InetAddress.getLocalHost()
-						.getHostAddress());
+				managerIpAddr = HinemosPropertyCommon.agent_connection_ipaddres.getAgentConnectionIpaddres();
 			}
 		} catch (UnknownHostException e) {
 			throw e;

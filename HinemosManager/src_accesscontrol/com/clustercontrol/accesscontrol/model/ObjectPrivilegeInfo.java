@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.accesscontrol.model;
 
 import java.io.Serializable;
@@ -11,8 +19,6 @@ import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 
 
 
@@ -38,14 +44,8 @@ public class ObjectPrivilegeInfo implements Serializable {
 
 	public ObjectPrivilegeInfo(ObjectPrivilegeInfoPK pk) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
 	}
 
-	public ObjectPrivilegeInfo(String objectType, String objectId, String userId, String objectPrivilege) {
-		this(new ObjectPrivilegeInfoPK(objectType, objectId, userId, objectPrivilege));
-	}
-	
 	@XmlTransient
 	@EmbeddedId
 	public ObjectPrivilegeInfoPK getId() {

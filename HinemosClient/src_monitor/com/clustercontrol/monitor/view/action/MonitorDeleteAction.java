@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.view.action;
@@ -35,7 +28,12 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.analytics.action.DeleteCorrelation;
+import com.clustercontrol.analytics.action.DeleteIntegration;
+import com.clustercontrol.analytics.action.DeleteLogcount;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.binary.action.DeleteMonitorBinaryFile;
+import com.clustercontrol.binary.action.DeleteMonitorPcap;
 import com.clustercontrol.custom.action.DeleteCustomNumeric;
 import com.clustercontrol.custom.action.DeleteCustomString;
 import com.clustercontrol.customtrap.action.DeleteCustomTrapNumeric;
@@ -166,6 +164,8 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 		DeleteInterface deleteInterfaceSqlS = null;
 		DeleteInterface deleteInterfaceSystemLog = null;
 		DeleteInterface deleteInterfaceLogfile = null;
+		DeleteInterface deleteInterfaceBinaryFile = null;
+		DeleteInterface deleteInterfacePcap = null;
 		DeleteInterface deleteInterfaceCustomN = null;
 		DeleteInterface deleteInterfaceCustomS = null;
 		DeleteInterface deleteInterfaceSnmpTrap = null;
@@ -174,7 +174,10 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 		DeleteInterface deleteInterfaceJmx = null;
 		DeleteInterface deleteInterfaceExt = null;
 		DeleteInterface deleteInterfaceCustomTrapN = null;		
-		DeleteInterface deleteInterfaceCustomTrapS = null;		
+		DeleteInterface deleteInterfaceCustomTrapS = null;
+		DeleteInterface deleteInterfaceLogcount = null;
+		DeleteInterface deleteInterfaceCorrelation = null;
+		DeleteInterface deleteInterfaceIntegration = null;
 
 		Map<String, List<String>> deleteMapAgent = null;
 		Map<String, List<String>> deleteMapHttpN = null;
@@ -190,6 +193,8 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 		Map<String, List<String>> deleteMapSqlS = null;
 		Map<String, List<String>> deleteMapSystemLog = null;
 		Map<String, List<String>> deleteMapLogfile = null;
+		Map<String, List<String>> deleteMapBinaryFile = null;
+		Map<String, List<String>> deleteMapPcap = null;
 		Map<String, List<String>> deleteMapCustomN = null;
 		Map<String, List<String>> deleteMapCustomS = null;
 		Map<String, List<String>> deleteMapSnmpTrap = null;
@@ -199,6 +204,9 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 		Map<String, List<String>> deleteMapExt = null;
 		Map<String, List<String>> deleteMapCustomTrapN = null;
 		Map<String, List<String>> deleteMapCustomTrapS = null;
+		Map<String, List<String>> deleteMapLogcount = null;
+		Map<String, List<String>> deleteMapCorrelation = null;
+		Map<String, List<String>> deleteMapIntegration = null;
 
 		for(String[] args : argsList) {
 			String pluginId = args[1];
@@ -301,6 +309,20 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 				if (deleteMapLogfile.get(managerName) == null) {
 					deleteMapLogfile.put(managerName, new ArrayList<String>());
 				}
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)) {
+				if (deleteMapBinaryFile == null) {
+					deleteMapBinaryFile = new ConcurrentHashMap<String, List<String>>();
+				}
+				if (deleteMapBinaryFile.get(managerName) == null) {
+					deleteMapBinaryFile.put(managerName, new ArrayList<String>());
+				}
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)) {
+				if (deleteMapPcap == null) {
+					deleteMapPcap = new ConcurrentHashMap<String, List<String>>();
+				}
+				if (deleteMapPcap.get(managerName) == null) {
+					deleteMapPcap.put(managerName, new ArrayList<String>());
+				}
 			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CUSTOM_N)) {
 				if(deleteMapCustomN == null) {
 					deleteMapCustomN = new ConcurrentHashMap<String, List<String>>();
@@ -356,6 +378,27 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 				}
 				if (deleteMapCustomTrapS.get(managerName) == null) {
 					deleteMapCustomTrapS.put(managerName, new ArrayList<String>());
+				}
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_LOGCOUNT)) {
+				if(deleteMapLogcount == null) {
+					deleteMapLogcount = new ConcurrentHashMap<String, List<String>>();
+				}
+				if (deleteMapLogcount.get(managerName) == null) {
+					deleteMapLogcount.put(managerName, new ArrayList<String>());
+				}
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CORRELATION)) {
+				if(deleteMapCorrelation == null) {
+					deleteMapCorrelation = new ConcurrentHashMap<String, List<String>>();
+				}
+				if (deleteMapCorrelation.get(managerName) == null) {
+					deleteMapCorrelation.put(managerName, new ArrayList<String>());
+				}
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_INTEGRATION)) {
+				if(deleteMapIntegration == null) {
+					deleteMapIntegration = new ConcurrentHashMap<String, List<String>>();
+				}
+				if (deleteMapIntegration.get(managerName) == null) {
+					deleteMapIntegration.put(managerName, new ArrayList<String>());
 				}
 			} else {
 				if(deleteMapExt == null) {
@@ -442,6 +485,16 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 					deleteInterfaceLogfile = new DeleteLogfile();
 				}
 				deleteMapLogfile.get(managerName).add(monitorId);
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)) {
+				if (deleteInterfaceBinaryFile == null) {
+					deleteInterfaceBinaryFile = new DeleteMonitorBinaryFile();
+				}
+				deleteMapBinaryFile.get(managerName).add(monitorId);
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)) {
+				if (deleteInterfacePcap == null) {
+					deleteInterfacePcap = new DeleteMonitorPcap();
+				}
+				deleteMapPcap.get(managerName).add(monitorId);
 			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CUSTOM_N)) {
 				if (deleteInterfaceCustomN == null) {
 					deleteInterfaceCustomN = new DeleteCustomNumeric();
@@ -482,6 +535,21 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 					deleteInterfaceCustomTrapS = new DeleteCustomTrapString();
 				}
 				deleteMapCustomTrapS.get(managerName).add(monitorId);
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_LOGCOUNT)) {
+				if (deleteInterfaceLogcount == null) {
+					deleteInterfaceLogcount = new DeleteLogcount();
+				}
+				deleteMapLogcount.get(managerName).add(monitorId);
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_CORRELATION)) {
+				if (deleteInterfaceCorrelation == null) {
+					deleteInterfaceCorrelation = new DeleteCorrelation();
+				}
+				deleteMapCorrelation.get(managerName).add(monitorId);
+			} else if (pluginId.equals(HinemosModuleConstant.MONITOR_INTEGRATION)) {
+				if (deleteInterfaceIntegration == null) {
+					deleteInterfaceIntegration = new DeleteIntegration();
+				}
+				deleteMapIntegration.get(managerName).add(monitorId);
 			} else {
 				int i = 0;
 				for(IMonitorPlugin extensionMonitor: LoadMonitorPlugin.getExtensionMonitorList()){
@@ -686,6 +754,32 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 					}
 				}
 			}
+			if (deleteInterfaceBinaryFile != null) {
+				for (Map.Entry<String, List<String>> map : deleteMapBinaryFile.entrySet()) {
+					try {
+						deleteInterfaceBinaryFile.delete(map.getKey(), map.getValue());
+						successCount = successCount + map.getValue().size();
+					} catch (InvalidRole_Exception e) {
+						throw e;
+					} catch (Exception e) {
+						errCount = errCount + map.getValue().size();
+						errMessage = HinemosMessage.replace(e.getMessage());
+					}
+				}
+			}
+			if (deleteInterfacePcap != null) {
+				for (Map.Entry<String, List<String>> map : deleteMapPcap.entrySet()) {
+					try {
+						deleteInterfacePcap.delete(map.getKey(), map.getValue());
+						successCount = successCount + map.getValue().size();
+					} catch (InvalidRole_Exception e) {
+						throw e;
+					} catch (Exception e) {
+						errCount = errCount + map.getValue().size();
+						errMessage = HinemosMessage.replace(e.getMessage());
+					}
+				}
+			}
 			if (deleteInterfaceCustomN != null) {
 				for(Map.Entry<String, List<String>> map : deleteMapCustomN.entrySet()) {
 					try {
@@ -794,6 +888,45 @@ public class MonitorDeleteAction extends AbstractHandler implements IElementUpda
 				for(Map.Entry<String, List<String>> map : deleteMapCustomTrapS.entrySet()) {
 					try {
 						deleteInterfaceCustomTrapS.delete(map.getKey(), map.getValue());
+						successCount = successCount + map.getValue().size();
+					} catch(InvalidRole_Exception e) {
+						throw e;
+					} catch(Exception e) {
+						errCount = errCount + map.getValue().size();
+						errMessage = HinemosMessage.replace(e.getMessage());
+					}
+				}
+			}
+			if (deleteInterfaceLogcount != null) {
+				for(Map.Entry<String, List<String>> map : deleteMapLogcount.entrySet()) {
+					try {
+						deleteInterfaceLogcount.delete(map.getKey(), map.getValue());
+						successCount = successCount + map.getValue().size();
+					} catch(InvalidRole_Exception e) {
+						throw e;
+					} catch(Exception e) {
+						errCount = errCount + map.getValue().size();
+						errMessage = HinemosMessage.replace(e.getMessage());
+					}
+				}
+			}
+			if (deleteInterfaceCorrelation != null) {
+				for(Map.Entry<String, List<String>> map : deleteMapCorrelation.entrySet()) {
+					try {
+						deleteInterfaceCorrelation.delete(map.getKey(), map.getValue());
+						successCount = successCount + map.getValue().size();
+					} catch(InvalidRole_Exception e) {
+						throw e;
+					} catch(Exception e) {
+						errCount = errCount + map.getValue().size();
+						errMessage = HinemosMessage.replace(e.getMessage());
+					}
+				}
+			}
+			if (deleteInterfaceIntegration != null) {
+				for(Map.Entry<String, List<String>> map : deleteMapIntegration.entrySet()) {
+					try {
+						deleteInterfaceIntegration.delete(map.getKey(), map.getValue());
 						successCount = successCount + map.getValue().size();
 					} catch(InvalidRole_Exception e) {
 						throw e;

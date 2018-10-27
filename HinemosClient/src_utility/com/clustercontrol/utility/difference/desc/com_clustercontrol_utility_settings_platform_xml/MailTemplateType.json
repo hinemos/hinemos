@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"MailTemplateType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Description",
+			"OwnerRoleId",
+			"Subject"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"MailTemplateInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

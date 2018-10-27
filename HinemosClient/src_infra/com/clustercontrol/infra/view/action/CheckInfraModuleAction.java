@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.view.action;
@@ -36,6 +29,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.infra.action.GetInfraModuleTableDefine;
+import com.clustercontrol.infra.bean.InfraNodeInputConstant;
 import com.clustercontrol.infra.dialog.RunDialog;
 import com.clustercontrol.infra.util.InfraEndpointWrapper;
 import com.clustercontrol.infra.util.AccessUtil;
@@ -133,18 +127,21 @@ public class CheckInfraModuleAction extends AbstractHandler implements IElementU
 		}
 		allRun = dialog.isAllRun();
 
-		List<AccessInfo> accessInfoList = AccessUtil.getAccessInfoList(
-				viewPart.getSite().getShell(), management.getFacilityId(), management.getOwnerRoleId(), managerName, infraModuleView.isUseNodeProp());
-		// ユーザ、パスワード、ポートの入力画面でキャンセルをクリックすると、nullが返ってくる。
-		// その場合は、処理中断。
-		if (accessInfoList == null) {
-			return null;
-		}
+		List<AccessInfo> accessInfoList = null;
 		List<String> moduleIdList = new ArrayList<String>();
 		moduleIdList.add(moduleId);
+		if (infraModuleView.getNodeInputType() == InfraNodeInputConstant.TYPE_DIALOG) {
+			accessInfoList = AccessUtil.getAccessInfoList(
+				viewPart.getSite().getShell(), management, moduleIdList, managerName);
+			// ユーザ、パスワード、ポートの入力画面でキャンセルをクリックすると、nullが返ってくる。
+			// その場合は、処理中断。
+			if (accessInfoList == null) {
+				return null;
+			}
+		}
 		try {
 			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
-			String sessionId = wrapper.createSession(management.getManagementId(), moduleIdList, accessInfoList);
+			String sessionId = wrapper.createSession(management.getManagementId(), moduleIdList, infraModuleView.getNodeInputType(), accessInfoList);
 			while (true) {
 				ModuleResult moduleResult = wrapper.checkInfraModule(sessionId, !allRun);
 				if (!allRun && !ModuleUtil.displayResult(moduleResult.getModuleId(), moduleResult)) {

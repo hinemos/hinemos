@@ -1,15 +1,11 @@
 /*
-Copyright (C) 2010 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.ws.access;
 
 import java.util.ArrayList;
@@ -24,6 +20,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.FunctionConstant;
+import com.clustercontrol.accesscontrol.bean.ManagerInfo;
 import com.clustercontrol.accesscontrol.bean.ObjectPrivilegeFilterInfo;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
@@ -54,7 +51,6 @@ import com.clustercontrol.fault.UsedRole;
 import com.clustercontrol.fault.UsedUser;
 import com.clustercontrol.fault.UserDuplicate;
 import com.clustercontrol.fault.UserNotFound;
-import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -96,7 +92,7 @@ public class AccessEndpoint {
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
 	 */
-	public int checkLogin() throws InvalidUserPass, InvalidRole, HinemosUnknown {
+	public ManagerInfo checkLogin() throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("checkLogin");
 
 		try {
@@ -110,11 +106,7 @@ public class AccessEndpoint {
 
 		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_ACCESS + " Login, Method=checkLogin, User="
 				+ HttpAuthenticator.getUserAccountString(wsctx));
-
-		new AccessControllerBean().checkLogin();
-
-		// Hinemosプロパティで設定されたタイムゾーンオフセットを取得し、返却する
-		return HinemosTime.getTimeZoneOffset();
+		return new AccessControllerBean().checkLogin();
 	}
 
 	/**
@@ -1072,6 +1064,9 @@ public class AccessEndpoint {
 				|| HinemosModuleConstant.INFRA_FILE.equals(objectType)) {
 			// 環境構築
 			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.INFRA, SystemPrivilegeMode.MODIFY));
+		} else if (HinemosModuleConstant.HUB_TRANSFER.equals(objectType)) {
+			// 収集蓄積
+			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HUB, SystemPrivilegeMode.MODIFY));
 		} else {
 			m_log.info("replaceObjectPrivilegeInfo " + objectType);
 		}

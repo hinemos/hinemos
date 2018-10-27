@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.collect.util;
@@ -32,13 +25,16 @@ import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
+import com.clustercontrol.collect.bean.CollectConstant;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.composite.CollectSettingComposite;
 import com.clustercontrol.collect.preference.PerformancePreferencePage;
+import com.clustercontrol.monitor.run.bean.MonitorNumericType;
 import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.ws.collect.CollectData;
 import com.clustercontrol.ws.collect.CollectKeyInfoPK;
@@ -46,6 +42,7 @@ import com.clustercontrol.ws.collect.CollectorItemCodeMstData;
 import com.clustercontrol.ws.collect.HashMapInfo;
 import com.clustercontrol.ws.collect.HashMapInfo.Map3;
 import com.clustercontrol.ws.collect.HashMapInfo.Map4;
+import com.clustercontrol.ws.collect.HinemosDbTimeout_Exception;
 import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
 import com.clustercontrol.ws.collect.InvalidRole_Exception;
 import com.clustercontrol.ws.collect.InvalidUserPass_Exception;
@@ -53,7 +50,7 @@ import com.clustercontrol.ws.monitor.EventDataInfo;
 import com.clustercontrol.ws.monitor.MonitorInfo;
 import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.ws.repository.FacilityInfo;
 
 /**
  * 性能グラフを表示する補助クラス<BR>
@@ -97,19 +94,22 @@ public class CollectGraphUtil {
 	/**
 	 * セパレータ
 	 */
-	private static final String SQUARE_SEPARATOR = "#";
+	private static final String SQUARE_SEPARATOR = "\u2029";
 
 	/**
 	 * 現在表示中のグラフ表示の最古時間
-	 * (DBに取りに行った最古時間、これよりも古い時刻を表示する場合は取得しにいく)
 	 */
 	private Long m_targetConditionStartDate = null;
 	
 	/**
 	 * 現在表示中のグラフ表示の最新時間
-	 * (DBにとりに行った最新時間、現在時刻を越えない)
 	 */
 	private Long m_targetConditionEndDate = null;
+	
+	/**
+	 * 前回DBから取得した時間
+	 */
+	private Long m_targetDBAccessDate = null;
 	
 	/**
 	 * サマリータイプ
@@ -123,16 +123,9 @@ public class CollectGraphUtil {
 	
 	/**
 	 * マネージャ名とファシリティIDとファシリティ名のマップ
-	 * (マネージャ名 + # + ファシリティID、ファシリティ名)の構造
+	 * (マネージャ名 + # + ファシリティID、ファシリティ情報)の構造
 	 */
-	private TreeMap<String, String> m_managerFacilityIdNameMap = new TreeMap<>();
-	
-	/**
-	 * マネージャ名とファシリティIDとダミーファシリティIDのマップ
-	 * (マネージャ名 + # + ファシリティID、ダミーファシリティID)の構造
-	 * ファシリティIDに「.」などが入るとグラフを正常に表示できないためダミーファシリティIDを作成する
-	 */
-	private TreeMap<String, String> m_managerFacilityIdDummyNameMap = new TreeMap<>();
+	private TreeMap<String, CollectFacilityDataInfo> m_managerFacilityDataInfoMap = new TreeMap<>();
 	
 	/**
 	 * マネージャ名とダミーマネージャ名のマップ
@@ -214,24 +207,41 @@ public class CollectGraphUtil {
 	 * @param endDate DBから取得するデータの終了時刻
 	 * @param selectStartDate グラフの表示開始時刻
 	 * @param selectEndDate グラフの表示終了時刻
+	 * @param nowDate 現在日時
 	 * @return
+	 * @throws HinemosDbTimeout_Exception 
 	 * @throws InvalidRole_Exception 
 	 * @throws HinemosUnknown_Exception 
 	 * @throws InvalidUserPass_Exception 
 	 */
-	public static StringBuffer getAddGraphPlotJson(Long startDate, Long endDate, Long selectStartDate, Long selectEndDate) 
-			throws InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+	public static StringBuffer getAddGraphPlotJson(Long startDate, Long endDate, Long selectStartDate, Long selectEndDate, Long nowDate) 
+			throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
 		m_log.debug("getAddGraphPlotJson() start");
 		StringBuffer sb = new StringBuffer();
 		int count = 0;
 		boolean allbreak = false;
+
+		// グラフの表示開始時刻、表示終了時刻、今回の処理日時を内部に保持する
+		setTargetConditionStartDate(selectStartDate);
+		setTargetConditionEndDate(selectEndDate);
+		long now = HinemosTime.currentTimeMillis();
+		if (nowDate != null) {
+			now = nowDate.longValue();
+		}
+		if (now > endDate) {
+			setTargetDBAccessDate(endDate);
+		} else {
+			setTargetDBAccessDate(now);
+		}
+
 		for (CollectKeyInfoPK collectKeyInfo : getInstance().m_collectKeyInfoList) {
-			String itemName = HinemosMessage.replace(collectKeyInfo.getItemName());
+			String itemNameCode = collectKeyInfo.getItemName();
+			String itemName = HinemosMessage.replace(itemNameCode);
 			String monitorId = collectKeyInfo.getMonitorId();
 			String displayName = collectKeyInfo.getDisplayName();
 			for (Map.Entry<String, TreeMap<String, List<Integer>>> entry : getInstance().m_targetManagerFacilityCollectMap.entrySet()) {
 				String managerName = entry.getKey();
-				Map<Integer, List<CollectData>> graphMap = getGraphDetailDataMap(managerName, monitorId, displayName, itemName, startDate, endDate);
+				Map<Integer, List<CollectData>> graphMap = getGraphDetailDataMap(managerName, monitorId, displayName, itemName, startDate, getTargetDBAccessDate());
 				String itemNameDisplayNameMonitorId = itemName + displayName + monitorId;
 				Map<String, Integer> collectIdMap = getFacilityCollectMap(itemNameDisplayNameMonitorId, managerName);
 				// plot文字列を取得
@@ -251,6 +261,9 @@ public class CollectGraphUtil {
 				String pluginId = "";
 				String graphRange = Boolean.FALSE.toString(); // graphrangeが未指定だとjson構文エラーになるので初期値を設定
 				String isHttpSce = Boolean.FALSE.toString();
+				String predictionTarget = "0";
+				String predictionTargetStr = "";
+				String predictionRange = "0";
 				if (thresholdStr != null) {
 					thresholdInfoMin = thresholdStr.split(",")[0];
 					thresholdInfoMax = thresholdStr.split(",")[1];
@@ -260,16 +273,43 @@ public class CollectGraphUtil {
 					pluginId = thresholdStr.split(",")[5];
 					graphRange = thresholdStr.split(",")[6];
 					isHttpSce = thresholdStr.split(",")[7];
+					predictionTarget = thresholdStr.split(",")[8];
+					predictionRange = thresholdStr.split(",")[9];
+					
+					// 将来予測の表示用日時
+					try {
+						StringBuilder timeSb = new StringBuilder();
+						int tmpTime = Integer.parseInt(predictionTarget);
+						boolean appendFlg = false;
+						if (tmpTime > 24 * 60) {
+							// 1日以上
+							timeSb.append(tmpTime / (24 * 60));
+							timeSb.append(Messages.getString("day"));
+							tmpTime = tmpTime % (24 * 60);
+							appendFlg = true;
+						}
+						if (appendFlg || tmpTime > 60) {
+							// 1時間以上
+							timeSb.append(tmpTime / 60);
+							timeSb.append(Messages.getString("hour.period"));
+							tmpTime = tmpTime % 60;
+						}
+						timeSb.append(tmpTime);
+						timeSb.append(Messages.getString("minute"));
+						predictionTargetStr = timeSb.toString();
+					} catch (NumberFormatException e) {
+						m_log.debug(e.getMessage());
+					}
 				}
 				
-				//  #でsplitしてaddPoints
+				//  separatorでsplitしてaddPoints
 				for (String plotStr : plotList) {
 					String split_plot[] = plotStr.split(SQUARE_SEPARATOR);
 					String facilityId = split_plot[0];
 					String collectId = split_plot[1];
 					String plot = split_plot[2];
-					String facilityName = getInstance().m_managerFacilityIdNameMap.get(managerName + SQUARE_SEPARATOR + facilityId);
-					String facilityDummyId = getInstance().m_managerFacilityIdDummyNameMap.get(managerName + SQUARE_SEPARATOR + facilityId);
+					String facilityName = getInstance().m_managerFacilityDataInfoMap.get(managerName + SQUARE_SEPARATOR + facilityId).getName();
+					String facilityDummyId = getInstance().m_managerFacilityDataInfoMap.get(managerName + SQUARE_SEPARATOR + facilityId).getDummyName();
 					String managerDummyName = getInstance().m_managerDummyNameMap.get(managerName);
 					String itemName2 = itemName;
 					if (!displayName.equals("") && !itemName2.endsWith("[" + displayName + "]")) {
@@ -280,6 +320,15 @@ public class CollectGraphUtil {
 					if (!getInstance().totalFlg) {
 						groupId = facilityDummyId + "_" + managerDummyName + "_" + itemName2 + "_" + monitorId;
 					}
+					
+					// 将来予測の取得
+					List<Double> forecastsList = getForecasts(monitorId, facilityId, displayName, itemNameCode, managerName);
+					Long dateOffset = forecastsList.get(0).longValue();
+					Double a0Value = forecastsList.get(1);
+					Double a1Value = forecastsList.get(2);
+					Double a2Value = forecastsList.get(3);
+					Double a3Value = forecastsList.get(4);
+					
 					String param =
 							"{"
 							+ "\'data\':" + plot + ", "
@@ -297,11 +346,20 @@ public class CollectGraphUtil {
 							+ "\'pluginid\':\'" + escapeParam(pluginId) + "\', "
 							+ "\'graphrange\':" + graphRange + ", "
 							+ "\'ishttpsce\':" + isHttpSce + ", "
-							+ "\'summarytype\':" + getInstance().m_summaryType + ", "
+							+ "\'predictiontarget\':" + escapeParam(predictionTarget) + ", "
+							+ "\'predictiontargetstr\':\'" + escapeParam(predictionTargetStr) +"\', "
+							+ "\'predictionrange\':" + escapeParam(predictionRange) + ", "
+							+ "\'now\':" + new Date().getTime() + ", "
+							+ "\'summarytype\':" + getSummaryType() + ", "
 							+ "\'startdate\':\'" + selectStartDate + "\', "
 							+ "\'enddate\':\'" + selectEndDate + "\', "
-							+ "\'sliderstartdate\':\'" + getInstance().m_sliderStart + "\', "
-							+ "\'sliderenddate\':\'" + getInstance().m_sliderEnd + "\', "
+							+ "\'sliderstartdate\':\'" + getSliderStart() + "\', "
+							+ "\'sliderenddate\':\'" + getSliderEnd() + "\', "
+							+ "\'dateoffset\':" + dateOffset + ", "
+							+ "\'a0value\':" + a0Value + ", "
+							+ "\'a1value\':" + a1Value + ", "
+							+ "\'a2value\':" + a2Value + ", "
+							+ "\'a3value\':" + a3Value + ", "
 							+ "\'thresholdinfomin\':\'" + escapeParam(thresholdInfoMin) + "\', "
 							+ "\'thresholdinfomax\':\'" + escapeParam(thresholdInfoMax) + "\', "
 							+ "\'thresholdwarnmin\':\'" + escapeParam(thresholdWarnMin) + "\', "
@@ -389,8 +447,7 @@ public class CollectGraphUtil {
 		getInstance().totalFlg = totalflg;
 		getInstance().stackFlg = stackflg;
 		getInstance().m_targetManagerFacilityCollectMap.clear();
-		getInstance().m_managerFacilityIdNameMap.clear();
-		getInstance().m_managerFacilityIdDummyNameMap.clear();
+		getInstance().m_managerFacilityDataInfoMap.clear();
 		getInstance().m_managerDummyNameMap.clear();
 		getInstance().m_managerMonitorCollectIdMap.clear();
 		getInstance().m_collectKeyInfoList.clear();
@@ -403,78 +460,22 @@ public class CollectGraphUtil {
 
 	/**
 	 * マネージャ名とファシリティ名のマップを作成する
-	 * @param item
+	 * @param managerName マネージャ名
+	 * @param info ファシリティ情報
 	 * @param count
-	 * @return ファシリティの数
 	 */
-	public static int sortManagerNameFacilityIdMap(FacilityTreeItem item, int count){
-		int size = 0;
-		ArrayList<String> targetConditionFacilityIdList = new ArrayList<String>();
-		targetConditionFacilityIdList.clear();
-		if (item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE) {
-			// 最上位の[スコープ]はマネージャ名が無いので呼び出し元に戻る
-			return 0;
+	public static int sortManagerNameFacilityIdMap(String managerName, FacilityInfo info, int count){
+		m_log.debug("sortManagerNameFacilityIdMap() managerName:" + managerName + 
+				", facilityId:" + info.getFacilityId() + ", facilityName:" + info.getFacilityName());
+		if (!getInstance().m_managerFacilityDataInfoMap.containsKey(managerName + SQUARE_SEPARATOR + info.getFacilityId())) {
+			count++;
+			getInstance().m_managerFacilityDataInfoMap.put(managerName + SQUARE_SEPARATOR + info.getFacilityId(), 
+					new CollectFacilityDataInfo(info.getFacilityId(), info.getFacilityName(), "dummy_" + count));
+			addTargetFacilityIdMap(managerName, info.getFacilityId());
 		}
-		String managerName = ScopePropertyUtil.getManager(item).getData().getFacilityId();
-		String facilityId = item.getData().getFacilityId();
-		String facilityName = item.getData().getFacilityName();
-		if (item.getData().getFacilityType() == FacilityConstant.TYPE_NODE) {
-			getInstance().m_managerFacilityIdNameMap.put(managerName + SQUARE_SEPARATOR + facilityId, facilityName);
-			getInstance().m_managerFacilityIdDummyNameMap.put(managerName + SQUARE_SEPARATOR + facilityId, "dummy_" + count);
-		}
-		m_log.debug("sortManagerNameFacilityIdMap() managerName:" + managerName + ", facilityId:" + facilityId + ", facilityName:" + facilityName);
-		switch (item.getData().getFacilityType()) {
-
-		case FacilityConstant.TYPE_NODE:
-			// 指定したノードだけ
-			targetConditionFacilityIdList.add(facilityId);
-			addTargetFacilityIdMap(managerName, facilityId);
-			break;
-
-		case FacilityConstant.TYPE_SCOPE:
-		case FacilityConstant.TYPE_MANAGER:
-			// 指定したスコープ配下に含まれる全てのノードを対象
-			setTargetNodeFacilityId(item, targetConditionFacilityIdList);
-			break;
-
-		default: // 既定の対処はスルー。
-			break;
-		}
-		size = getInstance().m_managerFacilityIdNameMap.size();
-		return size;
+		return count;
 	}
 
-	/**
-	 * FacilityTreeItemに所属する全てのノード(スコープではない)のファシリティIDをArrayListに設定します
-	 *
-	 * @param treeItem
-	 * @param facilityIdList
-	 */
-	private static void setTargetNodeFacilityId(FacilityTreeItem treeItem, ArrayList<String> facilityIdList) {
-		if (facilityIdList == null) {
-			m_log.warn("facilityIdList is null");
-			return;
-		}
-		m_log.trace("setTargetNodeFacilityId() treeItem = " + treeItem.getData().getFacilityId());
-		List<FacilityTreeItem> children = treeItem.getChildren();
-
-		for(FacilityTreeItem item : children){
-			switch (item.getData().getFacilityType()) {
-			case FacilityConstant.TYPE_NODE:
-				facilityIdList.add(item.getData().getFacilityId());
-				addTargetFacilityIdMap(ScopePropertyUtil.getManager(item).getData().getFacilityId(), item.getData().getFacilityId());
-				break;
-
-			case FacilityConstant.TYPE_SCOPE:
-				setTargetNodeFacilityId(item, facilityIdList);
-				break;
-
-			default:
-				break;
-			}
-		}
-	}
-	
 	/**
 	 * 
 	 * @param managerName
@@ -515,19 +516,24 @@ public class CollectGraphUtil {
 	/**
 	 * グラフのベースとなる部分の描画情報を作成します。
 	 * 初回のみ呼ばれます。
-	 * @param summaryType
+	 * @param summaryType サマリタイプ
+	 * @param appflg 近似直線表示フラグ
 	 * @return
 	 */
-	public static String drawGraphSheets(int summaryType) {
+	public static String drawGraphSheets(int summaryType, boolean appflg) {
 		long start = System.currentTimeMillis();
 		m_log.debug("drawGraphSheets()");
 		Long nowDate = System.currentTimeMillis();
 
 		long formatTerm = MILLISECOND_MONTH;
-		if (getInstance().m_targetConditionEndDate == null && getInstance().m_targetConditionStartDate == null) {
-			// 取得時刻がnullの場合は、初回グラフ表示時(画面上に何もない状態)なので、開始時刻に現在時間-1h、終了時刻に現在時刻をいれる
+		if (getTargetConditionEndDate() == null && getTargetConditionStartDate() == null) {
+			// 取得時刻がnullの場合は、初回グラフ表示時(画面上に何もない状態)なので、開始時刻に現在時間-1h、終了時刻に現在時刻+1h(近似直線表示の場合は「現在時間+2h」)をいれる
 			m_log.debug("drawGraphSheets() first draw.");
-			getInstance().m_targetConditionEndDate = nowDate;
+			if (appflg) {
+				setTargetConditionEndDate(nowDate + MILLISECOND_HOUR * 2);
+			} else {
+				setTargetConditionEndDate(nowDate + MILLISECOND_HOUR);
+			}
 			
 			// 指定されたサマリタイプ別に取得期間を変更する
 			switch (summaryType) {
@@ -535,7 +541,7 @@ public class CollectGraphUtil {
 				case SummaryTypeConstant.TYPE_MIN_HOUR :
 				case SummaryTypeConstant.TYPE_MAX_HOUR :
 					// 「時」の場合は、取得期間を「1日」、スライダーは「1週間」
-					getInstance().m_targetConditionStartDate = nowDate - MILLISECOND_DAY;
+					setTargetConditionStartDate(nowDate - MILLISECOND_DAY);
 					formatTerm = MILLISECOND_WEEK;
 					break;
 				
@@ -543,7 +549,7 @@ public class CollectGraphUtil {
 				case SummaryTypeConstant.TYPE_MIN_DAY :
 				case SummaryTypeConstant.TYPE_MAX_DAY :
 					// 「日」の場合は、取得期間を「1週間」、スライダーは「1ヶ月」
-					getInstance().m_targetConditionStartDate = nowDate - MILLISECOND_WEEK;
+					setTargetConditionStartDate(nowDate - MILLISECOND_WEEK);
 					formatTerm = MILLISECOND_MONTH;
 					break;
 
@@ -551,16 +557,21 @@ public class CollectGraphUtil {
 				case SummaryTypeConstant.TYPE_MIN_MONTH :
 				case SummaryTypeConstant.TYPE_MAX_MONTH :
 					// 「月」の場合は、取得期間を「1年」、スライダーは「10年」
-					getInstance().m_targetConditionStartDate = nowDate - MILLISECOND_YEAR;
+					setTargetConditionStartDate(nowDate - MILLISECOND_YEAR);
 					formatTerm = MILLISECOND_10YEAR;
 					break;
 
 				default :// raw
 					// 「ロー」の場合は、取得期間を「1時間」、スライダーは「1日」
-					getInstance().m_targetConditionStartDate = nowDate - MILLISECOND_HOUR;
+					setTargetConditionStartDate(nowDate - MILLISECOND_HOUR);
 					formatTerm = MILLISECOND_DAY;
 					break;
 			}
+			// 表示期間を真ん中に持ってくる
+			long centerDate = getTargetConditionStartDate() 
+					+ (getTargetConditionEndDate() - getTargetConditionStartDate()) /2;
+			setSliderStart(centerDate - (formatTerm / 2));
+			setSliderEnd(centerDate + (formatTerm / 2));
 
 		} else {
 			m_log.debug("drawGraphSheets() already draw.");
@@ -568,20 +579,20 @@ public class CollectGraphUtil {
 			
 			// 期間が1日以上でローが選択されている場合は、指定されている期間の中心時間から前後12時間にする(取得時間の短縮)
 			if (isSelectTermOverDay() && summaryType == SummaryTypeConstant.TYPE_RAW) {
-				long center = (getSelectTermDiff()/2) + getInstance().m_targetConditionStartDate;
-				getInstance().m_targetConditionStartDate = center - (MILLISECOND_DAY/2);
-				getInstance().m_targetConditionEndDate = center + (MILLISECOND_DAY/2);
+				long center = (getSelectTermDiff()/2) + getTargetConditionStartDate();
+				setTargetConditionStartDate(center - (MILLISECOND_DAY/2));
+				setTargetConditionEndDate(center + (MILLISECOND_DAY/2));
 				m_log.debug("drawGraphSheets() summaryType:raw, term over day. shortcut term. center:" + center);
+
+				// 前回の表示期間の取得、今回も同じ期間にする
+				formatTerm = getSliderEnd() - getSliderStart();
+				// 表示期間を真ん中に持ってくる
+				long centerDate = getTargetConditionStartDate() 
+						+ (getTargetConditionEndDate() - getTargetConditionStartDate()) /2;
+				setSliderStart(centerDate - (formatTerm / 2));
+				setSliderEnd(centerDate + (formatTerm / 2));
 			}
-			// 前回の表示期間の取得、今回も同じ期間にする
-			formatTerm = getInstance().m_sliderEnd - getInstance().m_sliderStart;
-			
 		}
-		// 表示期間を真ん中に持ってくる
-		long centerDate = getTargetConditionStartDate() 
-				+ (getTargetConditionEndDate() - getTargetConditionStartDate()) /2;
-		getInstance().m_sliderStart = centerDate - (formatTerm / 2);
-		getInstance().m_sliderEnd = centerDate + (formatTerm / 2);
 		
 		// グラフのベース部の文字列作成
 		ArrayList<String> plotJsonList = new ArrayList<>();
@@ -664,7 +675,14 @@ public class CollectGraphUtil {
 						&& !itemNameLocale.endsWith("[" + collectInfo.getDisplayName() + "]")) {
 					itemNameLocale += "[" + collectInfo.getDisplayName() + "]";
 				}
-				String str = itemNameLocale + "(" + collectInfo.getMonitorId() + ")";
+				String str = "";
+				if (!collectInfo.getMonitorId().equals(CollectConstant.COLLECT_TYPE_JOB)) {
+					// ジョブ履歴以外
+					str = itemNameLocale + "(" + collectInfo.getMonitorId() + ")";
+				} else {
+					// ジョブ履歴
+					str = itemNameLocale;
+				}
 				if (str.equals(select)) {
 					String param =
 						"{"
@@ -695,7 +713,7 @@ public class CollectGraphUtil {
 	public static void collectCollectIdInfo(int summaryType) throws InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
 		long start2 = System.currentTimeMillis();
 
-		getInstance().m_summaryType = summaryType;
+		setSummaryType(summaryType);
 		int count = 0;
 		int dispCount = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(PerformancePreferencePage.P_GRAPH_MAX);
 		// itemCode数分ループ
@@ -786,17 +804,18 @@ public class CollectGraphUtil {
 	 * @param fromTime 開始時刻
 	 * @param toTime 終了時刻
 	 * @return key:collectId, value:CollectDataのリスト
+	 * @throws HinemosDbTimeout_Exception 
 	 * @throws InvalidRole_Exception 
 	 * @throws HinemosUnknown_Exception 
 	 * @throws InvalidUserPass_Exception 
 	 */
 	private static Map<Integer, List<CollectData>> getGraphDetailDataMap(String managerName, String monitorId, String displayName, 
-			String itemName, Long fromTime, Long toTime) throws InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+			String itemName, Long fromTime, Long toTime) throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
 		long start = System.currentTimeMillis();
 		SimpleDateFormat DF = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
 		DF.setTimeZone(TimezoneUtil.getTimeZone());
 		m_log.info("getGraphDetailDataMap() managerName:" + managerName + ", monitorId:" + monitorId + ", displayName:" + displayName + ", itemName:" + itemName
-				+ ", fromTime:" + DF.format(new Date(fromTime)) + ", toTime:" + DF.format(new Date(toTime)) + ", summaryType:" + getInstance().m_summaryType);
+				+ ", fromTime:" + DF.format(new Date(fromTime)) + ", toTime:" + DF.format(new Date(toTime)) + ", summaryType:" + getSummaryType());
 		Map<Integer, List<CollectData>> map = new HashMap<>();
 		List<Integer> collectIdList = null;
 		if (getInstance().m_managerMonitorCollectIdMap.get(managerName) == null) {
@@ -811,28 +830,28 @@ public class CollectGraphUtil {
 
 		// 画面いっぱいにグラフを表示させるために表示範囲以上に情報を取得する
 		// 画面で表示中のデータと今回取得するデータで重複するところがあるが、javascriptで重複排除する
-		if (getInstance().m_summaryType == SummaryTypeConstant.TYPE_RAW) {
+		if (getSummaryType() == SummaryTypeConstant.TYPE_RAW) {
 			// nop
-		} else if (getInstance().m_summaryType == SummaryTypeConstant.TYPE_AVG_HOUR 
-				|| getInstance().m_summaryType == SummaryTypeConstant.TYPE_MIN_HOUR 
-				|| getInstance().m_summaryType == SummaryTypeConstant.TYPE_MAX_HOUR) {
+		} else if (getSummaryType() == SummaryTypeConstant.TYPE_AVG_HOUR 
+				|| getSummaryType() == SummaryTypeConstant.TYPE_MIN_HOUR 
+				|| getSummaryType() == SummaryTypeConstant.TYPE_MAX_HOUR) {
 			fromTime -= MILLISECOND_HOUR;
 			toTime += MILLISECOND_HOUR;
-		} else if (getInstance().m_summaryType == SummaryTypeConstant.TYPE_AVG_DAY
-				|| getInstance().m_summaryType == SummaryTypeConstant.TYPE_MIN_DAY
-				|| getInstance().m_summaryType == SummaryTypeConstant.TYPE_MAX_DAY) {
+		} else if (getSummaryType() == SummaryTypeConstant.TYPE_AVG_DAY
+				|| getSummaryType() == SummaryTypeConstant.TYPE_MIN_DAY
+				|| getSummaryType() == SummaryTypeConstant.TYPE_MAX_DAY) {
 			fromTime -= MILLISECOND_DAY;
 			toTime += MILLISECOND_DAY;
-		} else if (getInstance().m_summaryType == SummaryTypeConstant.TYPE_AVG_MONTH
-				|| getInstance().m_summaryType == SummaryTypeConstant.TYPE_MIN_MONTH
-				|| getInstance().m_summaryType == SummaryTypeConstant.TYPE_MAX_MONTH) {
+		} else if (getSummaryType() == SummaryTypeConstant.TYPE_AVG_MONTH
+				|| getSummaryType() == SummaryTypeConstant.TYPE_MIN_MONTH
+				|| getSummaryType() == SummaryTypeConstant.TYPE_MAX_MONTH) {
 			fromTime -= MILLISECOND_MONTH;
 			toTime += MILLISECOND_MONTH;
 		}
 		m_log.debug("getGraphDetailDataMap() REAL fromTime:" + DF.format(new Date(fromTime)) + ", toTime:" + DF.format(new Date(toTime)));
 
 		CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
-		HashMapInfo mapInfo = wrapper.getCollectData(collectIdList, getInstance().m_summaryType, fromTime, toTime);
+		HashMapInfo mapInfo = wrapper.getCollectData(collectIdList, getSummaryType(), fromTime, toTime);
 		Map3 map3 = mapInfo.getMap3();
 		int count = 0;
 		for (com.clustercontrol.ws.collect.HashMapInfo.Map3.Entry entry3 : map3.getEntry()) {
@@ -854,7 +873,7 @@ public class CollectGraphUtil {
 	 * <br>
 	 * facilityId    : ファシリティID<br>
 	 * collectId     : 収集ID<br>
-	 * plotData      : 座標情報([[x1,y1],[x2,y2],[x3,y3],･･･[xn,yn]])<br>
+	 * plotData      : 座標情報([[x1,y1,avg1,standard1],[x2,y2,avg2,standard2],[x3,y3,avg3,standard3],･･･[xn,yn,avgn,standardn]])<br>
 	 * <br>
 	 * @param collectIdMap
 	 * @param collectDataMap
@@ -878,10 +897,14 @@ public class CollectGraphUtil {
 					for (CollectData data : dataList) {
 						Long date = data.getTime();
 						Float value = data.getValue();
+						Float average = data.getAverage();
+						Float standard = data.getStandardDeviation(); // 偏差
 						if (date == null || value == null) {
+							m_log.debug("☆☆date or value null!!!!");
 							continue;
 						}
-						sb.append("[" + date + "," + value + "],");
+						// [日時,収集値,平均,偏差]
+						sb.append("[" + date + "," + value + "," + average + "," + standard + "],");
 					}
 				} else {
 					// collectidはあるが、選択期間にデータがない場合
@@ -919,8 +942,8 @@ public class CollectGraphUtil {
 	 */
 	private static String createBaseGraphDiv(String managerName, String itemName, String monitorId, String displayName, String facilityId){
 		long start = System.currentTimeMillis();
-		String facilityName = getInstance().m_managerFacilityIdNameMap.get(managerName + SQUARE_SEPARATOR + facilityId);
-		String facilityDummyId = getInstance().m_managerFacilityIdDummyNameMap.get(managerName + SQUARE_SEPARATOR + facilityId);
+		String facilityName = getInstance().m_managerFacilityDataInfoMap.get(managerName + SQUARE_SEPARATOR + facilityId).getName();
+		String facilityDummyId = getInstance().m_managerFacilityDataInfoMap.get(managerName + SQUARE_SEPARATOR + facilityId).getDummyName();
 		String managerDummyName = getInstance().m_managerDummyNameMap.get(managerName);
 		itemName = HinemosMessage.replace(itemName);
 		if (!displayName.equals("") && !itemName.endsWith("[" + displayName + "]")) {
@@ -933,6 +956,10 @@ public class CollectGraphUtil {
 		if (!getInstance().totalFlg) {
 			id = facilityDummyId + "_" + managerDummyName + "_" + itemName + "_" + monitorId;
 		}
+		String ylabel = itemName;
+		if (!monitorId.equals(CollectConstant.COLLECT_TYPE_JOB)) {
+			ylabel += "(" + monitorId + ")";
+		}
 		String param =
 				"{"
 				+ "\'managername\':\'" + escapeParam(managerDummyName) + "\', "// DUMMY
@@ -943,13 +970,13 @@ public class CollectGraphUtil {
 				+ "\'monitorid\':\'" + escapeParam(monitorId) + "\', "
 				+ "\'displayname\':\'" + escapeParam(displayName) + "\', "
 				+ "\'facilityname\':\'" + escapeParam(facilityName) + "\', "
-				+ "\'ylabel\':\'" + escapeParam(itemName) + "(" + escapeParam(monitorId) + ")\', "
+				+ "\'ylabel\':\'" + escapeParam(ylabel) + "\', "
 				+ "\'id\':\'" + escapeParam(id) + "\', "
-				+ "\'summarytype\':" + getInstance().m_summaryType + ", "
-				+ "\'sliderstartdate\':" + getInstance().m_sliderStart + ", " 
-				+ "\'sliderenddate\':" + getInstance().m_sliderEnd + ", " 
-				+ "\'startdate\':" + getInstance().m_targetConditionStartDate + ", " 
-				+ "\'enddate\':" + getInstance().m_targetConditionEndDate 
+				+ "\'summarytype\':" + getSummaryType() + ", "
+				+ "\'sliderstartdate\':" + getSliderStart() + ", " 
+				+ "\'sliderenddate\':" + getSliderEnd() + ", " 
+				+ "\'startdate\':" + getTargetConditionStartDate() + ", " 
+				+ "\'enddate\':" + getTargetConditionEndDate() 
 				+ "}";
 
 		m_log.debug("createBaseGraphDiv() time=" + (System.currentTimeMillis() - start) + "ms");
@@ -978,15 +1005,15 @@ public class CollectGraphUtil {
 	 * @return
 	 */
 	public static Long getSelectTermDiff() {
-		if (getInstance().m_targetConditionEndDate == null || getInstance().m_targetConditionStartDate == null) {
+		if (getTargetConditionEndDate() == null || getTargetConditionStartDate() == null) {
 			return 0L;
 		}
-		return getInstance().m_targetConditionEndDate - getInstance().m_targetConditionStartDate;
+		return getTargetConditionEndDate() - getTargetConditionStartDate();
 	}
 	
 	/**
 	 * 指定されたマネージャ名、monitoridを元に閾値情報と単位と100%表示可否を取得し、以下の形式で文字列で返します。<br>
-	 * 文字列形式：thresholdInfoMin,thresholdInfoMax,thresholdWarnMin,thresholdWarnMax,単位,100%表示可否,HTTPシナリオかどうか<br>
+	 * 文字列形式：thresholdInfoMin,thresholdInfoMax,thresholdWarnMin,thresholdWarnMax,単位,100%表示可否,HTTPシナリオかどうか,予測先(分後)<br>
 	 * monitorIdに対応するMonitorInfoが存在しない場合は、nullを返します。<br>
 	 * 
 	 * @param managerName
@@ -1003,38 +1030,49 @@ public class CollectGraphUtil {
 		boolean isGraphRange = false;
 		boolean isHttpSce = false;
 		String thresholdStr = null;
+		Integer predictionTarget = null;
+		Integer predictionRange = null;
 		try {
-			MonitorSettingEndpointWrapper monitorWrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			MonitorInfo monitorInfo = monitorWrapper.getMonitor(monitorId);
-			measure = HinemosMessage.replace(monitorInfo.getMeasure());
-			pluginId = monitorInfo.getMonitorTypeId();
-			List<MonitorNumericValueInfo> thresholdValue = monitorInfo.getNumericValueInfo();
-			for (MonitorNumericValueInfo thresholdInfo : thresholdValue) {
-				if (thresholdInfo.getPriority().equals(PriorityConstant.TYPE_WARNING)) {
-					thresholdWarnMax = thresholdInfo.getThresholdUpperLimit();
-					thresholdWarnMin = thresholdInfo.getThresholdLowerLimit();
-				} else if (thresholdInfo.getPriority().equals(PriorityConstant.TYPE_INFO)) {
-					thresholdInfoMax = thresholdInfo.getThresholdUpperLimit();
-					thresholdInfoMin = thresholdInfo.getThresholdLowerLimit();
+			if (monitorId.equals(CollectConstant.COLLECT_TYPE_JOB)) {
+				// ジョブ履歴の場合
+				measure = HinemosMessage.replace(MessageConstant.COLLECT_TYPE_JOB_EXECUTION_HISTORY_MEASURE.getMessage());
+			} else {
+				MonitorSettingEndpointWrapper monitorWrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorInfo monitorInfo = monitorWrapper.getMonitor(monitorId);
+				measure = HinemosMessage.replace(monitorInfo.getMeasure());
+				pluginId = monitorInfo.getMonitorTypeId();
+				predictionTarget = monitorInfo.getPredictionTarget();
+				predictionRange = monitorInfo.getPredictionAnalysysRange();
+				List<MonitorNumericValueInfo> thresholdValue = monitorInfo.getNumericValueInfo();
+				for (MonitorNumericValueInfo thresholdInfo : thresholdValue) {
+					if (thresholdInfo.getPriority().equals(PriorityConstant.TYPE_WARNING)
+							&& thresholdInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_BASIC.getType())) {
+						thresholdWarnMax = thresholdInfo.getThresholdUpperLimit();
+						thresholdWarnMin = thresholdInfo.getThresholdLowerLimit();
+					} else if (thresholdInfo.getPriority().equals(PriorityConstant.TYPE_INFO)
+							&& thresholdInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_BASIC.getType())) {
+						thresholdInfoMax = thresholdInfo.getThresholdUpperLimit();
+						thresholdInfoMin = thresholdInfo.getThresholdLowerLimit();
+					}
+				}
+				if (pluginId.equals(HinemosModuleConstant.MONITOR_PING)) {
+					thresholdInfoMax = thresholdInfoMin;
+					thresholdWarnMax = thresholdWarnMin;
+					thresholdInfoMin = 0d;
+					thresholdWarnMin = 0d;
+				}
+				// 100%表示可否を取得する
+				// (CollectKeyInfoPKの中のitemNameはdisplaynameがついているのでequalsでヒットしない、monitorInfo.itemNameで比較)
+				isGraphRange = isGraphRangePercent(managerName, monitorInfo.getItemName());
+				
+				// HTTP監視(シナリオ)かどうか
+				// HTTP監視(シナリオ)の場合は、上限下限表示を無効・円グラフと積み上げ棒グラフは値が表示されないようにする
+				if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_HTTP_SCENARIO)) {
+					isHttpSce = true;
 				}
 			}
-			if (pluginId.equals(HinemosModuleConstant.MONITOR_PING)) {
-				thresholdInfoMax = thresholdInfoMin;
-				thresholdWarnMax = thresholdWarnMin;
-				thresholdInfoMin = 0d;
-				thresholdWarnMin = 0d;
-			}
-			// 100%表示可否を取得する
-			// (CollectKeyInfoPKの中のitemNameはdisplaynameがついているのでequalsでヒットしない、monitorInfo.itemNameで比較)
-			isGraphRange = isGraphRangePercent(managerName, monitorInfo.getItemName());
-			
-			// HTTP監視(シナリオ)かどうか
-			// HTTP監視(シナリオ)の場合は、上限下限表示を無効・円グラフと積み上げ棒グラフは値が表示されないようにする
-			if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_HTTP_SCENARIO)) {
-				isHttpSce = true;
-			}
 			thresholdStr = thresholdInfoMin + "," + thresholdInfoMax + "," + thresholdWarnMin + "," + thresholdWarnMax + ","
-			+ measure + "," + pluginId + "," + isGraphRange + "," + isHttpSce;
+			+ measure + "," + pluginId + "," + isGraphRange + "," + isHttpSce + "," + predictionTarget + "," + predictionRange;
 		} catch (com.clustercontrol.ws.monitor.HinemosUnknown_Exception 
 				| com.clustercontrol.ws.monitor.InvalidRole_Exception
 				| com.clustercontrol.ws.monitor.InvalidUserPass_Exception e) {
@@ -1044,7 +1082,8 @@ public class CollectGraphUtil {
 			m_log.info("getThresholdData : " + e.getMessage());
 			// nop 複数マネージャで選択した収集値項目名がほかのマネージャに登録されている場合、ここを通る
 		}
-		m_log.info("getThresholdData() managerName=" + managerName + ", monitorId=" + monitorId + ", thresholdStr=" + thresholdStr);
+		m_log.info("getThresholdData() managerName=" + managerName + ", monitorId=" + monitorId 
+				+ ", thresholdStr=" + thresholdStr + ", preditctionTarget=" + predictionTarget + ", preditctionRange=" + predictionRange);
 		return thresholdStr;
 	}
 	
@@ -1079,10 +1118,12 @@ public class CollectGraphUtil {
 //						Integer duplicationCount = eventInfo.getDuplicationCount();
 						String facilityId = eventInfo.getFacilityId();
 						Long generationDate = eventInfo.getGenerationDate();
+						Long predictGenerationDate = eventInfo.getPredictGenerationDate(); 
 //						String managerName;
 						String message = HinemosMessage.replace(eventInfo.getMessage());
 //						String messageOrg = eventInfo.getMessageOrg();
 						String monitorDetailId = eventInfo.getMonitorDetailId();
+						String parentMonitorDetailId = eventInfo.getParentMonitorDetailId();
 						String monitorId = eventInfo.getMonitorId();
 						Long outputDate = eventInfo.getOutputDate();
 //						String ownerRoleId = eventInfo.getOwnerRoleId();
@@ -1090,17 +1131,19 @@ public class CollectGraphUtil {
 						Integer priority = eventInfo.getPriority();
 //						String scopeText = eventInfo.getScopeText();
 						
-						String facilityName = getInstance().m_managerFacilityIdNameMap.get(managerName + SQUARE_SEPARATOR + facilityId);
-						String dummyFacilityId = getInstance().m_managerFacilityIdDummyNameMap.get(managerName + SQUARE_SEPARATOR + facilityId);
+						String facilityName = getInstance().m_managerFacilityDataInfoMap.get(managerName + SQUARE_SEPARATOR + facilityId).getName();
+						String dummyFacilityId = getInstance().m_managerFacilityDataInfoMap.get(managerName + SQUARE_SEPARATOR + facilityId).getDummyName();
 						String dummyManagerName = getInstance().m_managerDummyNameMap.get(managerName);
 						String ret = "{\'managername\':\'" + escapeParam(dummyManagerName) + "\', "// DUMMY
 								+ "\'realmanagername\':\'" + escapeParam(managerName) + "\', "// real
 								+ "\'generationdate\':\'" + generationDate + "\', " // フラグが立つ日時
+								+ "\'predictgenerationdate\':\'" + predictGenerationDate + "\', " // フラグが立つ日時
 								+ "\'outputdate\':\'" + outputDate + "\', "// イベント詳細画面を開くために必要な出力日時
 								+ "\'date\':\'" + generationDate + "\', "
 								+ "\'message\':\'" + escapeParam(message) + "\', "
 								+ "\'monitorid\':\'" + escapeParam(monitorId) + "\', "
 								+ "\'displayname\':\'" + escapeParam(monitorDetailId) + "\', "
+								+ "\'parentdisplayname\':\'" + escapeParam(parentMonitorDetailId) + "\', "
 								+ "\'priority\':\'" + escapeParam(PriorityMessage.typeToString(priority)) + "\', "
 								+ "\'eventdetailid\':\'" + escapeParam(monitorId) + escapeParam(facilityId) + outputDate + "\', " // graph original value
 								+ "\'facilityname\':\'" + escapeParam(facilityName) + "\', "
@@ -1197,22 +1240,60 @@ public class CollectGraphUtil {
 	}
 	
 	/**
+	 * 将来予測の係数を取得します<br>
+	 *  配列の中身は以下の順番で入っています。<br>
+	 * 
+	 * list[0]：日付のoffset<br>
+	 * list[1]：a0<br>
+	 * list[2]：a1<br>
+	 * list[3]：a2<br>
+	 * list[4]：a3<br>
+	 * <br>
+	 * 1次近似 : a0 + a1(x+offset)<br>
+	 * 2次近似 : a0 + a1(x+offset) + a2(x+offset)^2<br>
+	 * 3次近似 : a0 + a1(x+offset) + a2(x+offset)^2 + a3(x+offset)^3<br>
+	 * 
+	 * @param monitorId
+	 * @param facilityId
+	 * @param displayName
+	 * @param itemName
+	 * @return
+	 */
+	private static List<Double> getForecasts(String monitorId, String facilityId, String displayName, String itemName, String managerName) {
+		List<Double> ret = new ArrayList<>();
+		CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
+		try {
+			ret = wrapper.getCoefficients(monitorId, facilityId, displayName, itemName);
+			// 配列のサイズはmax5なので、5に満たない場合は0を入れる
+			for (int i = ret.size(); i < 5; i++) {
+				ret.add(0d);
+			}
+		} catch (HinemosUnknown_Exception
+				| InvalidRole_Exception
+				| InvalidUserPass_Exception e) {
+			m_log.error("getForecasts : " + e.getMessage(), e);
+		}
+		m_log.debug("getForecasts() :" + monitorId + ", " + facilityId + ", " + displayName + ", " + itemName + "," + managerName + ", " + ret.toString()); 
+		return ret;
+	}
+	
+	/**
 	 * 現在のスライダーの範囲をLongで返します。
 	 * @return
 	 */
 	public static Long getSliderTerm() {
-		return getInstance().m_sliderEnd - getInstance().m_sliderStart;
+		return getSliderEnd() - getSliderStart();
 	}
 	
 	/**
 	 * 
-	 * @return 現在表示中のグラフ表示の最古時間<br>(DBに取りに行った最古時間、これよりも古い時刻を表示する場合は取得しにいく)
+	 * @return 現在表示中のグラフ表示の最古時間<br>
 	 */
 	public static Long getTargetConditionStartDate() {
 		return getInstance().m_targetConditionStartDate;
 	}
 	/**
-	 * 現在表示中のグラフ表示の最古時間<br>(DBに取りに行った最古時間、これよりも古い時刻を表示する場合は取得しにいく)
+	 * 現在表示中のグラフ表示の最古時間<br>
 	 * @param targetConditionStartDate
 	 */
 	public static void setTargetConditionStartDate(Long targetConditionStartDate) {
@@ -1220,18 +1301,33 @@ public class CollectGraphUtil {
 	}
 	/**
 	 * 
-	 * @return 現在表示中のグラフ表示の最新時間<br>(DBにとりに行った最新時間、現在時刻を越えない)
+	 * @return 現在表示中のグラフ表示の最新時間<br>
 	 */
 	public static Long getTargetConditionEndDate() {
 		return getInstance().m_targetConditionEndDate;
 	}
 	/**
 	 * 
-	 * @param targetConditionEndDate 現在表示中のグラフ表示の最新時間<br>(DBにとりに行った最新時間、現在時刻を越えない)
+	 * @param targetConditionEndDate 現在表示中のグラフ表示の最新時間<br>
 	 */
 	public static void setTargetConditionEndDate(Long targetConditionEndDate) {
 		getInstance().m_targetConditionEndDate = targetConditionEndDate;
 	}
+	/**
+	 * 
+	 * @return 前回DBから取得した時間<br>
+	 */
+	public static Long getTargetDBAccessDate() {
+		return getInstance().m_targetDBAccessDate;
+	}
+	/**
+	 * 
+	 * @param targetDBAccessDate 前回DBから取得した時間<br>
+	 */
+	public static void setTargetDBAccessDate(Long targetDBAccessDate) {
+		getInstance().m_targetDBAccessDate = targetDBAccessDate;
+	}
+
 	public static void setSummaryType(int summaryType) {
 		getInstance().m_summaryType = summaryType;
 	}
@@ -1268,7 +1364,7 @@ public class CollectGraphUtil {
 	 * managerNameとfacilityIDとcollectIDのリスト(itemCode混合)を返します。
 	 * @return
 	 */
-	public static TreeMap<String, TreeMap<String, List<Integer>>> getM_targetManagerFacilityCollectMap() {
+	public static TreeMap<String, TreeMap<String, List<Integer>>> getTargetManagerFacilityCollectMap() {
 		return getInstance().m_targetManagerFacilityCollectMap;
 	}
 
@@ -1277,30 +1373,30 @@ public class CollectGraphUtil {
 	 * (※itemNameはコードではない)
 	 * @return
 	 */
-	public static TreeMap<String, Map<String, List<Integer>>> getM_managerMonitorCollectIdMap() {
+	public static TreeMap<String, Map<String, List<Integer>>> getManagerMonitorCollectIdMap() {
 		return getInstance().m_managerMonitorCollectIdMap;
 	}
 	/**
-	 * マネージャ名とファシリティIDとファシリティ名のマップ (マネージャ名 + # + ファシリティID、ファシリティ名)の構造を返します。
+	 * マネージャ名とファシリティ情報のマップ (マネージャ名 + # + ファシリティID、ファシリティ情報)の構造を返します。
 	 * @return
 	 */
-	public static TreeMap<String, String> getM_managerFacilityIdNameMap() {
-		return getInstance().m_managerFacilityIdNameMap;
+	public static TreeMap<String, CollectFacilityDataInfo> getManagerFacilityDataInfoMap() {
+		return getInstance().m_managerFacilityDataInfoMap;
 	}
 	
 	/**
 	 * 画面左で選択されたもの(itemNameとmonitorIdが入ってる)を返します。
 	 * @return
 	 */
-	public static List<CollectKeyInfoPK> getM_collectKeyInfoList() {
+	public static List<CollectKeyInfoPK> getCollectKeyInfoList() {
 		return getInstance().m_collectKeyInfoList;
 	}
 
-	public static int getM_screenWidth() {
+	public static int getScreenWidth() {
 		return getInstance().m_screenWidth;
 	}
 	
-	public static void setM_screenWidth(int screenWidth) {
+	public static void setScreenWidth(int screenWidth) {
 		getInstance().m_screenWidth = screenWidth;
 	}
 	
@@ -1330,6 +1426,27 @@ public class CollectGraphUtil {
 	 * @return 返還後文字列
 	 */
 	public static String escapeParam(String param) {
-		return param.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"");
+		return param.replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"").replace("\n", ", ");
+	}
+
+	public static class CollectFacilityDataInfo {
+		private String id;
+		private String name;
+		private String dummyName;
+
+		CollectFacilityDataInfo(String id, String name, String dummyName) {
+			this.id = id;
+			this.name = name;
+			this.dummyName = dummyName;
+		}
+		public String getId() {
+			return id;
+		}
+		public String getName() {
+			return name;
+		}
+		public String getDummyName() {
+			return dummyName;
+		}
 	}
 }

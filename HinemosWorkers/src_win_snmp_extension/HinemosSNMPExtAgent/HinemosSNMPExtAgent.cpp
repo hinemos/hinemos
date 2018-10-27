@@ -1,17 +1,10 @@
 ﻿/*
- 
-Copyright (C) 2015 NTT DATA Corporation
- 
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License 
-as published by the Free Software Foundation, version 2.
- 
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied 
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-PURPOSE.  See the GNU General Public License for more details.
- 
-*/
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
 
 //
 // Hinemos SNMP 拡張エージェントDLL for Hinemos ver. 5.1
@@ -112,6 +105,7 @@ WORD errorEventLevel = EVENTLOG_ERROR_TYPE;
 long ignoreErrorCode[1024];
 int ignoreErrorCodeSize;
 
+int initializeComplete = 0;
 
 /* DLLの初期化 */
 BOOL WINAPI DllMain(HANDLE hDll, DWORD  dwReason, LPVOID lpReserved )
@@ -218,6 +212,8 @@ BOOL WINAPI SnmpExtensionInit(IN  DWORD dwTimeZeroReference,
 	// "初期化完了"のEventLogを書出す
 	PostEvtLog( EVENTLOG_INFORMATION_TYPE, "ExtensionInit", "Initialization Completed", 0 );
 
+	initializeComplete = 1;
+
     return TRUE;
 }
 
@@ -231,6 +227,12 @@ BOOL WINAPI SnmpExtensionQuery(IN BYTE requestType, IN OUT SnmpVarBindList *vari
 {
     static ULONG requestCount = 0;
     UINT    i;
+
+	// 初期化が完了していない場合はエラーを返す
+	if(!initializeComplete){
+		PostEvtLog( EVENTLOG_INFORMATION_TYPE, "ExtensionInit", "Now Initializing ...", 0 );
+		return ( SNMPAPI_ERROR );
+	}
 
     // 変数の数分処理を繰り返す
     for( i=0; i<(variableBindings->len); i++ ){

@@ -2,7 +2,7 @@
 <!-- 
    Hinemos (http://www.hinemos.info/)
    
-   Copyright (C) 2010 NTT DATA Corporation.
+   Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
  -->
 
 <!-- execute Ant (Run in the same JRE as the workspace -->
@@ -17,7 +17,7 @@
 		<ant antfile="build_manager_cli.xml" dir="." target="jar" inheritall="false" />
 		<ant antfile="build_win_tasktray.xml" dir="." target="all" inheritall="false" />
 		<ant antfile="build_win_ha_tasktray.xml" dir="." target="all" inheritall="false" />
-		<ant antfile="build_win_syslog.xml" dir="." target="all" inheritall="false" />
+		<ant antfile="build_reporting.xml" dir="." target="all" inheritall="false" />
 		
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>

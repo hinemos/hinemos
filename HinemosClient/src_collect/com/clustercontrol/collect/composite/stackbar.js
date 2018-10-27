@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
-性能[グラフ]の積み上げ棒グラフを描画するJavaScriptです。
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ *
+ * 性能[グラフ]の積み上げ棒グラフを描画するJavaScriptです。
  */
 StackBarGraph = function(elementid, options, graphsize) {
 var self = this;
@@ -281,35 +275,6 @@ StackBarGraph.prototype.update = function() {
 	.style("font-size", "8pt");
 	
 	self.animationStackbar();
-}
-
-//////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////
-// 線をアニメーション表示します。左から右に線を引きます。
-// trimYからしか呼ばれません。updateから呼ぶと、ドラッグ中に頻繁にアニメーションが発生します。
-StackBarGraph.prototype.animationLine = function() {
-	var self = this;
-	for (i = 0; i < self.lineids.length; i++) {
-		var id = self.lineids[i];
-		var line_len = self.points2[id].length;
-		if (line_len == 0) {
-			continue;
-		}
-		var target = self.vis.select('#' + id);
-		var totalLength = target.node().getTotalLength();
-		if (totalLength == 0) {
-			// 線が無いfacility、処理続行するとエラーになるためcontinue
-			continue;
-		}
-		target
-			.attr("stroke-dasharray", totalLength + " " + totalLength)
-			.attr("stroke-dashoffset", totalLength)
-			.transition()
-			.duration(HINEMOS_COLLECT_CONST.CONST_ANIMATION_INTERVAL)
-			.ease("linear")
-			.attr("stroke-dashoffset", 0);
-
-	}
 }
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////

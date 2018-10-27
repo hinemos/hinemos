@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"NetworkInterfaceList_funcName"}
+],
+"props":[
+	{
+	"propName":"networkInterfaceInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.selfcheck.monitor;
@@ -21,8 +14,8 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
@@ -69,7 +62,7 @@ public class DatabaseMonitor extends SelfCheckMonitorBase {
 	 */
 	@Override
 	public void execute() {
-		if (!HinemosPropertyUtil.getHinemosPropertyBool("selfcheck.monitoring.db", true)) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_db.getBooleanValue()) {
 			m_log.debug("skip");
 			return;
 		}
@@ -79,9 +72,7 @@ public class DatabaseMonitor extends SelfCheckMonitorBase {
 		HinemosEntityManager em = null;
 		boolean warn = true;
 		
-		validationQuery = HinemosPropertyUtil.getHinemosPropertyStr(
-				"selfcheck.monitoring.db.validationquery",
-				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.SELFCHECK_MONITORING_DB_VALIDATIONQUERY));
+		validationQuery = HinemosPropertyDefault.selfcheck_monitoring_db_validationquery.getStringValue();
 
 		/** メイン処理 */
 		m_log.debug("monitoring datasource. (query = " + validationQuery + ")");

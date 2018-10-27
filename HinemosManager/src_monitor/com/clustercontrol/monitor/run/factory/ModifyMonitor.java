@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.factory;
@@ -34,7 +27,11 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorDuplicate;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil;
+import com.clustercontrol.monitor.run.util.MonitorCollectDataCache;
+import com.clustercontrol.monitor.run.util.MonitorJudgementInfoCacheRemoveCallback;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.factory.ModifyNotifyRelation;
 import com.clustercontrol.notify.model.MonitorStatusEntity;
@@ -151,9 +148,10 @@ abstract public class ModifyMonitor {
 	 */
 	protected boolean addMonitorInfo(String user) throws MonitorNotFound, TriggerSchedulerException, EntityExistsException, HinemosUnknown, InvalidRole {
 		long now = HinemosTime.currentTimeMillis();
-		JpaTransactionManager jtm = new JpaTransactionManager();
 
-		try{
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
 			// 重複チェック
 			jtm.checkEntityExists(MonitorInfo.class, m_monitorInfo.getMonitorId());
 			
@@ -165,7 +163,7 @@ abstract public class ModifyMonitor {
 			m_monitorInfo.setUpdateDate(now);
 			m_monitorInfo.setUpdateUser(user);
 			
-			jtm.getEntityManager().persist(m_monitorInfo);
+			em.persist(m_monitorInfo);
 
 			// 通知情報の登録
 			String notifyGroupId = NotifyGroupIdGenerator.generate(m_monitorInfo);
@@ -215,7 +213,7 @@ abstract public class ModifyMonitor {
 	 * @throws MonitorNotFound
 	 * @throws InvalidRole
 	 */
-	protected abstract boolean addJudgementInfo() throws MonitorNotFound, InvalidRole;
+	protected abstract boolean addJudgementInfo() throws MonitorNotFound, InvalidRole, HinemosUnknown;
 
 	/**
 	 * チェック条件情報を作成し、監視情報に設定します。
@@ -263,7 +261,7 @@ abstract public class ModifyMonitor {
 	 * @throws EntityExistsException
 	 * @throws InvalidRole
 	 */
-	protected abstract boolean modifyJudgementInfo() throws MonitorNotFound, EntityExistsException, InvalidRole;
+	protected abstract boolean modifyJudgementInfo() throws MonitorNotFound, EntityExistsException, InvalidRole, HinemosUnknown;
 
 	/**
 	 * チェック条件情報を変更し、監視情報に設定します。
@@ -297,9 +295,9 @@ abstract public class ModifyMonitor {
 	 */
 	protected boolean modifyMonitorInfo(String user) throws MonitorNotFound, TriggerSchedulerException, HinemosUnknown, InvalidRole {
 		long now = HinemosTime.currentTimeMillis();
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 
-		try{
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// 監視情報を設定
 			m_monitor = QueryUtil.getMonitorInfoPK(m_monitorInfo.getMonitorId(), ObjectPrivilegeMode.MODIFY);
 
@@ -314,7 +312,12 @@ abstract public class ModifyMonitor {
 			// 監視/収集無効から有効(監視or収集のいずれか1つでも)に変更されているか
 			if(!m_monitor.getMonitorFlg() &&
 					!m_monitor.getCollectorFlg() &&
-					(m_monitorInfo.getMonitorFlg() || m_monitorInfo.getCollectorFlg())){
+					!m_monitor.getPredictionFlg() &&
+					!m_monitor.getChangeFlg() &&
+					(m_monitorInfo.getMonitorFlg() 
+							|| m_monitorInfo.getCollectorFlg()
+							|| m_monitorInfo.getPredictionFlg()
+							|| m_monitorInfo.getChangeFlg())){
 				m_isModifyEnableFlg = true;
 			}
 			m_log.debug("modifyMonitorInfo() m_isModifyFacilityId = " + m_isModifyFacilityId
@@ -391,7 +394,6 @@ abstract public class ModifyMonitor {
 	/**
 	 * トランザクションを開始し、監視情報を削除します。
 	 *
-	 * @param monitorTypeId 監視対象ID
 	 * @param monitorId 監視項目ID
 	 * @return 削除に成功した場合、</code> true </code>
 	 * @throws MonitorNotFound
@@ -401,10 +403,11 @@ abstract public class ModifyMonitor {
 	 *
 	 * @see #deleteMonitorInfo()
 	 */
-	public boolean delete(String monitorTypeId, String monitorId) throws MonitorNotFound, TriggerSchedulerException, HinemosUnknown, InvalidRole {
+	public boolean delete(String monitorId) throws MonitorNotFound, TriggerSchedulerException, HinemosUnknown, InvalidRole {
 
-		m_monitorTypeId = monitorTypeId;
 		m_monitorId = monitorId;
+		MonitorInfo monitorInfo = QueryUtil.getMonitorInfoPK(monitorId);
+		m_monitorTypeId = monitorInfo.getMonitorTypeId();
 
 		boolean result = false;
 
@@ -446,15 +449,28 @@ abstract public class ModifyMonitor {
 	 * @see com.clustercontrol.monitor.run.factory.ModifySchedule#deleteSchedule(String, String)
 	 */
 	private boolean deleteMonitorInfo() throws MonitorNotFound, TriggerSchedulerException, HinemosUnknown, InvalidRole {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 
-		try
-		{
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// 監視情報を取得
 			m_monitor = QueryUtil.getMonitorInfoPK(m_monitorId, ObjectPrivilegeMode.MODIFY);
 
 			// 監視グループ情報を削除
 			new NotifyControllerBean().deleteNotifyRelation(m_monitor.getNotifyGroupId());
+
+			if (m_monitor.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC) {
+				// 監視グループ情報を削除（将来予測）
+				new NotifyControllerBean().deleteNotifyRelation(CollectMonitorManagerUtil.getPredictionNotifyGroupId(m_monitor.getNotifyGroupId()));
+
+				// 監視グループ情報を削除（変化点）
+				new NotifyControllerBean().deleteNotifyRelation(CollectMonitorManagerUtil.getChangeNotifyGroupId(m_monitor.getNotifyGroupId()));
+
+				// 収集データキャッシュを削除
+				MonitorCollectDataCache.remove(m_monitorId);
+			}
+
+			// 判定キャッシュから削除
+			jtm.addCallback(new MonitorJudgementInfoCacheRemoveCallback(m_monitorId));
 
 			// チェック条件情報を削除
 			if(deleteCheckInfo()){

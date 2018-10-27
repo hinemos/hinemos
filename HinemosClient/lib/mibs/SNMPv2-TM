@@ -1,0 +1,88 @@
+   SNMPv2-TM DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-IDENTITY,
+       snmpModules, snmpDomains, snmpProxys
+           FROM SNMPv2-SMI
+       TEXTUAL-CONVENTION
+           FROM SNMPv2-TC;
+
+   snmpv2tm MODULE-IDENTITY
+       LAST-UPDATED "200210160000Z"
+       ORGANIZATION "IETF SNMPv3 Working Group"
+       ::= { snmpModules 19 }
+
+
+   snmpUDPDomain  OBJECT-IDENTITY
+       STATUS     current
+       ::= { snmpDomains 1 }
+
+
+
+
+
+
+
+
+
+
+   SnmpUDPAddress ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "1d.1d.1d.1d/2d"
+       STATUS       current
+       SYNTAX       OCTET STRING (SIZE (6))
+
+
+   snmpCLNSDomain OBJECT-IDENTITY
+       STATUS     current
+       ::= { snmpDomains 2 }
+
+   snmpCONSDomain OBJECT-IDENTITY
+       STATUS     current
+       ::= { snmpDomains 3 }
+
+   SnmpOSIAddress ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "*1x:/1x:"
+       STATUS       current
+       SYNTAX       OCTET STRING (SIZE (1 | 4..85))
+
+
+
+
+
+
+
+
+
+
+
+   snmpDDPDomain  OBJECT-IDENTITY
+       STATUS     current
+       ::= { snmpDomains 4 }
+
+   SnmpNBPAddress ::= TEXTUAL-CONVENTION
+       STATUS       current
+       SYNTAX       OCTET STRING (SIZE (3..99))
+
+
+   snmpIPXDomain  OBJECT-IDENTITY
+       STATUS     current
+       ::= { snmpDomains 5 }
+
+   SnmpIPXAddress ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "4x.1x:1x:1x:1x:1x:1x.2d"
+       STATUS       current
+       SYNTAX       OCTET STRING (SIZE (12))
+
+
+
+
+
+
+   rfc1157Proxy   OBJECT IDENTIFIER ::= { snmpProxys 1 }
+
+   rfc1157Domain  OBJECT-IDENTITY
+       STATUS     deprecated
+       ::= { rfc1157Proxy 1 }
+
+
+   END

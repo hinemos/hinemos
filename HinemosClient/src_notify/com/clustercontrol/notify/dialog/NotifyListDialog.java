@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.dialog;
@@ -99,7 +92,7 @@ public class NotifyListDialog extends CommonDialog {
 		setShellStyle(getShellStyle() | SWT.RESIZE | SWT.MAX);
 	}
 
-	public NotifyListDialog(Shell parent, String managerName, boolean isSelect, int notifyIdType, String ownerRoleId) {
+	public NotifyListDialog(Shell parent, String managerName, boolean isSelect, String ownerRoleId) {
 		super(parent);
 		setShellStyle(getShellStyle() | SWT.RESIZE | SWT.MAX);
 

@@ -1,14 +1,10 @@
-/**********************************************************************
- * Copyright (C) 2014 NTT DATA Corporation
- * This program is free software; you can redistribute it and/or
- * Modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation, version 2.
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
  *
- * This program is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- * PURPOSE.  See the GNU General Public License for more details.
- *********************************************************************/
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
 
 package com.clustercontrol.repository.view;
 
@@ -16,6 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
@@ -34,9 +33,11 @@ import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.composite.FacilityTreeComposite;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.composite.ScopeListComposite;
 import com.clustercontrol.repository.composite.action.FacilityTreeSelectionChangedListener;
 import com.clustercontrol.repository.composite.action.ScopeListSelectionChangedListener;
+import com.clustercontrol.repository.dialog.ScopeCreateDialog;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.repository.view.action.NodeAssignAction;
 import com.clustercontrol.repository.view.action.NodeReleaseAction;
@@ -48,6 +49,7 @@ import com.clustercontrol.repository.view.action.ScopeObjectPrivilegeAction;
 import com.clustercontrol.repository.view.action.ScopeShowAction;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
 import com.clustercontrol.view.ScopeListBaseView;
+import com.clustercontrol.ws.repository.FacilityInfo;
 import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
@@ -114,6 +116,36 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 
 		this.update();
 		setLastFocusComposite(this.getScopeTreeComposite());
+		
+		this.getScopeTreeComposite().getTreeViewer().addDoubleClickListener(new IDoubleClickListener() {
+			
+			@Override
+			public void doubleClick(DoubleClickEvent event) {
+				StructuredSelection selection = (StructuredSelection) event.getSelection();
+				FacilityTreeItem item = (FacilityTreeItem) selection.getFirstElement();
+				
+				// 未選択の場合は、処理終了
+				if( null == item ){
+					return;
+				}
+
+				// スコープかつビルトインでない場合のみ処理
+				FacilityInfo info = item.getData();
+				if (info.getFacilityType() == FacilityConstant.TYPE_SCOPE && !info.isBuiltInFlg()) {
+					FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
+					String managerName = manager.getData().getFacilityId();
+	
+					// ダイアログを生成
+					String facilityId = info.getFacilityId();
+					ScopeCreateDialog dialog = new ScopeCreateDialog(composite.getShell(), managerName, facilityId, true);
+	
+					// ダイアログにて変更が選択された場合、入力内容をもって登録を行う。
+					if (dialog.open() == IDialogConstants.OK_ID) {
+						composite.update();
+					}
+				}
+			}
+		});
 
 		return this.composite;
 	}

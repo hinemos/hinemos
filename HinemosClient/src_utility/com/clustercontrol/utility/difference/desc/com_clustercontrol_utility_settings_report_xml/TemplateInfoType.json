@@ -1,0 +1,38 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"templateSetId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"templateSetName",
+	"annotations":[
+		{"type":"Column", "columnName":"ReporingTemplateInfoType_templateSetName"}
+	]},
+	
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"ReporingTemplateInfoType_description"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"ReporingTemplateInfoType_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"templateDetailInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"ReporingTemplateInfoType_detailInfo"},
+		{"type":"Array", "idType":"props", "props":["orderNo"]},
+		{"type":"Ignore", "propNames":["orderNo"]}
+	]}
+]
+}

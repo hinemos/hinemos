@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.notify.monitor.model;
 
 import javax.persistence.AttributeOverride;
@@ -9,9 +17,6 @@ import javax.persistence.Table;
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.notify.util.NotifyUtil;
 
 
 /**
@@ -41,27 +46,8 @@ public class StatusInfoEntity extends ObjectPrivilegeTargetInfo {
 
 	public StatusInfoEntity(StatusInfoEntityPK pk) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
 		this.setObjectId(this.getId().getMonitorId());
-
-		this.setOwnerRoleId(NotifyUtil.getOwnerRoleId(pk.getPluginId(), pk.getMonitorId(),
-				pk.getMonitorDetailId(), pk.getFacilityId(), false));
 	}
-
-	public StatusInfoEntity(String facilityId,
-			String monitorId,
-			String monitorDetailId,
-			String pluginId) {
-		this(new StatusInfoEntityPK(facilityId, monitorId, monitorDetailId, pluginId));
-	}
-
-	public StatusInfoEntity(StatusInfoEntityPK pk, String ownerRoleId) {
-		this.setId(pk);
-		this.setObjectId(this.getId().getMonitorId());
-		this.setOwnerRoleId(ownerRoleId);
-	}
-
 
 	@EmbeddedId
 	public StatusInfoEntityPK getId() {

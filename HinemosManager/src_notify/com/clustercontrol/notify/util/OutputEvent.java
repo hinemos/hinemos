@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.util;
@@ -23,16 +16,18 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.HinemosManagerMain;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JdbcBatchExecutor;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.NotifyNotFound;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.monitor.run.util.EventCacheModifyCallback;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.model.NotifyEventInfo;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
+import com.clustercontrol.notify.monitor.model.EventLogEntityPK;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -141,51 +136,55 @@ public class OutputEvent implements DependDbNotifier {
 					+ ", facilityId=" + output.getFacilityId() + ", generationDate=" + output.getGenerationDate()
 					+ ", priority=" + output.getPriority() + ", message=" + output.getMessage() + ", ownerRoleId=" + ownerRoleId + ")");
 
-		// 出力日時を生成
-		Long outputDate = createOutputDate();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		// インスタンス生成
-		EventLogEntity entity = null;
-		if (ownerRoleId != null) {
-			entity = new EventLogEntity(output.getMonitorId(),
-					output.getSubKey(),
-					output.getPluginId(),
-					outputDate,
-					output.getFacilityId(),
-					ownerRoleId);
-		} else {
-			entity = new EventLogEntity(output.getMonitorId(),
+			// 出力日時を生成
+			Long outputDate = createOutputDate();
+
+			// インスタンス生成
+			EventLogEntity entity = null;
+			EventLogEntityPK pk = new EventLogEntityPK(
+					output.getMonitorId(),
 					output.getSubKey(),
 					output.getPluginId(),
 					outputDate,
 					output.getFacilityId());
+			entity = new EventLogEntity(pk);
+			if (ownerRoleId != null) {
+				entity.setOwnerRoleId(ownerRoleId);
+			} else {
+				entity.setOwnerRoleId(NotifyUtil.getOwnerRoleId(pk.getPluginId(), pk.getMonitorId(),
+						pk.getMonitorDetailId(), pk.getFacilityId(), true));
+				em.persist(entity);
+			}
+
+			entity.setApplication(output.getApplication());
+			entity.setComment("");
+			entity.setCommentDate(null);
+			entity.setCommentUser("");
+			entity.setConfirmDate(null);
+			entity.setConfirmFlg(confirmState);
+			entity.setConfirmUser("");
+			entity.setDuplicationCount(0l);
+			entity.setGenerationDate(output.getGenerationDate());
+			entity.setInhibitedFlg(false);
+			String message = output.getMessage();
+			entity.setMessage(getNotifyEventMessageMaxString(message));
+			entity.setMessageOrg(getNotifyEventMessageOrgMaxString(output.getMessageOrg()));
+			entity.setPriority(output.getPriority());
+			entity.setScopeText(output.getScopeText());
+			entity.setCollectGraphFlg(false);
+
+			if (m_log.isDebugEnabled())
+				m_log.debug("created event successfully. (monitorId=" + output.getMonitorId() + ", pluginId=" + output.getPluginId()
+						+ ", facilityId=" + output.getFacilityId() + ", generationDate=" + output.getGenerationDate()
+						+ ", priority=" + output.getPriority() + ", message=" + output.getMessage() + ")");
+
+			jtm.addCallback(new EventCacheModifyCallback(true, entity));
+
+			return entity;
 		}
-
-		entity.setApplication(output.getApplication());
-		entity.setComment("");
-		entity.setCommentDate(null);
-		entity.setCommentUser("");
-		entity.setConfirmDate(null);
-		entity.setConfirmFlg(confirmState);
-		entity.setConfirmUser("");
-		entity.setDuplicationCount(0l);
-		entity.setGenerationDate(output.getGenerationDate());
-		entity.setInhibitedFlg(false);
-		String message = output.getMessage();
-		entity.setMessage(getNotifyEventMessageMaxString(message));
-		entity.setMessageOrg(getNotifyEventMessageOrgMaxString(output.getMessageOrg()));
-		entity.setPriority(output.getPriority());
-		entity.setScopeText(output.getScopeText());
-		entity.setCollectGraphFlg(false);
-
-		if (m_log.isDebugEnabled())
-			m_log.debug("created event successfully. (monitorId=" + output.getMonitorId() + ", pluginId=" + output.getPluginId()
-					+ ", facilityId=" + output.getFacilityId() + ", generationDate=" + output.getGenerationDate()
-					+ ", priority=" + output.getPriority() + ", message=" + output.getMessage() + ")");
-
-		new JpaTransactionManager().addCallback(new EventCacheModifyCallback(true, entity));
-
-		return entity;
 	}
 
 	/**
@@ -222,7 +221,7 @@ public class OutputEvent implements DependDbNotifier {
 	 * @return
 	 */
 	public static String getNotifyEventMessageOrgMaxString(String messageOrg) {
-		return getMaxString("notify.event.messageorg.max.length", 1024, messageOrg);
+		return getMaxString(HinemosPropertyCommon.notify_event_messageorg_max_length, messageOrg);
 	}
 
 	/**
@@ -231,21 +230,20 @@ public class OutputEvent implements DependDbNotifier {
 	 * @return
 	 */
 	public static String getNotifyEventMessageMaxString(String message) {
-		return getMaxString("notify.event.message.max.length", 255, message);
+		return getMaxString(HinemosPropertyCommon.notify_event_message_max_length, message);
 	}
 
 	/**
 	 * 指定された文字列がHinemosプロパティ上で定義されているサイズよりも長い場合に切断する。
-	 * @param key Hinemosプロパティのキー
-	 * @param defaultValue Hinemosプロパティのキーが見つからない場合のデフォルト値
+	 * @param hinemosPropertyCommon Hinemosプロパティ
 	 * @param targetString 対象文字列
 	 * @return
 	 */
-	private static String getMaxString(String key, Integer defaultValue, String targetString) {
+	private static String getMaxString(HinemosPropertyCommon hinemosPropertyCommon, String targetString) {
 		if (targetString == null) {
 			return targetString;
 		}
-		int maxLen = HinemosPropertyUtil.getHinemosPropertyNum(key, Long.valueOf(defaultValue)).intValue();
+		int maxLen = hinemosPropertyCommon.getIntegerValue();
 		String returnString = null;
 		if (targetString.length() <= maxLen) {
 			returnString = targetString;

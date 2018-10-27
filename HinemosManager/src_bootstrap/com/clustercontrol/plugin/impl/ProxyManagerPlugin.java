@@ -1,14 +1,9 @@
 /*
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.plugin.impl;
@@ -34,7 +29,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 
 public class ProxyManagerPlugin implements HinemosPlugin {
@@ -58,11 +53,11 @@ public class ProxyManagerPlugin implements HinemosPlugin {
 		List<String> ignoreHostList = new ArrayList<String>();
 		
 		try {
-			proxyHost = HinemosPropertyUtil.getHinemosPropertyStr("http.proxy.host", null);
-			port = HinemosPropertyUtil.getHinemosPropertyNum("http.proxy.port", null);
-			user = HinemosPropertyUtil.getHinemosPropertyStr("http.proxy.user", null);
-			password = HinemosPropertyUtil.getHinemosPropertyStr("http.proxy.password", null);
-			ignoreHostStr = HinemosPropertyUtil.getHinemosPropertyStr("http.proxy.ignorehosts", null);
+			proxyHost = HinemosPropertyCommon.http_proxy_host.getStringValue();
+			port = HinemosPropertyCommon.http_proxy_port.getNumericValue();
+			user = HinemosPropertyCommon.http_proxy_user.getStringValue();
+			password = HinemosPropertyCommon.http_proxy_password.getStringValue();
+			ignoreHostStr = HinemosPropertyCommon.http_proxy_ignorehosts.getStringValue();
 			
 			if (proxyHost != null && port != null) {
 				log.info("initializing http proxy : proxyHost = " + proxyHost + ", port = " + port);
@@ -185,6 +180,11 @@ public class ProxyManagerPlugin implements HinemosPlugin {
 	@Override
 	public Set<String> getDependency() {
 		return new HashSet<String>();
+	}
+
+	@Override
+	public Set<String> getRequiredKeys() {
+		return null;
 	}
 
 	@Override

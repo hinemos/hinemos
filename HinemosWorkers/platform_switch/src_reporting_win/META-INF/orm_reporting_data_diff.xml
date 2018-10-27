@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+
+<!-- for win -->
+	<named-query name="ReportingMonitorInfo.findByItemCodeList">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a,
+				(SELECT c.id.monitorId, b.itemCode
+					FROM CollectorItemCodeMstEntity b
+					JOIN CollectKeyInfo c ON c.id.itemName like CONCAT( FUNCTION('REPLACE', b.itemName, '[', '[[]'), '%')
+					WHERE b.itemCode IN :itemCodeList
+					GROUP BY c.id.monitorId,b.itemCode)
+				AS ids
+				WHERE (ids.monitorId = a.monitorId)
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingCollectData.findByTime">
+		<query>
+			<![CDATA[
+				SELECT a, b, c.itemCode FROM CollectKeyInfo a
+				JOIN CollectData b ON a.collectorid = b.id.collectorid
+				JOIN CollectorItemCodeMstEntity c ON a.id.itemName like CONCAT( FUNCTION('REPLACE', c.itemName, '[', '[[]'), '%')
+				WHERE a.id.facilityid = :facilityId
+				AND b.id.time >= :fromTime AND b.id.time <= :toTime
+				AND a.id.monitorId = :monitorId
+				AND c.itemCode IN :itemCodeList
+				ORDER BY a.id.facilityid, c.itemCode, a.id.displayName, b.id.time
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingSummaryHour.findByTime">
+		<query>
+			<![CDATA[
+				SELECT a, b, c.itemCode FROM CollectKeyInfo a
+				JOIN SummaryHour b ON a.collectorid = b.id.collectorid
+				JOIN CollectorItemCodeMstEntity c ON a.id.itemName like CONCAT( FUNCTION('REPLACE', c.itemName, '[', '[[]'), '%')
+				WHERE a.id.facilityid = :facilityId
+				AND b.id.time >= :fromTime AND b.id.time <= :toTime
+				AND a.id.monitorId = :monitorId
+				AND c.itemCode IN :itemCodeList
+				ORDER BY a.id.facilityid, c.itemCode, a.id.displayName, b.id.time
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingSummaryDay.findByTime">
+		<query>
+			<![CDATA[
+				SELECT a, b, c.itemCode FROM CollectKeyInfo a
+				JOIN SummaryDay b ON a.collectorid = b.id.collectorid
+				JOIN CollectorItemCodeMstEntity c ON a.id.itemName like CONCAT( FUNCTION('REPLACE', c.itemName, '[', '[[]'), '%')
+				WHERE a.id.facilityid = :facilityId
+				AND b.id.time >= :fromTime AND b.id.time <= :toTime
+				AND a.id.monitorId = :monitorId
+				AND c.itemCode IN :itemCodeList
+				ORDER BY a.id.facilityid, c.itemCode, a.id.displayName, b.id.time
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingSummaryMonth.findByTime">
+		<query>
+			<![CDATA[
+				SELECT a, b, c.itemCode FROM CollectKeyInfo a
+				JOIN SummaryMonth b ON a.collectorid = b.id.collectorid
+				JOIN CollectorItemCodeMstEntity c ON a.id.itemName like CONCAT( FUNCTION('REPLACE', c.itemName, '[', '[[]'), '%')
+				WHERE a.id.facilityid = :facilityId
+				AND b.id.time >= :fromTime AND b.id.time <= :toTime
+				AND a.id.monitorId = :monitorId
+				AND c.itemCode IN :itemCodeList
+				ORDER BY a.id.facilityid, c.itemCode, a.id.displayName, b.id.time
+			]]>
+		</query>
+	</named-query>
+	<!-- SelectReportingJmx -->
+	<named-query name="ReportingSummaryPerfAvg.getSummaryPrefAvgData">
+		<query>
+			<![CDATA[
+				SELECT a.id.monitorId, c.itemCode, a.id.itemName, b.id.time, a.id.facilityid, SUM(b.value) FROM CollectKeyInfo a 
+				JOIN CollectData b ON a.collectorid = b.id.collectorid 
+				JOIN CollectorItemCodeMstEntity c ON a.id.itemName like CONCAT( FUNCTION('REPLACE', c.itemName, '[', '[[]'), '%') 
+				WHERE a.id.facilityid like :facilityId 
+				AND b.id.time >= :fromTime AND b.id.time <= :toTime 
+				AND a.id.monitorId = :monitorId 
+				AND c.itemCode IN :itemCodeList 
+				GROUP BY a.id.monitorId, c.itemCode, a.id.itemName, b.id.time, a.id.facilityid 
+				ORDER BY a.id.facilityid, c.itemCode, b.id.time 
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingSummaryPerfAvg.getSummaryPrefAvgHour">
+		<query>
+			<![CDATA[
+				SELECT a.id.monitorId, c.itemCode, a.id.itemName, b.id.time, a.id.facilityid, SUM(b.avg) FROM CollectKeyInfo a
+				JOIN SummaryHour b ON a.collectorid = b.id.collectorid
+				JOIN CollectorItemCodeMstEntity c ON a.id.itemName like CONCAT( FUNCTION('REPLACE', c.itemName, '[', '[[]'), '%') 
+				WHERE a.id.facilityid like :facilityId
+				AND b.id.time >= :fromTime AND b.id.time <= :toTime
+				AND a.id.monitorId = :monitorId
+				AND c.itemCode IN :itemCodeList
+				GROUP BY a.id.monitorId, c.itemCode, a.id.itemName, b.id.time, a.id.facilityid
+				ORDER BY a.id.facilityid, c.itemCode, b.id.time
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingSummaryPerfAvg.getSummaryPrefAvgDay">
+		<query>
+			<![CDATA[
+				SELECT a.id.monitorId, c.itemCode, a.id.itemName, b.id.time, a.id.facilityid, SUM(b.avg) FROM CollectKeyInfo a
+				JOIN SummaryDay b ON a.collectorid = b.id.collectorid
+				JOIN CollectorItemCodeMstEntity c ON a.id.itemName like CONCAT( FUNCTION('REPLACE', c.itemName, '[', '[[]'), '%') 
+				WHERE a.id.facilityid like :facilityId
+				AND b.id.time >= :fromTime AND b.id.time <= :toTime
+				AND a.id.monitorId = :monitorId
+				AND c.itemCode IN :itemCodeList
+				GROUP BY a.id.monitorId, c.itemCode, a.id.itemName, b.id.time, a.id.facilityid
+				ORDER BY a.id.facilityid, c.itemCode, b.id.time
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingSummaryPerfAvg.getSummaryPrefAvgMonth">
+		<query>
+			<![CDATA[
+				SELECT a.id.monitorId, c.itemCode, a.id.itemName, b.id.time, a.id.facilityid, SUM(b.avg) FROM CollectKeyInfo a
+				JOIN SummaryMonth b ON a.collectorid = b.id.collectorid
+				JOIN CollectorItemCodeMstEntity c ON a.id.itemName like CONCAT( FUNCTION('REPLACE', c.itemName, '[', '[[]'), '%') 
+				WHERE a.id.facilityid like :facilityId
+				AND b.id.time >= :fromTime AND b.id.time <= :toTime
+				AND a.id.monitorId = :monitorId
+				AND c.itemCode IN :itemCodeList
+				GROUP BY a.id.monitorId, c.itemCode, a.id.itemName, b.id.time, a.id.facilityid
+				ORDER BY a.id.facilityid, c.itemCode, b.id.time
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

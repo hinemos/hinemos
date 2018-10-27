@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.calendar.model;
 
 import java.util.ArrayList;
@@ -143,14 +151,16 @@ public class CalendarInfo extends ObjectPrivilegeTargetInfo {
 	 * 
 	 */
 	public void deleteCalDetailInfoEntities(List<CalendarDetailInfoPK> notDelPkList) {
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		List<CalendarDetailInfo> list = this.getCalendarDetailList();
-		Iterator<CalendarDetailInfo> iter = list.iterator();
-		while(iter.hasNext()) {
-			CalendarDetailInfo entity = iter.next();
-			if (!notDelPkList.contains(entity.getId())) {
-				iter.remove();
-				em.remove(entity);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<CalendarDetailInfo> list = this.getCalendarDetailList();
+			Iterator<CalendarDetailInfo> iter = list.iterator();
+			while(iter.hasNext()) {
+				CalendarDetailInfo entity = iter.next();
+				if (!notDelPkList.contains(entity.getId())) {
+					iter.remove();
+					em.remove(entity);
+				}
 			}
 		}
 	}

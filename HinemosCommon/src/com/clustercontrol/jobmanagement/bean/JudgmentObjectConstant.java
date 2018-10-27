@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.bean;
@@ -36,4 +29,10 @@ public class JudgmentObjectConstant {
 
 	/** ジョブ変数 */
 	public static final int TYPE_JOB_PARAMETER = 4;
+
+	/** セッション横断ジョブ終了状態 */
+	public static final int TYPE_CROSS_SESSION_JOB_END_STATUS = 5;
+
+	/** セッション横断ジョブ終了値 */
+	public static final int TYPE_CROSS_SESSION_JOB_END_VALUE = 6;
 }

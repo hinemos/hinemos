@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:annotation>
+    		<xs:documentation>収集項目マスタ</xs:documentation>
+    </xs:annotation>
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="collectMasters" type="CollectMasterDataList">
+		<xs:annotation>
+			<xs:documentation>収集項目マスタ情報のルートエレメント</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="CollectMasterDataList">
+		<xs:annotation>
+			<xs:documentation>収集項目マスタ情報のルートエレメント</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectorCalcMethodFrame" type="CollectorCalcMethodMstList" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>計算メソッド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectorItemCodeFrame" type="CollectorItemCodeMstList" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集項目コード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectorItemCalcFrame" type="CollectorItemCalcMstList" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>プラットフォーム毎の収集方法</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectorCategoryCollectFrame" type="CollectorCategoryCollectMstList" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カテゴリ毎の収集方法</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+
+	<!-- 計算メソッド定義 -->
+	<xs:element name="collectorCalcMethodList" type="CollectorCalcMethodMstList"/>
+	<xs:complexType name="CollectorCalcMethodMstList">
+		<xs:annotation>
+			<xs:documentation>計算メソッドのリスト</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="collectorCalcMethods" type="CollectorCalcMethodData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>計算メソッド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="collectorCalcMethodMst" type="CollectorCalcMethodData"/>
+	<xs:complexType name="CollectorCalcMethodData">
+		<xs:annotation>
+			<xs:documentation>計算メソッド</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="calcMethod" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>計算メソッド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="className" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>計算クラス名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="expression" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>計算式</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	
+	<!-- 収集項目定義 -->
+	<xs:element name="collectorItemCodeList" type="CollectorItemCodeMstList"/>
+	<xs:complexType name="CollectorItemCodeMstList">
+		<xs:annotation>
+			<xs:documentation>収集項目コードの定義リスト</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="collectorItems" type="CollectorCategoryData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>収集項目のコード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="collectorItemMst" type="CollectorCategoryData"/>
+	<xs:complexType name="CollectorCategoryData">
+		<xs:annotation>
+			<xs:documentation>収集項目のコード</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="categoryCode" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カテゴリコード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="categoryName" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カテゴリ名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectorItemCodes" type="CollectorItemCodeData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>収集項目</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="CollectorItemCodeData">
+		<xs:annotation>
+			<xs:documentation>収集項目</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="categoryCode" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カテゴリーコード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="deviceSupport" type="xs:boolean" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>デバイスサポート</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="deviceType" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>デバイスタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="graphRange" type="xs:boolean" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>グラフレンジ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="itemCode" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集項目コード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="itemName" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集項目名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="measure" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>メジャー</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="parentItemCode" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>親収集項目コード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="childItems" type="CollectorItemCodeData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>子収集項目</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+		
+	<!-- プラットフォーム毎の収集対象定義情報 -->
+	<xs:element name="collectorItemCalcList" type="CollectorItemCalcMstList"/>
+	<xs:complexType name="CollectorItemCalcMstList">
+		<xs:annotation>
+			<xs:documentation>プラットフォーム毎の収集対象の定義リスト</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="collectorItemCalcMethods" type="CollectorItemCalcMethodData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>プラットフォーム毎の収集対象情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="CollectorItemCalcMethodData">
+		<xs:annotation>
+			<xs:documentation>収集項目毎計算式</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="calcMethod" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>計算メソッド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectMethod" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集メソッド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="itemCode" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集項目</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="platformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>プラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="subPlatformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>サブプラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pollingCollector" type="CollectorPollingData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ポーリング収集情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="CollectorPollingData">
+		<xs:annotation>
+			<xs:documentation>ポーリング収集情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="collectMethod" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集方法</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="entryKey" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>エントリーキー</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureValue" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>失敗値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="itemCode" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集項目</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="platformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>プラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pollingTarget" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ポーリングターゲット</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="subPlatformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>サブプラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="valueType" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集値タイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="variableId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>変数ID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	
+	<!-- 古いプラットフォーム毎の収集対象定義情報
+	<xs:element name="collectorPlatformList" type="CollectorPlatformMstList"/>
+	<xs:complexType name="CollectorPlatformMstList">
+		<xs:annotation>
+			<xs:documentation>プラットフォーム毎の収集項目の定義リスト</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="collectorPlatforms" type="CollectorPlatformMstData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>プラットフォーム毎の収集対象情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="collectorPlatformMst" type="CollectorPlatformMstData"/>
+	<xs:complexType name="CollectorPlatformMstData">
+		<xs:annotation>
+			<xs:documentation>プラットフォーム毎の収集対象情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="platformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>プラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="platformName" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>プラットフォーム名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="orderNo" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>オーダーナンバー</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="itemCalcMethod" type="CollectorItemCalcMethodMstData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>収集項目計算式</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="CollectorItemCalcMethodMstData">
+		<xs:annotation>
+			<xs:documentation>収集項目毎計算式</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="calcMethod" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>計算メソッド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectMethod" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集メソッド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="itemCode" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集項目</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="platformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>プラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="subPlatformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>サブプラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pollingCollector" type="CollectorPollingMstData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ポーリング収集情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="CollectorPollingMstData">
+		<xs:annotation>
+			<xs:documentation>ポーリング収集情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="collectMethod" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集方法</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="entryKey" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>エントリーキー</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureValue" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>失敗値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="itemCode" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集項目</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="platformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>プラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pollingTarget" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ポーリングターゲット</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="subPlatformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>サブプラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="valueType" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集値タイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="variableId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>変数ID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	-->
+	
+	
+	<!-- カテゴリ毎の収集方法定義 -->
+	<xs:element name="collectorCategoryCollectList" type="CollectorCategoryCollectMstList"/>
+	<xs:complexType name="CollectorCategoryCollectMstList">
+		<xs:annotation>
+			<xs:documentation>プラットフォーム毎の収集項目の定義リスト</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="collectorCategoryCollects" type="CollectorCategoryCollectData" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>カテゴリ毎の収集方法</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="collectorCategoryCollectMst" type="CollectorCategoryCollectData"/>
+	<xs:complexType name="CollectorCategoryCollectData">
+		<xs:annotation>
+			<xs:documentation>カテゴリ毎の収集方法</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="categoryCode" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カテゴリコード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectMethod" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集メソッド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="platformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>プラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="subPlatformId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>サブプラットフォームID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+</xs:schema>

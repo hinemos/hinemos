@@ -1,0 +1,33 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"timeout",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorIntegrationInfo_timeout"}
+	]},
+	{
+	"propName":"notOrder",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorIntegrationInfo_notOrder"}
+	]},
+	{
+	"propName":"messageOk",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorIntegrationInfo_messageOk"}
+	]},
+	{
+	"propName":"messageNg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorIntegrationInfo_messageNg"}
+	]},
+	{
+	"propName":"conditionValue",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorIntegrationInfo_conditionValue"},
+		{"type":"Array", "idType":"prop", "propName":"orderNo"}
+	]}
+]
+}

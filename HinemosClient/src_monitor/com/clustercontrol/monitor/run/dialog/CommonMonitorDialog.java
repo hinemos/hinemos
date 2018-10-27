@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.dialog;
@@ -48,7 +41,9 @@ import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
  */
 public class CommonMonitorDialog extends CommonDialog {
 
+	public static final int WIDTH_TITLE_SHORT = 2;
 	public static final int WIDTH_TITLE = 4;
+	public static final int WIDTH_TITLE_MIDDLE = 6;
 	public static final int WIDTH_TITLE_LONG = 8;
 	public static final int WIDTH_VALUE = 2;
 	public static final int WIDTH_VALUE_LONG = 4;
@@ -447,6 +442,16 @@ public class CommonMonitorDialog extends CommonDialog {
 		monitor.setMonitorFlg(true);
 		// 収集有効フラグ
 		monitor.setCollectorFlg(false);
+		// 将来予測有効フラグ
+		monitor.setPredictionFlg(false);
+		// 将来予測－収集値の範囲
+		monitor.setPredictionAnalysysRange(60);
+		// 将来予測－予測対象時間
+		monitor.setPredictionTarget(60);
+		// 変化点有効フラグ
+		monitor.setChangeFlg(false);
+		// 変化点－収集値の範囲
+		monitor.setChangeAnalysysRange(60);
 	}
 
 	/**

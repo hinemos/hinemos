@@ -1,0 +1,1454 @@
+SONET-MIB DEFINITIONS ::= BEGIN
+
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    Integer32, transmission
+          FROM SNMPv2-SMI
+    DisplayString, TruthValue
+          FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP
+          FROM SNMPv2-CONF
+    ifIndex
+          FROM IF-MIB
+    PerfCurrentCount, PerfIntervalCount
+          FROM PerfHist-TC-MIB;
+
+
+
+sonetMIB MODULE-IDENTITY
+    LAST-UPDATED "9810190000Z"
+    ORGANIZATION "IETF AToM MIB Working Group"
+
+
+
+
+
+
+
+    ::= { transmission 39 }
+
+
+
+sonetObjects      OBJECT IDENTIFIER ::= { sonetMIB 1 }
+
+sonetObjectsPath  OBJECT IDENTIFIER ::= { sonetMIB 2 }
+
+sonetObjectsVT    OBJECT IDENTIFIER ::= { sonetMIB 3 }
+
+
+
+sonetMedium        OBJECT IDENTIFIER ::= { sonetObjects 1 }
+
+sonetSection       OBJECT IDENTIFIER ::= { sonetObjects 2 }
+
+
+
+
+
+sonetLine          OBJECT IDENTIFIER ::= { sonetObjects 3 }
+
+sonetFarEndLine    OBJECT IDENTIFIER ::= { sonetObjects 4 }
+
+sonetPath          OBJECT IDENTIFIER ::= { sonetObjectsPath 1 }
+
+sonetFarEndPath    OBJECT IDENTIFIER ::= { sonetObjectsPath 2 }
+
+sonetVT            OBJECT IDENTIFIER ::= { sonetObjectsVT 1 }
+
+sonetFarEndVT      OBJECT IDENTIFIER ::= { sonetObjectsVT 2 }
+
+
+
+sonetMediumTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetMediumEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+     ::= { sonetMedium 1 }
+
+sonetMediumEntry OBJECT-TYPE
+    SYNTAX  SonetMediumEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex }
+     ::= { sonetMediumTable 1 }
+
+SonetMediumEntry ::=
+    SEQUENCE {
+         sonetMediumType               INTEGER,
+         sonetMediumTimeElapsed        Integer32,
+         sonetMediumValidIntervals     Integer32,
+         sonetMediumLineCoding         INTEGER,
+         sonetMediumLineType           INTEGER,
+         sonetMediumCircuitIdentifier  DisplayString,
+         sonetMediumInvalidIntervals   Integer32,
+         sonetMediumLoopbackConfig     BITS
+    }
+
+
+
+
+
+
+sonetMediumType OBJECT-TYPE
+    SYNTAX  INTEGER  {
+               sonet(1),
+               sdh(2)
+            }
+    MAX-ACCESS  read-write
+    STATUS  current
+    ::= { sonetMediumEntry 1 }
+
+sonetMediumTimeElapsed OBJECT-TYPE
+    SYNTAX  Integer32 (1..900)
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetMediumEntry 2 }
+
+sonetMediumValidIntervals OBJECT-TYPE
+    SYNTAX  Integer32 (0..96)
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetMediumEntry 3 }
+
+
+
+
+
+
+sonetMediumLineCoding OBJECT-TYPE
+    SYNTAX  INTEGER {
+                sonetMediumOther(1),
+                sonetMediumB3ZS(2),
+                sonetMediumCMI(3),
+                sonetMediumNRZ(4),
+                sonetMediumRZ(5)
+            }
+    MAX-ACCESS  read-write
+    STATUS  current
+    ::= { sonetMediumEntry 4 }
+
+sonetMediumLineType OBJECT-TYPE
+    SYNTAX  INTEGER {
+                sonetOther(1),
+                sonetShortSingleMode(2),
+                sonetLongSingleMode(3),
+                sonetMultiMode(4),
+                sonetCoax(5),
+                sonetUTP(6)
+            }
+    MAX-ACCESS  read-write
+    STATUS  current
+    ::= { sonetMediumEntry 5 }
+
+sonetMediumCircuitIdentifier OBJECT-TYPE
+    SYNTAX  DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-write
+    STATUS  current
+    ::= { sonetMediumEntry 6 }
+sonetMediumInvalidIntervals OBJECT-TYPE
+    SYNTAX  Integer32 (0..96)
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetMediumEntry 7 }
+
+sonetMediumLoopbackConfig OBJECT-TYPE
+    SYNTAX      BITS {
+                  sonetNoLoop(0),
+                  sonetFacilityLoop(1),
+                  sonetTerminalLoop(2),
+                  sonetOtherLoop(3) }
+    MAX-ACCESS  read-write
+    STATUS      current
+
+    ::= { sonetMediumEntry 8 }
+
+sonetSESthresholdSet    OBJECT-TYPE
+    SYNTAX   INTEGER {
+
+
+
+
+
+               other(1),
+               Bellcore1991(2),
+               ansi1993(3),
+               itu1995(4),
+               ansi1997(5)
+                      }
+    MAX-ACCESS      read-write
+    STATUS          current
+     ::= { sonetMedium 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+sonetSectionCurrentTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetSectionCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+     ::= { sonetSection 1 }
+
+sonetSectionCurrentEntry OBJECT-TYPE
+    SYNTAX  SonetSectionCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex }
+     ::= { sonetSectionCurrentTable 1 }
+
+SonetSectionCurrentEntry ::=
+    SEQUENCE {
+        sonetSectionCurrentStatus   Integer32,
+        sonetSectionCurrentESs      PerfCurrentCount,
+        sonetSectionCurrentSESs     PerfCurrentCount,
+        sonetSectionCurrentSEFSs    PerfCurrentCount,
+        sonetSectionCurrentCVs      PerfCurrentCount
+    }
+
+
+sonetSectionCurrentStatus OBJECT-TYPE
+    SYNTAX  Integer32 (1..6)
+    MAX-ACCESS  read-only
+    STATUS  current
+     ::= { sonetSectionCurrentEntry 1 }
+
+sonetSectionCurrentESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+     ::= { sonetSectionCurrentEntry 2 }
+
+sonetSectionCurrentSESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+     ::= { sonetSectionCurrentEntry 3 }
+
+sonetSectionCurrentSEFSs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetSectionCurrentEntry 4 }
+
+sonetSectionCurrentCVs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+     ::= { sonetSectionCurrentEntry 5 }
+
+
+
+
+
+
+
+
+sonetSectionIntervalTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetSectionIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+     ::= { sonetSection 2 }
+
+sonetSectionIntervalEntry OBJECT-TYPE
+    SYNTAX  SonetSectionIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex,
+              sonetSectionIntervalNumber }
+     ::= { sonetSectionIntervalTable 1 }
+
+SonetSectionIntervalEntry ::=
+    SEQUENCE {
+         sonetSectionIntervalNumber  Integer32,
+         sonetSectionIntervalESs     PerfIntervalCount,
+         sonetSectionIntervalSESs    PerfIntervalCount,
+         sonetSectionIntervalSEFSs   PerfIntervalCount,
+         sonetSectionIntervalCVs     PerfIntervalCount,
+         sonetSectionIntervalValidData  TruthValue
+    }
+
+
+sonetSectionIntervalNumber OBJECT-TYPE
+    SYNTAX  Integer32 (1..96)
+    MAX-ACCESS  not-accessible
+    STATUS  current
+     ::= { sonetSectionIntervalEntry 1 }
+
+sonetSectionIntervalESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+     ::= { sonetSectionIntervalEntry 2 }
+
+sonetSectionIntervalSESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetSectionIntervalEntry 3 }
+
+sonetSectionIntervalSEFSs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetSectionIntervalEntry 4 }
+
+sonetSectionIntervalCVs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetSectionIntervalEntry 5 }
+
+sonetSectionIntervalValidData OBJECT-TYPE
+    SYNTAX  TruthValue
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetSectionIntervalEntry 6 }
+
+
+
+
+
+
+
+sonetLineCurrentTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetLineCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    ::= { sonetLine 1 }
+
+sonetLineCurrentEntry OBJECT-TYPE
+    SYNTAX  SonetLineCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex }
+    ::= { sonetLineCurrentTable 1 }
+
+SonetLineCurrentEntry ::=
+    SEQUENCE {
+         sonetLineCurrentStatus    Integer32,
+
+
+
+
+
+         sonetLineCurrentESs       PerfCurrentCount,
+         sonetLineCurrentSESs      PerfCurrentCount,
+         sonetLineCurrentCVs       PerfCurrentCount,
+         sonetLineCurrentUASs      PerfCurrentCount
+     }
+
+
+sonetLineCurrentStatus OBJECT-TYPE
+    SYNTAX  Integer32 (1..6)
+    MAX-ACCESS  read-only
+    STATUS  current
+     ::= { sonetLineCurrentEntry 1 }
+
+sonetLineCurrentESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetLineCurrentEntry 2 }
+
+sonetLineCurrentSESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetLineCurrentEntry 3 }
+
+sonetLineCurrentCVs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetLineCurrentEntry 4 }
+
+sonetLineCurrentUASs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetLineCurrentEntry 5 }
+
+
+
+
+sonetLineIntervalTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetLineIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+     ::= { sonetLine 2 }
+
+sonetLineIntervalEntry OBJECT-TYPE
+    SYNTAX  SonetLineIntervalEntry
+
+
+
+
+
+    MAX-ACCESS  not-accessible
+    STATUS  current
+   INDEX   { ifIndex,
+             sonetLineIntervalNumber }
+   ::= { sonetLineIntervalTable 1 }
+
+SonetLineIntervalEntry ::=
+    SEQUENCE {
+        sonetLineIntervalNumber    Integer32,
+        sonetLineIntervalESs       PerfIntervalCount,
+        sonetLineIntervalSESs      PerfIntervalCount,
+        sonetLineIntervalCVs       PerfIntervalCount,
+        sonetLineIntervalUASs      PerfIntervalCount,
+        sonetLineIntervalValidData TruthValue
+    }
+
+
+sonetLineIntervalNumber OBJECT-TYPE
+    SYNTAX  Integer32 (1..96)
+    MAX-ACCESS  not-accessible
+    STATUS  current
+     ::= { sonetLineIntervalEntry 1 }
+
+sonetLineIntervalESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+     ::= { sonetLineIntervalEntry 2 }
+
+sonetLineIntervalSESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+
+
+
+
+
+    MAX-ACCESS  read-only
+    STATUS  current
+      ::= { sonetLineIntervalEntry 3 }
+
+sonetLineIntervalCVs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetLineIntervalEntry 4 }
+
+sonetLineIntervalUASs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetLineIntervalEntry 5 }
+
+sonetLineIntervalValidData OBJECT-TYPE
+    SYNTAX  TruthValue
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetLineIntervalEntry 6 }
+
+
+
+
+
+
+
+
+
+
+
+
+sonetFarEndLineCurrentTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetFarEndLineCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    ::= { sonetFarEndLine 1 }
+
+sonetFarEndLineCurrentEntry OBJECT-TYPE
+    SYNTAX  SonetFarEndLineCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex }
+    ::= { sonetFarEndLineCurrentTable 1 }
+
+SonetFarEndLineCurrentEntry ::=
+    SEQUENCE {
+        sonetFarEndLineCurrentESs       PerfCurrentCount,
+        sonetFarEndLineCurrentSESs      PerfCurrentCount,
+        sonetFarEndLineCurrentCVs       PerfCurrentCount,
+        sonetFarEndLineCurrentUASs      PerfCurrentCount
+       }
+
+sonetFarEndLineCurrentESs OBJECT-TYPE
+   SYNTAX  PerfCurrentCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndLineCurrentEntry 1 }
+
+sonetFarEndLineCurrentSESs OBJECT-TYPE
+   SYNTAX  PerfCurrentCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndLineCurrentEntry 2 }
+
+sonetFarEndLineCurrentCVs OBJECT-TYPE
+   SYNTAX  PerfCurrentCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndLineCurrentEntry 3 }
+
+sonetFarEndLineCurrentUASs OBJECT-TYPE
+   SYNTAX  PerfCurrentCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndLineCurrentEntry 4 }
+
+
+
+
+
+
+
+
+
+sonetFarEndLineIntervalTable OBJECT-TYPE
+   SYNTAX  SEQUENCE OF SonetFarEndLineIntervalEntry
+   MAX-ACCESS  not-accessible
+   STATUS  current
+   ::= { sonetFarEndLine 2 }
+
+sonetFarEndLineIntervalEntry OBJECT-TYPE
+   SYNTAX  SonetFarEndLineIntervalEntry
+   MAX-ACCESS  not-accessible
+   STATUS  current
+   INDEX   { ifIndex,
+             sonetFarEndLineIntervalNumber }
+   ::= { sonetFarEndLineIntervalTable 1 }
+
+SonetFarEndLineIntervalEntry ::=
+    SEQUENCE {
+         sonetFarEndLineIntervalNumber    Integer32,
+         sonetFarEndLineIntervalESs       PerfIntervalCount,
+         sonetFarEndLineIntervalSESs      PerfIntervalCount,
+         sonetFarEndLineIntervalCVs       PerfIntervalCount,
+         sonetFarEndLineIntervalUASs      PerfIntervalCount,
+         sonetFarEndLineIntervalValidData TruthValue
+    }
+
+
+sonetFarEndLineIntervalNumber OBJECT-TYPE
+   SYNTAX  Integer32 (1..96)
+   MAX-ACCESS  not-accessible
+   STATUS  current
+   ::= { sonetFarEndLineIntervalEntry 1 }
+
+sonetFarEndLineIntervalESs OBJECT-TYPE
+   SYNTAX  PerfIntervalCount
+   MAX-ACCESS  read-only
+   STATUS  current
+  ::= { sonetFarEndLineIntervalEntry 2 }
+
+sonetFarEndLineIntervalSESs OBJECT-TYPE
+   SYNTAX  PerfIntervalCount
+   MAX-ACCESS  read-only
+   STATUS  current
+  ::= { sonetFarEndLineIntervalEntry 3 }
+
+sonetFarEndLineIntervalCVs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndLineIntervalEntry 4 }
+
+sonetFarEndLineIntervalUASs OBJECT-TYPE
+   SYNTAX  PerfIntervalCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndLineIntervalEntry 5 }
+
+sonetFarEndLineIntervalValidData OBJECT-TYPE
+    SYNTAX  TruthValue
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndLineIntervalEntry 6 }
+
+
+
+
+
+
+sonetPathCurrentTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetPathCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+::= { sonetPath 1 }
+
+sonetPathCurrentEntry OBJECT-TYPE
+    SYNTAX  SonetPathCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex }
+::= { sonetPathCurrentTable 1 }
+
+SonetPathCurrentEntry ::=
+    SEQUENCE {
+
+
+
+
+
+        sonetPathCurrentWidth      INTEGER,
+        sonetPathCurrentStatus     Integer32,
+        sonetPathCurrentESs        PerfCurrentCount,
+        sonetPathCurrentSESs       PerfCurrentCount,
+        sonetPathCurrentCVs        PerfCurrentCount,
+        sonetPathCurrentUASs       PerfCurrentCount
+    }
+
+
+sonetPathCurrentWidth OBJECT-TYPE
+    SYNTAX  INTEGER  {
+            sts1(1),
+            sts3cSTM1(2),
+            sts12cSTM4(3),
+            sts24c(4),
+            sts48cSTM16(5)
+     }
+    MAX-ACCESS  read-write
+    STATUS  current
+::= { sonetPathCurrentEntry 1 }
+
+sonetPathCurrentStatus OBJECT-TYPE
+    SYNTAX  Integer32 (1..62)
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetPathCurrentEntry 2 }
+
+sonetPathCurrentESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetPathCurrentEntry 3 }
+
+sonetPathCurrentSESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetPathCurrentEntry 4 }
+
+sonetPathCurrentCVs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetPathCurrentEntry 5 }
+
+sonetPathCurrentUASs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetPathCurrentEntry 6 }
+
+
+
+
+
+
+
+sonetPathIntervalTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetPathIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+::= { sonetPath 2 }
+
+sonetPathIntervalEntry OBJECT-TYPE
+    SYNTAX  SonetPathIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex,
+              sonetPathIntervalNumber }
+::= { sonetPathIntervalTable 1 }
+
+
+SonetPathIntervalEntry ::=
+    SEQUENCE {
+         sonetPathIntervalNumber     Integer32,
+         sonetPathIntervalESs        PerfIntervalCount,
+         sonetPathIntervalSESs       PerfIntervalCount,
+         sonetPathIntervalCVs        PerfIntervalCount,
+         sonetPathIntervalUASs       PerfIntervalCount,
+         sonetPathIntervalValidData  TruthValue
+    }
+
+
+sonetPathIntervalNumber OBJECT-TYPE
+    SYNTAX  Integer32 (1..96)
+    MAX-ACCESS  not-accessible
+    STATUS  current
+::= { sonetPathIntervalEntry 1 }
+
+sonetPathIntervalESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetPathIntervalEntry 2 }
+
+sonetPathIntervalSESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetPathIntervalEntry 3 }
+
+sonetPathIntervalCVs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetPathIntervalEntry 4 }
+
+sonetPathIntervalUASs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetPathIntervalEntry 5 }
+
+sonetPathIntervalValidData OBJECT-TYPE
+    SYNTAX  TruthValue
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetPathIntervalEntry 6 }
+
+
+
+
+
+sonetFarEndPathCurrentTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetFarEndPathCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    ::= { sonetFarEndPath 1 }
+
+sonetFarEndPathCurrentEntry OBJECT-TYPE
+    SYNTAX  SonetFarEndPathCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex }
+    ::= { sonetFarEndPathCurrentTable 1 }
+
+
+
+
+
+SonetFarEndPathCurrentEntry ::=
+    SEQUENCE {
+        sonetFarEndPathCurrentESs       PerfCurrentCount,
+        sonetFarEndPathCurrentSESs      PerfCurrentCount,
+        sonetFarEndPathCurrentCVs       PerfCurrentCount,
+        sonetFarEndPathCurrentUASs      PerfCurrentCount
+    }
+
+
+sonetFarEndPathCurrentESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndPathCurrentEntry 1 }
+
+sonetFarEndPathCurrentSESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndPathCurrentEntry 2 }
+
+sonetFarEndPathCurrentCVs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndPathCurrentEntry 3 }
+
+sonetFarEndPathCurrentUASs OBJECT-TYPE
+   SYNTAX  PerfCurrentCount
+   MAX-ACCESS  read-only
+   STATUS  current
+
+
+
+
+
+   ::= { sonetFarEndPathCurrentEntry 4 }
+
+
+
+sonetFarEndPathIntervalTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetFarEndPathIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    ::= { sonetFarEndPath 2 }
+
+sonetFarEndPathIntervalEntry OBJECT-TYPE
+    SYNTAX  SonetFarEndPathIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex,
+              sonetFarEndPathIntervalNumber }
+    ::= { sonetFarEndPathIntervalTable 1 }
+
+SonetFarEndPathIntervalEntry ::=
+    SEQUENCE {
+         sonetFarEndPathIntervalNumber     Integer32,
+         sonetFarEndPathIntervalESs        PerfIntervalCount,
+         sonetFarEndPathIntervalSESs       PerfIntervalCount,
+         sonetFarEndPathIntervalCVs        PerfIntervalCount,
+         sonetFarEndPathIntervalUASs       PerfIntervalCount,
+         sonetFarEndPathIntervalValidData  TruthValue
+    }
+
+
+
+
+
+sonetFarEndPathIntervalNumber OBJECT-TYPE
+   SYNTAX  Integer32 (1..96)
+   MAX-ACCESS  not-accessible
+   STATUS  current
+   ::= { sonetFarEndPathIntervalEntry 1 }
+
+sonetFarEndPathIntervalESs OBJECT-TYPE
+   SYNTAX  PerfIntervalCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndPathIntervalEntry 2 }
+
+sonetFarEndPathIntervalSESs OBJECT-TYPE
+   SYNTAX  PerfIntervalCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndPathIntervalEntry 3 }
+
+sonetFarEndPathIntervalCVs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndPathIntervalEntry 4 }
+
+sonetFarEndPathIntervalUASs OBJECT-TYPE
+   SYNTAX  PerfIntervalCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndPathIntervalEntry 5 }
+
+sonetFarEndPathIntervalValidData OBJECT-TYPE
+    SYNTAX  TruthValue
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndPathIntervalEntry 6 }
+
+
+
+
+
+
+
+
+
+
+
+
+sonetVTCurrentTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetVTCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+::= { sonetVT 1 }
+
+sonetVTCurrentEntry OBJECT-TYPE
+    SYNTAX  SonetVTCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex }
+::= { sonetVTCurrentTable 1 }
+
+SonetVTCurrentEntry ::=
+    SEQUENCE {
+        sonetVTCurrentWidth      INTEGER,
+        sonetVTCurrentStatus     Integer32,
+        sonetVTCurrentESs        PerfCurrentCount,
+        sonetVTCurrentSESs       PerfCurrentCount,
+        sonetVTCurrentCVs        PerfCurrentCount,
+        sonetVTCurrentUASs       PerfCurrentCount
+    }
+
+sonetVTCurrentWidth OBJECT-TYPE
+    SYNTAX  INTEGER {
+            vtWidth15VC11(1),
+            vtWidth2VC12(2),
+            vtWidth3(3),
+            vtWidth6VC2(4),
+            vtWidth6c(5)
+         }
+    MAX-ACCESS  read-write
+    STATUS  current
+::= { sonetVTCurrentEntry 1 }
+
+sonetVTCurrentStatus OBJECT-TYPE
+    SYNTAX  Integer32 (1..126)
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetVTCurrentEntry 2 }
+
+sonetVTCurrentESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetVTCurrentEntry 3 }
+
+sonetVTCurrentSESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetVTCurrentEntry 4 }
+
+sonetVTCurrentCVs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetVTCurrentEntry 5 }
+
+sonetVTCurrentUASs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetVTCurrentEntry 6 }
+
+
+
+
+sonetVTIntervalTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetVTIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+::= { sonetVT 2 }
+
+sonetVTIntervalEntry OBJECT-TYPE
+    SYNTAX  SonetVTIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex,
+              sonetVTIntervalNumber }
+::= { sonetVTIntervalTable 1 }
+
+SonetVTIntervalEntry ::=
+
+
+
+
+
+    SEQUENCE {
+        sonetVTIntervalNumber     Integer32,
+        sonetVTIntervalESs        PerfIntervalCount,
+        sonetVTIntervalSESs       PerfIntervalCount,
+        sonetVTIntervalCVs        PerfIntervalCount,
+        sonetVTIntervalUASs       PerfIntervalCount,
+        sonetVTIntervalValidData  TruthValue
+    }
+
+sonetVTIntervalNumber OBJECT-TYPE
+    SYNTAX  Integer32 (1..96)
+    MAX-ACCESS  not-accessible
+    STATUS  current
+::= { sonetVTIntervalEntry 1 }
+
+sonetVTIntervalESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetVTIntervalEntry 2 }
+
+sonetVTIntervalSESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetVTIntervalEntry 3 }
+
+sonetVTIntervalCVs OBJECT-TYPE
+
+
+
+
+
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetVTIntervalEntry 4 }
+
+sonetVTIntervalUASs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetVTIntervalEntry 5 }
+
+sonetVTIntervalValidData OBJECT-TYPE
+    SYNTAX  TruthValue
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetVTIntervalEntry 6 }
+
+
+
+
+
+
+
+
+
+
+
+sonetFarEndVTCurrentTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetFarEndVTCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    ::= { sonetFarEndVT 1 }
+
+sonetFarEndVTCurrentEntry OBJECT-TYPE
+    SYNTAX  SonetFarEndVTCurrentEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    INDEX   { ifIndex }
+    ::= { sonetFarEndVTCurrentTable 1 }
+
+SonetFarEndVTCurrentEntry ::=
+    SEQUENCE {
+        sonetFarEndVTCurrentESs       PerfCurrentCount,
+        sonetFarEndVTCurrentSESs      PerfCurrentCount,
+        sonetFarEndVTCurrentCVs       PerfCurrentCount,
+        sonetFarEndVTCurrentUASs      PerfCurrentCount
+    }
+
+
+sonetFarEndVTCurrentESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+::= { sonetFarEndVTCurrentEntry 1 }
+
+sonetFarEndVTCurrentSESs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndVTCurrentEntry 2 }
+
+
+
+
+
+
+sonetFarEndVTCurrentCVs OBJECT-TYPE
+    SYNTAX  PerfCurrentCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndVTCurrentEntry 3 }
+
+sonetFarEndVTCurrentUASs OBJECT-TYPE
+   SYNTAX  PerfCurrentCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndVTCurrentEntry 4 }
+
+
+
+sonetFarEndVTIntervalTable OBJECT-TYPE
+    SYNTAX  SEQUENCE OF SonetFarEndVTIntervalEntry
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    ::= { sonetFarEndVT 2 }
+
+sonetFarEndVTIntervalEntry OBJECT-TYPE
+    SYNTAX  SonetFarEndVTIntervalEntry
+    MAX-ACCESS  not-accessible
+
+
+
+
+
+    STATUS  current
+    INDEX   { ifIndex,
+              sonetFarEndVTIntervalNumber }
+    ::= { sonetFarEndVTIntervalTable 1 }
+
+SonetFarEndVTIntervalEntry ::=
+   SEQUENCE {
+         sonetFarEndVTIntervalNumber     Integer32,
+         sonetFarEndVTIntervalESs        PerfIntervalCount,
+         sonetFarEndVTIntervalSESs       PerfIntervalCount,
+         sonetFarEndVTIntervalCVs        PerfIntervalCount,
+         sonetFarEndVTIntervalUASs       PerfIntervalCount,
+         sonetFarEndVTIntervalValidData  TruthValue
+    }
+
+sonetFarEndVTIntervalNumber OBJECT-TYPE
+    SYNTAX  Integer32 (1..96)
+    MAX-ACCESS  not-accessible
+    STATUS  current
+    ::= { sonetFarEndVTIntervalEntry 1 }
+
+sonetFarEndVTIntervalESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+   ::= { sonetFarEndVTIntervalEntry 2 }
+
+sonetFarEndVTIntervalSESs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS  current
+    ::= { sonetFarEndVTIntervalEntry 3 }
+
+sonetFarEndVTIntervalCVs OBJECT-TYPE
+    SYNTAX  PerfIntervalCount
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndVTIntervalEntry 4 }
+
+sonetFarEndVTIntervalUASs OBJECT-TYPE
+   SYNTAX  PerfIntervalCount
+   MAX-ACCESS  read-only
+   STATUS  current
+   ::= { sonetFarEndVTIntervalEntry 5 }
+
+sonetFarEndVTIntervalValidData OBJECT-TYPE
+    SYNTAX  TruthValue
+    MAX-ACCESS  read-only
+    STATUS  current
+    ::= { sonetFarEndVTIntervalEntry 6 }
+
+
+sonetConformance OBJECT IDENTIFIER ::= { sonetMIB 4 }
+
+
+
+
+
+sonetGroups      OBJECT IDENTIFIER ::= { sonetConformance 1 }
+sonetCompliances OBJECT IDENTIFIER ::= { sonetConformance 2 }
+
+
+sonetCompliance MODULE-COMPLIANCE
+    STATUS  deprecated
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { sonetMediumStuff, sonetSectionStuff }
+
+        GROUP       sonetLineStuff
+
+        GROUP       sonetFarEndLineStuff
+
+        GROUP       sonetPathStuff
+
+        OBJECT      sonetPathCurrentWidth
+        MIN-ACCESS  read-only
+
+        GROUP       sonetFarEndPathStuff
+
+        GROUP       sonetVTStuff
+
+        OBJECT      sonetVTCurrentWidth
+        MIN-ACCESS  read-only
+
+        GROUP       sonetFarEndVTStuff
+
+    ::= { sonetCompliances 1 }
+
+
+
+sonetCompliance2 MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { sonetMediumStuff2, sonetSectionStuff2 }
+
+        OBJECT      sonetMediumType
+        MIN-ACCESS  read-only
+
+        OBJECT      sonetMediumLineCoding
+        MIN-ACCESS  read-only
+
+        OBJECT      sonetMediumLineType
+        MIN-ACCESS  read-only
+
+        OBJECT      sonetMediumCircuitIdentifier
+        MIN-ACCESS  read-only
+
+
+
+
+
+
+        OBJECT      sonetMediumLoopbackConfig
+        MIN-ACCESS  read-only
+
+        OBJECT      sonetSESthresholdSet
+        MIN-ACCESS  read-only
+
+        GROUP       sonetLineStuff2
+
+        GROUP       sonetFarEndLineStuff2
+
+        GROUP       sonetPathStuff2
+
+        OBJECT      sonetPathCurrentWidth
+        MIN-ACCESS  read-only
+
+        GROUP       sonetFarEndPathStuff2
+
+        GROUP       sonetVTStuff2
+
+
+
+
+
+        OBJECT      sonetVTCurrentWidth
+        MIN-ACCESS  read-only
+
+        GROUP       sonetFarEndVTStuff2
+
+    ::= { sonetCompliances 2 }
+
+
+
+sonetMediumStuff    OBJECT-GROUP
+    OBJECTS { sonetMediumType,
+              sonetMediumTimeElapsed,
+              sonetMediumValidIntervals,
+              sonetMediumLineCoding,
+              sonetMediumLineType,
+              sonetMediumCircuitIdentifier }
+    STATUS  deprecated
+    ::= { sonetGroups 1 }
+
+sonetSectionStuff    OBJECT-GROUP
+    OBJECTS { sonetSectionCurrentStatus,
+              sonetSectionCurrentESs,
+              sonetSectionCurrentSESs,
+              sonetSectionCurrentSEFSs,
+              sonetSectionCurrentCVs,
+              sonetSectionIntervalESs,
+              sonetSectionIntervalSESs,
+              sonetSectionIntervalSEFSs,
+              sonetSectionIntervalCVs
+ }
+    STATUS  deprecated
+    ::= { sonetGroups 2 }
+
+
+
+
+
+
+sonetLineStuff    OBJECT-GROUP
+    OBJECTS { sonetLineCurrentStatus,
+              sonetLineCurrentESs,
+              sonetLineCurrentSESs,
+              sonetLineCurrentCVs,
+              sonetLineCurrentUASs,
+              sonetLineIntervalESs,
+              sonetLineIntervalSESs,
+              sonetLineIntervalCVs,
+              sonetLineIntervalUASs }
+    STATUS  deprecated
+    ::= { sonetGroups 3 }
+
+sonetFarEndLineStuff    OBJECT-GROUP
+    OBJECTS { sonetFarEndLineCurrentESs,
+              sonetFarEndLineCurrentSESs,
+              sonetFarEndLineCurrentCVs,
+              sonetFarEndLineCurrentUASs,
+              sonetFarEndLineIntervalESs,
+              sonetFarEndLineIntervalSESs,
+              sonetFarEndLineIntervalCVs,
+              sonetFarEndLineIntervalUASs }
+    STATUS  deprecated
+    ::= { sonetGroups 4 }
+
+sonetPathStuff    OBJECT-GROUP
+    OBJECTS { sonetPathCurrentWidth,
+              sonetPathCurrentStatus,
+              sonetPathCurrentESs,
+              sonetPathCurrentSESs,
+              sonetPathCurrentCVs,
+              sonetPathCurrentUASs,
+              sonetPathIntervalESs,
+              sonetPathIntervalSESs,
+              sonetPathIntervalCVs,
+              sonetPathIntervalUASs }
+    STATUS  deprecated
+    ::= { sonetGroups 5 }
+
+
+
+
+
+sonetFarEndPathStuff    OBJECT-GROUP
+    OBJECTS { sonetFarEndPathCurrentESs,
+              sonetFarEndPathCurrentSESs,
+              sonetFarEndPathCurrentCVs,
+              sonetFarEndPathCurrentUASs,
+              sonetFarEndPathIntervalESs,
+              sonetFarEndPathIntervalSESs,
+              sonetFarEndPathIntervalCVs,
+              sonetFarEndPathIntervalUASs }
+    STATUS  deprecated
+    ::= { sonetGroups 6 }
+
+sonetVTStuff    OBJECT-GROUP
+    OBJECTS { sonetVTCurrentWidth,
+              sonetVTCurrentStatus,
+              sonetVTCurrentESs,
+              sonetVTCurrentSESs,
+              sonetVTCurrentCVs,
+              sonetVTCurrentUASs,
+              sonetVTIntervalESs,
+              sonetVTIntervalSESs,
+              sonetVTIntervalCVs,
+              sonetVTIntervalUASs }
+    STATUS  deprecated
+    ::= { sonetGroups 7 }
+
+sonetFarEndVTStuff    OBJECT-GROUP
+    OBJECTS { sonetFarEndVTCurrentESs,
+              sonetFarEndVTCurrentSESs,
+              sonetFarEndVTCurrentCVs,
+              sonetFarEndVTCurrentUASs,
+              sonetFarEndVTIntervalESs,
+              sonetFarEndVTIntervalSESs,
+              sonetFarEndVTIntervalCVs,
+              sonetFarEndVTIntervalUASs }
+    STATUS  deprecated
+    ::= { sonetGroups 8 }
+
+
+
+
+
+
+sonetMediumStuff2    OBJECT-GROUP
+    OBJECTS { sonetMediumType,
+              sonetMediumTimeElapsed,
+              sonetMediumValidIntervals,
+              sonetMediumLineCoding,
+              sonetMediumLineType,
+              sonetMediumCircuitIdentifier,
+              sonetMediumInvalidIntervals,
+              sonetMediumLoopbackConfig,
+              sonetSESthresholdSet }
+    STATUS  current
+    ::= { sonetGroups 9 }
+
+sonetSectionStuff2    OBJECT-GROUP
+    OBJECTS { sonetSectionCurrentStatus,
+              sonetSectionCurrentESs,
+              sonetSectionCurrentSESs,
+              sonetSectionCurrentSEFSs,
+              sonetSectionCurrentCVs,
+              sonetSectionIntervalESs,
+              sonetSectionIntervalSESs,
+              sonetSectionIntervalSEFSs,
+              sonetSectionIntervalCVs,
+              sonetSectionIntervalValidData }
+    STATUS  current
+    ::= { sonetGroups 10 }
+
+sonetLineStuff2    OBJECT-GROUP
+    OBJECTS { sonetLineCurrentStatus,
+              sonetLineCurrentESs,
+              sonetLineCurrentSESs,
+              sonetLineCurrentCVs,
+              sonetLineCurrentUASs,
+              sonetLineIntervalESs,
+              sonetLineIntervalSESs,
+              sonetLineIntervalCVs,
+              sonetLineIntervalUASs,
+              sonetLineIntervalValidData }
+    STATUS  current
+    ::= { sonetGroups 11 }
+
+sonetPathStuff2    OBJECT-GROUP
+    OBJECTS { sonetPathCurrentWidth,
+              sonetPathCurrentStatus,
+              sonetPathCurrentESs,
+              sonetPathCurrentSESs,
+              sonetPathCurrentCVs,
+              sonetPathCurrentUASs,
+              sonetPathIntervalESs,
+              sonetPathIntervalSESs,
+              sonetPathIntervalCVs,
+              sonetPathIntervalUASs,
+              sonetPathIntervalValidData }
+    STATUS  current
+    ::= { sonetGroups 12 }
+
+sonetVTStuff2    OBJECT-GROUP
+    OBJECTS { sonetVTCurrentWidth,
+              sonetVTCurrentStatus,
+              sonetVTCurrentESs,
+              sonetVTCurrentSESs,
+              sonetVTCurrentCVs,
+              sonetVTCurrentUASs,
+              sonetVTIntervalESs,
+              sonetVTIntervalSESs,
+              sonetVTIntervalCVs,
+              sonetVTIntervalUASs,
+              sonetVTIntervalValidData }
+    STATUS  current
+    ::= { sonetGroups 13 }
+
+sonetFarEndLineStuff2    OBJECT-GROUP
+    OBJECTS { sonetFarEndLineCurrentESs,
+              sonetFarEndLineCurrentSESs,
+              sonetFarEndLineCurrentCVs,
+              sonetFarEndLineCurrentUASs,
+              sonetFarEndLineIntervalESs,
+              sonetFarEndLineIntervalSESs,
+              sonetFarEndLineIntervalCVs,
+
+
+
+
+
+              sonetFarEndLineIntervalUASs,
+              sonetFarEndLineIntervalValidData }
+    STATUS  current
+    ::= { sonetGroups 14 }
+
+sonetFarEndPathStuff2    OBJECT-GROUP
+    OBJECTS { sonetFarEndPathCurrentESs,
+              sonetFarEndPathCurrentSESs,
+              sonetFarEndPathCurrentCVs,
+              sonetFarEndPathCurrentUASs,
+              sonetFarEndPathIntervalESs,
+              sonetFarEndPathIntervalSESs,
+              sonetFarEndPathIntervalCVs,
+              sonetFarEndPathIntervalUASs,
+              sonetFarEndPathIntervalValidData }
+    STATUS  current
+    ::= { sonetGroups 15 }
+
+sonetFarEndVTStuff2    OBJECT-GROUP
+    OBJECTS { sonetFarEndVTCurrentESs,
+              sonetFarEndVTCurrentSESs,
+              sonetFarEndVTCurrentCVs,
+              sonetFarEndVTCurrentUASs,
+              sonetFarEndVTIntervalESs,
+              sonetFarEndVTIntervalSESs,
+              sonetFarEndVTIntervalCVs,
+              sonetFarEndVTIntervalUASs,
+              sonetFarEndVTIntervalValidData }
+    STATUS  current
+    ::= { sonetGroups 16 }
+
+
+END

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.session;
@@ -21,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -47,6 +41,7 @@ import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
@@ -113,7 +108,6 @@ import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.util.JobValidator;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.jobmanagement.util.SendTopic;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.performance.util.PollingDataManager;
@@ -307,7 +301,30 @@ public class JobControllerBean implements CheckFacility {
 		return ret;
 	}
 
-	
+	/**
+	 * ジョブユニットのオーナーロールIDを配下のジョブに設定する。
+	 *
+	 * @param item 反映するJobTreeItem
+	 * @param ownerRoleId オーナーロールID
+	*/
+	private static void setOwnerRoleId(JobTreeItem item, String ownerRoleId) {
+		// 直下のJobTreeItemのOwnerRoleIdを変更する
+		List<JobTreeItem> children = item.getChildren();
+		if (children != null && children.size() > 0) {
+			Iterator<JobTreeItem> iter = children.iterator();
+			while(iter.hasNext()) {
+				JobTreeItem child = iter.next();
+				setOwnerRoleId(child, ownerRoleId);
+			}
+		}
+		JobInfo info = item.getData();
+		info.setOwnerRoleId(ownerRoleId);
+
+		m_log.debug("setOwnerRoleId() "
+					+ " jobunitId = " + info.getJobunitId()
+					+ " jobId = " + info.getId()
+					+ " ownerRoleId = " + info.getOwnerRoleId());
+	}
 	
 	/**
 	 * ジョブユニット情報を登録する。<BR>
@@ -341,6 +358,9 @@ public class JobControllerBean implements CheckFacility {
 			setJobunitIdAll(jobunit, jobunit.getData().getJobunitId()); // ジョブユニットIDを更新
 
 			// Validate
+			// ジョブユニットのオーナーロールIDを配下のジョブに設定する。
+			// 配下のジョブにオーナーロールIDを設定していないとバリデーションでエラーになるため。
+			setOwnerRoleId(jobunit, jobunit.getData().getOwnerRoleId());
 			long beforeValidate = HinemosTime.currentTimeMillis();
 			JobValidator.validateJobUnit(jobunit);
 			m_log.debug(String.format("validateJobUnit: %d ms", HinemosTime.currentTimeMillis() - beforeValidate));
@@ -388,7 +408,7 @@ public class JobControllerBean implements CheckFacility {
 			jtm.commit();
 			m_log.debug(String.format("jtm.commit: %d ms", HinemosTime.currentTimeMillis() - beforeCommit));
 			
-			FullJob.updateCache(jobunitId, tree2List(jobunit));
+			FullJob.updateCache(jobunitId);
 		} catch (HinemosUnknown | JobInvalid | InvalidRole | InvalidSetting e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -547,7 +567,7 @@ public class JobControllerBean implements CheckFacility {
 			JobEditEntity jobEditEntity = em.find(JobEditEntity.class, jobunitId, ObjectPrivilegeMode.READ);
 			if (jobEditEntity == null) {
 				// ジョブユニットの新規作成
-				new JobEditEntity(jobunitId);
+				em.persist(new JobEditEntity(jobunitId));
 			}
 
 			jtm.commit();
@@ -1919,7 +1939,14 @@ public class JobControllerBean implements CheckFacility {
 				if (type != JobKickConstant.TYPE_FILECHECK) {
 					continue;
 				}
-				JobFileCheck jobFileCheck = new JobControllerBean().getJobFileCheck(jobKick.getId());
+				
+				if (!(jobKick instanceof JobFileCheck)) {
+					// ここには到達しないはず
+					m_log.warn("getJobFileCheck() : the setting is not JobFileCheck. jobKickId=" + jobKick.getId());
+					continue;
+				}
+				
+				JobFileCheck jobFileCheck = (JobFileCheck)jobKick;
 
 				// ファイルチェック対象のファシリティIDであることを確認。
 				boolean flag = false;
@@ -2207,12 +2234,16 @@ public class JobControllerBean implements CheckFacility {
 					.getResultList();
 			if(ct != null && ct.size() > 0) {
 				// ID名を取得する
-				String listID = (MessageConstant.JOB_MANAGEMENT.getMessage() + " : ");
+				StringBuilder sb = new StringBuilder();
+				sb.append(MessageConstant.JOB_MANAGEMENT.getMessage() + " : ");
 				for (JobMstEntity entity : ct) {
-					listID += ("[" + entity.getId().getJobunitId());
-					listID += (", " + entity.getId().getJobId() + "], ");
+					sb.append("[");
+					sb.append(entity.getId().getJobunitId());
+					sb.append(", ");
+					sb.append(entity.getId().getJobId());
+					sb.append("], ");
 				}
-				UsedFacility e = new UsedFacility(listID);
+				UsedFacility e = new UsedFacility(sb.toString());
 				m_log.info("isUseFacilityId() : " + e.getClass().getSimpleName() +
 						", " + facilityId + ", " + e.getMessage());
 				throw e;
@@ -2324,6 +2355,7 @@ public class JobControllerBean implements CheckFacility {
 			if (entity == null) {
 				// ロックを新規作成する
 				entity = new JobEditEntity(jobunitId);
+				em.persist(entity);
 			}
 
 			if (entity.getEditSession() != null) {
@@ -2855,7 +2887,7 @@ public class JobControllerBean implements CheckFacility {
 
 		String iconId = "";
 		try {
-			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.job", "JOB_DEFAULT");
+			iconId = HinemosPropertyCommon.jobmap_icon_id_default_job.getStringValue();
 		} catch (Exception e) {
 			m_log.warn("getJobmapIconIdJobDefault() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -2874,7 +2906,7 @@ public class JobControllerBean implements CheckFacility {
 
 		String iconId = "";
 		try {
-			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.jobnet", "JOBNET_DEFAULT");
+			iconId = HinemosPropertyCommon.jobmap_icon_id_default_jobnet.getStringValue();
 		} catch (Exception e) {
 			m_log.warn("getJobmapIconIdJobnetDefault() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -2893,7 +2925,7 @@ public class JobControllerBean implements CheckFacility {
 
 		String iconId = "";
 		try {
-			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.approvaljob", "APPROVALJOB_DEFAULT");
+			iconId = HinemosPropertyCommon.jobmap_icon_id_default_approvaljob.getStringValue();
 		} catch (Exception e) {
 			m_log.warn("getJobmapIconIdApprovalDefault() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -2912,7 +2944,7 @@ public class JobControllerBean implements CheckFacility {
 
 		String iconId = "";
 		try {
-			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.monitorjob", "MONITORJOB_DEFAULT");
+			iconId = HinemosPropertyCommon.jobmap_icon_id_default_monitorjob.getStringValue();
 		} catch (Exception e) {
 			m_log.warn("getJobmapIconIdMonitorDefault() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -2931,7 +2963,7 @@ public class JobControllerBean implements CheckFacility {
 
 		String iconId = "";
 		try {
-			iconId = HinemosPropertyUtil.getHinemosPropertyStr("jobmap.icon.id.default.filejob", "FILEJOB_DEFAULT");
+			iconId = HinemosPropertyCommon.jobmap_icon_id_default_filejob.getStringValue();
 		} catch (Exception e) {
 			m_log.warn("getJobmapIconIdFileDefault() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -2954,13 +2986,12 @@ public class JobControllerBean implements CheckFacility {
 	 *
 	 * @return 承認画面へのリンク先アドレス
 	 * @throws HinemosUnknown
-	 * @throws InvalidRole
 	 */
-	public String getApprovalPageLink() throws HinemosUnknown, InvalidRole {
+	public String getApprovalPageLink() throws HinemosUnknown {
 		String str = null;
 		try {
-			str = HinemosPropertyUtil.getHinemosPropertyStr("job.approval.page.link", "http://192.168.1.1/#approval?LoginUrl=http://192.168.1.1:8080/HinemosWS/");
-		} catch (Exception e) {
+			str = HinemosPropertyCommon.job_approval_page_link.getStringValue();
+		} catch (RuntimeException e) {
 			m_log.warn("getApprovalPageLink() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);
@@ -3032,7 +3063,7 @@ public class JobControllerBean implements CheckFacility {
 	
 	/**
 	 * 監視設定一覧の取得
-	 *
+	 * ※相関係数監視、収集値統合監視は対象外
 	 * @param monitorTypeIds 監視種別IDリスト
 	 * @param ownerRoleId オーナーロールID
 	 * @return 監視設定一覧
@@ -3040,7 +3071,7 @@ public class JobControllerBean implements CheckFacility {
 	 */
 	public ArrayList<MonitorInfo> getMonitorListForJobMonitor(String ownerRoleId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("getMonitorListByMonitorTypeId() : start");
-
+		
 		JpaTransactionManager jtm = null;
 
 		ArrayList<MonitorInfo> list = new ArrayList<>();
@@ -3068,11 +3099,33 @@ public class JobControllerBean implements CheckFacility {
 					HinemosModuleConstant.MONITOR_HTTP_S,
 					HinemosModuleConstant.MONITOR_HTTP_SCENARIO,
 					HinemosModuleConstant.MONITOR_LOGFILE,
+					HinemosModuleConstant.MONITOR_LOGCOUNT,
+					HinemosModuleConstant.MONITOR_BINARYFILE_BIN,
+					HinemosModuleConstant.MONITOR_PCAP_BIN,
 					HinemosModuleConstant.MONITOR_WINEVENT,
 					HinemosModuleConstant.MONITOR_WINSERVICE);
 			for(MonitorInfo monitorInfo : new SelectJob().getMonitorListByMonitorTypeIds(monitorTypeIds, ownerRoleId)) {
 				if (monitorInfo.getPerfCheckInfo() == null
 						|| !monitorInfo.getPerfCheckInfo().getDeviceDisplayName().equals(PollingDataManager.ALL_DEVICE_NAME)) {
+					
+					jtm.getEntityManager().detach(monitorInfo);
+					monitorInfo.setCustomCheckInfo(null);
+					monitorInfo.setCustomTrapCheckInfo(null);
+					monitorInfo.setHttpCheckInfo(null);
+					monitorInfo.setHttpScenarioCheckInfo(null);
+					monitorInfo.setJmxCheckInfo(null);
+					monitorInfo.setLogfileCheckInfo(null);
+					monitorInfo.setBinaryCheckInfo(null);
+					monitorInfo.setPerfCheckInfo(null);
+					monitorInfo.setPingCheckInfo(null);
+					monitorInfo.setPluginCheckInfo(null);
+					monitorInfo.setPortCheckInfo(null);
+					monitorInfo.setProcessCheckInfo(null);
+					monitorInfo.setSnmpCheckInfo(null);
+					monitorInfo.setSqlCheckInfo(null);
+					monitorInfo.setTrapCheckInfo(null);
+					monitorInfo.setWinEventCheckInfo(null);
+					monitorInfo.setWinServiceCheckInfo(null);
 					list.add(monitorInfo);
 				}
 			}

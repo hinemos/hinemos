@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.calendar.util;
 
 import java.io.Serializable;
@@ -10,6 +18,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.calendar.model.CalendarPatternInfo;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
@@ -107,12 +116,12 @@ public class CalendarPatternCache {
 		
 		// 参照に基づ更新がアトミックに行われないため、スレッド間でコンフリクトする可能性がある。
 		// ただし、コンフリクトしてもキャッシュが破損するわけでなく、warm up後はマルチスレッドによる高性能が期待できる。
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			_lock.writeLock();
-			
 			HashMap<String, CalendarPatternInfo> cache = getCache();
 			CalendarPatternInfo pattern = getCalendarPatternInfoDB(id);
-			new JpaTransactionManager().getEntityManager().refresh(pattern);
+			em.refresh(pattern);
 			cache.put(id, pattern);
 			storeCache(cache);
 			

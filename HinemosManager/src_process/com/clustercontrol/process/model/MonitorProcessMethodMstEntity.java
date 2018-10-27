@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.process.model;
 
 import java.io.Serializable;
@@ -14,8 +22,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 
 
@@ -36,20 +42,6 @@ public class MonitorProcessMethodMstEntity implements Serializable {
 	@Deprecated
 	public MonitorProcessMethodMstEntity() {
 	}
-
-	public MonitorProcessMethodMstEntity(MonitorProcessMethodMstEntityPK pk,
-			CollectorPlatformMstEntity collectorPlatformMstEntity) {
-		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToCollectorPlatformMstEntity(collectorPlatformMstEntity);
-	}
-
-	public MonitorProcessMethodMstEntity(String platformId, String subPlatformId,
-			CollectorPlatformMstEntity collectorPlatformMstEntity) {
-		this(new MonitorProcessMethodMstEntityPK(platformId, subPlatformId), collectorPlatformMstEntity);
-	}
-
 
 	@EmbeddedId
 	public MonitorProcessMethodMstEntityPK getId() {

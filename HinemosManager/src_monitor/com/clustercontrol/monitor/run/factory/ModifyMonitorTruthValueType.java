@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.factory;
@@ -25,6 +18,7 @@ import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorTruthValueInfo;
 import com.clustercontrol.monitor.run.model.MonitorTruthValueInfoPK;
+import com.clustercontrol.monitor.run.util.MonitorJudgementInfoCacheRefreshCallback;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 
 /**
@@ -44,20 +38,26 @@ abstract public class ModifyMonitorTruthValueType extends ModifyMonitor{
 	 */
 	@Override
 	protected boolean addJudgementInfo() throws MonitorNotFound, InvalidRole {
-		List<MonitorTruthValueInfo> valueList = m_monitorInfo.getTruthValueInfo();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MonitorTruthValueInfo> valueList = m_monitorInfo.getTruthValueInfo();
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-
-		// 真偽値監視判定情報を設定
-		MonitorTruthValueInfo value = null;
-		for(int index=0; index<valueList.size(); index++){
-			value = valueList.get(index);
-			if(value != null){
-				em.persist(value);
-				value.relateToMonitorInfo(m_monitorInfo);
+			// 真偽値監視判定情報を設定
+			MonitorTruthValueInfo value = null;
+			for(int index=0; index<valueList.size(); index++){
+				value = valueList.get(index);
+				if(value != null){
+					em.persist(value);
+					value.relateToMonitorInfo(m_monitorInfo);
+				}
 			}
+
+			// 判定キャッシュを更新
+			jtm.addCallback(new MonitorJudgementInfoCacheRefreshCallback(
+					m_monitorInfo.getMonitorId(), m_monitorInfo.getMonitorType(), null, m_monitorInfo.getTruthValueInfo(), null));
+
+			return true;
 		}
-		return true;
 	}
 	
 	/**
@@ -74,35 +74,42 @@ abstract public class ModifyMonitorTruthValueType extends ModifyMonitor{
 	@Override
 	protected boolean modifyJudgementInfo() throws MonitorNotFound, InvalidRole {
 
-		// 真偽値監視判定情報を設定
-		List<MonitorTruthValueInfo> valueList = m_monitorInfo.getTruthValueInfo();
-		MonitorInfo monitorInfo = QueryUtil.getMonitorInfoPK(m_monitorInfo.getMonitorId());
-		List<MonitorTruthValueInfoPK> monitorTruthValueInfoEntityPkList = new ArrayList<MonitorTruthValueInfoPK>();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		for(MonitorTruthValueInfo value : valueList){
-			if(value != null){
-				MonitorTruthValueInfo entity = null;
-				MonitorTruthValueInfoPK entityPk = new MonitorTruthValueInfoPK(
-						m_monitorInfo.getMonitorId(),
-						value.getPriority(),
-						value.getTruthValue());
-				try {
-					entity = QueryUtil.getMonitorTruthValueInfoPK(entityPk);
-				} catch (MonitorNotFound e) {
-					// 新規登録
-					entity = new MonitorTruthValueInfo(entityPk);
-					em.persist(entity);
-					entity.relateToMonitorInfo(monitorInfo);
+			// 真偽値監視判定情報を設定
+			List<MonitorTruthValueInfo> valueList = m_monitorInfo.getTruthValueInfo();
+			MonitorInfo monitorInfo = QueryUtil.getMonitorInfoPK(m_monitorInfo.getMonitorId());
+			List<MonitorTruthValueInfoPK> monitorTruthValueInfoEntityPkList = new ArrayList<MonitorTruthValueInfoPK>();
+
+			for(MonitorTruthValueInfo value : valueList){
+				if(value != null){
+					MonitorTruthValueInfo entity = null;
+					MonitorTruthValueInfoPK entityPk = new MonitorTruthValueInfoPK(
+							m_monitorInfo.getMonitorId(),
+							value.getPriority(),
+							value.getTruthValue());
+					try {
+						entity = QueryUtil.getMonitorTruthValueInfoPK(entityPk);
+					} catch (MonitorNotFound e) {
+						// 新規登録
+						entity = new MonitorTruthValueInfo(entityPk);
+						em.persist(entity);
+						entity.relateToMonitorInfo(monitorInfo);
+					}
+					entity.setMessage(value.getMessage());
+					monitorTruthValueInfoEntityPkList.add(entityPk);
 				}
-				entity.setMessage(value.getMessage());
-				monitorTruthValueInfoEntityPkList.add(entityPk);
 			}
-		}
-		// 不要なMonitorTruthValueInfoEntityを削除
-		monitorInfo.deleteMonitorTruthValueInfoEntities(monitorTruthValueInfoEntityPkList);
+			// 不要なMonitorTruthValueInfoEntityを削除
+			monitorInfo.deleteMonitorTruthValueInfoEntities(monitorTruthValueInfoEntityPkList);
 
-		return true;
+			// 判定キャッシュを更新
+			jtm.addCallback(new MonitorJudgementInfoCacheRefreshCallback(
+					m_monitorInfo.getMonitorId(), m_monitorInfo.getMonitorType(), null, m_monitorInfo.getTruthValueInfo(), null));
+
+			return true;
+		}
 	}
 
 }

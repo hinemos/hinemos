@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol;
@@ -51,7 +44,7 @@ public class ClusterControlActionBarAdvisor extends ActionBarAdvisor {
 
 		//製品情報アクション(org.eclipse.ui.internal.about.AboutAction)を作成
 		aboutAction = ActionFactoryX.ABOUT.create(window);
-		aboutAction.setText('&'+aboutAction.getText());
+		//aboutAction.setText(aboutAction.getText());
 
 		register(aboutAction);
 	}
@@ -70,10 +63,6 @@ public class ClusterControlActionBarAdvisor extends ActionBarAdvisor {
 
 		//ヘルプコンテンツアクションを追加 （現状使用しない）
 		//helpMenu.add(helpContentsAction);
-
-		// Hinemos
-
-		//
 
 		//製品情報アクションを追加
 		aboutMenu.add(aboutAction);

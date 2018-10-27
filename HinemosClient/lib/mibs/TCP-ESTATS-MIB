@@ -1,0 +1,1695 @@
+   TCP-ESTATS-MIB DEFINITIONS ::= BEGIN
+   IMPORTS
+          MODULE-IDENTITY, Counter32, Integer32, Unsigned32,
+          Gauge32, OBJECT-TYPE, mib-2,
+          NOTIFICATION-TYPE
+              FROM SNMPv2-SMI                 -- [RFC2578]
+          MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+              FROM SNMPv2-CONF                -- [RFC2580]
+          ZeroBasedCounter32
+              FROM RMON2-MIB                  -- [RFC4502]
+          ZeroBasedCounter64
+              FROM HCNUM-TC                   -- [RFC2856]
+          TEXTUAL-CONVENTION,
+          DateAndTime, TruthValue, TimeStamp
+
+
+
+
+
+              FROM SNMPv2-TC                  -- [RFC2579]
+          tcpListenerEntry, tcpConnectionEntry
+              FROM TCP-MIB;                   -- [RFC4022]
+
+   tcpEStatsMIB MODULE-IDENTITY
+       LAST-UPDATED "200705180000Z"    -- 18 May 2007
+       ORGANIZATION "IETF TSV Working Group"
+
+
+
+
+
+           ::= { mib-2 156 }
+
+   tcpEStatsNotifications OBJECT IDENTIFIER ::= { tcpEStatsMIB 0 }
+   tcpEStatsMIBObjects    OBJECT IDENTIFIER ::= { tcpEStatsMIB 1 }
+   tcpEStatsConformance   OBJECT IDENTIFIER ::= { tcpEStatsMIB 2 }
+   tcpEStats             OBJECT IDENTIFIER ::= { tcpEStatsMIBObjects 1 }
+   tcpEStatsControl      OBJECT IDENTIFIER ::= { tcpEStatsMIBObjects 2 }
+   tcpEStatsScalar       OBJECT IDENTIFIER ::= { tcpEStatsMIBObjects 3 }
+
+
+   TcpEStatsNegotiated  ::= TEXTUAL-CONVENTION
+      STATUS             current
+      SYNTAX INTEGER {
+                   enabled(1),
+                   selfDisabled(2),
+                   peerDisabled(3)
+           }
+
+
+   tcpEStatsListenerTableLastChange OBJECT-TYPE
+       SYNTAX     TimeStamp
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { tcpEStatsScalar 3 }
+
+
+
+   tcpEStatsControlPath  OBJECT-TYPE
+       SYNTAX          TruthValue
+       MAX-ACCESS      read-write
+       STATUS          current
+       DEFVAL          { false }
+       ::= { tcpEStatsControl 1 }
+
+   tcpEStatsControlStack  OBJECT-TYPE
+       SYNTAX          TruthValue
+       MAX-ACCESS      read-write
+       STATUS          current
+       DEFVAL          { false }
+       ::= { tcpEStatsControl 2 }
+
+   tcpEStatsControlApp  OBJECT-TYPE
+       SYNTAX          TruthValue
+       MAX-ACCESS      read-write
+
+
+
+
+
+       STATUS          current
+       DEFVAL          { false }
+       ::= { tcpEStatsControl 3 }
+
+   tcpEStatsControlTune  OBJECT-TYPE
+       SYNTAX          TruthValue
+       MAX-ACCESS      read-write
+       STATUS          current
+       DEFVAL          { false }
+       ::= { tcpEStatsControl 4 }
+
+   tcpEStatsControlNotify  OBJECT-TYPE
+       SYNTAX          TruthValue
+       MAX-ACCESS      read-write
+       STATUS          current
+       DEFVAL          { false }
+       ::= { tcpEStatsControl 5 }
+
+   tcpEStatsConnTableLatency OBJECT-TYPE
+       SYNTAX          Unsigned32
+       UNITS           "seconds"
+       MAX-ACCESS      read-write
+       STATUS          current
+       DEFVAL { 0 }
+       ::= { tcpEStatsControl 6 }
+
+
+   tcpEStatsListenerTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF TcpEStatsListenerEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { tcpEStats 1 }
+
+   tcpEStatsListenerEntry OBJECT-TYPE
+       SYNTAX       TcpEStatsListenerEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       AUGMENTS { tcpListenerEntry }
+       ::= { tcpEStatsListenerTable 1 }
+
+   TcpEStatsListenerEntry ::= SEQUENCE {
+           tcpEStatsListenerStartTime         TimeStamp,
+           tcpEStatsListenerSynRcvd           ZeroBasedCounter32,
+           tcpEStatsListenerInitial           ZeroBasedCounter32,
+           tcpEStatsListenerEstablished       ZeroBasedCounter32,
+           tcpEStatsListenerAccepted          ZeroBasedCounter32,
+           tcpEStatsListenerExceedBacklog     ZeroBasedCounter32,
+           tcpEStatsListenerHCSynRcvd         ZeroBasedCounter64,
+           tcpEStatsListenerHCInitial         ZeroBasedCounter64,
+           tcpEStatsListenerHCEstablished     ZeroBasedCounter64,
+
+
+
+
+
+           tcpEStatsListenerHCAccepted        ZeroBasedCounter64,
+           tcpEStatsListenerHCExceedBacklog   ZeroBasedCounter64,
+           tcpEStatsListenerCurConns          Gauge32,
+           tcpEStatsListenerMaxBacklog        Unsigned32,
+           tcpEStatsListenerCurBacklog        Gauge32,
+           tcpEStatsListenerCurEstabBacklog   Gauge32
+   }
+
+   tcpEStatsListenerStartTime   OBJECT-TYPE
+       SYNTAX     TimeStamp
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { tcpEStatsListenerEntry 1 }
+
+   tcpEStatsListenerSynRcvd OBJECT-TYPE
+       SYNTAX     ZeroBasedCounter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { tcpEStatsListenerEntry 2 }
+
+   tcpEStatsListenerInitial     OBJECT-TYPE
+      SYNTAX     ZeroBasedCounter32
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 3 }
+
+   tcpEStatsListenerEstablished OBJECT-TYPE
+       SYNTAX     ZeroBasedCounter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { tcpEStatsListenerEntry 4 }
+
+   tcpEStatsListenerAccepted    OBJECT-TYPE
+      SYNTAX     ZeroBasedCounter32
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 5 }
+
+   tcpEStatsListenerExceedBacklog OBJECT-TYPE
+      SYNTAX     ZeroBasedCounter32
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 6 }
+
+   tcpEStatsListenerHCSynRcvd OBJECT-TYPE
+       SYNTAX     ZeroBasedCounter64
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { tcpEStatsListenerEntry 7 }
+
+   tcpEStatsListenerHCInitial     OBJECT-TYPE
+      SYNTAX     ZeroBasedCounter64
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 8 }
+
+
+
+
+
+   tcpEStatsListenerHCEstablished OBJECT-TYPE
+       SYNTAX     ZeroBasedCounter64
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { tcpEStatsListenerEntry 9 }
+
+   tcpEStatsListenerHCAccepted    OBJECT-TYPE
+      SYNTAX     ZeroBasedCounter64
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 10 }
+
+   tcpEStatsListenerHCExceedBacklog OBJECT-TYPE
+      SYNTAX     ZeroBasedCounter64
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 11 }
+
+   tcpEStatsListenerCurConns   OBJECT-TYPE
+      SYNTAX     Gauge32
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 12 }
+
+   tcpEStatsListenerMaxBacklog OBJECT-TYPE
+
+
+
+
+
+      SYNTAX     Unsigned32
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 13 }
+
+   tcpEStatsListenerCurBacklog OBJECT-TYPE
+      SYNTAX     Gauge32
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 14 }
+
+   tcpEStatsListenerCurEstabBacklog OBJECT-TYPE
+      SYNTAX     Gauge32
+      MAX-ACCESS read-only
+      STATUS     current
+       ::= { tcpEStatsListenerEntry 15 }
+
+
+
+   tcpEStatsConnectIdTable    OBJECT-TYPE
+       SYNTAX      SEQUENCE OF TcpEStatsConnectIdEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { tcpEStats 2 }
+
+   tcpEStatsConnectIdEntry  OBJECT-TYPE
+       SYNTAX       TcpEStatsConnectIdEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       AUGMENTS { tcpConnectionEntry }
+       ::= { tcpEStatsConnectIdTable 1 }
+
+   TcpEStatsConnectIdEntry ::= SEQUENCE {
+           tcpEStatsConnectIndex             Unsigned32
+   }
+
+   tcpEStatsConnectIndex  OBJECT-TYPE
+       SYNTAX          Unsigned32 (1..4294967295)
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsConnectIdEntry 1 }
+
+
+   tcpEStatsPerfTable    OBJECT-TYPE
+       SYNTAX      SEQUENCE OF TcpEStatsPerfEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { tcpEStats 3 }
+
+   tcpEStatsPerfEntry  OBJECT-TYPE
+       SYNTAX       TcpEStatsPerfEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+      INDEX { tcpEStatsConnectIndex }
+      ::= { tcpEStatsPerfTable 1 }
+
+   TcpEStatsPerfEntry ::= SEQUENCE {
+
+           tcpEStatsPerfSegsOut                ZeroBasedCounter32,
+           tcpEStatsPerfDataSegsOut            ZeroBasedCounter32,
+           tcpEStatsPerfDataOctetsOut          ZeroBasedCounter32,
+           tcpEStatsPerfHCDataOctetsOut        ZeroBasedCounter64,
+           tcpEStatsPerfSegsRetrans            ZeroBasedCounter32,
+           tcpEStatsPerfOctetsRetrans          ZeroBasedCounter32,
+           tcpEStatsPerfSegsIn                 ZeroBasedCounter32,
+           tcpEStatsPerfDataSegsIn             ZeroBasedCounter32,
+           tcpEStatsPerfDataOctetsIn           ZeroBasedCounter32,
+           tcpEStatsPerfHCDataOctetsIn         ZeroBasedCounter64,
+           tcpEStatsPerfElapsedSecs            ZeroBasedCounter32,
+           tcpEStatsPerfElapsedMicroSecs       ZeroBasedCounter32,
+           tcpEStatsPerfStartTimeStamp         DateAndTime,
+           tcpEStatsPerfCurMSS                 Gauge32,
+           tcpEStatsPerfPipeSize               Gauge32,
+           tcpEStatsPerfMaxPipeSize            Gauge32,
+           tcpEStatsPerfSmoothedRTT            Gauge32,
+           tcpEStatsPerfCurRTO                 Gauge32,
+           tcpEStatsPerfCongSignals            ZeroBasedCounter32,
+           tcpEStatsPerfCurCwnd                Gauge32,
+           tcpEStatsPerfCurSsthresh            Gauge32,
+           tcpEStatsPerfTimeouts               ZeroBasedCounter32,
+           tcpEStatsPerfCurRwinSent            Gauge32,
+
+
+
+
+
+           tcpEStatsPerfMaxRwinSent            Gauge32,
+           tcpEStatsPerfZeroRwinSent           ZeroBasedCounter32,
+           tcpEStatsPerfCurRwinRcvd            Gauge32,
+           tcpEStatsPerfMaxRwinRcvd            Gauge32,
+           tcpEStatsPerfZeroRwinRcvd           ZeroBasedCounter32,
+           tcpEStatsPerfSndLimTransRwin        ZeroBasedCounter32,
+           tcpEStatsPerfSndLimTransCwnd        ZeroBasedCounter32,
+           tcpEStatsPerfSndLimTransSnd         ZeroBasedCounter32,
+           tcpEStatsPerfSndLimTimeRwin         ZeroBasedCounter32,
+           tcpEStatsPerfSndLimTimeCwnd         ZeroBasedCounter32,
+           tcpEStatsPerfSndLimTimeSnd          ZeroBasedCounter32
+       }
+
+
+   tcpEStatsPerfSegsOut  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 1 }
+
+   tcpEStatsPerfDataSegsOut  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 2 }
+
+   tcpEStatsPerfDataOctetsOut  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 3 }
+
+
+
+
+
+
+   tcpEStatsPerfHCDataOctetsOut  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter64
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 4 }
+
+   tcpEStatsPerfSegsRetrans  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 5 }
+
+   tcpEStatsPerfOctetsRetrans  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 6 }
+
+   tcpEStatsPerfSegsIn  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 7 }
+
+   tcpEStatsPerfDataSegsIn  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 8 }
+
+   tcpEStatsPerfDataOctetsIn  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 9 }
+
+   tcpEStatsPerfHCDataOctetsIn  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter64
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 10 }
+
+   tcpEStatsPerfElapsedSecs  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "seconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 11 }
+
+   tcpEStatsPerfElapsedMicroSecs  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "microseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 12 }
+
+
+
+
+
+   tcpEStatsPerfStartTimeStamp  OBJECT-TYPE
+       SYNTAX          DateAndTime
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 13 }
+
+
+   tcpEStatsPerfCurMSS  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 14 }
+
+   tcpEStatsPerfPipeSize  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 15 }
+
+   tcpEStatsPerfMaxPipeSize  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 16 }
+
+   tcpEStatsPerfSmoothedRTT  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 17 }
+
+   tcpEStatsPerfCurRTO  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 18 }
+
+   tcpEStatsPerfCongSignals  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 19 }
+
+   tcpEStatsPerfCurCwnd  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 20 }
+
+   tcpEStatsPerfCurSsthresh  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+
+
+
+
+
+       ::= { tcpEStatsPerfEntry 21 }
+
+   tcpEStatsPerfTimeouts  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 22 }
+
+
+   tcpEStatsPerfCurRwinSent  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 23 }
+
+   tcpEStatsPerfMaxRwinSent  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 24 }
+
+   tcpEStatsPerfZeroRwinSent  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 25 }
+
+
+   tcpEStatsPerfCurRwinRcvd  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 26 }
+
+   tcpEStatsPerfMaxRwinRcvd  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 27 }
+
+   tcpEStatsPerfZeroRwinRcvd  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 28 }
+
+
+
+
+
+
+
+   tcpEStatsPerfSndLimTransRwin  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 31 }
+
+   tcpEStatsPerfSndLimTransCwnd  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 32 }
+
+   tcpEStatsPerfSndLimTransSnd  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 33 }
+
+   tcpEStatsPerfSndLimTimeRwin  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 34 }
+
+   tcpEStatsPerfSndLimTimeCwnd  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPerfEntry 35 }
+
+   tcpEStatsPerfSndLimTimeSnd  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+
+
+
+
+
+       ::= { tcpEStatsPerfEntry 36 }
+
+
+   tcpEStatsPathTable    OBJECT-TYPE
+       SYNTAX      SEQUENCE OF TcpEStatsPathEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { tcpEStats 4 }
+
+   tcpEStatsPathEntry  OBJECT-TYPE
+       SYNTAX       TcpEStatsPathEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+      INDEX { tcpEStatsConnectIndex }
+      ::= { tcpEStatsPathTable 1 }
+
+   TcpEStatsPathEntry ::= SEQUENCE {
+
+           tcpEStatsPathRetranThresh           Gauge32,
+           tcpEStatsPathNonRecovDAEpisodes     ZeroBasedCounter32,
+           tcpEStatsPathSumOctetsReordered     ZeroBasedCounter32,
+           tcpEStatsPathNonRecovDA             ZeroBasedCounter32,
+           tcpEStatsPathSampleRTT              Gauge32,
+           tcpEStatsPathRTTVar                 Gauge32,
+           tcpEStatsPathMaxRTT                 Gauge32,
+           tcpEStatsPathMinRTT                 Gauge32,
+           tcpEStatsPathSumRTT                 ZeroBasedCounter32,
+
+
+
+
+
+           tcpEStatsPathHCSumRTT               ZeroBasedCounter64,
+           tcpEStatsPathCountRTT               ZeroBasedCounter32,
+           tcpEStatsPathMaxRTO                 Gauge32,
+           tcpEStatsPathMinRTO                 Gauge32,
+           tcpEStatsPathIpTtl                  Unsigned32,
+           tcpEStatsPathIpTosIn                OCTET STRING,
+           tcpEStatsPathIpTosOut               OCTET STRING,
+           tcpEStatsPathPreCongSumCwnd         ZeroBasedCounter32,
+           tcpEStatsPathPreCongSumRTT          ZeroBasedCounter32,
+           tcpEStatsPathPostCongSumRTT         ZeroBasedCounter32,
+           tcpEStatsPathPostCongCountRTT       ZeroBasedCounter32,
+           tcpEStatsPathECNsignals             ZeroBasedCounter32,
+           tcpEStatsPathDupAckEpisodes         ZeroBasedCounter32,
+           tcpEStatsPathRcvRTT                 Gauge32,
+           tcpEStatsPathDupAcksOut             ZeroBasedCounter32,
+           tcpEStatsPathCERcvd                 ZeroBasedCounter32,
+           tcpEStatsPathECESent                ZeroBasedCounter32
+       }
+
+
+   tcpEStatsPathRetranThresh  OBJECT-TYPE
+       SYNTAX          Gauge32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 1 }
+
+   tcpEStatsPathNonRecovDAEpisodes  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 2 }
+
+   tcpEStatsPathSumOctetsReordered  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 3 }
+
+   tcpEStatsPathNonRecovDA  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 4 }
+
+
+
+
+
+
+   tcpEStatsPathSampleRTT  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 11 }
+
+   tcpEStatsPathRTTVar  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 12 }
+
+   tcpEStatsPathMaxRTT  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 13 }
+
+   tcpEStatsPathMinRTT  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 14 }
+
+   tcpEStatsPathSumRTT  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 15 }
+
+   tcpEStatsPathHCSumRTT  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter64
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 16 }
+
+   tcpEStatsPathCountRTT  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 17 }
+
+   tcpEStatsPathMaxRTO  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "milliseconds"
+
+
+
+
+
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 18 }
+
+   tcpEStatsPathMinRTO  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 19 }
+
+
+   tcpEStatsPathIpTtl  OBJECT-TYPE
+       SYNTAX          Unsigned32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 20 }
+
+   tcpEStatsPathIpTosIn  OBJECT-TYPE
+       SYNTAX          OCTET STRING (SIZE(1))
+       MAX-ACCESS      read-only
+       STATUS          current
+
+
+
+
+
+       ::= { tcpEStatsPathEntry 21 }
+
+   tcpEStatsPathIpTosOut  OBJECT-TYPE
+       SYNTAX          OCTET STRING (SIZE(1))
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 22 }
+
+
+   tcpEStatsPathPreCongSumCwnd  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 23 }
+
+   tcpEStatsPathPreCongSumRTT  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 24 }
+
+   tcpEStatsPathPostCongSumRTT  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 25 }
+
+   tcpEStatsPathPostCongCountRTT  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "milliseconds"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 26 }
+
+
+   tcpEStatsPathECNsignals  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 27 }
+
+
+   tcpEStatsPathDupAckEpisodes  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 28 }
+
+   tcpEStatsPathRcvRTT  OBJECT-TYPE
+       SYNTAX          Gauge32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 29 }
+
+   tcpEStatsPathDupAcksOut  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 30 }
+
+   tcpEStatsPathCERcvd  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 31 }
+
+   tcpEStatsPathECESent  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsPathEntry 32 }
+
+
+   tcpEStatsStackTable    OBJECT-TYPE
+       SYNTAX      SEQUENCE OF TcpEStatsStackEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { tcpEStats 5 }
+
+   tcpEStatsStackEntry  OBJECT-TYPE
+       SYNTAX       TcpEStatsStackEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+      INDEX { tcpEStatsConnectIndex }
+      ::= { tcpEStatsStackTable 1 }
+
+   TcpEStatsStackEntry ::= SEQUENCE {
+
+           tcpEStatsStackActiveOpen            TruthValue,
+           tcpEStatsStackMSSSent               Unsigned32,
+           tcpEStatsStackMSSRcvd               Unsigned32,
+           tcpEStatsStackWinScaleSent          Integer32,
+           tcpEStatsStackWinScaleRcvd          Integer32,
+           tcpEStatsStackTimeStamps            TcpEStatsNegotiated,
+           tcpEStatsStackECN                   TcpEStatsNegotiated,
+           tcpEStatsStackWillSendSACK          TcpEStatsNegotiated,
+           tcpEStatsStackWillUseSACK           TcpEStatsNegotiated,
+           tcpEStatsStackState                 INTEGER,
+           tcpEStatsStackNagle                 TruthValue,
+           tcpEStatsStackMaxSsCwnd             Gauge32,
+           tcpEStatsStackMaxCaCwnd             Gauge32,
+           tcpEStatsStackMaxSsthresh           Gauge32,
+           tcpEStatsStackMinSsthresh           Gauge32,
+           tcpEStatsStackInRecovery            INTEGER,
+           tcpEStatsStackDupAcksIn             ZeroBasedCounter32,
+           tcpEStatsStackSpuriousFrDetected    ZeroBasedCounter32,
+           tcpEStatsStackSpuriousRtoDetected   ZeroBasedCounter32,
+           tcpEStatsStackSoftErrors            ZeroBasedCounter32,
+           tcpEStatsStackSoftErrorReason       INTEGER,
+           tcpEStatsStackSlowStart             ZeroBasedCounter32,
+           tcpEStatsStackCongAvoid             ZeroBasedCounter32,
+           tcpEStatsStackOtherReductions       ZeroBasedCounter32,
+           tcpEStatsStackCongOverCount         ZeroBasedCounter32,
+           tcpEStatsStackFastRetran            ZeroBasedCounter32,
+           tcpEStatsStackSubsequentTimeouts    ZeroBasedCounter32,
+
+
+
+
+
+           tcpEStatsStackCurTimeoutCount       Gauge32,
+           tcpEStatsStackAbruptTimeouts        ZeroBasedCounter32,
+           tcpEStatsStackSACKsRcvd             ZeroBasedCounter32,
+           tcpEStatsStackSACKBlocksRcvd        ZeroBasedCounter32,
+           tcpEStatsStackSendStall             ZeroBasedCounter32,
+           tcpEStatsStackDSACKDups             ZeroBasedCounter32,
+           tcpEStatsStackMaxMSS                Gauge32,
+           tcpEStatsStackMinMSS                Gauge32,
+           tcpEStatsStackSndInitial            Unsigned32,
+           tcpEStatsStackRecInitial            Unsigned32,
+           tcpEStatsStackCurRetxQueue          Gauge32,
+           tcpEStatsStackMaxRetxQueue          Gauge32,
+           tcpEStatsStackCurReasmQueue         Gauge32,
+           tcpEStatsStackMaxReasmQueue         Gauge32
+       }
+
+
+   tcpEStatsStackActiveOpen  OBJECT-TYPE
+       SYNTAX          TruthValue
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 1 }
+
+   tcpEStatsStackMSSSent  OBJECT-TYPE
+       SYNTAX          Unsigned32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 2 }
+
+
+
+
+
+
+   tcpEStatsStackMSSRcvd  OBJECT-TYPE
+       SYNTAX          Unsigned32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 3 }
+
+   tcpEStatsStackWinScaleSent  OBJECT-TYPE
+       SYNTAX          Integer32 (-1..14)
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 4 }
+
+   tcpEStatsStackWinScaleRcvd  OBJECT-TYPE
+       SYNTAX          Integer32 (-1..14)
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 5 }
+
+   tcpEStatsStackTimeStamps  OBJECT-TYPE
+       SYNTAX          TcpEStatsNegotiated
+       MAX-ACCESS      read-only
+
+
+
+
+
+       STATUS          current
+       ::= { tcpEStatsStackEntry 6 }
+
+   tcpEStatsStackECN  OBJECT-TYPE
+       SYNTAX          TcpEStatsNegotiated
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 7 }
+
+   tcpEStatsStackWillSendSACK  OBJECT-TYPE
+       SYNTAX          TcpEStatsNegotiated
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 8 }
+
+   tcpEStatsStackWillUseSACK  OBJECT-TYPE
+       SYNTAX          TcpEStatsNegotiated
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 9 }
+
+
+   tcpEStatsStackState  OBJECT-TYPE
+       SYNTAX          INTEGER {
+          tcpESStateClosed(1),
+          tcpESStateListen(2),
+          tcpESStateSynSent(3),
+          tcpESStateSynReceived(4),
+          tcpESStateEstablished(5),
+          tcpESStateFinWait1(6),
+          tcpESStateFinWait2(7),
+          tcpESStateCloseWait(8),
+          tcpESStateLastAck(9),
+          tcpESStateClosing(10),
+          tcpESStateTimeWait(11),
+          tcpESStateDeleteTcb(12)
+       }
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 10 }
+
+   tcpEStatsStackNagle  OBJECT-TYPE
+       SYNTAX          TruthValue
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 11 }
+
+
+   tcpEStatsStackMaxSsCwnd  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 12 }
+
+   tcpEStatsStackMaxCaCwnd  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 13 }
+
+
+
+
+
+   tcpEStatsStackMaxSsthresh  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 14 }
+
+   tcpEStatsStackMinSsthresh  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 15 }
+
+   tcpEStatsStackInRecovery  OBJECT-TYPE
+       SYNTAX          INTEGER {
+          tcpESDataContiguous(1),
+          tcpESDataUnordered(2),
+          tcpESDataRecovery(3)
+       }
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 16 }
+
+   tcpEStatsStackDupAcksIn  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 17 }
+
+   tcpEStatsStackSpuriousFrDetected  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 18 }
+
+   tcpEStatsStackSpuriousRtoDetected  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 19 }
+
+
+   tcpEStatsStackSoftErrors  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 21 }
+
+   tcpEStatsStackSoftErrorReason  OBJECT-TYPE
+       SYNTAX          INTEGER {
+          belowDataWindow(1),
+          aboveDataWindow(2),
+          belowAckWindow(3),
+          aboveAckWindow(4),
+          belowTSWindow(5),
+          aboveTSWindow(6),
+          dataCheckSum(7),
+          otherSoftError(8)
+       }
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 22 }
+
+
+   tcpEStatsStackSlowStart  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 23 }
+
+   tcpEStatsStackCongAvoid  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 24 }
+
+   tcpEStatsStackOtherReductions  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 25 }
+
+   tcpEStatsStackCongOverCount  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 26 }
+
+   tcpEStatsStackFastRetran  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 27 }
+
+   tcpEStatsStackSubsequentTimeouts  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 28 }
+
+
+
+
+
+
+   tcpEStatsStackCurTimeoutCount  OBJECT-TYPE
+       SYNTAX          Gauge32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 29 }
+
+   tcpEStatsStackAbruptTimeouts  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 30 }
+
+   tcpEStatsStackSACKsRcvd  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 31 }
+
+   tcpEStatsStackSACKBlocksRcvd  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+
+
+
+
+
+       ::= { tcpEStatsStackEntry 32 }
+
+   tcpEStatsStackSendStall  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 33 }
+
+   tcpEStatsStackDSACKDups  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 34 }
+
+
+   tcpEStatsStackMaxMSS  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 35 }
+
+   tcpEStatsStackMinMSS  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 36 }
+
+
+   tcpEStatsStackSndInitial  OBJECT-TYPE
+       SYNTAX          Unsigned32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 37 }
+
+   tcpEStatsStackRecInitial  OBJECT-TYPE
+       SYNTAX          Unsigned32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 38 }
+
+
+   tcpEStatsStackCurRetxQueue  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+
+
+
+
+
+       ::= { tcpEStatsStackEntry 39 }
+
+   tcpEStatsStackMaxRetxQueue  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 40 }
+
+   tcpEStatsStackCurReasmQueue  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 41 }
+
+   tcpEStatsStackMaxReasmQueue  OBJECT-TYPE
+       SYNTAX          Gauge32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsStackEntry 42 }
+
+
+   tcpEStatsAppTable    OBJECT-TYPE
+       SYNTAX      SEQUENCE OF TcpEStatsAppEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { tcpEStats 6 }
+
+   tcpEStatsAppEntry  OBJECT-TYPE
+       SYNTAX       TcpEStatsAppEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+      INDEX { tcpEStatsConnectIndex }
+      ::= { tcpEStatsAppTable 1 }
+
+   TcpEStatsAppEntry ::= SEQUENCE {
+
+           tcpEStatsAppSndUna                  Counter32,
+           tcpEStatsAppSndNxt                  Unsigned32,
+           tcpEStatsAppSndMax                  Counter32,
+           tcpEStatsAppThruOctetsAcked         ZeroBasedCounter32,
+           tcpEStatsAppHCThruOctetsAcked       ZeroBasedCounter64,
+           tcpEStatsAppRcvNxt                  Counter32,
+           tcpEStatsAppThruOctetsReceived      ZeroBasedCounter32,
+           tcpEStatsAppHCThruOctetsReceived    ZeroBasedCounter64,
+           tcpEStatsAppCurAppWQueue            Gauge32,
+           tcpEStatsAppMaxAppWQueue            Gauge32,
+           tcpEStatsAppCurAppRQueue            Gauge32,
+           tcpEStatsAppMaxAppRQueue            Gauge32
+       }
+
+
+   tcpEStatsAppSndUna  OBJECT-TYPE
+       SYNTAX          Counter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 1 }
+
+   tcpEStatsAppSndNxt  OBJECT-TYPE
+       SYNTAX          Unsigned32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 2 }
+
+   tcpEStatsAppSndMax  OBJECT-TYPE
+       SYNTAX          Counter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 3 }
+
+   tcpEStatsAppThruOctetsAcked  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 4 }
+
+   tcpEStatsAppHCThruOctetsAcked  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter64
+       UNITS           "octets"
+
+
+
+
+
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 5 }
+
+   tcpEStatsAppRcvNxt  OBJECT-TYPE
+       SYNTAX          Counter32
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 6 }
+
+   tcpEStatsAppThruOctetsReceived  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 7 }
+
+   tcpEStatsAppHCThruOctetsReceived  OBJECT-TYPE
+       SYNTAX          ZeroBasedCounter64
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 8 }
+
+   tcpEStatsAppCurAppWQueue  OBJECT-TYPE
+
+
+
+
+
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 11 }
+
+   tcpEStatsAppMaxAppWQueue  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 12 }
+
+   tcpEStatsAppCurAppRQueue  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 13 }
+
+   tcpEStatsAppMaxAppRQueue  OBJECT-TYPE
+       SYNTAX          Gauge32
+       UNITS           "octets"
+       MAX-ACCESS      read-only
+       STATUS          current
+       ::= { tcpEStatsAppEntry 14 }
+
+
+   tcpEStatsTuneTable    OBJECT-TYPE
+       SYNTAX      SEQUENCE OF TcpEStatsTuneEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { tcpEStats 7 }
+
+   tcpEStatsTuneEntry  OBJECT-TYPE
+       SYNTAX       TcpEStatsTuneEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+      INDEX { tcpEStatsConnectIndex }
+      ::= { tcpEStatsTuneTable 1 }
+
+   TcpEStatsTuneEntry ::= SEQUENCE {
+
+           tcpEStatsTuneLimCwnd                Unsigned32,
+           tcpEStatsTuneLimSsthresh            Unsigned32,
+           tcpEStatsTuneLimRwin                Unsigned32,
+           tcpEStatsTuneLimMSS                 Unsigned32
+       }
+
+   tcpEStatsTuneLimCwnd  OBJECT-TYPE
+       SYNTAX          Unsigned32
+
+
+
+
+
+       UNITS           "octets"
+       MAX-ACCESS      read-write
+       STATUS          current
+       ::= { tcpEStatsTuneEntry 1 }
+
+   tcpEStatsTuneLimSsthresh  OBJECT-TYPE
+       SYNTAX          Unsigned32
+       UNITS           "octets"
+       MAX-ACCESS      read-write
+       STATUS          current
+       ::= { tcpEStatsTuneEntry 2 }
+
+   tcpEStatsTuneLimRwin  OBJECT-TYPE
+       SYNTAX          Unsigned32
+       UNITS           "octets"
+       MAX-ACCESS      read-write
+       STATUS          current
+       ::= { tcpEStatsTuneEntry 3 }
+
+   tcpEStatsTuneLimMSS  OBJECT-TYPE
+       SYNTAX          Unsigned32
+       UNITS           "octets"
+       MAX-ACCESS      read-write
+
+
+
+
+
+       STATUS          current
+       ::= { tcpEStatsTuneEntry 4 }
+
+
+   tcpEStatsEstablishNotification NOTIFICATION-TYPE
+       OBJECTS     {
+                     tcpEStatsConnectIndex
+                   }
+       STATUS      current
+       ::= { tcpEStatsNotifications 1 }
+
+   tcpEStatsCloseNotification NOTIFICATION-TYPE
+       OBJECTS     {
+                     tcpEStatsConnectIndex
+                   }
+       STATUS      current
+       ::= { tcpEStatsNotifications 2 }
+
+
+      tcpEStatsCompliances   OBJECT IDENTIFIER
+           ::= { tcpEStatsConformance 1 }
+      tcpEStatsGroups        OBJECT IDENTIFIER
+           ::= { tcpEStatsConformance 2 }
+
+
+     tcpEStatsCompliance MODULE-COMPLIANCE
+
+
+
+
+
+        STATUS current
+        MODULE -- this module
+            MANDATORY-GROUPS {
+                               tcpEStatsListenerGroup,
+                               tcpEStatsConnectIdGroup,
+                               tcpEStatsPerfGroup,
+                               tcpEStatsPathGroup,
+                               tcpEStatsStackGroup,
+                               tcpEStatsAppGroup
+                             }
+            GROUP tcpEStatsListenerHCGroup
+
+            GROUP tcpEStatsPerfOptionalGroup
+
+            GROUP tcpEStatsPerfHCGroup
+
+            GROUP tcpEStatsPathOptionalGroup
+
+            GROUP tcpEStatsPathHCGroup
+
+            GROUP tcpEStatsStackOptionalGroup
+
+
+
+
+
+
+            GROUP tcpEStatsAppHCGroup
+
+            GROUP tcpEStatsAppOptionalGroup
+
+            GROUP tcpEStatsTuneOptionalGroup
+
+            GROUP tcpEStatsNotificationsGroup
+
+            GROUP tcpEStatsNotificationsCtlGroup
+
+      ::= { tcpEStatsCompliances 1 }
+
+       tcpEStatsListenerGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsListenerTableLastChange,
+                 tcpEStatsListenerStartTime,
+                 tcpEStatsListenerSynRcvd,
+                 tcpEStatsListenerInitial,
+                 tcpEStatsListenerEstablished,
+                 tcpEStatsListenerAccepted,
+                 tcpEStatsListenerExceedBacklog,
+                 tcpEStatsListenerCurConns,
+                 tcpEStatsListenerMaxBacklog,
+                 tcpEStatsListenerCurBacklog,
+
+
+
+
+
+                 tcpEStatsListenerCurEstabBacklog
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 1 }
+
+       tcpEStatsListenerHCGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsListenerHCSynRcvd,
+                 tcpEStatsListenerHCInitial,
+                 tcpEStatsListenerHCEstablished,
+                 tcpEStatsListenerHCAccepted,
+                 tcpEStatsListenerHCExceedBacklog
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 2 }
+
+       tcpEStatsConnectIdGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsConnTableLatency,
+                 tcpEStatsConnectIndex
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 3 }
+
+       tcpEStatsPerfGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsPerfSegsOut, tcpEStatsPerfDataSegsOut,
+                 tcpEStatsPerfDataOctetsOut,
+                 tcpEStatsPerfSegsRetrans,
+                 tcpEStatsPerfOctetsRetrans, tcpEStatsPerfSegsIn,
+                 tcpEStatsPerfDataSegsIn,
+                 tcpEStatsPerfDataOctetsIn,
+                 tcpEStatsPerfElapsedSecs,
+                 tcpEStatsPerfElapsedMicroSecs,
+                 tcpEStatsPerfStartTimeStamp, tcpEStatsPerfCurMSS,
+                 tcpEStatsPerfPipeSize, tcpEStatsPerfMaxPipeSize,
+                 tcpEStatsPerfSmoothedRTT, tcpEStatsPerfCurRTO,
+
+
+
+
+
+                 tcpEStatsPerfCongSignals, tcpEStatsPerfCurCwnd,
+                 tcpEStatsPerfCurSsthresh, tcpEStatsPerfTimeouts,
+                 tcpEStatsPerfCurRwinSent,
+                 tcpEStatsPerfMaxRwinSent,
+                 tcpEStatsPerfZeroRwinSent,
+                 tcpEStatsPerfCurRwinRcvd,
+                 tcpEStatsPerfMaxRwinRcvd,
+                 tcpEStatsPerfZeroRwinRcvd
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 4 }
+
+       tcpEStatsPerfOptionalGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsPerfSndLimTransRwin,
+                 tcpEStatsPerfSndLimTransCwnd,
+                 tcpEStatsPerfSndLimTransSnd,
+                 tcpEStatsPerfSndLimTimeRwin,
+                 tcpEStatsPerfSndLimTimeCwnd,
+                 tcpEStatsPerfSndLimTimeSnd
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 5 }
+
+       tcpEStatsPerfHCGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsPerfHCDataOctetsOut,
+                 tcpEStatsPerfHCDataOctetsIn
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 6 }
+
+
+       tcpEStatsPathGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsControlPath,
+                 tcpEStatsPathRetranThresh,
+                 tcpEStatsPathNonRecovDAEpisodes,
+                 tcpEStatsPathSumOctetsReordered,
+
+
+
+
+
+                 tcpEStatsPathNonRecovDA
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 7 }
+
+       tcpEStatsPathOptionalGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsPathSampleRTT, tcpEStatsPathRTTVar,
+                 tcpEStatsPathMaxRTT, tcpEStatsPathMinRTT,
+                 tcpEStatsPathSumRTT, tcpEStatsPathCountRTT,
+                 tcpEStatsPathMaxRTO, tcpEStatsPathMinRTO,
+                 tcpEStatsPathIpTtl, tcpEStatsPathIpTosIn,
+                 tcpEStatsPathIpTosOut,
+                 tcpEStatsPathPreCongSumCwnd,
+                 tcpEStatsPathPreCongSumRTT,
+                 tcpEStatsPathPostCongSumRTT,
+                 tcpEStatsPathPostCongCountRTT,
+                 tcpEStatsPathECNsignals,
+                 tcpEStatsPathDupAckEpisodes, tcpEStatsPathRcvRTT,
+                 tcpEStatsPathDupAcksOut, tcpEStatsPathCERcvd,
+                 tcpEStatsPathECESent
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 8 }
+
+     tcpEStatsPathHCGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsPathHCSumRTT
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 9 }
+
+       tcpEStatsStackGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsControlStack,
+                 tcpEStatsStackActiveOpen, tcpEStatsStackMSSSent,
+
+
+
+
+
+                 tcpEStatsStackMSSRcvd, tcpEStatsStackWinScaleSent,
+                 tcpEStatsStackWinScaleRcvd,
+                 tcpEStatsStackTimeStamps, tcpEStatsStackECN,
+                 tcpEStatsStackWillSendSACK,
+                 tcpEStatsStackWillUseSACK, tcpEStatsStackState,
+                 tcpEStatsStackNagle, tcpEStatsStackMaxSsCwnd,
+                 tcpEStatsStackMaxCaCwnd,
+                 tcpEStatsStackMaxSsthresh,
+                 tcpEStatsStackMinSsthresh,
+                 tcpEStatsStackInRecovery, tcpEStatsStackDupAcksIn,
+                 tcpEStatsStackSpuriousFrDetected,
+                 tcpEStatsStackSpuriousRtoDetected
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 10 }
+
+       tcpEStatsStackOptionalGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsStackSoftErrors,
+                 tcpEStatsStackSoftErrorReason,
+                 tcpEStatsStackSlowStart, tcpEStatsStackCongAvoid,
+                 tcpEStatsStackOtherReductions,
+                 tcpEStatsStackCongOverCount,
+                 tcpEStatsStackFastRetran,
+                 tcpEStatsStackSubsequentTimeouts,
+                 tcpEStatsStackCurTimeoutCount,
+                 tcpEStatsStackAbruptTimeouts,
+                 tcpEStatsStackSACKsRcvd,
+                 tcpEStatsStackSACKBlocksRcvd,
+                 tcpEStatsStackSendStall, tcpEStatsStackDSACKDups,
+                 tcpEStatsStackMaxMSS, tcpEStatsStackMinMSS,
+                 tcpEStatsStackSndInitial,
+                 tcpEStatsStackRecInitial,
+                 tcpEStatsStackCurRetxQueue,
+                 tcpEStatsStackMaxRetxQueue,
+                 tcpEStatsStackCurReasmQueue,
+                 tcpEStatsStackMaxReasmQueue
+            }
+            STATUS current
+
+
+
+
+
+         ::= { tcpEStatsGroups 11 }
+
+       tcpEStatsAppGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsControlApp,
+                 tcpEStatsAppSndUna, tcpEStatsAppSndNxt,
+                 tcpEStatsAppSndMax, tcpEStatsAppThruOctetsAcked,
+                 tcpEStatsAppRcvNxt,
+                 tcpEStatsAppThruOctetsReceived
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 12 }
+
+     tcpEStatsAppHCGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsAppHCThruOctetsAcked,
+                 tcpEStatsAppHCThruOctetsReceived
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 13 }
+
+       tcpEStatsAppOptionalGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsAppCurAppWQueue,
+                 tcpEStatsAppMaxAppWQueue,
+                 tcpEStatsAppCurAppRQueue,
+                 tcpEStatsAppMaxAppRQueue
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 14 }
+
+       tcpEStatsTuneOptionalGroup  OBJECT-GROUP
+            OBJECTS {
+                 tcpEStatsControlTune,
+                 tcpEStatsTuneLimCwnd, tcpEStatsTuneLimSsthresh,
+                 tcpEStatsTuneLimRwin, tcpEStatsTuneLimMSS
+
+
+
+
+
+            }
+            STATUS current
+         ::= { tcpEStatsGroups 15 }
+
+       tcpEStatsNotificationsGroup      NOTIFICATION-GROUP
+            NOTIFICATIONS {
+                          tcpEStatsEstablishNotification,
+                          tcpEStatsCloseNotification
+            }
+            STATUS   current
+         ::= { tcpEStatsGroups 16 }
+
+       tcpEStatsNotificationsCtlGroup  OBJECT-GROUP
+            OBJECTS {
+                          tcpEStatsControlNotify
+            }
+            STATUS   current
+         ::= { tcpEStatsGroups 17 }
+
+      END

@@ -1,0 +1,1365 @@
+     MPLS-LDP-STD-MIB DEFINITIONS ::= BEGIN
+
+     IMPORTS
+         OBJECT-TYPE, MODULE-IDENTITY, NOTIFICATION-TYPE,
+         Integer32, Counter32, Unsigned32
+             FROM SNMPv2-SMI                                -- [RFC2578]
+
+         MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+             FROM SNMPv2-CONF                              --  [RFC2580]
+
+         RowStatus, TimeInterval, TruthValue,
+         TimeStamp, StorageType
+
+
+
+
+
+             FROM SNMPv2-TC                                --  [RFC2579]
+
+         InetAddressPrefixLength,
+         InetAddressType,
+         InetAddress,
+         InetPortNumber
+             FROM INET-ADDRESS-MIB                         --  [RFC3291]
+
+         IndexInteger,
+         IndexIntegerNextFree
+             FROM DIFFSERV-MIB                             --  [RFC3289]
+
+         mplsStdMIB,
+         MplsLabelDistributionMethod,
+         MplsLdpIdentifier,
+         MplsLdpLabelType,
+         MplsLspType,
+         MplsLsrIdentifier,
+         MplsRetentionMode
+             FROM MPLS-TC-STD-MIB                          --  [RFC3811]
+
+         MplsIndexType
+             FROM MPLS-LSR-STD-MIB;                        --  [RFC3813]
+
+     mplsLdpStdMIB MODULE-IDENTITY
+         LAST-UPDATED "200406030000Z"  -- June 3, 2004
+         ORGANIZATION "Multiprotocol Label Switching (mpls)
+                       Working Group"
+
+
+
+         ::= { mplsStdMIB 4 }
+
+
+     mplsLdpNotifications OBJECT IDENTIFIER ::= { mplsLdpStdMIB 0 }
+     mplsLdpObjects       OBJECT IDENTIFIER ::= { mplsLdpStdMIB 1 }
+     mplsLdpConformance   OBJECT IDENTIFIER ::= { mplsLdpStdMIB 2 }
+
+
+     mplsLdpLsrObjects    OBJECT IDENTIFIER ::= { mplsLdpObjects 1 }
+
+     mplsLdpEntityObjects OBJECT IDENTIFIER ::= { mplsLdpObjects 2 }
+
+
+     mplsLdpLsrId OBJECT-TYPE
+         SYNTAX      MplsLsrIdentifier
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpLsrObjects 1 }
+
+     mplsLdpLsrLoopDetectionCapable OBJECT-TYPE
+         SYNTAX      INTEGER {
+                                none(1),
+                                other(2),
+                                hopCount(3),
+                                pathVector(4),
+                                hopCountAndPathVector(5)
+
+
+
+
+
+                             }
+         MAX-ACCESS  read-only
+         STATUS      current
+
+         ::= { mplsLdpLsrObjects 2 }
+
+
+     mplsLdpEntityLastChange OBJECT-TYPE
+         SYNTAX  TimeStamp
+         MAX-ACCESS read-only
+         STATUS current
+         ::= { mplsLdpEntityObjects 1 }
+
+     mplsLdpEntityIndexNext  OBJECT-TYPE
+         SYNTAX      IndexIntegerNextFree
+         MAX-ACCESS     read-only
+         STATUS         current
+        ::= { mplsLdpEntityObjects 2 }
+
+
+     mplsLdpEntityTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsLdpEntityEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+          ::= { mplsLdpEntityObjects 3 }
+
+      mplsLdpEntityEntry OBJECT-TYPE
+          SYNTAX      MplsLdpEntityEntry
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          INDEX       {  mplsLdpEntityLdpId, mplsLdpEntityIndex  }
+          ::= { mplsLdpEntityTable 1 }
+
+      MplsLdpEntityEntry ::= SEQUENCE {
+          mplsLdpEntityLdpId                MplsLdpIdentifier,
+          mplsLdpEntityIndex                IndexInteger,
+          mplsLdpEntityProtocolVersion      Unsigned32,
+          mplsLdpEntityAdminStatus          INTEGER,
+          mplsLdpEntityOperStatus           INTEGER,
+          mplsLdpEntityTcpPort              InetPortNumber,
+          mplsLdpEntityUdpDscPort           InetPortNumber,
+
+
+
+
+
+          mplsLdpEntityMaxPduLength         Unsigned32,
+          mplsLdpEntityKeepAliveHoldTimer   Unsigned32,
+          mplsLdpEntityHelloHoldTimer       Unsigned32,
+          mplsLdpEntityInitSessionThreshold Integer32,
+          mplsLdpEntityLabelDistMethod      MplsLabelDistributionMethod,
+          mplsLdpEntityLabelRetentionMode   MplsRetentionMode,
+          mplsLdpEntityPathVectorLimit      Integer32,
+          mplsLdpEntityHopCountLimit        Integer32,
+          mplsLdpEntityTransportAddrKind    INTEGER,
+          mplsLdpEntityTargetPeer           TruthValue,
+          mplsLdpEntityTargetPeerAddrType   InetAddressType,
+          mplsLdpEntityTargetPeerAddr       InetAddress,
+          mplsLdpEntityLabelType            MplsLdpLabelType,
+          mplsLdpEntityDiscontinuityTime    TimeStamp,
+          mplsLdpEntityStorageType          StorageType,
+          mplsLdpEntityRowStatus            RowStatus
+      }
+
+      mplsLdpEntityLdpId OBJECT-TYPE
+          SYNTAX      MplsLdpIdentifier
+          MAX-ACCESS  not-accessible
+          STATUS      current
+         ::= { mplsLdpEntityEntry 1 }
+
+     mplsLdpEntityIndex OBJECT-TYPE
+         SYNTAX      IndexInteger
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpEntityEntry 2 }
+
+     mplsLdpEntityProtocolVersion OBJECT-TYPE
+         SYNTAX      Unsigned32(1..65535)
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { 1 }
+         ::= { mplsLdpEntityEntry 3 }
+
+     mplsLdpEntityAdminStatus OBJECT-TYPE
+         SYNTAX      INTEGER {
+                       enable(1),
+                       disable(2)
+                     }
+         MAX-ACCESS  read-create
+         STATUS      current
+
+
+
+
+
+         DEFVAL  { enable }
+         ::= { mplsLdpEntityEntry 4 }
+
+     mplsLdpEntityOperStatus OBJECT-TYPE
+         SYNTAX      INTEGER {
+                       unknown(1),
+                       enabled(2),
+                       disabled(3)
+                     }
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityEntry 5 }
+
+     mplsLdpEntityTcpPort OBJECT-TYPE
+         SYNTAX      InetPortNumber
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { 646 }
+         ::= { mplsLdpEntityEntry 6 }
+
+     mplsLdpEntityUdpDscPort OBJECT-TYPE
+         SYNTAX      InetPortNumber
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { 646 }
+         ::= { mplsLdpEntityEntry 7 }
+
+     mplsLdpEntityMaxPduLength OBJECT-TYPE
+         SYNTAX      Unsigned32 (256..65535)
+         UNITS       "octets"
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { 4096 }
+         ::= { mplsLdpEntityEntry 8 }
+
+     mplsLdpEntityKeepAliveHoldTimer OBJECT-TYPE
+         SYNTAX      Unsigned32 (1..65535)
+         UNITS       "seconds"
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { 40 }
+         ::= { mplsLdpEntityEntry 9 }
+
+     mplsLdpEntityHelloHoldTimer OBJECT-TYPE
+         SYNTAX      Unsigned32 (0..65535)
+         UNITS       "seconds"
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { 0 }
+         ::= { mplsLdpEntityEntry 10 }
+
+     mplsLdpEntityInitSessionThreshold OBJECT-TYPE
+         SYNTAX      Integer32(0..100)
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { 8 }
+         ::= { mplsLdpEntityEntry 11 }
+
+     mplsLdpEntityLabelDistMethod OBJECT-TYPE
+         SYNTAX      MplsLabelDistributionMethod
+         MAX-ACCESS  read-create
+         STATUS      current
+         ::= { mplsLdpEntityEntry 12 }
+
+     mplsLdpEntityLabelRetentionMode OBJECT-TYPE
+         SYNTAX      MplsRetentionMode
+         MAX-ACCESS  read-create
+         STATUS      current
+         ::= { mplsLdpEntityEntry 13 }
+
+     mplsLdpEntityPathVectorLimit OBJECT-TYPE
+         SYNTAX      Integer32 (0..255)
+         MAX-ACCESS  read-create
+
+
+
+
+
+         STATUS      current
+         ::= { mplsLdpEntityEntry 14 }
+
+     mplsLdpEntityHopCountLimit OBJECT-TYPE
+         SYNTAX       Integer32 (0..255)
+         MAX-ACCESS   read-create
+         STATUS       current
+         DEFVAL { 0 }
+         ::= { mplsLdpEntityEntry 15 }
+
+     mplsLdpEntityTransportAddrKind OBJECT-TYPE
+         SYNTAX     INTEGER {
+                               interface(1),
+                               loopback(2)
+                            }
+         MAX-ACCESS read-create
+         STATUS     current
+
+
+
+
+
+         DEFVAL { loopback }
+         ::= { mplsLdpEntityEntry 16 }
+
+     mplsLdpEntityTargetPeer OBJECT-TYPE
+         SYNTAX      TruthValue
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { false }
+         ::= { mplsLdpEntityEntry 17 }
+
+     mplsLdpEntityTargetPeerAddrType OBJECT-TYPE
+         SYNTAX      InetAddressType
+         MAX-ACCESS  read-create
+         STATUS      current
+         ::= { mplsLdpEntityEntry 18 }
+
+     mplsLdpEntityTargetPeerAddr OBJECT-TYPE
+         SYNTAX      InetAddress
+         MAX-ACCESS  read-create
+         STATUS      current
+        ::= { mplsLdpEntityEntry 19 }
+
+
+
+
+
+     mplsLdpEntityLabelType OBJECT-TYPE
+         SYNTAX      MplsLdpLabelType
+         MAX-ACCESS  read-create
+         STATUS      current
+         ::= { mplsLdpEntityEntry 20 }
+
+     mplsLdpEntityDiscontinuityTime OBJECT-TYPE
+         SYNTAX      TimeStamp
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityEntry 21 }
+
+     mplsLdpEntityStorageType  OBJECT-TYPE
+         SYNTAX      StorageType
+         MAX-ACCESS  read-create
+         STATUS      current
+
+
+
+
+
+         DEFVAL{ nonVolatile }
+         ::= { mplsLdpEntityEntry 22 }
+
+     mplsLdpEntityRowStatus OBJECT-TYPE
+         SYNTAX      RowStatus
+         MAX-ACCESS  read-create
+         STATUS      current
+         ::= { mplsLdpEntityEntry 23 }
+
+
+     mplsLdpEntityStatsTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsLdpEntityStatsEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpEntityObjects 4 }
+
+     mplsLdpEntityStatsEntry OBJECT-TYPE
+         SYNTAX      MplsLdpEntityStatsEntry
+
+
+
+
+
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         AUGMENTS       {   mplsLdpEntityEntry  }
+         ::= { mplsLdpEntityStatsTable 1 }
+
+     MplsLdpEntityStatsEntry ::= SEQUENCE {
+         mplsLdpEntityStatsSessionAttempts               Counter32,
+         mplsLdpEntityStatsSessionRejectedNoHelloErrors  Counter32,
+         mplsLdpEntityStatsSessionRejectedAdErrors       Counter32,
+         mplsLdpEntityStatsSessionRejectedMaxPduErrors   Counter32,
+         mplsLdpEntityStatsSessionRejectedLRErrors       Counter32,
+         mplsLdpEntityStatsBadLdpIdentifierErrors        Counter32,
+         mplsLdpEntityStatsBadPduLengthErrors            Counter32,
+         mplsLdpEntityStatsBadMessageLengthErrors        Counter32,
+         mplsLdpEntityStatsBadTlvLengthErrors            Counter32,
+         mplsLdpEntityStatsMalformedTlvValueErrors       Counter32,
+         mplsLdpEntityStatsKeepAliveTimerExpErrors       Counter32,
+         mplsLdpEntityStatsShutdownReceivedNotifications Counter32,
+         mplsLdpEntityStatsShutdownSentNotifications     Counter32
+     }
+
+     mplsLdpEntityStatsSessionAttempts OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+
+
+
+
+
+         ::= { mplsLdpEntityStatsEntry 1 }
+
+     mplsLdpEntityStatsSessionRejectedNoHelloErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 2 }
+
+     mplsLdpEntityStatsSessionRejectedAdErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 3 }
+
+     mplsLdpEntityStatsSessionRejectedMaxPduErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 4 }
+
+
+
+
+
+
+     mplsLdpEntityStatsSessionRejectedLRErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 5 }
+
+     mplsLdpEntityStatsBadLdpIdentifierErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 6 }
+
+     mplsLdpEntityStatsBadPduLengthErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 7 }
+
+
+
+
+
+     mplsLdpEntityStatsBadMessageLengthErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 8 }
+
+     mplsLdpEntityStatsBadTlvLengthErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 9 }
+
+     mplsLdpEntityStatsMalformedTlvValueErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+
+
+
+
+
+         ::= { mplsLdpEntityStatsEntry 10 }
+
+     mplsLdpEntityStatsKeepAliveTimerExpErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 11 }
+
+     mplsLdpEntityStatsShutdownReceivedNotifications OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 12 }
+
+     mplsLdpEntityStatsShutdownSentNotifications OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpEntityStatsEntry 13 }
+
+
+     mplsLdpSessionObjects OBJECT IDENTIFIER ::= { mplsLdpObjects 3 }
+
+     mplsLdpPeerLastChange OBJECT-TYPE
+         SYNTAX  TimeStamp
+         MAX-ACCESS read-only
+         STATUS current
+         ::= { mplsLdpSessionObjects 1 }
+
+     mplsLdpPeerTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsLdpPeerEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpSessionObjects 2 }
+
+     mplsLdpPeerEntry OBJECT-TYPE
+         SYNTAX      MplsLdpPeerEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         INDEX       { mplsLdpEntityLdpId,
+                       mplsLdpEntityIndex,
+                       mplsLdpPeerLdpId }
+         ::= { mplsLdpPeerTable 1 }
+
+     MplsLdpPeerEntry ::= SEQUENCE {
+         mplsLdpPeerLdpId                MplsLdpIdentifier,
+         mplsLdpPeerLabelDistMethod      MplsLabelDistributionMethod,
+
+
+
+
+
+         mplsLdpPeerPathVectorLimit      Integer32,
+         mplsLdpPeerTransportAddrType    InetAddressType,
+         mplsLdpPeerTransportAddr        InetAddress
+     }
+
+     mplsLdpPeerLdpId OBJECT-TYPE
+         SYNTAX      MplsLdpIdentifier
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpPeerEntry 1 }
+
+     mplsLdpPeerLabelDistMethod OBJECT-TYPE
+         SYNTAX      MplsLabelDistributionMethod
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpPeerEntry 2 }
+
+     mplsLdpPeerPathVectorLimit OBJECT-TYPE
+         SYNTAX      Integer32 (0..255)
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpPeerEntry 3 }
+
+     mplsLdpPeerTransportAddrType OBJECT-TYPE
+         SYNTAX      InetAddressType
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpPeerEntry 4 }
+
+     mplsLdpPeerTransportAddr OBJECT-TYPE
+         SYNTAX      InetAddress
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpPeerEntry 5 }
+
+
+     mplsLdpSessionTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsLdpSessionEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpSessionObjects 3 }
+
+     mplsLdpSessionEntry OBJECT-TYPE
+         SYNTAX      MplsLdpSessionEntry
+
+
+
+
+
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         AUGMENTS { mplsLdpPeerEntry }
+         ::= { mplsLdpSessionTable 1 }
+
+     MplsLdpSessionEntry ::= SEQUENCE {
+         mplsLdpSessionStateLastChange       TimeStamp,
+         mplsLdpSessionState                 INTEGER,
+         mplsLdpSessionRole                  INTEGER,
+         mplsLdpSessionProtocolVersion       Unsigned32,
+         mplsLdpSessionKeepAliveHoldTimeRem  TimeInterval,
+         mplsLdpSessionKeepAliveTime         Unsigned32,
+         mplsLdpSessionMaxPduLength          Unsigned32,
+         mplsLdpSessionDiscontinuityTime     TimeStamp
+     }
+
+     mplsLdpSessionStateLastChange OBJECT-TYPE
+         SYNTAX TimeStamp
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpSessionEntry 1 }
+
+
+
+
+
+
+     mplsLdpSessionState OBJECT-TYPE
+         SYNTAX      INTEGER {
+                        nonexistent(1),
+                        initialized(2),
+                        openrec(3),
+                        opensent(4),
+                        operational(5)
+                     }
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpSessionEntry 2 }
+
+     mplsLdpSessionRole OBJECT-TYPE
+         SYNTAX      INTEGER {
+                        unknown(1),
+                        active(2),
+                        passive(3)
+                     }
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpSessionEntry 3 }
+
+     mplsLdpSessionProtocolVersion OBJECT-TYPE
+         SYNTAX      Unsigned32(1..65535)
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpSessionEntry 4 }
+
+     mplsLdpSessionKeepAliveHoldTimeRem OBJECT-TYPE
+         SYNTAX      TimeInterval
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpSessionEntry 5 }
+
+        mplsLdpSessionKeepAliveTime OBJECT-TYPE
+            SYNTAX      Unsigned32 (1..65535)
+            UNITS       "seconds"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { mplsLdpSessionEntry 6 }
+
+        mplsLdpSessionMaxPduLength OBJECT-TYPE
+            SYNTAX      Unsigned32 (1..65535)
+            UNITS       "octets"
+            MAX-ACCESS  read-only
+
+
+
+
+
+            STATUS      current
+            ::= { mplsLdpSessionEntry 7 }
+
+     mplsLdpSessionDiscontinuityTime OBJECT-TYPE
+         SYNTAX      TimeStamp
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpSessionEntry 8 }
+
+
+     mplsLdpSessionStatsTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsLdpSessionStatsEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpSessionObjects 4 }
+
+     mplsLdpSessionStatsEntry OBJECT-TYPE
+         SYNTAX      MplsLdpSessionStatsEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+
+         AUGMENTS       { mplsLdpPeerEntry }
+         ::= { mplsLdpSessionStatsTable 1 }
+
+     MplsLdpSessionStatsEntry ::= SEQUENCE {
+         mplsLdpSessionStatsUnknownMesTypeErrors  Counter32,
+         mplsLdpSessionStatsUnknownTlvErrors      Counter32
+     }
+
+     mplsLdpSessionStatsUnknownMesTypeErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpSessionStatsEntry 1 }
+
+     mplsLdpSessionStatsUnknownTlvErrors OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpSessionStatsEntry 2 }
+
+
+
+
+
+
+
+     mplsLdpHelloAdjacencyObjects OBJECT IDENTIFIER ::=
+                                   { mplsLdpSessionObjects 5 }
+
+     mplsLdpHelloAdjacencyTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsLdpHelloAdjacencyEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpHelloAdjacencyObjects 1 }
+
+     mplsLdpHelloAdjacencyEntry OBJECT-TYPE
+         SYNTAX      MplsLdpHelloAdjacencyEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+              INDEX       { mplsLdpEntityLdpId,
+                            mplsLdpEntityIndex,
+                            mplsLdpPeerLdpId,
+                            mplsLdpHelloAdjacencyIndex }
+         ::= { mplsLdpHelloAdjacencyTable 1 }
+
+     MplsLdpHelloAdjacencyEntry ::= SEQUENCE {
+         mplsLdpHelloAdjacencyIndex         Unsigned32,
+         mplsLdpHelloAdjacencyHoldTimeRem   TimeInterval,
+         mplsLdpHelloAdjacencyHoldTime      Unsigned32,
+         mplsLdpHelloAdjacencyType          INTEGER
+     }
+
+     mplsLdpHelloAdjacencyIndex OBJECT-TYPE
+         SYNTAX      Unsigned32 (1..4294967295)
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpHelloAdjacencyEntry 1 }
+
+     mplsLdpHelloAdjacencyHoldTimeRem OBJECT-TYPE
+         SYNTAX      TimeInterval
+         UNITS       "seconds"
+         MAX-ACCESS  read-only
+
+
+
+
+
+         STATUS      current
+         ::= { mplsLdpHelloAdjacencyEntry 2 }
+
+     mplsLdpHelloAdjacencyHoldTime OBJECT-TYPE
+         SYNTAX Unsigned32 (0..65535)
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpHelloAdjacencyEntry 3 }
+
+     mplsLdpHelloAdjacencyType OBJECT-TYPE
+         SYNTAX      INTEGER {
+                        link(1),
+                        targeted(2)
+                     }
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpHelloAdjacencyEntry 4 }
+
+
+     mplsInSegmentLdpLspTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsInSegmentLdpLspEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpSessionObjects 6 }
+
+     mplsInSegmentLdpLspEntry OBJECT-TYPE
+         SYNTAX      MplsInSegmentLdpLspEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         INDEX       { mplsLdpEntityLdpId,
+                       mplsLdpEntityIndex,
+                       mplsLdpPeerLdpId,
+                       mplsInSegmentLdpLspIndex
+                     }
+         ::= { mplsInSegmentLdpLspTable 1 }
+
+
+
+
+
+
+     MplsInSegmentLdpLspEntry ::= SEQUENCE {
+         mplsInSegmentLdpLspIndex                 MplsIndexType,
+         mplsInSegmentLdpLspLabelType             MplsLdpLabelType,
+         mplsInSegmentLdpLspType                  MplsLspType
+     }
+
+     mplsInSegmentLdpLspIndex OBJECT-TYPE
+         SYNTAX        MplsIndexType
+         MAX-ACCESS    not-accessible
+         STATUS        current
+         ::= { mplsInSegmentLdpLspEntry 1 }
+
+     mplsInSegmentLdpLspLabelType  OBJECT-TYPE
+         SYNTAX        MplsLdpLabelType
+         MAX-ACCESS    read-only
+         STATUS        current
+         ::= { mplsInSegmentLdpLspEntry 2 }
+
+     mplsInSegmentLdpLspType OBJECT-TYPE
+         SYNTAX        MplsLspType
+         MAX-ACCESS    read-only
+         STATUS        current
+         ::= { mplsInSegmentLdpLspEntry 3 }
+
+
+     mplsOutSegmentLdpLspTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsOutSegmentLdpLspEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpSessionObjects 7 }
+
+     mplsOutSegmentLdpLspEntry OBJECT-TYPE
+
+
+
+
+
+         SYNTAX      MplsOutSegmentLdpLspEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         INDEX       { mplsLdpEntityLdpId,
+                       mplsLdpEntityIndex,
+                       mplsLdpPeerLdpId,
+                       mplsOutSegmentLdpLspIndex
+                     }
+         ::= { mplsOutSegmentLdpLspTable 1 }
+
+     MplsOutSegmentLdpLspEntry ::= SEQUENCE {
+         mplsOutSegmentLdpLspIndex                 MplsIndexType,
+         mplsOutSegmentLdpLspLabelType             MplsLdpLabelType,
+         mplsOutSegmentLdpLspType                  MplsLspType
+     }
+
+     mplsOutSegmentLdpLspIndex OBJECT-TYPE
+         SYNTAX       MplsIndexType
+         MAX-ACCESS   not-accessible
+         STATUS       current
+         ::= { mplsOutSegmentLdpLspEntry 1 }
+
+     mplsOutSegmentLdpLspLabelType  OBJECT-TYPE
+         SYNTAX        MplsLdpLabelType
+         MAX-ACCESS    read-only
+         STATUS        current
+         ::= { mplsOutSegmentLdpLspEntry 2 }
+
+     mplsOutSegmentLdpLspType OBJECT-TYPE
+         SYNTAX        MplsLspType
+         MAX-ACCESS    read-only
+         STATUS        current
+         ::= { mplsOutSegmentLdpLspEntry 3 }
+
+
+     mplsFecObjects OBJECT IDENTIFIER ::=
+                                { mplsLdpSessionObjects 8 }
+
+     mplsFecLastChange OBJECT-TYPE
+         SYNTAX  TimeStamp
+         MAX-ACCESS read-only
+         STATUS current
+        ::= { mplsFecObjects 1 }
+
+     mplsFecIndexNext  OBJECT-TYPE
+         SYNTAX         IndexIntegerNextFree
+         MAX-ACCESS     read-only
+         STATUS         current
+        ::= { mplsFecObjects 2 }
+
+     mplsFecTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsFecEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsFecObjects 3 }
+
+
+
+
+
+
+     mplsFecEntry OBJECT-TYPE
+         SYNTAX      MplsFecEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         INDEX       { mplsFecIndex }
+         ::= { mplsFecTable 1 }
+
+     MplsFecEntry ::= SEQUENCE {
+         mplsFecIndex               IndexInteger,
+         mplsFecType                INTEGER,
+         mplsFecAddrType            InetAddressType,
+         mplsFecAddr                InetAddress,
+         mplsFecAddrPrefixLength    InetAddressPrefixLength,
+         mplsFecStorageType         StorageType,
+         mplsFecRowStatus           RowStatus
+     }
+
+     mplsFecIndex OBJECT-TYPE
+         SYNTAX      IndexInteger
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsFecEntry 1 }
+
+     mplsFecType  OBJECT-TYPE
+         SYNTAX      INTEGER {
+                        prefix(1),
+                        hostAddress(2)
+                     }
+         MAX-ACCESS  read-create
+         STATUS      current
+         ::= { mplsFecEntry 2 }
+
+     mplsFecAddrType  OBJECT-TYPE
+         SYNTAX      InetAddressType
+         MAX-ACCESS  read-create
+
+
+
+
+
+         STATUS      current
+         ::= { mplsFecEntry 4 }
+
+     mplsFecAddr     OBJECT-TYPE
+         SYNTAX      InetAddress
+         MAX-ACCESS  read-create
+         STATUS      current
+         ::= { mplsFecEntry 5 }
+
+     mplsFecAddrPrefixLength  OBJECT-TYPE
+         SYNTAX      InetAddressPrefixLength
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { 0 }
+
+
+
+
+
+         ::= { mplsFecEntry 3 }
+
+     mplsFecStorageType  OBJECT-TYPE
+         SYNTAX      StorageType
+         MAX-ACCESS  read-create
+         STATUS      current
+         DEFVAL { nonVolatile }
+         ::= { mplsFecEntry 6 }
+
+     mplsFecRowStatus OBJECT-TYPE
+         SYNTAX      RowStatus
+         MAX-ACCESS  read-create
+         STATUS      current
+         ::= { mplsFecEntry 7 }
+
+
+     mplsLdpLspFecLastChange OBJECT-TYPE
+        SYNTAX TimeStamp
+        MAX-ACCESS read-only
+        STATUS current
+       ::= { mplsLdpSessionObjects 9 }
+
+
+
+
+
+     mplsLdpLspFecTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF MplsLdpLspFecEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+       ::= { mplsLdpSessionObjects 10 }
+
+     mplsLdpLspFecEntry OBJECT-TYPE
+        SYNTAX     MplsLdpLspFecEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        INDEX       { mplsLdpEntityLdpId,
+                      mplsLdpEntityIndex,
+                      mplsLdpPeerLdpId,
+                      mplsLdpLspFecSegment,
+                      mplsLdpLspFecSegmentIndex,
+                      mplsLdpLspFecIndex
+                     }
+        ::= { mplsLdpLspFecTable 1 }
+
+     MplsLdpLspFecEntry ::= SEQUENCE {
+        mplsLdpLspFecSegment       INTEGER,
+        mplsLdpLspFecSegmentIndex  MplsIndexType,
+        mplsLdpLspFecIndex         IndexInteger,
+        mplsLdpLspFecStorageType   StorageType,
+        mplsLdpLspFecRowStatus     RowStatus
+     }
+
+     mplsLdpLspFecSegment OBJECT-TYPE
+         SYNTAX INTEGER {
+                            inSegment(1),
+                            outSegment(2)
+                        }
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpLspFecEntry 1 }
+
+     mplsLdpLspFecSegmentIndex OBJECT-TYPE
+         SYNTAX      MplsIndexType
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpLspFecEntry 2 }
+
+     mplsLdpLspFecIndex   OBJECT-TYPE
+         SYNTAX      IndexInteger
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpLspFecEntry 3 }
+
+     mplsLdpLspFecStorageType  OBJECT-TYPE
+        SYNTAX      StorageType
+        MAX-ACCESS  read-create
+        STATUS      current
+        DEFVAL { nonVolatile }
+        ::= { mplsLdpLspFecEntry 4 }
+
+
+
+
+
+
+     mplsLdpLspFecRowStatus  OBJECT-TYPE
+        SYNTAX     RowStatus
+        MAX-ACCESS read-create
+        STATUS     current
+        ::= { mplsLdpLspFecEntry 5 }
+
+
+     mplsLdpSessionPeerAddrTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF MplsLdpSessionPeerAddrEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpSessionObjects 11 }
+
+     mplsLdpSessionPeerAddrEntry OBJECT-TYPE
+         SYNTAX      MplsLdpSessionPeerAddrEntry
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         INDEX       { mplsLdpEntityLdpId,
+                       mplsLdpEntityIndex,
+                       mplsLdpPeerLdpId,
+                       mplsLdpSessionPeerAddrIndex
+                     }
+         ::= { mplsLdpSessionPeerAddrTable 1 }
+
+     MplsLdpSessionPeerAddrEntry ::= SEQUENCE {
+         mplsLdpSessionPeerAddrIndex       Unsigned32,
+         mplsLdpSessionPeerNextHopAddrType InetAddressType,
+         mplsLdpSessionPeerNextHopAddr     InetAddress
+     }
+
+     mplsLdpSessionPeerAddrIndex OBJECT-TYPE
+         SYNTAX      Unsigned32 (1..4294967295)
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         ::= { mplsLdpSessionPeerAddrEntry 1 }
+
+     mplsLdpSessionPeerNextHopAddrType OBJECT-TYPE
+         SYNTAX      InetAddressType
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= { mplsLdpSessionPeerAddrEntry 2 }
+
+     mplsLdpSessionPeerNextHopAddr OBJECT-TYPE
+         SYNTAX      InetAddress
+         MAX-ACCESS  read-only
+         STATUS      current
+            ::= { mplsLdpSessionPeerAddrEntry 3 }
+
+
+     mplsLdpInitSessionThresholdExceeded NOTIFICATION-TYPE
+          OBJECTS     {
+                        mplsLdpEntityInitSessionThreshold
+                      }
+          STATUS      current
+          ::= { mplsLdpNotifications 1 }
+
+     mplsLdpPathVectorLimitMismatch NOTIFICATION-TYPE
+          OBJECTS     {
+                        mplsLdpEntityPathVectorLimit,
+                        mplsLdpPeerPathVectorLimit
+                      }
+          STATUS      current
+          ::= { mplsLdpNotifications 2 }
+
+
+
+
+
+
+     mplsLdpSessionUp NOTIFICATION-TYPE
+          OBJECTS     {
+                         mplsLdpSessionState,
+                         mplsLdpSessionDiscontinuityTime,
+                         mplsLdpSessionStatsUnknownMesTypeErrors,
+                         mplsLdpSessionStatsUnknownTlvErrors
+                      }
+          STATUS      current
+          ::= { mplsLdpNotifications 3 }
+
+     mplsLdpSessionDown NOTIFICATION-TYPE
+          OBJECTS     {
+                         mplsLdpSessionState,
+                         mplsLdpSessionDiscontinuityTime,
+                         mplsLdpSessionStatsUnknownMesTypeErrors,
+                         mplsLdpSessionStatsUnknownTlvErrors
+
+                      }
+          STATUS      current
+          ::= { mplsLdpNotifications 4 }
+
+
+     mplsLdpGroups
+         OBJECT IDENTIFIER ::= { mplsLdpConformance 1 }
+
+     mplsLdpCompliances
+         OBJECT IDENTIFIER ::= { mplsLdpConformance 2 }
+
+
+     mplsLdpModuleFullCompliance MODULE-COMPLIANCE
+         STATUS current
+
+         MODULE -- this module
+             MANDATORY-GROUPS    { mplsLdpGeneralGroup,
+                                   mplsLdpNotificationsGroup
+                                 }
+         GROUP mplsLdpLspGroup
+
+         OBJECT mplsLdpEntityTargetPeerAddrType
+         SYNTAX InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+         OBJECT mplsLdpEntityTargetPeerAddr
+         SYNTAX InetAddress (SIZE(0|4|16))
+
+         OBJECT mplsLdpEntityRowStatus
+         SYNTAX RowStatus { active(1) }
+         WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+         OBJECT mplsFecAddrType
+         SYNTAX InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+         OBJECT mplsFecAddr
+         SYNTAX InetAddress (SIZE(0|4|16))
+
+         OBJECT mplsFecRowStatus
+         SYNTAX RowStatus { active(1) }
+         WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+         OBJECT mplsLdpLspFecRowStatus
+         SYNTAX RowStatus { active(1) }
+         WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+         OBJECT mplsLdpSessionPeerNextHopAddrType
+         SYNTAX InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+         OBJECT mplsLdpSessionPeerNextHopAddr
+         SYNTAX InetAddress (SIZE(0|4|16))
+
+         ::= { mplsLdpCompliances 1 }
+
+
+     mplsLdpModuleReadOnlyCompliance MODULE-COMPLIANCE
+         STATUS current
+
+         MODULE -- this module
+             MANDATORY-GROUPS    { mplsLdpGeneralGroup,
+                                   mplsLdpNotificationsGroup
+                                 }
+
+         GROUP mplsLdpLspGroup
+
+         OBJECT       mplsLdpEntityProtocolVersion
+         MIN-ACCESS   read-only
+
+
+
+
+
+
+         OBJECT       mplsLdpEntityAdminStatus
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityTcpPort
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityUdpDscPort
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityMaxPduLength
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityKeepAliveHoldTimer
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityHelloHoldTimer
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityInitSessionThreshold
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityLabelDistMethod
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityLabelRetentionMode
+         MIN-ACCESS   read-only
+
+
+
+
+
+
+         OBJECT       mplsLdpEntityPathVectorLimit
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityHopCountLimit
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityTransportAddrKind
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityTargetPeer
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityTargetPeerAddrType
+         SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityTargetPeerAddr
+         SYNTAX       InetAddress (SIZE(0|4|16))
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityLabelType
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpEntityStorageType
+         MIN-ACCESS   read-only
+
+         OBJECT mplsLdpEntityRowStatus
+         SYNTAX RowStatus { active(1) }
+
+
+
+
+
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsFecType
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsFecAddrPrefixLength
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsFecAddrType
+         SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+         MIN-ACCESS   read-only
+
+         OBJECT        mplsFecAddr
+         SYNTAX        InetAddress (SIZE(0|4|16))
+         MIN-ACCESS    read-only
+
+         OBJECT       mplsFecStorageType
+         MIN-ACCESS   read-only
+
+         OBJECT mplsFecRowStatus
+         SYNTAX RowStatus { active(1) }
+         MIN-ACCESS   read-only
+
+         OBJECT       mplsLdpLspFecStorageType
+         MIN-ACCESS   read-only
+
+
+
+
+
+
+         OBJECT mplsLdpLspFecRowStatus
+         SYNTAX RowStatus { active(1) }
+         MIN-ACCESS   read-only
+
+         OBJECT mplsLdpSessionPeerNextHopAddrType
+         SYNTAX InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+
+         OBJECT mplsLdpSessionPeerNextHopAddr
+         SYNTAX InetAddress (SIZE(0|4|16))
+
+         ::= { mplsLdpCompliances 2 }
+
+
+     mplsLdpGeneralGroup OBJECT-GROUP
+         OBJECTS {
+         mplsLdpLsrId,
+         mplsLdpLsrLoopDetectionCapable,
+         mplsLdpEntityLastChange,
+         mplsLdpEntityIndexNext,
+         mplsLdpEntityProtocolVersion,
+         mplsLdpEntityAdminStatus,
+         mplsLdpEntityOperStatus,
+         mplsLdpEntityTcpPort,
+         mplsLdpEntityUdpDscPort,
+         mplsLdpEntityMaxPduLength,
+         mplsLdpEntityKeepAliveHoldTimer,
+         mplsLdpEntityHelloHoldTimer,
+         mplsLdpEntityInitSessionThreshold,
+         mplsLdpEntityLabelDistMethod,
+         mplsLdpEntityLabelRetentionMode,
+         mplsLdpEntityPathVectorLimit,
+         mplsLdpEntityHopCountLimit,
+         mplsLdpEntityTransportAddrKind,
+         mplsLdpEntityTargetPeer,
+         mplsLdpEntityTargetPeerAddrType,
+         mplsLdpEntityTargetPeerAddr,
+         mplsLdpEntityLabelType,
+
+
+
+
+
+         mplsLdpEntityDiscontinuityTime,
+         mplsLdpEntityStorageType,
+         mplsLdpEntityRowStatus,
+         mplsLdpEntityStatsSessionAttempts,
+         mplsLdpEntityStatsSessionRejectedNoHelloErrors,
+         mplsLdpEntityStatsSessionRejectedAdErrors,
+         mplsLdpEntityStatsSessionRejectedMaxPduErrors,
+         mplsLdpEntityStatsSessionRejectedLRErrors,
+         mplsLdpEntityStatsBadLdpIdentifierErrors,
+         mplsLdpEntityStatsBadPduLengthErrors,
+         mplsLdpEntityStatsBadMessageLengthErrors,
+         mplsLdpEntityStatsBadTlvLengthErrors,
+         mplsLdpEntityStatsMalformedTlvValueErrors,
+         mplsLdpEntityStatsKeepAliveTimerExpErrors,
+         mplsLdpEntityStatsShutdownReceivedNotifications,
+         mplsLdpEntityStatsShutdownSentNotifications,
+         mplsLdpPeerLastChange,
+         mplsLdpPeerLabelDistMethod,
+         mplsLdpPeerPathVectorLimit,
+         mplsLdpPeerTransportAddrType,
+         mplsLdpPeerTransportAddr,
+         mplsLdpHelloAdjacencyHoldTimeRem,
+         mplsLdpHelloAdjacencyHoldTime,
+         mplsLdpHelloAdjacencyType,
+         mplsLdpSessionStateLastChange,
+         mplsLdpSessionState,
+         mplsLdpSessionRole,
+         mplsLdpSessionProtocolVersion,
+         mplsLdpSessionKeepAliveHoldTimeRem,
+         mplsLdpSessionKeepAliveTime,
+         mplsLdpSessionMaxPduLength,
+         mplsLdpSessionDiscontinuityTime,
+         mplsLdpSessionStatsUnknownMesTypeErrors,
+         mplsLdpSessionStatsUnknownTlvErrors,
+         mplsLdpSessionPeerNextHopAddrType,
+         mplsLdpSessionPeerNextHopAddr,
+         mplsFecLastChange,
+         mplsFecIndexNext,
+         mplsFecType,
+         mplsFecAddrType,
+         mplsFecAddr,
+         mplsFecAddrPrefixLength,
+         mplsFecStorageType,
+         mplsFecRowStatus
+         }
+         STATUS    current
+
+
+
+
+
+         ::= { mplsLdpGroups 1 }
+
+     mplsLdpLspGroup OBJECT-GROUP
+         OBJECTS {
+         mplsInSegmentLdpLspLabelType,
+         mplsInSegmentLdpLspType,
+         mplsOutSegmentLdpLspLabelType,
+         mplsOutSegmentLdpLspType,
+         mplsLdpLspFecLastChange,
+         mplsLdpLspFecStorageType,
+         mplsLdpLspFecRowStatus
+         }
+         STATUS    current
+         ::= { mplsLdpGroups 2 }
+
+     mplsLdpNotificationsGroup NOTIFICATION-GROUP
+         NOTIFICATIONS { mplsLdpInitSessionThresholdExceeded,
+                         mplsLdpPathVectorLimitMismatch,
+                         mplsLdpSessionUp,
+                         mplsLdpSessionDown
+                            }
+         STATUS   current
+         ::= { mplsLdpGroups 3 }
+
+     END

@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2014 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.infra.session;
@@ -39,6 +32,7 @@ import com.clustercontrol.fault.InfraFileBeingUsed;
 import com.clustercontrol.fault.InfraFileNotFound;
 import com.clustercontrol.fault.InfraFileTooLarge;
 import com.clustercontrol.fault.InfraManagementDuplicate;
+import com.clustercontrol.fault.InfraManagementInvalid;
 import com.clustercontrol.fault.InfraManagementNotFound;
 import com.clustercontrol.fault.InfraModuleNotFound;
 import com.clustercontrol.fault.InvalidRole;
@@ -50,6 +44,7 @@ import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.SessionNotFound;
 import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.infra.bean.AccessInfo;
+import com.clustercontrol.infra.bean.InfraNodeInputConstant;
 import com.clustercontrol.infra.bean.ModuleResult;
 import com.clustercontrol.infra.factory.AsyncModuleWorker;
 import com.clustercontrol.infra.factory.DownloadInfraFile;
@@ -62,7 +57,6 @@ import com.clustercontrol.infra.model.InfraFileInfo;
 import com.clustercontrol.infra.model.InfraManagementInfo;
 import com.clustercontrol.infra.util.InfraManagementValidator;
 import com.clustercontrol.infra.util.QueryUtil;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.notify.bean.NotifyCheckIdResultInfo;
 import com.clustercontrol.notify.factory.SelectNotifyRelation;
 import com.clustercontrol.notify.util.NotifyRelationCache;
@@ -86,7 +80,8 @@ public class InfraControllerBean implements CheckFacility {
 	 * @throws InfraManagementDuplicate 
 	 *
 	 */
-	public boolean addInfraManagement(InfraManagementInfo info) throws NotifyDuplicate, InvalidSetting, InvalidRole, HinemosUnknown, InfraManagementDuplicate {
+	public boolean addInfraManagement(InfraManagementInfo info) 
+			throws NotifyDuplicate, InvalidSetting, InvalidRole, HinemosUnknown, InfraManagementDuplicate, InfraManagementNotFound {
 		JpaTransactionManager jtm = null;
 
 		// 通知情報を登録
@@ -110,7 +105,7 @@ public class InfraControllerBean implements CheckFacility {
 
 			// コミット後にキャッシュクリア
 			NotifyRelationCache.refresh();
-		} catch (NotifyDuplicate | HinemosUnknown e) {
+		} catch (InfraManagementNotFound | NotifyDuplicate | HinemosUnknown e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
@@ -189,7 +184,7 @@ public class InfraControllerBean implements CheckFacility {
 
 	/**
 	 */
-	public boolean deleteInfraManagement(String[] infraManagementIds) throws InfraManagementNotFound, InvalidRole, HinemosUnknown {
+	public boolean deleteInfraManagement(String[] infraManagementIds) throws InfraManagementNotFound, InvalidSetting, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		// 通知情報を削除
@@ -207,7 +202,7 @@ public class InfraControllerBean implements CheckFacility {
 
 			// コミット後にキャッシュクリア
 			NotifyRelationCache.refresh();
-		} catch(HinemosUnknown | InvalidRole | InfraManagementNotFound e){
+		} catch(HinemosUnknown | InvalidSetting | InvalidRole | InfraManagementNotFound e){
 			if (jtm != null){
 				jtm.rollback();
 			}
@@ -241,7 +236,7 @@ public class InfraControllerBean implements CheckFacility {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			info = proc.get(infraManagementId, ObjectPrivilegeMode.READ);
+			info = proc.get(infraManagementId, null, ObjectPrivilegeMode.READ);
 			jtm.commit();
 		} catch (HinemosUnknown | InvalidRole | InfraManagementNotFound e){
 			if (jtm != null){
@@ -335,6 +330,82 @@ public class InfraControllerBean implements CheckFacility {
 	}
 
 	/**
+	 * 参照環境構築モジュールの選択対象一覧を返す
+	 * 
+	 * @param ownerRoleId オーナーロールID
+	 * @return 参照環境構築モジュールの選択対象の環境構築IDリスト
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public List<String> getReferManagementIdList(String ownerRoleId) throws InvalidRole, HinemosUnknown {
+		JpaTransactionManager jtm = null;
+
+		List<String> list = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			list = new SelectInfraManagement().getReferManagementIdList(ownerRoleId);
+			jtm.commit();
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("getReferManagementIdList() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+
+		return list;
+	}
+
+	/**
+	 * ログイン情報ダイアログ用のアクセス情報を作成する
+	 * 
+	 * @param managementId 環境構築ID
+	 * @param moduleIdList モジュールIDリスト
+	 * @return アクセス情報のリスト
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InfraManagementNotFound
+	 */
+	public List<AccessInfo> createAccessInfoListForDialog(String managementId, List<String> moduleIdList)
+			throws InvalidRole, HinemosUnknown, InfraManagementNotFound {
+		JpaTransactionManager jtm = null;
+
+		// アクセス情報を作成する
+		List<AccessInfo> list = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			list = new SelectInfraManagement().createAccessInfoList(managementId, InfraNodeInputConstant.TYPE_DIALOG, null, moduleIdList);
+			jtm.commit();
+		} catch (HinemosUnknown | InvalidRole | InfraManagementNotFound e){
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("createAccessInfoList() : " + e.getClass().getSimpleName() +
+					", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+
+		return list;
+	}
+
+	/**
 
 	 */
 	public void checkNotifyId(String[] notifyIds) throws InvalidRole, HinemosUnknown {
@@ -386,11 +457,13 @@ public class InfraControllerBean implements CheckFacility {
 
 			if(ct != null && ct.size() > 0) {
 				// ID名を取得する
-				String listID = (MessageConstant.INFRA_MANAGEMENT.getMessage() + " : ");
+				StringBuilder sb = new StringBuilder();
+				sb.append(MessageConstant.INFRA_MANAGEMENT.getMessage() + " : ");
 				for (InfraManagementInfo entity : ct) {
-					listID += (entity.getManagementId() + ", ");
+					sb.append(entity.getManagementId());
+					sb.append(", ");
 				}
-				UsedFacility e = new UsedFacility(listID);
+				UsedFacility e = new UsedFacility(sb.toString());
 				m_log.info("isUseFacilityId() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;
@@ -410,8 +483,36 @@ public class InfraControllerBean implements CheckFacility {
 		}
 	}
 
-	public String createSession(String infraManagementId, List<String> moduleIdList, List<AccessInfo> accessList)
-			throws InfraManagementNotFound, InfraModuleNotFound, InvalidRole, HinemosUnknown, FacilityNotFound, InvalidSetting {
+	/**
+	 * セッション作成
+	 * 
+	 * @param infraManagementId 環境構築ID
+	 * @param moduleIdList モジュールIDリスト
+	 * @param nodeInputType ログイン情報設定種別（InfraNodeInputConstant）
+	 * @param accessList ログイン情報リスト
+	 * @return アクセス情報のリスト
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InfraManagementNotFound
+	 */
+	public String createSession(String infraManagementId, List<String> moduleIdList, Integer nodeInputType, List<AccessInfo> accessList)
+			throws InfraManagementNotFound, InfraModuleNotFound, InfraManagementInvalid, InvalidRole, HinemosUnknown, FacilityNotFound, InvalidSetting {
+
+		// モジュール件数の確認
+		new SelectInfraManagement().checkInfraModuleCount(infraManagementId, moduleIdList);
+
+		if (nodeInputType == InfraNodeInputConstant.TYPE_INFRA_PARAM
+				|| nodeInputType == InfraNodeInputConstant.TYPE_NODE_PARAM) {
+			// ログイン情報種別が環境構築変数、もしくはノードプロパティから取得、かつ通知からの遷移の場合
+			List<String> facilityIdList = null;
+			if (accessList != null) {
+				facilityIdList = new ArrayList<>();
+				for (AccessInfo accessInfo : accessList) {
+					facilityIdList.add(accessInfo.getFacilityId());
+				}
+			}
+			accessList = new SelectInfraManagement().createAccessInfoList(infraManagementId, nodeInputType, facilityIdList, moduleIdList);
+		}
 		return AsyncModuleWorker.createSession(infraManagementId, moduleIdList, accessList);
 	}
 
@@ -442,6 +543,10 @@ public class InfraControllerBean implements CheckFacility {
 		} catch (HinemosUnknown e) {
 			jtm.rollback();
 			throw e;
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
 		}
 		return ret;
 	}
@@ -469,6 +574,10 @@ public class InfraControllerBean implements CheckFacility {
 		} catch (HinemosUnknown e) {
 			jtm.rollback();
 			throw e;
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
 		}
 		return ret;
 	}
@@ -646,8 +755,7 @@ public class InfraControllerBean implements CheckFacility {
 	}
 	
 	public void deleteDownloadedInfraFile(String fileName) {
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.export.dir",
-				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_EXPORT_DIR));
+		String exportDirectory = HinemosPropertyDefault.infra_export_dir.getStringValue();
 		File file = new File(exportDirectory + "/" + fileName);
 		if (!file.delete())
 			m_log.debug("Fail to delete " + file.getAbsolutePath());
@@ -690,8 +798,7 @@ public class InfraControllerBean implements CheckFacility {
 
 	public DataHandler downloadTransferFile(String fileName) {
 		m_log.info("downloadTransferFile fileName="+fileName);
-		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir",
-					HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_TRANSFER_DIR))
+		String infraDirectory = HinemosPropertyDefault.infra_transfer_dir.getStringValue()
 				+ File.separator + "send" + File.separator;
 		FileDataSource fileData = new FileDataSource(infraDirectory + fileName);
 		return new DataHandler(fileData);

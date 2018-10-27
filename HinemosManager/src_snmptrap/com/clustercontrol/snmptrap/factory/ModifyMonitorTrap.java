@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2014 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.snmptrap.factory;
@@ -63,52 +56,58 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 	protected boolean addCheckInfo() throws MonitorNotFound, InvalidRole {
 		m_log.debug("addCheckInfo() : start");
 
-		// SNMPTRAP監視情報を登録
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		TrapCheckInfo trap = m_monitorInfo.getTrapCheckInfo();
-		trap.setMonitorId(m_monitorInfo.getMonitorId());
-		em.persist(trap);
-		
-		if(m_log.isDebugEnabled()){
-			m_log.debug("addCheckInfo() : " +
-					" MonitorId = " + trap.getMonitorId() +
-					",CommunityName = " + trap.getCommunityName() +
-					",CommunityCheck = " + trap.getCommunityCheck() +
-					",CharsetConvert = " + trap.getCharsetConvert() +
-					",CharsetName = " + trap.getCharsetName() +
-					",NotifyofReceivingUnspecifiedFlg = " + trap.getNotifyofReceivingUnspecifiedFlg() +
-					",PriorityUnspecified = " + trap.getPriorityUnspecified() +
-					",TrapValueInfos = " + trap.getTrapValueInfos()
-					);
-		}
-		
-		for (TrapValueInfo value: trap.getTrapValueInfos()) {
-			value.setMonitorId(trap.getMonitorId());
-			if (value.getGenericId() == null)
-				value.setGenericId(Integer.valueOf(0));
-			if (value.getSpecificId() == null)
-				value.setSpecificId(Integer.valueOf(0));
-			if (!value.getTrapOid().startsWith("."))
-				value.setTrapOid("." + value.getTrapOid());
-			em.persist(value);
-			value.relateToMonitorTrapInfoEntity(trap);
+			// SNMPTRAP監視情報を登録
+			TrapCheckInfo trap = m_monitorInfo.getTrapCheckInfo();
+			trap.setMonitorId(m_monitorInfo.getMonitorId());
+			em.persist(trap);
 			
-			for (int i = 0; i < value.getVarBindPatterns().size(); ++i) {
-				VarBindPattern pattern = value.getVarBindPatterns().get(i);
-				pattern.setMonitorId(value.getMonitorId());
-				pattern.setMib(value.getMib());
-				pattern.setTrapOid(value.getTrapOid());
-				pattern.setGenericId(value.getGenericId() == null ? Integer.valueOf(0): value.getGenericId());
-				pattern.setSpecificId(value.getSpecificId() == null ? Integer.valueOf(0): value.getSpecificId());
-				pattern.setOrderNo(i);
-				em.persist(pattern);
-				pattern.relateToMonitorTrapValueInfoEntity(value);
+			if(m_log.isDebugEnabled()){
+				m_log.debug("addCheckInfo() : " +
+						" MonitorId = " + trap.getMonitorId() +
+						",CommunityName = " + trap.getCommunityName() +
+						",CommunityCheck = " + trap.getCommunityCheck() +
+						",CharsetConvert = " + trap.getCharsetConvert() +
+						",CharsetName = " + trap.getCharsetName() +
+						",NotifyofReceivingUnspecifiedFlg = " + trap.getNotifyofReceivingUnspecifiedFlg() +
+						",PriorityUnspecified = " + trap.getPriorityUnspecified() +
+						",TrapValueInfos = " + trap.getTrapValueInfos()
+						);
 			}
-		}
+			
+			for (TrapValueInfo value: trap.getTrapValueInfos()) {
+				value.setMonitorId(trap.getMonitorId());
+				if (value.getGenericId() == null)
+					value.setGenericId(Integer.valueOf(0));
+				if (value.getSpecificId() == null)
+					value.setSpecificId(Integer.valueOf(0));
+				if (!value.getTrapOid().startsWith("."))
+					value.setTrapOid("." + value.getTrapOid());
+				em.persist(value);
+				value.relateToMonitorTrapInfoEntity(trap);
+				
+				if (value.getFormatVarBinds() == null) {
+					value.setFormatVarBinds("");
+				}
+				
+				for (int i = 0; i < value.getVarBindPatterns().size(); ++i) {
+					VarBindPattern pattern = value.getVarBindPatterns().get(i);
+					pattern.setMonitorId(value.getMonitorId());
+					pattern.setMib(value.getMib());
+					pattern.setTrapOid(value.getTrapOid());
+					pattern.setGenericId(value.getGenericId() == null ? Integer.valueOf(0): value.getGenericId());
+					pattern.setSpecificId(value.getSpecificId() == null ? Integer.valueOf(0): value.getSpecificId());
+					pattern.setOrderNo(i);
+					em.persist(pattern);
+					pattern.relateToMonitorTrapValueInfoEntity(value);
+				}
+			}
 
-		m_log.debug("addCheckInfo() : end");
-		return true;
+			m_log.debug("addCheckInfo() : end");
+			return true;
+		}
 	}
 	
 	@Override
@@ -130,105 +129,112 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 	protected boolean modifyCheckInfo() throws MonitorNotFound, InvalidRole {
 		m_log.debug("modifyCheckInfo() : start");
 
-		// SNMPTRAP監視情報を取得
-		TrapCheckInfo checkInfo = m_monitorInfo.getTrapCheckInfo();
-		if(m_log.isDebugEnabled()){
-			m_log.debug("modifyCheckInfo() : " +
-					" MonitorId = " + checkInfo.getMonitorId() +
-					",CommunityName = " + checkInfo.getCommunityName() +
-					",CommunityCheck = " + checkInfo.getCommunityCheck() +
-					",CharsetConvert = " + checkInfo.getCharsetConvert() +
-					",CharsetName = " + checkInfo.getCharsetName() +
-					",NotifyofReceivingUnspecifiedFlg = " + checkInfo.getNotifyofReceivingUnspecifiedFlg() +
-					",PriorityUnspecified = " + checkInfo.getPriorityUnspecified() +
-					",TrapValueInfos = " + checkInfo.getTrapValueInfos()
-					);
-		}
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		TrapCheckInfo trapInfoEntity = QueryUtil.getMonitorTrapInfoPK(m_monitorInfo.getMonitorId());
-
-		trapInfoEntity.setMonitorId(checkInfo.getMonitorId());
-		trapInfoEntity.setCharsetConvert(checkInfo.getCharsetConvert());
-		trapInfoEntity.setCharsetName(checkInfo.getCharsetName());
-		trapInfoEntity.setCommunityCheck(checkInfo.getCommunityCheck());
-		trapInfoEntity.setCommunityName(checkInfo.getCommunityName());
-		trapInfoEntity.setNotifyofReceivingUnspecifiedFlg(checkInfo.getNotifyofReceivingUnspecifiedFlg());
-		trapInfoEntity.setPriorityUnspecified(checkInfo.getPriorityUnspecified());
-
-		List<TrapValueInfo> trapValueList = new ArrayList<TrapValueInfo>(checkInfo.getTrapValueInfos());
-		
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-
-		List<TrapValueInfoPK> monitorTrapValueInfoEntityPkList = new ArrayList<TrapValueInfoPK>();
-		for (TrapValueInfo trapValue : trapValueList) {
-			if (trapValue != null) {
-				if (!trapValue.getTrapOid().startsWith(".")) {
-					trapValue.setTrapOid("." + trapValue.getTrapOid());
-				}
-				TrapValueInfo entity = null;
-				TrapValueInfoPK entityPk = new TrapValueInfoPK(
-						checkInfo.getMonitorId(),
-						trapValue.getMib(),
-						trapValue.getTrapOid(), 
-						trapValue.getGenericId() == null ? Integer.valueOf(0): trapValue.getGenericId(),
-						trapValue.getSpecificId() == null ? Integer.valueOf(0): trapValue.getSpecificId());
-				try {
-					entity = QueryUtil.getMonitorTrapValueInfoPK(entityPk);
-				} catch (MonitorNotFound e) {
-					entity = new TrapValueInfo(entityPk);
-					em.persist(entity);
-					entity.relateToMonitorTrapInfoEntity(trapInfoEntity);
-				}
-				
-				entity.setDescription(trapValue.getDescription());
-				entity.setFormatVarBinds(trapValue.getFormatVarBinds());
-				entity.setLogmsg(trapValue.getLogmsg());
-				entity.setPriorityAnyVarbind(trapValue.getPriorityAnyVarbind());
-				entity.setProcessingVarbindSpecified(trapValue.getProcessingVarbindSpecified());
-				entity.setUei(trapValue.getUei());
-				entity.setValidFlg(trapValue.getValidFlg());
-				entity.setVersion(trapValue.getVersion());
-				
-				List<VarBindPattern> varbindList = new ArrayList<VarBindPattern>(trapValue.getVarBindPatterns());
-				List<VarBindPatternPK> monitorTrapVarbindPatternInfoEntityPkList = new ArrayList<VarBindPatternPK>();
-				int orderNo = 0;
-				for (VarBindPattern varbind : varbindList) {
-					if (varbind != null) {
-						VarBindPattern varbindEntity = null;
-						VarBindPatternPK varbindEntityPk = new VarBindPatternPK(
-								checkInfo.getMonitorId(),
-								trapValue.getMib(),
-								trapValue.getTrapOid(), 
-								trapValue.getGenericId() == null ? Integer.valueOf(0): trapValue.getGenericId(),
-								trapValue.getSpecificId() == null ? Integer.valueOf(0): trapValue.getSpecificId(),
-								Integer.valueOf(orderNo));
-						try {
-							varbindEntity = QueryUtil.getMonitorTrapVarbindPatternInfoPK(varbindEntityPk);
-						} catch (MonitorNotFound e) {
-							varbindEntity = new VarBindPattern(varbindEntityPk);
-							em.persist(varbindEntity);
-							varbindEntity.relateToMonitorTrapValueInfoEntity(entity);
-						}
-						orderNo++;
-						
-						varbindEntity.setCaseSensitivityFlg(varbind.getCaseSensitivityFlg());
-						varbindEntity.setDescription(varbind.getDescription());
-						varbindEntity.setPattern(varbind.getPattern());
-						varbindEntity.setPriority(varbind.getPriority());
-						varbindEntity.setProcessType(varbind.getProcessType());
-						varbindEntity.setValidFlg(varbind.getValidFlg());
-						monitorTrapVarbindPatternInfoEntityPkList.add(varbindEntityPk);
-					}
-				}
-				entity.deleteMonitorTrapVarbindPatternInfoEntities(monitorTrapVarbindPatternInfoEntityPkList);
-				
-				monitorTrapValueInfoEntityPkList.add(entityPk);
+			// SNMPTRAP監視情報を取得
+			TrapCheckInfo checkInfo = m_monitorInfo.getTrapCheckInfo();
+			if(m_log.isDebugEnabled()){
+				m_log.debug("modifyCheckInfo() : " +
+						" MonitorId = " + checkInfo.getMonitorId() +
+						",CommunityName = " + checkInfo.getCommunityName() +
+						",CommunityCheck = " + checkInfo.getCommunityCheck() +
+						",CharsetConvert = " + checkInfo.getCharsetConvert() +
+						",CharsetName = " + checkInfo.getCharsetName() +
+						",NotifyofReceivingUnspecifiedFlg = " + checkInfo.getNotifyofReceivingUnspecifiedFlg() +
+						",PriorityUnspecified = " + checkInfo.getPriorityUnspecified() +
+						",TrapValueInfos = " + checkInfo.getTrapValueInfos()
+						);
 			}
-		}
-		trapInfoEntity.deleteMonitorTrapValueInfoEntities(monitorTrapValueInfoEntityPkList);
 
-		m_log.debug("modifyCheckInfo() : end");
-		return true;
+			TrapCheckInfo trapInfoEntity = QueryUtil.getMonitorTrapInfoPK(m_monitorInfo.getMonitorId());
+
+			trapInfoEntity.setMonitorId(checkInfo.getMonitorId());
+			trapInfoEntity.setCharsetConvert(checkInfo.getCharsetConvert());
+			trapInfoEntity.setCharsetName(checkInfo.getCharsetName());
+			trapInfoEntity.setCommunityCheck(checkInfo.getCommunityCheck());
+			trapInfoEntity.setCommunityName(checkInfo.getCommunityName());
+			trapInfoEntity.setNotifyofReceivingUnspecifiedFlg(checkInfo.getNotifyofReceivingUnspecifiedFlg());
+			trapInfoEntity.setPriorityUnspecified(checkInfo.getPriorityUnspecified());
+
+			List<TrapValueInfo> trapValueList = new ArrayList<TrapValueInfo>(checkInfo.getTrapValueInfos());
+
+			List<TrapValueInfoPK> monitorTrapValueInfoEntityPkList = new ArrayList<TrapValueInfoPK>();
+			for (TrapValueInfo trapValue : trapValueList) {
+				if (trapValue != null) {
+					if (!trapValue.getTrapOid().startsWith(".")) {
+						trapValue.setTrapOid("." + trapValue.getTrapOid());
+					}
+					TrapValueInfo entity = null;
+					TrapValueInfoPK entityPk = new TrapValueInfoPK(
+							checkInfo.getMonitorId(),
+							trapValue.getMib(),
+							trapValue.getTrapOid(), 
+							trapValue.getGenericId() == null ? Integer.valueOf(0): trapValue.getGenericId(),
+							trapValue.getSpecificId() == null ? Integer.valueOf(0): trapValue.getSpecificId());
+					try {
+						entity = QueryUtil.getMonitorTrapValueInfoPK(entityPk);
+					} catch (MonitorNotFound e) {
+						entity = new TrapValueInfo(entityPk);
+						em.persist(entity);
+						entity.relateToMonitorTrapInfoEntity(trapInfoEntity);
+					}
+					
+					if (trapValue.getFormatVarBinds() == null) {
+						entity.setFormatVarBinds("");
+					} else {
+						entity.setFormatVarBinds(trapValue.getFormatVarBinds());
+					}
+					
+					entity.setDescription(trapValue.getDescription());
+					entity.setLogmsg(trapValue.getLogmsg());
+					entity.setPriorityAnyVarbind(trapValue.getPriorityAnyVarbind());
+					entity.setProcessingVarbindSpecified(trapValue.getProcessingVarbindSpecified());
+					entity.setUei(trapValue.getUei());
+					entity.setValidFlg(trapValue.getValidFlg());
+					entity.setVersion(trapValue.getVersion());
+					
+					List<VarBindPattern> varbindList = new ArrayList<VarBindPattern>(trapValue.getVarBindPatterns());
+					List<VarBindPatternPK> monitorTrapVarbindPatternInfoEntityPkList = new ArrayList<VarBindPatternPK>();
+					int orderNo = 0;
+					for (VarBindPattern varbind : varbindList) {
+						if (varbind != null) {
+							VarBindPattern varbindEntity = null;
+							VarBindPatternPK varbindEntityPk = new VarBindPatternPK(
+									checkInfo.getMonitorId(),
+									trapValue.getMib(),
+									trapValue.getTrapOid(), 
+									trapValue.getGenericId() == null ? Integer.valueOf(0): trapValue.getGenericId(),
+									trapValue.getSpecificId() == null ? Integer.valueOf(0): trapValue.getSpecificId(),
+									Integer.valueOf(orderNo));
+							try {
+								varbindEntity = QueryUtil.getMonitorTrapVarbindPatternInfoPK(varbindEntityPk);
+							} catch (MonitorNotFound e) {
+								varbindEntity = new VarBindPattern(varbindEntityPk);
+								em.persist(varbindEntity);
+								varbindEntity.relateToMonitorTrapValueInfoEntity(entity);
+							}
+							orderNo++;
+							
+							varbindEntity.setCaseSensitivityFlg(varbind.getCaseSensitivityFlg());
+							varbindEntity.setDescription(varbind.getDescription());
+							varbindEntity.setPattern(varbind.getPattern());
+							varbindEntity.setPriority(varbind.getPriority());
+							varbindEntity.setProcessType(varbind.getProcessType());
+							varbindEntity.setValidFlg(varbind.getValidFlg());
+							monitorTrapVarbindPatternInfoEntityPkList.add(varbindEntityPk);
+						}
+					}
+					entity.deleteMonitorTrapVarbindPatternInfoEntities(monitorTrapVarbindPatternInfoEntityPkList);
+					
+					monitorTrapValueInfoEntityPkList.add(entityPk);
+				}
+			}
+			trapInfoEntity.deleteMonitorTrapValueInfoEntities(monitorTrapValueInfoEntityPkList);
+
+			m_log.debug("modifyCheckInfo() : end");
+			return true;
+		}
 	}
 	
 	@Override

@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"NodeVariableList_funcName"}
+],
+"props":[
+	{
+	"propName":"NodeVariableInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

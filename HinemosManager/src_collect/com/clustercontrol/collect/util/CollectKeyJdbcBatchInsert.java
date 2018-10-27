@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.collect.util;
 
 import java.sql.PreparedStatement;
@@ -27,6 +35,7 @@ public class CollectKeyJdbcBatchInsert extends JdbcBatchQuery {
 
 	@Override
 	public void addBatch(PreparedStatement pstmt) throws SQLException {
+		size++;
 			Object[] params = new Object[] {
 				entity.getItemName(),
 				entity.getDisplayName(),

@@ -1,0 +1,79 @@
+          RFC1414-MIB DEFINITIONS ::= BEGIN
+
+          IMPORTS
+              OBJECT-TYPE
+                  FROM RFC-1212
+              tcpConnLocalAddress, tcpConnLocalPort,
+              tcpConnRemAddress, tcpConnRemPort
+                      FROM RFC1213-MIB;
+
+
+          ident   OBJECT IDENTIFIER ::= { mib-2 24 }
+
+
+
+          identInfo       OBJECT IDENTIFIER ::= { ident 1 }
+
+
+
+
+
+          identTable OBJECT-TYPE
+                  SYNTAX  SEQUENCE OF IdentEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  ::= { identInfo 1 }
+
+          identEntry OBJECT-TYPE
+                  SYNTAX  IdentEntry
+                  ACCESS  not-accessible
+                  STATUS  mandatory
+                  INDEX   { tcpConnLocalAddress, tcpConnLocalPort,
+                            tcpConnRemAddress, tcpConnRemPort }
+                  ::= { identTable 1 }
+
+          IdentEntry ::=
+              SEQUENCE {
+                  identStatus     INTEGER,
+                  identOpSys      OCTET STRING,
+                  identCharset    OCTET STRING,
+                  identUserid     OCTET STRING,
+                  identMisc       OCTET STRING
+              }
+
+          identStatus OBJECT-TYPE
+                  SYNTAX  INTEGER {
+                              noError(1),
+                              unknownError(2)
+                          }
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { identEntry 1 }
+
+          identOpSys OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE(0..40))
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { identEntry 2 }
+
+
+          identCharset OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE(0..40))
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { identEntry 3 }
+
+          identUserid OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..255))
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { identEntry 4 }
+
+          identMisc OBJECT-TYPE
+                  SYNTAX  OCTET STRING (SIZE (0..255))
+                  ACCESS  read-only
+                  STATUS  mandatory
+                  ::= { identEntry 5 }
+
+
+          END

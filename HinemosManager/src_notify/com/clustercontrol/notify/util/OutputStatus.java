@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.util;
@@ -23,7 +16,9 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JdbcBatchExecutor;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
@@ -176,67 +171,79 @@ public class OutputStatus implements DependDbNotifier {
 	private void outputStatusInfo(OutputBasicInfo outputInfo, int expirationFlg, long expirationDateTime, long outputDateTime,
 			Map<StatusInfoEntityPK, StatusInfoEntity> oldEntityMap, String roleId, List<StatusInfoEntity> insertEntityList) {
 		StatusInfoEntity outputStatus = null;
-		
-		// エンティティ情報の検索
-		StatusInfoEntityPK outputStatusPk
-		= new StatusInfoEntityPK(outputInfo.getFacilityId(),
-				outputInfo.getMonitorId(),
-				outputInfo.getSubKey(),
-				outputInfo.getPluginId());
-		if (oldEntityMap == null) {
-			try {
-				outputStatus = com.clustercontrol.notify.monitor.util.QueryUtil.getStatusInfoPK(outputStatusPk);
-			} catch (MonitorNotFound e) {
-				m_log.debug("monitor not found.", e);
-			} catch (InvalidRole e) {
-				m_log.debug("invalid role.", e);
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			// エンティティ情報の検索
+			StatusInfoEntityPK outputStatusPk
+			= new StatusInfoEntityPK(outputInfo.getFacilityId(),
+					outputInfo.getMonitorId(),
+					outputInfo.getSubKey(),
+					outputInfo.getPluginId());
+			if (oldEntityMap == null) {
+				try {
+					outputStatus = com.clustercontrol.notify.monitor.util.QueryUtil.getStatusInfoPK(outputStatusPk);
+				} catch (MonitorNotFound e) {
+					m_log.debug("monitor not found.", e);
+				} catch (InvalidRole e) {
+					m_log.debug("invalid role.", e);
+				}
+			} else {
+				outputStatus = oldEntityMap.get(outputStatusPk);
 			}
-		} else {
-			outputStatus = oldEntityMap.get(outputStatusPk);
-		}
-		if (outputStatus == null) {
-			// 検索条件に合致するエンティティが存在しないため新規に生成
-			// インスタンス生成
-			if (roleId == null) {
+			if (outputStatus == null) {
+				// 検索条件に合致するエンティティが存在しないため新規に生成
+				// インスタンス生成
 				outputStatus = new StatusInfoEntity(outputStatusPk);
-			} else {
-				outputStatus = new StatusInfoEntity(outputStatusPk, roleId);
-			}
+				if (roleId == null) {
+					outputStatus.setOwnerRoleId(NotifyUtil.getOwnerRoleId(
+							outputStatusPk.getPluginId(), outputStatusPk.getMonitorId(),
+							outputStatusPk.getMonitorDetailId(), outputStatusPk.getFacilityId(), false));
+					em.persist(outputStatus);
+				} else {
+					outputStatus.setOwnerRoleId(roleId);
+				}
 
-			// 重複チェック
-			outputStatus.setApplication(outputInfo.getApplication());
-			outputStatus.setExpirationDate(expirationDateTime);
-			outputStatus.setExpirationFlg(expirationFlg);
-			outputStatus.setGenerationDate(outputInfo.getGenerationDate());
-			String message = outputInfo.getMessage();
-			if (message == null) {
-				message = "";
-			}
-			if (message.length() > 255) {
-				outputStatus.setMessage(message.substring(0, 255));
-			} else {
-				outputStatus.setMessage(message);
-			}
-			outputStatus.setOutputDate(outputDateTime);
-			outputStatus.setPriority(outputInfo.getPriority());
-			
-			if (checkDuplicateStatus(insertEntityList, outputStatus)) {
-				insertEntityList.add(outputStatus);
-			}
-		} else {
-			// ステータス情報の更新
-			outputStatus.setApplication(outputInfo.getApplication());
-			outputStatus.setMessage(outputInfo.getMessage());
-
-			// 重要度が変更されていた場合、出力日時を更新する
-			if (outputStatus.getPriority().intValue() != outputInfo.getPriority()) {
+				// 重複チェック
+				outputStatus.setApplication(outputInfo.getApplication());
+				outputStatus.setExpirationDate(expirationDateTime);
+				outputStatus.setExpirationFlg(expirationFlg);
 				outputStatus.setGenerationDate(outputInfo.getGenerationDate());
-			}
+				String message = outputInfo.getMessage();
+				if (message == null) {
+					message = "";
+				}
+				if (message.length() > 255) {
+					outputStatus.setMessage(message.substring(0, 255));
+				} else {
+					outputStatus.setMessage(message);
+				}
+				outputStatus.setOutputDate(outputDateTime);
+				outputStatus.setPriority(outputInfo.getPriority());
+				
+				if (checkDuplicateStatus(insertEntityList, outputStatus)) {
+					insertEntityList.add(outputStatus);
+				}
+			} else {
+				// ステータス情報の更新
+				outputStatus.setApplication(outputInfo.getApplication());
+				if (outputInfo.getMessage().length() > 255) {
+					outputStatus.setMessage(outputInfo.getMessage().substring(0, 255));
+				} else {
+					outputStatus.setMessage(outputInfo.getMessage());
+				}
 
-			outputStatus.setPriority(outputInfo.getPriority());
-			outputStatus.setOutputDate(outputDateTime);
-			outputStatus.setExpirationFlg(expirationFlg);
-			outputStatus.setExpirationDate(expirationDateTime);
+				// 重要度が変更されていた場合、出力日時を更新する
+				if (outputStatus.getPriority().intValue() != outputInfo.getPriority()) {
+					outputStatus.setGenerationDate(outputInfo.getGenerationDate());
+				}
+
+				outputStatus.setPriority(outputInfo.getPriority());
+				outputStatus.setOutputDate(outputDateTime);
+				outputStatus.setExpirationFlg(expirationFlg);
+				outputStatus.setExpirationDate(expirationDateTime);
+			}
 		}
 	}
 	

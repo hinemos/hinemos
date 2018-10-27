@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.snmptrap.model;
 
 import java.io.Serializable;
@@ -25,7 +33,7 @@ import javax.xml.bind.annotation.XmlType;
 @XmlType(namespace = "http://monitor.ws.clustercontrol.com")
 @Entity
 @Table(name="cc_monitor_trap_varbind_pattern_info", schema="setting")
-@Cacheable(true)
+@Cacheable(false)
 public class VarBindPattern implements Serializable {
 	private static final long serialVersionUID = 1L;
 

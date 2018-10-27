@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.util;
@@ -35,6 +28,7 @@ import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 import com.clustercontrol.ws.jobmanagement.JobInfo;
 import com.clustercontrol.ws.jobmanagement.JobInvalid_Exception;
+import com.clustercontrol.ws.jobmanagement.JobNextJobOrderInfo;
 import com.clustercontrol.ws.jobmanagement.JobObjectInfo;
 import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
@@ -251,10 +245,34 @@ public class JobUtil {
 							jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_START_MINUTE ||
 							jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
 						list.add(jobObjectInfo);
+					} else if (jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS ||
+							jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
+						//セッション横断待ち条件の場合、待ち条件のジョブIDはそのままコピーします
+						list.add(jobObjectInfo);
 					}
 				}
 				waitRule.getObject().clear();
 				waitRule.getObject().addAll(list);
+			}
+			//後続ジョブ優先度設定がある場合、合わせてコピーする
+			if (waitRule != null) {
+				if (waitRule.isExclusiveBranch() != null && waitRule.isExclusiveBranch()) {
+					List<JobNextJobOrderInfo> nextJobOrderList = waitRule.getExclusiveBranchNextJobOrderList();
+					List<JobNextJobOrderInfo> list = new ArrayList<JobNextJobOrderInfo>();
+					for (JobNextJobOrderInfo nextJobOrder: nextJobOrderList) {
+						String jobId = jobIdMap.get(nextJobOrder.getJobId());
+						String nextJobId = jobIdMap.get(nextJobOrder.getNextJobId());
+						if (jobId != null && nextJobId != null) {
+							JobNextJobOrderInfo newNextJobOrder = new JobNextJobOrderInfo();
+							newNextJobOrder.setJobunitId(item.getData().getJobunitId());
+							newNextJobOrder.setJobId(jobId);
+							newNextJobOrder.setNextJobId(nextJobId);
+							list.add(newNextJobOrder);
+						}
+					}
+					waitRule.getExclusiveBranchNextJobOrderList().clear();
+					waitRule.getExclusiveBranchNextJobOrderList().addAll(list);
+				}
 			}
 		}
 

@@ -1,0 +1,881 @@
+   WWW-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, mib-2,
+       Counter32, Counter64, Integer32, Unsigned32, TimeTicks
+           FROM SNMPv2-SMI
+
+
+
+
+       TEXTUAL-CONVENTION, DisplayString, DateAndTime, TimeInterval
+           FROM SNMPv2-TC
+
+       MODULE-COMPLIANCE, OBJECT-GROUP
+           FROM SNMPv2-CONF
+
+       Utf8String
+           FROM SYSAPPL-MIB;
+
+   wwwMIB MODULE-IDENTITY
+       LAST-UPDATED "9902251400Z"
+       ORGANIZATION "IETF Application MIB Working Group"
+
+
+
+
+
+
+          ::= { mib-2 65 }
+
+
+   wwwMIBObjects     OBJECT IDENTIFIER ::= { wwwMIB 1 }
+   wwwMIBConformance OBJECT IDENTIFIER ::= { wwwMIB 2 }
+
+
+   WwwRequestType ::= TEXTUAL-CONVENTION
+       STATUS      current
+       SYNTAX      OCTET STRING (SIZE (1..40))
+
+   WwwResponseType ::= TEXTUAL-CONVENTION
+       STATUS      current
+       SYNTAX      Integer32 (0..2147483647)
+
+   WwwOperStatus ::= TEXTUAL-CONVENTION
+       STATUS      current
+       SYNTAX      INTEGER {
+                       down(1),
+
+
+
+
+                       running(2),
+                       halted(3),
+                       congested(4),
+                       restarting(5)
+                   }
+
+   WwwDocName ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "255a"
+       STATUS      current
+       SYNTAX      OCTET STRING (SIZE (0..255))
+
+
+
+   wwwService OBJECT IDENTIFIER ::= { wwwMIBObjects 1 }
+
+   wwwServiceTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwServiceEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwService 1 }
+
+   wwwServiceEntry OBJECT-TYPE
+       SYNTAX      WwwServiceEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex }
+       ::= { wwwServiceTable 1 }
+
+   WwwServiceEntry ::= SEQUENCE {
+       wwwServiceIndex             Unsigned32,
+       wwwServiceDescription       Utf8String,
+       wwwServiceContact           Utf8String,
+       wwwServiceProtocol          OBJECT IDENTIFIER,
+       wwwServiceName              DisplayString,
+       wwwServiceType              INTEGER,
+
+
+
+
+       wwwServiceStartTime         DateAndTime,
+       wwwServiceOperStatus        WwwOperStatus,
+       wwwServiceLastChange        DateAndTime
+   }
+
+   wwwServiceIndex OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..4294967295)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwServiceEntry 1 }
+
+   wwwServiceDescription OBJECT-TYPE
+       SYNTAX      Utf8String
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwServiceEntry 2 }
+
+   wwwServiceContact OBJECT-TYPE
+       SYNTAX      Utf8String
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwServiceEntry 3 }
+
+   wwwServiceProtocol OBJECT-TYPE
+       SYNTAX      OBJECT IDENTIFIER
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwServiceEntry 4 }
+
+   wwwServiceName OBJECT-TYPE
+       SYNTAX      DisplayString
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwServiceEntry 5 }
+
+   wwwServiceType OBJECT-TYPE
+       SYNTAX      INTEGER {
+                       wwwOther(1),
+                       wwwServer(2),
+                       wwwClient(3),
+                       wwwProxy(4),
+                       wwwCachingProxy(5)
+                   }
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwServiceEntry 6 }
+
+   wwwServiceStartTime OBJECT-TYPE
+       SYNTAX      DateAndTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwServiceEntry 7 }
+
+   wwwServiceOperStatus OBJECT-TYPE
+       SYNTAX      WwwOperStatus
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwServiceEntry 8 }
+
+
+
+
+   wwwServiceLastChange OBJECT-TYPE
+       SYNTAX      DateAndTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwServiceEntry 9 }
+
+
+
+   wwwProtocolStatistics OBJECT IDENTIFIER ::= { wwwMIBObjects 2 }
+
+   wwwSummaryTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwSummaryEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwProtocolStatistics 1 }
+
+   wwwSummaryEntry OBJECT-TYPE
+       SYNTAX      WwwSummaryEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex }
+       ::= { wwwSummaryTable 1 }
+
+   WwwSummaryEntry ::= SEQUENCE {
+       wwwSummaryInRequests        Counter32,
+       wwwSummaryOutRequests       Counter32,
+       wwwSummaryInResponses       Counter32,
+       wwwSummaryOutResponses      Counter32,
+       wwwSummaryInBytes           Counter64,
+       wwwSummaryInLowBytes        Counter32,
+       wwwSummaryOutBytes          Counter64,
+       wwwSummaryOutLowBytes       Counter32
+   }
+
+   wwwSummaryInRequests OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+
+
+
+
+       STATUS      current
+       ::= { wwwSummaryEntry 1 }
+
+   wwwSummaryOutRequests OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwSummaryEntry 2 }
+
+   wwwSummaryInResponses OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwSummaryEntry 3 }
+
+   wwwSummaryOutResponses OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwSummaryEntry 4 }
+
+   wwwSummaryInBytes OBJECT-TYPE
+       SYNTAX      Counter64
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwSummaryEntry 5 }
+
+   wwwSummaryInLowBytes OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwSummaryEntry 6 }
+
+   wwwSummaryOutBytes OBJECT-TYPE
+       SYNTAX      Counter64
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwSummaryEntry 7 }
+
+   wwwSummaryOutLowBytes OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwSummaryEntry 8 }
+
+
+   wwwRequestInTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwRequestInEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwProtocolStatistics 2 }
+
+   wwwRequestInEntry OBJECT-TYPE
+       SYNTAX      WwwRequestInEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex, wwwRequestInIndex }
+       ::= { wwwRequestInTable 1 }
+
+   WwwRequestInEntry ::= SEQUENCE {
+       wwwRequestInIndex           WwwRequestType,
+       wwwRequestInRequests        Counter32,
+       wwwRequestInBytes           Counter32,
+       wwwRequestInLastTime        DateAndTime
+   }
+
+   wwwRequestInIndex OBJECT-TYPE
+       SYNTAX      WwwRequestType
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwRequestInEntry 1 }
+
+   wwwRequestInRequests OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+
+
+
+
+       STATUS      current
+       ::= { wwwRequestInEntry 2 }
+
+   wwwRequestInBytes OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwRequestInEntry 3 }
+
+   wwwRequestInLastTime OBJECT-TYPE
+       SYNTAX      DateAndTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwRequestInEntry 4 }
+
+   wwwRequestOutTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwRequestOutEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwProtocolStatistics 3 }
+
+   wwwRequestOutEntry OBJECT-TYPE
+       SYNTAX      WwwRequestOutEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex, wwwRequestOutIndex }
+       ::= { wwwRequestOutTable 1 }
+
+   WwwRequestOutEntry ::= SEQUENCE {
+       wwwRequestOutIndex          WwwRequestType,
+       wwwRequestOutRequests       Counter32,
+       wwwRequestOutBytes          Counter32,
+       wwwRequestOutLastTime       DateAndTime
+   }
+
+
+
+
+   wwwRequestOutIndex OBJECT-TYPE
+       SYNTAX      WwwRequestType
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwRequestOutEntry 1 }
+
+   wwwRequestOutRequests OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwRequestOutEntry 2 }
+
+   wwwRequestOutBytes OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwRequestOutEntry 3 }
+
+   wwwRequestOutLastTime OBJECT-TYPE
+       SYNTAX      DateAndTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwRequestOutEntry 4 }
+
+
+   wwwResponseInTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwResponseInEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwProtocolStatistics 4 }
+
+   wwwResponseInEntry OBJECT-TYPE
+
+
+
+
+       SYNTAX      WwwResponseInEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex, wwwResponseInIndex }
+       ::= { wwwResponseInTable 1 }
+
+   WwwResponseInEntry ::= SEQUENCE {
+       wwwResponseInIndex          WwwResponseType,
+       wwwResponseInResponses      Counter32,
+       wwwResponseInBytes          Counter32,
+       wwwResponseInLastTime       DateAndTime
+   }
+
+   wwwResponseInIndex OBJECT-TYPE
+       SYNTAX      WwwResponseType
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwResponseInEntry 1 }
+
+   wwwResponseInResponses OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwResponseInEntry 2 }
+
+   wwwResponseInBytes OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwResponseInEntry 3 }
+
+   wwwResponseInLastTime OBJECT-TYPE
+       SYNTAX      DateAndTime
+       MAX-ACCESS  read-only
+       STATUS      current
+
+
+
+
+       ::= { wwwResponseInEntry 4 }
+
+   wwwResponseOutTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwResponseOutEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwProtocolStatistics 5 }
+
+   wwwResponseOutEntry OBJECT-TYPE
+       SYNTAX      WwwResponseOutEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex, wwwResponseOutIndex }
+       ::= { wwwResponseOutTable 1 }
+
+   WwwResponseOutEntry ::= SEQUENCE {
+       wwwResponseOutIndex         WwwResponseType,
+       wwwResponseOutResponses     Counter32,
+       wwwResponseOutBytes         Counter32,
+       wwwResponseOutLastTime      DateAndTime
+   }
+
+   wwwResponseOutIndex OBJECT-TYPE
+       SYNTAX      WwwResponseType
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwResponseOutEntry 1 }
+
+   wwwResponseOutResponses OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwResponseOutEntry 2 }
+
+   wwwResponseOutBytes OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwResponseOutEntry 3 }
+
+   wwwResponseOutLastTime OBJECT-TYPE
+       SYNTAX      DateAndTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwResponseOutEntry 4 }
+
+
+
+   wwwDocumentStatistics OBJECT IDENTIFIER ::= { wwwMIBObjects 3 }
+
+   wwwDocCtrlTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwDocCtrlEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwDocumentStatistics 1 }
+
+   wwwDocCtrlEntry OBJECT-TYPE
+       SYNTAX      WwwDocCtrlEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex }
+       ::= { wwwDocCtrlTable 1 }
+
+   WwwDocCtrlEntry ::= SEQUENCE {
+       wwwDocCtrlLastNSize           Unsigned32,
+       wwwDocCtrlLastNLock           TimeTicks,
+       wwwDocCtrlBuckets             Unsigned32,
+       wwwDocCtrlBucketTimeInterval  TimeInterval,
+       wwwDocCtrlTopNSize            Unsigned32
+   }
+
+
+
+
+   wwwDocCtrlLastNSize OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-write
+       STATUS      current
+       DEFVAL { 25 }
+       ::= { wwwDocCtrlEntry 1 }
+
+   wwwDocCtrlLastNLock OBJECT-TYPE
+       SYNTAX      TimeTicks
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { wwwDocCtrlEntry 2 }
+
+   wwwDocCtrlBuckets OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-write
+       STATUS      current
+       DEFVAL { 4 }        -- 4 buckets times 15 minutes = 1 hour
+       ::= { wwwDocCtrlEntry 3 }
+
+
+
+
+   wwwDocCtrlBucketTimeInterval OBJECT-TYPE
+       SYNTAX      TimeInterval
+       MAX-ACCESS  read-write
+       STATUS      current
+       DEFVAL { 90000 }    -- 15 minutes (resolution .01 s)
+       ::= { wwwDocCtrlEntry 4 }
+
+   wwwDocCtrlTopNSize OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-write
+       STATUS      current
+       DEFVAL { 25 }
+       ::= { wwwDocCtrlEntry 5 }
+
+
+   wwwDocLastNTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwDocLastNEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwDocumentStatistics 2 }
+
+   wwwDocLastNEntry OBJECT-TYPE
+       SYNTAX      WwwDocLastNEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex, wwwDocLastNIndex }
+       ::= { wwwDocLastNTable 1 }
+
+   WwwDocLastNEntry ::= SEQUENCE {
+       wwwDocLastNIndex            Unsigned32,
+       wwwDocLastNName             WwwDocName,
+       wwwDocLastNTimeStamp        DateAndTime,
+       wwwDocLastNRequestType      WwwRequestType,
+       wwwDocLastNResponseType     WwwResponseType,
+       wwwDocLastNStatusMsg        Utf8String,
+       wwwDocLastNBytes            Unsigned32
+   }
+
+   wwwDocLastNIndex OBJECT-TYPE
+
+
+
+
+       SYNTAX      Unsigned32 (1..4294967295)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwDocLastNEntry 1 }
+
+   wwwDocLastNName OBJECT-TYPE
+       SYNTAX      WwwDocName
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocLastNEntry 2 }
+
+   wwwDocLastNTimeStamp OBJECT-TYPE
+       SYNTAX      DateAndTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocLastNEntry 3 }
+
+   wwwDocLastNRequestType OBJECT-TYPE
+       SYNTAX      WwwRequestType
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocLastNEntry 4 }
+
+   wwwDocLastNResponseType OBJECT-TYPE
+       SYNTAX      WwwResponseType
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocLastNEntry 5 }
+
+   wwwDocLastNStatusMsg OBJECT-TYPE
+       SYNTAX      Utf8String
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocLastNEntry 6 }
+
+   wwwDocLastNBytes OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocLastNEntry 7 }
+
+
+   wwwDocBucketTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwDocBucketEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwDocumentStatistics 3 }
+
+   wwwDocBucketEntry OBJECT-TYPE
+       SYNTAX      WwwDocBucketEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex, wwwDocBucketIndex }
+       ::= { wwwDocBucketTable 1 }
+
+
+
+
+   WwwDocBucketEntry ::= SEQUENCE {
+       wwwDocBucketIndex           Unsigned32,
+       wwwDocBucketTimeStamp       DateAndTime,
+       wwwDocBucketAccesses        Unsigned32,
+       wwwDocBucketDocuments       Unsigned32,
+       wwwDocBucketBytes           Unsigned32
+   }
+
+   wwwDocBucketIndex OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..4294967295)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwDocBucketEntry 1 }
+
+   wwwDocBucketTimeStamp OBJECT-TYPE
+       SYNTAX      DateAndTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocBucketEntry 2 }
+
+   wwwDocBucketAccesses OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocBucketEntry 3 }
+
+   wwwDocBucketDocuments OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocBucketEntry 4 }
+
+   wwwDocBucketBytes OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+
+
+
+
+       ::= { wwwDocBucketEntry 5 }
+
+
+   wwwDocAccessTopNTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwDocAccessTopNEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwDocumentStatistics 4 }
+
+   wwwDocAccessTopNEntry OBJECT-TYPE
+       SYNTAX      WwwDocAccessTopNEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex, wwwDocBucketIndex,
+                     wwwDocAccessTopNIndex }
+       ::= { wwwDocAccessTopNTable 1 }
+
+   WwwDocAccessTopNEntry ::= SEQUENCE {
+       wwwDocAccessTopNIndex             Unsigned32,
+       wwwDocAccessTopNName              WwwDocName,
+       wwwDocAccessTopNAccesses          Unsigned32,
+       wwwDocAccessTopNBytes             Unsigned32,
+       wwwDocAccessTopNLastResponseType  WwwResponseType
+   }
+
+   wwwDocAccessTopNIndex OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..4294967295)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwDocAccessTopNEntry 1 }
+
+
+
+
+   wwwDocAccessTopNName OBJECT-TYPE
+       SYNTAX      WwwDocName
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocAccessTopNEntry 2 }
+
+   wwwDocAccessTopNAccesses OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocAccessTopNEntry 3 }
+
+   wwwDocAccessTopNBytes OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocAccessTopNEntry 4 }
+
+   wwwDocAccessTopNLastResponseType OBJECT-TYPE
+       SYNTAX      WwwResponseType
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocAccessTopNEntry 5 }
+
+
+   wwwDocBytesTopNTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF WwwDocBytesTopNEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwDocumentStatistics 5 }
+
+
+
+
+   wwwDocBytesTopNEntry OBJECT-TYPE
+       SYNTAX      WwwDocBytesTopNEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX       { wwwServiceIndex, wwwDocBucketIndex,
+                     wwwDocBytesTopNIndex }
+       ::= { wwwDocBytesTopNTable 1 }
+
+   WwwDocBytesTopNEntry ::= SEQUENCE {
+       wwwDocBytesTopNIndex             Unsigned32,
+       wwwDocBytesTopNName              WwwDocName,
+       wwwDocBytesTopNAccesses          Unsigned32,
+       wwwDocBytesTopNBytes             Unsigned32,
+       wwwDocBytesTopNLastResponseType  WwwResponseType
+   }
+
+   wwwDocBytesTopNIndex OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..4294967295)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { wwwDocBytesTopNEntry 1 }
+
+   wwwDocBytesTopNName OBJECT-TYPE
+       SYNTAX      WwwDocName
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocBytesTopNEntry 2 }
+
+   wwwDocBytesTopNAccesses OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocBytesTopNEntry 3 }
+
+   wwwDocBytesTopNBytes OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+
+
+
+
+       ::= { wwwDocBytesTopNEntry 4 }
+
+   wwwDocBytesTopNLastResponseType OBJECT-TYPE
+       SYNTAX      WwwResponseType
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { wwwDocBytesTopNEntry 5 }
+
+
+   wwwMIBCompliances OBJECT IDENTIFIER ::= { wwwMIBConformance 1 }
+   wwwMIBGroups      OBJECT IDENTIFIER ::= { wwwMIBConformance 2 }
+
+   wwwMinimalCompliance MODULE-COMPLIANCE
+       STATUS      current
+       MODULE  -- this module
+       MANDATORY-GROUPS {
+           wwwServiceGroup,
+           wwwSummaryGroup
+       }
+       OBJECT wwwSummaryOutRequests
+       OBJECT wwwSummaryInResponses
+       OBJECT wwwSummaryInRequests
+       OBJECT wwwSummaryOutResponses
+       ::= { wwwMIBCompliances 1 }
+
+   wwwFullCompliance MODULE-COMPLIANCE
+       STATUS      current
+       MODULE  -- this module
+       MANDATORY-GROUPS {
+           wwwServiceGroup,
+           wwwSummaryGroup
+       }
+       GROUP  wwwRequestInGroup
+       GROUP wwwResponseOutGroup
+       GROUP wwwRequestOutGroup
+       GROUP wwwResponseInGroup
+       GROUP wwwDocumentGroup
+       OBJECT wwwSummaryOutRequests
+       OBJECT wwwSummaryInResponses
+       OBJECT wwwSummaryInRequests
+       OBJECT wwwSummaryOutResponses
+       ::= { wwwMIBCompliances 2 }
+
+
+
+
+   wwwServiceGroup OBJECT-GROUP
+       OBJECTS {
+           wwwServiceDescription,
+           wwwServiceContact,
+           wwwServiceProtocol,
+           wwwServiceName,
+           wwwServiceType,
+           wwwServiceStartTime,
+           wwwServiceOperStatus,
+           wwwServiceLastChange
+       }
+       STATUS      current
+       ::= { wwwMIBGroups 1 }
+
+   wwwSummaryGroup OBJECT-GROUP
+       OBJECTS {
+           wwwSummaryInRequests,
+           wwwSummaryOutRequests,
+           wwwSummaryInResponses,
+           wwwSummaryOutResponses,
+           wwwSummaryInBytes,
+           wwwSummaryInLowBytes,
+           wwwSummaryOutBytes,
+           wwwSummaryOutLowBytes
+       }
+       STATUS      current
+       ::= { wwwMIBGroups 2 }
+
+   wwwRequestInGroup OBJECT-GROUP
+       OBJECTS {
+           wwwRequestInRequests,
+           wwwRequestInBytes,
+           wwwRequestInLastTime
+       }
+       STATUS      current
+       ::= { wwwMIBGroups 3 }
+
+   wwwRequestOutGroup OBJECT-GROUP
+       OBJECTS {
+           wwwRequestOutRequests,
+
+
+
+
+           wwwRequestOutBytes,
+           wwwRequestOutLastTime
+       }
+       STATUS      current
+       ::= { wwwMIBGroups 4 }
+
+   wwwResponseInGroup OBJECT-GROUP
+       OBJECTS {
+           wwwResponseInResponses,
+           wwwResponseInBytes,
+           wwwResponseInLastTime
+       }
+       STATUS      current
+       ::= { wwwMIBGroups 5 }
+
+   wwwResponseOutGroup OBJECT-GROUP
+       OBJECTS {
+           wwwResponseOutResponses,
+           wwwResponseOutBytes,
+           wwwResponseOutLastTime
+       }
+       STATUS      current
+       ::= { wwwMIBGroups 6 }
+
+   wwwDocumentGroup OBJECT-GROUP
+       OBJECTS {
+           wwwDocCtrlLastNSize,
+           wwwDocCtrlLastNLock,
+           wwwDocCtrlBuckets,
+           wwwDocCtrlBucketTimeInterval,
+           wwwDocCtrlTopNSize,
+           wwwDocLastNName,
+           wwwDocLastNTimeStamp,
+           wwwDocLastNRequestType,
+           wwwDocLastNResponseType,
+           wwwDocLastNStatusMsg,
+           wwwDocLastNBytes,
+           wwwDocBucketTimeStamp,
+           wwwDocBucketAccesses,
+           wwwDocBucketDocuments,
+           wwwDocBucketBytes,
+
+
+
+
+           wwwDocAccessTopNName,
+           wwwDocAccessTopNAccesses,
+           wwwDocAccessTopNBytes,
+           wwwDocAccessTopNLastResponseType,
+           wwwDocBytesTopNName,
+           wwwDocBytesTopNAccesses,
+           wwwDocBytesTopNBytes,
+           wwwDocBytesTopNLastResponseType
+       }
+       STATUS  current
+       ::= { wwwMIBGroups 7 }
+
+   END

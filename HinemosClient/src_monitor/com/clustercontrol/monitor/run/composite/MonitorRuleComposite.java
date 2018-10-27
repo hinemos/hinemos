@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.composite;
@@ -116,6 +109,7 @@ public class MonitorRuleComposite extends Composite {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_comboRunInterval.setLayoutData(gridData);
+		this.m_comboRunInterval.add(RunInterval.TYPE_SEC_30.toString());
 		this.m_comboRunInterval.add(RunInterval.TYPE_MIN_01.toString());
 		this.m_comboRunInterval.add(RunInterval.TYPE_MIN_05.toString());
 		this.m_comboRunInterval.add(RunInterval.TYPE_MIN_10.toString());

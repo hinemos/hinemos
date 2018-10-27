@@ -1,0 +1,302 @@
+   ROHC-RTP-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE,
+       Unsigned32, Counter32, mib-2
+           FROM SNMPv2-SMI                               -- [RFC2578]
+
+
+
+
+
+       TruthValue
+           FROM SNMPv2-TC                                -- [RFC2579]
+
+       MODULE-COMPLIANCE, OBJECT-GROUP
+           FROM SNMPv2-CONF                              -- [RFC2580]
+
+       rohcChannelID, rohcContextCID
+           FROM ROHC-MIB;                                -- [RFC3816]
+
+   rohcRtpMIB MODULE-IDENTITY
+       LAST-UPDATED "200406030000Z"  -- June 3, 2004
+       ORGANIZATION "IETF Robust Header Compression Working Group"
+
+       ::= { mib-2 114 }
+
+
+
+
+
+
+
+   rohcRtpObjects       OBJECT IDENTIFIER ::= { rohcRtpMIB 1 }
+   rohcRtpConformance   OBJECT IDENTIFIER ::= { rohcRtpMIB 2 }
+
+
+   rohcRtpContextTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF RohcRtpContextEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { rohcRtpObjects 1 }
+
+   rohcRtpContextEntry OBJECT-TYPE
+       SYNTAX      RohcRtpContextEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX {
+           rohcChannelID,
+           rohcContextCID
+       }
+       ::= { rohcRtpContextTable 1 }
+
+   RohcRtpContextEntry ::= SEQUENCE {
+       rohcRtpContextState             INTEGER,
+       rohcRtpContextMode              INTEGER,
+       rohcRtpContextAlwaysPad         TruthValue,
+       rohcRtpContextLargePktsAllowed  TruthValue,
+       rohcRtpContextVerifyPeriod      Unsigned32,
+       rohcRtpContextSizesAllowed      Unsigned32,
+       rohcRtpContextSizesUsed         Unsigned32,
+       rohcRtpContextACKs              Counter32,
+       rohcRtpContextNACKs             Counter32,
+       rohcRtpContextSNACKs            Counter32,
+
+
+
+
+
+       rohcRtpContextNHPs              Counter32,
+       rohcRtpContextCSPs              Counter32,
+       rohcRtpContextCCPs              Counter32,
+       rohcRtpContextPktsLostPhysical  Counter32,
+       rohcRtpContextPktsLostPreLink   Counter32
+   }
+
+   rohcRtpContextState OBJECT-TYPE
+       SYNTAX      INTEGER {
+                       initAndRefresh(1),
+                       firstOrder(2),
+                       secondOrder(3),
+                       noContext(4),
+                       staticContext(5),
+                       fullContext(6)
+                   }
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 3 }
+
+   rohcRtpContextMode OBJECT-TYPE
+       SYNTAX      INTEGER {
+                       unidirectional(1),
+                       optimistic(2),
+                       reliable(3)
+                   }
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 4 }
+
+   rohcRtpContextAlwaysPad OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-only
+       STATUS      current
+       DEFVAL { false }
+       ::= { rohcRtpContextEntry 5 }
+
+   rohcRtpContextLargePktsAllowed OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-only
+       STATUS      current
+       DEFVAL { true }
+       ::= { rohcRtpContextEntry 6 }
+
+   rohcRtpContextVerifyPeriod OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+       DEFVAL { 0 }
+       ::= { rohcRtpContextEntry 7 }
+
+   rohcRtpContextSizesAllowed  OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..4294967295)
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 8 }
+
+   rohcRtpContextSizesUsed  OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..4294967295)
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 9 }
+
+
+
+
+
+
+   rohcRtpContextACKs OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 10 }
+
+   rohcRtpContextNACKs OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 11 }
+
+   rohcRtpContextSNACKs OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 12 }
+
+   rohcRtpContextNHPs OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 13 }
+
+   rohcRtpContextCSPs OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 14 }
+
+   rohcRtpContextCCPs OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 15 }
+
+   rohcRtpContextPktsLostPhysical OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 16 }
+
+   rohcRtpContextPktsLostPreLink OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpContextEntry 17 }
+
+
+
+
+
+
+
+   rohcRtpPacketSizeTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF RohcRtpPacketSizeEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { rohcRtpObjects 2 }
+
+   rohcRtpPacketSizeEntry OBJECT-TYPE
+       SYNTAX      RohcRtpPacketSizeEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX {
+           rohcChannelID,
+           rohcContextCID,
+           rohcRtpPacketSize
+       }
+       ::= { rohcRtpPacketSizeTable 1 }
+
+   RohcRtpPacketSizeEntry ::= SEQUENCE {
+       rohcRtpPacketSize                Unsigned32,
+       rohcRtpPacketSizePreferred       TruthValue,
+       rohcRtpPacketSizeUsed            TruthValue,
+       rohcRtpPacketSizeRestrictedType  INTEGER
+   }
+
+   rohcRtpPacketSize OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..4294967295)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { rohcRtpPacketSizeEntry 3 }
+
+   rohcRtpPacketSizePreferred OBJECT-TYPE
+
+
+
+
+
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpPacketSizeEntry 4 }
+
+   rohcRtpPacketSizeUsed OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpPacketSizeEntry 5 }
+
+   rohcRtpPacketSizeRestrictedType OBJECT-TYPE
+       SYNTAX      INTEGER {
+                       nhpOnly(1),
+                       rhpOnly(2),
+                       noRestrictions(3)
+                   }
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { rohcRtpPacketSizeEntry 6 }
+
+   rohcRtpCompliances OBJECT IDENTIFIER ::= { rohcRtpConformance 1 }
+   rohcRtpGroups      OBJECT IDENTIFIER ::= { rohcRtpConformance 2 }
+
+
+   rohcRtpCompliance MODULE-COMPLIANCE
+       STATUS      current
+       MODULE      -- this module
+       MANDATORY-GROUPS {
+               rohcRtpContextGroup
+       }
+       GROUP   rohcRtpPacketSizesGroup
+       GROUP   rohcRtpStatisticsGroup
+       ::= { rohcRtpCompliances 1 }
+
+
+
+
+
+   rohcRtpContextGroup OBJECT-GROUP
+       OBJECTS {
+           rohcRtpContextState,
+           rohcRtpContextMode,
+           rohcRtpContextAlwaysPad,
+           rohcRtpContextLargePktsAllowed,
+           rohcRtpContextVerifyPeriod
+       }
+       STATUS      current
+       ::= { rohcRtpGroups 1 }
+
+   rohcRtpPacketSizesGroup OBJECT-GROUP
+       OBJECTS {
+           rohcRtpContextSizesAllowed,
+           rohcRtpContextSizesUsed,
+           rohcRtpPacketSizePreferred,
+           rohcRtpPacketSizeUsed,
+           rohcRtpPacketSizeRestrictedType
+       }
+       STATUS      current
+       ::= { rohcRtpGroups 2 }
+
+   rohcRtpStatisticsGroup OBJECT-GROUP
+       OBJECTS {
+           rohcRtpContextACKs,
+           rohcRtpContextNACKs,
+           rohcRtpContextSNACKs,
+           rohcRtpContextNHPs,
+           rohcRtpContextCSPs,
+           rohcRtpContextCCPs,
+           rohcRtpContextPktsLostPhysical,
+           rohcRtpContextPktsLostPreLink
+       }
+       STATUS      current
+       ::= { rohcRtpGroups 3 }
+
+   END

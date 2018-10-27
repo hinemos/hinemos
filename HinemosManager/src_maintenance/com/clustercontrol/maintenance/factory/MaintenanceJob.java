@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.maintenance.factory;
@@ -28,10 +21,10 @@ import com.clustercontrol.commons.util.ILockManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.jobmanagement.factory.JobSessionImpl;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
+import com.clustercontrol.jobmanagement.util.JobSessionChangeDataCache;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.maintenance.util.QueryUtil;
 import com.clustercontrol.notify.model.MonitorStatusEntity;
-import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.notify.util.MonitorStatusCache;
 import com.clustercontrol.util.HinemosTime;
 
@@ -108,9 +101,6 @@ public class MaintenanceJob extends MaintenanceObject{
 		for (MonitorStatusEntity monitorStatus : monitorStatusList) {
 			MonitorStatusCache.remove(monitorStatus);
 		}
-		
-		// NotifyControllerBeanにあるキャッシュも削除する
-		NotifyControllerBean.removeCache(HinemosModuleConstant.JOB, sessionMap);
 
 		// 監視ジョブで使用するキャッシュも削除する
 		for(String sessionId : sessionIdList) {
@@ -168,6 +158,9 @@ public class MaintenanceJob extends MaintenanceObject{
 
 		// ジョブ多重度のリフレッシュ
 		JobMultiplicityCache.refresh();
+
+		// ジョブ履歴キャッシュ上の不要なデータを削除する。
+		JobSessionChangeDataCache.removeUnnecessaryData();
 
 		return ret;
 	}

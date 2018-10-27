@@ -1,0 +1,34 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"PingMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"PingInfo.RunCount",
+			"PingInfo.RunInterval",
+			"PingInfo.Timeout",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"NumericValue.*.ThresholdUpperLimit",
+			"NumericValue.*.ThresholdLowerLimit"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"PingMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

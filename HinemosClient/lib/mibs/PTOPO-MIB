@@ -1,0 +1,395 @@
+PTOPO-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+    Integer32, Counter32, mib-2
+        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION, AutonomousType, RowStatus, TimeStamp, TruthValue
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+
+
+
+
+
+        FROM SNMPv2-CONF
+    TimeFilter
+        FROM RMON2-MIB
+    PhysicalIndex
+        FROM ENTITY-MIB
+    AddressFamilyNumbers
+        FROM IANA-ADDRESS-FAMILY-NUMBERS-MIB;
+
+ptopoMIB MODULE-IDENTITY
+    LAST-UPDATED "200009210000Z"
+    ORGANIZATION "IETF; PTOPOMIB Working Group"
+    ::= { mib-2 79 }
+
+ptopoMIBObjects   OBJECT IDENTIFIER ::= { ptopoMIB 1 }
+
+
+ptopoData         OBJECT IDENTIFIER ::= { ptopoMIBObjects 1 }
+ptopoGeneral      OBJECT IDENTIFIER ::= { ptopoMIBObjects 2 }
+ptopoConfig       OBJECT IDENTIFIER ::= { ptopoMIBObjects 3 }
+
+
+
+
+
+
+PtopoGenAddr ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (0..20))
+
+PtopoChassisIdType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+            chasIdEntPhysicalAlias(1),
+            chasIdIfAlias(2),
+            chasIdPortEntPhysicalAlias(3),
+            chasIdMacAddress(4),
+            chasIdPtopoGenAddr(5)
+    }
+
+PtopoChassisId ::= TEXTUAL-CONVENTION
+    STATUS      current
+
+
+
+
+
+    SYNTAX      OCTET STRING (SIZE (1..32))
+
+PtopoPortIdType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+            portIdIfAlias(1),
+            portIdEntPhysicalAlias(2),
+            portIdMacAddr(3),
+            portIdPtopoGenAddr(4)
+    }
+
+PtopoPortId ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      OCTET STRING (SIZE (1..32))
+
+
+PtopoAddrSeenState ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+            notUsed(1),
+            unknown(2),
+            oneAddr(3),
+            multiAddr(4)
+    }
+
+
+
+
+
+
+
+
+ptopoConnTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PtopoConnEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { ptopoData 1 }
+
+ptopoConnEntry       OBJECT-TYPE
+    SYNTAX      PtopoConnEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   {
+           ptopoConnTimeMark,
+           ptopoConnLocalChassis,
+           ptopoConnLocalPort,
+           ptopoConnIndex
+    }
+    ::= { ptopoConnTable 1 }
+
+PtopoConnEntry ::= SEQUENCE {
+      ptopoConnTimeMark            TimeFilter,
+      ptopoConnLocalChassis        PhysicalIndex,
+      ptopoConnLocalPort           PhysicalIndex,
+      ptopoConnIndex               Integer32,
+      ptopoConnRemoteChassisType   PtopoChassisIdType,
+      ptopoConnRemoteChassis       PtopoChassisId,
+      ptopoConnRemotePortType      PtopoPortIdType,
+      ptopoConnRemotePort          PtopoPortId,
+      ptopoConnDiscAlgorithm       AutonomousType,
+      ptopoConnAgentNetAddrType    AddressFamilyNumbers,
+      ptopoConnAgentNetAddr        PtopoGenAddr,
+      ptopoConnMultiMacSASeen      PtopoAddrSeenState,
+      ptopoConnMultiNetSASeen      PtopoAddrSeenState,
+
+
+
+
+
+      ptopoConnIsStatic            TruthValue,
+      ptopoConnLastVerifyTime      TimeStamp,
+      ptopoConnRowStatus           RowStatus
+}
+
+ptopoConnTimeMark  OBJECT-TYPE
+    SYNTAX      TimeFilter
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { ptopoConnEntry 1 }
+
+ptopoConnLocalChassis  OBJECT-TYPE
+    SYNTAX      PhysicalIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { ptopoConnEntry 2 }
+
+ptopoConnLocalPort     OBJECT-TYPE
+    SYNTAX      PhysicalIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { ptopoConnEntry 3 }
+
+ptopoConnIndex    OBJECT-TYPE
+    SYNTAX      Integer32  (1..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { ptopoConnEntry 4 }
+
+ptopoConnRemoteChassisType  OBJECT-TYPE
+    SYNTAX      PtopoChassisIdType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { ptopoConnEntry 5 }
+
+ptopoConnRemoteChassis  OBJECT-TYPE
+    SYNTAX      PtopoChassisId
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { ptopoConnEntry 6 }
+
+ptopoConnRemotePortType  OBJECT-TYPE
+    SYNTAX      PtopoPortIdType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { ptopoConnEntry 7 }
+
+ptopoConnRemotePort  OBJECT-TYPE
+    SYNTAX      PtopoPortId
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { ptopoConnEntry 8 }
+
+ptopoConnDiscAlgorithm OBJECT-TYPE
+    SYNTAX      AutonomousType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ptopoConnEntry 9 }
+
+ptopoConnAgentNetAddrType  OBJECT-TYPE
+    SYNTAX      AddressFamilyNumbers
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { ptopoConnEntry 10 }
+
+ptopoConnAgentNetAddr  OBJECT-TYPE
+    SYNTAX      PtopoGenAddr
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    ::= { ptopoConnEntry 11 }
+
+ptopoConnMultiMacSASeen  OBJECT-TYPE
+    SYNTAX      PtopoAddrSeenState
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ptopoConnEntry 12 }
+
+ptopoConnMultiNetSASeen  OBJECT-TYPE
+    SYNTAX      PtopoAddrSeenState
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ptopoConnEntry 13 }
+
+ptopoConnIsStatic  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { false }
+    ::= { ptopoConnEntry 14 }
+
+ptopoConnLastVerifyTime  OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ptopoConnEntry 15 }
+
+ptopoConnRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { ptopoConnEntry 16 }
+
+
+
+ptopoLastChangeTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ptopoGeneral 1 }
+
+ptopoConnTabInserts OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "table entries"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ptopoGeneral 2 }
+
+ptopoConnTabDeletes OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "table entries"
+    MAX-ACCESS  read-only
+    STATUS      current
+
+    ::= { ptopoGeneral 3 }
+
+ptopoConnTabDrops OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "table entries"
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { ptopoGeneral 4 }
+
+ptopoConnTabAgeouts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { ptopoGeneral 5 }
+
+
+ptopoConfigTrapInterval OBJECT-TYPE
+    SYNTAX      Integer32 (0 | 5..3600)
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { ptopoConfig 1 }
+
+ptopoConfigMaxHoldTime OBJECT-TYPE
+    SYNTAX      Integer32 (1..2147483647)
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 300 }
+    ::= { ptopoConfig 2 }
+
+
+ptopoMIBNotifications  OBJECT IDENTIFIER ::= { ptopoMIB 2 }
+ptopoMIBTrapPrefix     OBJECT IDENTIFIER ::=
+
+
+
+
+
+      { ptopoMIBNotifications 0 }
+
+ptopoConfigChange NOTIFICATION-TYPE
+    OBJECTS       {
+             ptopoConnTabInserts,
+             ptopoConnTabDeletes,
+             ptopoConnTabDrops,
+             ptopoConnTabAgeouts
+    }
+    STATUS        current
+   ::= { ptopoMIBTrapPrefix 1 }
+
+
+ptopoRegistrationPoints  OBJECT IDENTIFIER ::= { ptopoMIB 3 }
+
+ptopoDiscoveryMechanisms OBJECT IDENTIFIER ::=
+      { ptopoRegistrationPoints 1 }
+
+ptopoDiscoveryLocal      OBJECT IDENTIFIER ::=
+      { ptopoDiscoveryMechanisms 1 }
+
+
+ptopoConformance OBJECT IDENTIFIER ::= { ptopoMIB 4 }
+
+ptopoCompliances OBJECT IDENTIFIER ::= { ptopoConformance 1 }
+ptopoGroups      OBJECT IDENTIFIER ::= { ptopoConformance 2 }
+
+
+ptopoCompliance MODULE-COMPLIANCE
+   STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+              ptopoDataGroup,
+
+
+
+
+
+              ptopoGeneralGroup,
+              ptopoConfigGroup,
+              ptopoNotificationsGroup
+        }
+    ::= { ptopoCompliances 1 }
+
+ptopoDataGroup   OBJECT-GROUP
+    OBJECTS {
+         ptopoConnRemoteChassisType,
+         ptopoConnRemoteChassis,
+         ptopoConnRemotePortType,
+         ptopoConnRemotePort,
+         ptopoConnDiscAlgorithm,
+         ptopoConnAgentNetAddrType,
+         ptopoConnAgentNetAddr,
+         ptopoConnMultiMacSASeen,
+         ptopoConnMultiNetSASeen,
+         ptopoConnIsStatic,
+         ptopoConnLastVerifyTime,
+         ptopoConnRowStatus
+    }
+    STATUS  current
+    ::= { ptopoGroups 1 }
+
+ptopoGeneralGroup    OBJECT-GROUP
+    OBJECTS {
+         ptopoLastChangeTime,
+         ptopoConnTabInserts,
+         ptopoConnTabDeletes,
+         ptopoConnTabDrops,
+         ptopoConnTabAgeouts
+    }
+    STATUS  current
+    ::= { ptopoGroups 2 }
+
+
+
+
+
+ptopoConfigGroup    OBJECT-GROUP
+    OBJECTS {
+         ptopoConfigTrapInterval,
+         ptopoConfigMaxHoldTime
+    }
+    STATUS  current
+    ::= { ptopoGroups 3 }
+
+ptopoNotificationsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+         ptopoConfigChange
+    }
+    STATUS        current
+    ::= { ptopoGroups 4 }
+
+END

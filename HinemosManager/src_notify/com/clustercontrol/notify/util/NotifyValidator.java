@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) since 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.util;
@@ -25,13 +18,13 @@ import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.CommonValidator;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosException;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.MailTemplateNotFound;
 import com.clustercontrol.infra.util.InfraManagementValidator;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.notify.bean.ExecFacilityConstant;
 import com.clustercontrol.notify.bean.NotifyTypeConstant;
 import com.clustercontrol.notify.mail.model.MailTemplateInfo;
@@ -104,11 +97,11 @@ public class NotifyValidator {
 
 		for (int i = 0; i < validFlgIndexes.size(); i++) {
 			int validFlgIndex = validFlgIndexes.get(i);
-			if (isNullOrEmpty(effectiveUsers[validFlgIndex])) {
+			if (effectiveUsers[validFlgIndex] == null) {
 				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_EFFECTIVEUSER.getMessage());
 			}
 			CommonValidator.validateString("effective.user", effectiveUsers[validFlgIndex],
-					true, 1, 64);
+					true, 0, 64);
 
 			if (isNullOrEmpty(commands[validFlgIndex])) {
 				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_COMMAND_NOTIFY.getMessage());
@@ -327,8 +320,7 @@ public class NotifyValidator {
 					DataRangeConstant.SMALLINT_HIGH);
 		}
 		// 初回通知するまでのカウント
-		int maxInitialCount = HinemosPropertyUtil.getHinemosPropertyNum(
-				"notify.initial.count.max", Long.valueOf(10)).intValue();
+		int maxInitialCount = HinemosPropertyCommon.notify_initial_count_max.getIntegerValue();
 		CommonValidator.validateInt(MessageConstant.NOTIFY_INITIAL.getMessage(),
 				notifyInfo.getInitialCount(), 1, maxInitialCount - 1);
 

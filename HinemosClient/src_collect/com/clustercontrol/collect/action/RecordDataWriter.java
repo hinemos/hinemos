@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.collect.action;
@@ -34,6 +27,7 @@ import org.eclipse.rap.rwt.internal.service.ServiceContext;
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.collect.preference.PerformancePreferencePage;
 import com.clustercontrol.collect.util.CollectEndpointWrapper;
+import com.clustercontrol.collect.util.CollectGraphUtil.CollectFacilityDataInfo;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.collect.CollectKeyInfoPK;
 import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
@@ -51,7 +45,7 @@ public class RecordDataWriter implements Runnable {
 	private static Log m_log = LogFactory.getLog(RecordDataWriter.class);
 	
 	// input
-	private TreeMap<String, String> m_managerFacilityIdNameMap = null;
+	private TreeMap<String, CollectFacilityDataInfo> m_managerFacilityDataInfoMap = null;
 	private Integer m_summaryType = null;
 	private List<CollectKeyInfoPK> m_targetCollectKeyInfoList = null;	
 	private Map<String, List<String>> m_targetManagerFacilityMap = null;
@@ -75,7 +69,7 @@ public class RecordDataWriter implements Runnable {
 	/**
 	 * セパレータ
 	 */
-	private static final String SQUARE_SEPARATOR = "#";
+	private static final String SQUARE_SEPARATOR = "\u2029";
 
 	/**
 	 * デフォルトコンストラクタ
@@ -85,14 +79,14 @@ public class RecordDataWriter implements Runnable {
 	 * @param archiveFlag
 	 * @param folderName
 	 */
-	public RecordDataWriter(TreeMap<String, String> managerFacilityIdNameMap,
+	public RecordDataWriter(TreeMap<String, CollectFacilityDataInfo> managerFacilityDataInfoMap,
 			Integer summaryType,
 			List<CollectKeyInfoPK> targetCollectKeyInfoList,
 			TreeMap<String,  List<String>> targetManagerFacilityMap,
 			boolean headerFlag, String filePath, String defaultDateStr) {
 		super();
 		
-		this.m_managerFacilityIdNameMap = managerFacilityIdNameMap;
+		this.m_managerFacilityDataInfoMap = managerFacilityDataInfoMap;
 		this.m_summaryType = summaryType;
 		this.m_targetCollectKeyInfoList = targetCollectKeyInfoList;
 		this.m_targetManagerFacilityMap =targetManagerFacilityMap;
@@ -104,7 +98,7 @@ public class RecordDataWriter implements Runnable {
 		this.defaultDateStr = defaultDateStr;
 
 		m_log.debug("RecordDataWriter() " +
-				"managerFacilityIdNameMap = " + managerFacilityIdNameMap.toString() +
+				"managerFacilityIdNameMap = " + managerFacilityDataInfoMap.toString() +
 				", summaryType = " + summaryType +
 				", targetManagerFacilityMap = " + targetManagerFacilityMap.toString() +
 				", headerFlag = " + headerFlag +
@@ -137,11 +131,11 @@ public class RecordDataWriter implements Runnable {
 				String managerName = entry.getKey();
 				Map<String, String> facilityIdNameMap = new HashMap<String, String>();
 				
-				for (Map.Entry<String, String> managerFacilityIdName : m_managerFacilityIdNameMap.entrySet()) {
-					if(managerFacilityIdName.getKey().startsWith(managerName + SQUARE_SEPARATOR)){
-						String split_plot[] = managerFacilityIdName.getKey().split(SQUARE_SEPARATOR);
+				for (Map.Entry<String, CollectFacilityDataInfo> managerFacilityDataInfo : m_managerFacilityDataInfoMap.entrySet()) {
+					if(managerFacilityDataInfo.getKey().startsWith(managerName + SQUARE_SEPARATOR)){
+						String split_plot[] = managerFacilityDataInfo.getKey().split(SQUARE_SEPARATOR);
 						String facilityName = split_plot[1];
-						facilityIdNameMap.put(facilityName, managerFacilityIdName.getValue());
+						facilityIdNameMap.put(facilityName, managerFacilityDataInfo.getValue().getName());
 					}
 				}
 			CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);

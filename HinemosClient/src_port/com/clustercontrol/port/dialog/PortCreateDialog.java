@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.port.dialog;
@@ -161,7 +154,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		this.m_radioTCP = new Button(groupCheckRule, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "tcp", m_radioTCP);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = 8;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_radioTCP.setLayoutData(gridData);
@@ -172,7 +165,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		this.m_radioService = new Button(groupCheckRule, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "service", m_radioService);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = 8;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_radioService.setLayoutData(gridData);
@@ -188,7 +181,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		this.m_comboService = new Combo(groupCheckRule, SWT.DROP_DOWN | SWT.READ_ONLY);
 		WidgetTestUtil.setTestId(this, "service", m_comboService);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE_LONG;
+		gridData.horizontalSpan = 4;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_comboService.setLayoutData(gridData);
@@ -207,7 +200,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "space1", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TEXT;
+		gridData.horizontalSpan = 10;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -219,7 +212,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "portnumber", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = 7;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -228,7 +221,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		this.m_textPortNo = new Text(groupCheckRule, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "protno", m_textPortNo);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE_LONG;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textPortNo.setLayoutData(gridData);
@@ -243,7 +236,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "space2", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = HALF_UNIT - (WIDTH_TITLE_LONG + WIDTH_VALUE_LONG);
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -251,20 +244,11 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		/*
 		 * 実行回数
 		 */
-		//空白
-		label = new Label(groupCheckRule, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space3", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = MIN_UNIT;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
-
 		// ラベル
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "labelruncount", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE + MIN_UNIT;
+		gridData.horizontalSpan = 7;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -274,7 +258,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		this.m_textRunCount = new Text(groupCheckRule, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "textruncount", m_textRunCount);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE_LONG;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textRunCount.setLayoutData(gridData);
@@ -289,7 +273,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "labelcount", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = HALF_UNIT - (WIDTH_TITLE + WIDTH_VALUE + WIDTH_VALUE_LONG);
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -302,7 +286,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "trialruninterval", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = 7;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -312,7 +296,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		this.m_textRunInterval = new Text(groupCheckRule, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "runinterval", m_textRunInterval);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE_LONG;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textRunInterval.setLayoutData(gridData);
@@ -327,7 +311,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "labelmillisec1", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = HALF_UNIT - (WIDTH_TITLE_LONG + WIDTH_VALUE_LONG);
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -336,19 +320,11 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		/*
 		 * タイムアウト
 		 */
-		//空白
-		label = new Label(groupCheckRule, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "spacetimeout", label);
-		gridData = new GridData();
-		gridData.horizontalSpan = MIN_UNIT;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		label.setLayoutData(gridData);
 		// ラベル
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "labeltimeout", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE + MIN_UNIT;
+		gridData.horizontalSpan = 7;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -358,7 +334,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		this.m_textTimeout = new Text(groupCheckRule, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "timeout", m_textTimeout);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE_LONG;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textTimeout.setLayoutData(gridData);
@@ -373,7 +349,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		label = new Label(groupCheckRule, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "labelmillisec2", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = HALF_UNIT - (WIDTH_TITLE + WIDTH_VALUE + WIDTH_VALUE_LONG);
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);

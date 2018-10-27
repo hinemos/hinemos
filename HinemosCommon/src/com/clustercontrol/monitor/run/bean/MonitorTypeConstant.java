@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.bean;
@@ -18,7 +11,7 @@ package com.clustercontrol.monitor.run.bean;
 /**
  * 監視種別の定義を定数として格納するクラス<BR>
  * 
- * @version 4.0.0
+ * @version 6.1.0 バイナリ監視追加
  * @since 2.1.0
  */
 public class MonitorTypeConstant {
@@ -36,4 +29,7 @@ public class MonitorTypeConstant {
 
 	/** シナリオ（種別）。 */
 	public static final int TYPE_SCENARIO = 4;	
+
+	/** バイナリ（種別）。 */
+	public static final int TYPE_BINARY = 5;	
 }

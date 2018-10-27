@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"CPUList_funcName"}
+],
+"props":[
+	{
+	"propName":"CPUInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

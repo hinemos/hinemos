@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.dialog;
@@ -129,7 +122,7 @@ public class CommonMonitorStringDialog extends CommonMonitorDialog {
 		this.confirmCollectValid = new Button(groupCollect, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "confirmcollectvalid", confirmCollectValid);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalSpan = SMALL_UNIT;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.confirmCollectValid.setLayoutData(gridData);
@@ -150,17 +143,17 @@ public class CommonMonitorStringDialog extends CommonMonitorDialog {
 		Label label = new Label(groupCollect, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "logFormat", label);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = WIDTH_TITLE_MIDDLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
 		label.setText(Messages.getString("hub.log.format.id") + " : ");
 
-		// テキスト（ログフォーマット）
+		// コンボボックス（ログフォーマット）
 		this.logFormat = new Combo(groupCollect, SWT.BORDER | SWT.LEFT | SWT.READ_ONLY);
 		WidgetTestUtil.setTestId(this, "logFormat", logFormat);
 		gridData = new GridData();
-		gridData.horizontalSpan = BASIC_UNIT - WIDTH_TITLE - WIDTH_TITLE_LONG;
+		gridData.horizontalSpan = BASIC_UNIT - SMALL_UNIT - WIDTH_TITLE_MIDDLE;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.logFormat.setLayoutData(gridData);

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.plugin.impl;
@@ -26,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.snmptrap.bean.SnmpTrap;
 import com.clustercontrol.snmptrap.service.Snmp4JSession;
@@ -41,25 +34,8 @@ import com.clustercontrol.snmptrap.service.SnmpTrapSession;
 public class SnmpTrapPlugin implements HinemosPlugin {
 	private static final Logger logger = Logger.getLogger(SnmpTrapPlugin.class);
 
-	/** snmptrapの待ち受けアドレス */
-	public static final String _keyListenAddress = "monitor.snmptrap.listen.address";
-	public static final String _listenAddressDefault = "0.0.0.0";
-
-	/** snmptrapの待ち受けポート番号 */
-	public static final String _keyListenPort = "monitor.snmptrap.listen.port";
-	public static final int _listenPortDefault = 162;
-
 	/** snmptrapのデフォルト文字コード */
-	public static final String _keyCharset = "monitor.snmptrap.charset";
 	public static final Charset _charsetDefault = Charset.forName("UTF-8");
-
-	/** 受信処理とフィルタリング処理の間に存在するsnmptrap処理待ちキューの最大サイズ*/
-	public static final String _keyTaskQueueSize = "monitor.snmptrap.filter.queue.size";
-	public static final int _taskQueueSizeDefault = 15 * 60 * 30;	// 15[min] * 30[msg/sec]
-
-	/** フィルタリング処理のスレッド数 */
-	public static final String _keyTaskThreadSize = "monitor.snmptrap.filter.thread.size";
-	public static final int _taskThreadSizeDefault = 1;
 
 	private static SnmpTrapMonitorService snmpTrapService;
 
@@ -68,6 +44,11 @@ public class SnmpTrapPlugin implements HinemosPlugin {
 		Set<String> dependency = new HashSet<String>();
 		dependency.add(AsyncWorkerPlugin.class.getName());
 		return dependency;
+	}
+
+	@Override
+	public Set<String> getRequiredKeys() {
+		return null;
 	}
 
 	@Override
@@ -112,8 +93,8 @@ public class SnmpTrapPlugin implements HinemosPlugin {
 	}
 
 	private static void createService() {
-		String address = HinemosPropertyUtil.getHinemosPropertyStr(_keyListenAddress, _listenAddressDefault);
-		int port = HinemosPropertyUtil.getHinemosPropertyNum(_keyListenPort, Long.valueOf(_listenPortDefault)).intValue();
+		String address = HinemosPropertyCommon.monitor_snmptrap_listen_address.getStringValue();
+		int port = HinemosPropertyCommon.monitor_snmptrap_listen_port.getIntegerValue();
 
 		StringBuilder charsetAll = new StringBuilder();
 		for (String c : Charset.availableCharsets().keySet()) {
@@ -123,11 +104,11 @@ public class SnmpTrapPlugin implements HinemosPlugin {
 
 		Charset defaultCharset = _charsetDefault;
 		try {
-			defaultCharset = Charset.forName(HinemosPropertyUtil.getHinemosPropertyStr(_keyCharset, "UTF-8"));
+			defaultCharset = Charset.forName(HinemosPropertyCommon.monitor_snmptrap_charset.getStringValue());
 		} catch (Exception e) { }
 
-		int queueSize = HinemosPropertyUtil.getHinemosPropertyNum(_keyTaskQueueSize, Long.valueOf(_taskQueueSizeDefault)).intValue();
-		int threadSize = HinemosPropertyUtil.getHinemosPropertyNum(_keyTaskThreadSize, Long.valueOf(_taskThreadSizeDefault)).intValue();
+		int queueSize = HinemosPropertyCommon.monitor_snmptrap_filter_queue_size.getIntegerValue();
+		int threadSize = HinemosPropertyCommon.monitor_snmptrap_filter_thread_size.getIntegerValue();
 
 		logger.info(String.format("starting SnmpTrapPlugin : listenAddress = %s, listenPort = %d, charset = %s, queueSize = %d, threads = %d",
 				address, port, defaultCharset.name(), queueSize, threadSize));

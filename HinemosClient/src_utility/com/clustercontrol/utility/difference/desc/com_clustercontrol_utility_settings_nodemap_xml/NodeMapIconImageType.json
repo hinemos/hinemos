@@ -1,0 +1,17 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"NodeMapIconImageType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"iconId"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"NodeMapIconImageInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

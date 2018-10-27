@@ -1,0 +1,47 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"HttpScenarioMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"HttpScenarioInfo.AuthType",
+			"HttpScenarioInfo.AuthUser",
+			"HttpScenarioInfo.AuthPassword",
+			"HttpScenarioInfo.ProxyFlg",
+			"HttpScenarioInfo.ProxyUrl",
+			"HttpScenarioInfo.ProxyPort",
+			"HttpScenarioInfo.ProxyUser",
+			"HttpScenarioInfo.ProxyPassword",
+			"HttpScenarioInfo.MonitoringPerPageFlg",
+			"HttpScenarioInfo.UserAgent",
+			"HttpScenarioInfo.ConnectTimeout",
+			"HttpScenarioInfo.RequestTimeout",
+			"PageValue",
+			"PageValue.*.Description",
+			"PatternValue",
+			"PatternValue.*.Description",
+			"VariableValue",
+			"VariableValue.*.name",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"HttpScenarioMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

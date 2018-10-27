@@ -1,0 +1,139 @@
+DIFFSERV-CONFIG-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+
+    OBJECT-TYPE, MODULE-IDENTITY,
+    zeroDotZero, mib-2            FROM SNMPv2-SMI          -- [RFC2578]
+
+    RowStatus, StorageType,
+    RowPointer, DateAndTime       FROM SNMPv2-TC           -- [RFC2579]
+
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP                  FROM SNMPv2-CONF         -- [RFC2580]
+
+
+
+
+
+
+    SnmpAdminString               FROM SNMP-FRAMEWORK-MIB; -- [RFC3411]
+
+diffServConfigMib MODULE-IDENTITY
+    LAST-UPDATED "200401220000Z" -- 22 January 2004
+    ORGANIZATION "SNMPCONF WG"
+    ::= { mib-2 108 }
+
+diffServConfigMIBObjects OBJECT IDENTIFIER ::= { diffServConfigMib 1 }
+diffServConfigMIBConformance OBJECT IDENTIFIER ::=
+                                               { diffServConfigMib 2 }
+
+
+
+
+
+
+diffServConfigTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServConfigEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServConfigMIBObjects 2 }
+
+diffServConfigEntry OBJECT-TYPE
+    SYNTAX       DiffServConfigEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServConfigId }
+    ::= { diffServConfigTable 1 }
+
+DiffServConfigEntry ::= SEQUENCE {
+    diffServConfigId           SnmpAdminString,
+    diffServConfigDescr        SnmpAdminString,
+    diffServConfigOwner        SnmpAdminString,
+    diffServConfigLastChange   DateAndTime,
+    diffServConfigStart        RowPointer,
+    diffServConfigStorage      StorageType,
+    diffServConfigStatus       RowStatus
+}
+
+diffServConfigId OBJECT-TYPE
+    SYNTAX         SnmpAdminString (SIZE(1..116))
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    ::= { diffServConfigEntry 1 }
+
+diffServConfigDescr OBJECT-TYPE
+
+
+
+
+
+    SYNTAX         SnmpAdminString
+    MAX-ACCESS     read-create
+    STATUS         current
+    ::= { diffServConfigEntry 2 }
+
+diffServConfigOwner OBJECT-TYPE
+    SYNTAX         SnmpAdminString
+    MAX-ACCESS     read-create
+    STATUS         current
+    ::= { diffServConfigEntry 3 }
+
+diffServConfigLastChange OBJECT-TYPE
+    SYNTAX         DateAndTime
+    MAX-ACCESS     read-only
+    STATUS         current
+    ::= { diffServConfigEntry 4 }
+
+diffServConfigStart OBJECT-TYPE
+    SYNTAX         RowPointer
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL { zeroDotZero }
+    ::= { diffServConfigEntry 5 }
+
+diffServConfigStorage OBJECT-TYPE
+    SYNTAX         StorageType
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL { nonVolatile }
+    ::= { diffServConfigEntry 6 }
+
+diffServConfigStatus OBJECT-TYPE
+    SYNTAX         RowStatus
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL { notInService }
+    ::= { diffServConfigEntry 7 }
+
+
+
+
+
+
+
+diffServConfigMIBCompliances
+   OBJECT IDENTIFIER ::= { diffServConfigMIBConformance 1 }
+diffServConfigMIBGroups
+   OBJECT IDENTIFIER ::= { diffServConfigMIBConformance 2 }
+
+diffServConfigMIBFullCompliance MODULE-COMPLIANCE
+    STATUS       current
+    MODULE  -- This module
+    MANDATORY-GROUPS {  diffServConfigMIBConfigGroup }
+
+    OBJECT diffServConfigStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+    ::= { diffServConfigMIBCompliances 1 }
+
+diffServConfigMIBConfigGroup OBJECT-GROUP
+    OBJECTS {  diffServConfigDescr,
+               diffServConfigOwner,
+               diffServConfigLastChange,
+               diffServConfigStart,
+               diffServConfigStorage,
+               diffServConfigStatus
+    }
+    STATUS current
+    ::= { diffServConfigMIBGroups 1 }
+END

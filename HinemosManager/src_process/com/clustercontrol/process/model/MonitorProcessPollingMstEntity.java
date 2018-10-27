@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.process.model;
 
 import java.io.Serializable;
@@ -13,9 +21,6 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 
 
@@ -37,23 +42,6 @@ public class MonitorProcessPollingMstEntity implements Serializable {
 	@Deprecated
 	public MonitorProcessPollingMstEntity() {
 	}
-
-	public MonitorProcessPollingMstEntity(MonitorProcessPollingMstEntityPK pk,
-			CollectorPlatformMstEntity collectorPlatformMstEntity) {
-		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToCollectorPlatformMstEntity(collectorPlatformMstEntity);
-	}
-
-	public MonitorProcessPollingMstEntity(String collectMethod,
-			String platformId,
-			String subPlatformId,
-			String variableId,
-			CollectorPlatformMstEntity collectorPlatformMstEntity) {
-		this(new MonitorProcessPollingMstEntityPK(collectMethod, platformId, subPlatformId, variableId), collectorPlatformMstEntity);
-	}
-
 
 	@EmbeddedId
 	public MonitorProcessPollingMstEntityPK getId() {

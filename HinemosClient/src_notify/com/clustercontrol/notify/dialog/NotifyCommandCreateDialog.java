@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.notify.dialog;
@@ -387,12 +380,6 @@ public class NotifyCommandCreateDialog extends NotifyBasicCreateDialog {
 
 		// 情報
 		if(this.m_checkExecInfo.getSelection()){
-			// ユーザ
-			if("".equals(this.m_textUserInfo.getText())){
-				this.m_textUserInfo.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-			}else{
-				this.m_textUserInfo.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-			}
 			// コマンド
 			if("".equals(this.m_textCommandInfo.getText())){
 				this.m_textCommandInfo.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
@@ -406,12 +393,6 @@ public class NotifyCommandCreateDialog extends NotifyBasicCreateDialog {
 
 		// 警告
 		if(this.m_checkExecWarning.getSelection()){
-			// ユーザ
-			if("".equals(this.m_textUserWarning.getText())){
-				this.m_textUserWarning.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-			}else{
-				this.m_textUserWarning.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-			}
 			// コマンド
 			if("".equals(this.m_textCommandWarning.getText())){
 				this.m_textCommandWarning.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
@@ -424,12 +405,6 @@ public class NotifyCommandCreateDialog extends NotifyBasicCreateDialog {
 
 		// 危険
 		if(this.m_checkExecCritical.getSelection()){
-			// ユーザ
-			if("".equals(this.m_textUserCritical.getText())){
-				this.m_textUserCritical.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-			}else{
-				this.m_textUserCritical.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-			}
 			// コマンド
 			if("".equals(this.m_textCommandCritical.getText())){
 				this.m_textCommandCritical.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
@@ -442,12 +417,6 @@ public class NotifyCommandCreateDialog extends NotifyBasicCreateDialog {
 
 		// 不明
 		if(m_checkExecUnknown.getSelection()){
-			// ユーザ
-			if("".equals(this.m_textUserUnknown.getText())){
-				this.m_textUserUnknown.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-			}else{
-				this.m_textUserUnknown.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-			}
 			// コマンド
 			if("".equals(this.m_textCommandUnknown.getText())){
 				this.m_textCommandUnknown.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
@@ -614,16 +583,16 @@ public class NotifyCommandCreateDialog extends NotifyBasicCreateDialog {
 		command.setUnknownValidFlg(m_checkExecUnknown.getSelection());
 
 		// 実効ユーザ
-		if (isNotNullAndBlank(m_textUserInfo.getText())) {
+		if (m_textUserInfo.getText() != null) {
 			command.setInfoEffectiveUser(m_textUserInfo.getText());
 		}
-		if (isNotNullAndBlank(m_textUserWarning.getText())) {
+		if (m_textUserWarning.getText() != null) {
 			command.setWarnEffectiveUser(m_textUserWarning.getText());
 		}
-		if (isNotNullAndBlank(m_textUserCritical.getText())) {
+		if (m_textUserCritical.getText() != null) {
 			command.setCriticalEffectiveUser(m_textUserCritical.getText());
 		}
-		if (isNotNullAndBlank(m_textUserUnknown.getText())) {
+		if (m_textUserUnknown.getText() != null) {
 			command.setUnknownEffectiveUser(m_textUserUnknown.getText());
 		}
 
@@ -897,6 +866,7 @@ public class NotifyCommandCreateDialog extends NotifyBasicCreateDialog {
 		gridData.horizontalSpan = WIDTH_COMMAND_USER;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
+		text.setToolTipText(Messages.getString("notify.command.user.tooltip"));
 		text.setLayoutData(gridData);
 		text.addModifyListener(new ModifyListener(){
 			@Override

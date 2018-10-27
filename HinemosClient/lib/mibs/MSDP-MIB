@@ -1,0 +1,697 @@
+MSDP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+    experimental, Counter32, Gauge32, TimeTicks, Integer32,
+    IpAddress
+        FROM SNMPv2-SMI
+    RowStatus, TruthValue, TimeStamp, DisplayString
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+        FROM SNMPv2-CONF;
+
+msdpMIB MODULE-IDENTITY
+    LAST-UPDATED "200608010000Z"
+    ORGANIZATION "IETF MBONED Working Group"
+    ::= { experimental 92 }
+
+msdpMIBobjects OBJECT IDENTIFIER ::= { msdpMIB 1 }
+
+msdp           OBJECT IDENTIFIER ::= { msdpMIBobjects 1 }
+
+
+msdpEnabled OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { msdp 1 }
+
+msdpCacheLifetime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { msdp 2 }
+
+
+
+
+
+msdpNumSACacheEntries OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdp 3 }
+
+
+
+msdpRPAddress OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { msdp 11 }
+
+
+msdpRequestsTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF MsdpRequestsEntry
+    MAX-ACCESS not-accessible
+    STATUS     deprecated
+       ::= { msdp 4 }
+
+msdpRequestsEntry OBJECT-TYPE
+    SYNTAX     MsdpRequestsEntry
+    MAX-ACCESS not-accessible
+    STATUS     deprecated
+    INDEX { msdpRequestsGroupAddress, msdpRequestsGroupMask }
+    ::= { msdpRequestsTable 1 }
+
+MsdpRequestsEntry ::= SEQUENCE {
+        msdpRequestsGroupAddress  IpAddress,
+        msdpRequestsGroupMask     IpAddress,
+        msdpRequestsPeer          IpAddress,
+        msdpRequestsStatus        RowStatus
+    }
+
+msdpRequestsGroupAddress OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS not-accessible
+    STATUS     deprecated
+    ::= { msdpRequestsEntry 1 }
+
+msdpRequestsGroupMask OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS not-accessible
+    STATUS     deprecated
+    ::= { msdpRequestsEntry 2 }
+
+msdpRequestsPeer OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS read-create
+    STATUS     deprecated
+    ::= { msdpRequestsEntry 3 }
+
+msdpRequestsStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     deprecated
+    ::= { msdpRequestsEntry 4 }
+
+
+
+msdpPeerTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF MsdpPeerEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { msdp 5 }
+
+msdpPeerEntry OBJECT-TYPE
+    SYNTAX     MsdpPeerEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    INDEX      { msdpPeerRemoteAddress }
+    ::= { msdpPeerTable 1 }
+
+MsdpPeerEntry ::= SEQUENCE {
+        msdpPeerRemoteAddress              IpAddress,
+        msdpPeerState                      INTEGER,
+        msdpPeerRPFFailures                Counter32,
+        msdpPeerInSAs                      Counter32,
+        msdpPeerOutSAs                     Counter32,
+        msdpPeerInSARequests               Counter32,
+        msdpPeerOutSARequests              Counter32,
+        msdpPeerInSAResponses              Counter32,
+        msdpPeerOutSAResponses             Counter32,
+        msdpPeerInControlMessages          Counter32,
+        msdpPeerOutControlMessages         Counter32,
+        msdpPeerInDataPackets              Counter32,
+        msdpPeerOutDataPackets             Counter32,
+        msdpPeerFsmEstablishedTransitions  Counter32,
+        msdpPeerFsmEstablishedTime         TimeStamp,
+        msdpPeerInMessageTime              TimeStamp,
+        msdpPeerLocalAddress               IpAddress,
+        msdpPeerConnectRetryInterval       Integer32,
+        msdpPeerHoldTimeConfigured         Integer32,
+        msdpPeerKeepAliveConfigured        Integer32,
+        msdpPeerDataTtl                    Integer32,
+        msdpPeerProcessRequestsFrom        TruthValue,
+        msdpPeerStatus                     RowStatus,
+        msdpPeerRemotePort                 Integer32,
+        msdpPeerLocalPort                  Integer32,
+        msdpPeerEncapsulationType          INTEGER,
+        msdpPeerConnectionAttempts         Counter32,
+        msdpPeerInNotifications            Counter32,
+        msdpPeerOutNotifications           Counter32,
+        msdpPeerLastError                  OCTET STRING,
+        msdpPeerDiscontinuityTime          TimeStamp
+    }
+
+msdpPeerRemoteAddress OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { msdpPeerEntry 1 }
+
+
+msdpPeerState OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     INTEGER {
+                         inactive(1),
+                         listen(2),
+                         connecting(3),
+                         established(4),
+                         disabled(5)
+                       }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 3 }
+
+msdpPeerRPFFailures OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 4 }
+
+msdpPeerInSAs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 5 }
+
+msdpPeerOutSAs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 6 }
+
+msdpPeerInSARequests OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 7 }
+
+msdpPeerOutSARequests OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 8 }
+
+msdpPeerInSAResponses OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     deprecated
+    ::= { msdpPeerEntry 9 }
+
+
+
+
+
+
+msdpPeerOutSAResponses OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     deprecated
+    ::= { msdpPeerEntry 10 }
+
+msdpPeerInControlMessages OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 11 }
+
+msdpPeerOutControlMessages OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 12 }
+
+msdpPeerInDataPackets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 13 }
+
+msdpPeerOutDataPackets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 14 }
+
+msdpPeerFsmEstablishedTransitions OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 15 }
+
+msdpPeerFsmEstablishedTime OBJECT-TYPE
+    SYNTAX     TimeStamp
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 16 }
+
+msdpPeerInMessageTime OBJECT-TYPE
+    SYNTAX     TimeStamp
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 17 }
+
+msdpPeerLocalAddress OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { msdpPeerEntry 18 }
+
+
+
+msdpPeerConnectRetryInterval OBJECT-TYPE
+    SYNTAX     Integer32 (1..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 30 }
+    ::= { msdpPeerEntry 20 }
+
+msdpPeerHoldTimeConfigured OBJECT-TYPE
+    SYNTAX     Integer32 (0|3..65535)
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 75 }
+    ::= { msdpPeerEntry 21 }
+
+msdpPeerKeepAliveConfigured OBJECT-TYPE
+    SYNTAX     Integer32 (0|1..21845)
+
+
+
+
+
+    UNITS      "seconds"
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 60 }
+    ::= { msdpPeerEntry 22 }
+
+msdpPeerDataTtl OBJECT-TYPE
+    SYNTAX     Integer32 (0..255)
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { 1 }
+    ::= { msdpPeerEntry 23 }
+
+msdpPeerProcessRequestsFrom OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS     deprecated
+    ::= { msdpPeerEntry 24 }
+
+msdpPeerStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { msdpPeerEntry 25 }
+
+msdpPeerRemotePort OBJECT-TYPE
+    SYNTAX     Integer32 (0..65535)
+    MAX-ACCESS read-only
+    STATUS     current
+    DEFVAL { 639 }
+    ::= { msdpPeerEntry 26 }
+
+msdpPeerLocalPort OBJECT-TYPE
+    SYNTAX     Integer32 (0..65535)
+    MAX-ACCESS read-only
+    STATUS     current
+    DEFVAL { 639 }
+    ::= { msdpPeerEntry 27 }
+
+
+msdpPeerEncapsulationType OBJECT-TYPE
+    SYNTAX     INTEGER {
+                         none(0),
+                         tcp(1)
+                       }
+    MAX-ACCESS read-create
+    STATUS     current
+
+
+
+
+
+    ::= { msdpPeerEntry 29 }
+
+msdpPeerConnectionAttempts OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 30 }
+
+msdpPeerInNotifications OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     deprecated
+    ::= { msdpPeerEntry 31 }
+
+msdpPeerOutNotifications OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     deprecated
+    ::= { msdpPeerEntry 32 }
+
+msdpPeerLastError OBJECT-TYPE
+    SYNTAX     OCTET STRING (SIZE (2))
+    MAX-ACCESS read-only
+    STATUS     deprecated
+    DEFVAL   { '0000'h }
+    ::= { msdpPeerEntry 33 }
+
+msdpPeerDiscontinuityTime OBJECT-TYPE
+    SYNTAX     TimeStamp
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpPeerEntry 34 }
+
+
+msdpSACacheTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF MsdpSACacheEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { msdp 6 }
+
+msdpSACacheEntry OBJECT-TYPE
+    SYNTAX     MsdpSACacheEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    INDEX      { msdpSACacheGroupAddr, msdpSACacheSourceAddr,
+                 msdpSACacheOriginRP }
+    ::= { msdpSACacheTable 1 }
+
+MsdpSACacheEntry ::= SEQUENCE {
+        msdpSACacheGroupAddr        IpAddress,
+        msdpSACacheSourceAddr       IpAddress,
+        msdpSACacheOriginRP         IpAddress,
+        msdpSACachePeerLearnedFrom  IpAddress,
+        msdpSACacheRPFPeer          IpAddress,
+        msdpSACacheInSAs            Counter32,
+        msdpSACacheInDataPackets    Counter32,
+        msdpSACacheUpTime           TimeTicks,
+        msdpSACacheExpiryTime       TimeTicks,
+        msdpSACacheStatus           RowStatus
+    }
+
+msdpSACacheGroupAddr OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { msdpSACacheEntry 1 }
+
+msdpSACacheSourceAddr OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { msdpSACacheEntry 2 }
+
+msdpSACacheOriginRP OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { msdpSACacheEntry 3 }
+
+msdpSACachePeerLearnedFrom OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpSACacheEntry 4 }
+
+msdpSACacheRPFPeer OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpSACacheEntry 5 }
+
+msdpSACacheInSAs OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpSACacheEntry 6 }
+
+msdpSACacheInDataPackets OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpSACacheEntry 7 }
+
+msdpSACacheUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpSACacheEntry 8 }
+
+msdpSACacheExpiryTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { msdpSACacheEntry 9 }
+
+msdpSACacheStatus OBJECT-TYPE
+    SYNTAX     RowStatus { active(1), destroy(6) }
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { msdpSACacheEntry 10 }
+
+
+
+msdpMeshGroupTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF MsdpMeshGroupEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { msdp 12 }
+
+msdpMeshGroupEntry OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     MsdpMeshGroupEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX        { msdpMeshGroupName, msdpMeshGroupPeerAddress }
+    ::= { msdpMeshGroupTable 1 }
+
+MsdpMeshGroupEntry ::= SEQUENCE {
+        msdpMeshGroupName         DisplayString,
+        msdpMeshGroupPeerAddress  IpAddress,
+        msdpMeshGroupStatus       RowStatus
+    }
+
+msdpMeshGroupName OBJECT-TYPE
+    SYNTAX     DisplayString (SIZE(1..64))
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { msdpMeshGroupEntry 1 }
+
+msdpMeshGroupPeerAddress OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { msdpMeshGroupEntry 2 }
+
+msdpMeshGroupStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+       ::= { msdpMeshGroupEntry 3 }
+
+
+
+msdpTraps   OBJECT IDENTIFIER ::= { msdp 0 }
+
+msdpEstablished NOTIFICATION-TYPE
+    OBJECTS { msdpPeerFsmEstablishedTransitions }
+    STATUS     current
+    ::= { msdpTraps 1 }
+
+msdpBackwardTransition NOTIFICATION-TYPE
+    OBJECTS { msdpPeerState }
+    STATUS     current
+    ::= { msdpTraps 2 }
+
+
+msdpMIBConformance OBJECT IDENTIFIER ::= { msdp 8 }
+msdpMIBCompliances OBJECT IDENTIFIER ::= { msdpMIBConformance 1 }
+msdpMIBGroups      OBJECT IDENTIFIER ::= { msdpMIBConformance 2 }
+
+
+msdpMIBCompliance MODULE-COMPLIANCE
+    STATUS     deprecated
+   MODULE  -- this module
+   MANDATORY-GROUPS { msdpMIBGlobalsGroup, msdpMIBPeerGroup,
+
+
+
+
+
+                      msdpMIBNotificationGroup }
+
+       GROUP  msdpMIBEncapsulationGroup
+       GROUP  msdpMIBSACacheGroup
+        GROUP  msdpMIBRequestsGroup
+        GROUP  msdpMIBRPGroup
+        GROUP  msdpMIBMeshGroupGroup
+   ::= { msdpMIBCompliances 1 }
+
+msdpMIBFullCompliance MODULE-COMPLIANCE
+    STATUS     current
+   MODULE  -- this module
+   MANDATORY-GROUPS { msdpMIBGlobalsGroup, msdpMIBPeerGroup2,
+                      msdpMIBSACacheGroup, msdpMIBEncapsulationGroup }
+        GROUP  msdpMIBRPGroup
+        GROUP  msdpMIBMeshGroupGroup
+   ::= { msdpMIBCompliances 2 }
+
+msdpMIBReadOnlyCompliance MODULE-COMPLIANCE
+    STATUS     current
+   MODULE  -- this module
+   MANDATORY-GROUPS { msdpMIBGlobalsGroup, msdpMIBPeerGroup2,
+                      msdpMIBSACacheGroup, msdpMIBEncapsulationGroup }
+        GROUP  msdpMIBRPGroup
+        GROUP  msdpMIBMeshGroupGroup
+        OBJECT     msdpEnabled
+        MIN-ACCESS read-only
+        OBJECT     msdpCacheLifetime
+        MIN-ACCESS read-only
+        OBJECT     msdpPeerLocalAddress
+        MIN-ACCESS read-only
+        OBJECT     msdpPeerConnectRetryInterval
+        MIN-ACCESS read-only
+        OBJECT     msdpPeerHoldTimeConfigured
+        MIN-ACCESS read-only
+        OBJECT     msdpPeerKeepAliveConfigured
+        MIN-ACCESS read-only
+        OBJECT     msdpPeerDataTtl
+        MIN-ACCESS read-only
+        OBJECT     msdpPeerStatus
+        MIN-ACCESS read-only
+        OBJECT     msdpPeerEncapsulationType
+        MIN-ACCESS read-only
+
+
+
+
+
+        OBJECT     msdpSACacheStatus
+        MIN-ACCESS read-only
+        OBJECT     msdpRPAddress
+        MIN-ACCESS read-only
+        OBJECT     msdpMeshGroupStatus
+        MIN-ACCESS read-only
+   ::= { msdpMIBCompliances 3 }
+
+
+msdpMIBGlobalsGroup OBJECT-GROUP
+   OBJECTS { msdpEnabled }
+    STATUS     current
+    ::= { msdpMIBGroups 1 }
+
+msdpMIBPeerGroup OBJECT-GROUP
+   OBJECTS { msdpPeerRPFFailures,
+             msdpPeerState, msdpPeerInSAs, msdpPeerOutSAs,
+             msdpPeerInSARequests, msdpPeerOutSARequests,
+             msdpPeerInSAResponses, msdpPeerOutSAResponses,
+             msdpPeerInNotifications, msdpPeerOutNotifications,
+             msdpPeerInControlMessages, msdpPeerOutControlMessages,
+             msdpPeerFsmEstablishedTransitions,
+             msdpPeerFsmEstablishedTime,
+             msdpPeerLocalAddress,
+             msdpPeerRemotePort, msdpPeerLocalPort,
+             msdpPeerConnectRetryInterval,
+             msdpPeerHoldTimeConfigured,
+             msdpPeerKeepAliveConfigured,
+             msdpPeerInMessageTime,
+             msdpPeerProcessRequestsFrom,
+             msdpPeerConnectionAttempts,
+             msdpPeerLastError,
+             msdpPeerStatus,
+             msdpPeerDiscontinuityTime
+           }
+    STATUS     deprecated
+    ::= { msdpMIBGroups 2 }
+
+msdpMIBEncapsulationGroup OBJECT-GROUP
+   OBJECTS { msdpPeerInDataPackets, msdpPeerOutDataPackets,
+             msdpPeerDataTtl,
+             msdpPeerEncapsulationType
+           }
+    STATUS     current
+    ::= { msdpMIBGroups 3 }
+
+msdpMIBSACacheGroup OBJECT-GROUP
+    OBJECTS { msdpCacheLifetime, msdpNumSACacheEntries,
+              msdpSACachePeerLearnedFrom,
+              msdpSACacheRPFPeer, msdpSACacheInSAs,
+              msdpSACacheInDataPackets,
+              msdpSACacheUpTime, msdpSACacheExpiryTime,
+              msdpSACacheStatus }
+    STATUS     current
+    ::= { msdpMIBGroups 4 }
+
+msdpMIBNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { msdpEstablished,
+                    msdpBackwardTransition }
+    STATUS     current
+    ::= { msdpMIBGroups 5 }
+
+msdpMIBRequestsGroup OBJECT-GROUP
+    OBJECTS { msdpRequestsPeer, msdpRequestsStatus }
+    STATUS     deprecated
+    ::= { msdpMIBGroups 6 }
+
+msdpMIBRPGroup OBJECT-GROUP
+
+
+
+
+
+    OBJECTS { msdpRPAddress }
+    STATUS     current
+    ::= { msdpMIBGroups 7 }
+
+msdpMIBMeshGroupGroup OBJECT-GROUP
+    OBJECTS { msdpMeshGroupStatus }
+    STATUS     current
+    ::= { msdpMIBGroups 8 }
+
+msdpMIBPeerGroup2 OBJECT-GROUP
+   OBJECTS { msdpPeerRPFFailures,
+             msdpPeerState, msdpPeerInSAs, msdpPeerOutSAs,
+             msdpPeerInSARequests, msdpPeerOutSARequests,
+             msdpPeerInControlMessages, msdpPeerOutControlMessages,
+             msdpPeerFsmEstablishedTransitions,
+             msdpPeerFsmEstablishedTime,
+             msdpPeerLocalAddress,
+             msdpPeerRemotePort, msdpPeerLocalPort,
+             msdpPeerConnectRetryInterval,
+             msdpPeerHoldTimeConfigured,
+             msdpPeerKeepAliveConfigured,
+             msdpPeerInMessageTime,
+             msdpPeerConnectionAttempts,
+             msdpPeerStatus,
+             msdpPeerDiscontinuityTime
+           }
+    STATUS     current
+    ::= { msdpMIBGroups 9 }
+
+END

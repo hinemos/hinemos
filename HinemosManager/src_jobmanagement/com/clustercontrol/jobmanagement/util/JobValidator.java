@@ -1,21 +1,15 @@
 /*
-
-Copyright (C) since 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.util;
 
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +24,7 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -39,6 +34,9 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.fault.JobInvalid;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.fault.RoleNotFound;
+import com.clustercontrol.fault.UserNotFound;
+import com.clustercontrol.jobmanagement.bean.CommandStopTypeConstant;
 import com.clustercontrol.jobmanagement.bean.JobCommandInfo;
 import com.clustercontrol.jobmanagement.bean.JobCommandParam;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
@@ -49,6 +47,7 @@ import com.clustercontrol.jobmanagement.bean.JobFileInfo;
 import com.clustercontrol.jobmanagement.bean.JobInfo;
 import com.clustercontrol.jobmanagement.bean.JobKick;
 import com.clustercontrol.jobmanagement.bean.JobKickConstant;
+import com.clustercontrol.jobmanagement.bean.JobNextJobOrderInfo;
 import com.clustercontrol.jobmanagement.bean.JobObjectInfo;
 import com.clustercontrol.jobmanagement.bean.JobRuntimeParam;
 import com.clustercontrol.jobmanagement.bean.JobRuntimeParamDetail;
@@ -66,7 +65,6 @@ import com.clustercontrol.jobmanagement.model.JobKickEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.repository.util.FacilityTreeCache;
@@ -198,7 +196,7 @@ public class JobValidator {
 			Integer qMinute = jobSchedule.getEveryXminutes();
 			if (qMinute != null) {
 				if (qMinute <= 0 || 60 < qMinute || qMinute <= pMinute ||
-						!(qMinute == 5 || qMinute == 10 || qMinute == 15 ||
+						!(qMinute == 1 || qMinute == 2 || qMinute == 3 || qMinute == 5 || qMinute == 10 || qMinute == 15 ||
 						qMinute == 20 || qMinute == 30 || qMinute == 60)) { 
 					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_MIN_EACH.getMessage());
 					m_log.info("validateJobSchedule() : "
@@ -401,13 +399,12 @@ public class JobValidator {
 	 */
 	public static void validateJobMaster() throws InvalidSetting, HinemosUnknown, JobInfoNotFound, InvalidRole {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-
 		m_log.debug("validateJobMaster()");
 
 		// ジョブ実行契機
 		m_log.debug("validateJobMaster() jobschedule check start");
-		try{
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			Collection<JobKickEntity> jobKickList =
 					em.createNamedQuery("JobKickEntity.findAll",
 							JobKickEntity.class, ObjectPrivilegeMode.NONE).getResultList();
@@ -590,142 +587,163 @@ public class JobValidator {
 			}
 		}
 
-		// ジョブの場合は、ファシリティIDの存在チェック
 		if (jobInfo.getType() == JobConstant.TYPE_JOB) {
 			JobCommandInfo command = jobInfo.getCommand();
 
+			// 実行コマンドが存在するかチェック
+			if (command.getStartCommand() == null || "".equals(command.getStartCommand())) {
+					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_COMMAND.getMessage());
+					m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
+					throw e;
+			}
+			// 停止コマンドが存在するかチェック（指定している場合のみ)
+			if (command.getStopType() == CommandStopTypeConstant.EXECUTE_COMMAND) {
+				if (command.getStopCommand() == null || "".equals(command.getStopCommand())) {
+					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_COMMAND.getMessage());
+					m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
+					throw e;
+				}
+			}
+			// 実行ユーザのチェック
+			if (command.getSpecifyUser()) {
+				CommonValidator.validateString(MessageConstant.EFFECTIVE_USER.getMessage(), command.getUser(), true, 1, DataRangeConstant.VARCHAR_64);
+			}
+			
 			// 実行するファシリティIDのチェック
 			if(command.getFacilityID() == null || "".equals(command.getFacilityID())){
 				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SCOPE.getMessage());
 				m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;
-			}else{
-
-				// ジョブ変数でない場合は、ファシリティIDのチェックを行う
-				if(!SystemParameterConstant.isParam(
-						command.getFacilityID(),
-						SystemParameterConstant.FACILITY_ID)){
-					try {
-						FacilityTreeCache.validateFacilityId(command.getFacilityID(), jobInfo.getOwnerRoleId(), false);
-					} catch (FacilityNotFound e) {
-						InvalidSetting e1 = new InvalidSetting("FacilityId is not exist in repository. FacilityId = " + command.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
-						m_log.info("validateJobUnit() : "
-								+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
-						throw e1;
-					} catch (InvalidRole e) {
-						throw e;
-					} catch (Exception e) {
-						m_log.warn("validateJobUnit() add job unknown error. FacilityId = " + command.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId + " : "
-								+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-						throw new HinemosUnknown("add job unknown error. FacilityId = " + command.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId, e);
-
-					}
-				}
+			}
+			// ジョブ変数でない場合は、ファシリティIDのチェックを行う
+			if(!ParameterUtil.isParamFormat(command.getFacilityID())){
 				try {
-					// 試行回数の未設定時(インポート時を想定)
-					if (command.getMessageRetry() == null || command.getCommandRetry() == null) {
-						String message = "validateJobUnit() messageRetry or commandRetry is null(job). messageRetry =" + command.getMessageRetry()
-								+ ", commandRetry =" + command.getCommandRetry();
-						m_log.info(message);
-						throw new InvalidSetting(message);
-					}
-
-					// 試行回数のチェック
-					CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), command.getMessageRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
-
-					if (command.getCommandRetryFlg()) {
-						CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), command.getCommandRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
-					}
-				} catch (Exception e) {
-					m_log.info("validateJobUnit() add job retry error. FacilityId = " + command.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = "
-							+ jobId + ",messageRetry =" + command.getMessageRetry() + ",commandRetry =" + command.getCommandRetry() + ",commandRetryFlg ="
-							+ command.getCommandRetryFlg() + " : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+					FacilityTreeCache.validateFacilityId(command.getFacilityID(), jobInfo.getOwnerRoleId(), false);
+				} catch (FacilityNotFound e) {
+					InvalidSetting e1 = new InvalidSetting("FacilityId is not exist in repository. FacilityId = " + command.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
+					m_log.info("validateJobUnit() : "
+							+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
+					throw e1;
+				} catch (InvalidRole e) {
 					throw e;
+				} catch (Exception e) {
+					m_log.warn("validateJobUnit() add job unknown error. FacilityId = " + command.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId + " : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+					throw new HinemosUnknown("add job unknown error. FacilityId = " + command.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId, e);
 				}
-				
-				// スクリプト配布のチェック
-				// スクリプトの最大サイズはHinemosプロパティから取得
-				int scriptMaxSize = HinemosPropertyUtil.getHinemosPropertyNum("job.script.maxsize", Long.valueOf(8192)).intValue();
-				if(command.getManagerDistribution()) {
-					// スクリプト名
-					String scriptName = command.getScriptName();
-					CommonValidator.validateString(MessageConstant.JOB_SCRIPT_NAME.getMessage(), scriptName, true, 1, 256);
-					// エンコーディング
-					String scriptEncoding = command.getScriptEncoding();
-					CommonValidator.validateString(MessageConstant.JOB_SCRIPT_ENCODING.getMessage(), scriptEncoding, true, 1, 32);
-					// スクリプト
-					String scriptContent = command.getScriptContent();
-					CommonValidator.validateString(MessageConstant.JOB_SCRIPT.getMessage(), scriptContent, true, 1, scriptMaxSize);
-				} else {
-					// スクリプト名
-					String scriptName = command.getScriptName();
-					CommonValidator.validateString(MessageConstant.JOB_SCRIPT_NAME.getMessage(), scriptName, false, 0, 256);
-					// エンコーディング
-					String scriptEncoding = command.getScriptEncoding();
-					CommonValidator.validateString(MessageConstant.JOB_SCRIPT_ENCODING.getMessage(), scriptEncoding, false, 0, 32);
-					// スクリプト
-					String scriptContent = command.getScriptContent();
-					CommonValidator.validateString(MessageConstant.JOB_SCRIPT.getMessage(), scriptContent, false, 0, scriptMaxSize);
+			} else {
+				CommonValidator.validateString(MessageConstant.JOB_PARAM_ID.getMessage(), command.getFacilityID(), true, 1, 512);
+			}
+
+			// 試行回数の未設定時(インポート時を想定)
+			if (command.getMessageRetry() == null || command.getCommandRetry() == null) {
+				String message = "validateJobUnit() messageRetry or commandRetry is null(job). messageRetry =" + command.getMessageRetry()
+						+ ", commandRetry =" + command.getCommandRetry();
+				m_log.info(message);
+				throw new InvalidSetting(message);
+			}
+
+			// 試行回数のチェック
+			CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), command.getMessageRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
+
+			if (command.getCommandRetryFlg()) {
+				CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), command.getCommandRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
+			}
+
+			// スクリプト配布のチェック
+			// スクリプトの最大サイズはHinemosプロパティから取得
+			int scriptMaxSize = HinemosPropertyCommon.job_script_maxsize.getIntegerValue();
+			if(command.getManagerDistribution()) {
+				// スクリプト名
+				String scriptName = command.getScriptName();
+				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_NAME.getMessage(), scriptName, true, 1, 256);
+				// エンコーディング
+				String scriptEncoding = command.getScriptEncoding();
+				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_ENCODING.getMessage(), scriptEncoding, true, 1, 32);
+				// スクリプト
+				String scriptContent = command.getScriptContent();
+				CommonValidator.validateString(MessageConstant.JOB_SCRIPT.getMessage(), scriptContent, true, 1, scriptMaxSize);
+			} else {
+				// スクリプト名
+				String scriptName = command.getScriptName();
+				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_NAME.getMessage(), scriptName, false, 0, 256);
+				// エンコーディング
+				String scriptEncoding = command.getScriptEncoding();
+				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_ENCODING.getMessage(), scriptEncoding, false, 0, 32);
+				// スクリプト
+				String scriptContent = command.getScriptContent();
+				CommonValidator.validateString(MessageConstant.JOB_SCRIPT.getMessage(), scriptContent, false, 0, scriptMaxSize);
+			}
+			
+			// ジョブ変数のチェック
+			ArrayList<JobCommandParam> jobCommandParamList = jobInfo.getCommand().getJobCommandParamList();
+			if(jobCommandParamList != null && jobCommandParamList.size() > 0) {
+				for (JobCommandParam jobCommandParam : jobCommandParamList) {
+					// パラメータID
+					String paramId = jobCommandParam.getParamId();
+					CommonValidator.validateId(MessageConstant.JOB_PARAM_ID.getMessage(), paramId, 64);
+					// 値
+					String jobCommandParamValue = jobCommandParam.getValue();
+					CommonValidator.validateString(MessageConstant.JOB_PARAM_VALUE.getMessage(), jobCommandParamValue, true, 1, 256);
 				}
-				
-				// ジョブ変数のチェック
-				ArrayList<JobCommandParam> jobCommandParamList = jobInfo.getCommand().getJobCommandParamList();
-				if(jobCommandParamList != null && jobCommandParamList.size() > 0) {
-					for (JobCommandParam jobCommandParam : jobCommandParamList) {
-						// パラメータID
-						String paramId = jobCommandParam.getParamId();
-						CommonValidator.validateId(MessageConstant.JOB_PARAM_ID.getMessage(), paramId, 64);
-						// 値
-						String jobCommandParamValue = jobCommandParam.getValue();
-						CommonValidator.validateString(MessageConstant.JOB_PARAM_VALUE.getMessage(), jobCommandParamValue, true, 1, 256);
-					}
-				}
-				
-				// 環境変数のチェック
-				List<JobEnvVariableInfo> envInfoList = command.getEnvVariableInfo();
-				if(envInfoList != null && envInfoList.size() > 0) {
-					for (JobEnvVariableInfo envInfo : envInfoList) {
-						// 名前
-						String envId = envInfo.getEnvVariableId();
-						CommonValidator.validateId(MessageConstant.JOB_ENV_ID.getMessage(), envId, 64);
-						// 値
-						String envValue = envInfo.getValue();
-						CommonValidator.validateString(MessageConstant.JOB_ENV_VALUE.getMessage(), envValue, true, 1, 256);
-						// 説明
-						String envDescription = envInfo.getDescription();
-						CommonValidator.validateString(MessageConstant.JOB_ENV_DESCRIPTION.getMessage(), envDescription, false, 0, 256);
-					}
+			}
+			
+			// 環境変数のチェック
+			List<JobEnvVariableInfo> envInfoList = command.getEnvVariableInfo();
+			if(envInfoList != null && envInfoList.size() > 0) {
+				for (JobEnvVariableInfo envInfo : envInfoList) {
+					// 名前
+					String envId = envInfo.getEnvVariableId();
+					CommonValidator.validateId(MessageConstant.JOB_ENV_ID.getMessage(), envId, 64);
+					// 値
+					String envValue = envInfo.getValue();
+					CommonValidator.validateString(MessageConstant.JOB_ENV_VALUE.getMessage(), envValue, true, 1, 256);
+					// 説明
+					String envDescription = envInfo.getDescription();
+					CommonValidator.validateString(MessageConstant.JOB_ENV_DESCRIPTION.getMessage(), envDescription, false, 0, 256);
 				}
 			}
 		} else if (jobInfo.getType() == JobConstant.TYPE_FILEJOB) {
 			JobFileInfo file = jobInfo.getFile();
-
+			
+			// 転送ファイルの入力が存在するかチェック
+			if (file.getSrcFile() == null || "".equals(file.getSrcFile())) {
+				 InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_FILE_NOT_FOUND.getMessage(jobInfo.getId()));
+				 m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
+				 throw e;
+			}
+			// 受信先ディレクトリの入力が存在するかチェック
+			if (file.getDestDirectory() == null || "".equals(file.getDestDirectory())) {
+				 InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_DIR.getMessage());
+				 m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
+				 throw e;
+			}
 			// 送信元ファシリティID(ノード)
 			if(file.getSrcFacilityID() == null || "".equals(file.getSrcFacilityID())){
 				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_NODE.getMessage());
 				m_log.info("validateJobUnit() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;
-			}else{
-				try {
-					FacilityTreeCache.validateFacilityId(file.getSrcFacilityID(), jobInfo.getOwnerRoleId(), true);
-				} catch (FacilityNotFound e) {
-					InvalidSetting e1 = new InvalidSetting("FacilityId is not exist in repository. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
-					m_log.info("validateJobUnit() : "
-							+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
-					throw e1;
-				} catch (InvalidRole e) {
-					throw e;
-				} catch (InvalidSetting e) {
-					InvalidSetting e1 = new InvalidSetting("Src FacilityId is not node. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
-					m_log.info("validateJobUnit() : "
-							+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
-					throw new HinemosUnknown("add file transfer job unknown error. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId, e);
-				} catch (Exception e) {
-					m_log.warn("validateJobUnit() add file transfer job unknown error. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId + " : "
-							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-					throw new HinemosUnknown("add file transfer job unknown error. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId, e);
-				}
+			}
+			
+			try {
+				FacilityTreeCache.validateFacilityId(file.getSrcFacilityID(), jobInfo.getOwnerRoleId(), true);
+			} catch (FacilityNotFound e) {
+				InvalidSetting e1 = new InvalidSetting("FacilityId is not exist in repository. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
+				m_log.info("validateJobUnit() : "
+						+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
+				throw e1;
+			} catch (InvalidRole e) {
+				throw e;
+			} catch (InvalidSetting e) {
+				InvalidSetting e1 = new InvalidSetting("Src FacilityId is not node. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
+				m_log.info("validateJobUnit() : "
+						+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
+				throw new HinemosUnknown("add file transfer job unknown error. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId, e);
+			} catch (Exception e) {
+				m_log.warn("validateJobUnit() add file transfer job unknown error. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId + " : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				throw new HinemosUnknown("add file transfer job unknown error. Src FacilityId = " + file.getSrcFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId, e);
 			}
 
 			// 受信先ファシリティID(ノード/スコープ)
@@ -756,6 +774,11 @@ public class JobValidator {
 				throw e;
 			}
 			
+			// ユーザの指定
+			if (file.isSpecifyUser()) {
+				CommonValidator.validateString(MessageConstant.EFFECTIVE_USER.getMessage(), file.getUser(), true, 1, DataRangeConstant.VARCHAR_64);
+			}
+			
 			try {
 				// 試行回数の未設定時(インポート時を想定)
 				if (file.getMessageRetry() == null || file.getCommandRetry() == null) {
@@ -783,7 +806,7 @@ public class JobValidator {
 				m_log.info("validateJobUnit() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;
 			}
-			if ( jobInfo.getReferJobUnitId() == null || jobInfo.getReferJobUnitId().equals("")) {
+			if ( jobInfo.getReferJobUnitId() == null || jobInfo.getReferJobUnitId().equals("") || !jobInfo.getReferJobUnitId().equals(jobInfo.getJobunitId())) {
 				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_REFERENCE_JOBUNITID.getMessage());
 				m_log.info("validateJobUnit() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;
@@ -794,10 +817,25 @@ public class JobValidator {
 				m_log.info("validateJobUnit() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;
 			}
+			// ロールの存在確認
+			try {
+				com.clustercontrol.accesscontrol.util.QueryUtil.getRolePK(jobInfo.getApprovalReqRoleId());
+			} catch (RoleNotFound e) {
+				throw new InvalidSetting(e.getMessage(), e);
+			}
 			if (jobInfo.getApprovalReqUserId() == null || jobInfo.getApprovalReqUserId().equals("")) {
 				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_APPROVAL_REQ_USERID.getMessage());
 				m_log.info("validateJobUnit() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;
+			}
+			// ユーザの存在確認
+			if (!jobInfo.getApprovalReqUserId().equals("*")) {
+				try {
+					com.clustercontrol.accesscontrol.util.QueryUtil.getUserPK(jobInfo.getApprovalReqUserId());
+				} catch (UserNotFound e) {
+					throw new InvalidSetting(e.getMessage(), e);
+				}
+				
 			}
 			if (jobInfo.getApprovalReqSentence() == null || jobInfo.getApprovalReqSentence().equals("")) {
 				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_APPROVAL_REQ_SENTENCE.getMessage());
@@ -868,6 +906,8 @@ public class JobValidator {
 			if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_SNMPTRAP)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_SYSTEMLOG)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_LOGFILE)
+				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
+				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_WINEVENT)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)) {
@@ -883,6 +923,30 @@ public class JobValidator {
 					throw e;
 				}
 				CommonValidator.validateInt(MessageConstant.MONITORJOB_RETURNVALUE_WAIT.getMessage(), monitor.getMonitorWaitEndValue(), DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH);
+			}
+			
+			// 実行するファシリティIDのチェック
+			if(monitor.getFacilityID() == null || "".equals(monitor.getFacilityID())){
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SCOPE.getMessage());
+				m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			// ジョブ変数でない場合は、ファシリティIDのチェックを行う
+			if(!ParameterUtil.isParamFormat(monitor.getFacilityID())){
+				try {
+					FacilityTreeCache.validateFacilityId(monitor.getFacilityID(), jobInfo.getOwnerRoleId(), false);
+				} catch (FacilityNotFound e) {
+					InvalidSetting e1 = new InvalidSetting("FacilityId is not exist in repository. FacilityId = " + monitor.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
+					m_log.info("validateJobUnit() : "
+							+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
+					throw e1;
+				} catch (InvalidRole e) {
+					throw e;
+				} catch (Exception e) {
+					m_log.warn("validateJobUnit() add job unknown error. FacilityId = " + monitor.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId + " : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+					throw new HinemosUnknown("add job unknown error. FacilityId = " + monitor.getFacilityID() + ", jobunitId = " + jobunitId + ", jobId = " + jobId, e);
+				}
 			}
 		}
 
@@ -905,6 +969,17 @@ public class JobValidator {
 				m_log.info(message);
 				throw new InvalidSetting(message);
 			}
+			for (JobEndStatusInfo endStatus : endStatusList) {
+				CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), endStatus.getValue(), DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH);
+				CommonValidator.validateInt(MessageConstant.RANGE_END_VALUE.getMessage(), endStatus.getStartRangeValue(), DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH);
+				CommonValidator.validateInt(MessageConstant.RANGE_END_VALUE.getMessage(), endStatus.getEndRangeValue(), DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH);
+				if (endStatus.getStartRangeValue() > endStatus.getEndRangeValue()) {
+					String message = "startRangeValue > endRangeValue. start="+ endStatus.getStartRangeValue()+", end="+endStatus.getEndRangeValue()+ ", jobunitId = " + jobunitId + ", jobId = " + jobId;
+					m_log.info(message);
+					throw new InvalidSetting(message);
+				}
+			}
+			
 
 			if (jobInfo.getBeginPriority() == null
 					|| jobInfo.getNormalPriority() == null
@@ -920,18 +995,6 @@ public class JobValidator {
 				for(NotifyRelationInfo notifyInfo : jobInfo.getNotifyRelationInfos()){
 					CommonValidator.validateNotifyId(notifyInfo.getNotifyId(), true, jobInfo.getOwnerRoleId());
 				}
-			}
-		}
-
-		if (type == JobConstant.TYPE_JOB ||
-				type == JobConstant.TYPE_FILEJOB ||
-				type == JobConstant.TYPE_APPROVALJOB ||
-				type == JobConstant.TYPE_MONITORJOB ||
-				type == JobConstant.TYPE_JOBNET) {
-
-			// カレンダの権限チェック
-			if (jobInfo.getWaitRule().isCalendar()) {
-				CommonValidator.validateCalenderId(jobInfo.getWaitRule().getCalendarId(), true, jobInfo.getOwnerRoleId());
 			}
 		}
 
@@ -1006,8 +1069,9 @@ public class JobValidator {
 	 * ジョブツリーアイテムのジョブ待ち条件情報をチェックする
 	 * 
 	 * @param item ジョブ待ち条件情報をチェックするジョブツリーアイテム
+	 * @throws InvalidRole 
 	 */
-	private static void validateWaitRule(JobTreeItem item) throws InvalidSetting, JobInvalid{
+	private static void validateWaitRule(JobTreeItem item) throws InvalidSetting, JobInvalid, InvalidRole{
 		if(item == null || item.getData() == null) {
 			return;
 		}
@@ -1015,46 +1079,97 @@ public class JobValidator {
 		String jobId = item.getData().getId();
 		//待ち条件情報を取得する
 		JobWaitRuleInfo waitRule = item.getData().getWaitRule();
-		if(waitRule != null && waitRule.getObject() != null && waitRule.getObject().size() > 0){
-			for (JobObjectInfo objectInfo : waitRule.getObject()) {
-				m_log.debug("objectInfo=" + objectInfo);
-
-				if(objectInfo.getType() != JudgmentObjectConstant.TYPE_TIME
-						&& objectInfo.getType() != JudgmentObjectConstant.TYPE_START_MINUTE
-						&& objectInfo.getType() != JudgmentObjectConstant.TYPE_JOB_PARAMETER){
-					m_log.debug("Not Time and Not Delay");
-					//判定対象のジョブIDが同一階層に存在するかチェック
-					boolean find = false;
-					String targetJobId = objectInfo.getJobId();
-					for(JobTreeItem child : item.getParent().getChildren()){
-						//ジョブIDをチェック
-						JobInfo childInfo = child.getData();
-						if(childInfo != null && !jobId.equals(childInfo.getId())){
-							if(targetJobId.equals(childInfo.getId())){
-								find = true;
-								break;
+		if(waitRule != null) {
+			// 待ち条件の判定対象チェック
+			if (waitRule.getObject() != null) {
+				for (JobObjectInfo objectInfo : waitRule.getObject()) {
+					m_log.debug("objectInfo=" + objectInfo);
+	
+					if(objectInfo.getType() != JudgmentObjectConstant.TYPE_TIME
+							&& objectInfo.getType() != JudgmentObjectConstant.TYPE_START_MINUTE
+							&& objectInfo.getType() != JudgmentObjectConstant.TYPE_JOB_PARAMETER
+							&& objectInfo.getType() != JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS
+							&& objectInfo.getType() != JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE){
+						m_log.debug("Not Time and Not Delay");
+						//判定対象のジョブIDが同一階層に存在するかチェック
+						boolean find = false;
+						String targetJobId = objectInfo.getJobId();
+						for(JobTreeItem child : item.getParent().getChildren()){
+							//ジョブIDをチェック
+							JobInfo childInfo = child.getData();
+							if(childInfo != null && !jobId.equals(childInfo.getId())){
+								if(targetJobId.equals(childInfo.getId())){
+									find = true;
+									break;
+								}
 							}
 						}
+						if(!find){
+							String args[] = {jobId, targetJobId};
+							JobInvalid ji = new JobInvalid(MessageConstant.MESSAGE_WAIT_JOBID_NG_INVALID_JOBID.getMessage(args));
+							m_log.info("checkWaitRule() : " + ji.getClass().getSimpleName() + ", " + ji.getMessage());
+							throw ji;
+						}
+					} else if (objectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS
+								|| objectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE){
+						//セッション横断ジョブ待ち条件の場合は判定対象が同一ジョブユニットであることをチェック
+						JobTreeItem jobunitItem = item;
+						while (jobunitItem.getData().getType() != JobConstant.TYPE_JOBUNIT) {
+							jobunitItem = jobunitItem.getParent();
+						}
+						List<String> jobIdList = getJobIdList(jobunitItem);
+						String targetJobId = objectInfo.getJobId();
+						if (!jobIdList.contains(targetJobId)) {
+							String args[] = {jobId, targetJobId};
+							JobInvalid ji = new JobInvalid(MessageConstant.MESSAGE_WAIT_CROSS_SESSION_JOBID_NG_INVALID_JOBID.getMessage(args));
+							m_log.info("checkWaitRule() : " + ji.getClass().getSimpleName() + ", " + ji.getMessage());
+							throw ji;
+						}
+						
+					}else if (objectInfo.getType() == JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
+						// 条件判定の場合、設定値の妥当性チェックを行う
+						CommonValidator.validateString(MessageConstant.WAIT_RULE_DECISION_VALUE_1.getMessage(), objectInfo.getDecisionValue01(), true, 1, 128);
+						CommonValidator.validateString(MessageConstant.WAIT_RULE_DECISION_VALUE_2.getMessage(), objectInfo.getDecisionValue02(), true, 1, 128);
+						CommonValidator.validateInt(MessageConstant.WAIT_RULE_DECISION_CONDITION.getMessage(), objectInfo.getDecisionCondition(), 0, 7);
+					}else if (objectInfo.getType() == JudgmentObjectConstant.TYPE_TIME) {
+						if(objectInfo.getTime() < DATETIME_VALUE_MIN || DATETIME_VALUE_MAX < objectInfo.getTime()){
+							String[] args = {DATETIME_STRING_MIN, DATETIME_STRING_MAX, item.getData().getJobunitId(), jobId};
+							InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_RANGE_OVER_JOB_SETTINGTIME.getMessage(args));
+							m_log.info("validateWaitRule() : "
+									+ e.getClass().getSimpleName() + ", " + e.getMessage());
+							throw e;
+						}
+					}else if (objectInfo.getType() == JudgmentObjectConstant.TYPE_START_MINUTE) {
+						CommonValidator.validateInt(MessageConstant.TIME_AFTER_SESSION_START.getMessage(), objectInfo.getStartMinute(), 0, DataRangeConstant.SMALLINT_HIGH);
 					}
-					if(!find){
-						String args[] = {jobId, targetJobId};
-						JobInvalid ji = new JobInvalid(MessageConstant.MESSAGE_WAIT_JOBID_NG_INVALID_JOBID.getMessage(args));
-						m_log.info("checkWaitRule() : " + ji.getClass().getSimpleName() + ", " + ji.getMessage());
-						throw ji;
-					}
-				}else if (objectInfo.getType() == JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
-					// 条件判定の場合、設定値の妥当性チェックを行う
-					CommonValidator.validateString(MessageConstant.WAIT_RULE_DECISION_VALUE_1.getMessage(), objectInfo.getDecisionValue01(), true, 1, 128);
-					CommonValidator.validateString(MessageConstant.WAIT_RULE_DECISION_VALUE_2.getMessage(), objectInfo.getDecisionValue02(), true, 1, 128);
-					CommonValidator.validateInt(MessageConstant.WAIT_RULE_DECISION_CONDITION.getMessage(), objectInfo.getDecisionCondition(), 0, 7);
-				}else if (objectInfo.getType() == JudgmentObjectConstant.TYPE_TIME) {
-					if(objectInfo.getTime() < DATETIME_VALUE_MIN || DATETIME_VALUE_MAX < objectInfo.getTime()){
-						String[] args = {DATETIME_STRING_MIN, DATETIME_STRING_MAX, item.getData().getJobunitId(), jobId};
-						InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_RANGE_OVER_JOB_SETTINGTIME.getMessage(args));
-						m_log.info("validateWaitRule() : "
-								+ e.getClass().getSimpleName() + ", " + e.getMessage());
-						throw e;
-					}
+				}
+			}
+			// 条件を満たさない場合に終了する
+			if (waitRule.isEndCondition()) {
+				CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), waitRule.getEndValue(), DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH);
+				if (waitRule.getEndStatus() == null) {
+					String message = "validateWaitRule() : endStatus(endCondition) is null";
+					m_log.info(message);
+					throw new InvalidSetting(message);
+				}
+			}
+			// カレンダのチェック
+			if (waitRule.isCalendar()) {
+				CommonValidator.validateCalenderId(waitRule.getCalendarId(), true, item.getData().getOwnerRoleId());
+				CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), waitRule.getCalendarEndValue(), DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH);
+				if (waitRule.getSkipEndStatus() == null) {
+					String message = "validateWaitRule() : endStatus(calendar) is null";
+					throw new InvalidSetting(message);
+				}
+			}
+			
+			// スキップのチェック
+			if (waitRule.isSkip()) {
+				CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), waitRule.getSkipEndValue(), DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH);
+				if (waitRule.getSkipEndStatus() == null) {
+					String message = "validateWaitRule() : endStatus(Skip) is null";
+					m_log.info(message);
+					throw new InvalidSetting(message);
 				}
 			}
 			if(waitRule.isStart_delay_time()){
@@ -1066,6 +1181,12 @@ public class JobValidator {
 					throw e;
 				}
 			}
+			if(waitRule.isStart_delay_session()) {
+				CommonValidator.validateInt(MessageConstant.TIME_AFTER_SESSION_START.getMessage(), waitRule.getStart_delay_session_value(), 1, DataRangeConstant.SMALLINT_HIGH);
+			}
+			if (waitRule.isStart_delay_notify()) {
+				CommonValidator.validatePriority(MessageConstant.START_DELAY.getMessage(), waitRule.getStart_delay_notify_priority(), false);
+			}
 			if(waitRule.isEnd_delay_time()){
 				if(waitRule.getEnd_delay_time_value() < DATETIME_VALUE_MIN || DATETIME_VALUE_MAX < waitRule.getEnd_delay_time_value()){
 					String[] args = {DATETIME_STRING_MIN, DATETIME_STRING_MAX, item.getData().getJobunitId(), jobId};
@@ -1074,6 +1195,96 @@ public class JobValidator {
 							+ e.getClass().getSimpleName() + ", " + e.getMessage());
 					throw e;
 				}
+			}
+			if (waitRule.isEnd_delay_session()) {
+				CommonValidator.validateInt(MessageConstant.TIME_AFTER_SESSION_START.getMessage(), waitRule.getEnd_delay_session_value(), 1, DataRangeConstant.SMALLINT_HIGH);
+			}
+			if (waitRule.isEnd_delay_job()) {
+				CommonValidator.validateInt(MessageConstant.TIME_AFTER_JOB_START.getMessage(), waitRule.getEnd_delay_job_value(), 1, DataRangeConstant.SMALLINT_HIGH);
+			}
+			if(waitRule.isEnd_delay_change_mount()){
+				// 0を含めないため、独自の実装を行う。
+				Double minSize = 0D;
+				Double maxSize = 100D;
+				if (waitRule.getEnd_delay_change_mount_value() == null 
+						|| waitRule.getEnd_delay_change_mount_value() <= minSize 
+						|| waitRule.getEnd_delay_change_mount_value() > maxSize) {
+					String[] args = {MessageConstant.JOB_CHANGE_MOUNT.getMessage(),
+							((new BigDecimal(minSize)).toBigInteger()).toString(),
+							((new BigDecimal(maxSize)).toBigInteger()).toString()};
+					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_BETWEEN_EXCLUDE_MINSIZE.getMessage(args));
+					m_log.info("validateWaitRule() : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage());
+					throw e;
+				}
+			}
+			if (waitRule.isEnd_delay_notify()) {
+				CommonValidator.validatePriority(MessageConstant.END_DELAY.getMessage(), waitRule.getEnd_delay_notify_priority(), false);
+			}
+			//排他条件分岐の設定をチェック
+			if (waitRule.isExclusiveBranch()) {
+				//後続ジョブの優先度設定のチェック
+				//後続ジョブでないジョブの優先度設定が存在しないこと
+				//このジョブを待ち条件としているジョブIDリスト
+				List<String> nextJobIdList = new ArrayList<>();
+				JobTreeItem parent= item.getParent();
+				if (parent != null) {
+					//同一階層のジョブリスト
+					List<JobTreeItem> siblingJobList = parent.getChildren();
+					//新規に作成された後続ジョブを表示するために使用する
+					for (JobTreeItem sibling : siblingJobList) {
+						if (sibling == item) {
+							continue;
+						}
+						JobInfo siblingJobInfo = sibling.getData();
+						if (siblingJobInfo.getWaitRule() == null) {
+							continue;
+						}
+						List<JobObjectInfo> siblingWaitJobObjectInfoList = siblingJobInfo.getWaitRule().getObject();
+						if (siblingWaitJobObjectInfoList != null) {
+							for (JobObjectInfo siblingWaitJobObjectInfo : siblingWaitJobObjectInfoList) {
+								//同じ階層のジョブの中でこのジョブを待ち条件としているもの
+								if ((siblingWaitJobObjectInfo.getType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS ||
+									siblingWaitJobObjectInfo.getType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE) &&
+									siblingWaitJobObjectInfo.getJobId().equals(item.getData().getId())) {
+									nextJobIdList.add(sibling.getData().getId());
+									break;
+								} 
+							}
+						}
+					}
+				}
+
+				List<JobNextJobOrderInfo> nextJobOrderList = waitRule.getExclusiveBranchNextJobOrderList();
+				if (nextJobOrderList != null) {
+					for (JobNextJobOrderInfo nextJobOrder: nextJobOrderList){
+						String targetJobId = nextJobOrder.getNextJobId();
+						//優先度設定のジョブIDが後続ジョブに無ければエラー
+						if (!nextJobIdList.contains(targetJobId)) {
+							String[] args = {jobId, targetJobId};
+							InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_NEXT_JOB_ORDER_JOBID_NG_INVALID_JOBID.getMessage(args));
+							m_log.info("validateWaitRule() : "
+									+ e.getClass().getSimpleName() + ", " + e.getMessage());
+							throw e;
+						}
+					}
+				}
+
+				CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), waitRule.getExclusiveBranchEndValue(), DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH);
+				if (waitRule.getExclusiveBranchEndStatus() == null) {
+					String message = "validateWaitRule() : endStatus(exclusiveBranch) is null";
+					throw new InvalidSetting(message);
+				}
+			}
+			//繰り返し設定をチェック
+			if (waitRule.getJobRetryFlg()) {
+				if (waitRule.getJobRetry() == null) {
+					String message = "validateJobUnit() jobRetry is null(job). jobRetry =" + waitRule.getJobRetry();
+					m_log.info(message);
+					throw new InvalidSetting(message);
+				}
+				// 試行回数のチェック
+				CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), waitRule.getJobRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
 			}
 		}
 		//子JobTreeItemを取得

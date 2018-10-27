@@ -1,24 +1,15 @@
 /*
-
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.custom.factory;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.custom.bean.CommandResultDTO;
@@ -28,7 +19,6 @@ import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.session.NotifyControllerBean;
 
 /**
  * コマンド監視の監視処理基底クラス<br/>
@@ -38,13 +28,13 @@ import com.clustercontrol.notify.session.NotifyControllerBean;
  */
 public abstract class RunCustomBase {
 
-	private static Log m_log = LogFactory.getLog(RunCustom.class);;
 	protected CommandResultDTO result = null;
 	protected List<MonitorJobEndNode> monitorJobEndNodeList = new ArrayList<>(); 
 	
 	/**
 	 * 閾値判定を行い、監視結果を通知する。<br/>
 	 * 
+	 * @return 通知情報リスト
 	 * @throws HinemosUnknown
 	 *             予期せぬ内部エラーが発生した場合
 	 * @throws MonitorNotFound
@@ -52,10 +42,10 @@ public abstract class RunCustomBase {
 	 * @throws CustomInvalid
 	 *             監視設定に不整合が存在する場合
 	 */
-	public abstract void monitor() throws HinemosUnknown, MonitorNotFound, CustomInvalid;
+	public abstract List<OutputBasicInfo> monitor() throws HinemosUnknown, MonitorNotFound, CustomInvalid;
 
 	/**
-	 * 通知機能に対して、コマンド監視の結果を通知する。<br/>
+	 * 通知情報を作成する。<br/>
 	 * 
 	 * @param priority
 	 *            監視結果の重要度(PriorityConstant.INFOなど)
@@ -71,13 +61,17 @@ public abstract class RunCustomBase {
 	 *            監視結果に埋め込むオリジナルメッセージ
 	 * @param pluginID
 	 *            PluginID
+	 * @param isPredict
+	 *            true:将来予測
+	 * @return 通知情報
+	 *      
 	 * @throws HinemosUnknown
 	 *             予期せぬ内部エラーが発生した場合
 	 * @throws CustomInvalid
 	 *             監視設定に不整合が存在する場合
 	 */
-	protected void notify(int priority, MonitorInfo monitor, String facilityId, String facilityPath, String subKey,
-			String msg, String msgOrig, String pluginID) throws HinemosUnknown, CustomInvalid {
+	protected OutputBasicInfo createOutputBasicInfo(int priority, MonitorInfo monitor, String facilityId, String facilityPath, String subKey,
+			String msg, String msgOrig, String pluginID, String applicationName, String notifyGroupId) throws HinemosUnknown, CustomInvalid {
 		// Local Variable
 		OutputBasicInfo notifyInfo = null;
 
@@ -87,20 +81,22 @@ public abstract class RunCustomBase {
 		// デバイス名単位に通知抑制されるよう、抑制用サブキーを設定する。
 		notifyInfo.setSubKey(subKey == null ? "" : subKey);
 		notifyInfo.setPriority(priority);
-		notifyInfo.setApplication(monitor.getApplication());
 		notifyInfo.setFacilityId(facilityId);
 		notifyInfo.setScopeText(facilityPath);
 		notifyInfo.setGenerationDate(result.getCollectDate());
 		notifyInfo.setMessage(msg);
 		notifyInfo.setMessageOrg(msgOrig);
 
-		try {
-			// 通知処理
-			new NotifyControllerBean().notify(notifyInfo, NotifyGroupIdGenerator.generate(monitor));
-		} catch (Exception e) {
-			m_log.warn("notify() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			throw new HinemosUnknown("unexpected internal failure occurred. [" + result + "]", e);
+		if (notifyGroupId == null || notifyGroupId.isEmpty()) {
+			notifyGroupId = NotifyGroupIdGenerator.generate(monitor);
 		}
+		if (applicationName == null || applicationName.isEmpty()) {
+			applicationName = monitor.getApplication();
+		}
+		notifyInfo.setApplication(applicationName);
+		notifyInfo.setNotifyGroupId(notifyGroupId);
+		
+		return notifyInfo;
 	}
 
 	/**

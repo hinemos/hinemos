@@ -1,0 +1,411 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"facilityName",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_facilityName"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_description"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ownerRoleId"}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_validFlg"},
+		{"type":"Translate", "values":[{"value":"true", "name":"name_circle"}, {"value":"false", "name":"name_hyphen"}]}
+	]},
+
+	{
+	"propName":"platformFamily",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_platformFamily"}
+	]},
+	
+	{
+	"propName":"subPlatformFamily",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_subPlatformFamily"}
+	]},
+
+	{
+	"propName":"hardwareType",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_hardwareType"}
+	]},
+
+	{
+	"propName":"iconImage",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_iconImage"}
+	]},
+
+	{
+	"propName":"ipAddressVersion",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipAddressVersion"}
+	]},
+
+	{
+	"propName":"ipAddressV4",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipAddressV4"}
+	]},
+
+	{
+	"propName":"ipAddressV6",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipAddressV6"}
+	]},
+
+	{
+	"propName":"nodeName",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_nodeName"}
+	]},
+
+	{
+	"propName":"osName",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_osName"}
+	]},
+
+	{
+	"propName":"osRelease",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_osRelease"}
+	]},
+
+	{
+	"propName":"osVersion",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_osVersion"}
+	]},
+
+	{
+	"propName":"characterSet",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_characterSet"}
+	]},
+	
+	{
+	"propName":"agentAwakePort",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_agentAwakePort"}
+	]},
+	
+	{
+	"propName":"jobMultiplicity",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_jobMultiplicity"}
+	]},
+	
+	{
+	"propName":"jobPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_jobPriority"}
+	]},
+
+	{
+	"propName":"snmpPort",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpPort"}
+	]},
+
+	{
+	"propName":"snmpCommunity",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpCommunity"}
+	]},
+
+	{
+	"propName":"snmpVersion",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpVersion"}
+	]},
+
+	{
+	"propName":"snmpTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpTimeout"}
+	]},
+
+	{
+	"propName":"snmpRetryCount",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpRetryCount"}
+	]},
+
+	{
+	"propName":"snmpUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpUser"}
+	]},
+
+	{
+	"propName":"snmpAuthPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpAuthPassword"}
+	]},
+
+	{
+	"propName":"snmpPrivPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpPrivPassword"}
+	]},
+
+	{
+	"propName":"snmpSecurityLevel",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpSecurityLevel"}
+	]},
+
+	{
+	"propName":"snmpAuthProtocol",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpAuthProtocol"}
+	]},
+
+	{
+	"propName":"snmpPrivProtocol",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_snmpPrivProtocol"}
+	]},
+
+	{
+	"propName":"wbemUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_wbemUser"}
+	]},
+
+	{
+	"propName":"wbemUserPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_wbemUserPassword"}
+	]},
+
+	{
+	"propName":"wbemPort",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_wbemPort"}
+	]},
+
+	{
+	"propName":"wbemProtocol",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_wbemProtocol"}
+	]},
+
+	{
+	"propName":"wbemTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_wbemTimeout"}
+	]},
+
+
+	{
+	"propName":"wbemRetryCount",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_wbemRetryCount"}
+	]},
+
+
+	{
+	"propName":"ipmiIpAddress",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipmiIpAddress"}
+	]},
+
+	{
+	"propName":"ipmiPort",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipmiPort"}
+	]},
+
+	{
+	"propName":"ipmiUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipmiUser"}
+	]},
+
+	{
+	"propName":"ipmiUserPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipmiUserPassword"}
+	]},
+
+	{
+	"propName":"ipmiTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipmiTimeout"}
+	]},
+
+	{
+	"propName":"ipmiRetryCount",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipmiRetryCount"}
+	]},
+
+	{
+	"propName":"ipmiProtocol",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipmiProtocol"}
+	]},
+
+	{
+	"propName":"ipmiLevel",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_ipmiLevel"}
+	]},
+
+	{
+	"propName":"winrmUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_winrmUser"}
+	]},
+
+	{
+	"propName":"winrmUserPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_winrmUserPassword"}
+	]},
+
+	{
+	"propName":"winrmVersion",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_winrmVersion"}
+	]},
+
+	{
+	"propName":"winrmPort",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_winrmPort"}
+	]},
+
+	{
+	"propName":"winrmProtocol",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_winrmProtocol"}
+	]},
+
+	{
+	"propName":"winrmTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_winrmTimeout"}
+	]},
+
+	{
+	"propName":"winrmRetryCount",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_winrmRetryCount"}
+	]},
+	
+	{
+	"propName":"sshUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_sshUser"}
+	]},
+
+	{
+	"propName":"sshUserPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_sshUserPassword"}
+	]},
+
+	{
+	"propName":"sshPrivateKeyFilename",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_sshPrivateKeyFilename"}
+	]},
+
+	{
+	"propName":"sshPrivateKeyPassphrase",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_sshPrivateKeyPassphrase"}
+	]},
+
+	{
+	"propName":"sshPort",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_sshPort"}
+	]},
+
+	{
+	"propName":"sshTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_sshTimeout"}
+	]},
+	
+	{
+	"propName":"cloudService",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_cloudService"}
+	]},
+	
+	{
+	"propName":"cloudScope",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_cloudScope"}
+	]},
+	
+	{
+	"propName":"cloudResourceType",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_cloudResourceType"}
+	]},
+	
+	{
+	"propName":"cloudResourceId",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_cloudResourceId"}
+	]},
+	
+	{
+	"propName":"cloudResourceName",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_cloudResourceName"}
+	]},
+	
+	{
+	"propName":"cloudLocation",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_cloudLocation"}
+	]},
+	
+	{
+	"propName":"autoDeviceSearch",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_autoDeviceSearch"}
+	]},
+
+	{
+	"propName":"administrator",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_administrator"}
+	]},
+
+	{
+	"propName":"contact",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_contact"}
+	]}
+]
+}

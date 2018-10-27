@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<project name="plugin_props_main" basedir=".">
+	<import file="version_props.xml"/>
+	
+	<property name="rpm.version" value="${option.version}"/>
+
+	<property name="rpm.license" value="GPLv2 or Commercial"/>
+	<property name="rpm.host" value="hinemos"/>
+	<property name="rpm.group" value="Application/System"/>
+	<property name="rpm.url" value="http://www.hinemos.info/"/>
+	<property name="rpm.vendor" value="NTT DATA INTELLILINK Corporation"/>
+	<property name="rpm.packager" value="${rpm.vendor} &lt;www.intellilink.co.jp/&gt;"/>
+	<property name="rpm.dist" value="1.el"/>
+</project>

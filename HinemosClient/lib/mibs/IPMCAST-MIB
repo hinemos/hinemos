@@ -1,0 +1,1154 @@
+IPMCAST-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    mib-2, Unsigned32, Counter64,
+    Gauge32, TimeTicks              FROM SNMPv2-SMI         -- [RFC2578]
+    RowStatus, TruthValue,
+    StorageType, TimeStamp          FROM SNMPv2-TC          -- [RFC2579]
+    MODULE-COMPLIANCE, OBJECT-GROUP FROM SNMPv2-CONF        -- [RFC2580]
+    CounterBasedGauge64             FROM HCNUM-TC           -- [RFC2856]
+    InterfaceIndexOrZero,
+    InterfaceIndex                  FROM IF-MIB             -- [RFC2863]
+    IANAipRouteProtocol,
+    IANAipMRouteProtocol            FROM IANA-RTPROTO-MIB
+    SnmpAdminString                 FROM SNMP-FRAMEWORK-MIB -- [RFC3411]
+    InetAddress, InetAddressType,
+    InetAddressPrefixLength,
+    InetZoneIndex, InetVersion      FROM INET-ADDRESS-MIB   -- [RFC4001]
+    LangTag                         FROM LANGTAG-TC-MIB;    -- [RFC5131]
+
+ipMcastMIB MODULE-IDENTITY
+    LAST-UPDATED "200711090000Z" -- 9 November 2007
+    ORGANIZATION "IETF MBONE Deployment (MBONED) Working Group"
+    ::= { mib-2 168 }
+
+
+ipMcast      OBJECT IDENTIFIER ::= { ipMcastMIB 1 }
+
+ipMcastEnabled OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-write
+    STATUS     current
+    ::= { ipMcast 1 }
+
+ipMcastRouteEntryCount OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcast 2 }
+
+ipMcastDeviceConfigStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-write
+
+
+
+
+
+    STATUS      current
+       DEFVAL { nonVolatile }
+    ::= { ipMcast 11 }
+
+
+ipMcastInterfaceTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF IpMcastInterfaceEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcast 3 }
+
+ipMcastInterfaceEntry OBJECT-TYPE
+    SYNTAX     IpMcastInterfaceEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { ipMcastInterfaceIPVersion,
+                 ipMcastInterfaceIfIndex }
+    ::= { ipMcastInterfaceTable 1 }
+
+IpMcastInterfaceEntry ::= SEQUENCE {
+    ipMcastInterfaceIPVersion         InetVersion,
+    ipMcastInterfaceIfIndex           InterfaceIndex,
+    ipMcastInterfaceTtl               Unsigned32,
+    ipMcastInterfaceRateLimit         Unsigned32,
+    ipMcastInterfaceStorageType       StorageType
+}
+
+
+
+
+
+ipMcastInterfaceIPVersion OBJECT-TYPE
+    SYNTAX     InetVersion
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastInterfaceEntry 1 }
+
+ipMcastInterfaceIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastInterfaceEntry 2 }
+
+ipMcastInterfaceTtl OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..256)
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL     { 0 }
+    ::= { ipMcastInterfaceEntry 3 }
+
+ipMcastInterfaceRateLimit OBJECT-TYPE
+    SYNTAX     Unsigned32
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL     { 0 }
+    ::= { ipMcastInterfaceEntry 4 }
+
+ipMcastInterfaceStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-write
+
+
+
+
+
+    STATUS      current
+       DEFVAL { nonVolatile }
+    ::= { ipMcastInterfaceEntry 5 }
+
+
+ipMcastSsmRangeTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF IpMcastSsmRangeEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcast 4 }
+
+ipMcastSsmRangeEntry OBJECT-TYPE
+    SYNTAX     IpMcastSsmRangeEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { ipMcastSsmRangeAddressType,
+                 ipMcastSsmRangeAddress,
+                 ipMcastSsmRangePrefixLength }
+    ::= { ipMcastSsmRangeTable 1 }
+
+IpMcastSsmRangeEntry ::= SEQUENCE {
+    ipMcastSsmRangeAddressType   InetAddressType,
+    ipMcastSsmRangeAddress       InetAddress,
+    ipMcastSsmRangePrefixLength  InetAddressPrefixLength,
+    ipMcastSsmRangeRowStatus     RowStatus,
+    ipMcastSsmRangeStorageType   StorageType
+}
+
+
+
+
+
+ipMcastSsmRangeAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastSsmRangeEntry 1 }
+
+ipMcastSsmRangeAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastSsmRangeEntry 2 }
+
+ipMcastSsmRangePrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastSsmRangeEntry 3 }
+
+ipMcastSsmRangeRowStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { ipMcastSsmRangeEntry 4 }
+
+ipMcastSsmRangeStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+       DEFVAL { nonVolatile }
+    ::= { ipMcastSsmRangeEntry 5 }
+
+
+ipMcastRouteTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF IpMcastRouteEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcast 5 }
+
+ipMcastRouteEntry OBJECT-TYPE
+    SYNTAX     IpMcastRouteEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { ipMcastRouteGroupAddressType,
+                 ipMcastRouteGroup,
+                 ipMcastRouteGroupPrefixLength,
+                 ipMcastRouteSourceAddressType,
+                 ipMcastRouteSource,
+                 ipMcastRouteSourcePrefixLength }
+    ::= { ipMcastRouteTable 1 }
+
+IpMcastRouteEntry ::= SEQUENCE {
+    ipMcastRouteGroupAddressType      InetAddressType,
+    ipMcastRouteGroup                 InetAddress,
+    ipMcastRouteGroupPrefixLength     InetAddressPrefixLength,
+    ipMcastRouteSourceAddressType     InetAddressType,
+    ipMcastRouteSource                InetAddress,
+    ipMcastRouteSourcePrefixLength    InetAddressPrefixLength,
+    ipMcastRouteUpstreamNeighborType  InetAddressType,
+    ipMcastRouteUpstreamNeighbor      InetAddress,
+    ipMcastRouteInIfIndex             InterfaceIndexOrZero,
+    ipMcastRouteTimeStamp             TimeStamp,
+    ipMcastRouteExpiryTime            TimeTicks,
+    ipMcastRouteProtocol              IANAipMRouteProtocol,
+    ipMcastRouteRtProtocol            IANAipRouteProtocol,
+    ipMcastRouteRtAddressType         InetAddressType,
+    ipMcastRouteRtAddress             InetAddress,
+    ipMcastRouteRtPrefixLength        InetAddressPrefixLength,
+    ipMcastRouteRtType                INTEGER,
+    ipMcastRouteOctets                Counter64,
+    ipMcastRoutePkts                  Counter64,
+    ipMcastRouteTtlDropOctets         Counter64,
+    ipMcastRouteTtlDropPackets        Counter64,
+    ipMcastRouteDifferentInIfOctets   Counter64,
+    ipMcastRouteDifferentInIfPackets  Counter64,
+
+
+
+
+
+    ipMcastRouteBps                   CounterBasedGauge64
+}
+
+ipMcastRouteGroupAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteEntry 1 }
+
+ipMcastRouteGroup OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteEntry 2 }
+
+ipMcastRouteGroupPrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteEntry 3 }
+
+ipMcastRouteSourceAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteEntry 4 }
+
+ipMcastRouteSource OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteEntry 5 }
+
+ipMcastRouteSourcePrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteEntry 6 }
+
+ipMcastRouteUpstreamNeighborType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 7 }
+
+ipMcastRouteUpstreamNeighbor OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 8 }
+
+ipMcastRouteInIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndexOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 9 }
+
+
+
+
+
+
+ipMcastRouteTimeStamp OBJECT-TYPE
+    SYNTAX     TimeStamp
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 10 }
+
+ipMcastRouteExpiryTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 11 }
+
+ipMcastRouteProtocol OBJECT-TYPE
+    SYNTAX     IANAipMRouteProtocol
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 12 }
+
+ipMcastRouteRtProtocol OBJECT-TYPE
+    SYNTAX     IANAipRouteProtocol
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 13 }
+
+ipMcastRouteRtAddressType OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     InetAddressType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 14 }
+
+ipMcastRouteRtAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 15 }
+
+ipMcastRouteRtPrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 16 }
+
+ipMcastRouteRtType OBJECT-TYPE
+    SYNTAX     INTEGER {
+                unicast (1),  -- Unicast route used in multicast RIB
+                multicast (2) -- Multicast route
+               }
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { ipMcastRouteEntry 17 }
+
+ipMcastRouteOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 18 }
+
+ipMcastRoutePkts OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 19 }
+
+ipMcastRouteTtlDropOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { ipMcastRouteEntry 20 }
+
+ipMcastRouteTtlDropPackets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 21 }
+
+ipMcastRouteDifferentInIfOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 22 }
+
+ipMcastRouteDifferentInIfPackets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 23 }
+
+ipMcastRouteBps OBJECT-TYPE
+    SYNTAX     CounterBasedGauge64
+    UNITS      "bits per second"
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteEntry 24 }
+
+ipMcastRouteNextHopTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF IpMcastRouteNextHopEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcast 6 }
+
+ipMcastRouteNextHopEntry OBJECT-TYPE
+    SYNTAX     IpMcastRouteNextHopEntry
+
+
+
+
+
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { ipMcastRouteNextHopGroupAddressType,
+                 ipMcastRouteNextHopGroup,
+                 ipMcastRouteNextHopGroupPrefixLength,
+                 ipMcastRouteNextHopSourceAddressType,
+                 ipMcastRouteNextHopSource,
+                 ipMcastRouteNextHopSourcePrefixLength,
+                 ipMcastRouteNextHopIfIndex,
+                 ipMcastRouteNextHopAddressType,
+                 ipMcastRouteNextHopAddress }
+    ::= { ipMcastRouteNextHopTable 1 }
+
+IpMcastRouteNextHopEntry ::= SEQUENCE {
+    ipMcastRouteNextHopGroupAddressType    InetAddressType,
+    ipMcastRouteNextHopGroup               InetAddress,
+    ipMcastRouteNextHopGroupPrefixLength   InetAddressPrefixLength,
+    ipMcastRouteNextHopSourceAddressType   InetAddressType,
+    ipMcastRouteNextHopSource              InetAddress,
+    ipMcastRouteNextHopSourcePrefixLength  InetAddressPrefixLength,
+    ipMcastRouteNextHopIfIndex             InterfaceIndex,
+    ipMcastRouteNextHopAddressType         InetAddressType,
+    ipMcastRouteNextHopAddress             InetAddress,
+    ipMcastRouteNextHopState               INTEGER,
+    ipMcastRouteNextHopTimeStamp           TimeStamp,
+    ipMcastRouteNextHopExpiryTime          TimeTicks,
+    ipMcastRouteNextHopClosestMemberHops   Unsigned32,
+    ipMcastRouteNextHopProtocol            IANAipMRouteProtocol,
+    ipMcastRouteNextHopOctets              Counter64,
+    ipMcastRouteNextHopPkts                Counter64
+}
+
+ipMcastRouteNextHopGroupAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 1 }
+
+ipMcastRouteNextHopGroup OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 2 }
+
+ipMcastRouteNextHopGroupPrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 3 }
+
+ipMcastRouteNextHopSourceAddressType OBJECT-TYPE
+
+
+
+
+
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 4 }
+
+ipMcastRouteNextHopSource OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 5 }
+
+ipMcastRouteNextHopSourcePrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 6 }
+
+ipMcastRouteNextHopIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 7 }
+
+ipMcastRouteNextHopAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 8 }
+
+ipMcastRouteNextHopAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 9 }
+
+ipMcastRouteNextHopState OBJECT-TYPE
+    SYNTAX     INTEGER { pruned(1), forwarding(2) }
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 10 }
+
+ipMcastRouteNextHopTimeStamp OBJECT-TYPE
+    SYNTAX     TimeStamp
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 11 }
+
+ipMcastRouteNextHopExpiryTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 12 }
+
+ipMcastRouteNextHopClosestMemberHops OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..256)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 13 }
+
+ipMcastRouteNextHopProtocol OBJECT-TYPE
+    SYNTAX     IANAipMRouteProtocol
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 14 }
+
+ipMcastRouteNextHopOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 15 }
+
+ipMcastRouteNextHopPkts OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastRouteNextHopEntry 16 }
+
+
+
+
+
+
+
+ipMcastBoundaryTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF IpMcastBoundaryEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcast 7 }
+
+ipMcastBoundaryEntry OBJECT-TYPE
+    SYNTAX     IpMcastBoundaryEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { ipMcastBoundaryIfIndex,
+                 ipMcastBoundaryAddressType,
+                 ipMcastBoundaryAddress,
+                 ipMcastBoundaryAddressPrefixLength }
+    ::= { ipMcastBoundaryTable 1 }
+
+IpMcastBoundaryEntry ::= SEQUENCE {
+    ipMcastBoundaryIfIndex              InterfaceIndex,
+    ipMcastBoundaryAddressType          InetAddressType,
+    ipMcastBoundaryAddress              InetAddress,
+    ipMcastBoundaryAddressPrefixLength  InetAddressPrefixLength,
+    ipMcastBoundaryTimeStamp            TimeStamp,
+    ipMcastBoundaryDroppedMcastOctets   Counter64,
+    ipMcastBoundaryDroppedMcastPkts     Counter64,
+    ipMcastBoundaryStatus               RowStatus,
+    ipMcastBoundaryStorageType          StorageType
+}
+
+ipMcastBoundaryIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastBoundaryEntry 1 }
+
+ipMcastBoundaryAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastBoundaryEntry 2 }
+
+ipMcastBoundaryAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastBoundaryEntry 3 }
+
+ipMcastBoundaryAddressPrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastBoundaryEntry 4 }
+
+ipMcastBoundaryTimeStamp OBJECT-TYPE
+    SYNTAX     TimeStamp
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastBoundaryEntry 5 }
+
+ipMcastBoundaryDroppedMcastOctets OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastBoundaryEntry 6 }
+
+ipMcastBoundaryDroppedMcastPkts OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastBoundaryEntry 7 }
+
+ipMcastBoundaryStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { ipMcastBoundaryEntry 8 }
+
+ipMcastBoundaryStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+       DEFVAL { nonVolatile }
+    ::= { ipMcastBoundaryEntry 9 }
+
+
+
+
+
+
+
+ipMcastScopeNameTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF IpMcastScopeNameEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcast 8 }
+
+ipMcastScopeNameEntry OBJECT-TYPE
+    SYNTAX     IpMcastScopeNameEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { ipMcastScopeNameAddressType,
+                 ipMcastScopeNameAddress,
+                 ipMcastScopeNameAddressPrefixLength,
+                 ipMcastScopeNameLanguage }
+    ::= { ipMcastScopeNameTable 1 }
+
+IpMcastScopeNameEntry ::= SEQUENCE {
+    ipMcastScopeNameAddressType          InetAddressType,
+    ipMcastScopeNameAddress              InetAddress,
+    ipMcastScopeNameAddressPrefixLength  InetAddressPrefixLength,
+    ipMcastScopeNameLanguage             LangTag,
+    ipMcastScopeNameString               SnmpAdminString,
+    ipMcastScopeNameDefault              TruthValue,
+    ipMcastScopeNameStatus               RowStatus,
+    ipMcastScopeNameStorageType          StorageType
+}
+
+ipMcastScopeNameAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastScopeNameEntry 1 }
+
+ipMcastScopeNameAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastScopeNameEntry 2 }
+
+ipMcastScopeNameAddressPrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastScopeNameEntry 3 }
+
+
+
+
+
+ipMcastScopeNameLanguage OBJECT-TYPE
+    SYNTAX     LangTag
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastScopeNameEntry 4 }
+
+ipMcastScopeNameString OBJECT-TYPE
+    SYNTAX     SnmpAdminString
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { ipMcastScopeNameEntry 5 }
+
+ipMcastScopeNameDefault OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL { false }
+    ::= { ipMcastScopeNameEntry 6 }
+
+
+
+
+
+
+ipMcastScopeNameStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { ipMcastScopeNameEntry 7 }
+
+ipMcastScopeNameStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+       DEFVAL { nonVolatile }
+    ::= { ipMcastScopeNameEntry 8 }
+
+
+ipMcastLocalListenerTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF IpMcastLocalListenerEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcast 9 }
+
+ipMcastLocalListenerEntry OBJECT-TYPE
+    SYNTAX     IpMcastLocalListenerEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX      { ipMcastLocalListenerGroupAddressType,
+                 ipMcastLocalListenerGroupAddress,
+                 ipMcastLocalListenerSourceAddressType,
+                 ipMcastLocalListenerSourceAddress,
+                 ipMcastLocalListenerSourcePrefixLength,
+                 ipMcastLocalListenerIfIndex,
+                 ipMcastLocalListenerRunIndex }
+    ::= { ipMcastLocalListenerTable 1 }
+
+IpMcastLocalListenerEntry ::= SEQUENCE {
+    ipMcastLocalListenerGroupAddressType    InetAddressType,
+    ipMcastLocalListenerGroupAddress        InetAddress,
+    ipMcastLocalListenerSourceAddressType   InetAddressType,
+    ipMcastLocalListenerSourceAddress       InetAddress,
+    ipMcastLocalListenerSourcePrefixLength  InetAddressPrefixLength,
+    ipMcastLocalListenerIfIndex             InterfaceIndex,
+    ipMcastLocalListenerRunIndex            Unsigned32
+}
+
+ipMcastLocalListenerGroupAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastLocalListenerEntry 1 }
+
+ipMcastLocalListenerGroupAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastLocalListenerEntry 2 }
+
+ipMcastLocalListenerSourceAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastLocalListenerEntry 3 }
+
+ipMcastLocalListenerSourceAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastLocalListenerEntry 4 }
+
+ipMcastLocalListenerSourcePrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastLocalListenerEntry 5 }
+
+ipMcastLocalListenerIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastLocalListenerEntry 6 }
+
+ipMcastLocalListenerRunIndex OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..2147483647)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastLocalListenerEntry 7 }
+
+
+ipMcastZoneTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF IpMcastZoneEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcast 10 }
+
+ipMcastZoneEntry OBJECT-TYPE
+    SYNTAX     IpMcastZoneEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+
+
+
+
+    INDEX      { ipMcastZoneIndex }
+    ::= { ipMcastZoneTable 1 }
+
+IpMcastZoneEntry ::= SEQUENCE {
+    ipMcastZoneIndex                        InetZoneIndex,
+    ipMcastZoneScopeDefaultZoneIndex        InetZoneIndex,
+    ipMcastZoneScopeAddressType             InetAddressType,
+    ipMcastZoneScopeAddress                 InetAddress,
+    ipMcastZoneScopeAddressPrefixLength     InetAddressPrefixLength
+}
+
+ipMcastZoneIndex OBJECT-TYPE
+    SYNTAX     InetZoneIndex (1..4294967295)
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { ipMcastZoneEntry 1 }
+
+ipMcastZoneScopeDefaultZoneIndex OBJECT-TYPE
+    SYNTAX     InetZoneIndex (1..4294967295)
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastZoneEntry 2 }
+
+ipMcastZoneScopeAddressType OBJECT-TYPE
+    SYNTAX     InetAddressType
+
+
+
+
+
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastZoneEntry 3 }
+
+ipMcastZoneScopeAddress OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastZoneEntry 4 }
+
+ipMcastZoneScopeAddressPrefixLength OBJECT-TYPE
+    SYNTAX     InetAddressPrefixLength
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { ipMcastZoneEntry 5 }
+
+
+
+
+
+
+
+ipMcastMIBConformance
+                  OBJECT IDENTIFIER ::= { ipMcastMIB 2 }
+ipMcastMIBCompliances
+                  OBJECT IDENTIFIER ::= { ipMcastMIBConformance 1 }
+ipMcastMIBGroups  OBJECT IDENTIFIER ::= { ipMcastMIBConformance 2 }
+
+
+ipMcastMIBComplianceHost MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE  -- this module
+    MANDATORY-GROUPS { ipMcastMIBLocalListenerGroup,
+
+
+
+
+
+                       ipMcastMIBBasicGroup }
+
+      OBJECT     ipMcastEnabled
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastDeviceConfigStorageType
+      MIN-ACCESS read-only
+
+      GROUP        ipMcastMIBSsmGroup
+
+      GROUP        ipMcastMIBRouteGroup
+
+      GROUP        ipMcastMIBRouteDiagnosticsGroup
+
+      GROUP        ipMcastMIBBoundaryIfGroup
+
+      GROUP        ipMcastMIBScopeNameGroup
+
+    ::= { ipMcastMIBCompliances 1 }
+
+ipMcastMIBComplianceRouter MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE  -- this module
+    MANDATORY-GROUPS { ipMcastMIBRouteProtoGroup,
+                       ipMcastMIBBasicGroup,
+                       ipMcastMIBSsmGroup,
+                       ipMcastMIBRouteGroup }
+
+      OBJECT     ipMcastEnabled
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastDeviceConfigStorageType
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastInterfaceTtl
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastInterfaceRateLimit
+      MIN-ACCESS read-only
+
+
+
+
+
+
+      OBJECT     ipMcastInterfaceStorageType
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastRouteUpstreamNeighborType
+      SYNTAX     InetAddressType { unknown(0), ipv4(1), ipv6(2),
+                                   ipv4z(3), ipv6z(4) }
+
+      OBJECT     ipMcastRouteUpstreamNeighbor
+      SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+
+      OBJECT     ipMcastRouteRtAddressType
+      SYNTAX     InetAddressType { unknown(0), ipv4(1), ipv6(2),
+                                   ipv4z(3), ipv6z(4) }
+
+      OBJECT     ipMcastRouteRtAddress
+      SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+
+      OBJECT     ipMcastSsmRangeRowStatus
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastSsmRangeStorageType
+      MIN-ACCESS read-only
+
+      GROUP        ipMcastMIBRouteDiagnosticsGroup
+
+
+
+
+
+      GROUP        ipMcastMIBPktsOutGroup
+
+      GROUP        ipMcastMIBHopCountGroup
+
+      GROUP        ipMcastMIBRouteOctetsGroup
+
+      GROUP        ipMcastMIBRouteBpsGroup
+
+      GROUP        ipMcastMIBLocalListenerGroup
+
+      GROUP        ipMcastMIBBoundaryIfGroup
+
+      GROUP        ipMcastMIBScopeNameGroup
+
+    ::= { ipMcastMIBCompliances 2 }
+
+ipMcastMIBComplianceBorderRouter MODULE-COMPLIANCE
+    STATUS  current
+
+    MODULE  -- this module
+    MANDATORY-GROUPS { ipMcastMIBRouteProtoGroup,
+                       ipMcastMIBBasicGroup,
+                       ipMcastMIBSsmGroup,
+                       ipMcastMIBRouteGroup,
+                       ipMcastMIBBoundaryIfGroup,
+                       ipMcastMIBScopeNameGroup }
+
+
+
+
+
+
+      OBJECT     ipMcastEnabled
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastDeviceConfigStorageType
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastInterfaceTtl
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastInterfaceRateLimit
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastInterfaceStorageType
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastRouteUpstreamNeighborType
+      SYNTAX     InetAddressType { unknown(0), ipv4(1), ipv6(2),
+                                   ipv4z(3), ipv6z(4) }
+
+      OBJECT     ipMcastRouteUpstreamNeighbor
+      SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+
+      OBJECT     ipMcastRouteRtAddressType
+      SYNTAX     InetAddressType { unknown(0), ipv4(1), ipv6(2),
+                                   ipv4z(3), ipv6z(4) }
+
+      OBJECT     ipMcastRouteRtAddress
+      SYNTAX     InetAddress (SIZE (0|4|8|16|20))
+
+      OBJECT     ipMcastSsmRangeRowStatus
+      MIN-ACCESS read-only
+
+      OBJECT     ipMcastSsmRangeStorageType
+      MIN-ACCESS read-only
+
+      GROUP        ipMcastMIBRouteDiagnosticsGroup
+
+      GROUP        ipMcastMIBPktsOutGroup
+
+      GROUP        ipMcastMIBHopCountGroup
+
+      GROUP        ipMcastMIBRouteOctetsGroup
+
+      GROUP        ipMcastMIBRouteBpsGroup
+
+      GROUP        ipMcastMIBLocalListenerGroup
+
+      OBJECT     ipMcastZoneScopeAddressType
+      SYNTAX     InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT     ipMcastZoneScopeAddress
+      SYNTAX     InetAddress (SIZE (4|16))
+
+
+
+
+
+
+    ::= { ipMcastMIBCompliances 3 }
+
+ipMcastMIBBasicGroup OBJECT-GROUP
+    OBJECTS { ipMcastEnabled,
+              ipMcastRouteEntryCount,
+              ipMcastDeviceConfigStorageType
+            }
+    STATUS  current
+    ::= { ipMcastMIBGroups 1 }
+
+ipMcastMIBSsmGroup OBJECT-GROUP
+    OBJECTS { ipMcastSsmRangeRowStatus,
+              ipMcastSsmRangeStorageType }
+    STATUS  current
+    ::= { ipMcastMIBGroups 2 }
+
+ipMcastMIBRouteGroup OBJECT-GROUP
+    OBJECTS { ipMcastInterfaceTtl,
+              ipMcastInterfaceRateLimit,
+              ipMcastInterfaceStorageType,
+              ipMcastRouteUpstreamNeighborType,
+              ipMcastRouteUpstreamNeighbor,
+              ipMcastRouteInIfIndex,
+              ipMcastRouteTimeStamp,
+              ipMcastRouteExpiryTime,
+              ipMcastRouteNextHopState,
+              ipMcastRouteNextHopTimeStamp,
+              ipMcastRouteNextHopExpiryTime
+            }
+    STATUS  current
+    ::= { ipMcastMIBGroups 3 }
+
+ipMcastMIBRouteDiagnosticsGroup OBJECT-GROUP
+    OBJECTS { ipMcastRoutePkts,
+              ipMcastRouteTtlDropPackets,
+              ipMcastRouteDifferentInIfPackets
+
+
+
+
+
+            }
+    STATUS  current
+    ::= { ipMcastMIBGroups 4 }
+
+ipMcastMIBPktsOutGroup OBJECT-GROUP
+    OBJECTS { ipMcastRouteNextHopTimeStamp,
+              ipMcastRouteNextHopPkts }
+    STATUS  current
+    ::= { ipMcastMIBGroups 5 }
+
+ipMcastMIBHopCountGroup OBJECT-GROUP
+    OBJECTS { ipMcastRouteNextHopClosestMemberHops }
+    STATUS  current
+    ::= { ipMcastMIBGroups 6 }
+
+ipMcastMIBRouteOctetsGroup OBJECT-GROUP
+    OBJECTS { ipMcastRouteTimeStamp,
+              ipMcastRouteOctets,
+              ipMcastRouteTtlDropOctets,
+              ipMcastRouteDifferentInIfOctets,
+              ipMcastRouteNextHopTimeStamp,
+              ipMcastRouteNextHopOctets }
+    STATUS  current
+    ::= { ipMcastMIBGroups 7 }
+
+ipMcastMIBRouteBpsGroup OBJECT-GROUP
+    OBJECTS { ipMcastRouteBps }
+    STATUS  current
+    ::= { ipMcastMIBGroups 8 }
+
+ipMcastMIBRouteProtoGroup OBJECT-GROUP
+    OBJECTS { ipMcastRouteProtocol, ipMcastRouteRtProtocol,
+              ipMcastRouteRtAddressType, ipMcastRouteRtAddress,
+              ipMcastRouteRtPrefixLength, ipMcastRouteRtType,
+
+
+
+
+
+              ipMcastRouteNextHopProtocol }
+    STATUS  current
+    ::= { ipMcastMIBGroups 9 }
+
+ipMcastMIBLocalListenerGroup OBJECT-GROUP
+    OBJECTS { ipMcastLocalListenerRunIndex }
+    STATUS  current
+    ::= { ipMcastMIBGroups 10 }
+
+ipMcastMIBBoundaryIfGroup OBJECT-GROUP
+    OBJECTS { ipMcastBoundaryTimeStamp,
+              ipMcastBoundaryDroppedMcastOctets,
+              ipMcastBoundaryDroppedMcastPkts,
+              ipMcastBoundaryStatus,
+              ipMcastBoundaryStorageType,
+              ipMcastZoneScopeDefaultZoneIndex,
+              ipMcastZoneScopeAddressType,
+              ipMcastZoneScopeAddress,
+              ipMcastZoneScopeAddressPrefixLength
+            }
+    STATUS  current
+    ::= { ipMcastMIBGroups 11 }
+
+ipMcastMIBScopeNameGroup OBJECT-GROUP
+    OBJECTS { ipMcastScopeNameString, ipMcastScopeNameDefault,
+              ipMcastScopeNameStatus, ipMcastScopeNameStorageType }
+    STATUS  current
+    ::= { ipMcastMIBGroups 12 }
+
+END

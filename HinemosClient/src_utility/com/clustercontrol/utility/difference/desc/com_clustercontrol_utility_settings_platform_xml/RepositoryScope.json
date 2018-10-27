@@ -1,0 +1,21 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"RepositoryScope_funcName"},
+	{"type":"OrderBy",
+	"props":[
+		"FacilityName",
+		"Description",
+		"OwnerRoleId",
+		"IconImage",
+		"ScopeInfo.*"
+	]
+	}
+],
+"props":[
+	{
+	"propName":"scopeInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

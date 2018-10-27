@@ -1,14 +1,10 @@
-/**********************************************************************
- * Copyright (C) 2014 NTT DATA Corporation
- * This program is free software; you can redistribute it and/or
- * Modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation, version 2.
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
  *
- * This program is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- * PURPOSE.  See the GNU General Public License for more details.
- *********************************************************************/
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
 
 package com.clustercontrol.util;
 
@@ -18,6 +14,7 @@ import java.net.Proxy;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -167,6 +164,14 @@ public class EndpointManager {
 			}
 		}
 		return activeList;
+	}
+
+	public static Set<String> getAllOptions() {
+		Set<String> allOptions = new HashSet<>();
+		for( Map.Entry<String, EndpointUnit> e : getInstance().endpointManagerMap.entrySet() ){
+			allOptions.addAll(e.getValue().getOptions());
+		}
+		return allOptions;
 	}
 
 	/**

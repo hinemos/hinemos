@@ -1,0 +1,27 @@
+URI-TC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, mib-2             FROM SNMPv2-SMI      -- [RFC2578]
+    TEXTUAL-CONVENTION                 FROM SNMPv2-TC;      -- [RFC2579]
+
+uriTcMIB MODULE-IDENTITY
+    LAST-UPDATED "200709100000Z" -- 10 September 2007
+    ORGANIZATION "IETF Operations and Management (OPS) Area"
+    ::= { mib-2 164 }
+
+Uri ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "1a"
+   STATUS      current
+   SYNTAX      OCTET STRING
+
+Uri255 ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "255a"
+   STATUS      current
+   SYNTAX      OCTET STRING (SIZE (0..255))
+
+Uri1024 ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "1024a"
+   STATUS      current
+   SYNTAX      OCTET STRING (SIZE (0..1024))
+
+END

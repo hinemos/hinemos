@@ -1,0 +1,20 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"name",
+	"annotations":[
+		{"type":"Column", "columnName":"TransferDestProp_name"}
+	]},
+
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"TransferDestProp_value"}
+	]}
+
+]
+}

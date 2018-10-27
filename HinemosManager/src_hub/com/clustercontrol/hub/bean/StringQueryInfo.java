@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.bean;
 
 /**
@@ -28,6 +22,7 @@ public class StringQueryInfo {
 	private String monitorId;
 	private String facilityId;
 	private String keywords;
+	private String tag;
 	private Operator operator;
 	private Integer offset;
 	private Integer size;
@@ -121,6 +116,25 @@ public class StringQueryInfo {
 		this.keywords = keywords;
 	}
 	/**
+	 * タグ取得。
+	 * 
+	 * @return the tag
+	 */
+	public String getTag() {
+		return tag;
+	}
+	/**
+	 * タグ設定。
+	 * 
+	 * 指定されたタグごとに集計を行う。
+	 * ログ件数監視で使用する。
+	 * 
+	 * @param tag the tag to set
+	 */
+	public void setTag(String tag) {
+		this.tag = tag;
+	}
+	/**
 	 * キーワードの論理演算種別設定
 	 * 
 	 * @return the operator
@@ -188,7 +202,7 @@ public class StringQueryInfo {
 	@Override
 	public String toString() {
 		return "StringQueryInfo [from=" + from + ", to=" + to + ", monitorId=" + monitorId + ", facilityId="
-				+ facilityId + ", keywords=" + keywords + ", operator=" + operator + ", offset=" + offset + ", size="
+				+ facilityId + ", keywords=" + keywords + ", tag=" + tag + ", operator=" + operator + ", offset=" + offset + ", size="
 				+ size + ", needCount=" + needCount + "]";
 	}
 }

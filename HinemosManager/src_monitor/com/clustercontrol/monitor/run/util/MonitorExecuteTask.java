@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.run.util;
 
 import java.util.concurrent.Callable;
@@ -8,6 +16,9 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.HinemosDbTimeout;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorStringValueType;
@@ -117,16 +128,23 @@ public class MonitorExecuteTask implements Callable<MonitorRunResultInfo>{
 			jtm.commit();
 			
 			return info;
+		} catch (HinemosDbTimeout | InvalidSetting | HinemosUnknown e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
 		} catch (RuntimeException e) {
 			m_log.warn("call() : "
 					+ "facilityId=" + m_facilityId + ", notifyGroupId=" + m_runMonitor.getNotifyGroupId()
 					+ ", Exception=" + e.getClass().getSimpleName() + ", message=" + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw e;
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
 		}
 	}
 }

@@ -1,0 +1,282 @@
+SNMP-USER-BASED-SM-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    OBJECT-IDENTITY,
+    snmpModules, Counter32                FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION, TestAndIncr,
+    RowStatus, RowPointer,
+    StorageType, AutonomousType           FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP       FROM SNMPv2-CONF
+    SnmpAdminString, SnmpEngineID,
+    snmpAuthProtocols, snmpPrivProtocols  FROM SNMP-FRAMEWORK-MIB;
+
+snmpUsmMIB MODULE-IDENTITY
+    LAST-UPDATED "200210160000Z"            -- 16 Oct 2002, midnight
+    ORGANIZATION "SNMPv3 Working Group"
+
+
+
+
+
+
+
+    ::= { snmpModules 15 }
+
+
+usmMIBObjects     OBJECT IDENTIFIER ::= { snmpUsmMIB 1 }
+usmMIBConformance OBJECT IDENTIFIER ::= { snmpUsmMIB 2 }
+
+
+usmNoAuthProtocol OBJECT-IDENTITY
+    STATUS        current
+    ::= { snmpAuthProtocols 1 }
+
+usmHMACMD5AuthProtocol OBJECT-IDENTITY
+    STATUS        current
+    ::= { snmpAuthProtocols 2 }
+
+usmHMACSHAAuthProtocol OBJECT-IDENTITY
+    STATUS        current
+    ::= { snmpAuthProtocols 3 }
+
+usmNoPrivProtocol OBJECT-IDENTITY
+    STATUS        current
+    ::= { snmpPrivProtocols 1 }
+
+usmDESPrivProtocol OBJECT-IDENTITY
+    STATUS        current
+    ::= { snmpPrivProtocols 2 }
+
+
+KeyChange ::=     TEXTUAL-CONVENTION
+   STATUS         current
+    SYNTAX       OCTET STRING
+
+
+
+
+
+
+
+usmStats         OBJECT IDENTIFIER ::= { usmMIBObjects 1 }
+
+
+usmStatsUnsupportedSecLevels OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { usmStats 1 }
+
+usmStatsNotInTimeWindows OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { usmStats 2 }
+
+usmStatsUnknownUserNames OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { usmStats 3 }
+
+usmStatsUnknownEngineIDs OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { usmStats 4 }
+
+usmStatsWrongDigests OBJECT-TYPE
+
+
+
+
+
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { usmStats 5 }
+
+usmStatsDecryptionErrors OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { usmStats 6 }
+
+
+usmUser          OBJECT IDENTIFIER ::= { usmMIBObjects 2 }
+
+usmUserSpinLock  OBJECT-TYPE
+    SYNTAX       TestAndIncr
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { usmUser 1 }
+
+
+usmUserTable     OBJECT-TYPE
+    SYNTAX       SEQUENCE OF UsmUserEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { usmUser 2 }
+
+usmUserEntry     OBJECT-TYPE
+    SYNTAX       UsmUserEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX       { usmUserEngineID,
+                  usmUserName
+                }
+    ::= { usmUserTable 1 }
+
+UsmUserEntry ::= SEQUENCE
+    {
+        usmUserEngineID         SnmpEngineID,
+        usmUserName             SnmpAdminString,
+        usmUserSecurityName     SnmpAdminString,
+        usmUserCloneFrom        RowPointer,
+        usmUserAuthProtocol     AutonomousType,
+        usmUserAuthKeyChange    KeyChange,
+        usmUserOwnAuthKeyChange KeyChange,
+        usmUserPrivProtocol     AutonomousType,
+        usmUserPrivKeyChange    KeyChange,
+        usmUserOwnPrivKeyChange KeyChange,
+        usmUserPublic           OCTET STRING,
+        usmUserStorageType      StorageType,
+        usmUserStatus           RowStatus
+    }
+
+usmUserEngineID  OBJECT-TYPE
+    SYNTAX       SnmpEngineID
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { usmUserEntry 1 }
+
+usmUserName      OBJECT-TYPE
+    SYNTAX       SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { usmUserEntry 2 }
+
+usmUserSecurityName OBJECT-TYPE
+    SYNTAX       SnmpAdminString
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { usmUserEntry 3 }
+
+usmUserCloneFrom OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { usmUserEntry 4 }
+
+usmUserAuthProtocol OBJECT-TYPE
+    SYNTAX       AutonomousType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { usmNoAuthProtocol }
+    ::= { usmUserEntry 5 }
+
+usmUserAuthKeyChange OBJECT-TYPE
+    SYNTAX       KeyChange   -- typically (SIZE (0 | 32)) for HMACMD5
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { ''H }    -- the empty string
+    ::= { usmUserEntry 6 }
+
+usmUserOwnAuthKeyChange OBJECT-TYPE
+    SYNTAX       KeyChange   -- typically (SIZE (0 | 32)) for HMACMD5
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { ''H }    -- the empty string
+    ::= { usmUserEntry 7 }
+
+usmUserPrivProtocol OBJECT-TYPE
+    SYNTAX       AutonomousType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { usmNoPrivProtocol }
+    ::= { usmUserEntry 8 }
+
+usmUserPrivKeyChange OBJECT-TYPE
+    SYNTAX       KeyChange  -- typically (SIZE (0 | 32)) for DES
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { ''H }    -- the empty string
+    ::= { usmUserEntry 9 }
+
+usmUserOwnPrivKeyChange OBJECT-TYPE
+    SYNTAX       KeyChange  -- typically (SIZE (0 | 32)) for DES
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { ''H }    -- the empty string
+    ::= { usmUserEntry 10 }
+
+usmUserPublic    OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE(0..32))
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { ''H }  -- the empty string
+    ::= { usmUserEntry 11 }
+
+usmUserStorageType OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { nonVolatile }
+    ::= { usmUserEntry 12 }
+
+usmUserStatus    OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { usmUserEntry 13 }
+
+
+usmMIBCompliances OBJECT IDENTIFIER ::= { usmMIBConformance 1 }
+usmMIBGroups      OBJECT IDENTIFIER ::= { usmMIBConformance 2 }
+
+
+usmMIBCompliance MODULE-COMPLIANCE
+    STATUS       current
+
+    MODULE       -- this module
+        MANDATORY-GROUPS { usmMIBBasicGroup }
+
+        OBJECT           usmUserAuthProtocol
+        MIN-ACCESS       read-only
+
+        OBJECT           usmUserPrivProtocol
+        MIN-ACCESS       read-only
+
+    ::= { usmMIBCompliances 1 }
+
+usmMIBBasicGroup OBJECT-GROUP
+    OBJECTS     {
+                  usmStatsUnsupportedSecLevels,
+                  usmStatsNotInTimeWindows,
+                  usmStatsUnknownUserNames,
+                  usmStatsUnknownEngineIDs,
+                  usmStatsWrongDigests,
+                  usmStatsDecryptionErrors,
+                  usmUserSpinLock,
+                  usmUserSecurityName,
+                  usmUserCloneFrom,
+                  usmUserAuthProtocol,
+                  usmUserAuthKeyChange,
+                  usmUserOwnAuthKeyChange,
+                  usmUserPrivProtocol,
+                  usmUserPrivKeyChange,
+                  usmUserOwnPrivKeyChange,
+
+
+
+
+
+                  usmUserPublic,
+                  usmUserStorageType,
+                  usmUserStatus
+                }
+    STATUS       current
+    ::= { usmMIBGroups 1 }
+
+END

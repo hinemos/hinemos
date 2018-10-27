@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.monitor.util;
 
 import java.util.List;
@@ -20,6 +28,7 @@ import com.clustercontrol.ws.monitor.JdbcDriverInfo;
 import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
 import com.clustercontrol.ws.monitor.MonitorFilterInfo;
 import com.clustercontrol.ws.monitor.MonitorInfo;
+import com.clustercontrol.ws.monitor.MonitorInfoBean;
 import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 import com.clustercontrol.ws.monitor.MonitorSettingEndpoint;
 import com.clustercontrol.ws.monitor.MonitorSettingEndpointService;
@@ -81,6 +90,38 @@ public class MonitorSettingEndpointWrapper{
 		throw wse;
 	}
 
+	public List<MonitorInfoBean> getMonitorBeanList()
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : getMonitorSettingEndpoint(endpointUnit)) {
+			try {
+				MonitorSettingEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getMonitorBeanList();
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getMonitorBeanList(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public List<MonitorInfoBean> getMonitorBeanListByCondition( MonitorFilterInfo condition )
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : getMonitorSettingEndpoint(endpointUnit)) {
+			try {
+				MonitorSettingEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getMonitorBeanListByCondition(condition);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getMonitorBeanListByCondition(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
 	public boolean addMonitor(MonitorInfo monitorInfo)
 			throws HinemosUnknown_Exception,
 			InvalidRole_Exception, InvalidUserPass_Exception,
@@ -119,7 +160,7 @@ public class MonitorSettingEndpointWrapper{
 		throw wse;
 	}
 
-	public boolean deleteMonitor(List<String> monitorIdList, String monitorTypeId)
+	public boolean deleteMonitor(List<String> monitorIdList)
 			throws HinemosUnknown_Exception,
 			InvalidRole_Exception, InvalidUserPass_Exception,
 			MonitorNotFound_Exception,
@@ -128,10 +169,27 @@ public class MonitorSettingEndpointWrapper{
 		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : getMonitorSettingEndpoint(endpointUnit)) {
 			try {
 				MonitorSettingEndpoint endpoint = endpointSetting.getEndpoint();
-				return endpoint.deleteMonitor(monitorIdList, monitorTypeId);
+				return endpoint.deleteMonitor(monitorIdList);
 			} catch (WebServiceException e) {
 				wse = e;
 				m_log.warn("deleteMonitor(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public List<MonitorInfo> getStringMonitoInfoListForAnalytics(String facilityId, String ownerRoleId)
+			throws HinemosUnknown_Exception,
+			InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : getMonitorSettingEndpoint(endpointUnit)) {
+			try {
+				MonitorSettingEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getStringMonitoInfoListForAnalytics(facilityId, ownerRoleId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getStringMonitoInfoListForAnalytics(), " + e.getMessage());
 				endpointUnit.changeEndpoint();
 			}
 		}
@@ -462,6 +520,22 @@ public class MonitorSettingEndpointWrapper{
 		throw wse;
 	}
 
+	public List<MonitorInfo> getMonitorListForLogcount(String facilityId, String ownerRoleId)
+			throws HinemosUnknown_Exception, InvalidUserPass_Exception, InvalidRole_Exception	{
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : getMonitorSettingEndpoint(endpointUnit)) {
+			try {
+				MonitorSettingEndpoint endpoint = (MonitorSettingEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getMonitorListForLogcount(facilityId, ownerRoleId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getMonitorListForLogcount(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
 	public HashMapInfo getItemCodeMap()
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
 		WebServiceException wse = null;
@@ -488,6 +562,39 @@ public class MonitorSettingEndpointWrapper{
 			} catch (WebServiceException e) {
 				wse = e;
 				m_log.warn("getAvailableCollectorItemList(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+	
+	public List<String> getMonitorStringTagList(String monitorId, String ownerRoleId)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : getMonitorSettingEndpoint(endpointUnit)) {
+			try {
+				MonitorSettingEndpoint endpoint = (MonitorSettingEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getMonitorStringTagList(monitorId, ownerRoleId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getMonitorStringTagList(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+	
+	public void runSummaryLogcount(String monitorId, Long startDate)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, InvalidSetting_Exception, MonitorNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : getMonitorSettingEndpoint(endpointUnit)) {
+			try {
+				MonitorSettingEndpoint endpoint = (MonitorSettingEndpoint) endpointSetting.getEndpoint();
+				endpoint.runSummaryLogcount(monitorId, startDate);
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("runSummaryLogcount(), " + e.getMessage());
 				endpointUnit.changeEndpoint();
 			}
 		}

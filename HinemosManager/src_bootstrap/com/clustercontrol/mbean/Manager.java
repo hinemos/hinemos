@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2012 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.mbean;
@@ -179,34 +172,36 @@ public class Manager implements ManagerMXBean {
 		StringBuilder str = new StringBuilder();
 		String lineSeparator = System.getProperty("line.separator");
 		
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		ServerSession ss = em.unwrap(ServerSession.class);
-		
-		// 登録するイベントリスナーはJpaSessionEventListenerのみ
-		List<SessionEventListener> list = ss.getEventManager().getListeners();
-		JpaSessionEventListener listener = (JpaSessionEventListener)list.get(0);
-		
-		str.append("[DB ConnectionPool Info]" + lineSeparator);
-		// Hinemos 5.1時点ではデフォルトのコネクションプールしか使用しないが、読込専用プール等、
-		// 別のプールを追加する場合は、プール毎に出力するため、プール名も併せて取得すべき。
-		for (ConnectionPool pool : ss.getConnectionPools().values()) {
-			used = (pool.getTotalNumberOfConnections() - pool.getConnectionsAvailable().size());
-			StringBuilder message = new StringBuilder();
-			message.append("Pool-name=" + pool.getName());
-			message.append(" ,Initial=" + pool.getInitialNumberOfConnections());
-			message.append(" ,Max=" + pool.getMaxNumberOfConnections());
-			message.append(" ,Min=" + pool.getMinNumberOfConnections());
-			message.append(" ,Use=" + used);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			ServerSession ss = em.unwrap(ServerSession.class);
 			
-			str.append(message + lineSeparator);
-			log.debug(message);
+			// 登録するイベントリスナーはJpaSessionEventListenerのみ
+			List<SessionEventListener> list = ss.getEventManager().getListeners();
+			JpaSessionEventListener listener = (JpaSessionEventListener)list.get(0);
+			
+			str.append("[DB ConnectionPool Info]" + lineSeparator);
+			// Hinemos 5.1時点ではデフォルトのコネクションプールしか使用しないが、読込専用プール等、
+			// 別のプールを追加する場合は、プール毎に出力するため、プール名も併せて取得すべき。
+			for (ConnectionPool pool : ss.getConnectionPools().values()) {
+				used = (pool.getTotalNumberOfConnections() - pool.getConnectionsAvailable().size());
+				StringBuilder message = new StringBuilder();
+				message.append("Pool-name=" + pool.getName());
+				message.append(" ,Initial=" + pool.getInitialNumberOfConnections());
+				message.append(" ,Max=" + pool.getMaxNumberOfConnections());
+				message.append(" ,Min=" + pool.getMinNumberOfConnections());
+				message.append(" ,Use=" + used);
+				
+				str.append(message + lineSeparator);
+				log.debug(message);
+			}
+			// プール使用数の統計データ(1時間毎の最大使用数)を取得(統計データはデフォルトプールのみ取得)
+			for (DBConnectionPoolStats queue : listener.getPoolStats()){
+				str.append("Max use count:" + String.format("%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS", queue.getUpdateTime()) + "=" + queue.getMaxUseCount() + lineSeparator);
+			}
+			log.debug("get DB ConnectionPool Info end.");
+			return str.toString();
 		}
-		// プール使用数の統計データ(1時間毎の最大使用数)を取得(統計データはデフォルトプールのみ取得)
-		for (DBConnectionPoolStats queue : listener.getPoolStats()){
-			str.append("Max use count:" + String.format("%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS", queue.getUpdateTime()) + "=" + queue.getMaxUseCount() + lineSeparator);
-		}
-		log.debug("get DB ConnectionPool Info end.");
-		return str.toString();
 	}
 
 	@Override
@@ -303,6 +298,11 @@ public class Manager implements ManagerMXBean {
 	@Override
 	public int getWebServiceForAgentHubQueueCount() {
 		return WebServiceAgentPlugin.getAgentHubQueueSize();
+	}
+
+	@Override
+	public int getWebServiceForAgentBinaryQueueCount() {
+		return WebServiceAgentPlugin.getAgentBinaryQueueSize();
 	}
 
 	@Override

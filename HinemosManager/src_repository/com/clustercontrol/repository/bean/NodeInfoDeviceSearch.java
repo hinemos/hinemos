@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) since 2009 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.repository.bean;
 
 import java.io.Serializable;
@@ -22,7 +16,7 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlType;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.repository.model.NodeCpuInfo;
 import com.clustercontrol.repository.model.NodeDeviceInfo;
 import com.clustercontrol.repository.model.NodeDiskInfo;
@@ -54,18 +48,6 @@ public class NodeInfoDeviceSearch implements Serializable
 	private static String itemGenDev = MessageConstant.GENERAL_DEVICE_LIST.getMessage();
 	private String errorMessage = null;
 
-	// 自動デバイスサーチのプロパティ
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_CPU = "repository.device.search.prop.device.cpu";
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_MEMORY = "repository.device.search.prop.device.memory";
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_NIC = "repository.device.search.prop.device.nic";
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_DISK = "repository.device.search.prop.device.disk";
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_FILESYSTEM = "repository.device.search.prop.device.filesystem";
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_GENERAL = "repository.device.search.prop.device.general";
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_BASIC_HARDWARE = "repository.device.search.prop.basic.hardware";
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_BASIC_NETWORK = "repository.device.search.prop.basic.network";
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_BASIC_OS = "repository.device.search.prop.basic.os";
-	private static String REPOSITORY_DEVICE_SEARCH_PROP_BASIC_AGENT = "repository.device.search.prop.basic.agent";
-	
 	/**
 	 * 登録時エラーのあったノード詳細情報のsetter
 	 * @param message
@@ -148,7 +130,7 @@ public class NodeInfoDeviceSearch implements Serializable
 		equalsBasic = equalsNodeBasicInfo(lastNode);
 
 		//CPU情報
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_CPU, true)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_device_cpu.getBooleanValue()) {
 			Set<NodeCpuInfo> last = new HashSet<NodeCpuInfo>();
 			if (lastNode.getNodeCpuInfo() != null) {
 				last.addAll(lastNode.getNodeCpuInfo());
@@ -186,7 +168,7 @@ public class NodeInfoDeviceSearch implements Serializable
 		}
 
 		//メモリ情報
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_MEMORY, true)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_device_memory.getBooleanValue()) {
 			Set<NodeMemoryInfo> last = new HashSet<NodeMemoryInfo>();
 			if (lastNode.getNodeMemoryInfo() != null) {
 				last.addAll(lastNode.getNodeMemoryInfo());
@@ -224,7 +206,7 @@ public class NodeInfoDeviceSearch implements Serializable
 		}
 
 		//NIC情報
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_NIC, true)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_device_nic.getBooleanValue()) {
 			Set<NodeNetworkInterfaceInfo> last = new HashSet<NodeNetworkInterfaceInfo>();
 			if (lastNode.getNodeNetworkInterfaceInfo() != null) {
 				last.addAll(lastNode.getNodeNetworkInterfaceInfo());
@@ -263,7 +245,7 @@ public class NodeInfoDeviceSearch implements Serializable
 		}
 
 		//ディスク情報
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_DISK, true)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_device_disk.getBooleanValue()) {
 			Set<NodeDiskInfo> last = new HashSet<NodeDiskInfo>();
 			if (lastNode.getNodeDiskInfo() != null) {
 				last.addAll(lastNode.getNodeDiskInfo());
@@ -301,7 +283,7 @@ public class NodeInfoDeviceSearch implements Serializable
 		}
 
 		//ファイルシステム情報
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_FILESYSTEM, true)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_device_filesystem.getBooleanValue()) {
 			Set<NodeFilesystemInfo> last = new HashSet<NodeFilesystemInfo>();
 			if (lastNode.getNodeFilesystemInfo() != null) {
 				last.addAll(lastNode.getNodeFilesystemInfo());
@@ -339,7 +321,7 @@ public class NodeInfoDeviceSearch implements Serializable
 		}
 
 		//汎用デバイス情報(自動検出されないため、trueにすると必ず削除されることを注意せよ）
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_DEVICE_GENERAL, false)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_device_general.getBooleanValue()) {
 			Set<NodeDeviceInfo> last = new HashSet<NodeDeviceInfo>();
 			if (lastNode.getNodeDeviceInfo() != null) {
 				last.addAll(lastNode.getNodeDeviceInfo());
@@ -376,7 +358,7 @@ public class NodeInfoDeviceSearch implements Serializable
 			//取得した情報で更新
 			if (equalsBasic == false) {
 				// サーバ基本情報->ハードウェア
-				if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_BASIC_HARDWARE, false)) {
+				if (HinemosPropertyCommon.repository_device_search_prop_basic_hardware.getBooleanValue()) {
 					this.newNodeInfo.setPlatformFamily(this.nodeInfo.getPlatformFamily());
 					//SNMPで取得される情報ではないためサブプラットフォームは置き換えない
 					//(置き換えてしまうとクラウド仮想化オプション利用時にリソース監視(メトリクス)が動作しなくなる)
@@ -384,14 +366,14 @@ public class NodeInfoDeviceSearch implements Serializable
 					this.newNodeInfo.setIconImage(this.nodeInfo.getIconImage());
 				}
 				// サーバ基本情報->ネットワーク
-				if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_BASIC_NETWORK, true)) {
+				if (HinemosPropertyCommon.repository_device_search_prop_basic_network.getBooleanValue()) {
 					this.newNodeInfo.setIpAddressVersion(this.nodeInfo.getIpAddressVersion());
 					this.newNodeInfo.setIpAddressV4(this.nodeInfo.getIpAddressV4());
 					this.newNodeInfo.setIpAddressV6(this.nodeInfo.getIpAddressV6());
 					this.newNodeInfo.setNodeHostnameInfo(this.nodeInfo.getNodeHostnameInfo());
 				}
 				// サーバ基本情報->OS
-				if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_BASIC_OS, false)) {
+				if (HinemosPropertyCommon.repository_device_search_prop_basic_os.getBooleanValue()) {
 					this.newNodeInfo.setNodeName(this.nodeInfo.getNodeName());
 					this.newNodeInfo.setOsName(this.nodeInfo.getOsName());
 					this.newNodeInfo.setOsRelease(this.nodeInfo.getOsRelease());
@@ -399,7 +381,7 @@ public class NodeInfoDeviceSearch implements Serializable
 					this.newNodeInfo.setCharacterSet(this.nodeInfo.getCharacterSet());
 				}
 				// サーバ基本情報->Hinemosエージェント
-				if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_BASIC_AGENT, false)) {
+				if (HinemosPropertyCommon.repository_device_search_prop_basic_agent.getBooleanValue()) {
 					this.newNodeInfo.setAgentAwakePort(this.nodeInfo.getAgentAwakePort());
 				}
 			}
@@ -435,7 +417,7 @@ public class NodeInfoDeviceSearch implements Serializable
 	private boolean equalsNodeBasicInfo(NodeInfo lastNode) {
 		boolean lEquals = true;
 
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_BASIC_HARDWARE, false)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_basic_hardware.getBooleanValue()) {
 			// HW
 			if( nodeInfo.getPlatformFamily() == null ) {
 				lEquals = lEquals && ( lastNode.getPlatformFamily() == null );
@@ -488,7 +470,7 @@ public class NodeInfoDeviceSearch implements Serializable
 		}
 
 		// IP アドレス
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_BASIC_NETWORK, true)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_basic_network.getBooleanValue()) {
 			if( nodeInfo.getIpAddressVersion() == null )
 			{
 				lEquals = lEquals && ( lastNode.getIpAddressVersion() == null );
@@ -530,6 +512,12 @@ public class NodeInfoDeviceSearch implements Serializable
 			if( nodeInfo.getNodeHostnameInfo() == null || nodeInfo.getNodeHostnameInfo().isEmpty() )
 			{
 				lEquals = lEquals && ( lastNode.getNodeHostnameInfo() == null || lastNode.getNodeHostnameInfo().isEmpty());
+			} else if (lastNode.getNodeHostnameInfo() == null || lastNode.getNodeHostnameInfo().isEmpty()) {
+				// 前回値が空で、今回のデバイスサーチで値がある場合（必ず同一ではない）
+				lEquals = false;
+				setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.NETWORK.getMessage() + "." + MessageConstant.HOST_NAME.getMessage(),
+						MessageConstant.NONEXISTENT.getMessage(),
+						nodeInfo.getNodeHostnameInfo().get(0).getHostname());
 			} else {
 				lEquals = lEquals
 						&& nodeInfo
@@ -552,7 +540,7 @@ public class NodeInfoDeviceSearch implements Serializable
 		}
 
 		// OS
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_BASIC_OS, false)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_basic_os.getBooleanValue()) {
 			if( nodeInfo.getNodeName() == null )
 			{
 				lEquals = lEquals && ( lastNode.getNodeName() == null );
@@ -631,7 +619,7 @@ public class NodeInfoDeviceSearch implements Serializable
 		}
 
 		// Hinemosエージェント
-		if (HinemosPropertyUtil.getHinemosPropertyBool(REPOSITORY_DEVICE_SEARCH_PROP_BASIC_AGENT, false)) {
+		if (HinemosPropertyCommon.repository_device_search_prop_basic_agent.getBooleanValue()) {
 			if( nodeInfo.getAgentAwakePort() == null )
 			{
 				lEquals = lEquals && ( lastNode.getAgentAwakePort() == null );

@@ -12,11 +12,18 @@
 			]]>
 		</query>
 	</named-query>
-	<named-query name="CollectKeyInfo.findAll">
+	<named-query name="CollectKeyInfoPk.findAll">
 		<query>
 			<![CDATA[
 				SELECT a.id FROM CollectKeyInfo a
 				ORDER BY a.id.itemName, a.id.monitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectKeyInfo.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectKeyInfo a
 			]]>
 		</query>
 	</named-query>
@@ -25,6 +32,14 @@
 			<![CDATA[
 				SELECT a FROM CollectKeyInfo a
 				WHERE a.collectorid = :collectorid
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectKeyInfo.findByMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectKeyInfo a
+				WHERE a.id.monitorId = :monitorId
 			]]>
 		</query>
 	</named-query>
@@ -43,6 +58,28 @@
 			<![CDATA[
 				SELECT a FROM CollectData a
 				WHERE a.id.collectorid = :collectorid
+				ORDER BY a.id.time
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectData.findOrderByTimeDesc">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectData a
+				WHERE a.id.collectorid = :collectorid
+				AND a.id.time >= :startDate
+				AND a.id.time < :endDate
+				ORDER BY a.id.time desc
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectData.findOrderByTimeAsc">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectData a
+				WHERE a.id.collectorid = :collectorid
+				AND a.id.time >= :startDate
+				AND a.id.time < :endDate
 				ORDER BY a.id.time
 			]]>
 		</query>

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.jobmanagement.factory;
@@ -76,11 +69,11 @@ public class ModifyJobKick {
 	 */
 	public void addJobKick(final JobKick info, String loginUser, Integer jobkickType) throws HinemosUnknown, JobKickDuplicate {
 		m_log.debug("addJobKick() : id=" + info.getId() + ", jobId=" + info.getJobId() + ", jobkickType=" + jobkickType);
-		JpaTransactionManager jtm = new JpaTransactionManager();
 		//最終更新日時を設定
 		long now = HinemosTime.currentTimeMillis();
 		// DBにスケジュール情報を保存
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// IDの重複チェック
 			String id = info.getId();
 			jtm.checkEntityExists(JobKickEntity.class, id);
@@ -91,7 +84,8 @@ public class ModifyJobKick {
 			jobKickEntity.setJobkickType(jobkickType);
 			jobKickEntity.setJobunitId(info.getJobunitId());
 			jobKickEntity.setJobId(info.getJobId());
-
+			// 登録
+			em.persist(jobKickEntity);
 			// ランタイムジョブ変数情報
 			if (info.getJobRuntimeParamList() != null
 					&& info.getJobRuntimeParamList().size() > 0) {
@@ -102,7 +96,9 @@ public class ModifyJobKick {
 					jobRuntimeParamEntity.setDefaultValue(jobRuntimeParam.getValue());
 					jobRuntimeParamEntity.setDescription(jobRuntimeParam.getDescription());
 					jobRuntimeParamEntity.setRequiredFlg(jobRuntimeParam.getRequiredFlg());
-					
+					em.persist(jobRuntimeParamEntity);
+					jobRuntimeParamEntity.relateToJobKickEntity(jobKickEntity);
+
 					// ランタイムジョブ変数詳細情報
 					if (jobRuntimeParam.getJobRuntimeParamDetailList() != null
 							&& jobRuntimeParam.getJobRuntimeParamDetailList().size() > 0) {
@@ -112,6 +108,9 @@ public class ModifyJobKick {
 							JobRuntimeParamDetailEntity jobRuntimeParamDetailEntity
 								= new JobRuntimeParamDetailEntity(jobRuntimeParamEntity, 
 										detailIdx);
+							// 登録
+							em.persist(jobRuntimeParamDetailEntity);
+							jobRuntimeParamDetailEntity.relateToJobRuntimeParamEntity(jobRuntimeParamEntity);
 							jobRuntimeParamDetailEntity.setParamValue(
 									jobRuntimeParamDetail.getParamValue());
 							jobRuntimeParamDetailEntity.setDescription(
@@ -267,12 +266,11 @@ public class ModifyJobKick {
 	 */
 	public void modifyJobKick(final JobKick info, String loginUser, Integer jobkickType) throws HinemosUnknown, JobInfoNotFound, ObjectPrivilege_InvalidRole{
 		m_log.debug("modifyJobKick() : id=" + info.getId() + ", jobId=" + info.getJobId() + ", jobkickType=" + jobkickType);
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		HinemosEntityManager em = jtm.getEntityManager();
 		//最終更新日時を設定
 		long now = HinemosTime.currentTimeMillis();
 		// DBにスケジュール情報を保存
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			JobKickEntity bean  = em.find(JobKickEntity.class, info.getId(),
 					ObjectPrivilegeMode.MODIFY);
 			if (bean == null) {
@@ -286,10 +284,10 @@ public class ModifyJobKick {
 			bean.setJobId(info.getJobId());
 
 			// ランタイムジョブ変数情報
+			ArrayList<JobRuntimeParamEntityPK> jobRuntimeParamEntityPKList = new ArrayList<>();
+				
 			if (info.getJobRuntimeParamList() != null
 					&& info.getJobRuntimeParamList().size() > 0) {
-				ArrayList<JobRuntimeParamEntityPK> jobRuntimeParamEntityPKList = new ArrayList<>();
-				
 				for (JobRuntimeParam jobRuntimeParam : info.getJobRuntimeParamList()) {
 					JobRuntimeParamEntityPK jobRuntimeParamEntityPK 
 						= new JobRuntimeParamEntityPK(info.getId(), jobRuntimeParam.getParamId());
@@ -299,7 +297,9 @@ public class ModifyJobKick {
 					if (jobRuntimeParamEntity == null) {
 						// 新規登録
 						jobRuntimeParamEntity 
-							= new JobRuntimeParamEntity(jobRuntimeParamEntityPK, bean);
+							= new JobRuntimeParamEntity(jobRuntimeParamEntityPK);
+						em.persist(jobRuntimeParamEntity);
+						jobRuntimeParamEntity.relateToJobKickEntity(bean);
 					}
 					jobRuntimeParamEntity.setParamType(jobRuntimeParam.getParamType());
 					jobRuntimeParamEntity.setDefaultValue(jobRuntimeParam.getValue());
@@ -327,8 +327,10 @@ public class ModifyJobKick {
 							if (jobRuntimeParamDetailEntity == null) {
 								// 新規登録
 								jobRuntimeParamDetailEntity = new JobRuntimeParamDetailEntity(
-										jobRuntimeParamDetailEntityPK,
-										jobRuntimeParamEntity);
+										jobRuntimeParamDetailEntityPK);
+								// 登録
+								em.persist(jobRuntimeParamDetailEntity);
+								jobRuntimeParamDetailEntity.relateToJobRuntimeParamEntity(jobRuntimeParamEntity);
 							}
 							jobRuntimeParamDetailEntity.setParamValue(
 									jobRuntimeParamDetail.getParamValue());
@@ -341,9 +343,9 @@ public class ModifyJobKick {
 						jobRuntimeParamEntity.deleteJobRuntimeParamDetailEntities(jobRuntimeParamDetailEntityPKList);
 					}
 				}
-				// 不要なJobRuntimeParamEntityを削除
-				bean.deleteJobRuntimeParamEntities(jobRuntimeParamEntityPKList);
 			}
+			// 不要なJobRuntimeParamEntityを削除
+			bean.deleteJobRuntimeParamEntities(jobRuntimeParamEntityPKList);
 
 			if (jobkickType == JobKickConstant.TYPE_SCHEDULE) {
 				// ジョブスケジュール
@@ -499,10 +501,9 @@ public class ModifyJobKick {
 		// スケジュール定義を削除
 		m_log.debug("deleteJobKick() : id=" + jobkickId);
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		HinemosEntityManager em = jtm.getEntityManager();
 		// DBのスケジュール情報を削除
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			//削除対象を検索
 			JobKickEntity jobKickEntity = em.find(JobKickEntity.class, jobkickId,
 					ObjectPrivilegeMode.MODIFY);

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.collect.bean;
@@ -60,7 +53,26 @@ public class Sample implements Serializable {
 		if(perfDataList == null)
 			perfDataList = new ArrayList<PerfData>();
 
-		perfDataList.add(new PerfData(facilityId, itemName, value, errorType, displayName));
+		perfDataList.add(new PerfData(facilityId, itemName, value, null, null, errorType, displayName));
+	}
+
+	/**
+	 * 性能値のセット
+	 * @param facilityId
+	 * @param itemName
+	 * @param value
+	 * @param average
+	 * @param standardDeviation
+	 * @param errorType	//値が不正な場合のエラーパターン
+	 * @param displayName
+	 */
+	public void set(String facilityId, String itemName, Double value, Double average,
+			 Double standardDeviation, Integer errorType, String displayName){
+
+		if(perfDataList == null)
+			perfDataList = new ArrayList<PerfData>();
+
+		perfDataList.add(new PerfData(facilityId, itemName, value, average, standardDeviation, errorType, displayName));
 	}
 
 	/**
@@ -76,7 +88,26 @@ public class Sample implements Serializable {
 		if(perfDataList == null)
 			perfDataList = new ArrayList<PerfData>();
 
-		perfDataList.add(new PerfData(facilityId, itemName, value, errorType, ""));
+		perfDataList.add(new PerfData(facilityId, itemName, value, null, null, errorType, ""));
+	}
+
+	/**
+	 * 性能値のセット
+	 * @param facilityId
+	 * @param itemCode
+	 * @param displayName
+	 * @param value
+	 * @param average
+	 * @param standardDeviation
+	 * @param errorType	//値が不正な場合のエラーパターン
+	 */
+	public void set(String facilityId, String itemName, Double value, Double average,
+			 Double standardDeviation, Integer errorType){
+
+		if(perfDataList == null)
+			perfDataList = new ArrayList<PerfData>();
+
+		perfDataList.add(new PerfData(facilityId, itemName, value, average, standardDeviation, errorType, ""));
 	}
 
 	/**

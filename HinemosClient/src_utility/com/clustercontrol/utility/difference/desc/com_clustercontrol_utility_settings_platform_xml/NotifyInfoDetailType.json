@@ -1,0 +1,60 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"notifyId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfodetailType_notifyId"}
+	]},
+
+	{
+	"propName":"infoValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfodetailType_infoValidFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"warnValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfodetailType_warnValidFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"criticalValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfodetailType_criticalValidFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"unKnownValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyInfodetailType_unKnownValidFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]}
+]
+}

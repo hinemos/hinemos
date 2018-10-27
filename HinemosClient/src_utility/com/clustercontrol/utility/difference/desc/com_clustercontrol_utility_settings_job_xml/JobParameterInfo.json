@@ -1,0 +1,34 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"paramId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"paramType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobParameterInfo_type"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_job_param_type_system"}, 
+			{"value":"1", "name":"name_job_param_type_user"}
+		]}
+	]},
+	
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"JobParameterInfo_description"}
+	]},
+	
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"JobParameterInfo_value"}
+	]}
+]
+}

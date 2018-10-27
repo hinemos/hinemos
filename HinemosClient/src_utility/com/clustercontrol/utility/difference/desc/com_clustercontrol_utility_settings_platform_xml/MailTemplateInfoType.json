@@ -1,0 +1,36 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"mailTemplateId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"MailTemplateTypeInfoType_description"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"MailTemplateTypeInfoType_ownerRoleId"}
+	]},
+
+	{
+	"propName":"subject",
+	"annotations":[
+		{"type":"Column", "columnName":"MailTemplateTypeInfoType_subject"}
+	]},
+
+	{
+	"propName":"body",
+	"annotations":[
+		{"type":"Column", "columnName":"MailTemplateTypeInfoType_body"}
+	]}
+]
+}

@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.bean;
@@ -21,7 +14,7 @@ import java.util.List;
 /**
  * Hinemosの機能を定数として格納するクラス<BR>
  *
- * @version 6.0.0
+ * @version 6.1.0
  * @since 2.1.2
  */
 public class HinemosModuleConstant {
@@ -86,6 +79,8 @@ public class HinemosModuleConstant {
 	public static final String MONITOR_SYSTEMLOG = "MON_SYSLOG_S";
 	/** ログファイル監視 */
 	public static final String MONITOR_LOGFILE = "MON_LOGFILE_S";
+	/** ログ件数監視 */
+	public static final String MONITOR_LOGCOUNT = "MON_LOGCOUNT_N";
 	/** Windowsサービス監視 */
 	public static final String MONITOR_WINSERVICE = "MON_WINSERVICE_B";
 	/** Windowsイベント監視 */
@@ -93,7 +88,15 @@ public class HinemosModuleConstant {
 	/** カスタムトラップ監視 （数値）*/
 	public static final String MONITOR_CUSTOMTRAP_N = "MON_CUSTOMTRAP_N";
 	/** カスタムトラップ監視 （文字列） */
-	public static final String MONITOR_CUSTOMTRAP_S = "MON_CUSTOMTRAP_S";	
+	public static final String MONITOR_CUSTOMTRAP_S = "MON_CUSTOMTRAP_S";
+	/** 相関係数監視（数値） */
+	public static final String MONITOR_CORRELATION = "MON_CORRELATION_N";
+	/** 収集値統合監視(真偽値) */
+	public static final String MONITOR_INTEGRATION = "MON_COMPOUND_B";
+	/** バイナリファイル監視 （バイナリ） */
+	public static final String MONITOR_BINARYFILE_BIN = "MON_BINARYFILE_BIN";	
+	/** パケットキャプチャ （バイナリ） */
+	public static final String MONITOR_PCAP_BIN = "MON_PCAP_BIN";	
 	/** スコープ */
 	public static final String MONITOR_SCOPE = "MON_SCP";
 	/** ステータス */
@@ -154,8 +157,10 @@ public class HinemosModuleConstant {
 
 	/** レポーティング */
 	public static final String REPORTING = "REPORTING"; 
-	
 
+	/** 遠隔管理 */
+	public static final String INQUIRY = "INQUIRY"; 
+	
 	/** マネージャ操作ログタイトル */
 	/** リポジトリ */
 	public static final String LOG_PREFIX_REPOSITORY = "[Repository]";
@@ -173,6 +178,8 @@ public class HinemosModuleConstant {
 	public static final String LOG_PREFIX_MONITOR_SYSTEMLOG = "[Systemlog]";
 	/** ログファイル監視 */
 	public static final String LOG_PREFIX_MONITOR_LOGFILE = "[Logfile]";
+	/** ログ件数監視 */
+	public static final String LOG_PREFIX_MONITOR_LOGCOUNT = "[Logcount]";
 	/** Hinemosエージェント監視 */
 	public static final String LOG_PREFIX_MONITOR_AGENT = "[Agent]";
 	/** カスタム監視 */
@@ -201,6 +208,14 @@ public class HinemosModuleConstant {
 	public static final String LOG_PREFIX_MONITOR_WINEVENT = "[WinEvent]";
 	/** カスタム監視 */
 	public static final String LOG_PREFIX_MONITOR_CUSTOMTRAP = "[Customtrap]";
+	/** 相関係数監視 */
+	public static final String LOG_PREFIX_MONITOR_CORRELATION = "[Correlation]";
+	/** 収集値統合監視 */
+	public static final String LOG_PREFIX_MONITOR_INTEGRATION = "[Compound]";
+	/** バイナリファイル監視 */
+	public static final String LOG_PREFIX_MONITOR_BINARY_FILE = "[BinaryFile]";
+	/** パケットキャプチャ監視 */
+	public static final String LOG_PREFIX_MONITOR_PCAP = "[PcketCapture]";
 	/** JMX */	
 	public static final String LOG_PREFIX_MONITOR_JMX = "[Jmx]";
 	/** 性能管理 */
@@ -219,6 +234,8 @@ public class HinemosModuleConstant {
 	public static final String LOG_PREFIX_REPORTING = "[Reporting]"; 
 	/** 収集蓄積 */
 	public static final String LOG_PREFIX_HUB = "[Hub]";
+	/** 遠隔管理 */
+	public static final String LOG_PREFIX_INQUIRY = "[Inquiry]";
 
 	private static List<ExtensionType> extensionTypeList = new ArrayList<ExtensionType>();
 
@@ -280,6 +297,7 @@ public class HinemosModuleConstant {
 				typeId.equals(MONITOR_HTTP_S) ||
 				typeId.equals(MONITOR_HTTP_SCENARIO) ||
 				typeId.equals(MONITOR_LOGFILE) ||
+				typeId.equals(MONITOR_LOGCOUNT) ||
 				typeId.equals(MONITOR_PERFORMANCE) ||
 				typeId.equals(MONITOR_PING) ||
 				typeId.equals(MONITOR_PORT ) ||
@@ -298,6 +316,10 @@ public class HinemosModuleConstant {
 				typeId.equals(MONITOR_JMX) ||
 				typeId.equals(MONITOR_CUSTOMTRAP_N) ||
 				typeId.equals(MONITOR_CUSTOMTRAP_S) ||
+				typeId.equals(MONITOR_CORRELATION) ||
+				typeId.equals(MONITOR_INTEGRATION) ||
+				typeId.equals(MONITOR_BINARYFILE_BIN) ||
+				typeId.equals(MONITOR_PCAP_BIN) ||
 				typeId.equals(HUB_LOGFORMAT) ||
 				typeId.equals(HUB_TRANSFER) ||
 				typeId.equals(PERFORMANCE) ||
@@ -391,6 +413,12 @@ public class HinemosModuleConstant {
 			return "SYSTEMLOG_MONITOR";
 		} else if (string.equals(MONITOR_LOGFILE)) {
 			return "LOGFILE_MONITOR";
+		} else if (string.equals(MONITOR_LOGCOUNT)) {
+			return "LOGCOUNT_MONITOR";
+		} else if (string.equals(MONITOR_CORRELATION)) {
+			return "COLLECT_MONITOR";
+		} else if (string.equals(MONITOR_INTEGRATION)) {
+			return "INTEGRATION_MONITOR";
 		} else if (string.equals(PERFORMANCE)) {
 			return "PERFORMANCE";
 		} else if (string.equals(JOB)) {
@@ -415,6 +443,10 @@ public class HinemosModuleConstant {
 			return "CUSTOMTRAP_MONITOR_N";
 		} else if (string.equals(MONITOR_CUSTOMTRAP_S)){
 			return "CUSTOMTRAP_MONITOR_S";
+		} else if (string.equals(MONITOR_BINARYFILE_BIN)){
+			return "BINARYFILE_MONITOR_BIN";
+		} else if (string.equals(MONITOR_PCAP_BIN)){
+			return "PCAP_MONITOR_BIN";
 		} else if(!extensionTypeList.isEmpty()){
 			for(ExtensionType extensionType: extensionTypeList){
 				if(string.equals(extensionType.getTypeId())){

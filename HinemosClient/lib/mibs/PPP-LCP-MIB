@@ -1,0 +1,484 @@
+          PPP-LCP-MIB DEFINITIONS ::= BEGIN
+
+          IMPORTS
+               Counter
+                    FROM RFC1155-SMI
+               ifIndex, transmission
+                    FROM RFC1213-MIB
+               OBJECT-TYPE
+                    FROM RFC-1212;
+
+
+               ppp  OBJECT IDENTIFIER ::= { transmission 23 }
+
+               pppLcp OBJECT IDENTIFIER ::= { ppp 1 }
+
+
+
+
+
+
+
+               pppLink      OBJECT IDENTIFIER ::= { pppLcp 1 }
+               pppLqr       OBJECT IDENTIFIER ::= { pppLcp 2 }
+               pppTests     OBJECT IDENTIFIER ::= { pppLcp 3 }
+
+
+
+
+
+
+
+          pppLinkStatusTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppLinkStatusEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppLink 1 }
+
+
+
+
+
+
+          pppLinkStatusEntry   OBJECT-TYPE
+               SYNTAX    PppLinkStatusEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex }
+               ::= { pppLinkStatusTable 1 }
+
+
+          PppLinkStatusEntry ::= SEQUENCE {
+               pppLinkStatusPhysicalIndex
+                    INTEGER,
+               pppLinkStatusBadAddresses
+                    Counter,
+               pppLinkStatusBadControls
+                    Counter,
+               pppLinkStatusPacketTooLongs
+                    Counter,
+               pppLinkStatusBadFCSs
+                    Counter,
+               pppLinkStatusLocalMRU
+                    INTEGER,
+               pppLinkStatusRemoteMRU
+                    INTEGER,
+               pppLinkStatusLocalToPeerACCMap
+                    OCTET STRING,
+               pppLinkStatusPeerToLocalACCMap
+                    OCTET STRING,
+               pppLinkStatusLocalToRemoteProtocolCompression
+                    INTEGER,
+               pppLinkStatusRemoteToLocalProtocolCompression
+                    INTEGER,
+               pppLinkStatusLocalToRemoteACCompression
+                    INTEGER,
+               pppLinkStatusRemoteToLocalACCompression
+                    INTEGER,
+               pppLinkStatusTransmitFcsSize
+                    INTEGER,
+               pppLinkStatusReceiveFcsSize
+                    INTEGER
+               }
+          pppLinkStatusPhysicalIndex   OBJECT-TYPE
+               SYNTAX    INTEGER(0..2147483647)
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 1 }
+
+
+          pppLinkStatusBadAddresses   OBJECT-TYPE
+               SYNTAX    Counter
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 2 }
+
+
+          pppLinkStatusBadControls   OBJECT-TYPE
+               SYNTAX    Counter
+               ACCESS    read-only
+               STATUS    mandatory
+
+
+
+
+
+               ::= { pppLinkStatusEntry 3 }
+
+
+          pppLinkStatusPacketTooLongs   OBJECT-TYPE
+               SYNTAX    Counter
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 4 }
+
+
+          pppLinkStatusBadFCSs   OBJECT-TYPE
+               SYNTAX    Counter
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 5 }
+
+
+          pppLinkStatusLocalMRU   OBJECT-TYPE
+               SYNTAX    INTEGER(1..2147483648)
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 6 }
+
+
+          pppLinkStatusRemoteMRU   OBJECT-TYPE
+               SYNTAX    INTEGER(1..2147483648)
+
+
+
+
+
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 7 }
+
+
+          pppLinkStatusLocalToPeerACCMap   OBJECT-TYPE
+               SYNTAX    OCTET STRING (SIZE (4))
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 8 }
+
+
+          pppLinkStatusPeerToLocalACCMap   OBJECT-TYPE
+               SYNTAX    OCTET STRING (SIZE (4))
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 9 }
+
+
+          pppLinkStatusLocalToRemoteProtocolCompression
+               OBJECT-TYPE
+               SYNTAX    INTEGER {
+                         enabled(1),
+                         disabled(2)
+                    }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 10 }
+
+
+          pppLinkStatusRemoteToLocalProtocolCompression
+               OBJECT-TYPE
+               SYNTAX    INTEGER {
+                         enabled(1),
+                         disabled(2)
+                    }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 11 }
+
+
+          pppLinkStatusLocalToRemoteACCompression   OBJECT-TYPE
+               SYNTAX    INTEGER {
+                         enabled(1),
+                         disabled(2)
+                    }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 12 }
+
+
+          pppLinkStatusRemoteToLocalACCompression   OBJECT-TYPE
+               SYNTAX    INTEGER {
+                         enabled(1),
+                         disabled(2)
+                    }
+
+
+
+
+
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 13 }
+
+
+          pppLinkStatusTransmitFcsSize   OBJECT-TYPE
+               SYNTAX    INTEGER (0..128)
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 14 }
+
+
+          pppLinkStatusReceiveFcsSize   OBJECT-TYPE
+               SYNTAX    INTEGER (0..128)
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLinkStatusEntry 15 }
+
+
+          pppLinkConfigTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppLinkConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppLink 2 }
+
+
+          pppLinkConfigEntry   OBJECT-TYPE
+               SYNTAX    PppLinkConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex }
+               ::= { pppLinkConfigTable 1 }
+
+
+          PppLinkConfigEntry ::= SEQUENCE {
+               pppLinkConfigInitialMRU
+                    INTEGER,
+               pppLinkConfigReceiveACCMap
+                    OCTET STRING,
+               pppLinkConfigTransmitACCMap
+                    OCTET STRING,
+               pppLinkConfigMagicNumber
+                    INTEGER,
+               pppLinkConfigFcsSize
+                    INTEGER
+               }
+
+          pppLinkConfigInitialMRU   OBJECT-TYPE
+               SYNTAX    INTEGER(0..2147483647)
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { 1500 }
+               ::= { pppLinkConfigEntry 1 }
+
+
+
+
+
+
+
+          pppLinkConfigReceiveACCMap   OBJECT-TYPE
+               SYNTAX    OCTET STRING (SIZE (4))
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { 'ffffffff'h }
+               ::= { pppLinkConfigEntry 2 }
+
+
+          pppLinkConfigTransmitACCMap   OBJECT-TYPE
+               SYNTAX    OCTET STRING (SIZE (4))
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { 'ffffffff'h }
+               ::= { pppLinkConfigEntry 3 }
+
+
+
+
+
+
+
+          pppLinkConfigMagicNumber   OBJECT-TYPE
+               SYNTAX    INTEGER {false (1), true (2)}
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { false }
+               ::= { pppLinkConfigEntry 4 }
+
+
+          pppLinkConfigFcsSize   OBJECT-TYPE
+               SYNTAX    INTEGER (0..128)
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { 16 }
+               ::= { pppLinkConfigEntry 5 }
+
+
+
+
+
+          pppLqrTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppLqrEntry
+               ACCESS    not-accessible
+
+
+
+
+
+               STATUS    mandatory
+               ::= { pppLqr 1 }
+
+
+          pppLqrEntry   OBJECT-TYPE
+               SYNTAX    PppLqrEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex }
+               ::= { pppLqrTable 1 }
+
+
+          PppLqrEntry ::= SEQUENCE {
+               pppLqrQuality
+                    INTEGER,
+               pppLqrInGoodOctets
+                    Counter,
+               pppLqrLocalPeriod
+                    INTEGER,
+               pppLqrRemotePeriod
+                    INTEGER,
+               pppLqrOutLQRs
+                    Counter,
+               pppLqrInLQRs
+                    Counter
+          }
+
+          pppLqrQuality   OBJECT-TYPE
+               SYNTAX    INTEGER {
+                         good(1),
+                         bad(2),
+                         not-determined(3)
+                    }
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLqrEntry 1 }
+
+
+          pppLqrInGoodOctets   OBJECT-TYPE
+               SYNTAX    Counter
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLqrEntry 2 }
+
+
+          pppLqrLocalPeriod   OBJECT-TYPE
+               SYNTAX    INTEGER(1..2147483648)
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLqrEntry 3 }
+
+
+          pppLqrRemotePeriod   OBJECT-TYPE
+               SYNTAX    INTEGER(1..2147483648)
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLqrEntry 4 }
+
+
+
+
+
+
+
+          pppLqrOutLQRs   OBJECT-TYPE
+               SYNTAX    Counter
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLqrEntry 5 }
+
+
+          pppLqrInLQRs   OBJECT-TYPE
+               SYNTAX    Counter
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLqrEntry 6 }
+
+
+
+          pppLqrConfigTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppLqrConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppLqr 2 }
+
+
+          pppLqrConfigEntry   OBJECT-TYPE
+               SYNTAX    PppLqrConfigEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex }
+               ::= { pppLqrConfigTable 1 }
+
+
+
+
+
+
+          PppLqrConfigEntry ::= SEQUENCE {
+               pppLqrConfigPeriod
+                    INTEGER,
+               pppLqrConfigStatus
+                    INTEGER
+          }
+
+          pppLqrConfigPeriod   OBJECT-TYPE
+               SYNTAX    INTEGER(0..2147483647)
+               ACCESS    read-write
+               STATUS    mandatory
+               DEFVAL    { 0 }
+               ::= { pppLqrConfigEntry 1 }
+
+
+          pppLqrConfigStatus   OBJECT-TYPE
+               SYNTAX    INTEGER {disabled (1), enabled (2)}
+               ACCESS    read-write
+               STATUS    mandatory
+
+
+
+
+
+               DEFVAL    { enabled }
+               ::= { pppLqrConfigEntry 2 }
+
+
+
+
+
+          pppLqrExtnsTable   OBJECT-TYPE
+               SYNTAX    SEQUENCE OF PppLqrExtnsEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               ::= { pppLqr 3 }
+
+
+          pppLqrExtnsEntry   OBJECT-TYPE
+               SYNTAX    PppLqrExtnsEntry
+               ACCESS    not-accessible
+               STATUS    mandatory
+               INDEX     { ifIndex }
+               ::= { pppLqrExtnsTable 1 }
+
+          PppLqrExtnsEntry ::= SEQUENCE {
+
+
+
+
+
+               pppLqrExtnsLastReceivedLqrPacket
+                    OCTET STRING(SIZE(68))
+          }
+
+          pppLqrExtnsLastReceivedLqrPacket   OBJECT-TYPE
+               SYNTAX    OCTET STRING(SIZE(68))
+               ACCESS    read-only
+               STATUS    mandatory
+               ::= { pppLqrExtnsEntry 1 }
+
+
+
+
+
+
+
+               pppEchoTest    OBJECT IDENTIFIER ::= { pppTests 1 }
+
+
+
+
+
+
+
+
+
+               pppDiscardTest OBJECT IDENTIFIER ::= { pppTests 2 }
+
+
+          END

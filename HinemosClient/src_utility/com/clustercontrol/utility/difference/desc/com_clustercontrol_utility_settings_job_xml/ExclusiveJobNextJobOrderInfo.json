@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	
+	{
+	"propName":"order",
+	"annotations":[
+		{"type":"Column", "columnName":"ExclusiveJobNextJobOrderInfo_order"}
+	]},
+	
+	{
+	"propName":"nextJobId",
+	"annotations":[
+		{"type":"Column", "columnName":"ExclusiveJobNextJobOrderInfo_nextJobId"}
+	]}
+]
+}

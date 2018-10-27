@@ -72,4 +72,14 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="MonitorNumericValueInfo.findByIdNumericType">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorNumericValueInfo a
+				WHERE a.id.monitorId = :monitorId
+				AND a.id.monitorNumericType = :monitorNumericType
+				ORDER BY a.id.priority
+			]]>
+		</query>
+	</named-query>
 </entity-mappings>

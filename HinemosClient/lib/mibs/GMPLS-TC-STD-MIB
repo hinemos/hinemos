@@ -1,0 +1,41 @@
+   GMPLS-TC-STD-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+     MODULE-IDENTITY
+       FROM SNMPv2-SMI                                    -- RFC 2578
+     TEXTUAL-CONVENTION
+       FROM SNMPv2-TC                                     -- RFC 2579
+     mplsStdMIB
+       FROM MPLS-TC-STD-MIB                               -- RFC 3811
+   ;
+
+   gmplsTCStdMIB MODULE-IDENTITY
+     LAST-UPDATED
+       "200702280000Z" -- 28 February 2007 00:00:00 GMT
+     ORGANIZATION
+       "IETF Common Control and Measurement Plane (CCAMP) Working Group"
+   ::= { mplsStdMIB 12 }
+
+   GmplsFreeformLabelTC ::= TEXTUAL-CONVENTION
+     STATUS      current
+     SYNTAX OCTET STRING (SIZE (0..64))
+
+   GmplsLabelTypeTC ::= TEXTUAL-CONVENTION
+     STATUS      current
+      SYNTAX INTEGER {
+        gmplsMplsLabel(1),
+        gmplsPortWavelengthLabel(2),
+        gmplsFreeformGeneralizedLabel(3),
+        gmplsSonetLabel(4),
+        gmplsSdhLabel(5),
+        gmplsWavebandLabel(6)
+      }
+
+   GmplsSegmentDirectionTC ::= TEXTUAL-CONVENTION
+     STATUS      current
+     SYNTAX  INTEGER {
+       forward(1),   -- data flows from head-end of LSP toward tail-end
+       reverse(2)    -- data flows from tail-end of LSP toward head-end
+     }
+
+   END

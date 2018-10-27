@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"JobmapType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Description",
+			"OwnerRoleId"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"JobmapInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

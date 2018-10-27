@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) since 2009 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.performance.factory;
@@ -58,10 +51,9 @@ public class OperateCollectPollingMaster {
 	 */
 	public boolean add(CollectorPollingMstData data) throws EntityExistsException, CollectorNotFound, FacilityNotFound {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
 		// 収集方法毎の収集項目情報の追加
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			CollectorItemCodeMstEntity collectorItemCodeMstEntity
 			= QueryUtil.getCollectorItemCodeMstPK(data.getItemCode());
 			CollectorPlatformMstEntity collectorPlatformMstEntity
@@ -78,13 +70,17 @@ public class OperateCollectPollingMaster {
 					collectorItemCodeMstEntity,
 					data.getCollectMethod(),
 					data.getSubPlatformId(),
-					data.getVariableId(),
-					snmpValueTypeMstEntity);
+					data.getVariableId());
 			// 重複チェック
 			jtm.checkEntityExists(CollectorPollingMstEntity.class, entity.getId());
 			entity.setEntryKey(data.getEntryKey());
 			entity.setFailureValue(data.getFailureValue());
 			entity.setPollingTarget(data.getPollingTarget());
+			// 登録
+			em.persist(entity);
+			entity.relateToCollectorItemCodeMstEntity(collectorItemCodeMstEntity);
+			entity.relateToCollectorPlatformMstEntity(collectorPlatformMstEntity);
+			entity.relateToSnmpValueTypeMstEntity(snmpValueTypeMstEntity);
 		} catch (EntityExistsException e) {
 			m_log.info("add() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -108,20 +104,22 @@ public class OperateCollectPollingMaster {
 	 */
 	public boolean delete(CollectorPollingMstPK pk) throws CollectorNotFound {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		CollectorPollingMstEntity entity
-		= QueryUtil.getCollectorPollingMstPK(
-				pk.getCollectMethod(),
-				pk.getPlatformId(),
-				pk.getSubPlatformId(),
-				pk.getItemCode(),
-				pk.getVariableId());
-		// pkが同じデータが登録されている場合は、削除する
-		entity.unchain();	// 削除前処理
-		em.remove(entity);
+			CollectorPollingMstEntity entity
+			= QueryUtil.getCollectorPollingMstPK(
+					pk.getCollectMethod(),
+					pk.getPlatformId(),
+					pk.getSubPlatformId(),
+					pk.getItemCode(),
+					pk.getVariableId());
+			// pkが同じデータが登録されている場合は、削除する
+			entity.unchain();	// 削除前処理
+			em.remove(entity);
 
-		return true;
+			return true;
+		}
 	}
 
 	/**
@@ -129,16 +127,18 @@ public class OperateCollectPollingMaster {
 	 */
 	public boolean deleteAll() {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		List<CollectorPollingMstEntity> col = QueryUtil.getAllCollectorPollingMst();
-		for (CollectorPollingMstEntity entity : col) {
-			// 削除処理
-			entity.unchain();	// 削除前処理
-			em.remove(entity);
+			List<CollectorPollingMstEntity> col = QueryUtil.getAllCollectorPollingMst();
+			for (CollectorPollingMstEntity entity : col) {
+				// 削除処理
+				entity.unchain();	// 削除前処理
+				em.remove(entity);
+			}
+
+			return true;
 		}
-
-		return true;
 	}
 
 	/**

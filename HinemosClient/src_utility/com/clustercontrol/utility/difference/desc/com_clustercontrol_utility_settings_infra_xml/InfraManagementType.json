@@ -1,0 +1,28 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"InfraManagement_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"ManagementId",
+			"Name",
+			"Description",
+			"FacilityId",
+			"Scope",
+			"OwnerRoleId",
+			"ValidFlg",
+			"StartPriority",
+			"NormalPriorityRun",
+			"AbnormalPriorityRun",
+			"NormalPriorityCheck",
+			"AbnormalPriorityCheck"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"InfraManagementInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

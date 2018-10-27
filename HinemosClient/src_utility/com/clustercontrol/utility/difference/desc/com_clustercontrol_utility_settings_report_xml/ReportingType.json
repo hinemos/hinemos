@@ -1,0 +1,35 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"ReportingType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Description",
+			"OwnerRoleId",
+			"FacilityId",
+			"CalendarId",
+			"OutputPeriodType",
+			"OutputPeriodBefore",
+			"OutputPeriodFor",
+			"TemplateSetId",
+			"ReportTitle",
+			"LogoValidFlg",
+			"LogoFilename",
+			"PageValidFlg",
+			"OutputType",
+			"ScheduleType",
+			"Day",
+			"Week",
+			"Hour",
+			"Minute",
+			"ValidFlg"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"ReportingInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

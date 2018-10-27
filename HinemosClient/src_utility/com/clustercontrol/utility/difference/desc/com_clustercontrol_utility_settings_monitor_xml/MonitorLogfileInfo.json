@@ -1,0 +1,48 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"directory",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorLogfileInfo_directory"}
+	]},
+
+	{
+	"propName":"fileName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorLogfileInfo_fileName"}
+	]},
+
+	{
+	"propName":"fileEncoding",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorLogfileInfo_fileEncoding"}
+	]},
+
+	{
+	"propName":"fileReturnCode",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorLogfileInfo_fileReturnCode"}
+	]},
+	
+	{
+		"propName":"filePatternHead",
+		"annotations":[
+			{"type":"Column", "columnName":"MonitorLogfileInfo_filePattenHead"}
+	]},
+	
+	{
+		"propName":"filePatternTail",
+		"annotations":[
+			{"type":"Column", "columnName":"MonitorLogfileInfo_filePattenTail"}
+	]},
+	
+	{
+		"propName":"fileMaxBytes",
+		"annotations":[
+			{"type":"Column", "columnName":"MonitorLogfileInfo_fileMaxBytes"}
+	]}
+]
+}

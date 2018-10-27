@@ -2,13 +2,13 @@
 <!--
    Hinemos (http://www.hinemos.info/)
 
-   Copyright (C) 2012 NTT DATA Corporation.
+   Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
  -->
 <project name="HinemosManager" default="all" basedir=".">
 
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
 	<import file="../HinemosCommon/ant_config/build_common.xml"/>
-	<import file="manager_switch/switch.xml"/>
+	<import file="platform_switch/switch.xml"/>
 
 	<property name="project.name" value="HinemosManager" />
 	<property name="jar.file" value="${jar.HinemosManager}" />
@@ -41,11 +41,15 @@
 			<include name="**/*.jar" />
 			<exclude name="**/eclipselink-src.jar" />
 		</fileset>
+		<fileset dir="./platform_switch/lib_platform_win">
+			<include name="**/*.jar" />
+		</fileset>
 		<path refid="id.compile.classpath" />
 	</path>
 
 	<path id="id.compile.sourcepath.local">
 		<pathelement path="src_accesscontrol" />
+		<pathelement path="src_analytics" />
 		<pathelement path="src_calendar" />
 		<pathelement path="src_collect" />
 		<pathelement path="src_collectmaster" />
@@ -89,8 +93,13 @@
 		<pathelement path="src_customtrap" />
 
 		<pathelement path="src_bootstrap" />
-		
-		<pathelement path="src_platform" />
+
+		<pathelement path="src_reporting" />
+
+		<pathelement path="./build/tmp/src_platform" />
+		<pathelement path="src_binary" />
+		<pathelement path="src_xcloud"/>
+		<pathelement path="src_inquiry" />
 	</path>
 
 	<target name="compile" description="Compile Java sources">
@@ -103,7 +112,9 @@
 			encoding="${compile.encode}"
 			includeantruntime="false"
 			debug="on">
+			<compilerarg value="-XDignore.symbol.file" />
 			<src path="src_accesscontrol" />
+			<src path="src_analytics" />
 			<src path="src_calendar" />
 			<src path="src_collect" />
 			<src path="src_collectmaster" />
@@ -147,12 +158,17 @@
 			<src path="src_hub" />
 			<src path="src_customtrap" />
 
-			<src path="src_platform" />
+			<src path="src_reporting" />
+
+			<src path="./build/tmp/src_platform" />
+			<src path="src_binary" />
+			<src path="src_xcloud" />
+			<src path="src_inquiry" />
 
 			<src path="resources" />
 		</javac>
 	</target>
-	
+
 	<target name="jar_main" description="Generate JAR file">
 		<jar jarfile="${jar.dir}/${jar.file}" manifest="${build.dir}/MANIFEST.MF">
 			<fileset dir="${build.dir}/${class.dir}">
@@ -161,6 +177,11 @@
 				<exclude name="**/platform/**"/>
 			</fileset>
 			<fileset dir="src_accesscontrol">
+				<include name="**/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_analytics">
 				<include name="**/*.java" if="jar.include.src"/>
 				<include name="**/model/*.java" if="jar.include.src"/>
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
@@ -326,15 +347,34 @@
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 
+			<fileset dir="src_inquiry">
+				<include name="**/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+
 			<fileset dir="src_bootstrap">
 				<include name="**/*.java" if="jar.include.src"/>
 				<include name="**/model/*.java" if="jar.include.src"/>
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
 				<include name="META-INF/services/*" />
 			</fileset>
+			<fileset dir="src_reporting">
+				<include name="**/*.java" if="jar.include.src" />
+				<include name="**/model/*.java" if="jar.include.src" />
+				<include name="META-INF/*.xml" if="jar.include.xml" />
+				<include name="META-INF/services/*" />
+				<include name="**/*.properties" if="jar.include.properties"/>
+			</fileset>
+			<fileset dir="src_xcloud">
+				<include name="**/*.java" if="jar.include.src" />
+				<include name="**/model/*.java" if="jar.include.src" />
+				<include name="META-INF/*.xml" if="jar.include.xml" />
+				<include name="**/*.properties" if="jar.include.properties"/>
+			</fileset>
 		</jar>
 	</target>
-	
+
 	<macrodef name="jar_diff.mac" description="Generate JAR file">
 		<attribute name="jarname" />
 		<sequential>
@@ -342,7 +382,7 @@
 				<fileset dir="${build.dir}/${class.dir}">
 					<include name="**/platform/**"/>
 				</fileset>
-				<fileset dir="src_platform">
+				<fileset dir="./build/tmp/src_platform">
 					<include name="**/*.java" if="jar.include.src"/>
 					<include name="**/model/*.java" if="jar.include.src"/>
 					<include name="META-INF/*.xml" if="jar.include.xml"/>
@@ -363,9 +403,13 @@
 		<attribute name="dir.from" />
 		<attribute name="dir.to" />
 		<attribute name="jar.diff" />
+		<attribute name="dir.plugin" />
+		<attribute name="reporting.jar.diff" />
 		<sequential>
 			<property name="jpa.jar-file.package" value="&lt;jar-file&gt;@{dir.lib}/HinemosManager.jar&lt;/jar-file&gt;" />
 			<property name="jpa.jar-win-file.package" value="&lt;jar-file&gt;@{dir.lib}/@{jar.diff}&lt;/jar-file&gt;" />
+			<property name="jpa.jar-reporting-file.package" value="&lt;jar-file&gt;@{dir.plugin}/HinemosReporting.jar&lt;/jar-file&gt;" />
+			<property name="jpa.jar-reporting-win-file.package" value="&lt;jar-file&gt;@{dir.plugin}/@{reporting.jar.diff}&lt;/jar-file&gt;" />
 			<copy todir="../HinemosManager/build/META-INF_@{dir.to}" overwrite="true">
 				<fileset dir="../HinemosManager/resources/@{dir.from}/META-INF">
 					<include name="**/*.xml" />
@@ -373,7 +417,7 @@
 			</copy>
 			<replace file="../HinemosManager/build/META-INF_@{dir.to}/persistence.xml"
 				token="${jpa.comment.start}add jar-file here${jpa.comment.end}"
-				value="${jpa.jar-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.jar-win-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add jar-file here${jpa.comment.end}" />
+				value="${jpa.jar-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.jar-win-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.jar-reporting-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.jar-reporting-win-file.package}&#x0D;&#x0A;&#x09;&#x09;${jpa.comment.start}add jar-file here${jpa.comment.end}" />
 			<loadfile property="jpa.mapping-file" srcfile="../HinemosManager/resources/mapping-file" />
 			<replace file="../HinemosManager/build/META-INF_@{dir.to}/persistence.xml"
 				token="&#x09;&#x09;${jpa.comment.start}add mapping-file here${jpa.comment.end}"
@@ -381,10 +425,10 @@
 		</sequential>
 	</macrodef>
 	<target name="jpa_config_rhel" description="generate jpa configuration">
-		<jpa_config.mac dir.lib="%%HINEMOS_HOME%%/lib" dir.from="${rhel.dir}" dir.to="RHEL" jar.diff="${jar.rhel}" />
+		<jpa_config.mac dir.lib="%%HINEMOS_HOME%%/lib" dir.from="${rhel.dir}" dir.to="RHEL" jar.diff="${jar.rhel}" dir.plugin="%%HINEMOS_HOME%%/plugins" reporting.jar.diff="HinemosReportingRhel.jar" />
 	</target>
 	<target name="jpa_config_win" description="generate jpa configuration">
-		<jpa_config.mac dir.lib="../lib" dir.from="${win.dir}" dir.to="WIN" jar.diff="${jar.win}" />
+		<jpa_config.mac dir.lib="../lib" dir.from="${win.dir}" dir.to="WIN" jar.diff="${jar.win}" dir.plugin="../lib"  reporting.jar.diff="HinemosReportingWin.jar" />
 	</target>
 
 	<target name="install">
@@ -429,7 +473,8 @@
 					resourcedestdir="${wsdl.dir}"
 					keep="false"
 					genwsdl="true"
-					sei="@{sei.class}">
+					sei="@{sei.class}"
+					encoding="${compile.encode}">
 					<classpath refid="ws.class.path"/>
 				</wsgen>
 			</sequential>
@@ -451,11 +496,16 @@
 		<wsgen.mac sei.class="com.clustercontrol.ws.notify.NotifyEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.collectmaster.PerformanceCollectMasterEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.repository.RepositoryEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.reporting.ReportingEndpoint" />
 		<wsgen.mac sei.class="com.clustercontrol.ws.jmxmaster.JmxMasterEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.infra.InfraEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.utility.UtilityEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.hub.HubEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.hub.BinaryEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.agenthub.AgentHubEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.agentbinary.AgentBinaryEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.xcloud.CloudEndpointImpl"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.inquiry.InquiryEndpoint"/>
 		<taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
 			<classpath refid="ws.class.path"/>
 		</taskdef>
@@ -464,7 +514,7 @@
 			<attribute name="service.wsdl" />
 			<sequential>
 				<wsimport
-
+					encoding="${compile.encode}"
 					keep="true"
 					destdir="@{dir}"
 					wsdl="${basedir}/${wsdl.dir}/@{service.wsdl}"
@@ -474,9 +524,12 @@
 				</wsimport>
 			</sequential>
 		</macrodef>
+
 		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentEndpointService.wsdl" />
-		<wsimport.mac dir="${agentws.dir}" service.wsdl="CloudCommonEndpointService.wsdl" />
 		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentHubEndpointService.wsdl" />
+		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentBinaryEndpointService.wsdl" />
+
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="CloudCommonEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="AccessEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="CalendarEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="CollectEndpointService.wsdl" />
@@ -491,10 +544,14 @@
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="NotifyEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="PerformanceCollectMasterEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="RepositoryEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="ReportingEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="JmxMasterEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="InfraEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="UtilityEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="HubEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="BinaryEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="CloudEndpointService.wsdl" />
+		<wsimport.mac dir="${clientws.dir}" service.wsdl="InquiryEndpointService.wsdl" />
 		<!-- sourcedestdir="${agentws.dir}" -->
 		<delete>
 			<fileset dir="build/agentws" includes="**/*.class" />
@@ -525,9 +582,13 @@
 
 	<!-- All -->
 	<target name="all" depends="dependency">
+		<!-- <delete> will recursely remove files under build\tmp\src_platform -->
+		<exec executable="CMD" failonerror="false">
+			<arg line="/C rmdir build\tmp\src_platform" />
+		</exec>
 		<delete dir="build" failonerror="true" />
 		<antcall target="clean" />
-		
+
 		<!-- win -->
 		<antcall target="win_quick" />
 		<antcall target="jpa_config_win" />
@@ -537,6 +598,7 @@
 		<antcall target="jpa_config_rhel" />
 
 		<antcall target="jar_main" />
+		<antcall target="build_publish" />
 		<antcall target="copy_messages" />
 		<antcall target="webclient" />
 		<antcall target="install" />
@@ -545,11 +607,11 @@
 				property="eclipse_jar_available"/>
 		<antcall target="refresh" />
 	</target>
-	
+
 	<target name="win" depends="dependency">
 		<delete dir="build" failonerror="true" />
 		<antcall target="clean" />
-		
+
 		<!-- win -->
 		<antcall target="win_quick" />
 		<antcall target="jpa_config_win" />
@@ -563,11 +625,11 @@
 				property="eclipse_jar_available"/>
 		<antcall target="refresh" />
 	</target>
-	
+
 	<target name="rhel" depends="dependency">
 		<delete dir="build" failonerror="true" />
 		<antcall target="clean" />
-		
+
 		<!-- rhel -->
 		<antcall target="rhel_quick" />
 		<antcall target="jpa_config_rhel" />
@@ -591,7 +653,7 @@
 		<delete dir="${build.dir}/${class.dir}" failonerror="true" />
 		<mkdir dir="${build.dir}/${class.dir}" />
 	</target>
-	
+
 	<target name="win_quick" depends="dependency">
 		<antcall target="clean_classes" />
 		<antcall target="switch_to_win" />
@@ -599,7 +661,7 @@
 		<antcall target="manifest" />
 		<antcall target="jar_diff_win" />
 	</target>
-	
+
 	<target name="rhel_quick" depends="dependency">
 		<antcall target="clean_classes" />
 		<antcall target="switch_to_rhel" />
@@ -607,14 +669,15 @@
 		<antcall target="manifest" />
 		<antcall target="jar_diff_rhel" />
 	</target>
-	
+
 	<target name="all_quick" depends="dependency">
 		<antcall target="clean" />
-		
+
 		<antcall target="win_quick" />
 		<antcall target="rhel_quick" />
-			
+
 		<antcall target="jar_main" />
+		<antcall target="build_publish" />
 		<antcall target="copy_messages" />
 	</target>
 
@@ -622,7 +685,7 @@
 		<eclipse.refreshLocal resource="${project.name}" depth="infinite"/>
 		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
 	</target>
-	
+
 	<target name="copy_messages">
 		<copy todir="../HinemosClient/lib/" overwrite="true">
 			<fileset dir="../HinemosManager/resources">
@@ -630,5 +693,52 @@
 			</fileset>
 		</copy>
 	</target>
-	
+
+	<!-- Classpath for building PublishXXX.jar -->
+	<path id="publish.compile.classpath">
+		<fileset dir="${jar.dir}">
+			<include name="${jar.file}" />
+			<include name="${jar.rhel}" />
+		</fileset>
+		<path refid="id.compile.classpath.local" />
+	</path>
+
+	<macrodef name="build-publish">
+		<attribute name="src.suffix" />
+		<attribute name="jar.suffix" />
+		<attribute name="bin.dir" default="${build.dir}/bin_publish_@{src.suffix}" />
+		<sequential>
+			<!-- clean_classes" -->
+			<delete dir="@{bin.dir}" failonerror="true" />
+			<mkdir dir="@{bin.dir}" />
+
+			<!-- compile -->
+			<javac
+				destdir="@{bin.dir}"
+				failonerror="true"
+				classpathref="publish.compile.classpath"
+				source="${compile.version.manager}"
+				target="${compile.version.manager}"
+				encoding="${compile.encode}"
+				includeantruntime="false"
+				debug="on">
+				<src path="src_publish_@{src.suffix}" />
+			</javac>
+
+			<!-- jar -->
+			<jar jarfile="${jar.dir}/Publish@{jar.suffix}.jar" manifest="${build.dir}/MANIFEST.MF">
+				<fileset dir="@{bin.dir}">
+					<include name="**/*.class"/>
+				</fileset>
+				<fileset dir="src_publish_@{src.suffix}">
+					<include name="META-INF/services/*" />
+				</fileset>
+			</jar>
+		</sequential>
+	</macrodef>
+
+	<target name="build_publish">
+		<build-publish src.suffix="oss" jar.suffix="OSS" />
+		<build-publish src.suffix="ent" jar.suffix="Enterprise" />
+	</target>
 </project>

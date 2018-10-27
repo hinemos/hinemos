@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
-性能[グラフ]の共通処理を定義しているJavaScriptです。
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ *
+ * 性能[グラフ]の共通処理を定義しているJavaScriptです。
  */
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -70,7 +64,7 @@ isReallyNaN = function(x) {
 //////////////////////////////////////////////////////////////
 // 適用押下時の情報を保持します(グラフ種別など)
 function setGraphConfig(settinginfo) {
-	// {return, returnKind, total, stack, applox, thre, pie, scatter, legend, bar}
+	// {return, returnKind, total, stack, applox, thre, pie, scatter, legend, sigma, bar}
 	var settingarr = [];
 	for (var i = 0;settinginfo != null && i < settinginfo.length; i++) {
 		var info = Number(settinginfo.substring(i, i+1));
@@ -87,8 +81,9 @@ function setGraphConfig(settinginfo) {
 		.attr("data-pie-flg", settingarr[6])
 		.attr("data-scatter-flg", settingarr[7])
 		.attr("data-legend-flg", settingarr[8])
-		.attr("data-stackbar-flg", settingarr[9])
-		.attr("data-rap-flg", settingarr[10]);
+		.attr("data-sigma-flg", settingarr[9])
+		.attr("data-stackbar-flg", settingarr[10])
+		.attr("data-rap-flg", settingarr[11]);
 }
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -115,6 +110,7 @@ function clearGraphConfig() {
 		.attr("data-pie-flg", "false")
 		.attr("data-scatter-flg", "false")
 		.attr("data-legend-flg", "false")
+		.attr("data-sigma-flg", "false")
 		.attr("data-stackbar-flg", "false");
 }
 //////////////////////////////////////////////////////////////
@@ -157,6 +153,7 @@ function setGraphMessages(json) {
 		.attr("mess-critical", json.critical) // 危険
 		.attr("mess-unknown", json.unknown) // 不明
 		.attr("mess-detail", json.detail) // 詳細
+		.attr("mess-prediction", json.prediction) // 予測先(@@分後)
 		.attr("mess-timezoneoffset", json.timezoneoffset) // タイムゾーンオフセット(数値)
 		.attr("mess-captureerror", json.captureerror) // キャプチャファイルが100以上あるため、実行できません
 		.attr("mess-unexpectederror", json.unexpectederror) // 予期しないエラーが発生しました。

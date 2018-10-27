@@ -1,0 +1,1122 @@
+IANA-PRINTER-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+        mib-2
+            FROM SNMPv2-SMI                              -- [RFC2578]
+    TEXTUAL-CONVENTION
+            FROM SNMPv2-TC;                              -- [RFC2579]
+
+ianaPrinterMIB MODULE-IDENTITY
+    LAST-UPDATED  "201609140000Z" -- September 14, 2016
+
+    ORGANIZATION  "IANA"
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+    ::= { mib-2 109 }
+
+
+PrtCoverStatusTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+                  coverOpen(3),
+                  coverClosed(4),
+                  interlockOpen(5),
+                  interlockClosed(6)
+
+                  }
+
+
+PrtGeneralResetTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+
+    SYNTAX    INTEGER {
+                  notResetting(3),
+                  powerCycleReset(4), -- Cold Start
+                  resetToNVRAM(5), -- Warm Start
+                  resetToFactoryDefaults(6) -- Reset contents of
+                  }
+
+PrtChannelTypeTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+                  chSerialPort(3),
+                  chParallelPort(4),
+                  chIEEE1284Port(5),
+                  chSCSIPort(6),
+                  chAppleTalkPAP(7),
+
+                  chLPDServer(8),
+                  chNetwareRPrinter(9),
+
+
+                  chNetwarePServer(10),
+
+                  chPort9100(11),
+                  chAppSocket(12),
+                  chFTP(13),         -- [RFC959]
+                  chTFTP(14),        -- [RFC1350]
+                  chDLCLLCPort(15),
+                  chIBM3270(16),     -- IBM Coax
+                  chIBM5250(17),     -- IBM Twinax
+                  chFax(18),
+                  chIEEE1394(19),
+                  chTransport1(20),
+
+                  chCPAP(21),      -- TCP port 170
+                  chDCERemoteProcCall(22), -- OSF
+                  chONCRemoteProcCall(23), -- SUN Microsystems
+                  chOLE(24),         -- Microsoft
+                  chNamedPipe(25),
+                  chPCPrint(26),   -- Banyan
+                  chServerMessageBlock(27),
+                  chDPMF(28),   -- IBM Infoprint
+                  chDLLAPI(29), -- Microsoft
+                  chVxDAPI(30), -- Microsoft
+                  chSystemObjectManager(31), -- IBM
+                  chDECLAT(32),
+
+                  chNPAP(33),
+                  chUSB(34), -- Not in RFC 1759
+                  chIRDA(35), -- Not in RFC 1759
+                  chPrintXChange(36),  -- Not in RFC 1759
+                  chPortTCP(37),  -- Not in RFC 1759
+                  chBidirPortTCP(38),  -- Not in RFC 1759
+                  chUNPP(39),  -- Not in RFC 1759
+                  chAppleTalkADSP(40),  -- Not in RFC 1759
+
+                  chPortSPX(41),  -- Not in RFC 1759
+                  chPortHTTP(42),  -- Not in RFC 1759
+                  chNDPS(43),  -- Not in RFC 1759
+
+                  chIPP(44),  -- Not in RFC 1759
+
+
+                  chSMTP(45),
+                  chWSPrint(46) -- Not in RFC 3805
+}
+
+
+PrtInterpreterLangFamilyTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+        other(1),
+        unknown(2),          -- Not in RFC 1759
+        langPCL(3),          -- PCL.  Starting with PCL version 5,
+        langHPGL(4),         -- Hewlett-Packard Graphics Language.
+        langPJL(5),          -- Peripheral Job Language.  Appears in
+
+        langPS(6),           -- PostScript (tm) Language
+        langIPDS(7),         -- Intelligent Printer Data Stream
+        langPPDS(8),         -- IBM Personal Printer Data Stream.
+        langEscapeP(9),      -- Epson Corp.
+        langEpson(10),
+        langDDIF(11),        -- Digital Document Interchange Format
+        langInterpress(12),
+        langISO6429(13),     -- ISO 6429.  Control functions for
+        langLineData(14),    -- line-data:  Lines of data as
+        langMODCA(15),       -- Mixed Object Document Content
+
+        langREGIS(16),       -- Remote Graphics Instruction Set,
+        langSCS(17),         -- SNA Character String
+        langSPDL(18),        -- ISO 10180 Standard Page Description
+        langTEK4014(19),     -- Tektronix Corp.
+        langPDS(20),
+        langIGP(21),         -- Printronix Corp.
+        langCodeV(22),       -- Magnum Code-V, Image and printer
+        langDSCDSE(23),      -- DSC-DSE:  Data Stream Compatible and
+        langWPS(24),         -- Windows Printing System, Resource
+        langLN03(25),        -- Early DEC-PPL3, Digital Equipment
+        langCCITT(26),
+        langQUIC(27),        -- QUIC (Quality Information Code), Page
+        langCPAP(28),        -- Common Printer Access Protocol
+        langDecPPL(29),      -- Digital ANSI-Compliant Printing
+        langSimpleText(30),
+
+        langNPAP(31),        -- Network Printer Alliance Protocol
+        langDOC(32),         -- Document Option Commands, Appears in
+        langimPress(33),     -- imPRESS, Page description language
+        langPinwriter(34),
+        langNPDL(35),        -- Page printer  for Japanese market.
+        langNEC201PL(36),    -- Serial printer language used in
+        langAutomatic(37),
+        langPages(38),       -- Page printer Advanced Graphic
+        langLIPS(39),        -- LBP Image Processing System
+        langTIFF(40),        -- Tagged Image File Format (Aldus)
+
+        langDiagnostic(41),
+        langPSPrinter(42),
+        langCaPSL(43),       -- Canon Print Systems Language
+        langEXCL(44),        -- Extended Command Language
+        langLCDS(45),        -- Line Conditioned Data Stream
+        langXES(46),         -- Xerox Escape Sequences
+        langPCLXL(47),       -- Not in RFC 1759
+        langART(48),         -- Not in RFC 1759
+        langTIPSI(49),       -- Not in RFC 1759
+        langPrescribe(50),   -- Not in RFC 1759
+        langLinePrinter(51), -- Not in RFC 1759
+        langIDP(52),         -- Not in RFC 1759
+
+        langXJCL(53),        -- Not in RFC 1759
+        langPDF(54),         -- Not in RFC 1759
+        langRPDL(55),        -- Not in RFC 1759
+        langIntermecIPL(56), -- Not in RFC 1759
+        langUBIFingerprint(57),  -- Not in RFC 1759
+        langUBIDirectProtocol(58),  -- Not in RFC 1759
+        langFujitsu(59),     -- Not in RFC 1759
+        langCGM(60),         -- Not in RFC 1759
+        langJPEG(61),        -- Not in RFC 1759
+        langCALS1(62),       -- Not in RFC 1759
+
+        langCALS2(63),       -- Not in RFC 1759
+        langNIRS(64),        -- Not in RFC 1759
+        langC4(65),          -- Not in RFC 1759
+        langXPS(66),         -- Not in RFC 3805
+        langOpenXPS(67),     -- Not in RFC 3805
+        langJDF(68),         -- Not in RFC 3805
+        langJMF(69),         -- Not in RFC 3805
+        langPPML(70),        -- Not in RFC 3805
+        langXHTMLPrint(71),  -- Not in RFC 3805
+        langPDFis(72),       -- Not in RFC 3805
+        langPDF13(73),       -- Not in RFC 3805
+        langPDF14(74),       -- Not in RFC 3805
+        langPDF15(75),       -- Not in RFC 3805
+        langPDF16(76),       -- Not in RFC 3805
+        langPDF17(77),       -- Not in RFC 3805
+        langPS2(78),         -- Not in RFC 3805
+        langPS3(79),         -- Not in RFC 3805
+        langPCL3(80),        -- Not in RFC 3805
+        langPCL3GUI(81),     -- Not in RFC 3805
+        langPCL5e(82),       -- Not in RFC 3805
+        langPCL5c(83),       -- Not in RFC 3805
+        langPWGRaster(84),   -- Not in RFC 1759
+        langAppleRaster(85)  -- Not in RFC 1759
+}
+
+
+PrtInputTypeTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+                  sheetFeedAutoRemovableTray(3),
+                  sheetFeedAutoNonRemovableTray(4),
+                  sheetFeedManual(5),
+                  continuousRoll(6),
+                  continuousFanFold(7),
+                  sheetFeedPull(8)
+                  }
+
+PrtOutputTypeTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+                  removableBin(3),
+                  unRemovableBin(4),
+                  continuousRollDevice(5),
+                  mailBox(6),
+                  continuousFanFold(7)
+                  }
+
+
+PrtMarkerMarkTechTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+                  electrophotographicLED(3),
+                  electrophotographicLaser(4),
+                  electrophotographicOther(5),
+                  impactMovingHeadDotMatrix9pin(6),
+                  impactMovingHeadDotMatrix24pin(7),
+                  impactMovingHeadDotMatrixOther(8),
+                  impactMovingHeadFullyFormed(9),
+                  impactBand(10),
+                  impactOther(11),
+                  inkjetAqueous(12),
+                  inkjetSolid(13),
+                  inkjetOther(14),
+                  pen(15),
+                  thermalTransfer(16),
+                  thermalSensitive(17),
+                  thermalDiffusion(18),
+                  thermalOther(19),
+                  electroerosion(20),
+                  electrostatic(21),
+                  photographicMicrofiche(22),
+                  photographicImagesetter(23),
+                  photographicOther(24),
+                  ionDeposition(25),
+                  eBeam(26),
+                  typesetter(27)
+                  }
+
+PrtMarkerSuppliesTypeTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+
+                  toner(3),
+                  wasteToner(4),
+                  ink(5),
+                  inkCartridge(6),
+                  inkRibbon(7),
+                  wasteInk(8),
+                  opc(9),               -- photo conductor
+                  developer(10),
+                  fuserOil(11),
+                  solidWax(12),
+                  ribbonWax(13),
+                  wasteWax(14),
+                  fuser(15),            -- Not in RFC 1759
+                  coronaWire(16),       -- Not in RFC 1759
+                  fuserOilWick(17),     -- Not in RFC 1759
+                  cleanerUnit(18),      -- Not in RFC 1759
+                  fuserCleaningPad(19), -- Not in RFC 1759
+                  transferUnit(20),     -- Not in RFC 1759
+                  tonerCartridge(21),   -- Not in RFC 1759
+                  fuserOiler(22),       -- Not in RFC 1759
+                  water(23),            -- Not in RFC 1759
+                  wasteWater(24),       -- Not in RFC 1759
+                  glueWaterAdditive(25),-- Not in RFC 1759
+                  wastePaper(26),       -- Not in RFC 1759
+                  bindingSupply(27),    -- Not in RFC 1759
+                  bandingSupply(28),    -- Not in RFC 1759
+                  stitchingWire(29),    -- Not in RFC 1759
+                  shrinkWrap(30),       -- Not in RFC 1759
+                  paperWrap(31),        -- Not in RFC 1759
+                  staples(32),          -- Not in RFC 1759
+                  inserts(33),          -- Not in RFC 1759
+                  covers(34),           -- Not in RFC 1759
+                  matteToner(35),       -- Not in RFC 3805
+                  matteInk(36)          -- Not in RFC 3805
+                  }
+
+
+PrtMediaPathTypeTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+
+                  other(1),
+                  unknown(2),
+                  longEdgeBindingDuplex(3),
+                  shortEdgeBindingDuplex(4),
+                  simplex(5)
+                  }
+
+
+PrtConsoleColorTC ::= TEXTUAL-CONVENTION
+    STATUS     current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+                  white(3),
+                  red(4),
+                  green(5),
+                  blue(6),
+                  cyan(7),
+                  magenta(8),
+                  yellow(9),
+                  orange(10)        -- Not in RFC 1759
+                  }
+
+PrtConsoleDisableTC ::= TEXTUAL-CONVENTION
+    STATUS     current
+    SYNTAX    INTEGER {
+                  enabled(3),
+                  disabled(4)
+                  }
+
+
+PrtAlertTrainingLevelTC ::= TEXTUAL-CONVENTION
+
+    STATUS    current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+                  untrained(3),
+                  trained(4),
+                  fieldService(5),
+                  management(6),
+                  noInterventionRequired(7)  -- Not in RFC 1759
+                 }
+
+PrtAlertGroupTC ::= TEXTUAL-CONVENTION
+
+    STATUS    current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+                  hostResourcesMIBStorageTable(3),
+                  hostResourcesMIBDeviceTable(4),
+                  generalPrinter(5),
+                  cover(6),
+                  localization(7),
+                  input(8),
+                  output(9),
+                  marker(10),
+                  markerSupplies(11),
+                  markerColorant(12),
+                  mediaPath(13),
+                  channel(14),
+                  interpreter(15),
+                  consoleDisplayBuffer(16),
+                  consoleLights(17),
+                  alert(18),                   -- Not in RFC 1759
+                  finDevice(30),               -- Not in RFC 1759
+                  finSupply(31),               -- Not in RFC 1759
+                  finSupplyMediaInput(32),     -- Not in RFC 1759
+                  finAttribute(33)             -- Not in RFC 1759
+                  }
+
+PrtAlertCodeTC ::= TEXTUAL-CONVENTION
+    STATUS    current
+    SYNTAX    INTEGER {
+                  other(1),
+                  unknown(2),
+                  coverOpen(3),
+                  coverClosed(4),
+                  interlockOpen(5),
+                  interlockClosed(6),
+                  configurationChange(7),
+                  jam(8),
+                  subunitMissing(9),           -- Not in RFC 1759
+                  subunitLifeAlmostOver(10),   -- Not in RFC 1759
+                  subunitLifeOver(11),         -- Not in RFC 1759
+                  subunitAlmostEmpty(12),      -- Not in RFC 1759
+                  subunitEmpty(13),            -- Not in RFC 1759
+                  subunitAlmostFull(14),       -- Not in RFC 1759
+                  subunitFull(15),             -- Not in RFC 1759
+                  subunitNearLimit(16),        -- Not in RFC 1759
+                  subunitAtLimit(17),          -- Not in RFC 1759
+                  subunitOpened(18),           -- Not in RFC 1759
+                  subunitClosed(19),           -- Not in RFC 1759
+                  subunitTurnedOn(20),         -- Not in RFC 1759
+                  subunitTurnedOff(21),        -- Not in RFC 1759
+                  subunitOffline(22),          -- Not in RFC 1759
+                  subunitPowerSaver(23),       -- Not in RFC 1759
+                  subunitWarmingUp(24),        -- Not in RFC 1759
+                  subunitAdded(25),            -- Not in RFC 1759
+                  subunitRemoved(26),          -- Not in RFC 1759
+                  subunitResourceAdded(27),    -- Not in RFC 1759
+                  subunitResourceRemoved(28),  -- Not in RFC 1759
+                  subunitRecoverableFailure(29),
+                  subunitUnrecoverableFailure(30),
+
+                  subunitRecoverableStorageError(31),
+                  subunitUnrecoverableStorageError(32),
+                  subunitMotorFailure(33),     -- Not in RFC 1759
+                  subunitMemoryExhausted(34),  -- Not in RFC 1759
+                  subunitUnderTemperature(35), -- Not in RFC 1759
+                  subunitOverTemperature(36),  -- Not in RFC 1759
+                  subunitTimingFailure(37),    -- Not in RFC 1759
+                  subunitThermistorFailure(38), -- Not in RFC 1759
+
+                  doorOpen(501),    -- DEPRECATED
+                  doorClosed(502),  -- DEPRECATED
+                  powerUp(503),
+                  powerDown(504),
+                  printerNMSReset(505),        -- Not in RFC 1759
+                  printerManualReset(506),     -- Not in RFC 1759
+                  printerReadyToPrint(507),    -- Not in RFC 1759
+
+                  inputMediaTrayMissing(801),
+                  inputMediaSizeChange(802),
+                  inputMediaWeightChange(803),
+                  inputMediaTypeChange(804),
+                  inputMediaColorChange(805),
+                  inputMediaFormPartsChange(806),
+                  inputMediaSupplyLow(807),
+                  inputMediaSupplyEmpty(808),
+                  inputMediaChangeRequest(809), -- Not in RFC 1759
+                  inputManualInputRequest(810), -- Not in RFC 1759
+
+                  inputTrayPositionFailure(811), -- Not in RFC 1759
+                  inputTrayElevationFailure(812),
+                  inputCannotFeedSizeSelected(813),
+                  outputMediaTrayMissing(901),
+                  outputMediaTrayAlmostFull(902),
+                  outputMediaTrayFull(903),
+                  outputMailboxSelectFailure(904),
+                  markerFuserUnderTemperature(1001),
+                  markerFuserOverTemperature(1002),
+                  markerFuserTimingFailure(1003),
+                  markerFuserThermistorFailure(1004),
+                  markerAdjustingPrintQuality(1005),
+                  markerTonerEmpty(1101),
+                  markerInkEmpty(1102),
+                  markerPrintRibbonEmpty(1103),
+                  markerTonerAlmostEmpty(1104),
+                  markerInkAlmostEmpty(1105),
+                  markerPrintRibbonAlmostEmpty(1106),
+                  markerWasteTonerReceptacleAlmostFull(1107),
+                  markerWasteInkReceptacleAlmostFull(1108),
+                  markerWasteTonerReceptacleFull(1109),
+                  markerWasteInkReceptacleFull(1110),
+                  markerOpcLifeAlmostOver(1111),
+                  markerOpcLifeOver(1112),
+                  markerDeveloperAlmostEmpty(1113),
+                  markerDeveloperEmpty(1114),
+                  markerTonerCartridgeMissing(1115),
+                  mediaPathMediaTrayMissing(1301),
+                  mediaPathMediaTrayAlmostFull(1302),
+                  mediaPathMediaTrayFull(1303),
+                  mediaPathCannotDuplexMediaSelected(1304),
+
+                  interpreterMemoryIncrease(1501),
+                  interpreterMemoryDecrease(1502),
+                  interpreterCartridgeAdded(1503),
+                  interpreterCartridgeDeleted(1504),
+                  interpreterResourceAdded(1505),
+                  interpreterResourceDeleted(1506),
+                  interpreterResourceUnavailable(1507),
+                  interpreterComplexPageEncountered(1509),
+                  alertRemovalOfBinaryChangeEntry(1801),
+                  staplerCoverOpen(30203),
+                  staplerCoverClosed(30204),
+                  staplerInterlockOpen(30205),
+                  staplerInterlockClosed(30206),
+                  staplerConfigurationChange(30207),
+                  staplerJam(30208),
+                  staplerMissing(30209),
+                  staplerLifeAlmostOver(30210),
+                  staplerLifeOver(30211),
+                  staplerAlmostEmpty(30212),
+                  staplerEmpty(30213),
+                  staplerAlmostFull(30214),
+                  staplerFull(30215),
+                  staplerNearLimit(30216),
+                  staplerAtLimit(30217),
+                  staplerOpened(30218),
+                  staplerClosed(30219),
+                  staplerTurnedOn(30220),
+                  staplerTurnedOff(30221),
+                  staplerOffline(30222),
+                  staplerPowerSaver(30223),
+                  staplerWarmingUp(30224),
+                  staplerAdded(30225),
+                  staplerRemoved(30226),
+                  staplerResourceAdded(30227),
+                  staplerResourceRemoved(30228),
+                  staplerRecoverableFailure(30229),
+                  staplerUnrecoverableFailure(30230),
+                  staplerRecoverableStorageError(30231),
+                  staplerUnrecoverableStorageError(30232),
+                  staplerMotorFailure(30233),
+                  staplerMemoryExhausted(30234),
+                  staplerUnderTemperature(30235),
+                  staplerOverTemperature(30236),
+                  staplerTimingFailure(30237),
+                  staplerThermistorFailure(30238),
+
+                  stitcherCoverOpen(30303),
+                  stitcherCoverClosed(30304),
+                  stitcherInterlockOpen(30305),
+                  stitcherInterlockClosed(30306),
+                  stitcherConfigurationChange(30307),
+                  stitcherJam(30308),
+                  stitcherMissing(30309),
+                  stitcherLifeAlmostOver(30310),
+                  stitcherLifeOver(30311),
+                  stitcherAlmostEmpty(30312),
+                  stitcherEmpty(30313),
+                  stitcherAlmostFull(30314),
+                  stitcherFull(30315),
+                  stitcherNearLimit(30316),
+                  stitcherAtLimit(30317),
+                  stitcherOpened(30318),
+                  stitcherClosed(30319),
+                  stitcherTurnedOn(30320),
+                  stitcherTurnedOff(30321),
+                  stitcherOffline(30322),
+                  stitcherPowerSaver(30323),
+                  stitcherWarmingUp(30324),
+                  stitcherAdded(30325),
+                  stitcherRemoved(30326),
+                  stitcherResourceAdded(30327),
+                  stitcherResourceRemoved(30328),
+                  stitcherRecoverableFailure(30329),
+                  stitcherUnrecoverableFailure(30330),
+                  stitcherRecoverableStorageError(30331),
+                  stitcherUnrecoverableStorageError(30332),
+                  stitcherMotorFailure(30333),
+                  stitcherMemoryExhausted(30334),
+                  stitcherUnderTemperature(30335),
+                  stitcherOverTemperature(30336),
+                  stitcherTimingFailure(30337),
+                  stitcherThermistorFailure(30338),
+
+                  folderCoverOpen(30403),
+                  folderCoverClosed(30404),
+                  folderInterlockOpen(30405),
+                  folderInterlockClosed(30406),
+                  folderConfigurationChange(30407),
+                  folderJam(30408),
+                  folderMissing(30409),
+                  folderLifeAlmostOver(30410),
+                  folderLifeOver(30411),
+                  folderAlmostEmpty(30412),
+                  folderEmpty(30413),
+                  folderAlmostFull(30414),
+                  folderFull(30415),
+                  folderNearLimit(30416),
+                  folderAtLimit(30417),
+                  folderOpened(30418),
+                  folderClosed(30419),
+                  folderTurnedOn(30420),
+                  folderTurnedOff(30421),
+                  folderOffline(30422),
+                  folderPowerSaver(30423),
+                  folderWarmingUp(30424),
+                  folderAdded(30425),
+                  folderRemoved(30426),
+                  folderResourceAdded(30427),
+                  folderResourceRemoved(30428),
+                  folderRecoverableFailure(30429),
+                  folderUnrecoverableFailure(30430),
+                  folderRecoverableStorageError(30431),
+                  folderUnrecoverableStorageError(30432),
+                  folderMotorFailure(30433),
+                  folderMemoryExhausted(30434),
+                  folderUnderTemperature(30435),
+                  folderOverTemperature(30436),
+                  folderTimingFailure(30437),
+                  folderThermistorFailure(30438),
+
+                  binderCoverOpen(30503),
+                  binderCoverClosed(30504),
+                  binderInterlockOpen(30505),
+                  binderInterlockClosed(30506),
+                  binderConfigurationChange(30507),
+                  binderJam(30508),
+                  binderMissing(30509),
+                  binderLifeAlmostOver(30510),
+                  binderLifeOver(30511),
+                  binderAlmostEmpty(30512),
+                  binderEmpty(30513),
+                  binderAlmostFull(30514),
+                  binderFull(30515),
+                  binderNearLimit(30516),
+                  binderAtLimit(30517),
+                  binderOpened(30518),
+                  binderClosed(30519),
+                  binderTurnedOn(30520),
+                  binderTurnedOff(30521),
+                  binderOffline(30522),
+                  binderPowerSaver(30523),
+                  binderWarmingUp(30524),
+                  binderAdded(30525),
+                  binderRemoved(30526),
+                  binderResourceAdded(30527),
+                  binderResourceRemoved(30528),
+                  binderRecoverableFailure(30529),
+                  binderUnrecoverableFailure(30530),
+                  binderRecoverableStorageError(30531),
+                  binderUnrecoverableStorageError(30532),
+                  binderMotorFailure(30533),
+                  binderMemoryExhausted(30534),
+                  binderUnderTemperature(30535),
+                  binderOverTemperature(30536),
+                  binderTimingFailure(30537),
+                  binderThermistorFailure(30538),
+
+                  trimmerCoverOpen(30603),
+                  trimmerCoverClosed(30604),
+                  trimmerInterlockOpen(30605),
+                  trimmerInterlockClosed(30606),
+                  trimmerConfigurationChange(30607),
+                  trimmerJam(30608),
+                  trimmerMissing(30609),
+                  trimmerLifeAlmostOver(30610),
+                  trimmerLifeOver(30611),
+                  trimmerAlmostEmpty(30612),
+                  trimmerEmpty(30613),
+                  trimmerAlmostFull(30614),
+                  trimmerFull(30615),
+                  trimmerNearLimit(30616),
+                  trimmerAtLimit(30617),
+                  trimmerOpened(30618),
+                  trimmerClosed(30619),
+                  trimmerTurnedOn(30620),
+                  trimmerTurnedOff(30621),
+                  trimmerOffline(30622),
+                  trimmerPowerSaver(30623),
+                  trimmerWarmingUp(30624),
+                  trimmerAdded(30625),
+                  trimmerRemoved(30626),
+                  trimmerResourceAdded(30627),
+                  trimmerResourceRemoved(30628),
+                  trimmerRecoverableFailure(30629),
+                  trimmerUnrecoverableFailure(30630),
+                  trimmerRecoverableStorageError(30631),
+                  trimmerUnrecoverableStorageError(30632),
+                  trimmerMotorFailure(30633),
+                  trimmerMemoryExhausted(30634),
+                  trimmerUnderTemperature(30635),
+                  trimmerOverTemperature(30636),
+                  trimmerTimingFailure(30637),
+                  trimmerThermistorFailure(30638),
+
+                  dieCutterCoverOpen(30703),
+                  dieCutterCoverClosed(30704),
+                  dieCutterInterlockOpen(30705),
+                  dieCutterInterlockClosed(30706),
+                  dieCutterConfigurationChange(30707),
+                  dieCutterJam(30708),
+                  dieCutterMissing(30709),
+                  dieCutterLifeAlmostOver(30710),
+                  dieCutterLifeOver(30711),
+                  dieCutterAlmostEmpty(30712),
+                  dieCutterEmpty(30713),
+                  dieCutterAlmostFull(30714),
+                  dieCutterFull(30715),
+                  dieCutterNearLimit(30716),
+                  dieCutterAtLimit(30717),
+                  dieCutterOpened(30718),
+                  dieCutterClosed(30719),
+                  dieCutterTurnedOn(30720),
+                  dieCutterTurnedOff(30721),
+                  dieCutterOffline(30722),
+                  dieCutterPowerSaver(30723),
+                  dieCutterWarmingUp(30724),
+                  dieCutterAdded(30725),
+                  dieCutterRemoved(30726),
+                  dieCutterResourceAdded(30727),
+                  dieCutterResourceRemoved(30728),
+                  dieCutterRecoverableFailure(30729),
+                  dieCutterUnrecoverableFailure(30730),
+                  dieCutterRecoverableStorageError(30731),
+                  dieCutterUnrecoverableStorageError(30732),
+                  dieCutterMotorFailure(30733),
+                  dieCutterMemoryExhausted(30734),
+                  dieCutterUnderTemperature(30735),
+                  dieCutterOverTemperature(30736),
+                  dieCutterTimingFailure(30737),
+                  dieCutterThermistorFailure(30738),
+
+                  puncherCoverOpen(30803),
+                  puncherCoverClosed(30804),
+                  puncherInterlockOpen(30805),
+                  puncherInterlockClosed(30806),
+                  puncherConfigurationChange(30807),
+                  puncherJam(30808),
+                  puncherMissing(30809),
+                  puncherLifeAlmostOver(30810),
+                  puncherLifeOver(30811),
+                  puncherAlmostEmpty(30812),
+                  puncherEmpty(30813),
+                  puncherAlmostFull(30814),
+                  puncherFull(30815),
+                  puncherNearLimit(30816),
+                  puncherAtLimit(30817),
+                  puncherOpened(30818),
+                  puncherClosed(30819),
+                  puncherTurnedOn(30820),
+                  puncherTurnedOff(30821),
+                  puncherOffline(30822),
+                  puncherPowerSaver(30823),
+                  puncherWarmingUp(30824),
+                  puncherAdded(30825),
+                  puncherRemoved(30826),
+                  puncherResourceAdded(30827),
+                  puncherResourceRemoved(30828),
+                  puncherRecoverableFailure(30829),
+                  puncherUnrecoverableFailure(30830),
+                  puncherRecoverableStorageError(30831),
+                  puncherUnrecoverableStorageError(30832),
+                  puncherMotorFailure(30833),
+                  puncherMemoryExhausted(30834),
+                  puncherUnderTemperature(30835),
+                  puncherOverTemperature(30836),
+                  puncherTimingFailure(30837),
+                  puncherThermistorFailure(30838),
+
+                  perforaterCoverOpen(30903),
+                  perforaterCoverClosed(30904),
+                  perforaterInterlockOpen(30905),
+                  perforaterInterlockClosed(30906),
+                  perforaterConfigurationChange(30907),
+                  perforaterJam(30908),
+                  perforaterMissing(30909),
+                  perforaterLifeAlmostOver(30910),
+                  perforaterLifeOver(30911),
+                  perforaterAlmostEmpty(30912),
+                  perforaterEmpty(30913),
+                  perforaterAlmostFull(30914),
+                  perforaterFull(30915),
+                  perforaterNearLimit(30916),
+                  perforaterAtLimit(30917),
+                  perforaterOpened(30918),
+                  perforaterClosed(30919),
+                  perforaterTurnedOn(30920),
+                  perforaterTurnedOff(30921),
+                  perforaterOffline(30922),
+                  perforaterPowerSaver(30923),
+                  perforaterWarmingUp(30924),
+                  perforaterAdded(30925),
+                  perforaterRemoved(30926),
+                  perforaterResourceAdded(30927),
+                  perforaterResourceRemoved(30928),
+                  perforaterRecoverableFailure(30929),
+                  perforaterUnrecoverableFailure(30930),
+                  perforaterRecoverableStorageError(30931),
+                  perforaterUnrecoverableStorageError(30932),
+                  perforaterMotorFailure(30933),
+                  perforaterMemoryExhausted(30934),
+                  perforaterUnderTemperature(30935),
+                  perforaterOverTemperature(30936),
+                  perforaterTimingFailure(30937),
+                  perforaterThermistorFailure(30938),
+
+                  slitterCoverOpen(31003),
+                  slitterCoverClosed(31004),
+                  slitterInterlockOpen(31005),
+                  slitterInterlockClosed(31006),
+                  slitterConfigurationChange(31007),
+                  slitterJam(31008),
+                  slitterMissing(31009),
+                  slitterLifeAlmostOver(31010),
+                  slitterLifeOver(31011),
+                  slitterAlmostEmpty(31012),
+                  slitterEmpty(31013),
+                  slitterAlmostFull(31014),
+                  slitterFull(31015),
+                  slitterNearLimit(31016),
+                  slitterAtLimit(31017),
+                  slitterOpened(31018),
+                  slitterClosed(31019),
+                  slitterTurnedOn(31020),
+                  slitterTurnedOff(31021),
+                  slitterOffline(31022),
+                  slitterPowerSaver(31023),
+                  slitterWarmingUp(31024),
+                  slitterAdded(31025),
+                  slitterRemoved(31026),
+                  slitterResourceAdded(31027),
+                  slitterResourceRemoved(31028),
+                  slitterRecoverableFailure(31029),
+                  slitterUnrecoverableFailure(31030),
+                  slitterRecoverableStorageError(31031),
+                  slitterUnrecoverableStorageError(31032),
+                  slitterMotorFailure(31033),
+                  slitterMemoryExhausted(31034),
+                  slitterUnderTemperature(31035),
+                  slitterOverTemperature(31036),
+                  slitterTimingFailure(31037),
+                  slitterThermistorFailure(31038),
+
+                  separationCutterCoverOpen(31103),
+                  separationCutterCoverClosed(31104),
+                  separationCutterInterlockOpen(31105),
+                  separationCutterInterlockClosed(31106),
+                  separationCutterConfigurationChange(31107),
+                  separationCutterJam(31108),
+                  separationCutterMissing(31109),
+                  separationCutterLifeAlmostOver(31110),
+                  separationCutterLifeOver(31111),
+                  separationCutterAlmostEmpty(31112),
+                  separationCutterEmpty(31113),
+                  separationCutterAlmostFull(31114),
+                  separationCutterFull(31115),
+                  separationCutterNearLimit(31116),
+                  separationCutterAtLimit(31117),
+                  separationCutterOpened(31118),
+                  separationCutterClosed(31119),
+                  separationCutterTurnedOn(31120),
+                  separationCutterTurnedOff(31121),
+                  separationCutterOffline(31122),
+                  separationCutterPowerSaver(31123),
+                  separationCutterWarmingUp(31124),
+                  separationCutterAdded(31125),
+                  separationCutterRemoved(31126),
+                  separationCutterResourceAdded(31127),
+                  separationCutterResourceRemoved(31128),
+                  separationCutterRecoverableFailure(31129),
+                  separationCutterUnrecoverableFailure(31130),
+                  separationCutterRecoverableStorageError(31131),
+                  separationCutterUnrecoverableStorageError(31132),
+                  separationCutterMotorFailure(31133),
+                  separationCutterMemoryExhausted(31134),
+                  separationCutterUnderTemperature(31135),
+                  separationCutterOverTemperature(31136),
+                  separationCutterTimingFailure(31137),
+                  separationCutterThermistorFailure(31138),
+
+                  imprinterCoverOpen(31203),
+                  imprinterCoverClosed(31204),
+                  imprinterInterlockOpen(31205),
+                  imprinterInterlockClosed(31206),
+                  imprinterConfigurationChange(31207),
+                  imprinterJam(31208),
+                  imprinterMissing(31209),
+                  imprinterLifeAlmostOver(31210),
+                  imprinterLifeOver(31211),
+                  imprinterAlmostEmpty(31212),
+                  imprinterEmpty(31213),
+                  imprinterAlmostFull(31214),
+                  imprinterFull(31215),
+                  imprinterNearLimit(31216),
+                  imprinterAtLimit(31217),
+                  imprinterOpened(31218),
+                  imprinterClosed(31219),
+                  imprinterTurnedOn(31220),
+                  imprinterTurnedOff(31221),
+                  imprinterOffline(31222),
+                  imprinterPowerSaver(31223),
+                  imprinterWarmingUp(31224),
+                  imprinterAdded(31225),
+                  imprinterRemoved(31226),
+                  imprinterResourceAdded(31227),
+                  imprinterResourceRemoved(31228),
+                  imprinterRecoverableFailure(31229),
+                  imprinterUnrecoverableFailure(31230),
+                  imprinterRecoverableStorageError(31231),
+                  imprinterUnrecoverableStorageError(31232),
+                  imprinterMotorFailure(31233),
+                  imprinterMemoryExhausted(31234),
+                  imprinterUnderTemperature(31235),
+                  imprinterOverTemperature(31236),
+                  imprinterTimingFailure(31237),
+                  imprinterThermistorFailure(31238),
+
+                  wrapperCoverOpen(31303),
+                  wrapperCoverClosed(31304),
+                  wrapperInterlockOpen(31305),
+                  wrapperInterlockClosed(31306),
+                  wrapperConfigurationChange(31307),
+                  wrapperJam(31308),
+                  wrapperMissing(31309),
+                  wrapperLifeAlmostOver(31310),
+                  wrapperLifeOver(31311),
+                  wrapperAlmostEmpty(31312),
+                  wrapperEmpty(31313),
+                  wrapperAlmostFull(31314),
+                  wrapperFull(31315),
+                  wrapperNearLimit(31316),
+                  wrapperAtLimit(31317),
+                  wrapperOpened(31318),
+                  wrapperClosed(31319),
+                  wrapperTurnedOn(31320),
+                  wrapperTurnedOff(31321),
+                  wrapperOffline(31322),
+                  wrapperPowerSaver(31323),
+                  wrapperWarmingUp(31324),
+                  wrapperAdded(31325),
+                  wrapperRemoved(31326),
+                  wrapperResourceAdded(31327),
+                  wrapperResourceRemoved(31328),
+                  wrapperRecoverableFailure(31329),
+                  wrapperUnrecoverableFailure(31330),
+                  wrapperRecoverableStorageError(31331),
+                  wrapperUnrecoverableStorageError(31332),
+                  wrapperMotorFailure(31333),
+                  wrapperMemoryExhausted(31334),
+                  wrapperUnderTemperature(31335),
+                  wrapperOverTemperature(31336),
+                  wrapperTimingFailure(31337),
+                  wrapperThermistorFailure(31338),
+
+                  banderCoverOpen(31403),
+                  banderCoverClosed(31404),
+                  banderInterlockOpen(31405),
+                  banderInterlockClosed(31406),
+                  banderConfigurationChange(31407),
+                  banderJam(31408),
+                  banderMissing(31409),
+                  banderLifeAlmostOver(31410),
+                  banderLifeOver(31411),
+                  banderAlmostEmpty(31412),
+                  banderEmpty(31413),
+                  banderAlmostFull(31414),
+                  banderFull(31415),
+                  banderNearLimit(31416),
+                  banderAtLimit(31417),
+                  banderOpened(31418),
+                  banderClosed(31419),
+                  banderTurnedOn(31420),
+                  banderTurnedOff(31421),
+                  banderOffline(31422),
+                  banderPowerSaver(31423),
+                  banderWarmingUp(31424),
+                  banderAdded(31425),
+                  banderRemoved(31426),
+                  banderResourceAdded(31427),
+                  banderResourceRemoved(31428),
+                  banderRecoverableFailure(31429),
+                  banderUnrecoverableFailure(31430),
+                  banderRecoverableStorageError(31431),
+                  banderUnrecoverableStorageError(31432),
+                  banderMotorFailure(31433),
+                  banderMemoryExhausted(31434),
+                  banderUnderTemperature(31435),
+                  banderOverTemperature(31436),
+                  banderTimingFailure(31437),
+                  banderThermistorFailure(31438),
+
+                  makeEnvelopeCoverOpen(31503),
+                  makeEnvelopeCoverClosed(31504),
+                  makeEnvelopeInterlockOpen(31505),
+                  makeEnvelopeInterlockClosed(31506),
+                  makeEnvelopeConfigurationChange(31507),
+                  makeEnvelopeJam(31508),
+                  makeEnvelopeMissing(31509),
+                  makeEnvelopeLifeAlmostOver(31510),
+                  makeEnvelopeLifeOver(31511),
+                  makeEnvelopeAlmostEmpty(31512),
+                  makeEnvelopeEmpty(31513),
+                  makeEnvelopeAlmostFull(31514),
+                  makeEnvelopeFull(31515),
+                  makeEnvelopeNearLimit(31516),
+                  makeEnvelopeAtLimit(31517),
+                  makeEnvelopeOpened(31518),
+                  makeEnvelopeClosed(31519),
+                  makeEnvelopeTurnedOn(31520),
+                  makeEnvelopeTurnedOff(31521),
+                  makeEnvelopeOffline(31522),
+                  makeEnvelopePowerSaver(31523),
+                  makeEnvelopeWarmingUp(31524),
+                  makeEnvelopeAdded(31525),
+                  makeEnvelopeRemoved(31526),
+                  makeEnvelopeResourceAdded(31527),
+                  makeEnvelopeResourceRemoved(31528),
+                  makeEnvelopeRecoverableFailure(31529),
+                  makeEnvelopeUnrecoverableFailure(31530),
+                  makeEnvelopeRecoverableStorageError(31531),
+                  makeEnvelopeUnrecoverableStorageError(31532),
+                  makeEnvelopeMotorFailure(31533),
+                  makeEnvelopeMemoryExhausted(31534),
+                  makeEnvelopeUnderTemperature(31535),
+                  makeEnvelopeOverTemperature(31536),
+                  makeEnvelopeTimingFailure(31537),
+                  makeEnvelopeThermistorFailure(31538),
+
+                  stackerCoverOpen(31603),
+                  stackerCoverClosed(31604),
+                  stackerInterlockOpen(31605),
+                  stackerInterlockClosed(31606),
+                  stackerConfigurationChange(31607),
+                  stackerJam(31608),
+                  stackerMissing(31609),
+                  stackerLifeAlmostOver(31610),
+                  stackerLifeOver(31611),
+                  stackerAlmostEmpty(31612),
+                  stackerEmpty(31613),
+                  stackerAlmostFull(31614),
+                  stackerFull(31615),
+                  stackerNearLimit(31616),
+                  stackerAtLimit(31617),
+                  stackerOpened(31618),
+                  stackerClosed(31619),
+                  stackerTurnedOn(31620),
+                  stackerTurnedOff(31621),
+                  stackerOffline(31622),
+                  stackerPowerSaver(31623),
+                  stackerWarmingUp(31624),
+                  stackerAdded(31625),
+                  stackerRemoved(31626),
+                  stackerResourceAdded(31627),
+                  stackerResourceRemoved(31628),
+                  stackerRecoverableFailure(31629),
+                  stackerUnrecoverableFailure(31630),
+                  stackerRecoverableStorageError(31631),
+                  stackerUnrecoverableStorageError(31632),
+                  stackerMotorFailure(31633),
+                  stackerMemoryExhausted(31634),
+                  stackerUnderTemperature(31635),
+                  stackerOverTemperature(31636),
+                  stackerTimingFailure(31637),
+                  stackerThermistorFailure(31638),
+
+                  sheetRotatorCoverOpen(31703),
+                  sheetRotatorCoverClosed(31704),
+                  sheetRotatorInterlockOpen(31705),
+                  sheetRotatorInterlockClosed(31706),
+                  sheetRotatorConfigurationChange(31707),
+                  sheetRotatorJam(31708),
+                  sheetRotatorMissing(31709),
+                  sheetRotatorLifeAlmostOver(31710),
+                  sheetRotatorLifeOver(31711),
+                  sheetRotatorAlmostEmpty(31712),
+                  sheetRotatorEmpty(31713),
+                  sheetRotatorAlmostFull(31714),
+                  sheetRotatorFull(31715),
+                  sheetRotatorNearLimit(31716),
+                  sheetRotatorAtLimit(31717),
+                  sheetRotatorOpened(31718),
+                  sheetRotatorClosed(31719),
+                  sheetRotatorTurnedOn(31720),
+                  sheetRotatorTurnedOff(31721),
+                  sheetRotatorOffline(31722),
+                  sheetRotatorPowerSaver(31723),
+                  sheetRotatorWarmingUp(31724),
+                  sheetRotatorAdded(31725),
+                  sheetRotatorRemoved(31726),
+                  sheetRotatorResourceAdded(31727),
+                  sheetRotatorResourceRemoved(31728),
+                  sheetRotatorRecoverableFailure(31729),
+                  sheetRotatorUnrecoverableFailure(31730),
+                  sheetRotatorRecoverableStorageError(31731),
+                  sheetRotatorUnrecoverableStorageError(31732),
+                  sheetRotatorMotorFailure(31733),
+                  sheetRotatorMemoryExhausted(31734),
+                  sheetRotatorUnderTemperature(31735),
+                  sheetRotatorOverTemperature(31736),
+                  sheetRotatorTimingFailure(31737),
+                  sheetRotatorThermistorFailure(31738),
+
+                  inserterCoverOpen(31803),
+                  inserterCoverClosed(31804),
+                  inserterInterlockOpen(31805),
+                  inserterInterlockClosed(31806),
+                  inserterConfigurationChange(31807),
+                  inserterJam(31808),
+                  inserterMissing(31809),
+                  inserterLifeAlmostOver(31810),
+                  inserterLifeOver(31811),
+                  inserterAlmostEmpty(31812),
+                  inserterEmpty(31813),
+                  inserterAlmostFull(31814),
+                  inserterFull(31815),
+                  inserterNearLimit(31816),
+                  inserterAtLimit(31817),
+                  inserterOpened(31818),
+                  inserterClosed(31819),
+                  inserterTurnedOn(31820),
+                  inserterTurnedOff(31821),
+                  inserterOffline(31822),
+                  inserterPowerSaver(31823),
+                  inserterWarmingUp(31824),
+                  inserterAdded(31825),
+                  inserterRemoved(31826),
+                  inserterResourceAdded(31827),
+                  inserterResourceRemoved(31828),
+                  inserterRecoverableFailure(31829),
+                  inserterUnrecoverableFailure(31830),
+                  inserterRecoverableStorageError(31831),
+                  inserterUnrecoverableStorageError(31832),
+                  inserterMotorFailure(31833),
+                  inserterMemoryExhausted(31834),
+                  inserterUnderTemperature(31835),
+                  inserterOverTemperature(31836),
+                  inserterTimingFailure(31837),
+                  inserterThermistorFailure(31838)
+                  }
+END

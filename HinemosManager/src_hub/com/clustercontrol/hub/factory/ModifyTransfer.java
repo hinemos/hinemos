@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.hub.factory;
@@ -55,8 +48,8 @@ public class ModifyTransfer {
 	 * @throws HinemosUnknown
 	 */
 	public void add(TransferInfo entity, String userId) throws LogTransferDuplicate, HinemosUnknown {
-		try {
-			JpaTransactionManager jtm = new JpaTransactionManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			
 			long now = HinemosTime.currentTimeMillis();
 			jtm.checkEntityExists(TransferInfo.class, entity.getTransferId());
@@ -66,7 +59,6 @@ public class ModifyTransfer {
 			entity.setUpdateDate(now);
 			entity.setUpdateUser(userId);
 			
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 			em.persist(entity);
 			
 			jtm.flush();
@@ -84,10 +76,9 @@ public class ModifyTransfer {
 	 * @throws InvalidRole
 	 */
 	public void modify(TransferInfo logTransfer, String userId) throws LogTransferNotFound, InvalidRole {
-		try {
-			JpaTransactionManager jtm = new JpaTransactionManager();
-			
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
+
 			String transferId = logTransfer.getTransferId();
 			TransferInfo entity = em.find(TransferInfo.class, transferId, ObjectPrivilegeMode.MODIFY);
 			if (entity == null) {
@@ -156,8 +147,8 @@ public class ModifyTransfer {
 		m_log.debug(String.format("delete() : transferId = %s", transferId));
 
 		// ファイルを取得
-		try {
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			TransferInfo entity = em.find(TransferInfo.class, transferId, ObjectPrivilegeMode.MODIFY);
 			if (entity == null) {
 				LogTransferNotFound e = new LogTransferNotFound("LogTransfer.findByPrimaryKey, transferId = " + transferId);

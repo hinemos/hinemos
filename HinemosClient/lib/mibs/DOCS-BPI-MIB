@@ -1,0 +1,1002 @@
+DOCS-BPI-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+MODULE-IDENTITY, OBJECT-TYPE,
+Integer32, Counter32, IpAddress
+FROM SNMPv2-SMI
+DisplayString, MacAddress, RowStatus, TruthValue, DateAndTime
+FROM SNMPv2-TC
+OBJECT-GROUP, MODULE-COMPLIANCE
+FROM SNMPv2-CONF
+ifIndex
+FROM IF-MIB
+docsIfMib, docsIfCmServiceId, docsIfCmtsServiceId
+FROM DOCS-IF-MIB
+;
+
+docsBpiMIB      MODULE-IDENTITY
+LAST-UPDATED "200103130000Z"
+ORGANIZATION "IETF IPCDN Working Group"
+
+
+
+::= { docsIfMib 5 }
+
+docsBpiMIBObjects  OBJECT IDENTIFIER ::= { docsBpiMIB 1 }
+
+
+docsBpiCmObjects OBJECT IDENTIFIER ::= { docsBpiMIBObjects 1 }
+
+
+docsBpiCmBaseTable      OBJECT-TYPE
+SYNTAX                  SEQUENCE OF     DocsBpiCmBaseEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+::= { docsBpiCmObjects 1 }
+
+docsBpiCmBaseEntry      OBJECT-TYPE
+SYNTAX                  DocsBpiCmBaseEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+INDEX                   { ifIndex }
+::= { docsBpiCmBaseTable 1 }
+
+DocsBpiCmBaseEntry ::= SEQUENCE {
+docsBpiCmPrivacyEnable                  TruthValue,
+docsBpiCmPublicKey                      OCTET STRING,
+docsBpiCmAuthState                      INTEGER,
+docsBpiCmAuthKeySequenceNumber          Integer32,
+docsBpiCmAuthExpires                    DateAndTime,
+
+
+
+
+
+docsBpiCmAuthReset                      TruthValue,
+docsBpiCmAuthGraceTime                  Integer32,
+docsBpiCmTEKGraceTime                   Integer32,
+docsBpiCmAuthWaitTimeout                Integer32,
+docsBpiCmReauthWaitTimeout              Integer32,
+docsBpiCmOpWaitTimeout                  Integer32,
+docsBpiCmRekeyWaitTimeout               Integer32,
+docsBpiCmAuthRejectWaitTimeout          Integer32,
+docsBpiCmAuthRequests                   Counter32,
+docsBpiCmAuthReplies                    Counter32,
+docsBpiCmAuthRejects                    Counter32,
+docsBpiCmAuthInvalids                   Counter32,
+docsBpiCmAuthRejectErrorCode            INTEGER,
+docsBpiCmAuthRejectErrorString          DisplayString,
+docsBpiCmAuthInvalidErrorCode           INTEGER,
+docsBpiCmAuthInvalidErrorString         DisplayString
+}
+
+docsBpiCmPrivacyEnable  OBJECT-TYPE
+SYNTAX                  TruthValue
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 1 }
+
+docsBpiCmPublicKey      OBJECT-TYPE
+SYNTAX                  OCTET STRING (SIZE (74 | 106 | 140 | 270))
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 2 }
+
+docsBpiCmAuthState      OBJECT-TYPE
+SYNTAX                  INTEGER {
+
+
+
+
+
+                                authWait(2),
+                                authorized(3),
+                                reauthWait(4),
+                                authRejectWait(5)
+                        }
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 3 }
+
+docsBpiCmAuthKeySequenceNumber  OBJECT-TYPE
+SYNTAX                          Integer32 (0..15)
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmBaseEntry 4 }
+
+docsBpiCmAuthExpires    OBJECT-TYPE
+SYNTAX                  DateAndTime
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 5 }
+
+docsBpiCmAuthReset      OBJECT-TYPE
+SYNTAX                  TruthValue
+MAX-ACCESS              read-write
+STATUS                  current
+::= { docsBpiCmBaseEntry 6 }
+
+docsBpiCmAuthGraceTime  OBJECT-TYPE
+SYNTAX                  Integer32 (1..1800)
+UNITS                   "seconds"
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 7 }
+
+docsBpiCmTEKGraceTime   OBJECT-TYPE
+SYNTAX                  Integer32 (1..1800)
+UNITS                   "seconds"
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 8 }
+
+docsBpiCmAuthWaitTimeout        OBJECT-TYPE
+SYNTAX                          Integer32 (1..30)
+UNITS                           "seconds"
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmBaseEntry 9 }
+
+docsBpiCmReauthWaitTimeout      OBJECT-TYPE
+SYNTAX                          Integer32 (1..30)
+UNITS                           "seconds"
+MAX-ACCESS                      read-only
+STATUS                          current
+
+
+
+
+
+::= { docsBpiCmBaseEntry 10 }
+
+docsBpiCmOpWaitTimeout  OBJECT-TYPE
+SYNTAX                  Integer32 (1..10)
+UNITS                   "seconds"
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 11 }
+
+docsBpiCmRekeyWaitTimeout       OBJECT-TYPE
+SYNTAX                          Integer32 (1..10)
+UNITS                           "seconds"
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmBaseEntry 12 }
+
+docsBpiCmAuthRejectWaitTimeout  OBJECT-TYPE
+SYNTAX                          Integer32 (1..600)
+UNITS                           "seconds"
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmBaseEntry 13 }
+
+docsBpiCmAuthRequests   OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 14 }
+
+
+
+
+
+docsBpiCmAuthReplies    OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 15 }
+
+docsBpiCmAuthRejects    OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 16 }
+
+docsBpiCmAuthInvalids   OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 17 }
+
+docsBpiCmAuthRejectErrorCode    OBJECT-TYPE
+SYNTAX                          INTEGER {
+                                        none(1),
+                                        unknown(2),
+                                        unauthorizedCm(3),
+                                        unauthorizedSid(4)
+                                }
+MAX-ACCESS                      read-only
+STATUS                          current
+
+
+
+
+
+::= { docsBpiCmBaseEntry 18 }
+
+docsBpiCmAuthRejectErrorString  OBJECT-TYPE
+SYNTAX                          DisplayString (SIZE (0..128))
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmBaseEntry 19 }
+
+docsBpiCmAuthInvalidErrorCode   OBJECT-TYPE
+SYNTAX                  INTEGER {
+                                none(1),
+                                unknown(2),
+                                unauthorizedCm(3),
+                                unsolicited(5),
+                                invalidKeySequence(6),
+                                keyRequestAuthenticationFailure(7)
+                        }
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmBaseEntry 20 }
+
+docsBpiCmAuthInvalidErrorString OBJECT-TYPE
+SYNTAX                          DisplayString (SIZE (0..128))
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmBaseEntry 21 }
+
+
+docsBpiCmTEKTable       OBJECT-TYPE
+SYNTAX                  SEQUENCE OF     DocsBpiCmTEKEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+::= { docsBpiCmObjects 2 }
+
+docsBpiCmTEKEntry       OBJECT-TYPE
+SYNTAX                  DocsBpiCmTEKEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+INDEX                   { ifIndex, docsIfCmServiceId }
+::= { docsBpiCmTEKTable 1 }
+
+DocsBpiCmTEKEntry ::= SEQUENCE {
+docsBpiCmTEKPrivacyEnable               TruthValue,
+docsBpiCmTEKState                       INTEGER,
+docsBpiCmTEKExpiresOld                  DateAndTime,
+docsBpiCmTEKExpiresNew                  DateAndTime,
+docsBpiCmTEKKeyRequests                 Counter32,
+docsBpiCmTEKKeyReplies                  Counter32,
+docsBpiCmTEKKeyRejects                  Counter32,
+docsBpiCmTEKInvalids                    Counter32,
+docsBpiCmTEKAuthPends                   Counter32,
+docsBpiCmTEKKeyRejectErrorCode          INTEGER,
+docsBpiCmTEKKeyRejectErrorString        DisplayString,
+docsBpiCmTEKInvalidErrorCode            INTEGER,
+docsBpiCmTEKInvalidErrorString          DisplayString
+}
+
+
+
+
+
+docsBpiCmTEKPrivacyEnable       OBJECT-TYPE
+SYNTAX                          TruthValue
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmTEKEntry 1 }
+
+docsBpiCmTEKState       OBJECT-TYPE
+SYNTAX                  INTEGER {
+                                start(1),
+                                opWait(2),
+                                opReauthWait(3),
+                                operational(4),
+                                rekeyWait(5),
+                                rekeyReauthWait(6)
+                        }
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmTEKEntry 2 }
+
+docsBpiCmTEKExpiresOld  OBJECT-TYPE
+SYNTAX                  DateAndTime
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmTEKEntry 3 }
+
+docsBpiCmTEKExpiresNew  OBJECT-TYPE
+
+
+
+
+
+SYNTAX                  DateAndTime
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmTEKEntry 4 }
+
+docsBpiCmTEKKeyRequests OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmTEKEntry 5 }
+
+docsBpiCmTEKKeyReplies  OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmTEKEntry 6 }
+
+docsBpiCmTEKKeyRejects  OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmTEKEntry 7 }
+
+docsBpiCmTEKInvalids    OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+
+
+
+
+
+::= { docsBpiCmTEKEntry 8 }
+
+docsBpiCmTEKAuthPends   OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmTEKEntry 9 }
+
+docsBpiCmTEKKeyRejectErrorCode  OBJECT-TYPE
+SYNTAX                          INTEGER {
+                                        none(1),
+                                        unknown(2),
+                                        unauthorizedSid(4)
+                                }
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmTEKEntry 10 }
+
+docsBpiCmTEKKeyRejectErrorString        OBJECT-TYPE
+SYNTAX                                  DisplayString (SIZE (0..128))
+MAX-ACCESS                              read-only
+STATUS                                  current
+::= { docsBpiCmTEKEntry 11 }
+
+
+
+
+
+docsBpiCmTEKInvalidErrorCode    OBJECT-TYPE
+SYNTAX                          INTEGER {
+                                        none(1),
+                                        unknown(2),
+                                        invalidKeySequence(6)
+                                }
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmTEKEntry 12 }
+
+docsBpiCmTEKInvalidErrorString  OBJECT-TYPE
+SYNTAX                          DisplayString (SIZE (0..128))
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmTEKEntry 13 }
+
+
+docsBpiCmtsObjects OBJECT IDENTIFIER ::= { docsBpiMIBObjects 2 }
+
+
+docsBpiCmtsBaseTable    OBJECT-TYPE
+SYNTAX                  SEQUENCE OF     DocsBpiCmtsBaseEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+::= { docsBpiCmtsObjects 1 }
+
+
+
+
+
+
+docsBpiCmtsBaseEntry    OBJECT-TYPE
+SYNTAX                  DocsBpiCmtsBaseEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+INDEX                   { ifIndex }
+::= { docsBpiCmtsBaseTable 1 }
+
+DocsBpiCmtsBaseEntry ::= SEQUENCE {
+docsBpiCmtsDefaultAuthLifetime  Integer32,
+docsBpiCmtsDefaultTEKLifetime   Integer32,
+docsBpiCmtsDefaultAuthGraceTime Integer32,
+docsBpiCmtsDefaultTEKGraceTime  Integer32,
+docsBpiCmtsAuthRequests         Counter32,
+docsBpiCmtsAuthReplies          Counter32,
+docsBpiCmtsAuthRejects          Counter32,
+docsBpiCmtsAuthInvalids         Counter32
+}
+
+docsBpiCmtsDefaultAuthLifetime  OBJECT-TYPE
+SYNTAX                          Integer32 (1..6048000)
+UNITS                           "seconds"
+MAX-ACCESS                      read-write
+STATUS                          current
+::= { docsBpiCmtsBaseEntry 1 }
+
+docsBpiCmtsDefaultTEKLifetime   OBJECT-TYPE
+SYNTAX                          Integer32 (1..604800)
+UNITS                           "seconds"
+MAX-ACCESS                      read-write
+STATUS                          current
+::= { docsBpiCmtsBaseEntry 2 }
+
+
+
+
+
+
+
+docsBpiCmtsDefaultAuthGraceTime OBJECT-TYPE
+SYNTAX                          Integer32 (1..1800)
+UNITS                           "seconds"
+MAX-ACCESS                      read-write
+STATUS                          obsolete
+::= { docsBpiCmtsBaseEntry 3 }
+
+docsBpiCmtsDefaultTEKGraceTime  OBJECT-TYPE
+SYNTAX                          Integer32 (1..1800)
+UNITS                           "seconds"
+MAX-ACCESS                      read-write
+STATUS                          obsolete
+::= { docsBpiCmtsBaseEntry 4 }
+
+docsBpiCmtsAuthRequests OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsBaseEntry 5 }
+
+docsBpiCmtsAuthReplies  OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsBaseEntry 6 }
+
+docsBpiCmtsAuthRejects  OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsBaseEntry 7 }
+
+docsBpiCmtsAuthInvalids OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsBaseEntry 8 }
+
+
+docsBpiCmtsAuthTable    OBJECT-TYPE
+SYNTAX                  SEQUENCE OF     DocsBpiCmtsAuthEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+::= { docsBpiCmtsObjects 2 }
+
+docsBpiCmtsAuthEntry    OBJECT-TYPE
+SYNTAX                  DocsBpiCmtsAuthEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+INDEX                   { ifIndex, docsBpiCmtsAuthCmMacAddress }
+::= { docsBpiCmtsAuthTable 1 }
+
+DocsBpiCmtsAuthEntry ::= SEQUENCE {
+docsBpiCmtsAuthCmMacAddress             MacAddress,
+docsBpiCmtsAuthCmPublicKey              OCTET STRING,
+docsBpiCmtsAuthCmKeySequenceNumber      Integer32,
+docsBpiCmtsAuthCmExpires                DateAndTime,
+
+
+
+
+
+docsBpiCmtsAuthCmLifetime               Integer32,
+docsBpiCmtsAuthCmGraceTime              Integer32,
+docsBpiCmtsAuthCmReset                  INTEGER,
+docsBpiCmtsAuthCmRequests               Counter32,
+docsBpiCmtsAuthCmReplies                Counter32,
+docsBpiCmtsAuthCmRejects                Counter32,
+docsBpiCmtsAuthCmInvalids               Counter32,
+docsBpiCmtsAuthRejectErrorCode          INTEGER,
+docsBpiCmtsAuthRejectErrorString        DisplayString,
+docsBpiCmtsAuthInvalidErrorCode         INTEGER,
+docsBpiCmtsAuthInvalidErrorString       DisplayString
+}
+
+docsBpiCmtsAuthCmMacAddress     OBJECT-TYPE
+SYNTAX                          MacAddress
+MAX-ACCESS                      not-accessible
+STATUS                          current
+::= { docsBpiCmtsAuthEntry 1 }
+
+docsBpiCmtsAuthCmPublicKey      OBJECT-TYPE
+SYNTAX                          OCTET STRING
+                                (SIZE (0 | 74 | 106 | 140 | 270))
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsAuthEntry 2 }
+
+docsBpiCmtsAuthCmKeySequenceNumber      OBJECT-TYPE
+SYNTAX                                  Integer32 (0..15)
+MAX-ACCESS                              read-only
+STATUS                                  current
+
+
+
+
+
+::= { docsBpiCmtsAuthEntry 3 }
+
+docsBpiCmtsAuthCmExpires        OBJECT-TYPE
+SYNTAX                          DateAndTime
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsAuthEntry 4 }
+
+docsBpiCmtsAuthCmLifetime       OBJECT-TYPE
+SYNTAX                          Integer32 (1..6048000)
+UNITS                           "seconds"
+MAX-ACCESS                      read-write
+STATUS                          current
+::= { docsBpiCmtsAuthEntry 5 }
+
+docsBpiCmtsAuthCmGraceTime      OBJECT-TYPE
+SYNTAX                          Integer32 (1..1800)
+UNITS                           "seconds"
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsAuthEntry 6 }
+
+docsBpiCmtsAuthCmReset  OBJECT-TYPE
+SYNTAX                  INTEGER {
+                                noResetRequested(1),
+                                invalidateAuth(2),
+                                sendAuthInvalid(3),
+
+
+
+
+
+                                invalidateTeks(4)
+                        }
+MAX-ACCESS              read-write
+STATUS                  current
+::= { docsBpiCmtsAuthEntry 7 }
+
+docsBpiCmtsAuthCmRequests       OBJECT-TYPE
+SYNTAX                          Counter32
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsAuthEntry 8 }
+
+docsBpiCmtsAuthCmReplies        OBJECT-TYPE
+SYNTAX                          Counter32
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsAuthEntry 9 }
+
+docsBpiCmtsAuthCmRejects        OBJECT-TYPE
+SYNTAX                          Counter32
+MAX-ACCESS                      read-only
+STATUS                          current
+
+
+
+
+
+::= { docsBpiCmtsAuthEntry 10 }
+
+docsBpiCmtsAuthCmInvalids       OBJECT-TYPE
+SYNTAX                          Counter32
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsAuthEntry 11 }
+
+docsBpiCmtsAuthRejectErrorCode  OBJECT-TYPE
+SYNTAX                  INTEGER {
+                                none(1),
+                                unknown(2),
+                                unauthorizedCm(3),
+                                unauthorizedSid(4)
+                        }
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsAuthEntry 12 }
+
+docsBpiCmtsAuthRejectErrorString        OBJECT-TYPE
+SYNTAX                                  DisplayString (SIZE (0..128))
+MAX-ACCESS                              read-only
+STATUS                                  current
+::= { docsBpiCmtsAuthEntry 13 }
+
+docsBpiCmtsAuthInvalidErrorCode OBJECT-TYPE
+SYNTAX                  INTEGER {
+                                none(1),
+                                unknown(2),
+                                unauthorizedCm(3),
+                                unsolicited(5),
+                                invalidKeySequence(6),
+                                keyRequestAuthenticationFailure(7)
+                        }
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsAuthEntry 14 }
+
+docsBpiCmtsAuthInvalidErrorString       OBJECT-TYPE
+SYNTAX                                  DisplayString (SIZE (0..128))
+MAX-ACCESS                              read-only
+STATUS                                  current
+::= { docsBpiCmtsAuthEntry 15 }
+
+
+docsBpiCmtsTEKTable     OBJECT-TYPE
+SYNTAX                  SEQUENCE OF     DocsBpiCmtsTEKEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+
+
+
+
+
+::= { docsBpiCmtsObjects 3 }
+
+docsBpiCmtsTEKEntry     OBJECT-TYPE
+SYNTAX                  DocsBpiCmtsTEKEntry
+MAX-ACCESS              not-accessible
+STATUS                  current
+INDEX                   { ifIndex, docsIfCmtsServiceId }
+::= { docsBpiCmtsTEKTable 1 }
+
+DocsBpiCmtsTEKEntry ::= SEQUENCE {
+docsBpiCmtsTEKLifetime                  Integer32,
+docsBpiCmtsTEKGraceTime                 Integer32,
+docsBpiCmtsTEKExpiresOld                DateAndTime,
+docsBpiCmtsTEKExpiresNew                DateAndTime,
+docsBpiCmtsTEKReset                     TruthValue,
+docsBpiCmtsKeyRequests                  Counter32,
+docsBpiCmtsKeyReplies                   Counter32,
+docsBpiCmtsKeyRejects                   Counter32,
+docsBpiCmtsTEKInvalids                  Counter32,
+docsBpiCmtsKeyRejectErrorCode           INTEGER,
+docsBpiCmtsKeyRejectErrorString         DisplayString,
+docsBpiCmtsTEKInvalidErrorCode          INTEGER,
+docsBpiCmtsTEKInvalidErrorString        DisplayString
+}
+
+docsBpiCmtsTEKLifetime  OBJECT-TYPE
+SYNTAX                  Integer32 (1..604800)
+UNITS                   "seconds"
+MAX-ACCESS              read-write
+STATUS                  current
+::= { docsBpiCmtsTEKEntry 1 }
+
+
+
+
+
+
+docsBpiCmtsTEKGraceTime OBJECT-TYPE
+SYNTAX                  Integer32 (1..1800)
+UNITS                   "seconds"
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsTEKEntry 2 }
+
+docsBpiCmtsTEKExpiresOld        OBJECT-TYPE
+SYNTAX                  DateAndTime
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsTEKEntry 3 }
+
+docsBpiCmtsTEKExpiresNew        OBJECT-TYPE
+SYNTAX                          DateAndTime
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsTEKEntry 4 }
+
+docsBpiCmtsTEKReset     OBJECT-TYPE
+SYNTAX                  TruthValue
+MAX-ACCESS              read-write
+STATUS                  current
+::= { docsBpiCmtsTEKEntry 5 }
+
+docsBpiCmtsKeyRequests  OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsTEKEntry 6 }
+
+docsBpiCmtsKeyReplies   OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsTEKEntry 7 }
+
+docsBpiCmtsKeyRejects   OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+::= { docsBpiCmtsTEKEntry 8 }
+
+docsBpiCmtsTEKInvalids  OBJECT-TYPE
+SYNTAX                  Counter32
+MAX-ACCESS              read-only
+STATUS                  current
+
+
+
+
+
+::= { docsBpiCmtsTEKEntry 9 }
+
+docsBpiCmtsKeyRejectErrorCode   OBJECT-TYPE
+SYNTAX                          INTEGER {
+                                        none(1),
+                                        unknown(2),
+                                        unauthorizedSid(4)
+                                }
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsTEKEntry 10 }
+
+docsBpiCmtsKeyRejectErrorString OBJECT-TYPE
+SYNTAX                          DisplayString (SIZE (0..128))
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsTEKEntry 11 }
+
+docsBpiCmtsTEKInvalidErrorCode  OBJECT-TYPE
+SYNTAX                          INTEGER {
+                                        none(1),
+                                        unknown(2),
+                                        invalidKeySequence(6)
+                                }
+MAX-ACCESS                      read-only
+STATUS                          current
+::= { docsBpiCmtsTEKEntry 12 }
+
+docsBpiCmtsTEKInvalidErrorString        OBJECT-TYPE
+SYNTAX                                  DisplayString (SIZE (0..128))
+MAX-ACCESS                              read-only
+STATUS                                  current
+::= { docsBpiCmtsTEKEntry 13 }
+
+
+docsBpiMulticastControl OBJECT IDENTIFIER ::= { docsBpiCmtsObjects 4 }
+
+
+docsBpiIpMulticastMapTable      OBJECT-TYPE
+SYNTAX                          SEQUENCE OF DocsBpiIpMulticastMapEntry
+MAX-ACCESS                      not-accessible
+STATUS                          current
+::= { docsBpiMulticastControl 1 }
+
+docsBpiIpMulticastMapEntry      OBJECT-TYPE
+SYNTAX                          DocsBpiIpMulticastMapEntry
+MAX-ACCESS                      not-accessible
+STATUS                          current
+
+
+
+
+
+INDEX                           { ifIndex, docsBpiIpMulticastAddress,
+                                  docsBpiIpMulticastPrefixLength }
+::= { docsBpiIpMulticastMapTable 1 }
+
+DocsBpiIpMulticastMapEntry ::= SEQUENCE {
+docsBpiIpMulticastAddress       IpAddress,
+docsBpiIpMulticastPrefixLength  Integer32,
+docsBpiIpMulticastServiceId     Integer32,
+docsBpiIpMulticastMapControl    RowStatus
+}
+
+docsBpiIpMulticastAddress       OBJECT-TYPE
+SYNTAX                          IpAddress
+MAX-ACCESS                      not-accessible
+STATUS                          current
+::= { docsBpiIpMulticastMapEntry 1 }
+
+docsBpiIpMulticastPrefixLength  OBJECT-TYPE
+SYNTAX                          Integer32 (0..32)
+MAX-ACCESS                      not-accessible
+STATUS                          current
+::= { docsBpiIpMulticastMapEntry 2 }
+
+docsBpiIpMulticastServiceId     OBJECT-TYPE
+SYNTAX                          Integer32 (8192..16368)
+MAX-ACCESS                      read-create
+STATUS                          current
+
+
+
+
+
+::= { docsBpiIpMulticastMapEntry 3 }
+
+docsBpiIpMulticastMapControl    OBJECT-TYPE
+SYNTAX                          RowStatus
+MAX-ACCESS                      read-create
+STATUS                          current
+::= { docsBpiIpMulticastMapEntry 4 }
+
+
+docsBpiMulticastAuthTable       OBJECT-TYPE
+SYNTAX                          SEQUENCE OF DocsBpiMulticastAuthEntry
+MAX-ACCESS                      not-accessible
+STATUS                          current
+::= { docsBpiMulticastControl 2 }
+
+docsBpiMulticastAuthEntry       OBJECT-TYPE
+SYNTAX                          DocsBpiMulticastAuthEntry
+MAX-ACCESS                      not-accessible
+STATUS                          current
+INDEX                           { ifIndex, docsBpiMulticastServiceId,
+                                  docsBpiMulticastCmMacAddress }
+::= { docsBpiMulticastAuthTable 1 }
+
+DocsBpiMulticastAuthEntry ::= SEQUENCE {
+docsBpiMulticastServiceId       Integer32,
+docsBpiMulticastCmMacAddress    MacAddress,
+docsBpiMulticastAuthControl     RowStatus
+}
+
+docsBpiMulticastServiceId       OBJECT-TYPE
+SYNTAX                          Integer32 (8192..16368)
+MAX-ACCESS                      not-accessible
+STATUS                          current
+::= { docsBpiMulticastAuthEntry 1 }
+
+docsBpiMulticastCmMacAddress    OBJECT-TYPE
+SYNTAX                          MacAddress
+MAX-ACCESS                      not-accessible
+STATUS                          current
+::= { docsBpiMulticastAuthEntry 2 }
+
+docsBpiMulticastAuthControl     OBJECT-TYPE
+SYNTAX                          RowStatus
+MAX-ACCESS                      read-create
+STATUS                          current
+::= { docsBpiMulticastAuthEntry 3 }
+
+
+docsBpiNotification     OBJECT IDENTIFIER ::= { docsBpiMIB 2 }
+docsBpiConformance      OBJECT IDENTIFIER ::= { docsBpiMIB 3 }
+docsBpiCompliances      OBJECT IDENTIFIER ::= { docsBpiConformance 1 }
+docsBpiGroups           OBJECT IDENTIFIER ::= { docsBpiConformance 2 }
+
+docsBpiBasicCompliance MODULE-COMPLIANCE
+STATUS          current
+
+MODULE  -- docsBpiMIB
+
+GROUP   docsBpiCmGroup
+
+GROUP   docsBpiCmtsGroup
+
+
+
+OBJECT  docsBpiCmtsDefaultAuthLifetime
+SYNTAX  Integer32 (86400..6048000)
+
+OBJECT  docsBpiCmtsDefaultTEKLifetime
+SYNTAX  Integer32 (1800..604800)
+
+
+
+OBJECT  docsBpiCmtsAuthCmLifetime
+SYNTAX  Integer32 (86400..6048000)
+
+
+OBJECT  docsBpiCmtsTEKLifetime
+SYNTAX  Integer32 (1800..604800)
+
+
+::= { docsBpiCompliances 1 }
+
+docsBpiCmGroup  OBJECT-GROUP
+OBJECTS {
+docsBpiCmPrivacyEnable,
+docsBpiCmPublicKey,
+docsBpiCmAuthState,
+docsBpiCmAuthKeySequenceNumber,
+docsBpiCmAuthExpires,
+docsBpiCmAuthReset,
+docsBpiCmAuthGraceTime,
+docsBpiCmTEKGraceTime,
+docsBpiCmAuthWaitTimeout,
+docsBpiCmReauthWaitTimeout,
+docsBpiCmOpWaitTimeout,
+docsBpiCmRekeyWaitTimeout,
+docsBpiCmAuthRejectWaitTimeout,
+docsBpiCmAuthRequests,
+docsBpiCmAuthReplies,
+docsBpiCmAuthRejects,
+docsBpiCmAuthInvalids,
+docsBpiCmAuthRejectErrorCode,
+docsBpiCmAuthRejectErrorString,
+docsBpiCmAuthInvalidErrorCode,
+
+
+
+
+
+docsBpiCmAuthInvalidErrorString,
+docsBpiCmTEKPrivacyEnable,
+docsBpiCmTEKState,
+docsBpiCmTEKExpiresOld,
+docsBpiCmTEKExpiresNew,
+docsBpiCmTEKKeyRequests,
+docsBpiCmTEKKeyReplies,
+docsBpiCmTEKKeyRejects,
+docsBpiCmTEKInvalids,
+docsBpiCmTEKAuthPends,
+docsBpiCmTEKKeyRejectErrorCode,
+docsBpiCmTEKKeyRejectErrorString,
+docsBpiCmTEKInvalidErrorCode,
+docsBpiCmTEKInvalidErrorString
+}
+STATUS                  current
+::= { docsBpiGroups 1 }
+
+docsBpiCmtsGroup        OBJECT-GROUP
+OBJECTS {
+docsBpiCmtsDefaultAuthLifetime,
+docsBpiCmtsDefaultTEKLifetime,
+docsBpiCmtsAuthRequests,
+docsBpiCmtsAuthReplies,
+docsBpiCmtsAuthRejects,
+docsBpiCmtsAuthInvalids,
+docsBpiCmtsAuthCmPublicKey,
+docsBpiCmtsAuthCmKeySequenceNumber,
+docsBpiCmtsAuthCmExpires,
+docsBpiCmtsAuthCmLifetime,
+docsBpiCmtsAuthCmGraceTime,
+docsBpiCmtsAuthCmReset,
+docsBpiCmtsAuthCmRequests,
+docsBpiCmtsAuthCmReplies,
+docsBpiCmtsAuthCmRejects,
+docsBpiCmtsAuthCmInvalids,
+docsBpiCmtsAuthRejectErrorCode,
+docsBpiCmtsAuthRejectErrorString,
+docsBpiCmtsAuthInvalidErrorCode,
+docsBpiCmtsAuthInvalidErrorString,
+docsBpiCmtsTEKLifetime,
+docsBpiCmtsTEKGraceTime,
+docsBpiCmtsTEKExpiresOld,
+docsBpiCmtsTEKExpiresNew,
+docsBpiCmtsTEKReset,
+docsBpiCmtsKeyRequests,
+
+
+
+
+
+docsBpiCmtsKeyReplies,
+docsBpiCmtsKeyRejects,
+docsBpiCmtsTEKInvalids,
+docsBpiCmtsKeyRejectErrorCode,
+docsBpiCmtsKeyRejectErrorString,
+docsBpiCmtsTEKInvalidErrorCode,
+docsBpiCmtsTEKInvalidErrorString,
+docsBpiIpMulticastServiceId,
+docsBpiIpMulticastMapControl,
+docsBpiMulticastAuthControl
+}
+STATUS          current
+::= { docsBpiGroups 2 }
+
+docsBpiObsoleteObjectsGroup     OBJECT-GROUP
+OBJECTS {
+docsBpiCmtsDefaultAuthGraceTime,
+docsBpiCmtsDefaultTEKGraceTime
+}
+STATUS          obsolete
+::= { docsBpiGroups 3 }
+
+END

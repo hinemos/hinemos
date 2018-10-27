@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.factory;
@@ -100,18 +93,20 @@ public class ModifyEventCollectGraphFlg {
 				+ ", outputDate = " + outputDate + ", collectGraphFlg = " + collectGraphFlg);
 		// イベントログ情報を取得
 		EventLogEntity event = null;
-		try {
-			event = QueryUtil.getEventLogPK(monitorId, monitorDetailId, pluginId, outputDate, facilityId, ObjectPrivilegeMode.MODIFY);
-		} catch (EventLogNotFound e) {
-			throw new MonitorNotFound(e.getMessage(), e);
-		} catch (InvalidRole e) {
-			throw e;
-		}
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			try {
+				event = QueryUtil.getEventLogPK(monitorId, monitorDetailId, pluginId, outputDate, facilityId, ObjectPrivilegeMode.MODIFY);
+			} catch (EventLogNotFound e) {
+				throw new MonitorNotFound(e.getMessage(), e);
+			} catch (InvalidRole e) {
+				throw e;
+			}
 
-		// フラグを変更
-		event.setCollectGraphFlg(collectGraphFlg);
-		
-		new JpaTransactionManager().addCallback(new EventCacheModifyCallback(false, event));
+			// フラグを変更
+			event.setCollectGraphFlg(collectGraphFlg);
+			
+			jtm.addCallback(new EventCacheModifyCallback(false, event));
+		}
 	}
 }
 

@@ -1,0 +1,665 @@
+   IPS-AUTH-MIB DEFINITIONS  ::= BEGIN
+
+       IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY, Unsigned32,
+       mib-2
+       FROM SNMPv2-SMI
+
+       TEXTUAL-CONVENTION, RowStatus, AutonomousType, StorageType
+       FROM SNMPv2-TC
+
+       MODULE-COMPLIANCE, OBJECT-GROUP
+       FROM SNMPv2-CONF
+
+       SnmpAdminString
+       FROM SNMP-FRAMEWORK-MIB -- RFC 3411
+
+       AddressFamilyNumbers
+       FROM IANA-ADDRESS-FAMILY-NUMBERS-MIB
+       ;
+
+   ipsAuthMibModule MODULE-IDENTITY
+       LAST-UPDATED  "200605220000Z" -- May 22, 2006
+       ORGANIZATION  "IETF IPS Working Group"
+
+
+
+
+
+
+
+   ::= { mib-2 141 }
+
+   ipsAuthNotifications OBJECT IDENTIFIER ::= { ipsAuthMibModule 0 }
+   ipsAuthObjects       OBJECT IDENTIFIER ::= { ipsAuthMibModule 1 }
+   ipsAuthConformance   OBJECT IDENTIFIER ::= { ipsAuthMibModule 2 }
+
+
+   IpsAuthAddress ::= TEXTUAL-CONVENTION
+       STATUS        current
+       SYNTAX        OCTET STRING (SIZE(0..255))
+
+
+   ipsAuthDescriptors OBJECT IDENTIFIER ::= { ipsAuthObjects 1 }
+
+   ipsAuthMethodTypes OBJECT-IDENTITY
+       STATUS        current
+   ::= { ipsAuthDescriptors 1 }
+
+   ipsAuthMethodNone OBJECT-IDENTITY
+       STATUS        current
+   ::= { ipsAuthMethodTypes 1 }
+
+   ipsAuthMethodSrp OBJECT-IDENTITY
+       STATUS        current
+   ::= { ipsAuthMethodTypes 2 }
+
+   ipsAuthMethodChap OBJECT-IDENTITY
+       STATUS        current
+   ::= { ipsAuthMethodTypes 3 }
+
+   ipsAuthMethodKerberos OBJECT-IDENTITY
+       STATUS        current
+
+
+
+
+
+   ::= { ipsAuthMethodTypes 4 }
+
+
+   ipsAuthInstance OBJECT IDENTIFIER ::= { ipsAuthObjects 2 }
+
+
+   ipsAuthInstanceAttributesTable OBJECT-TYPE
+       SYNTAX        SEQUENCE OF IpsAuthInstanceAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthInstance 2 }
+
+   ipsAuthInstanceAttributesEntry OBJECT-TYPE
+       SYNTAX        IpsAuthInstanceAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ipsAuthInstIndex }
+   ::= { ipsAuthInstanceAttributesTable 1 }
+
+   IpsAuthInstanceAttributesEntry ::= SEQUENCE {
+       ipsAuthInstIndex               Unsigned32,
+       ipsAuthInstDescr               SnmpAdminString,
+       ipsAuthInstStorageType         StorageType
+   }
+
+   ipsAuthInstIndex OBJECT-TYPE
+       SYNTAX        Unsigned32 (1..4294967295)
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthInstanceAttributesEntry 1 }
+
+   ipsAuthInstDescr OBJECT-TYPE
+       SYNTAX        SnmpAdminString
+       MAX-ACCESS    read-write
+
+
+
+
+
+       STATUS        current
+   ::= { ipsAuthInstanceAttributesEntry 2 }
+
+   ipsAuthInstStorageType OBJECT-TYPE
+       SYNTAX        StorageType
+       MAX-ACCESS    read-write
+       STATUS        current
+       DEFVAL        { volatile }
+   ::= { ipsAuthInstanceAttributesEntry 3 }
+
+   ipsAuthIdentity OBJECT IDENTIFIER ::= { ipsAuthObjects 3 }
+
+
+   ipsAuthIdentAttributesTable OBJECT-TYPE
+       SYNTAX        SEQUENCE OF IpsAuthIdentAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+
+
+
+
+
+   ::= { ipsAuthIdentity 1 }
+
+   ipsAuthIdentAttributesEntry OBJECT-TYPE
+       SYNTAX        IpsAuthIdentAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ipsAuthInstIndex, ipsAuthIdentIndex }
+   ::= { ipsAuthIdentAttributesTable  1 }
+
+   IpsAuthIdentAttributesEntry ::= SEQUENCE {
+       ipsAuthIdentIndex              Unsigned32,
+       ipsAuthIdentDescription        SnmpAdminString,
+       ipsAuthIdentRowStatus          RowStatus,
+       ipsAuthIdentStorageType        StorageType
+   }
+
+   ipsAuthIdentIndex OBJECT-TYPE
+       SYNTAX        Unsigned32 (1..4294967295)
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthIdentAttributesEntry 1 }
+
+   ipsAuthIdentDescription OBJECT-TYPE
+       SYNTAX        SnmpAdminString
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthIdentAttributesEntry 2 }
+
+   ipsAuthIdentRowStatus OBJECT-TYPE
+       SYNTAX        RowStatus
+       MAX-ACCESS    read-create
+       STATUS        current
+
+
+
+
+
+   ::= { ipsAuthIdentAttributesEntry 3 }
+
+   ipsAuthIdentStorageType OBJECT-TYPE
+       SYNTAX        StorageType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DEFVAL        { nonVolatile }
+   ::= { ipsAuthIdentAttributesEntry 4 }
+
+   ipsAuthIdentityName OBJECT IDENTIFIER ::= { ipsAuthObjects 4 }
+
+
+   ipsAuthIdentNameAttributesTable OBJECT-TYPE
+       SYNTAX        SEQUENCE OF IpsAuthIdentNameAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthIdentityName 1 }
+
+   ipsAuthIdentNameAttributesEntry OBJECT-TYPE
+       SYNTAX        IpsAuthIdentNameAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ipsAuthInstIndex, ipsAuthIdentIndex,
+               ipsAuthIdentNameIndex }
+   ::= { ipsAuthIdentNameAttributesTable  1 }
+
+
+
+
+
+
+   IpsAuthIdentNameAttributesEntry ::= SEQUENCE {
+       ipsAuthIdentNameIndex          Unsigned32,
+       ipsAuthIdentName               SnmpAdminString,
+       ipsAuthIdentNameRowStatus      RowStatus,
+       ipsAuthIdentNameStorageType    StorageType
+   }
+
+   ipsAuthIdentNameIndex OBJECT-TYPE
+       SYNTAX        Unsigned32 (1..4294967295)
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthIdentNameAttributesEntry 1 }
+
+   ipsAuthIdentName OBJECT-TYPE
+       SYNTAX        SnmpAdminString
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthIdentNameAttributesEntry 2 }
+
+   ipsAuthIdentNameRowStatus OBJECT-TYPE
+       SYNTAX        RowStatus
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthIdentNameAttributesEntry 3 }
+
+   ipsAuthIdentNameStorageType OBJECT-TYPE
+       SYNTAX        StorageType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DEFVAL        { nonVolatile }
+   ::= { ipsAuthIdentNameAttributesEntry 4 }
+
+   ipsAuthIdentityAddress OBJECT IDENTIFIER ::= { ipsAuthObjects 5 }
+
+
+   ipsAuthIdentAddrAttributesTable OBJECT-TYPE
+       SYNTAX        SEQUENCE OF IpsAuthIdentAddrAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthIdentityAddress 1 }
+
+   ipsAuthIdentAddrAttributesEntry OBJECT-TYPE
+       SYNTAX        IpsAuthIdentAddrAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ipsAuthInstIndex, ipsAuthIdentIndex,
+               ipsAuthIdentAddrIndex }
+   ::= { ipsAuthIdentAddrAttributesTable  1 }
+
+   IpsAuthIdentAddrAttributesEntry ::= SEQUENCE {
+       ipsAuthIdentAddrIndex          Unsigned32,
+       ipsAuthIdentAddrType           AddressFamilyNumbers,
+       ipsAuthIdentAddrStart          IpsAuthAddress,
+       ipsAuthIdentAddrEnd            IpsAuthAddress,
+       ipsAuthIdentAddrRowStatus      RowStatus,
+       ipsAuthIdentAddrStorageType    StorageType
+   }
+
+   ipsAuthIdentAddrIndex OBJECT-TYPE
+
+
+
+
+
+       SYNTAX        Unsigned32 (1..4294967295)
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthIdentAddrAttributesEntry 1 }
+
+   ipsAuthIdentAddrType OBJECT-TYPE
+       SYNTAX        AddressFamilyNumbers
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthIdentAddrAttributesEntry 2 }
+
+   ipsAuthIdentAddrStart OBJECT-TYPE
+       SYNTAX        IpsAuthAddress
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthIdentAddrAttributesEntry 3 }
+
+   ipsAuthIdentAddrEnd OBJECT-TYPE
+       SYNTAX        IpsAuthAddress
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthIdentAddrAttributesEntry 4 }
+
+   ipsAuthIdentAddrRowStatus OBJECT-TYPE
+       SYNTAX        RowStatus
+
+
+
+
+
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthIdentAddrAttributesEntry 5 }
+
+   ipsAuthIdentAddrStorageType OBJECT-TYPE
+       SYNTAX        StorageType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DEFVAL        { nonVolatile }
+   ::= { ipsAuthIdentAddrAttributesEntry 6 }
+
+   ipsAuthCredential OBJECT IDENTIFIER ::= { ipsAuthObjects 6 }
+
+
+   ipsAuthCredentialAttributesTable OBJECT-TYPE
+       SYNTAX        SEQUENCE OF IpsAuthCredentialAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthCredential 1 }
+
+   ipsAuthCredentialAttributesEntry OBJECT-TYPE
+       SYNTAX        IpsAuthCredentialAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ipsAuthInstIndex, ipsAuthIdentIndex, ipsAuthCredIndex }
+   ::= { ipsAuthCredentialAttributesTable  1 }
+
+   IpsAuthCredentialAttributesEntry ::= SEQUENCE {
+       ipsAuthCredIndex               Unsigned32,
+       ipsAuthCredAuthMethod          AutonomousType,
+       ipsAuthCredRowStatus           RowStatus,
+       ipsAuthCredStorageType         StorageType
+   }
+
+   ipsAuthCredIndex OBJECT-TYPE
+       SYNTAX        Unsigned32 (1..4294967295)
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthCredentialAttributesEntry 1 }
+
+   ipsAuthCredAuthMethod OBJECT-TYPE
+       SYNTAX        AutonomousType
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthCredentialAttributesEntry 2 }
+
+   ipsAuthCredRowStatus OBJECT-TYPE
+       SYNTAX        RowStatus
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthCredentialAttributesEntry 3 }
+
+   ipsAuthCredStorageType OBJECT-TYPE
+       SYNTAX        StorageType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DEFVAL        { nonVolatile }
+   ::= { ipsAuthCredentialAttributesEntry 4 }
+
+   ipsAuthCredChap OBJECT IDENTIFIER ::= { ipsAuthObjects 7 }
+
+
+   ipsAuthCredChapAttributesTable OBJECT-TYPE
+       SYNTAX        SEQUENCE OF IpsAuthCredChapAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthCredChap 1 }
+
+   ipsAuthCredChapAttributesEntry OBJECT-TYPE
+       SYNTAX        IpsAuthCredChapAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ipsAuthInstIndex, ipsAuthIdentIndex, ipsAuthCredIndex }
+   ::= { ipsAuthCredChapAttributesTable  1 }
+
+   IpsAuthCredChapAttributesEntry ::= SEQUENCE {
+       ipsAuthCredChapUserName        SnmpAdminString,
+       ipsAuthCredChapRowStatus       RowStatus,
+       ipsAuthCredChapStorageType     StorageType
+   }
+
+   ipsAuthCredChapUserName OBJECT-TYPE
+       SYNTAX        SnmpAdminString
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthCredChapAttributesEntry 1 }
+
+   ipsAuthCredChapRowStatus OBJECT-TYPE
+       SYNTAX        RowStatus
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthCredChapAttributesEntry 2 }
+
+   ipsAuthCredChapStorageType OBJECT-TYPE
+       SYNTAX        StorageType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DEFVAL        { nonVolatile }
+   ::= { ipsAuthCredChapAttributesEntry 3 }
+
+   ipsAuthCredSrp OBJECT IDENTIFIER ::= { ipsAuthObjects 8 }
+
+
+   ipsAuthCredSrpAttributesTable OBJECT-TYPE
+       SYNTAX        SEQUENCE OF IpsAuthCredSrpAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthCredSrp 1 }
+
+   ipsAuthCredSrpAttributesEntry OBJECT-TYPE
+       SYNTAX        IpsAuthCredSrpAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ipsAuthInstIndex, ipsAuthIdentIndex, ipsAuthCredIndex }
+   ::= { ipsAuthCredSrpAttributesTable  1 }
+
+   IpsAuthCredSrpAttributesEntry ::= SEQUENCE {
+       ipsAuthCredSrpUserName         SnmpAdminString,
+       ipsAuthCredSrpRowStatus        RowStatus,
+       ipsAuthCredSrpStorageType      StorageType
+   }
+
+   ipsAuthCredSrpUserName OBJECT-TYPE
+       SYNTAX        SnmpAdminString
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthCredSrpAttributesEntry 1 }
+
+   ipsAuthCredSrpRowStatus OBJECT-TYPE
+       SYNTAX        RowStatus
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthCredSrpAttributesEntry 2 }
+
+   ipsAuthCredSrpStorageType OBJECT-TYPE
+       SYNTAX        StorageType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DEFVAL        { nonVolatile }
+   ::= { ipsAuthCredSrpAttributesEntry 3 }
+
+   ipsAuthCredKerberos OBJECT IDENTIFIER ::= { ipsAuthObjects 9 }
+
+
+   ipsAuthCredKerbAttributesTable OBJECT-TYPE
+       SYNTAX        SEQUENCE OF IpsAuthCredKerbAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+   ::= { ipsAuthCredKerberos 1 }
+
+   ipsAuthCredKerbAttributesEntry OBJECT-TYPE
+       SYNTAX        IpsAuthCredKerbAttributesEntry
+       MAX-ACCESS    not-accessible
+       STATUS        current
+       INDEX { ipsAuthInstIndex, ipsAuthIdentIndex, ipsAuthCredIndex }
+   ::= { ipsAuthCredKerbAttributesTable  1 }
+
+   IpsAuthCredKerbAttributesEntry ::= SEQUENCE {
+
+
+
+
+
+       ipsAuthCredKerbPrincipal       SnmpAdminString,
+       ipsAuthCredKerbRowStatus       RowStatus,
+       ipsAuthCredKerbStorageType     StorageType
+   }
+
+   ipsAuthCredKerbPrincipal OBJECT-TYPE
+       SYNTAX        SnmpAdminString
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthCredKerbAttributesEntry 1 }
+
+   ipsAuthCredKerbRowStatus OBJECT-TYPE
+       SYNTAX        RowStatus
+       MAX-ACCESS    read-create
+       STATUS        current
+   ::= { ipsAuthCredKerbAttributesEntry 2 }
+
+   ipsAuthCredKerbStorageType OBJECT-TYPE
+       SYNTAX        StorageType
+       MAX-ACCESS    read-create
+       STATUS        current
+       DEFVAL        { nonVolatile }
+   ::= { ipsAuthCredKerbAttributesEntry 3 }
+
+
+
+
+
+
+
+
+
+   ipsAuthCompliances OBJECT IDENTIFIER ::= { ipsAuthConformance 1 }
+   ipsAuthGroups      OBJECT IDENTIFIER ::= { ipsAuthConformance 2 }
+
+   ipsAuthInstanceAttributesGroup OBJECT-GROUP
+       OBJECTS {
+           ipsAuthInstDescr,
+           ipsAuthInstStorageType
+       }
+       STATUS current
+   ::= { ipsAuthGroups 1 }
+
+   ipsAuthIdentAttributesGroup OBJECT-GROUP
+       OBJECTS {
+           ipsAuthIdentDescription,
+           ipsAuthIdentRowStatus,
+           ipsAuthIdentStorageType
+       }
+       STATUS current
+   ::= { ipsAuthGroups 2 }
+
+   ipsAuthIdentNameAttributesGroup OBJECT-GROUP
+       OBJECTS {
+           ipsAuthIdentName,
+           ipsAuthIdentNameRowStatus,
+           ipsAuthIdentNameStorageType
+       }
+       STATUS current
+   ::= { ipsAuthGroups 3 }
+
+   ipsAuthIdentAddrAttributesGroup OBJECT-GROUP
+       OBJECTS {
+           ipsAuthIdentAddrType,
+           ipsAuthIdentAddrStart,
+           ipsAuthIdentAddrEnd,
+
+
+
+
+
+           ipsAuthIdentAddrRowStatus,
+           ipsAuthIdentAddrStorageType
+       }
+       STATUS current
+   ::= { ipsAuthGroups 4 }
+
+   ipsAuthIdentCredAttributesGroup OBJECT-GROUP
+       OBJECTS {
+           ipsAuthCredAuthMethod,
+           ipsAuthCredRowStatus,
+           ipsAuthCredStorageType
+       }
+       STATUS current
+   ::= { ipsAuthGroups 5 }
+
+   ipsAuthIdentChapAttrGroup OBJECT-GROUP
+       OBJECTS {
+           ipsAuthCredChapUserName,
+           ipsAuthCredChapRowStatus,
+           ipsAuthCredChapStorageType
+       }
+       STATUS current
+   ::= { ipsAuthGroups 6 }
+
+   ipsAuthIdentSrpAttrGroup OBJECT-GROUP
+       OBJECTS {
+           ipsAuthCredSrpUserName,
+           ipsAuthCredSrpRowStatus,
+           ipsAuthCredSrpStorageType
+       }
+       STATUS current
+   ::= { ipsAuthGroups 7 }
+
+
+
+
+
+   ipsAuthIdentKerberosAttrGroup OBJECT-GROUP
+       OBJECTS {
+           ipsAuthCredKerbPrincipal,
+           ipsAuthCredKerbRowStatus,
+           ipsAuthCredKerbStorageType
+       }
+       STATUS current
+   ::= { ipsAuthGroups 8 }
+
+
+   ipsAuthComplianceV1 MODULE-COMPLIANCE
+       STATUS current
+       MODULE       -- this module
+       MANDATORY-GROUPS {
+           ipsAuthInstanceAttributesGroup,
+           ipsAuthIdentAttributesGroup
+       }
+
+
+       GROUP ipsAuthIdentNameAttributesGroup
+
+       GROUP ipsAuthIdentAddrAttributesGroup
+
+       GROUP ipsAuthIdentCredAttributesGroup
+
+
+
+
+
+       GROUP ipsAuthIdentChapAttrGroup
+
+       GROUP ipsAuthIdentSrpAttrGroup
+
+       GROUP ipsAuthIdentKerberosAttrGroup
+
+       OBJECT ipsAuthInstDescr
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthInstStorageType
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthIdentDescription
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthIdentRowStatus
+       SYNTAX INTEGER { active(1) } -- subset of RowStatus
+       MIN-ACCESS read-only
+
+
+
+
+
+
+       OBJECT ipsAuthIdentName
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthIdentNameRowStatus
+       SYNTAX INTEGER { active(1) } -- subset of RowStatus
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthIdentAddrType
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthIdentAddrStart
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthIdentAddrEnd
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthIdentAddrRowStatus
+       SYNTAX INTEGER { active(1) } -- subset of RowStatus
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthCredAuthMethod
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthCredRowStatus
+       SYNTAX INTEGER { active(1) } -- subset of RowStatus
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthCredChapUserName
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthCredChapRowStatus
+       SYNTAX INTEGER { active(1) } -- subset of RowStatus
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthCredSrpUserName
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthCredSrpRowStatus
+       SYNTAX INTEGER { active(1) } -- subset of RowStatus
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthCredKerbPrincipal
+       MIN-ACCESS read-only
+
+       OBJECT ipsAuthCredKerbRowStatus
+       SYNTAX INTEGER { active(1) } -- subset of RowStatus
+       MIN-ACCESS read-only
+
+   ::= { ipsAuthCompliances 1 }
+
+   END

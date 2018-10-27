@@ -1,0 +1,107 @@
+SIP-UA-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Unsigned32,
+    mib-2
+          FROM SNMPv2-SMI             -- RFC 2578
+
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+          FROM SNMPv2-CONF            -- RFC 2580
+
+    applIndex
+          FROM NETWORK-SERVICES-MIB   -- RFC 2788
+
+    InetAddressType,
+    InetAddress
+          FROM INET-ADDRESS-MIB       -- RFC 4001
+
+    SipTCEntityRole
+          FROM SIP-TC-MIB;            -- RFC 4780
+
+sipUAMIB MODULE-IDENTITY
+    LAST-UPDATED   "200704200000Z"
+    ORGANIZATION   "IETF Session Initiation Protocol Working Group"
+     ::= { mib-2 150 }
+
+sipUAMIBObjects        OBJECT IDENTIFIER ::= { sipUAMIB 1 }
+
+
+
+
+
+sipUAMIBConformance    OBJECT IDENTIFIER ::= { sipUAMIB 2 }
+
+sipUACfgServer         OBJECT IDENTIFIER ::= { sipUAMIBObjects 1 }
+
+sipUACfgServerTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SipUACfgServerEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipUACfgServer 1 }
+
+sipUACfgServerEntry OBJECT-TYPE
+    SYNTAX      SipUACfgServerEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { applIndex, sipUACfgServerIndex }
+    ::= { sipUACfgServerTable 1 }
+
+SipUACfgServerEntry ::= SEQUENCE {
+        sipUACfgServerIndex       Unsigned32,
+        sipUACfgServerAddressType InetAddressType,
+        sipUACfgServerAddress     InetAddress,
+        sipUACfgServerRole        SipTCEntityRole
+    }
+
+sipUACfgServerIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { sipUACfgServerEntry 1 }
+
+sipUACfgServerAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipUACfgServerEntry 2 }
+
+sipUACfgServerAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipUACfgServerEntry 3 }
+
+sipUACfgServerRole OBJECT-TYPE
+    SYNTAX      SipTCEntityRole
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { sipUACfgServerEntry 4 }
+
+sipUAMIBCompliances OBJECT IDENTIFIER ::= { sipUAMIBConformance 1 }
+sipUAMIBGroups      OBJECT IDENTIFIER ::= { sipUAMIBConformance 2 }
+
+sipUACompliance MODULE-COMPLIANCE
+    STATUS      current
+
+
+
+
+
+    MODULE -- this module
+        MANDATORY-GROUPS { sipUAConfigGroup }
+
+    ::= { sipUAMIBCompliances 1 }
+
+sipUAConfigGroup OBJECT-GROUP
+    OBJECTS {
+            sipUACfgServerAddressType,
+            sipUACfgServerAddress,
+            sipUACfgServerRole
+    }
+    STATUS  current
+    ::= { sipUAMIBGroups 1 }
+
+END

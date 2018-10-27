@@ -1,0 +1,856 @@
+   PKTC-IETF-MTA-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY,
+       OBJECT-TYPE,
+       OBJECT-IDENTITY,
+       Unsigned32,
+       Counter32,
+       NOTIFICATION-TYPE,
+       mib-2
+             FROM SNMPv2-SMI                    -- [RFC2578]
+       TEXTUAL-CONVENTION,
+       RowStatus,
+       TruthValue
+             FROM SNMPv2-TC                     -- [RFC2579]
+       OBJECT-GROUP,
+       MODULE-COMPLIANCE,
+       NOTIFICATION-GROUP
+             FROM SNMPv2-CONF                   -- [RFC2580]
+       InetAddressType,
+       InetAddress
+             FROM INET-ADDRESS-MIB              -- [RFC4001]
+       sysDescr
+             FROM SNMPv2-MIB                    -- [RFC3418]
+       SnmpAdminString
+             FROM SNMP-FRAMEWORK-MIB            -- [RFC3411]
+       docsDevSoftwareGroupV2
+             FROM DOCS-CABLE-DEVICE-MIB         -- [RFC4639]
+       DocsX509ASN1DEREncodedCertificate,
+       docsBpi2CodeDownloadGroup
+             FROM DOCS-IETF-BPI2-MIB            -- [RFC4131]
+       LongUtf8String
+             FROM SYSAPPL-MIB                   -- [RFC2287]
+       ifPhysAddress
+             FROM IF-MIB;                       -- [RFC2863]
+
+       pktcIetfMtaMib MODULE-IDENTITY
+       LAST-UPDATED "200609180000Z" -- September 18, 2006
+       ORGANIZATION "IETF IP over Cable Data Network Working Group"
+
+
+
+
+   ::=  { mib-2 140 }
+
+
+   PktcMtaDevProvEncryptAlg  ::= TEXTUAL-CONVENTION
+       STATUS      current
+       SYNTAX      INTEGER  {
+                   none             (0),
+                   des64CbcMode     (1),
+                   t3Des192CbcMode  (2),
+                   aes128CbcMode    (3),
+                   aes256CbcMode    (4)
+       }
+
+
+   pktcMtaNotification OBJECT IDENTIFIER ::= { pktcIetfMtaMib 0 }
+   pktcMtaMibObjects  OBJECT IDENTIFIER ::= { pktcIetfMtaMib 1 }
+   pktcMtaDevBase     OBJECT IDENTIFIER ::= { pktcMtaMibObjects 1 }
+   pktcMtaDevServer   OBJECT IDENTIFIER ::= { pktcMtaMibObjects 2 }
+   pktcMtaDevSecurity OBJECT IDENTIFIER ::= { pktcMtaMibObjects 3 }
+   pktcMtaDevErrors   OBJECT IDENTIFIER ::= { pktcMtaMibObjects 4 }
+   pktcMtaConformance  OBJECT IDENTIFIER ::= { pktcIetfMtaMib 2 }
+
+
+   pktcMtaDevResetNow  OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { pktcMtaDevBase 1 }
+
+   pktcMtaDevSerialNumber OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevBase 2 }
+
+   pktcMtaDevSwCurrentVers OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-only
+       STATUS      current
+
+   ::= { pktcMtaDevBase 3 }
+
+   pktcMtaDevFQDN      OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-only
+       STATUS      current
+
+
+
+
+
+       ::= { pktcMtaDevBase 4 }
+
+   pktcMtaDevEndPntCount     OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..255)
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevBase 5 }
+
+   pktcMtaDevEnabled     OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { pktcMtaDevBase 6 }
+
+   pktcMtaDevTypeIdentifier     OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevBase 7 }
+
+   pktcMtaDevProvisioningState     OBJECT-TYPE
+       SYNTAX      INTEGER {
+                   pass                      (1),
+                   inProgress                (2),
+                   failConfigFileError       (3),
+                   passWithWarnings          (4),
+                   passWithIncompleteParsing (5),
+                   failureInternalError      (6),
+                   failureOtherReason        (7)
+       }
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevBase 8 }
+
+   pktcMtaDevHttpAccess  OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevBase 9 }
+
+   pktcMtaDevProvisioningTimer  OBJECT-TYPE
+       SYNTAX      Unsigned32 (0..30)
+       UNITS       "minutes"
+       MAX-ACCESS  read-write
+       STATUS      current
+
+
+
+
+
+       DEFVAL {10}
+       ::=  {pktcMtaDevBase 10}
+
+   pktcMtaDevProvisioningCounter  OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      current
+         ::= {pktcMtaDevBase 11}
+
+    pktcMtaDevErrorOidsTable  OBJECT-TYPE
+       SYNTAX SEQUENCE OF PktcMtaDevErrorOidsEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       ::= {pktcMtaDevBase 12 }
+
+   pktcMtaDevErrorOidsEntry  OBJECT-TYPE
+       SYNTAX PktcMtaDevErrorOidsEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       INDEX { pktcMtaDevErrorOidIndex }
+                ::= {pktcMtaDevErrorOidsTable 1}
+
+   PktcMtaDevErrorOidsEntry ::= SEQUENCE {
+       pktcMtaDevErrorOidIndex Unsigned32,
+       pktcMtaDevErrorOid      SnmpAdminString,
+       pktcMtaDevErrorValue    SnmpAdminString,
+       pktcMtaDevErrorReason   SnmpAdminString
+       }
+
+   pktcMtaDevErrorOidIndex  OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..1024)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+
+       ::= {pktcMtaDevErrorOidsEntry 1}
+
+
+
+
+
+
+   pktcMtaDevErrorOid  OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-only
+       STATUS      current
+
+       ::= {pktcMtaDevErrorOidsEntry 2}
+
+   pktcMtaDevErrorValue  OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-only
+       STATUS      current
+
+       ::= {pktcMtaDevErrorOidsEntry 3}
+
+   pktcMtaDevErrorReason  OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= {pktcMtaDevErrorOidsEntry 4}
+
+
+
+
+
+
+
+   pktcMtaDevDhcpServerAddressType  OBJECT-TYPE
+       SYNTAX      InetAddressType
+       MAX-ACCESS  read-only
+       STATUS      current
+       DEFVAL { ipv4 }
+       ::= { pktcMtaDevServer 1}
+
+   pktcMtaDevServerDhcp1   OBJECT-TYPE
+       SYNTAX      InetAddress
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevServer 2 }
+
+   pktcMtaDevServerDhcp2  OBJECT-TYPE
+       SYNTAX      InetAddress
+       MAX-ACCESS  read-only
+
+
+
+
+
+       STATUS      current
+             ::= { pktcMtaDevServer 3 }
+
+   pktcMtaDevDnsServerAddressType  OBJECT-TYPE
+       SYNTAX      InetAddressType
+       MAX-ACCESS  read-only
+       STATUS      current
+       DEFVAL { ipv4 }
+       ::= { pktcMtaDevServer 4}
+
+   pktcMtaDevServerDns1  OBJECT-TYPE
+       SYNTAX      InetAddress
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { pktcMtaDevServer 5 }
+
+   pktcMtaDevServerDns2  OBJECT-TYPE
+       SYNTAX      InetAddress
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { pktcMtaDevServer 6 }
+
+   pktcMtaDevTimeServerAddressType  OBJECT-TYPE
+       SYNTAX      InetAddressType
+       MAX-ACCESS  read-only
+       STATUS      current
+       DEFVAL { ipv4 }
+       ::= { pktcMtaDevServer 7}
+
+   pktcMtaDevTimeServer   OBJECT-TYPE
+       SYNTAX      InetAddress
+
+
+
+
+
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { pktcMtaDevServer 8}
+
+   pktcMtaDevConfigFile  OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { pktcMtaDevServer 9 }
+
+   pktcMtaDevSnmpEntity  OBJECT-TYPE
+       SYNTAX      SnmpAdminString
+       MAX-ACCESS  read-only
+       STATUS      current
+
+       ::= { pktcMtaDevServer 10 }
+
+   pktcMtaDevProvConfigHash  OBJECT-TYPE
+       SYNTAX      OCTET STRING (SIZE(20))
+       MAX-ACCESS  read-write
+       STATUS      current
+
+
+
+
+
+       ::= { pktcMtaDevServer 11 }
+
+   pktcMtaDevProvConfigKey  OBJECT-TYPE
+       SYNTAX      OCTET STRING (SIZE(32))
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { pktcMtaDevServer 12 }
+
+   pktcMtaDevProvConfigEncryptAlg   OBJECT-TYPE
+       SYNTAX      PktcMtaDevProvEncryptAlg
+       MAX-ACCESS  read-write
+       STATUS      current
+       DEFVAL { des64CbcMode }
+       ::= { pktcMtaDevServer 13 }
+
+   pktcMtaDevProvSolicitedKeyTimeout  OBJECT-TYPE
+       SYNTAX      Unsigned32 (0..180)
+       UNITS       "seconds"
+       MAX-ACCESS  read-write
+       STATUS      current
+       DEFVAL { 3 }
+       ::= { pktcMtaDevServer 14 }
+
+
+   pktcMtaDevProvUnsolicitedKeyMaxTimeout  OBJECT-TYPE
+       SYNTAX      Unsigned32 (0..600)
+       UNITS       "seconds"
+       MAX-ACCESS  read-only
+       STATUS      current
+       DEFVAL {600}
+       ::= { pktcMtaDevServer 15 }
+
+   pktcMtaDevProvUnsolicitedKeyNomTimeout  OBJECT-TYPE
+       SYNTAX      Unsigned32 (0..600)
+       UNITS       "seconds"
+       MAX-ACCESS  read-only
+       STATUS      current
+       DEFVAL {3}
+       ::= { pktcMtaDevServer 16}
+
+   pktcMtaDevProvUnsolicitedKeyMaxRetries  OBJECT-TYPE
+       SYNTAX      Unsigned32 (0..32)
+       MAX-ACCESS  read-only
+       STATUS      current
+       DEFVAL {8}
+       ::= { pktcMtaDevServer 17 }
+
+   pktcMtaDevProvKerbRealmName  OBJECT-TYPE
+       SYNTAX      SnmpAdminString (SIZE(1..255))
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevServer 18 }
+
+   pktcMtaDevProvState  OBJECT-TYPE
+       SYNTAX      INTEGER  {
+                   operational                (1),
+                   waitingForSnmpSetInfo      (2),
+                   waitingForTftpAddrResponse (3),
+                   waitingForConfigFile       (4)
+       }
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevServer 19 }
+
+
+   pktcMtaDevManufacturerCertificate  OBJECT-TYPE
+       SYNTAX      DocsX509ASN1DEREncodedCertificate
+       MAX-ACCESS  read-only
+       STATUS      current
+
+       ::= {pktcMtaDevSecurity 1}
+
+   pktcMtaDevCertificate  OBJECT-TYPE
+       SYNTAX      DocsX509ASN1DEREncodedCertificate
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevSecurity 2 }
+
+   pktcMtaDevCorrelationId  OBJECT-TYPE
+       SYNTAX      Unsigned32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevSecurity 3 }
+
+   pktcMtaDevTelephonyRootCertificate  OBJECT-TYPE
+       SYNTAX      DocsX509ASN1DEREncodedCertificate
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { pktcMtaDevSecurity 4 }
+
+
+
+
+
+
+
+
+
+
+
+
+   pktcMtaDevRealmAvailSlot   OBJECT-TYPE
+       SYNTAX      Unsigned32 (0..64)
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= {  pktcMtaDevSecurity 5 }
+
+   pktcMtaDevRealmTable  OBJECT-TYPE
+       SYNTAX      SEQUENCE OF PktcMtaDevRealmEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= {  pktcMtaDevSecurity 6 }
+
+   pktcMtaDevRealmEntry  OBJECT-TYPE
+       SYNTAX      PktcMtaDevRealmEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+
+
+
+
+
+       INDEX { pktcMtaDevRealmIndex }
+   ::= { pktcMtaDevRealmTable 1 }
+
+   PktcMtaDevRealmEntry ::= SEQUENCE {
+       pktcMtaDevRealmIndex                    Unsigned32,
+       pktcMtaDevRealmName                     SnmpAdminString,
+       pktcMtaDevRealmPkinitGracePeriod        Unsigned32,
+       pktcMtaDevRealmTgsGracePeriod           Unsigned32,
+       pktcMtaDevRealmOrgName                  LongUtf8String,
+       pktcMtaDevRealmUnsolicitedKeyMaxTimeout Unsigned32,
+       pktcMtaDevRealmUnsolicitedKeyNomTimeout Unsigned32,
+       pktcMtaDevRealmUnsolicitedKeyMaxRetries Unsigned32,
+       pktcMtaDevRealmStatus                   RowStatus
+       }
+
+   pktcMtaDevRealmIndex  OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..64)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { pktcMtaDevRealmEntry 1}
+
+   pktcMtaDevRealmName  OBJECT-TYPE
+       SYNTAX      SnmpAdminString (SIZE(1..255))
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { pktcMtaDevRealmEntry 2 }
+
+   pktcMtaDevRealmPkinitGracePeriod  OBJECT-TYPE
+       SYNTAX      Unsigned32 (15..600)
+       UNITS       "minutes"
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 15 }
+       ::= { pktcMtaDevRealmEntry 3 }
+
+   pktcMtaDevRealmTgsGracePeriod  OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..600)
+       UNITS       "minutes"
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 10 }
+       ::= { pktcMtaDevRealmEntry 4 }
+
+   pktcMtaDevRealmOrgName  OBJECT-TYPE
+       SYNTAX      LongUtf8String
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { pktcMtaDevRealmEntry 5 }
+
+
+
+
+
+
+   pktcMtaDevRealmUnsolicitedKeyMaxTimeout  OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..600)
+       UNITS       "seconds"
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 100 }
+       ::= { pktcMtaDevRealmEntry 6 }
+
+   pktcMtaDevRealmUnsolicitedKeyNomTimeout  OBJECT-TYPE
+       SYNTAX      Unsigned32 (100..600000)
+       UNITS       "milliseconds"
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 3000 }
+       ::= { pktcMtaDevRealmEntry 7 }
+
+   pktcMtaDevRealmUnsolicitedKeyMaxRetries  OBJECT-TYPE
+       SYNTAX      Unsigned32 (0..1024)
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 5 }
+
+
+
+
+
+       ::= { pktcMtaDevRealmEntry 8 }
+
+   pktcMtaDevRealmStatus     OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { pktcMtaDevRealmEntry 9 }
+
+
+   pktcMtaDevCmsAvailSlot   OBJECT-TYPE
+       SYNTAX      Unsigned32 (0..128)
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= {  pktcMtaDevSecurity 7 }
+
+   pktcMtaDevCmsTable  OBJECT-TYPE
+       SYNTAX      SEQUENCE OF PktcMtaDevCmsEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= {  pktcMtaDevSecurity 8 }
+
+   pktcMtaDevCmsEntry  OBJECT-TYPE
+       SYNTAX      PktcMtaDevCmsEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX { pktcMtaDevCmsIndex }
+
+
+
+
+
+       ::= { pktcMtaDevCmsTable 1 }
+
+   PktcMtaDevCmsEntry ::= SEQUENCE {
+       pktcMtaDevCmsIndex                        Unsigned32,
+       pktcMtaDevCmsFqdn                         SnmpAdminString,
+       pktcMtaDevCmsKerbRealmName                SnmpAdminString,
+       pktcMtaDevCmsMaxClockSkew                 Unsigned32,
+       pktcMtaDevCmsSolicitedKeyTimeout          Unsigned32,
+       pktcMtaDevCmsUnsolicitedKeyMaxTimeout     Unsigned32,
+       pktcMtaDevCmsUnsolicitedKeyNomTimeout     Unsigned32,
+       pktcMtaDevCmsUnsolicitedKeyMaxRetries     Unsigned32,
+       pktcMtaDevCmsIpsecCtrl                    TruthValue,
+       pktcMtaDevCmsStatus                       RowStatus
+       }
+
+   pktcMtaDevCmsIndex  OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..128)
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { pktcMtaDevCmsEntry 1 }
+
+   pktcMtaDevCmsFqdn  OBJECT-TYPE
+       SYNTAX      SnmpAdminString (SIZE(1..255))
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { pktcMtaDevCmsEntry 2 }
+
+   pktcMtaDevCmsKerbRealmName  OBJECT-TYPE
+       SYNTAX      SnmpAdminString (SIZE(1..255))
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { pktcMtaDevCmsEntry 3 }
+
+   pktcMtaDevCmsMaxClockSkew    OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..1800)
+       UNITS       "seconds"
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 300 }
+       ::= { pktcMtaDevCmsEntry 4 }
+
+   pktcMtaDevCmsSolicitedKeyTimeout  OBJECT-TYPE
+       SYNTAX      Unsigned32 (100..30000)
+       UNITS       "milliseconds"
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 1000 }
+       ::= { pktcMtaDevCmsEntry 5 }
+
+
+
+
+
+
+
+   pktcMtaDevCmsUnsolicitedKeyMaxTimeout  OBJECT-TYPE
+       SYNTAX      Unsigned32 (1..600)
+       UNITS       "seconds"
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 600 }
+       ::= { pktcMtaDevCmsEntry 6 }
+
+   pktcMtaDevCmsUnsolicitedKeyNomTimeout  OBJECT-TYPE
+       SYNTAX      Unsigned32 (100..30000)
+       UNITS       "milliseconds"
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 500 }
+       ::= { pktcMtaDevCmsEntry 7 }
+
+   pktcMtaDevCmsUnsolicitedKeyMaxRetries  OBJECT-TYPE
+       SYNTAX      Unsigned32 (0..1024)
+       MAX-ACCESS  read-create
+       STATUS      current
+       DEFVAL { 5 }
+       ::= { pktcMtaDevCmsEntry 8 }
+
+
+
+
+
+
+   pktcMtaDevCmsIpsecCtrl     OBJECT-TYPE
+       SYNTAX        TruthValue
+       MAX-ACCESS    read-only
+       STATUS        current
+       DEFVAL { true }
+       ::= { pktcMtaDevCmsEntry 9 }
+
+   pktcMtaDevCmsStatus     OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { pktcMtaDevCmsEntry 10 }
+
+   pktcMtaDevResetKrbTickets   OBJECT-TYPE
+       SYNTAX      BITS {
+                            invalidateProvOnReboot   (0),
+                            invalidateAllCmsOnReboot (1)
+                   }
+       MAX-ACCESS   read-write
+       STATUS    current
+       DEFVAL { {   } }
+       ::= {  pktcMtaDevSecurity 9 }
+
+
+   pktcMtaDevErrorsTooManyErrors OBJECT-IDENTITY
+       STATUS     current
+          ::= { pktcMtaDevErrors  1 }
+
+   pktcMtaDevProvisioningEnrollment  NOTIFICATION-TYPE
+       OBJECTS {
+               sysDescr,
+               pktcMtaDevSwCurrentVers,
+               pktcMtaDevTypeIdentifier,
+               ifPhysAddress,
+               pktcMtaDevCorrelationId
+
+
+
+
+
+       }
+       STATUS   current
+       ::= { pktcMtaNotification 1 }
+
+   pktcMtaDevProvisioningStatus  NOTIFICATION-TYPE
+       OBJECTS {
+               ifPhysAddress,
+               pktcMtaDevCorrelationId,
+               pktcMtaDevProvisioningState
+       }
+       STATUS      current
+       ::= { pktcMtaNotification 2 }
+
+
+   pktcMtaCompliances  OBJECT IDENTIFIER ::= { pktcMtaConformance 1 }
+   pktcMtaGroups       OBJECT IDENTIFIER ::= { pktcMtaConformance 2 }
+
+   pktcMtaBasicCompliance MODULE-COMPLIANCE
+       STATUS      current
+
+       MODULE  -- Unconditionally mandatory groups for MTAs
+
+           MANDATORY-GROUPS {
+               pktcMtaGroup,
+               pktcMtaNotificationGroup
+           }
+
+           OBJECT  pktcMtaDevDhcpServerAddressType
+               SYNTAX      InetAddressType { ipv4(1) }
+
+           OBJECT  pktcMtaDevDnsServerAddressType
+               SYNTAX      InetAddressType { ipv4(1) }
+
+           OBJECT  pktcMtaDevTimeServerAddressType
+               SYNTAX      InetAddressType { ipv4(1) }
+
+           OBJECT    pktcMtaDevServerDhcp1
+               SYNTAX  InetAddress (SIZE(4))
+
+           OBJECT    pktcMtaDevServerDhcp2
+               SYNTAX  InetAddress (SIZE(4))
+
+           OBJECT    pktcMtaDevServerDns1
+
+
+
+
+
+               SYNTAX  InetAddress (SIZE(4))
+
+           OBJECT    pktcMtaDevServerDns2
+               SYNTAX  InetAddress (SIZE(4))
+
+           OBJECT    pktcMtaDevTimeServer
+               SYNTAX  InetAddress (SIZE(4))
+
+           OBJECT    pktcMtaDevProvConfigEncryptAlg
+               SYNTAX  PktcMtaDevProvEncryptAlg
+
+           OBJECT pktcMtaDevRealmOrgName
+               SYNTAX LongUtf8String (SIZE (1..384))
+
+       ::= { pktcMtaCompliances 1 }
+
+   pktcMtaGroup OBJECT-GROUP
+       OBJECTS {
+               pktcMtaDevResetNow,
+               pktcMtaDevSerialNumber,
+               pktcMtaDevSwCurrentVers,
+               pktcMtaDevFQDN,
+               pktcMtaDevEndPntCount,
+               pktcMtaDevEnabled,
+               pktcMtaDevProvisioningCounter,
+               pktcMtaDevErrorOid,
+               pktcMtaDevErrorValue,
+               pktcMtaDevErrorReason,
+               pktcMtaDevTypeIdentifier,
+               pktcMtaDevProvisioningState,
+               pktcMtaDevHttpAccess,
+               pktcMtaDevCertificate,
+               pktcMtaDevCorrelationId,
+               pktcMtaDevManufacturerCertificate,
+               pktcMtaDevDhcpServerAddressType,
+               pktcMtaDevDnsServerAddressType,
+               pktcMtaDevTimeServerAddressType,
+               pktcMtaDevProvConfigEncryptAlg,
+               pktcMtaDevServerDhcp1,
+               pktcMtaDevServerDhcp2,
+               pktcMtaDevServerDns1,
+               pktcMtaDevServerDns2,
+               pktcMtaDevTimeServer,
+               pktcMtaDevConfigFile,
+               pktcMtaDevSnmpEntity,
+               pktcMtaDevRealmPkinitGracePeriod,
+               pktcMtaDevRealmTgsGracePeriod,
+               pktcMtaDevRealmAvailSlot,
+               pktcMtaDevRealmName,
+               pktcMtaDevRealmOrgName,
+               pktcMtaDevRealmUnsolicitedKeyMaxTimeout,
+               pktcMtaDevRealmUnsolicitedKeyNomTimeout,
+               pktcMtaDevRealmUnsolicitedKeyMaxRetries,
+               pktcMtaDevRealmStatus,
+               pktcMtaDevCmsAvailSlot,
+               pktcMtaDevCmsFqdn,
+               pktcMtaDevCmsKerbRealmName,
+               pktcMtaDevCmsUnsolicitedKeyMaxTimeout,
+
+
+
+
+
+               pktcMtaDevCmsUnsolicitedKeyNomTimeout,
+               pktcMtaDevCmsUnsolicitedKeyMaxRetries,
+               pktcMtaDevCmsSolicitedKeyTimeout,
+               pktcMtaDevCmsMaxClockSkew,
+               pktcMtaDevCmsIpsecCtrl,
+               pktcMtaDevCmsStatus,
+               pktcMtaDevResetKrbTickets,
+               pktcMtaDevProvUnsolicitedKeyMaxTimeout,
+               pktcMtaDevProvUnsolicitedKeyNomTimeout,
+               pktcMtaDevProvUnsolicitedKeyMaxRetries,
+               pktcMtaDevProvKerbRealmName,
+               pktcMtaDevProvSolicitedKeyTimeout,
+               pktcMtaDevProvConfigHash,
+               pktcMtaDevProvConfigKey,
+               pktcMtaDevProvState,
+               pktcMtaDevProvisioningTimer,
+               pktcMtaDevTelephonyRootCertificate
+       }
+       STATUS      current
+       ::= { pktcMtaGroups 1 }
+
+   pktcMtaNotificationGroup          NOTIFICATION-GROUP
+       NOTIFICATIONS {
+                     pktcMtaDevProvisioningStatus,
+                     pktcMtaDevProvisioningEnrollment
+       }
+       STATUS      current
+       ::= { pktcMtaGroups 2 }
+
+   pktcMtaBasicSmtaCompliance MODULE-COMPLIANCE
+       STATUS      current
+
+      MODULE -- Unconditionally Mandatory Groups for S-MTA devices
+           MANDATORY-GROUPS {
+
+
+
+
+
+               pktcMtaGroup,
+               pktcMtaNotificationGroup
+           }
+
+           OBJECT  pktcMtaDevDhcpServerAddressType
+               SYNTAX      InetAddressType { ipv4(1) }
+
+           OBJECT  pktcMtaDevDnsServerAddressType
+               SYNTAX      InetAddressType { ipv4(1) }
+
+           OBJECT  pktcMtaDevTimeServerAddressType
+               SYNTAX      InetAddressType { ipv4(1) }
+
+           OBJECT    pktcMtaDevServerDhcp1
+               SYNTAX  InetAddress (SIZE(4))
+
+           OBJECT    pktcMtaDevServerDhcp2
+               SYNTAX  InetAddress (SIZE(4))
+
+           OBJECT    pktcMtaDevServerDns1
+               SYNTAX  InetAddress (SIZE(4))
+
+
+
+
+
+
+           OBJECT    pktcMtaDevServerDns2
+               SYNTAX  InetAddress (SIZE(4))
+
+           OBJECT    pktcMtaDevTimeServer
+               SYNTAX  InetAddress (SIZE(4))
+
+           OBJECT    pktcMtaDevProvConfigEncryptAlg
+               SYNTAX  PktcMtaDevProvEncryptAlg
+
+           OBJECT pktcMtaDevRealmOrgName
+               SYNTAX LongUtf8String (SIZE (1..384))
+       MODULE DOCS-CABLE-DEVICE-MIB
+           MANDATORY-GROUPS {
+
+
+
+
+
+               docsDevSoftwareGroupV2
+           }
+
+       MODULE DOCS-IETF-BPI2-MIB
+           MANDATORY-GROUPS {
+               docsBpi2CodeDownloadGroup
+           }
+
+        ::= { pktcMtaCompliances 2 }
+
+   END

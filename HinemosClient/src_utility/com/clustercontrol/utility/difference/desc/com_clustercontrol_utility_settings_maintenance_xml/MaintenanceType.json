@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"MaintenanceType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Description",
+			"OwnerRoleId",
+			"ValidFlg",
+			"TypeId",
+			"DataRetentionPeriod",
+			"CalendarId",
+			"Type",
+			"Month",
+			"Mday",
+			"DayOfWeek",
+			"Hour",
+			"Min",
+			"NotifyId",
+			"Application"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"MaintenanceInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

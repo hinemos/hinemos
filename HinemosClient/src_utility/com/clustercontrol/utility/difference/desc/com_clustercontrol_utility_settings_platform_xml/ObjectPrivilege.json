@@ -1,0 +1,20 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"ObjectPrivilege_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"ObjectType",
+			"ObjectId",
+			"RoleId",
+			"ObjectPrivilege"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"ObjectPrivilegeInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

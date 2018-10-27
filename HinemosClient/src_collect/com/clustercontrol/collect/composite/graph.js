@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
-性能[グラフ]の折れ線グラフと積み上げ面グラフを描画するJavaScriptです。
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ *
+ * 性能[グラフ]の折れ線グラフと積み上げ面グラフを描画するJavaScriptです。
  */
 NewGraph = function(elementid, options, graphsize) {
 var self = this;
@@ -34,14 +28,16 @@ this.baseheight = Number((self.chart.style.height).replace(/px/g, "")) - HINEMOS
 this.lineids = [];
 this.points2 = [];// 線の情報
 this.stackdata = [];// 線の情報
-this.basepoints =[];
 this.points = null;// プロットの情報(g-tag)
 this.node = null;// 積み上げ情報(g-tag)
 this.colorlist = [];
-
+this.forecastslist = []; // 未来予測の係数リスト(key:lineid, value:)
+this.summarytype = HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_AVG_HOUR;
 this.itemname = options.itemname;
 this.monitorid = options.monitorid;
 this.displayname = options.displayname;
+this.prediction = [];// 将来予測の情報
+this.starlist = [];
 
 this.graphrange;
 
@@ -55,6 +51,7 @@ this.managername = null;
 this.event = {};
 this.event.object;
 this.event.eventidlist;
+this.displineid = "";
 
 //////////////////////////////////////////////////////////////
 // Create Margins and Axis and hook our zoom function
@@ -290,7 +287,6 @@ if (getGraphConfig("data-stack-flg")) {
 // 積み上げ面描画できているのか
 this.is_disp_success = true;
 
-this.summarytype = HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_AVG_HOUR;
 
 	this.vis.append("g").attr("id", "node_group");
 
@@ -438,6 +434,21 @@ this.summarytype = HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_AVG_HOUR;
 			return this.x(d.x);
 		})
 		.y(function(d, i) {
+			if (ControlGraph.isAvg(this.displineid)) {
+				return this.y(d.avg);
+			}
+			if (ControlGraph.isSig(this.displineid)) {
+				return this.y(d.sig);
+			}
+			if (ControlGraph.isSim(this.displineid)) {
+				return this.y(d.sim);
+			}
+			if (ControlGraph.isApprox(this.displineid)) {
+				return this.y(d.app);
+			}
+			if (ControlGraph.isApproxTarget(this.displineid)) {
+				return this.y(d.tar);
+			}
 			return this.y(d.y);
 		});
 }
@@ -511,7 +522,59 @@ NewGraph.prototype.update = function() {
 	for (i = 0; i < this.lineids.length; i++) {
 		var id = this.lineids[i];
 		var target = this.vis.select('#' + id);
-		target.attr('d', this.line(this.points2[id]));
+		self.displineid = id;
+		
+		var newlinepoints = null;
+		if (ControlGraph.isApprox(id)) {
+			// 重複データの除去
+			newlinepoints = this.points2[ControlGraph.getNormalLineId(id)].filter(function (x, i, self) {
+				if (typeof(x.app) != "undefined" && x.app != null) {
+					return true;
+				}
+				return false;
+			});
+		} else if (ControlGraph.isApproxTarget(id)) {
+				// 重複データの除去
+				newlinepoints = this.points2[ControlGraph.getNormalLineId(id)].filter(function (x, i, self) {
+					if (typeof(x.tar) != "undefined" && x.tar != null) {
+						return true;
+					}
+					return false;
+				});
+		} else if (ControlGraph.isAvg(id)) {
+			// 重複データの除去
+			newlinepoints = this.points2[ControlGraph.getNormalLineId(id)].filter(function (x, i, self) {
+				if (typeof(x.avg) != "undefined" && x.avg != null) {
+					return true;
+				}
+				return false;
+			});
+		} else if (ControlGraph.isSig(id)) {
+			// 重複データの除去
+			newlinepoints = this.points2[ControlGraph.getNormalLineId(id)].filter(function (x, i, self) {
+				if (typeof(x.sig) != "undefined" && x.sig != null) {
+					return true;
+				}
+				return false;
+			});
+		} else if (ControlGraph.isSim(id)) {
+			// 重複データの除去
+			newlinepoints = this.points2[ControlGraph.getNormalLineId(id)].filter(function (x, i, self) {
+				if (typeof(x.sim) != "undefined" && x.sim != null) {
+					return true;
+				}
+				return false;
+			});
+		} else {
+			// 重複データの除去
+			newlinepoints = this.points2[id].filter(function (x, i, self) {
+				if (typeof(x.y) != "undefined" && x.y != null) {
+					return true;
+				}
+				return false;
+			});
+		}
+		target.attr('d', this.line(newlinepoints));
 	}
 
 	// イベントフラグの線の再描画
@@ -522,43 +585,41 @@ NewGraph.prototype.update = function() {
 		}
 	}
 
+	// イベントフラグの線の再描画
+	if (!this.vis.select(".predictiontarget").empty()) {
+		for (i = 0; this.starlist != null && i < this.starlist.length; i++) {
+			var star = this.starlist[i];
+			this.vis.select("#predictiontarget" + star.lineid).attr('transform', function(d, i) {
+				return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
+			});
+		}
+	}
+
 	// プロットの再描画
-	this.points.selectAll('circle').attr("transform", function(d) {
-		return "translate(" + self.x(d.point.x) + "," + self.y(d.point.y) + ")"; }
-	);
+	this.points.selectAll('circle').attr("transform", function(d, i) {
+		if (ControlGraph.isAvg(d.lineid)) {
+			return "translate(" + self.x(d.point.x) + "," + self.y(d.point.avg) + ")"; 
+		}
+		if (ControlGraph.isSig(d.lineid)) {
+			return "translate(" + self.x(d.point.x) + "," + self.y(d.point.sig) + ")"; 
+		}
+		if (ControlGraph.isSim(d.lineid)) {
+			return "translate(" + self.x(d.point.x) + "," + self.y(d.point.sim) + ")"; 
+		}
+		if (ControlGraph.isApprox(d.lineid)) {
+			return "translate(" + self.x(d.point.x) + "," + self.y(d.point.app) + ")"; 
+		}
+		if (ControlGraph.isApproxTarget(d.lineid)) {
+			return "translate(" + self.x(d.point.x) + "," + self.y(d.point.tar) + ")"; 
+		}
+		return "translate(" + self.x(d.point.x) + "," + self.y(d.point.y) + ")"; 
+	});
 	
 	// 表示の更新後にスタイルを指定する
 	self.vis.selectAll(".axis line").style("stroke", HINEMOS_COLLECT_CONST.CONST_COLOR_GRAY);
 	self.vis.selectAll(".axis text")
 	.style("font-size", "8pt");
 };// end of update
-//////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////
-// 線をアニメーション表示します。左から右に線を引きます。
-// trimYからしか呼ばれません。updateから呼ぶと、ドラッグ中に頻繁にアニメーションが発生します。
-NewGraph.prototype.animationLine = function() {
-	var self = this;
-	for (i = 0; i < self.lineids.length; i++) {
-		var id = self.lineids[i];
-		var line_len = self.points2[id].length;
-		if (line_len == 0) {
-			continue;
-		}
-		var target = self.vis.select('#' + id);
-		var totalLength = target.node().getTotalLength();
-		if (totalLength == 0) {
-			// 線が無いfacility、処理続行するとエラーになるためcontinue
-			continue;
-		}
-		target
-			.attr("stroke-dasharray", totalLength + " " + totalLength)
-			.attr("stroke-dashoffset", totalLength)
-			.transition()
-			.duration(HINEMOS_COLLECT_CONST.CONST_ANIMATION_INTERVAL)
-			.ease("linear")
-			.attr("stroke-dashoffset", 0);
-	}
-}
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 NewGraph.prototype.redraw = function() {
@@ -568,9 +629,12 @@ NewGraph.prototype.redraw = function() {
 		self.vis.select(".y.axis").call(self.yAxis);
 		for (var i = 0; i < self.lineids.length; i++) {
 			var linekey = self.lineids[i];
-			if (ControlGraph.isApprox(linekey) && self.points2[linekey].length <= 0) {
-				var approx_arr = self.approxPoints(ControlGraph.dispLineId(linekey), self.points2[ControlGraph.getNormalLineId(linekey)], linekey, self.enddate);
-				self.points2[linekey] = approx_arr;
+			if (ControlGraph.isApprox(linekey)) {
+				var normal = ControlGraph.getNormalLineId(linekey);
+				if (self.points2[normal].length > 0) {
+					var facilityId = self.points2[normal][0].facilityid;
+					self.approxPoints(facilityId, normal, self.startdate, self.enddate);
+				}
 			}
 		}
 		for (keyvalue in thresholdgraph) {
@@ -579,7 +643,6 @@ NewGraph.prototype.redraw = function() {
 		}
 		self.redrawPlotData()(true);
 		self.plot.call(d3.behavior.zoom().x(self.x).y(self.y).on("zoom", function() { self.redraw()();throttle(self.upup, self);}));
-//		self.vis.call(d3.behavior.zoom().x(self.x).y(self.y).on("zoom", function() { self.redraw()();throttle(self.upup, self);}));
 		self.update();
 	}
 }
@@ -618,6 +681,7 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 			self.sliderenddate = item.sliderenddate;
 			self.startdate = item.startdate;
 			self.enddate = item.enddate;
+			self.summarytype = item.summarytype;
 
 			var collectid = item.collectid;
 			if (collectid != "none") {
@@ -643,42 +707,88 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 				if (thresholdgraph[groupkey] != null) {
 					ThresholdGraph.prototype.setThresholdParam(groupkey, thresholdinfo);
 				} else {
-					thresholdgraph[groupkey] = new ThresholdGraph(graph[groupkey], thresholdinfo);// TODO
+					thresholdgraph[groupkey] = new ThresholdGraph(graph[groupkey], thresholdinfo);
 				}
 			}
 			if (self.lineids.indexOf(line_key) < 0) {
 				// 初回の場合はnewする
 				self.lineids[k] = line_key;
 				self.points2[line_key] = [];
-				self.basepoints[line_key] = [];
 				self.colorlist[line_key] = self.colors(self.lineids.length);
 				if (getGraphConfig("data-approx-flg")) {
 					// 近似フラグがONの場合は、近似グラフIDを作成する
 					k++;
-					self.lineids[k] = ControlGraph.giveApproxLineId(line_key);
-					self.points2[self.lineids[k]] = [];
-					self.basepoints[self.lineids[k]] = [];
-					self.colorlist[ControlGraph.giveApproxLineId(line_key)] = self.colorlist[line_key];
+					self.lineids[k] = ControlGraph.getApproxLineId(line_key);
+					self.colorlist[self.lineids[k]] = self.colorlist[line_key];
+					k++;
+					self.lineids[k] = ControlGraph.getApproxTargetLineId(line_key);
+					self.colorlist[self.lineids[k]] = self.colorlist[line_key];
+				}
+				if (getGraphConfig("data-sigma-flg")) {
+					k++;
+					var sigmalineid = line_key + "avg";
+					self.lineids[k] = sigmalineid;
+					self.colorlist[sigmalineid] = self.colorlist[line_key];
+					
+					k++;
+					sigmalineid = line_key + "sig";
+					self.lineids[k] = sigmalineid;
+					self.colorlist[sigmalineid] = self.colorlist[line_key];
+					
+					k++;
+					sigmalineid = line_key + "sim";
+					self.lineids[k] = sigmalineid;
+					self.colorlist[sigmalineid] = self.colorlist[line_key];
 				}
 			}
 			// 通常グラフ描画用のソート
 			for (j = 0; j < item.data.length; j++) {
 				var singledata = item.data[j];
-				if (isReallyNaN(Number(singledata[1]))) {
-					// NaN(不明)だった場合はデータを使用しないためループの先頭に戻る
-					continue;
-				}
 				var newpoint = {};
 				newpoint.x = Number(singledata[0]);
-				newpoint.y = Number(singledata[1]);
+				if (singledata[1] != null && !isReallyNaN(singledata[1])) {
+					newpoint.y = Number(singledata[1]);
+				}
+				if (getGraphConfig("data-approx-flg")) {
+					if (singledata[1] != null && !isReallyNaN(singledata[1])
+							&& Number(singledata[0]) >= item.now - item.predictionrange * 60 * 1000
+							&& Number(singledata[0]) <= item.now) {
+						newpoint.tar = Number(singledata[1]);
+					}
+				}
+				if (getGraphConfig("data-sigma-flg")) {
+					if (singledata[2] != null && !isReallyNaN(singledata[2])) {
+						newpoint.avg = Number(singledata[2]); // 平均
+						if (singledata[3] != null && !isReallyNaN(singledata[3])) {
+							newpoint.sig = (Number(singledata[3]) * 2) + newpoint.avg; // 2p
+							newpoint.sim = (Number(singledata[3]) * -2) + newpoint.avg; // -2p
+						}
+					}
+				}
 				newpoint.facilityid = facilityid;
 				newpoint.realfacilityid = item.realfacilityid;
 				newpoint.facilityname = facilityname;
-				newpoint.key = line_key;
 				newpoint.managername = managerName;
 				newpoint.realmanagername = item.realmanagername;
 				self.points2[line_key].push(newpoint);
 			}
+			
+			// 未来予測の係数
+			var forecastsvalue = {};
+			forecastsvalue.dateoffset = item.dateoffset;
+			forecastsvalue.a0 = item.a0value;
+			forecastsvalue.a1 = item.a1value;
+			forecastsvalue.a2 = item.a2value;
+			forecastsvalue.a3 = item.a3value;
+			self.forecastslist[line_key] = forecastsvalue;
+			
+			// 
+			var predictionTargetInfo = {};
+			predictionTargetInfo.now = item.now;
+			predictionTargetInfo.min = item.predictiontarget;
+			predictionTargetInfo.str = item.predictiontargetstr;
+			self.prediction[line_key] = predictionTargetInfo;
+			
 			// ソート
 			self.points2[line_key].sort(function(a, b) {
 				if (a.x < b.x) { return -1 };
@@ -689,7 +799,7 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 			var newlinepoints = self.points2[line_key].filter(function (x, i, self) {
 				var count = 0;
 				for (count = 0; count < self.length; count++) {
-					if (self[count].x == x.x) {
+					if (self[count].x == x.x) { // && typeof(x.y) != "undefined") {
 						break;
 					}
 				}
@@ -699,12 +809,11 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 			// 重複データ除去後のデータを正規データとする
 			self.points2[line_key] = newlinepoints;
 			
-			// 近似線の表示
-			if (getGraphConfig("data-approx-flg") && self.points2[line_key].length > 0) {
-				// 近似用のデータを計算する
-				var approx_arr = self.approxPoints(facilityid, self.points2[line_key], ControlGraph.giveApproxLineId(line_key), self.enddate);
-				self.points2[ControlGraph.giveApproxLineId(line_key)] = approx_arr;
-			}
+//			// 近似線の表示
+//			if (getGraphConfig("data-approx-flg") && self.points2[line_key].length > 0) {
+//				// 近似用のデータを計算する
+//				self.approxPoints(facilityid, line_key, self.startdate, self.enddate);
+//			}
 			k++;
 		}// データの整理が終了
 		
@@ -714,8 +823,8 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 		.enter()
 		.append("path")
 			.attr("class", function(d, i) {
-				if (ControlGraph.isApprox(d)) {
-					return "line_dash";
+				if (!ControlGraph.isNormal(d) && !ControlGraph.isApproxTarget(d)) {
+					return "line line_dash";
 				}
 				return "line";
 			})
@@ -726,17 +835,29 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 		.on("mouseover", function(d) { // 線のmouseoverイベント
 			// functionの引数dとmouseoverされた線のidが異なるため、thisからidを取得する
 			var targetlineid = this.id;
-			var facilityname = self.points2[targetlineid][0].facilityname;
-			var managername = self.points2[targetlineid][0].realmanagername;
-			var realfacilityid = self.points2[targetlineid][0].realfacilityid;
+			var baseid = targetlineid;
 			var linestyle = "solid";
-			if (ControlGraph.isApprox(targetlineid)) {
+			var linetype = "";
+			if (!ControlGraph.isNormal(baseid)) {
+				baseid = ControlGraph.getNormalLineId(baseid);
 				linestyle = "dashed"; // 近似線のツールチップ表示は破線にする
 			}
+			if (ControlGraph.isApprox(targetlineid)) {
+				linetype = "[APPROX]";
+			} else if (ControlGraph.isAvg(targetlineid)) {
+				linetype = "[AVERAGE]";
+			} else if (ControlGraph.isSig(targetlineid)) {
+				linetype = "[SIGMA]";
+			} else if (ControlGraph.isSim(targetlineid)) {
+				linetype = "[-SIGMA]";
+			}
+			var facilityname = self.points2[baseid][0].facilityname;
+			var managername = self.points2[baseid][0].realmanagername;
+			var realfacilityid = self.points2[baseid][0].realfacilityid;
 			var str = "<dl>";
 			str += "<dt style='border-bottom-style:" + linestyle + ";word-wrap: break-word;'>" + managername + "</dt>";
 			str += "<dd style='border-bottom-color :" + self.colorlist[targetlineid] + ";border-left-color :" + self.colorlist[targetlineid] 
-			+ ";border-bottom-style:" + linestyle + ";word-wrap: break-word;'>" + facilityname + "(" + realfacilityid + ")</dd>";
+			+ ";border-bottom-style:" + linestyle + ";word-wrap: break-word;'>" + facilityname + "(" + realfacilityid + ")" + linetype + "</dd>";
 			str += "</dl>";
 
 			d3.select("body")
@@ -807,7 +928,6 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 					return d;
 					})
 			.attr("clip-path", "url(#clip)");
-			
 		}
 		
 		// 最小・最大・平均・最新の算出
@@ -822,6 +942,9 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 		
 		// イベントフラグの線を描画
 		self.createEventFlag(eventflaginfo);
+		
+		// 
+		self.createPredictionTarget();
 		
 		// プロットの作成
 		self.redrawPlotData()();
@@ -859,7 +982,7 @@ NewGraph.prototype.createLegend = function() {
 		}
 	} else {
 		for (facimanekey in self.points2) {
-			if (!ControlGraph.isApprox(facimanekey)) {
+			if (ControlGraph.isNormal(facimanekey)) {
 				// 近似線は凡例表示しない
 				if (self.points2[facimanekey] != null && self.points2[facimanekey].length != 0 && self.valueinfo[facimanekey].size != 0) {
 					legendlist.push(facimanekey);
@@ -924,7 +1047,7 @@ NewGraph.prototype.createLegend = function() {
 	.attr("width", 375)
 	.attr("height", 20)
 	.style("fill", function(d, i) {
-		var color = "#e6e6fa";//"#fff0f5";//"#f5f5f5";
+		var color = "#e6e6fa";
 		if (i % 2 == 1) {
 			color = "#ffffff";
 		}
@@ -1054,7 +1177,7 @@ NewGraph.prototype.createLegend = function() {
 		if (i == 10) return ""; // omitted below
 		var targetvalue = "";
 		var target = self.valueinfo[d];
-		if (target == null || target.size == 0) return "-";
+		if (target == null || target.size == 0 || target.min == undefined) return "-";
 		targetvalue = target.min;
 		return targetvalue.toPrecision(3); 
 	})
@@ -1062,7 +1185,7 @@ NewGraph.prototype.createLegend = function() {
 		.text(function(d) {
 			var targetvalue = "";
 			var target = self.valueinfo[d];
-			if (target == null || target.size == 0) return "-";
+			if (target == null || target.size == 0 || target.min == undefined) return "-";
 			targetvalue = target.min;
 			return targetvalue; 
 		});
@@ -1090,7 +1213,7 @@ NewGraph.prototype.createLegend = function() {
 		if (i == 10) return ""; // omitted below
 		var targetvalue = "";
 		var target = self.valueinfo[d];
-		if (target == null || target.size == 0) return "-";
+		if (target == null || target.size == 0 || target.avg == undefined) return "-";
 		targetvalue = target.avg;
 		return targetvalue.toPrecision(3); 
 	})
@@ -1098,7 +1221,7 @@ NewGraph.prototype.createLegend = function() {
 		.text(function(d) {
 			var targetvalue = "";
 			var target = self.valueinfo[d];
-		if (target == null || target.size == 0) return "-";
+		if (target == null || target.size == 0 || target.avg == undefined) return "-";
 			targetvalue = target.avg;
 			return targetvalue; 
 		});
@@ -1126,7 +1249,7 @@ NewGraph.prototype.createLegend = function() {
 		if (i == 10) return ""; // omitted below
 		var targetvalue = "";
 		var target = self.valueinfo[d];
-		if (target == null || target.size == 0) return "-";
+		if (target == null || target.size == 0 || target.max == undefined) return "-";
 		targetvalue = target.max;
 		return targetvalue.toPrecision(3); 
 	})
@@ -1134,7 +1257,7 @@ NewGraph.prototype.createLegend = function() {
 		.text(function(d) {
 			var targetvalue = "";
 			var target = self.valueinfo[d];
-			if (target == null || target.size == 0) return "-";
+			if (target == null || target.size == 0 || target.max == undefined) return "-";
 			targetvalue = target.max;
 			return targetvalue; 
 		});
@@ -1162,7 +1285,7 @@ NewGraph.prototype.createLegend = function() {
 		if (i == 10) return ""; // omitted below
 		var min_value = "";
 		var target = self.valueinfo[d];
-		if (target == null || target.size == 0) return "-";
+		if (target == null || target.size == 0 || target.last == undefined) return "-";
 		targetvalue = target.last;
 		return targetvalue.toPrecision(3); 
 	})
@@ -1170,7 +1293,7 @@ NewGraph.prototype.createLegend = function() {
 		.text(function(d) {
 			var targetvalue = "";
 			var target = self.valueinfo[d];
-			if (target == null || target.size == 0) return "-";
+			if (target == null || target.size == 0 || target.last == undefined) return "-";
 			targetvalue = target.last;
 			return targetvalue; 
 		});
@@ -1230,13 +1353,28 @@ NewGraph.prototype.redrawPlotData = function() {
 		self.points.selectAll('.dot')
 		.data(function(d, index){
 			var dd = self.points2[d];
+			if (!ControlGraph.isNormal(d)) {
+				dd = self.points2[ControlGraph.getNormalLineId(d)];
+			}
 			var a = [];
 			if (isOnlyApprox && getGraphConfig("data-approx-flg") && !ControlGraph.isApprox(d)) {
 				// 近似線のプロットのみを表示させたい場合は、通常線は何もしない
 				return a;
 			}
 			dd.forEach(function(point, i){
-				a.push({'index': index, 'point': point});
+				if (ControlGraph.isNormal(d) && typeof(point.y) != "undefined") {
+					a.push({'index': index, 'point': point, 'lineid':d});
+				} else if (ControlGraph.isApprox(d) && typeof(point.app) != "undefined") {
+					a.push({'index': index, 'point': point, 'lineid':d});
+				} else if (ControlGraph.isApproxTarget(d) && typeof(point.tar) != "undefined") {
+					a.push({'index': index, 'point': point, 'lineid':d});
+				} else if (ControlGraph.isAvg(d) && typeof(point.avg) != "undefined") {
+					a.push({'index': index, 'point': point, 'lineid':d});
+				} else if (ControlGraph.isSig(d) && typeof(point.sig) != "undefined") {
+					a.push({'index': index, 'point': point, 'lineid':d});
+				} else if (ControlGraph.isSim(d) && typeof(point.sim) != "undefined") {
+					a.push({'index': index, 'point': point, 'lineid':d});
+				}
 			});
 			return a;
 		})
@@ -1244,35 +1382,76 @@ NewGraph.prototype.redrawPlotData = function() {
 		.append('circle')
 		.attr('class','dot')
 		.attr("r", function(d) {
-			if (ControlGraph.isApprox(d.point.key)) {
-				return 0.5;
+			if (!ControlGraph.isNormal(d.lineid)) {
+				return 0.1;
 			}
 			return 1;
 		})
 		.attr('fill', function(d,i){
-			return self.colorlist[d.point.key];
+			return self.colorlist[d.lineid];
 		})
 		.attr("transform", function(d) { 
-			return "translate(" + self.x(d.point.x) + "," + self.y(d.point.y) + ")"; }
-		)
+			var lineid = d.lineid;
+			
+			if (ControlGraph.isAvg(lineid)) {
+				return "translate(" + self.x(d.point.x) + "," + self.y(d.point.avg) + ")"; 
+			}
+			if (ControlGraph.isSig(lineid)) {
+				return "translate(" + self.x(d.point.x) + "," + self.y(d.point.sig) + ")"; 
+			}
+			if (ControlGraph.isSim(lineid)) {
+				return "translate(" + self.x(d.point.x) + "," + self.y(d.point.sim) + ")"; 
+			}
+			if (ControlGraph.isApprox(lineid)) {
+				return "translate(" + self.x(d.point.x) + "," + self.y(d.point.app) + ")"; 
+			}
+			if (ControlGraph.isApproxTarget(lineid)) {
+				return "translate(" + self.x(d.point.x) + "," + self.y(d.point.tar) + ")"; 
+			}
+			return "translate(" + self.x(d.point.x) + "," + self.y(d.point.y) + ")"; 
+		})
 		// tooltipの設定
 		.on("mouseover", function(d) { // 点のmouseoverイベント
 			var parseDate = d3.time.format('%Y/%m/%d %H:%M:%S');
 			var linestyle ="solid";
-			if (ControlGraph.isApprox(d.point.key)) {
+			if (!ControlGraph.isNormal(d.lineid)) {
 				linestyle = "dashed"; // 近似線のツールチップ表示は破線にする
+			}
+			var value = d.point.y;
+			var linetype = "";
+			if (ControlGraph.isApprox(d.lineid)) {
+				value = d.point.app;
+				linetype = "[APPROX]";
+			} else if (ControlGraph.isAvg(d.lineid)) {
+				value = d.point.avg;
+				linetype = "[AVERAGE]";
+			} else if (ControlGraph.isSig(d.lineid)) {
+				value = d.point.sig;
+				linetype = "[SIGMA]";
+			} else if (ControlGraph.isSim(d.lineid)) {
+				value = d.point.sim;
+				linetype = "[-SIGMA]";
 			}
 			var str = "<dl>";
 			str += "<dt style='border-bottom-style:" + linestyle + ";word-wrap: break-word;'>" + d.point.realmanagername + "  :  <" + parseDate(new Date(d.point.x)) + "></dt>";
-			str += "<dd style='border-bottom-color :" + self.colorlist[d.point.key] + ";border-left-color :" + self.colorlist[d.point.key] 
-			+ ";border-bottom-style:" + linestyle + ";word-wrap: break-word;'>" + d.point.facilityname + "(" + d.point.realfacilityid + ") : " + d.point.y + "</dd>";
+			str += "<dd style='border-bottom-color :" + self.colorlist[d.lineid] + ";border-left-color :" + self.colorlist[d.lineid] 
+			+ ";border-bottom-style:" + linestyle + ";word-wrap: break-word;'>" + d.point.facilityname + "(" + d.point.realfacilityid + ") : " + value + linetype + "</dd>";
 			str += "</dl>";
 
 			d3.select("body").select(".tooltip_mouse").style("visibility", "visible").style("width", "300px").html(str);
 			var paths = document.getElementsByTagName("path");
+			if (ControlGraph.isApprox(d.lineid)) {
+				// 将来予測対象データ
+				for (var i = 0; i < paths.length; i++) {
+					var pathsingle = paths[i];
+					if (pathsingle.id == d.lineid.slice(0, -3) + "tar") {
+						d3.select(pathsingle).style("stroke-width", HINEMOS_COLLECT_CONST.CONST_LINE_WIDTH_MOUSEOVER);
+					}
+				}
+			}
 			for (var i = 0; i < paths.length; i++) {
 				var pathsingle = paths[i];
-				if (pathsingle.id == d.point.key) {
+				if (pathsingle.id == d.lineid) {
 					d3.select(pathsingle).style("stroke-width", HINEMOS_COLLECT_CONST.CONST_LINE_WIDTH_MOUSEOVER);
 				}
 			}
@@ -1292,9 +1471,18 @@ NewGraph.prototype.redrawPlotData = function() {
 		.on("mouseout", function(d) { // 点のmouseoutイベント
 			disableTooltip();
 			var paths = document.getElementsByTagName("path");
+			if (ControlGraph.isApprox(d.lineid)) {
+				// 将来予測対象データ
+				for (var i = 0; i < paths.length; i++) {
+					var pathsingle = paths[i];
+					if (pathsingle.id == d.lineid.slice(0, -3) + "tar") {
+						d3.select(pathsingle).style("stroke-width", HINEMOS_COLLECT_CONST.CONST_LINE_WIDTH_DEFAULT);
+					}
+				}
+			}
 			for (var i = 0; i < paths.length; i++) {
 				var pathsingle = paths[i];
-				if (pathsingle.id == d.point.key) {
+				if (pathsingle.id == d.lineid) {
 					d3.select(pathsingle).style("stroke-width", HINEMOS_COLLECT_CONST.CONST_LINE_WIDTH_DEFAULT);
 				}
 			}
@@ -1309,15 +1497,31 @@ NewGraph.prototype.createEventFlag = function(eventflaginfo) {
 	var self = this;
 	// 線情報
 	if (self.event == undefined) return;// フラグなしの場合は処理なしで戻る
-	
+
+	// 既存のイベント線の削除処理
+	if (self.event.object != null) {
+		for (eventkey in self.event.object) {
+			var eventobj = self.event.object[eventkey];
+			self.vis.select("#eventflagline" + eventkey).remove(); // pathタグの削除
+			delete self.event.object[eventkey]; // メンバで保持している詳細情報の削除
+			var place = 0;
+			for (place = 0; place < self.event.eventidlist.length; place++) {
+				if (self.event.eventidlist[place] == eventkey) {
+					self.event.eventidlist.splice(place, 1);
+					break;
+				}
+			}
+		}
+	}
+
 	var totalarr = {};
 	if (self.event.eventidlist == undefined) self.event.eventidlist = [];
 	for (var i = 0; i < eventflaginfo.length; i++) {
-		if (eventflaginfo[i].monitorid != self.monitorid || eventflaginfo[i].displayname != self.displayname) {
+		if (eventflaginfo[i].monitorid != self.monitorid || eventflaginfo[i].parentdisplayname != self.displayname) {
 			// monitoridとdisplaynameが異なる場合はループの先頭に戻る
 			continue;
 		}
-		var lineid = ControlGraph.giveLineId(eventflaginfo[i].facilityid + "_" + eventflaginfo[i].managername);
+		var lineid = eventflaginfo[i].facilityid + "_" + eventflaginfo[i].managername;
 		if (getGraphConfig("data-stack-flg")) {
 			lineid = eventflaginfo[i].managername + "_" + eventflaginfo[i].facilityid;
 		}
@@ -1334,7 +1538,7 @@ NewGraph.prototype.createEventFlag = function(eventflaginfo) {
 
 		self.event.eventidlist.push(eventdetailid);
 		var startline = {};
-		startline.x = Number(eventflaginfo[i].generationdate);
+		startline.x = Number(eventflaginfo[i].predictgenerationdate);
 		startline.y = Number(0);
 		startline.outputdate = Number(eventflaginfo[i].outputdate);
 		startline.lineid = lineid;
@@ -1350,7 +1554,7 @@ NewGraph.prototype.createEventFlag = function(eventflaginfo) {
 		startline.eventdetailid = eventflaginfo[i].eventdetailid;
 		startline.pluginid = eventflaginfo[i].pluginid;
 		var endline = {};
-		endline.x = Number(eventflaginfo[i].generationdate);
+		endline.x = Number(eventflaginfo[i].predictgenerationdate);
 		endline.y = Number(self.height);
 		endline.lineid = lineid;
 
@@ -1427,12 +1631,112 @@ NewGraph.prototype.createEventFlag = function(eventflaginfo) {
 		param.pluginid = targetobj.pluginid;
 		param.facilityid = targetobj.realfacilityid;
 		callJavaMethod(param);
-
 	});
 
 	// 線別スタイルの設定
 	self.vis.selectAll("path#eventflagline")
 	.style("stroke-dasharray", "5, 0");
+};
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+// 近似直線の予測先を描画します。
+NewGraph.prototype.createPredictionTarget = function() {
+
+	if (!getGraphConfig("data-approx-flg")) {
+		// 近似表示なしの場合は何もしない
+		return;
+	}
+	var self = this;
+
+	// 線情報
+	if (self.prediction == undefined) return;// フラグなしの場合は処理なしで戻る
+	
+	var starlist = [];
+	for (var lineid in self.prediction) {
+		var obj = self.prediction[lineid];
+		var point = self.points2[lineid];
+		if (point.length <= 0) {
+			continue;
+		}
+		var forinfo = self.forecastslist[lineid];
+		var facilityname = point[0].facilityname;
+		var managername = point[0].realmanagername;
+		var date = obj.now + obj.min*60*1000;
+		var star = {};
+		star.facilityname = facilityname;
+		star.managername = managername;
+		star.x = date;
+		var xx = date - (forinfo.dateoffset);
+		star.y = forinfo.a0 + forinfo.a1 * Math.pow(xx, 1) + forinfo.a2 * Math.pow(xx, 2) + forinfo.a3 * Math.pow(xx, 3);
+		star.lineid = lineid;
+		starlist.push(star);
+	
+	}
+	if (starlist.length <= 0) {
+		return;
+	}
+	self.starlist = null;
+	self.starlist = starlist;
+	
+	if (Number(self.startdate) > starlist[0].x 
+		|| Number(self.enddate) < starlist[0].x) {
+		// 目印が描画範囲外の場合は何もしない
+		return;
+	}
+
+	self.vis.selectAll(".predictiontarget")
+	.data(self.starlist)
+	.enter()
+	.append("g")
+	.attr("class", "dddots")
+	.attr("id", function(d, i) {
+		return "predictiontarget_" + d.lineid;
+	})
+	.attr("clip-path", "url(#clip)")
+	.append('circle')
+	.attr('id', function(d) {
+		return 'predictiontarget' + d.lineid;
+	})
+	.attr('class', function(d) {
+		return 'predictiontarget';
+	})
+	.attr("r", function(d) {
+		return 3;
+	})
+	.attr('fill', function(d, i){
+		return self.colorlist[d.lineid];
+	})
+	.attr("transform", function(d) { 
+		return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
+	})
+	// tooltipの設定
+	.on("mouseover", function(d) { // 点のmouseoverイベント
+		var parseDate = d3.time.format('%Y/%m/%d %H:%M:%S');
+		var predictionstr = getGraphMessages("mess-prediction");
+		var minstr = predictionstr.replace("@@", self.prediction[d.lineid].str);
+		var str = "<dl>";
+		str += "<dt style='border-bottom-style:dashed;word-wrap: break-word;'>" + d.managername + " : <" + parseDate(new Date(d.x)) + "> *"  + minstr  + "*</dt>";
+		str += "<dd style='border-bottom-color :" + self.colorlist[d.lineid] + ";border-left-color :" + self.colorlist[d.lineid] 
+		+ ";border-bottom-style:dashed;word-wrap: break-word;'>" + d.facilityname + " : " + d.y + "</dd>";
+		str += "</dl>";
+		d3.select("body").select(".tooltip_mouse").style("visibility", "visible").style("width", "350px").html(str);
+	})
+	.on("mousemove", function(d) { // 点のmousemoveイベント
+		var pagey = d3.event.pageY;
+		var pagex = d3.event.pageX;
+		// chromeとfirefoxはd3.event.pageXで取れる、IE10、11も取れるがIE10だと座標が若干ずれている
+		// そのため、IE10の場合はif文で値を取得しなおす
+		// firefoxでは[event is not defined.]になるため、ブラウザチェックする
+		if (!checkBrowserKind("firefox") && (event.pageY == undefined || event.pageX == undefined)) { // IE9、10でのevent.pageX、event.pageYが取れない対策
+			pagex = event.clientX + (document.body.scrollLeft || document.documentElement.scrollLeft);
+			pagey = event.clientY + (document.body.scrollTop || document.documentElement.scrollTop);
+		}
+		d3.select("body").select(".tooltip_mouse").style("top", (pagey-20)+"px").style("left",(pagex+10)+"px");
+	})
+	.on("mouseout", function(d) { // 点のmouseoutイベント
+		disableTooltip();
+	});
+	return;
 };
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -1504,74 +1808,104 @@ NewGraph.prototype.getCollectIdNone = function(self, datacount) {
 }
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
-// 近似直線を作成します
-NewGraph.prototype.approxPoints = function(facilityid, pointdata, linekey, enddate) {
-	var a = 0;
-	var b = 0;
-	var sum_xy = 0, sum_x = 0, sum_y = 0, sum_x2 = 0;
+//n近似線を作成します
+//normallineid : おおもとのlineid
+NewGraph.prototype.approxPoints = function(facilityid, normallineid, startdate, enddate) {
 	var managername = "";
 	var realmanagername = "";
-	var approxarr = [];
-	var self = this;
-	
-	if (pointdata.length <= 0) {
-		return approxarr;
-	}
-	for (var i = 0; i < pointdata.length; i++) {
-		sum_xy += pointdata[i].x * pointdata[i].y;
-		sum_x += pointdata[i].x;
-		sum_y += pointdata[i].y;
-		sum_x2 += Math.pow(pointdata[i].x, 2);
-		managername = pointdata[i].managername;
-		realmanagername = pointdata[i].realmanagername;
-	}
-	a = (pointdata.length * sum_xy - sum_x * sum_y) / (pointdata.length * sum_x2 - Math.pow(sum_x, 2));
-	b = (sum_x2 * sum_y - sum_xy * sum_x) / (pointdata.length * sum_x2 - Math.pow(sum_x, 2));
-	
-	if (isReallyNaN(a) || isReallyNaN(b)) {
-		// aもbもNaNのため、returnする
-		return approxarr;
-	}
-	
 	var facilityname = "";
 	var realfacilityid = "";
-	for (var i = 0; i < pointdata.length; i++) {
-		var newpoint = {};
-		newpoint.x = Number(pointdata[i].x);
-		newpoint.y = a * newpoint.x + b;
-		newpoint.facilityid = facilityid;
-		facilityname = pointdata[i].facilityname;
-		realfacilityid = pointdata[i].realfacilityid;
-		newpoint.facilityname = facilityname;
-		newpoint.realfacilityid = realfacilityid;
-		newpoint.key = linekey;
-		newpoint.approx = true;
-		newpoint.managername = managername;
-		newpoint.realmanagername = realmanagername;
-		approxarr.push(newpoint);
+	var self = this;
+	
+	if (self.points2[normallineid].length <= 0) {
+		return;
 	}
-	approxarr.sort(function(a, b) {
-	if (a.x < b.x) { return -1 };
-	if (a.x > b.x) { return 1 };
-	return 0
+	
+	var newapp = self.points2[normallineid].filter(function(v, i) {
+		return (v.apponly != true);
 	});
+	
+	self.points2[normallineid] = newapp;
+	
+	var forinfo = self.forecastslist[normallineid];
+	
+	managername = self.points2[normallineid][0].managername;
+	realmanagername = self.points2[normallineid][0].realmanagername;
+	facilityname = self.points2[normallineid][0].facilityname;
+	realfacilityid = self.points2[normallineid][0].realfacilityid;
 
 	// プロット情報の最新時間よりもグラフの表示領域最新時間のほうが未来の場合は、未来時刻に近似線を延ばす
 	// 表示領域最新時間の座標を求める
-	if (approxarr[approxarr.length-1].x < enddate) {
+	// サマリタイプ別にプロットの間隔を決める(rawは1m、hourは1h、dayは1day、monthは1month)
+	var add_term = 60*1000; // 1minute
+	switch (self.summarytype) {
+		case HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_AVG_HOUR:
+		case HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_MIN_HOUR:
+		case HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_MAX_HOUR:
+			add_term = msec_hour;
+		break;
+		case HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_AVG_DAY:
+		case HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_MIN_DAY:
+		case HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_MAX_DAY:
+			add_term = msec_day;
+		break;
+		case HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_AVG_MONTH:
+		case HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_MIN_MONTH:
+		case HINEMOS_COLLECT_CONST.CONST_SUMMARY_TYPE_MAX_MONTH:
+			add_term = msec_month;
+		break;
+		default:
+		break;
+	}
+	var disp_min = self.y.domain()[0];
+	var disp_max = self.y.domain()[1];
+	var disp_diff = disp_max - disp_min;
+	disp_max = disp_max + disp_diff * 100;
+	disp_min = disp_min - disp_diff * 100;
+
+	var apparr = [];
+	for (var term = Number(startdate); term <= (Number(enddate) + add_term); term+=add_term) {
 		var newpoint = {};
-		newpoint.x = Number(enddate);
-		newpoint.y = a * newpoint.x + b;
-		newpoint.key = linekey;
-		newpoint.approx = true;
+		newpoint.x = term;
+		var xx = newpoint.x - (forinfo.dateoffset);
+		var app = forinfo.a0 + forinfo.a1 * Math.pow(xx, 1) + forinfo.a2 * Math.pow(xx, 2) + forinfo.a3 * Math.pow(xx, 3);
+		
+		if (app < disp_min || disp_max < app) {
+			continue;
+		}
+		newpoint.app = app;
 		newpoint.facilityid = facilityid;
 		newpoint.realfacilityid = realfacilityid;
 		newpoint.facilityname = facilityname;
 		newpoint.managername = managername;
 		newpoint.realmanagername = realmanagername;
-		approxarr.push(newpoint);
+		newpoint.apponly = true;
+		apparr.push(newpoint);
 	}
-	return approxarr;
+	
+	
+	// ソート
+	apparr.sort(function(a, b) {
+		if (a.x < b.x) { return -1 };
+		if (a.x > b.x) { return 1 };
+		return 0
+	});
+	// 重複データの除去
+	var newlinepoints = apparr.filter(function (x, i, self) {
+		var count = 0;
+		for (count = 0; count < self.length; count++) {
+			if (self[count].x == x.x) {
+				break;
+			}
+		}
+		return count == i;
+	});
+	
+	for (var k = 0; k < apparr.length; k++) {
+		self.points2[normallineid].push(apparr[k]);
+	}
+	
+	return;
 };
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -1586,47 +1920,93 @@ NewGraph.prototype.removePoints = function(start_date, end_date, alldel) {
 			for (var keyline in self.points2) {
 				var howmany_back = 0;
 				var howmany_front = 0;
-				var length = self.points2[keyline].length;
 				// 後半の削除
-				if (ControlGraph.isApprox(keyline) || alldel) {
-					// 近似直線の場合または全消しフラグがtrueの場合は、全部消す
-					howmany_back = length;
+				if (alldel) {
+					// 全消しフラグがtrueの場合は、全部消す
+					howmany_back = self.points2[keyline].length;
 				} else {
-					for (j = length-1; j >= 0; j--) {
+				
+				
+					var newapp = self.points2[keyline].filter(function(v, i) {
+						return (v.apponly != true);
+					});
+
+					self.points2[keyline] = newapp;
+/*
+					self.points2[keyline].some(function(v, i){
+						if (typeof(v.apponly) != "undefined") {
+							self.points2[keyline].splice(i,1);
+						}
+					});
+*/				
+/*				
+					// 近似用のオブジェクトを削除
+					var appcount = 0;
+					for (var k = 0; k < self.points2[keyline].length; k++) {
+						if (typeof(self.points2[keyline][k].apponly) != "undefined") {
+							appcount++;
+						}
+						delete self.points2[keyline][k].app;// 近似直線の情報を削除する
+					}
+					self.points2[keyline].splice(self.points2[keyline].length-appcount, appcount);
+*/
+
+					// 指定日時外のオブジェクトを削除
+					for (j = self.points2[keyline].length-1; j >= 0; j--) {
+						delete self.points2[keyline][j].app;// 近似直線の情報を削除する
 						if (self.points2[keyline][j].x >= Number(end_date)) {
 							howmany_back++;
 						}
 					}
 					// グラフに余白を作らないように、消す数の調整
-					if (howmany_back != length && howmany_back > 0) {
+					if (howmany_back != self.points2[keyline].length && howmany_back > 0) {
 						howmany_back--;
 					}
 				}
 				// plotの数が変わる、再度ループしなおしが良さげ
 				// どこから・どのぐらい
-				var sum = self.points2[keyline].splice(length-howmany_back, howmany_back);
+				var sum = self.points2[keyline].splice(self.points2[keyline].length-howmany_back, howmany_back);
+
 				// 前半の削除
-				length = self.points2[keyline].length;
-				for (j = 0; j < length; j++) {
+				for (j = 0; j < self.points2[keyline].length; j++) {
 					if (self.points2[keyline][j].x <= Number(start_date)) {
 						howmany_front++;
 					}
 				}
 				// グラフに余白を作らないように、消す数の調整
-				if (howmany_front != length && howmany_front > 0) {
+				if (howmany_front != self.points2[keyline].length && howmany_front > 0) {
 					howmany_front--;
 				}
-				sum = self.points2[keyline].splice(0, howmany_front);
 				// 前半の削除
-
+				sum = self.points2[keyline].splice(0, howmany_front);
+			}
+			
+			for (var i = 0; i < self.lineids.length; i++) {
 				// プロットも消す
-				self.points.selectAll("g#" + keyline + " circle")
+				self.points.selectAll("g#" + self.lineids[i] + " circle")
 				.data(function(d, index) {
-					var dd = self.points2[d];
 					var a = [];
+					var normalid = d;
+					if (!ControlGraph.isNormal(d)) {
+						normalid = ControlGraph.getNormalLineId(normalid);
+					}
+					var dd = self.points2[normalid];
 					dd.forEach(function(point, i){
-						a.push({'index': index, 'point': point});
+						if (ControlGraph.isNormal(d) && typeof(point.y) != "undefined") {
+							a.push({'index': index, 'point': point, 'lineid':d});
+						} else if (ControlGraph.isApprox(d) && typeof(point.app) != "undefined") {
+							a.push({'index': index, 'point': point, 'lineid':d});
+						} else if (ControlGraph.isApproxTarget(d) && typeof(point.tar) != "undefined") {
+							a.push({'index': index, 'point': point, 'lineid':d});
+						} else if (ControlGraph.isAvg(d) && typeof(point.avg) != "undefined") {
+							a.push({'index': index, 'point': point, 'lineid':d});
+						} else if (ControlGraph.isSig(d) && typeof(point.sig) != "undefined") {
+							a.push({'index': index, 'point': point, 'lineid':d});
+						} else if (ControlGraph.isSim(d) && typeof(point.sim) != "undefined") {
+							a.push({'index': index, 'point': point, 'lineid':d});
+						}
 					});
+					// 残すプロットの情報を返す
 					return a;
 				})
 				.exit()
@@ -1635,6 +2015,7 @@ NewGraph.prototype.removePoints = function(start_date, end_date, alldel) {
 			
 			// イベント線の削除処理(範囲外のものを削除する)
 			self.removeEventFlag(self, start_date, end_date);
+			self.removePredictionTarget(self, start_date, end_date);
 			self.redraw();
 		}
 	} catch (e) {
@@ -1663,6 +2044,17 @@ NewGraph.prototype.removeEventFlag = function(self, start_date, end_date) {
 				}
 			}
 		}
+	}
+};
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+NewGraph.prototype.removePredictionTarget = function(self, start_date, end_date) {
+	// イベント線の削除処理(範囲外のものを削除する)
+	for (var i = 0; i < self.starlist.length; i++) {
+		var preobj = self.starlist[i];
+		// イベント線が範囲外になったので削除する
+		self.vis.select("#predictiontarget" + preobj.lineid).remove(); // pathタグの削除
+		delete self.prediction[i]; // メンバで保持している詳細情報の削除
 	}
 };
 //////////////////////////////////////////////////////////////
@@ -1724,7 +2116,6 @@ ControlGraph.addDiv = function (parentid, name) {
 			div_midchild.id = div_parent_id;
 			div_block.appendChild(div_midchild)
 			div_parent = document.getElementById(div_parent_id);
-//			div_parent.style.background="white";
 		}
 
 		// 一番前にadd
@@ -1800,7 +2191,7 @@ ControlGraph.addPlotAtOnce = function (plotjson) {
 		for (var i = 0; i < length; i++) {
 			var item = plotjson.all[i];
 			var groupid = item.groupid;// total:monitorid, total:facilityid+managername+monitorid
-			var id = ControlGraph.giveLineId(item.facilityid + "_" + item.managername);// + item.collectid;
+			var id = item.facilityid + "_" + item.managername;// + item.collectid;
 			if (data_arr[groupid] == null) {
 				data_arr[groupid] = [];
 			}
@@ -1870,11 +2261,10 @@ try {
 				break;
 			}
 		}
-		if (itemflg) {
-			// すでにリストに入っているなら先頭に戻る
-			continue;
+		if (!itemflg) {
+			// リストに入っていないなら、入れる
+			itemTrimList.push(itemmoni);
 		}
-		itemTrimList.push(itemmoni);
 	}
 	// itemname+monitoridの配列が完成↑
 	
@@ -1901,11 +2291,11 @@ try {
 						if (value.size == 0) {
 							continue;
 						}
-						if (max_y < value.max) {
-							max_y = value.max;
+						if (max_y < value.disp_max) {
+							max_y = value.disp_max;
 						}
-						if (min_y > value.min) {
-							min_y = value.min;
+						if (min_y > value.disp_min) {
+							min_y = value.disp_min;
 						}
 					}
 				}
@@ -1995,15 +2385,38 @@ ControlGraph.calcMinMaxAvg = function(self) {
 	} else {
 		facilitylist = self.points2;
 	}
-
 	
+	/////////
+	// 内部関数
+	/////////
+	function getY(value, startdate, enddate, type) {
+		if (getGraphConfig("data-stack-flg")) {
+			if (startdate <= value.date && value.date <= enddate) {
+				return value.y;
+			}
+		} else {
+			if (startdate <= value.x && value.x <= enddate && value.apponly != true) {
+				switch (type) {
+					case "avg":
+						return value.avg;
+						break;
+					case "sig":
+						return value.sig;
+						break;
+					case "sim":
+						return value.sim;
+						break;
+					default:
+						return value.y;
+						break;
+				}
+			}
+		}
+	}
+		
 	for (var linekey in facilitylist) {
-		var min = 0;
-		var max = 0;
-		var avg = 0;
 		var size = 0;
-		var last = 0;
-		var find = 0;
+		var last = null;
 		var startdate = Number(self.startdate);
 		var enddate = Number(self.enddate);
 		var pointlist = facilitylist[linekey];
@@ -2011,30 +2424,61 @@ ControlGraph.calcMinMaxAvg = function(self) {
 		if (getGraphConfig("data-stack-flg")) {
 			pointlist = facilitylist[linekey].values;
 		}
-
-
+		
+		// 収集値のmin、max、meanを求める
+		var y_min = d3.min(pointlist, function (e) { return getY(e, startdate, enddate, "y");});
+		var y_max = d3.max(pointlist, function (e) { return getY(e, startdate, enddate, "y");});
+		var y_mean = d3.mean(pointlist, function (e) { return getY(e, startdate, enddate, "y");});
+		
+		// 平均のmin、maxを求める
+		var avg_min = d3.min(pointlist, function (e) { return getY(e, startdate, enddate, "avg");});
+		var avg_max = d3.max(pointlist, function (e) { return getY(e, startdate, enddate, "avg");});
+		
+		// 2pのmin、maxを求める
+		var sig_min = d3.min(pointlist, function (e) { return getY(e, startdate, enddate, "sig");});
+		var sig_max = d3.max(pointlist, function (e) { return getY(e, startdate, enddate, "sig");});
+		
+		// -2pのmin、maxを求める
+		var sim_min = d3.min(pointlist, function (e) { return getY(e, startdate, enddate, "sim");});
+		var sim_max = d3.max(pointlist, function (e) { return getY(e, startdate, enddate, "sim");});
+		
+		// TODO ここで将来予測の予測点を取得する
+		var predict = undefined;
+		var pred = self.prediction[linekey];
+		if (typeof(pred) != "undefined") {
+			var forinfo = self.forecastslist[linekey];
+			var preddate = pred.now + pred.min*60*1000;
+			
+			if (startdate <= preddate && preddate <= enddate) {
+				var xx = preddate - (forinfo.dateoffset);
+				predict = forinfo.a0 + forinfo.a1 * Math.pow(xx, 1) + forinfo.a2 * Math.pow(xx, 2) + forinfo.a3 * Math.pow(xx, 3);
+			}
+		}
+		
+		// y軸のmin、maxを求める
+		var disp_min = d3.min([y_min, avg_min, sig_min, sim_min, predict]);
+		var disp_max = d3.max([y_max, avg_max, sig_max, sim_max, predict]);
+		
+		// 凡例表示用のlastの日時を取得
+		var x_max = d3.max(pointlist, function (e) {
+			if (startdate <= e.x && e.x <= enddate && typeof(e.y) != "undefined") {
+				if (getGraphConfig("data-stack-flg")) {
+					return e.date;
+				}
+				return e.x;
+			}
+		});
 		for (var i = 0; i < pointlist.length; i++) {
 			var obj = pointlist[i];
 			var checkdate = obj.x;
 			if (getGraphConfig("data-stack-flg")) {
 				checkdate = obj.date;
 			}
-
 			if (startdate <= checkdate && checkdate <= enddate) {
-				last = obj.y;
-				if (find == 0) {
-					min = last;
-					max = last;
-					find++;
-				}
-				if (obj.y < min) {
-					min = last;
-				}
-				if (obj.y > max) {
-					max = last;
-				}
-				avg += last;
 				size++;
+				if (checkdate == x_max) {
+					last = obj.y;
+				}
 			}
 		}
 		if (self.valueinfo == null) {
@@ -2044,55 +2488,91 @@ ControlGraph.calcMinMaxAvg = function(self) {
 			linekey = facilitylist[linekey].name;
 		}
 		var ret = [];
-		ret.min = min;
-		ret.max = max;
-		ret.avg = avg / size;
+		ret.min = y_min; // 凡例表示用の最小値
+		ret.max = y_max; // 凡例表示用の最大値
+		ret.disp_min = disp_min; // y軸調整用の最小値
+		ret.disp_max = disp_max; // y軸調整用の最大値
+		ret.avg = y_mean;
 		ret.size = size;
-		ret.last = last;
+		if (last != null) {
+			ret.last = last;
+		}
 		ret.linekey = linekey;
 		self.valueinfo[linekey] = ret;
-//		console.log("min:" + ret.min + ", max:" + ret.max + ", last:" + last + ", avg:" + ret.avg + ", size:" + ret.size + ", linekey:" + linekey);
+//		console.log("min:" + ret.min + ", max:" + ret.max + ", last:" + last + ", avg:" + ret.avg + ", size:" + ret.size + ", linekey:" + linekey + ", dispmin:" + ret.disp_min + ", dispmax:" + ret.disp_max);
 	} // end of loop
 };
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
-// xxxx => NxxxxN
-ControlGraph.giveLineId = function(lineId) {
-	return "N" + lineId + "N";
-}
-//////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////
-// ANxxxxNA => xxxx, NxxxxN => xxxx
-ControlGraph.dispLineId = function(lineId) {
-	var slicelen = 1;
-	if (ControlGraph.isApprox(lineId)) {
-		slicelen = 2;
-	}
-	var lineId2 = lineId.slice(slicelen, lineId.length);
-	return lineId2.slice(0, lineId2.length-slicelen);
-}
-//////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////
-// ANxxxxNA => NxxxxN
+// xxxYYY => xxx
 ControlGraph.getNormalLineId = function(lineId) {
-	var lineId2 = lineId.slice(1, lineId.length);
-	return lineId2.slice(0, lineId2.length-1);
+	return lineId.slice(0, lineId.length-3);
 }
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
-// xxxx => AxxxxA
-ControlGraph.giveApproxLineId = function(lineId) {
-	return "A" + lineId + "A";
+// xxxx => xxxxapp
+ControlGraph.getApproxLineId = function(lineId) {
+	return lineId + "app";
 }
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
-// ANxxxxNA => true
+//xxxx => xxxxtar
+ControlGraph.getApproxTargetLineId = function(lineId) {
+return lineId + "tar";
+}
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+// xxxxapp => true
 ControlGraph.isApprox = function(lineId) {
-	var lin = lineId.slice(1);
-	if (lineId.slice(0, 1) == "A" && lineId.slice(-1) == "A") {
+	if (lineId.slice(-3) == "app") {
 		return true;
 	}
 	return false;
+}
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+//xxxxapp => true
+ControlGraph.isApproxTarget = function(lineId) {
+if (lineId.slice(-3) == "tar") {
+return true;
+}
+return false;
+}
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+// xxxxsig => true
+ControlGraph.isSig = function(lineId) {
+	if (lineId.slice(-3) == "sig") {
+		return true;
+	}
+	return false;
+}
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+// xxxxsigm => true
+ControlGraph.isSim = function(lineId) {
+	if (lineId.slice(-3) == "sim") {
+		return true;
+	}
+	return false;
+}
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+// xxxxavg => true
+ControlGraph.isAvg = function(lineId) {
+	if (lineId.slice(-3) == "avg") {
+		return true;
+	}
+	return false;
+}
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+// xxxx => true
+ControlGraph.isNormal = function(lineId) {
+	if (ControlGraph.isApprox(lineId) || ControlGraph.isApproxTarget(lineId) || ControlGraph.isAvg(lineId) || ControlGraph.isSig(lineId) || ControlGraph.isSim(lineId)) {
+		return false;
+	}
+	return true;
 }
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
@@ -2315,19 +2795,6 @@ NewGraph.prototype.updateStack = function() {
 //////////////////////////////////////////////////////////////
 NewGraph.prototype.animationStack = function() {
 	var self = this;
-/*	for (i = 0; i < this.lineids.length; i++) {
-		var pathdata = this.vis.selectAll("#"+this.lineids[i]).select("path");
-		var totalLength = pathdata.node().getTotalLength();
-		pathdata
-			.attr("stroke-dasharray", totalLength + " " + totalLength)
-			.attr("stroke-dashoffset", totalLength)
-			.transition()
-			.duration(2000)
-			.ease("linear")
-			.attr("stroke-dashoffset", 0);
-
-	}
-*/
 	self.vis.select("#clip rect").attr("width", 0);
 
 	self.vis.select("#clip rect")

@@ -1,0 +1,22 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"targetkey",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCustomInfo_targetKey"}
+	]},
+
+	{
+	"propName":"convertFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorCustomTrapInfo_convertFlg"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_nothing"},
+			{"value":"1", "name":"name_takeDifference"}
+		]}
+	]}
+]
+}

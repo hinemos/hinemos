@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.action;
@@ -146,7 +139,7 @@ public class GetMonitorListTableDefine {
 
 		// 実行間隔
 		tableDefine.add(RUN_INTERVAL,
-				new TableColumnInfo(Messages.getString("run.interval", locale), TableColumnInfo.NONE, 40, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("run.interval", locale), TableColumnInfo.RUN_INTERVAL, 40, SWT.LEFT));
 
 		// 監視有効/無効
 		tableDefine.add(MONITOR_FLG,

@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.monitor.run.dialog;
@@ -47,16 +40,11 @@ import com.clustercontrol.ws.monitor.MonitorStringValueInfo;
 /**
  * フィルタ[作成・変更]ダイアログクラス<BR>
  *
- * @version 4.0.0
+ * @version 6.1.0 バイナリ監視用フィルタ追加対応
  * @since 2.1.0
  */
 public class StringValueInfoCreateDialog extends CommonDialog {
 
-	/** カラム数（タイトル）。 */
-	public static final int WIDTH_TITLE = 4;
-
-	/** カラム数（値）。 */
-	public static final int WIDTH_VALUE = 2;
 
 	/** 入力値を保持するオブジェクト。 */
 	private MonitorStringValueInfo m_inputData = null;
@@ -139,25 +127,35 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		// タイトル
 		shell.setText(Messages.getString("dialog.monitor.run.create.modify.string"));
 
-		// 変数として利用されるラベル
-		Label label = null;
-		// 変数として利用されるグリッドデータ
-		GridData gridData = null;
-
 		// レイアウト
 		GridLayout layout = new GridLayout(1, true);
 		layout.marginWidth = 10;
 		layout.marginHeight = 10;
 		layout.numColumns = 15;
 		parent.setLayout(layout);
+		this.setDescription(parent, layout);
+		this.setOtherInput(parent, layout, shell);
 
+	}
+
+	/**
+	 * 説明部分のセット.
+	 *
+	 */
+	protected void setDescription(Composite parent, GridLayout layout) {
+
+		// 変数として利用されるラベル
+		Label label = null;
+		// 変数として利用されるグリッドデータ
+		GridData gridData = null;
+		
 		/*
 		 * 説明
 		 */
 		// ラベル
 		label = new Label(parent, SWT.NONE);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -176,6 +174,18 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 				update();
 			}
 		});
+	}
+
+	/**
+	 * 画面項目残部分のセット.
+	 *
+	 */
+	protected void setOtherInput(Composite parent, GridLayout layout, Shell shell) {
+
+		// 変数として利用されるラベル
+		Label label = null;
+		// 変数として利用されるグリッドデータ
+		GridData gridData = null;
 
 		/*
 		 * 監視条件グループ
@@ -201,7 +211,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		// ラベル
 		label = new Label(monitorRuleGroup, SWT.NONE);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalSpan = 6;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -210,17 +220,18 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		this.m_textPattern = new Text(monitorRuleGroup, SWT.BORDER | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "pattern", m_textPattern);
 		gridData = new GridData();
-		gridData.horizontalSpan = 10;
+		gridData.horizontalSpan = 9;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
+		this.m_textPattern.setMessage(Messages.getString("pattern.placeholder.regex"));
 		this.m_textPattern.setLayoutData(gridData);
-		this.m_textPattern.addModifyListener(new ModifyListener(){
+		this.m_textPattern.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
 			}
 		});
-
+		
 		/*
 		 * 出力の条件
 		 */
@@ -308,7 +319,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		// ラベル
 		label = new Label(executeGroup, SWT.NONE);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -317,7 +328,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		this.m_comboPriority = new Combo(executeGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
 		WidgetTestUtil.setTestId(this, "priority", m_comboPriority);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_VALUE;
+		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_comboPriority.setLayoutData(gridData);
@@ -329,7 +340,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		// 空白
 		label = new Label(executeGroup, SWT.NONE);
 		gridData = new GridData();
-		gridData.horizontalSpan = 8;
+		gridData.horizontalSpan = 7;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
@@ -340,7 +351,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		// ラベル
 		label = new Label(executeGroup, SWT.NONE);
 		gridData = new GridData();
-		gridData.horizontalSpan = WIDTH_TITLE;
+		gridData.horizontalSpan = 5;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);

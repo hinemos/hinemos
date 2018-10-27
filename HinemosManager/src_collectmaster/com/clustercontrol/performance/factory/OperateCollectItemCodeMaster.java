@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) since 2009 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.performance.factory;
@@ -52,18 +45,16 @@ public class OperateCollectItemCodeMaster {
 	 */
 	public boolean add(CollectorItemCodeMstData data) throws EntityExistsException {
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-
 		// 収集項目コード定義情報の追加
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			CollectorCategoryMstEntity collectorCategoryMstEntity = null;
 			try {
 				collectorCategoryMstEntity = QueryUtil.getCollectorCategoryMstPK(data.getCategoryCode());
 			} catch (CollectorNotFound e) {
 			}
 			// インスタンス生成
-			CollectorItemCodeMstEntity entity = new CollectorItemCodeMstEntity(data.getItemCode(),
-					collectorCategoryMstEntity);
+			CollectorItemCodeMstEntity entity = new CollectorItemCodeMstEntity(data.getItemCode());
 			// 重複チェック
 			jtm.checkEntityExists(CollectorItemCodeMstEntity.class, entity.getItemCode());
 			entity.setDeviceSupport(data.isDeviceSupport());
@@ -72,6 +63,9 @@ public class OperateCollectItemCodeMaster {
 			entity.setItemName(data.getItemName());
 			entity.setMeasure(data.getMeasure());
 			entity.setParentItemCode(data.getParentItemCode());
+			// 登録
+			em.persist(entity);
+			entity.relateToCollectorCategoryMstEntity(collectorCategoryMstEntity);
 		} catch (EntityExistsException e) {
 			m_log.info("add() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -87,15 +81,17 @@ public class OperateCollectItemCodeMaster {
 	 */
 	public boolean delete(String itemCode) throws CollectorNotFound {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		CollectorItemCodeMstEntity entity
-		= QueryUtil.getCollectorItemCodeMstPK(itemCode);
-		// pkが同じデータが登録されている場合は、削除する
-		entity.unchain();	// 	削除前処理
-		em.remove(entity);
+			CollectorItemCodeMstEntity entity
+			= QueryUtil.getCollectorItemCodeMstPK(itemCode);
+			// pkが同じデータが登録されている場合は、削除する
+			entity.unchain();	// 	削除前処理
+			em.remove(entity);
 
-		return true;
+			return true;
+		}
 	}
 
 	/**
@@ -103,17 +99,19 @@ public class OperateCollectItemCodeMaster {
 	 */
 	public boolean deleteAll() {
 
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-		List<CollectorItemCodeMstEntity> col
-		= QueryUtil.getAllCollectorItemCodeMst();
-		for (CollectorItemCodeMstEntity entity : col) {
-			// 削除処理
-			entity.unchain();	// 	削除前処理
-			em.remove(entity);
+			List<CollectorItemCodeMstEntity> col
+			= QueryUtil.getAllCollectorItemCodeMst();
+			for (CollectorItemCodeMstEntity entity : col) {
+				// 削除処理
+				entity.unchain();	// 	削除前処理
+				em.remove(entity);
+			}
+
+			return true;
 		}
-
-		return true;
 	}
 
 	/**

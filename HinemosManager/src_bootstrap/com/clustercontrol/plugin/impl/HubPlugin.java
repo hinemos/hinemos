@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.plugin.impl;
 
 import java.util.HashSet;
@@ -22,6 +30,11 @@ public class HubPlugin implements HinemosPlugin {
 		Set<String> dependency = new HashSet<String>();
 		dependency.add(SchedulerPlugin.class.getName());
 		return dependency;
+	}
+
+	@Override
+	public Set<String> getRequiredKeys() {
+		return null;
 	}
 
 	@Override

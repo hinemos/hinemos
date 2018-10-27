@@ -1,0 +1,176 @@
+T11-FC-FABRIC-LOCK-MIB  DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    mib-2                              FROM SNMPv2-SMI   -- [RFC2578]
+    RowStatus                          FROM SNMPv2-TC    -- [RFC2579]
+    MODULE-COMPLIANCE, OBJECT-GROUP    FROM SNMPv2-CONF  -- [RFC2580]
+    InetAddressType, InetAddress       FROM
+                                       INET-ADDRESS-MIB  -- [RFC4001]
+    fcmInstanceIndex, fcmSwitchIndex   FROM FC-MGMT-MIB  -- [RFC4044]
+    T11NsGs4RejectReasonCode           FROM
+                                 T11-FC-NAME-SERVER-MIB  -- [RFC4438]
+    T11FabricIndex                     FROM T11-TC-MIB;  -- [RFC4439]
+
+t11FabricLockMIB  MODULE-IDENTITY
+    LAST-UPDATED  "200706270000Z"
+    ORGANIZATION  "For the initial versions, T11.
+                   For later versions, the IETF's IMSS Working Group."
+
+    ::= { mib-2 159 }
+
+
+
+
+
+
+t11FLockMIBObjects       OBJECT IDENTIFIER ::= { t11FabricLockMIB 1 }
+t11FLockMIBConformance   OBJECT IDENTIFIER ::= { t11FabricLockMIB 2 }
+t11FLockMIBNotifications OBJECT IDENTIFIER ::= { t11FabricLockMIB 0 }
+t11FLockConfiguration    OBJECT IDENTIFIER ::= { t11FLockMIBObjects 1 }
+
+
+t11FLockTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF T11FLockEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FLockConfiguration 1 }
+
+t11FLockEntry OBJECT-TYPE
+    SYNTAX       T11FLockEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX   { fcmInstanceIndex, fcmSwitchIndex, t11FLockFabricIndex,
+              t11FLockApplicationID }
+    ::= { t11FLockTable 1 }
+
+T11FLockEntry ::= SEQUENCE {
+    t11FLockFabricIndex             T11FabricIndex,
+    t11FLockApplicationID           OCTET STRING,
+    t11FLockInitiatorType           INTEGER,
+    t11FLockInitiator               OCTET STRING,
+    t11FLockInitiatorIpAddrType     InetAddressType,
+    t11FLockInitiatorIpAddr         InetAddress,
+    t11FLockStatus                  INTEGER,
+    t11FLockRejectReasonCode        T11NsGs4RejectReasonCode,
+    t11FLockRejectReasonCodeExp     OCTET STRING,
+    t11FLockRejectReasonVendorCode  OCTET STRING,
+    t11FLockRowStatus               RowStatus
+}
+
+t11FLockFabricIndex OBJECT-TYPE
+    SYNTAX       T11FabricIndex
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FLockEntry 1 }
+
+t11FLockApplicationID OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE (1))
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { t11FLockEntry 2 }
+
+t11FLockInitiatorType OBJECT-TYPE
+    SYNTAX        INTEGER {
+                      other(1),
+                      ssb(2),
+                      cli(3),
+                      snmp(4)
+                  }
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FLockEntry 3 }
+
+t11FLockInitiator OBJECT-TYPE
+    SYNTAX          OCTET STRING (SIZE(0..64))
+    MAX-ACCESS      read-only
+    STATUS          current
+    ::= { t11FLockEntry 4 }
+
+t11FLockInitiatorIpAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      read-only
+    STATUS          current
+    ::= { t11FLockEntry 5 }
+
+t11FLockInitiatorIpAddr OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      read-only
+    STATUS          current
+    ::= { t11FLockEntry 6 }
+
+t11FLockStatus OBJECT-TYPE
+    SYNTAX        INTEGER {
+                      active(1),
+                      settingUp(2),
+                      rejectFailure(3),
+                      otherFailure(4)
+                  }
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FLockEntry 7 }
+
+t11FLockRejectReasonCode OBJECT-TYPE
+    SYNTAX        T11NsGs4RejectReasonCode
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FLockEntry 8 }
+
+t11FLockRejectReasonCodeExp OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE(0 | 1))
+    MAX-ACCESS    read-only
+    STATUS        current
+
+
+
+
+
+    ::= { t11FLockEntry 9 }
+
+t11FLockRejectReasonVendorCode OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE(0 | 1))
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { t11FLockEntry 10 }
+
+t11FLockRowStatus OBJECT-TYPE
+    SYNTAX        RowStatus
+    MAX-ACCESS    read-create
+    STATUS        current
+    ::= { t11FLockEntry 11 }
+
+
+t11FLockMIBCompliances
+                     OBJECT IDENTIFIER ::= { t11FLockMIBConformance 1 }
+t11FLockMIBGroups    OBJECT IDENTIFIER ::= { t11FLockMIBConformance 2 }
+
+t11FLockMIBCompliance MODULE-COMPLIANCE
+    STATUS       current
+    MODULE MANDATORY-GROUPS { t11FLockActiveGroup }
+
+
+
+
+
+
+    OBJECT       t11FLockRowStatus
+    MIN-ACCESS   read-only
+
+    ::= { t11FLockMIBCompliances 1 }
+
+
+t11FLockActiveGroup OBJECT-GROUP
+    OBJECTS  { t11FLockInitiatorType,
+               t11FLockInitiator,
+               t11FLockInitiatorIpAddrType,
+               t11FLockInitiatorIpAddr,
+               t11FLockStatus,
+               t11FLockRejectReasonCode,
+               t11FLockRejectReasonCodeExp,
+               t11FLockRejectReasonVendorCode,
+               t11FLockRowStatus
+             }
+    STATUS   current
+    ::= { t11FLockMIBGroups 1 }
+
+END

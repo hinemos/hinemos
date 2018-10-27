@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.customtrap.service;
@@ -50,11 +43,11 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.apache.log4j.Logger;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.customtrap.bean.CustomTrap;
 import com.clustercontrol.customtrap.bean.CustomTraps;
 import com.clustercontrol.customtrap.util.CustomTrapNotifier;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.snmptrap.service.ReceivedTrapFilterTask;
 import com.clustercontrol.util.HinemosTime;
@@ -120,11 +113,10 @@ public class CustomTrapMonitorService {
 			httpServer = HttpServer.create(new InetSocketAddress(customTrapUrl.getHost(), customTrapUrl.getPort()),
 					this.backlog);
 		} else if (customTrapUrl.getProtocol().equals("https")) {
-			String protocol = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.protocol", "TLS");
-			String keystorePath = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.path", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.WS_HTTPS_KEYSTORE_PATH));
-			String keystorePassword = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.password",
-					"hinemos");
-			String keystoreType = HinemosPropertyUtil.getHinemosPropertyStr("ws.https.keystore.type", "PKCS12");
+			String protocol = HinemosPropertyCommon.ws_https_protocol.getStringValue();
+			String keystorePath = HinemosPropertyDefault.ws_https_keystore_path.getStringValue();
+			String keystorePassword = HinemosPropertyCommon.ws_https_keystore_password.getStringValue();
+			String keystoreType = HinemosPropertyCommon.ws_https_keystore_type.getStringValue();
 			logger.info("CustomTrap protocol: " + protocol + ", keystorePath: " + keystorePath +  ", KeyStore: " + keystoreType);
 			SSLContext ssl = SSLContext.getInstance(protocol);
 			KeyManagerFactory keyFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());

@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.process.factory;
 
 import java.io.Serializable;
@@ -62,44 +70,44 @@ public class ProcessMasterCache {
 	}
 
 	public static void refresh() {
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		if (! jtm.isNestedEm()) {
-			m_log.warn("refresh() : transactioin has not been begined.");
-			jtm.close();
-			return;
-		}
-		
-		try {
-			_lock.writeLock();
-			
-			HashMap<MonitorProcessPollingMstPK, MonitorProcessPollingMstData> cache 
-				= new HashMap<MonitorProcessPollingMstPK, MonitorProcessPollingMstData>();
-			
-			List<MonitorProcessPollingMstEntity> c = QueryUtil.getAllMonitorProcessPollingMst();
-
-			for (MonitorProcessPollingMstEntity entity : c) {
-				MonitorProcessPollingMstData data =
-						new MonitorProcessPollingMstData(
-								entity.getId().getCollectMethod(),
-								entity.getId().getPlatformId(),
-								entity.getId().getSubPlatformId(),
-								entity.getId().getVariableId(),
-								entity.getEntryKey(),
-								entity.getPollingTarget());
-				MonitorProcessPollingMstPK dataPk = new MonitorProcessPollingMstPK(
-						entity.getId().getCollectMethod(),
-						entity.getId().getPlatformId(),
-						entity.getId().getSubPlatformId(),
-						entity.getId().getVariableId());
-				cache.put(dataPk, data);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			if (! jtm.isNestedEm()) {
+				m_log.warn("refresh() : transactioin has not been begined.");
+				return;
 			}
 			
-			storeCache(cache);
-		} catch (Exception e) {
-			m_log.warn("ProcessMasterCache() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-		} finally {
-			_lock.writeUnlock();
+			try {
+				_lock.writeLock();
+				
+				HashMap<MonitorProcessPollingMstPK, MonitorProcessPollingMstData> cache 
+					= new HashMap<MonitorProcessPollingMstPK, MonitorProcessPollingMstData>();
+				
+				List<MonitorProcessPollingMstEntity> c = QueryUtil.getAllMonitorProcessPollingMst();
+
+				for (MonitorProcessPollingMstEntity entity : c) {
+					MonitorProcessPollingMstData data =
+							new MonitorProcessPollingMstData(
+									entity.getId().getCollectMethod(),
+									entity.getId().getPlatformId(),
+									entity.getId().getSubPlatformId(),
+									entity.getId().getVariableId(),
+									entity.getEntryKey(),
+									entity.getPollingTarget());
+					MonitorProcessPollingMstPK dataPk = new MonitorProcessPollingMstPK(
+							entity.getId().getCollectMethod(),
+							entity.getId().getPlatformId(),
+							entity.getId().getSubPlatformId(),
+							entity.getId().getVariableId());
+					cache.put(dataPk, data);
+				}
+				
+				storeCache(cache);
+			} catch (Exception e) {
+				m_log.warn("ProcessMasterCache() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			} finally {
+				_lock.writeUnlock();
+			}
 		}
 	}
 	

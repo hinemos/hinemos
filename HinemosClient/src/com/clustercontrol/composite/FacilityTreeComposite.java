@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.composite;
@@ -383,17 +376,12 @@ public class FacilityTreeComposite extends Composite {
 				
 				public void checkStateChanged(CheckStateChangedEvent event) {
 					CheckboxTreeViewer checkboxTreeViewer = (CheckboxTreeViewer) treeViewer;
-					// 親が選択されたら子供も選択する
-					if (event.getChecked()) {
-						checkboxTreeViewer.setSubtreeChecked(event.getElement(), true);
-					}
-					if (!event.getChecked()) {
-						checkboxTreeViewer.setSubtreeChecked(event.getElement(), false);
-						Object object = event.getElement();
-						if (object instanceof FacilityTreeItem) {
-							FacilityTreeItem item = (FacilityTreeItem) event.getElement();
-							setParentCheck(checkboxTreeViewer, item, false);
-						}
+					Object element = event.getElement();
+					// 親が選択されたら子供も選択し、子の一部のみがチェックされている場合はグレー状態にする
+					if (element instanceof FacilityTreeItem) {
+						FacilityTreeItem item = (FacilityTreeItem)element;
+						checkItems(checkboxTreeViewer, item, event.getChecked());
+						checkPath(checkboxTreeViewer, item, event.getChecked(), false);
 					}
 					// チェック状態を保持する
 					selectFacilityList = getCheckedTreeInfo();
@@ -417,13 +405,47 @@ public class FacilityTreeComposite extends Composite {
 		this.update();
 	}
 	
-	private void setParentCheck(CheckboxTreeViewer checkboxTreeViewer, FacilityTreeItem item , boolean flag) {
-		FacilityTreeItem parent = item.getParent();
-		if (parent == null) {
+	/**
+	 * ツリー上のチェックボックスに値をセットします。
+	 * 子のノードがある場合はそれらもチェックします。
+	 * @param tree CheckBoxTreeViewerのインスタンス
+	 * @param item チェック対象のFacilityTreeItemのインスタンス
+	 * @param checked チェックボックスのチェック状態
+	 */
+	protected void checkItems(CheckboxTreeViewer tree, FacilityTreeItem item, boolean checked) {
+		tree.setGrayed(item, false);
+		tree.setChecked(item, checked);
+		List<FacilityTreeItem> children = item.getChildren();
+		for(FacilityTreeItem child: children) {
+			checkItems(tree, child, checked);
+		}
+	}
+	
+	/**
+	 * チェックボックスの状態をチェックしてツリーに値をセットします。
+	 * @param tree CheckBoxTreeViewerのインスタンス
+	 * @param item チェック対象のFacilityTreeItemのインスタンス
+	 * @param checked チェックボックスのチェック状態
+	 * @param grayed チェックボックスのグレー状態（子の一部のみが選択されている状態）
+	 */
+	protected void checkPath(CheckboxTreeViewer tree, FacilityTreeItem item, boolean checked, boolean grayed) {
+		if(item == null){
 			return;
 		}
-		checkboxTreeViewer.setChecked(parent, flag);
-		setParentCheck(checkboxTreeViewer, parent, flag);
+		if(grayed){
+			checked = true;
+		} else {
+			List<FacilityTreeItem> children = item.getChildren();
+			for (FacilityTreeItem child: children) {
+				if (tree.getGrayed(child) || checked != tree.getChecked(child)) {
+					checked = grayed = true;
+					break;
+				}
+			}
+		}
+		tree.setChecked(item, checked);
+		tree.setGrayed(item, grayed);
+		checkPath(tree, item.getParent(), checked, grayed);
 	}
 
 	/**
@@ -693,9 +715,19 @@ public class FacilityTreeComposite extends Composite {
 	 * @return
 	 */
 	public List<String> getCheckedTreeInfo() {
-		Object[] treeItemList = ((CheckboxTreeViewer)getTreeViewer()).getCheckedElements();
+		CheckboxTreeViewer tree = (CheckboxTreeViewer)getTreeViewer();
+		Object[] treeItemArray = tree.getCheckedElements();
+		List<Object> treeItemList = new ArrayList<Object>();
+		
+		for(Object item:treeItemArray){
+			boolean grayed = tree.getGrayed(item);
+			boolean checked = tree.getChecked(item);
+			if(!grayed && checked){
+				treeItemList.add(item);
+			}
+		}
 		List<String> selectFacilityStringList = new ArrayList<>();
-		m_log.debug("SIZE:" + treeItemList.length);
+		m_log.debug("SIZE:" + treeItemList.size());
 		for (Object objectItem : treeItemList) {
 			if (objectItem instanceof FacilityTreeItem) {
 				FacilityTreeItem facilityTreeItem = (FacilityTreeItem)objectItem;
@@ -746,9 +778,11 @@ public class FacilityTreeComposite extends Composite {
 		FacilityTreeItem facilityArr[] = treeItemList.toArray(new FacilityTreeItem[treeItemList.size()]);
 		((CheckboxTreeViewer)getTreeViewer()).setCheckedElements(facilityArr);
 		
-		// 選択状態の親に新たに子供がいた場合は、子供にチェックをつける
-		for (FacilityTreeItem item : parentItemList) {
-			((CheckboxTreeViewer)getTreeViewer()).setSubtreeChecked(item, true);
+		// 選択状態の親に新たに子供がいた場合は、子供にチェックをつけ,子の一部がチェックされている場合グレー状態にする
+		for (FacilityTreeItem item : treeItemList) {
+			CheckboxTreeViewer tree = (CheckboxTreeViewer)getTreeViewer();
+			checkItems(tree, item, true);
+			checkPath(tree, item, true, false);
 		}
 		Object[] returns = ((CheckboxTreeViewer)getTreeViewer()).getCheckedElements();
 		m_log.debug("selectItemSize:" + returns.length);

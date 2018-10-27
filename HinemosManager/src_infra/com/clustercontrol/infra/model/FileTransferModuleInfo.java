@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.infra.model;
 
 import java.io.ByteArrayOutputStream;
@@ -10,6 +18,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +41,7 @@ import org.apache.log4j.Logger;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InfraManagementNotFound;
@@ -43,13 +53,12 @@ import com.clustercontrol.infra.bean.ModuleNodeResult;
 import com.clustercontrol.infra.bean.OkNgConstant;
 import com.clustercontrol.infra.bean.SendMethodConstant;
 import com.clustercontrol.infra.util.InfraJdbcExecutor;
+import com.clustercontrol.infra.util.InfraParameterUtil;
 import com.clustercontrol.infra.util.JschUtil;
 import com.clustercontrol.infra.util.QueryUtil;
 import com.clustercontrol.infra.util.WinRMUtil;
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.repository.model.NodeInfo;
-import com.clustercontrol.repository.util.RepositoryUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.StringBinder;
@@ -180,7 +189,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 	@Override
 	protected void validateSub(InfraManagementInfo infraManagementInfo) throws InvalidSetting, InvalidRole {
 		// fileId
-		CommonValidator.validateString(MessageConstant.INFRA_MODULE_PLACEMENT_FILE.getMessage(), getFileId(), false, 0, 256);
+		CommonValidator.validateString(MessageConstant.INFRA_MODULE_PLACEMENT_FILE.getMessage(), getFileId(), true, 1, 256);
 		// ファイル情報存在チェック
 		try {
 			QueryUtil.getInfraFileInfoPK_OR(getFileId(), ObjectPrivilegeMode.READ, infraManagementInfo.getOwnerRoleId());
@@ -193,14 +202,22 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		}
 		
 		// destPath
-		CommonValidator.validateString(MessageConstant.INFRA_MODULE_PLACEMENT_PATH.getMessage(), getDestPath(), false, 0, 1024);
+		CommonValidator.validateString(MessageConstant.INFRA_MODULE_PLACEMENT_PATH.getMessage(), getDestPath(), true, 1, 1024);
 		
-		// destOwner
-		CommonValidator.validateString(MessageConstant.INFRA_MODULE_TRANSFER_METHOD_OWNER.getMessage(), getDestOwner(), false, 0, 256);
-		
-		// destAttribute
-		CommonValidator.validateString(MessageConstant.INFRA_MODULE_TRANSFER_METHOD_SCP_FILE_ATTRIBUTE.getMessage(), getDestAttribute(), false, 0, 64);
-		
+		if (getSendMethodType() == SendMethodConstant.TYPE_SCP) {
+			// destOwner
+			CommonValidator.validateString(MessageConstant.INFRA_MODULE_TRANSFER_METHOD_OWNER.getMessage(), getDestOwner(), true, 1, 256);
+			
+			// destAttribute
+			CommonValidator.validateString(MessageConstant.INFRA_MODULE_TRANSFER_METHOD_SCP_FILE_ATTRIBUTE.getMessage(), getDestAttribute(), true, 1, 64);
+		} else {
+			// destOwner
+			CommonValidator.validateString(MessageConstant.INFRA_MODULE_TRANSFER_METHOD_OWNER.getMessage(), getDestOwner(), false, 0, 256);
+			
+			// destAttribute
+			CommonValidator.validateString(MessageConstant.INFRA_MODULE_TRANSFER_METHOD_SCP_FILE_ATTRIBUTE.getMessage(), getDestAttribute(), false, 0, 64);
+		}
+
 		// precheckFlg : not backupIfExistFlg
 		
 		// sendMehodType
@@ -244,8 +261,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 	}
 	
 	private String createTempFilePath(String sessionId) {
-		String exportDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.export.dir",
-				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_EXPORT_DIR));
+		String exportDirectory = HinemosPropertyDefault.infra_export_dir.getStringValue();
 		String filepath = exportDirectory + "/" + sessionId + "-" + getModuleId();
 		return filepath;
 	}
@@ -256,10 +272,9 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 	}
 
 	@Override
-	public ModuleNodeResult run(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId) throws HinemosUnknown, InvalidUserPass {
+	public ModuleNodeResult run(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId, Map<String, String> paramMap) throws HinemosUnknown, InvalidUserPass {
 		String postfixStr = node.getFacilityId();
-		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir", 
-				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_TRANSFER_DIR));
+		String infraDirectory = HinemosPropertyDefault.infra_transfer_dir.getStringValue();
 		InfraFileInfo fileEntity = null;
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		try {
@@ -278,11 +293,23 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		
 		File orgFile = new File(createTempFilePath(sessionId));
 
+		// 配置パスの置換
+		String bindDestPath;
+		try {
+			HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap);
+			StringBinder binder = new StringBinder(map);
+			bindDestPath = binder.bindParam(getDestPath());
+		} catch (Exception e) {
+			Logger.getLogger(this.getClass()).warn("run() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			bindDestPath = getDestPath();
+		}
+
 		// 一時ファイルの作成(文字列を置換する)
 		srcDir += "send" + SEPARATOR;
 		srcFile += "." + postfixStr;
 		try {
-			createFile(orgFile, srcDir + srcFile, getFileTransferVariableList(), node);
+			createFile(orgFile, srcDir + srcFile, getFileTransferVariableList(), node, paramMap);
 			return send(
 					node.getFacilityId(),
 					node.getAvailableIpAddress(),
@@ -290,7 +317,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 					access,
 					srcDir,
 					srcFile,
-					getDestPath(),
+					bindDestPath,
 					fileName,
 					getDestOwner(),
 					getDestAttribute()
@@ -304,14 +331,13 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 	}
 	
 	@Override
-	public ModuleNodeResult check(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId, boolean verbose) throws HinemosUnknown, InvalidUserPass {
+	public ModuleNodeResult check(InfraManagementInfo management, NodeInfo node, AccessInfo access, String sessionId, Map<String, String> paramMap, boolean verbose) throws HinemosUnknown, InvalidUserPass {
 		ModuleNodeResult ret = new ModuleNodeResult(OkNgConstant.TYPE_NG, -1, "failed checking");
 		ret.setFacilityId(node.getFacilityId());
 
 		//// sendフォルダにファイルを生成
 		String postfixStr = node.getFacilityId();
-		String infraDirectory = HinemosPropertyUtil.getHinemosPropertyStr("infra.transfer.dir",
-				HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.INFRA_TRANSFER_DIR));
+		String infraDirectory = HinemosPropertyDefault.infra_transfer_dir.getStringValue();
 		InfraFileInfo fileEntity = null;
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		try {
@@ -332,18 +358,17 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		
 		File orgFile = new File(createTempFilePath(sessionId));
 		long fileSize = orgFile.length();
-		String INFRA_TRANSFER_FILESIZE = "infra.transfer.filesize";
 		boolean isDiscarded = false;
 
 		///// New File /////
 		// 20481より大きい場合はファイルの中身を比較表示できません。MD5は比較できます。
 		// 20481という数字は、クライアントで利用している比較ライブラリ(mergely)に依存しています。
-		long maxFilesize = HinemosPropertyUtil.getHinemosPropertyNum(INFRA_TRANSFER_FILESIZE, Long.valueOf(20481));
+		long maxFilesize = HinemosPropertyCommon.infra_transfer_filesize.getNumericValue();
 		// 一時ファイルの作成(文字列を置換する)
 		srcDir += "send" + SEPARATOR;
 		srcFile += "." + postfixStr;
 
-		createFile(orgFile, srcDir + srcFile, getFileTransferVariableList(), node);
+		createFile(orgFile, srcDir + srcFile, getFileTransferVariableList(), node, paramMap);
 		file = new File(srcDir + srcFile);
 		if(file.exists()) {
 			FileDataSource source = new FileDataSource(file);
@@ -372,6 +397,19 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		 * 		→ファイル配布先でMD5をチェックする。
 		 */
 		Logger.getLogger(this.getClass()).info("managementId=" + management.getManagementId() + ", fileId=" + fileId + ", verbose=" + verbose);
+
+		// 配置パスの置換
+		String bindDestPath;
+		try {
+			HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap);
+			StringBinder binder = new StringBinder(map);
+			bindDestPath = binder.bindParam(getDestPath());
+		} catch (Exception e) {
+			Logger.getLogger(this.getClass()).warn("execCommand() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			bindDestPath = getDestPath();
+		}
+		
 		if (!verbose) {
 			return isSameMd5(
 							node.getFacilityId(),
@@ -380,7 +418,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 							access,
 							srcDir,
 							srcFile,
-							getDestPath(),
+							bindDestPath,
 							fileName
 							);
 		} else {
@@ -392,7 +430,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 				node.getAvailableIpAddress(),
 				node.getWinrmProtocol(),
 				access,
-				getDestPath(),
+				bindDestPath,
 				fileName,
 				srcDir,
 				srcFile,
@@ -443,7 +481,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 	private static Object replaceFileLock = new Object();
 	
 	// runとcheckから呼ばれる
-	private static void createFile(File orgFile, String dstFilepath, List<FileTransferVariableInfo> list, NodeInfo node) throws HinemosUnknown {
+	private static void createFile(File orgFile, String dstFilepath, List<FileTransferVariableInfo> list, NodeInfo node, Map<String, String> paramMap) throws HinemosUnknown {
 		if(list.isEmpty()) {
 			//文字列置換がない場合はそのままコピーする
 			try {
@@ -460,11 +498,9 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 			ArrayList<FileInfo> list2 = new ArrayList<>();
 			for (FileTransferVariableInfo info : list) {
 				FileInfo info2 = new FileInfo(info.getName(), info.getValue());
-				
 				String str = info2.getValue();
-				
-				Map<String, String> nodeParameter = RepositoryUtil.createNodeParameter(node);
-				StringBinder strbinder = new StringBinder(nodeParameter);
+				HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap);
+				StringBinder strbinder = new StringBinder(map);
 				Logger.getLogger(FileTransferModuleInfo.class).debug("replaceNodeVariable() before : " + str);
 				str = strbinder.bindParam(str);
 				Logger.getLogger(FileTransferModuleInfo.class).debug("replaceNodeVariable() after : " + str);
@@ -741,6 +777,8 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		
 		for (FileTransferVariableInfo webVariable: webVariableList) {
 			FileTransferVariableInfo dbVariable = new FileTransferVariableInfo(module, webVariable.getName());
+			em.persist(dbVariable);
+			dbVariable.relateToFileTransferModuleInfo(module);
 			dbVariable.setValue(webVariable.getValue());
 		}
 		

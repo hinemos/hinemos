@@ -2,7 +2,7 @@
 <!-- 
    Hinemos (http://www.hinemos.info/)
    
-   Copyright (C) 2010 NTT DATA Corporation.
+   Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
  -->
 
 <!-- execute Ant (Run in the same JRE as the workspace -->
@@ -45,6 +45,7 @@
 			failonerror="true"
 			classpathref="id.compile.classpath.local"
 			includeantruntime="false"
+			source="${compile.version}" target="${compile.version}" encoding="${compile.encode}"
 			debug="on">
 			<src path="${src.dir}" />
 			<src path="resources" />

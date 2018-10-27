@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.notify.model;
 
 import javax.persistence.AttributeOverride;
@@ -5,7 +13,6 @@ import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EntityManager;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
@@ -296,7 +303,7 @@ public class NotifyInfo extends ObjectPrivilegeTargetInfo {
 		}
 	}
 	
-	public void persistSelf(EntityManager em) {
+	public void persistSelf() {
 		if (notifyCommandInfoEntity != null) {
 			notifyCommandInfoEntity.setNotifyId(getNotifyId());
 			notifyCommandInfoEntity.relateToNotifyInfoEntity(this);
@@ -336,6 +343,5 @@ public class NotifyInfo extends ObjectPrivilegeTargetInfo {
 			notifyInfraInfoEntity.setNotifyId(getNotifyId());
 			notifyInfraInfoEntity.relateToNotifyInfoEntity(this);
 		}
-		em.persist(this);
 	}
 }

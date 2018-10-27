@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"fileName",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]}
+]
+}

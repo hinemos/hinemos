@@ -1,0 +1,665 @@
+          SIP-MIB DEFINITIONS ::= BEGIN
+
+          IMPORTS
+             MODULE-IDENTITY, OBJECT-TYPE, Counter32,
+             Integer32, IpAddress                     FROM SNMPv2-SMI
+             TimeStamp, TEXTUAL-CONVENTION            FROM SNMPv2-TC
+             MODULE-COMPLIANCE, OBJECT-GROUP          FROM SNMPv2-CONF
+             transmission, ifIndex, mib-2             FROM RFC1213-MIB;
+
+
+          sipMIB MODULE-IDENTITY
+              LAST-UPDATED "9403311818Z"
+              ORGANIZATION "IETF Interfaces Working Group"
+              ::= { mib-2 36 }
+
+          SMDSAddress ::= TEXTUAL-CONVENTION
+              DISPLAY-HINT "1h:"
+              STATUS       current
+              SYNTAX  OCTET STRING (SIZE (8))
+
+          IfIndex ::= TEXTUAL-CONVENTION
+            STATUS  current
+            SYNTAX Integer32
+
+
+          sip     OBJECT IDENTIFIER ::= { transmission 31 }
+          sipMIBObjects   OBJECT IDENTIFIER ::= { sipMIB 1 }
+
+
+
+          sipL3Table  OBJECT-TYPE
+              SYNTAX      SEQUENCE OF SipL3Entry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+             ::= { sip 1 }
+
+          sipL3Entry  OBJECT-TYPE
+              SYNTAX      SipL3Entry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+             INDEX   { sipL3Index }
+             ::= { sipL3Table 1 }
+
+          SipL3Entry  ::= SEQUENCE {
+              sipL3Index                        IfIndex,
+              sipL3ReceivedIndividualDAs        Counter32,
+              sipL3ReceivedGAs                  Counter32,
+              sipL3UnrecognizedIndividualDAs    Counter32,
+              sipL3UnrecognizedGAs              Counter32,
+
+
+
+
+
+              sipL3SentIndividualDAs            Counter32,
+              sipL3SentGAs                      Counter32,
+              sipL3Errors                       Counter32,
+              sipL3InvalidSMDSAddressTypes      Counter32,
+              sipL3VersionSupport               Integer32
+             }
+
+          sipL3Index  OBJECT-TYPE
+              SYNTAX      IfIndex
+              MAX-ACCESS  read-only
+              STATUS      current
+             ::= { sipL3Entry 1 }
+
+          sipL3ReceivedIndividualDAs OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      deprecated
+             ::= { sipL3Entry 2 }
+
+          sipL3ReceivedGAs OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      deprecated
+             ::= { sipL3Entry 3 }
+
+          sipL3UnrecognizedIndividualDAs OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      deprecated
+              ::= { sipL3Entry 4 }
+
+          sipL3UnrecognizedGAs OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      deprecated
+              ::= { sipL3Entry 5 }
+
+          sipL3SentIndividualDAs OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      deprecated
+              ::= { sipL3Entry 6 }
+
+          sipL3SentGAs OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      deprecated
+              ::= { sipL3Entry 7 }
+
+
+
+
+
+
+
+          sipL3Errors OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      deprecated
+              ::= { sipL3Entry 8 }
+
+          sipL3InvalidSMDSAddressTypes OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      deprecated
+              ::= { sipL3Entry 9 }
+
+          sipL3VersionSupport  OBJECT-TYPE
+              SYNTAX      Integer32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL3Entry 10 }
+
+
+
+          sipL2Table  OBJECT-TYPE
+              SYNTAX      SEQUENCE OF SipL2Entry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              ::= { sip 2 }
+
+          sipL2Entry  OBJECT-TYPE
+              SYNTAX      SipL2Entry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              INDEX   { sipL2Index }
+              ::= { sipL2Table 1 }
+
+          SipL2Entry  ::= SEQUENCE {
+              sipL2Index                     IfIndex,
+              sipL2ReceivedCounts            Counter32,
+              sipL2SentCounts                Counter32,
+              sipL2HcsOrCRCErrors            Counter32,
+              sipL2PayloadLengthErrors       Counter32,
+              sipL2SequenceNumberErrors      Counter32,
+              sipL2MidCurrentlyActiveErrors  Counter32,
+              sipL2BomOrSSMsMIDErrors        Counter32,
+              sipL2EomsMIDErrors             Counter32
+            }
+
+          sipL2Index  OBJECT-TYPE
+              SYNTAX      IfIndex
+              MAX-ACCESS  read-only
+
+
+
+
+
+              STATUS      current
+              ::= { sipL2Entry 1 }
+
+          sipL2ReceivedCounts OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL2Entry 2 }
+
+          sipL2SentCounts OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL2Entry 3 }
+
+
+          sipL2HcsOrCRCErrors  OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL2Entry 4 }
+
+          sipL2PayloadLengthErrors  OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL2Entry 5 }
+
+          sipL2SequenceNumberErrors  OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL2Entry 6 }
+
+          sipL2MidCurrentlyActiveErrors  OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL2Entry 7 }
+
+          sipL2BomOrSSMsMIDErrors  OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL2Entry 8 }
+
+          sipL2EomsMIDErrors  OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL2Entry 9 }
+
+
+
+          sipPLCP OBJECT IDENTIFIER ::= { sip 3 }
+
+
+
+          sipDS1PLCPTable  OBJECT-TYPE
+              SYNTAX      SEQUENCE OF SipDS1PLCPEntry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              ::= { sipPLCP 1 }
+
+          sipDS1PLCPEntry  OBJECT-TYPE
+              SYNTAX      SipDS1PLCPEntry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              INDEX   { sipDS1PLCPIndex }
+              ::= { sipDS1PLCPTable 1 }
+
+          SipDS1PLCPEntry  ::= SEQUENCE {
+              sipDS1PLCPIndex       IfIndex,
+              sipDS1PLCPSEFSs       Counter32,
+              sipDS1PLCPAlarmState  INTEGER,
+
+
+
+
+
+              sipDS1PLCPUASs        Counter32
+              }
+
+          sipDS1PLCPIndex  OBJECT-TYPE
+              SYNTAX      IfIndex
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipDS1PLCPEntry 1 }
+
+          sipDS1PLCPSEFSs OBJECT-TYPE
+              SYNTAX       Counter32
+              MAX-ACCESS   read-only
+              STATUS       current
+              ::= { sipDS1PLCPEntry 2 }
+
+          sipDS1PLCPAlarmState OBJECT-TYPE
+              SYNTAX  INTEGER     {
+                          noAlarm (1),
+                          receivedFarEndAlarm (2),
+                          incomingLOF (3)
+                      }
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipDS1PLCPEntry 3 }
+
+
+
+
+
+
+          sipDS1PLCPUASs OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipDS1PLCPEntry 4 }
+
+
+
+          sipDS3PLCPTable  OBJECT-TYPE
+              SYNTAX      SEQUENCE OF SipDS3PLCPEntry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              ::= { sipPLCP 2 }
+
+          sipDS3PLCPEntry  OBJECT-TYPE
+              SYNTAX      SipDS3PLCPEntry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              INDEX   { sipDS3PLCPIndex }
+              ::= { sipDS3PLCPTable 1 }
+
+          SipDS3PLCPEntry  ::= SEQUENCE {
+              sipDS3PLCPIndex       IfIndex,
+              sipDS3PLCPSEFSs       Counter32,
+              sipDS3PLCPAlarmState  INTEGER,
+              sipDS3PLCPUASs        Counter32
+              }
+
+          sipDS3PLCPIndex  OBJECT-TYPE
+              SYNTAX      IfIndex
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipDS3PLCPEntry 1 }
+
+
+
+
+
+          sipDS3PLCPSEFSs OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipDS3PLCPEntry 2 }
+
+          sipDS3PLCPAlarmState OBJECT-TYPE
+              SYNTAX  INTEGER     {
+                          noAlarm (1),
+                          receivedFarEndAlarm (2),
+                          incomingLOF (3)
+                      }
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipDS3PLCPEntry 3 }
+
+          sipDS3PLCPUASs OBJECT-TYPE
+              SYNTAX      Counter32
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipDS3PLCPEntry 4 }
+
+
+
+
+
+
+
+
+          smdsApplications OBJECT IDENTIFIER ::= { sip 4 }
+
+          ipOverSMDS OBJECT IDENTIFIER ::= { smdsApplications 1 }
+
+
+
+          ipOverSMDSTable OBJECT-TYPE
+              SYNTAX      SEQUENCE OF IpOverSMDSEntry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              ::= { ipOverSMDS 1 }
+
+          ipOverSMDSEntry OBJECT-TYPE
+              SYNTAX      IpOverSMDSEntry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              INDEX   { ipOverSMDSIndex, ipOverSMDSAddress }
+              ::= { ipOverSMDSTable 1 }
+
+          IpOverSMDSEntry ::=
+              SEQUENCE {
+                 ipOverSMDSIndex       IfIndex,
+                 ipOverSMDSAddress     IpAddress,
+                 ipOverSMDSHA          SMDSAddress,
+                 ipOverSMDSLISGA       SMDSAddress,
+                 ipOverSMDSARPReq      SMDSAddress
+                 }
+
+          ipOverSMDSIndex OBJECT-TYPE
+
+
+
+
+
+              SYNTAX      IfIndex
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { ipOverSMDSEntry 1 }
+
+          ipOverSMDSAddress OBJECT-TYPE
+               SYNTAX      IpAddress
+               MAX-ACCESS  read-only
+               STATUS      current
+              ::= { ipOverSMDSEntry 2 }
+
+          ipOverSMDSHA OBJECT-TYPE
+              SYNTAX      SMDSAddress
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { ipOverSMDSEntry 3 }
+
+          ipOverSMDSLISGA OBJECT-TYPE
+              SYNTAX      SMDSAddress
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { ipOverSMDSEntry 4 }
+
+          ipOverSMDSARPReq OBJECT-TYPE
+              SYNTAX      SMDSAddress
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { ipOverSMDSEntry 5 }
+
+
+
+
+
+
+
+
+          smdsCarrierSelection OBJECT IDENTIFIER ::= { sip 5 }
+
+
+
+          sipErrorLog OBJECT IDENTIFIER ::= { sip 6 }
+
+          sipL3PDUErrorTable OBJECT-TYPE
+              SYNTAX      SEQUENCE OF SipL3PDUErrorEntry
+              MAX-ACCESS  not-accessible
+              STATUS      current
+              ::= { sipErrorLog 1 }
+
+          sipL3PDUErrorEntry  OBJECT-TYPE
+              SYNTAX      SipL3PDUErrorEntry
+              MAX-ACCESS  not-accessible
+
+
+
+
+
+              STATUS      current
+              INDEX   { sipL3PDUErrorIndex, sipL3PDUErrorType }
+              ::= { sipL3PDUErrorTable 1 }
+
+          SipL3PDUErrorEntry ::= SEQUENCE {
+              sipL3PDUErrorIndex       IfIndex,
+              sipL3PDUErrorType        INTEGER,
+              sipL3PDUErrorSA          SMDSAddress,
+              sipL3PDUErrorDA          SMDSAddress,
+              sipL3PDUErrorTimeStamp   TimeStamp
+              }
+
+          sipL3PDUErrorIndex OBJECT-TYPE
+              SYNTAX      IfIndex
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL3PDUErrorEntry 1 }
+
+          sipL3PDUErrorType OBJECT-TYPE
+              SYNTAX  INTEGER {
+                erroredDAFieldFormat (1),
+                erroredSAFieldFormat (2),
+                invalidBAsizeFieldValue (3),
+                invalidHdrExtLength (4),
+                invalidHdrExtElementLength (5),
+                invalidHdrExtVersionElementPositionLenthOrValue (6),
+           invalidHdrExtCarSelectElementPositionLenghtValueOrFormat (7),
+                hePADError (8),
+                beTagMismatch (9),
+                baSizeFieldNotEqualToLengthField (10),
+                incorrectLength (11),
+                mriTimeout (12)
+              }
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL3PDUErrorEntry 2 }
+
+          sipL3PDUErrorSA OBJECT-TYPE
+              SYNTAX      SMDSAddress
+              MAX-ACCESS  read-only
+
+
+
+
+
+              STATUS      current
+              ::= { sipL3PDUErrorEntry 3 }
+
+          sipL3PDUErrorDA OBJECT-TYPE
+              SYNTAX      SMDSAddress
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL3PDUErrorEntry 4 }
+
+          sipL3PDUErrorTimeStamp OBJECT-TYPE
+              SYNTAX      TimeStamp
+              MAX-ACCESS  read-only
+              STATUS      current
+              ::= { sipL3PDUErrorEntry 5 }
+
+
+
+          sipDxiTable   OBJECT-TYPE
+             SYNTAX          SEQUENCE OF SipDxiEntry
+             MAX-ACCESS      not-accessible
+             STATUS          current
+             ::= { sipMIBObjects 1 }
+
+          sipDxiEntry   OBJECT-TYPE
+             SYNTAX     SipDxiEntry
+             MAX-ACCESS not-accessible
+             STATUS     current
+             INDEX { ifIndex }
+             ::= { sipDxiTable 1 }
+
+          SipDxiEntry ::=
+             SEQUENCE {
+                sipDxiCrc
+
+
+
+
+
+                   INTEGER,
+                sipDxiOutDiscards
+                   Counter32,
+                sipDxiInErrors
+                   Counter32,
+                sipDxiInAborts
+                   Counter32,
+                sipDxiInTestFrames
+                   Counter32,
+                sipDxiOutTestFrames
+                   Counter32,
+                sipDxiHbpNoAcks
+                   Counter32
+             }
+
+          sipDxiCrc   OBJECT-TYPE
+             SYNTAX  INTEGER {
+                        crc16(1),
+                        crc32(2)
+                        }
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { sipDxiEntry 1 }
+
+          sipDxiOutDiscards   OBJECT-TYPE
+             SYNTAX     Counter32
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { sipDxiEntry 2 }
+
+          sipDxiInErrors   OBJECT-TYPE
+             SYNTAX     Counter32
+             MAX-ACCESS read-only
+             STATUS     current
+
+
+
+
+
+             ::= { sipDxiEntry 3 }
+
+          sipDxiInAborts  OBJECT-TYPE
+             SYNTAX     Counter32
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { sipDxiEntry 4 }
+
+          sipDxiInTestFrames    OBJECT-TYPE
+             SYNTAX     Counter32
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { sipDxiEntry 5 }
+
+          sipDxiOutTestFrames   OBJECT-TYPE
+             SYNTAX     Counter32
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { sipDxiEntry 6 }
+
+          sipDxiHbpNoAcks  OBJECT-TYPE
+             SYNTAX     Counter32
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { sipDxiEntry 7 }
+
+
+
+          smdsConformance OBJECT IDENTIFIER ::= { sipMIB 2 }
+
+
+
+
+
+
+          smdsGroups      OBJECT IDENTIFIER ::= { smdsConformance 1 }
+          smdsCompliances OBJECT IDENTIFIER ::= { smdsConformance 2 }
+
+
+
+          smdsCompliance MODULE-COMPLIANCE
+              STATUS  current
+
+              MODULE  -- this module
+                  MANDATORY-GROUPS { sipLevel3Stuff }
+
+                  GROUP       sipLevel2Stuff
+
+                  GROUP       sipDS1PLCPStuff
+
+                  GROUP       sipDS3PLCPStuff
+
+                  GROUP       sipIPApplicationsStuff
+
+                  GROUP       sipDxiStuff
+              ::= { smdsCompliances 1 }
+
+
+          sipLevel3Stuff    OBJECT-GROUP
+              OBJECTS { sipL3Index,
+                        sipL3VersionSupport, sipL3PDUErrorIndex,
+                        sipL3PDUErrorType,
+
+
+
+
+
+                        sipL3PDUErrorSA, sipL3PDUErrorDA,
+                        sipL3PDUErrorTimeStamp }
+              STATUS  current
+              ::= { smdsGroups 1 }
+
+          sipLevel2Stuff    OBJECT-GROUP
+              OBJECTS { sipL2Index, sipL2HcsOrCRCErrors,
+                        sipL2PayloadLengthErrors,
+                        sipL2SequenceNumberErrors,
+                        sipL2MidCurrentlyActiveErrors,
+                        sipL2BomOrSSMsMIDErrors,
+                        sipL2EomsMIDErrors }
+              STATUS  current
+              ::= { smdsGroups 2 }
+
+          sipDS1PLCPStuff    OBJECT-GROUP
+              OBJECTS { sipDS1PLCPIndex, sipDS1PLCPSEFSs,
+                        sipDS1PLCPAlarmState, sipDS1PLCPUASs }
+              STATUS  current
+              ::= { smdsGroups 3 }
+
+          sipDS3PLCPStuff    OBJECT-GROUP
+              OBJECTS { sipDS3PLCPIndex, sipDS3PLCPSEFSs,
+                        sipDS3PLCPAlarmState, sipDS3PLCPUASs }
+              STATUS  current
+              ::= { smdsGroups 4 }
+
+
+          sipIPApplicationsStuff    OBJECT-GROUP
+              OBJECTS { ipOverSMDSIndex, ipOverSMDSAddress,
+                        ipOverSMDSHA, ipOverSMDSLISGA, ipOverSMDSARPReq }
+              STATUS  current
+              ::= { smdsGroups 5 }
+
+
+
+
+
+          sipDxiStuff     OBJECT-GROUP
+              OBJECTS  { sipDxiCrc, sipDxiOutDiscards,
+                         sipDxiInErrors, sipDxiInAborts,
+                         sipDxiInTestFrames, sipDxiOutTestFrames,
+                         sipDxiHbpNoAcks }
+              STATUS   current
+              ::= { smdsGroups 6 }
+
+          END

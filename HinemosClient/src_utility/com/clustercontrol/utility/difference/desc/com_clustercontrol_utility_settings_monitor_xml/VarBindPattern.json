@@ -1,0 +1,57 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"orderNo",
+	"annotations":[
+		{"type":"Column", "columnName":"VarBindPattern_orderNo"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"VarBindPattern_description"}
+	]},
+
+	{
+	"propName":"pattern",
+	"annotations":[
+		{"type":"Column", "columnName":"VarBindPattern_pattern"}
+	]},
+
+	{
+	"propName":"priority",
+	"annotations":[
+		{"type":"Column", "columnName":"VarBindPattern_priority"},
+		{
+			"type":"Translate", 
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"processType",
+	"annotations":[
+		{"type":"Column", "columnName":"VarBindPattern_processType"}
+	]},
+
+	{
+	"propName":"caseSensitivityFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"VarBindPattern_caseSensitivityFlg"}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"VarBindPattern_validFlg"}
+	]}
+]
+}

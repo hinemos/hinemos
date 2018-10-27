@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.calendar.util;
 
 import java.io.Serializable;
@@ -106,11 +114,11 @@ public class CalendarCache {
 		
 		// getCache後からここまでの間に他スレッドによりキャッシュが格納される可能性があり、多重の無駄なキャッシュ格納処理の場合がある。
 		// ただし、キャッシュが破損するわけでないため、本方式にて段階的なキャッシングの仕組みを採用する。
-		try {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			_lock.writeLock();
 			
 			ConcurrentHashMap<String, CalendarInfo> cache = getCache();
-			HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
 			CalendarInfo calendar = getCalendarInfoDB(id);
 			em.refresh(calendar);
 			em.detach(calendar);

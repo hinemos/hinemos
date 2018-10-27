@@ -1,0 +1,715 @@
+   DNS-SERVER-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       mib-2
+           FROM RFC1213-MIB
+       MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY,
+       IpAddress, Counter32, Gauge32
+           FROM SNMPv2-SMI
+       TEXTUAL-CONVENTION, RowStatus, DisplayString, TruthValue
+           FROM SNMPv2-TC
+       MODULE-COMPLIANCE, OBJECT-GROUP
+           FROM SNMPv2-CONF;
+
+   dns OBJECT-IDENTITY
+       STATUS  current
+       ::= { mib-2 32 }
+
+   dnsServMIB MODULE-IDENTITY
+       LAST-UPDATED "9401282251Z"
+       ORGANIZATION "IETF DNS Working Group"
+       ::= { dns 1 }
+
+
+
+
+
+
+   dnsServMIBObjects       OBJECT IDENTIFIER ::= { dnsServMIB 1 }
+
+
+   dnsServConfig           OBJECT IDENTIFIER ::= { dnsServMIBObjects 1 }
+   dnsServCounter          OBJECT IDENTIFIER ::= { dnsServMIBObjects 2 }
+   dnsServOptCounter       OBJECT IDENTIFIER ::= { dnsServMIBObjects 3 }
+   dnsServZone             OBJECT IDENTIFIER ::= { dnsServMIBObjects 4 }
+
+
+
+   DnsName ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX  OCTET STRING (SIZE (0..255))
+
+   DnsNameAsIndex ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX  DnsName
+
+   DnsClass ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "2d"
+       STATUS  current
+       SYNTAX  INTEGER (0..65535)
+
+   DnsType ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "2d"
+       STATUS  current
+       SYNTAX  INTEGER (0..65535)
+
+   DnsQClass ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "2d"
+       STATUS  current
+       SYNTAX  INTEGER (0..65535)
+
+
+
+
+
+
+   DnsQType ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "2d"
+       STATUS  current
+       SYNTAX  INTEGER (0..65535)
+
+   DnsTime ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "4d"
+       STATUS  current
+       SYNTAX  Gauge32
+
+
+   DnsOpCode ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX  INTEGER (0..15)
+
+   DnsRespCode ::= TEXTUAL-CONVENTION
+       STATUS  current
+       SYNTAX  INTEGER (0..15)
+
+
+
+
+
+
+
+
+
+
+   dnsServConfigImplementIdent OBJECT-TYPE
+       SYNTAX      DisplayString
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServConfig 1 }
+
+   dnsServConfigRecurs  OBJECT-TYPE
+       SYNTAX      INTEGER { available(1),
+                             restricted(2),
+                             unavailable(3) }
+       MAX-ACCESS  read-write
+       STATUS      current
+        ::= { dnsServConfig 2 }
+
+   dnsServConfigUpTime OBJECT-TYPE
+       SYNTAX      DnsTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServConfig 3 }
+
+   dnsServConfigResetTime OBJECT-TYPE
+       SYNTAX      DnsTime
+       MAX-ACCESS  read-only
+       STATUS      current
+
+
+
+
+
+       ::= { dnsServConfig 4 }
+
+   dnsServConfigReset OBJECT-TYPE
+       SYNTAX      INTEGER { other(1),
+                             reset(2),
+                             initializing(3),
+                             running(4) }
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { dnsServConfig 5 }
+
+
+
+   dnsServCounterAuthAns OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 2 }
+
+   dnsServCounterAuthNoNames OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 3 }
+
+
+
+
+
+   dnsServCounterAuthNoDataResps OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 4 }
+
+   dnsServCounterNonAuthDatas OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 5 }
+
+   dnsServCounterNonAuthNoDatas OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 6 }
+
+   dnsServCounterReferrals OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 7 }
+
+   dnsServCounterErrors OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 8 }
+
+   dnsServCounterRelNames OBJECT-TYPE
+       SYNTAX      Counter32
+
+
+
+
+
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 9 }
+
+   dnsServCounterReqRefusals OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 10 }
+
+   dnsServCounterReqUnparses OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 11 }
+
+   dnsServCounterOtherErrors OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounter 12 }
+
+
+   dnsServCounterTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF DnsServCounterEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServCounter 13 }
+
+   dnsServCounterEntry OBJECT-TYPE
+       SYNTAX      DnsServCounterEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       INDEX     { dnsServCounterOpCode,
+                   dnsServCounterQClass,
+                   dnsServCounterQType,
+                   dnsServCounterTransport }
+       ::= { dnsServCounterTable 1 }
+
+   DnsServCounterEntry ::=
+       SEQUENCE {
+           dnsServCounterOpCode
+               DnsOpCode,
+           dnsServCounterQClass
+               DnsClass,
+           dnsServCounterQType
+               DnsType,
+           dnsServCounterTransport
+               INTEGER,
+           dnsServCounterRequests
+               Counter32,
+           dnsServCounterResponses
+               Counter32
+           }
+
+   dnsServCounterOpCode OBJECT-TYPE
+       SYNTAX      DnsOpCode
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServCounterEntry 1 }
+
+   dnsServCounterQClass OBJECT-TYPE
+       SYNTAX      DnsClass
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServCounterEntry 2 }
+
+
+
+
+
+
+   dnsServCounterQType OBJECT-TYPE
+       SYNTAX      DnsType
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServCounterEntry 3 }
+
+   dnsServCounterTransport OBJECT-TYPE
+       SYNTAX      INTEGER { udp(1), tcp(2), other(3) }
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServCounterEntry 4 }
+
+   dnsServCounterRequests OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounterEntry 5 }
+
+   dnsServCounterResponses OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServCounterEntry 6 }
+
+
+
+
+
+
+
+
+
+
+
+
+   dnsServOptCounterSelfAuthAns OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 1 }
+
+   dnsServOptCounterSelfAuthNoNames OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 2 }
+
+   dnsServOptCounterSelfAuthNoDataResps OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 3 }
+
+   dnsServOptCounterSelfNonAuthDatas OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 4 }
+
+   dnsServOptCounterSelfNonAuthNoDatas OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 5 }
+
+   dnsServOptCounterSelfReferrals OBJECT-TYPE
+       SYNTAX      Counter32
+
+
+
+
+
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 6 }
+
+   dnsServOptCounterSelfErrors OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 7 }
+
+   dnsServOptCounterSelfRelNames OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 8 }
+
+   dnsServOptCounterSelfReqRefusals OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 9 }
+
+   dnsServOptCounterSelfReqUnparses OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 10 }
+
+
+
+
+
+   dnsServOptCounterSelfOtherErrors OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 11 }
+
+   dnsServOptCounterFriendsAuthAns OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 12 }
+
+   dnsServOptCounterFriendsAuthNoNames OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 13 }
+
+   dnsServOptCounterFriendsAuthNoDataResps OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 14 }
+
+   dnsServOptCounterFriendsNonAuthDatas OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+
+
+
+
+
+       ::= { dnsServOptCounter 15 }
+
+   dnsServOptCounterFriendsNonAuthNoDatas OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 16 }
+
+   dnsServOptCounterFriendsReferrals OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 17 }
+
+   dnsServOptCounterFriendsErrors OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 18 }
+
+   dnsServOptCounterFriendsRelNames OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 19 }
+
+   dnsServOptCounterFriendsReqRefusals OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+
+
+
+
+
+       STATUS      current
+       ::= { dnsServOptCounter 20 }
+
+   dnsServOptCounterFriendsReqUnparses OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 21 }
+
+   dnsServOptCounterFriendsOtherErrors OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServOptCounter 22 }
+
+
+
+
+
+   dnsServZoneTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF DnsServZoneEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServZone 1 }
+
+   dnsServZoneEntry OBJECT-TYPE
+       SYNTAX      DnsServZoneEntry
+       MAX-ACCESS  not-accessible
+
+
+
+
+
+       STATUS      current
+       INDEX     { dnsServZoneName,
+                   dnsServZoneClass }
+       ::= { dnsServZoneTable 1 }
+
+   DnsServZoneEntry ::=
+       SEQUENCE {
+           dnsServZoneName
+               DnsNameAsIndex,
+           dnsServZoneClass
+               DnsClass,
+           dnsServZoneLastReloadSuccess
+               DnsTime,
+           dnsServZoneLastReloadAttempt
+               DnsTime,
+           dnsServZoneLastSourceAttempt
+               IpAddress,
+           dnsServZoneStatus
+               RowStatus,
+           dnsServZoneSerial
+               Counter32,
+           dnsServZoneCurrent
+               TruthValue,
+           dnsServZoneLastSourceSuccess
+               IpAddress
+       }
+
+   dnsServZoneName OBJECT-TYPE
+       SYNTAX      DnsNameAsIndex
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServZoneEntry 1 }
+
+   dnsServZoneClass OBJECT-TYPE
+       SYNTAX      DnsClass
+       MAX-ACCESS  not-accessible
+       STATUS      current
+
+
+
+
+
+       ::= { dnsServZoneEntry 2 }
+
+   dnsServZoneLastReloadSuccess OBJECT-TYPE
+       SYNTAX      DnsTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServZoneEntry 3 }
+
+   dnsServZoneLastReloadAttempt OBJECT-TYPE
+       SYNTAX      DnsTime
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServZoneEntry 4 }
+
+   dnsServZoneLastSourceAttempt OBJECT-TYPE
+       SYNTAX      IpAddress
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServZoneEntry 5 }
+
+   dnsServZoneStatus OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+       STATUS      current
+       ::= { dnsServZoneEntry 6 }
+
+   dnsServZoneSerial OBJECT-TYPE
+       SYNTAX      Counter32
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServZoneEntry 7 }
+
+   dnsServZoneCurrent OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServZoneEntry 8 }
+
+   dnsServZoneLastSourceSuccess OBJECT-TYPE
+       SYNTAX      IpAddress
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dnsServZoneEntry 9 }
+
+
+   dnsServZoneSrcTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF DnsServZoneSrcEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServZone 2 }
+
+   dnsServZoneSrcEntry OBJECT-TYPE
+       SYNTAX      DnsServZoneSrcEntry
+       MAX-ACCESS  not-accessible
+
+
+
+
+
+       STATUS      current
+       INDEX     { dnsServZoneSrcName,
+                   dnsServZoneSrcClass,
+                   dnsServZoneSrcAddr }
+       ::= { dnsServZoneSrcTable 1 }
+
+   DnsServZoneSrcEntry ::=
+       SEQUENCE {
+           dnsServZoneSrcName
+               DnsNameAsIndex,
+           dnsServZoneSrcClass
+               DnsClass,
+           dnsServZoneSrcAddr
+               IpAddress,
+           dnsServZoneSrcStatus
+               RowStatus
+       }
+
+   dnsServZoneSrcName OBJECT-TYPE
+       SYNTAX      DnsNameAsIndex
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServZoneSrcEntry 1 }
+
+   dnsServZoneSrcClass OBJECT-TYPE
+       SYNTAX      DnsClass
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServZoneSrcEntry 2 }
+
+   dnsServZoneSrcAddr OBJECT-TYPE
+       SYNTAX      IpAddress
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dnsServZoneSrcEntry 3 }
+
+   dnsServZoneSrcStatus OBJECT-TYPE
+       SYNTAX      RowStatus
+       MAX-ACCESS  read-create
+
+
+
+
+
+       STATUS      current
+       ::= { dnsServZoneSrcEntry 4 }
+
+
+
+   dnsServMIBGroups        OBJECT IDENTIFIER ::= { dnsServMIB 2 }
+
+   dnsServConfigGroup OBJECT-GROUP
+       OBJECTS   { dnsServConfigImplementIdent,
+                   dnsServConfigRecurs,
+                   dnsServConfigUpTime,
+                   dnsServConfigResetTime,
+                   dnsServConfigReset }
+       STATUS      current
+       ::= { dnsServMIBGroups 1 }
+
+   dnsServCounterGroup OBJECT-GROUP
+       OBJECTS   { dnsServCounterAuthAns,
+                   dnsServCounterAuthNoNames,
+                   dnsServCounterAuthNoDataResps,
+                   dnsServCounterNonAuthDatas,
+                   dnsServCounterNonAuthNoDatas,
+                   dnsServCounterReferrals,
+                   dnsServCounterErrors,
+                   dnsServCounterRelNames,
+                   dnsServCounterReqRefusals,
+                   dnsServCounterReqUnparses,
+                   dnsServCounterOtherErrors,
+                   dnsServCounterOpCode,
+                   dnsServCounterQClass,
+                   dnsServCounterQType,
+                   dnsServCounterTransport,
+                   dnsServCounterRequests,
+                   dnsServCounterResponses }
+       STATUS      current
+       ::= { dnsServMIBGroups 2 }
+
+
+
+
+
+
+
+   dnsServOptCounterGroup OBJECT-GROUP
+       OBJECTS   { dnsServOptCounterSelfAuthAns,
+                   dnsServOptCounterSelfAuthNoNames,
+                   dnsServOptCounterSelfAuthNoDataResps,
+                   dnsServOptCounterSelfNonAuthDatas,
+                   dnsServOptCounterSelfNonAuthNoDatas,
+                   dnsServOptCounterSelfReferrals,
+                   dnsServOptCounterSelfErrors,
+                   dnsServOptCounterSelfRelNames,
+                   dnsServOptCounterSelfReqRefusals,
+                   dnsServOptCounterSelfReqUnparses,
+                   dnsServOptCounterSelfOtherErrors,
+                   dnsServOptCounterFriendsAuthAns,
+                   dnsServOptCounterFriendsAuthNoNames,
+                   dnsServOptCounterFriendsAuthNoDataResps,
+                   dnsServOptCounterFriendsNonAuthDatas,
+                   dnsServOptCounterFriendsNonAuthNoDatas,
+                   dnsServOptCounterFriendsReferrals,
+                   dnsServOptCounterFriendsErrors,
+                   dnsServOptCounterFriendsRelNames,
+                   dnsServOptCounterFriendsReqRefusals,
+                   dnsServOptCounterFriendsReqUnparses,
+                   dnsServOptCounterFriendsOtherErrors }
+       STATUS      current
+       ::= { dnsServMIBGroups 3 }
+
+   dnsServZoneGroup OBJECT-GROUP
+       OBJECTS   { dnsServZoneName,
+                   dnsServZoneClass,
+                   dnsServZoneLastReloadSuccess,
+                   dnsServZoneLastReloadAttempt,
+                   dnsServZoneLastSourceAttempt,
+                   dnsServZoneLastSourceSuccess,
+                   dnsServZoneStatus,
+                   dnsServZoneSerial,
+                   dnsServZoneCurrent,
+                   dnsServZoneSrcName,
+                   dnsServZoneSrcClass,
+                   dnsServZoneSrcAddr,
+                   dnsServZoneSrcStatus }
+       STATUS      current
+       ::= { dnsServMIBGroups 4 }
+
+
+
+
+
+
+   dnsServMIBCompliances OBJECT IDENTIFIER ::= { dnsServMIB 3 }
+
+   dnsServMIBCompliance MODULE-COMPLIANCE
+       STATUS      current
+       MODULE -- This MIB module
+           MANDATORY-GROUPS { dnsServConfigGroup, dnsServCounterGroup }
+           GROUP   dnsServOptCounterGroup
+           GROUP   dnsServZoneGroup
+           OBJECT  dnsServConfigRecurs
+           MIN-ACCESS      read-only
+           OBJECT  dnsServConfigReset
+           MIN-ACCESS      read-only
+       ::= { dnsServMIBCompliances 1 }
+
+   END

@@ -1,0 +1,42 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"objectType",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"ObjectPrivilegeInfo_objectType"}
+	]},
+
+	{
+	"propName":"objectId",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"ObjectPrivilegeInfo_objectId"}
+	]},
+
+	{
+	"propName":"roleId",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"ObjectPrivilegeInfo_roleId"}
+	]},
+
+	{
+	"propName":"objectPrivilege",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Column", "columnName":"ObjectPrivilegeInfo_objectPrivilege"},
+		{"type":"Translate",
+			"values":[
+				{"value":"READ", "name":"name_Privilege_Read"},
+				{"value":"WRITE", "name":"name_Privilege_Write"},
+				{"value":"EXEC", "name":"name_Privilege_Exec"},
+				{"value":"NONE", "name":"name_Privilege_None"}
+			]
+		}
+	]}
+]
+}

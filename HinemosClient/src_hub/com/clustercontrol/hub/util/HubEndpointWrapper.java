@@ -1,17 +1,11 @@
 /*
-
-Copyright (C) 2016 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
+
 package com.clustercontrol.hub.util;
 
 import java.util.List;
@@ -23,6 +17,7 @@ import org.apache.log4j.Logger;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.EndpointUnit;
 import com.clustercontrol.util.EndpointUnit.EndpointSetting;
+import com.clustercontrol.ws.hub.HinemosDbTimeout_Exception;
 import com.clustercontrol.ws.hub.HinemosUnknown_Exception;
 import com.clustercontrol.ws.hub.HubEndpoint;
 import com.clustercontrol.ws.hub.HubEndpointService;
@@ -317,9 +312,10 @@ public class HubEndpointWrapper {
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
+	 * @throws HinemosDbTimeout_Exception
 	 * @throws InvalidSetting_Exception
 	 */
-	public StringQueryResult queryCollectStringData(StringQueryInfo query)  throws InvalidUserPass_Exception, InvalidRole_Exception, HinemosUnknown_Exception, InvalidSetting_Exception {
+	public StringQueryResult queryCollectStringData(StringQueryInfo query)  throws InvalidUserPass_Exception, InvalidRole_Exception, HinemosUnknown_Exception, HinemosDbTimeout_Exception, InvalidSetting_Exception {
 		WebServiceException wse = null;
 		for (EndpointSetting<HubEndpoint> endpointSetting : getHubEndpoint(endpointUnit)) {
 			try {

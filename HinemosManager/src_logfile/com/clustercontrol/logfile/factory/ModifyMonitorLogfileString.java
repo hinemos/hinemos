@@ -1,16 +1,9 @@
 /*
-
- Copyright (C) 2006 NTT DATA Corporation
-
- This program is free software; you can redistribute it and/or
- Modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation, version 2.
-
- This program is distributed in the hope that it will be
- useful, but WITHOUT ANY WARRANTY; without even the implied
- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.logfile.factory;
@@ -92,12 +85,14 @@ public class ModifyMonitorLogfileString extends ModifyMonitorStringValueType{
 	 */
 	@Override
 	protected boolean addCheckInfo() throws MonitorNotFound, InvalidRole {
-		LogfileCheckInfo checkInfo = m_monitorInfo.getLogfileCheckInfo();
-		checkInfo.setMonitorId(m_monitorInfo.getMonitorId());
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			LogfileCheckInfo checkInfo = m_monitorInfo.getLogfileCheckInfo();
+			checkInfo.setMonitorId(m_monitorInfo.getMonitorId());
 
-		// ログファイル監視情報を追加
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(checkInfo);
-		return true;
+			// ログファイル監視情報を追加
+			em.persist(checkInfo);
+			return true;
+		}
 	}
 }

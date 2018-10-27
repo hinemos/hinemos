@@ -1,0 +1,164 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[	
+	{
+	"propName":"orderNo",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_orderNo"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_description"}
+	]},
+	
+	{
+	"propName":"yearNo",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_yearNo"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_yearNo"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"monthNo",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_monthNo"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_monthNo"},
+				{"value":"1", "name":"name_monthNo_1"},
+				{"value":"2", "name":"name_monthNo_2"},
+				{"value":"3", "name":"name_monthNo_3"},
+				{"value":"4", "name":"name_monthNo_4"},
+				{"value":"5", "name":"name_monthNo_5"},
+				{"value":"6", "name":"name_monthNo_6"},
+				{"value":"7", "name":"name_monthNo_7"},
+				{"value":"8", "name":"name_monthNo_8"},
+				{"value":"9", "name":"name_monthNo_9"},
+				{"value":"10", "name":"name_monthNo_10"},
+				{"value":"11", "name":"name_monthNo_11"},
+				{"value":"12", "name":"name_monthNo_12"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"dayType",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_dayType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_daytype_every"},
+				{"value":"1", "name":"name_daytype_weekday"},
+				{"value":"2", "name":"name_daytype_day"},
+				{"value":"3", "name":"name_daytype_pattern"}
+			]
+		}
+	]},
+	{
+	"propName":"weekNo",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_weekNo"},
+		{"type":"Translate",
+			"values":[
+				{"value":"1", "name":"name_weekNo_sunday"},
+				{"value":"2", "name":"name_weekNo_monday"},
+				{"value":"3", "name":"name_weekNo_tuesday"},
+				{"value":"4", "name":"name_weekNo_wednesday"},
+				{"value":"5", "name":"name_weekNo_thursday"},
+				{"value":"6", "name":"name_weekNo_friday"},
+				{"value":"7", "name":"name_weekNo_Saturday"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"weekXth",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_weekXth"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_weekXth_every"},
+				{"value":"1", "name":"name_weekXth_1"},
+				{"value":"2", "name":"name_weekXth_2"},
+				{"value":"3", "name":"name_weekXth_3"},
+				{"value":"4", "name":"name_weekXth_4"},
+				{"value":"5", "name":"name_weekXth_5"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"dayNo",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_dayNo"}
+	]},
+	
+	{
+	"propName":"calendarPatternId",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_calendarPatternId"}
+	]},
+	
+	{
+	"propName":"afterDay",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_afterDay"}
+	]},
+	
+	{
+	"propName":"startTime",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_startTime"}
+	]},
+
+	{
+	"propName":"endTime",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_endTime"}
+	]},
+
+	{
+	"propName":"substituteFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_substituteFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":false, "name":"name_substituteFlg_false"},
+				{"value":true, "name":"name_substituteFlg_true"}
+			]
+		}
+	]},
+
+	{
+	"propName":"substituteTime",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_substituteTime"}
+	]},
+
+	{
+	"propName":"substituteLimit",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_substituteLimit"}
+	]},
+
+	{
+	"propName":"executeFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"CalendarDetailInfoType_executeFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":false, "name":"name_executeFlg_false"},
+				{"value":true, "name":"name_executeFlg_true"}
+			]
+		}
+	]}
+]
+}

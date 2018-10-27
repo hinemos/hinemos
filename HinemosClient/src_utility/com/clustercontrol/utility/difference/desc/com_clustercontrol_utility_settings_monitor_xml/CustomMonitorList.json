@@ -1,0 +1,46 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"CustomMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"CustomInfo.ExecuteType",
+			"CustomInfo.SelectedFacilityId",
+			"CustomInfo.SpecifyUser",
+			"CustomInfo.EffectiveUser",
+			"CustomInfo.Command",
+			"CustomInfo.Timeout",
+			"CustomInfo.ConvertFlg",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"Monitor.ItemName",
+			"Monitor.Measure",
+			"NumericValue",
+			"StringValue",
+			"StringValue.*.Description",
+			"StringValue.*.OrderNo",
+			"StringValue.*.Pattern",
+			"StringValue.*.ProcessType",
+			"StringValue.*.CaseSensitivityFlg",
+			"StringValue.*.Message",
+			"StringValue.*.ValidFlg",
+			"StringValue.*.Priority"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"CustomMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

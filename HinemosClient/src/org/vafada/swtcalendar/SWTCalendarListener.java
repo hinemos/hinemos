@@ -1,6 +1,7 @@
 /*
  * SWTCalendarListener.java - An interface for notifying for date changed Mark
  * Bryan Yu swtcalendar.sourceforge.net
+ * Modified by: NTT DATA INTELLILINK Corporation <http://www.hinemos.info/>
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free

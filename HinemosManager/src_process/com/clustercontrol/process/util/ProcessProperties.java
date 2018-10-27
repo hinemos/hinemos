@@ -1,21 +1,14 @@
 /*
-
-Copyright (C) 2006 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.process.util;
 
-import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 
 /**
  * プロセス監視プロパティ情報を取得するクラス<BR>
@@ -47,7 +40,7 @@ public class ProcessProperties {
 	 */
 	public int getStartSecond() {
 		/** プロセス監視値取得開始時間（秒） */
-		return HinemosPropertyUtil.getHinemosPropertyNum("monitor.process.start.second", Long.valueOf(30)).intValue();
+		return HinemosPropertyCommon.monitor_process_start_second.getIntegerValue();
 	}
 
 	/**
@@ -55,7 +48,7 @@ public class ProcessProperties {
 	 */
 	public int getValidSecond() {
 		/** SNMPポーラー収集許容時間（秒） */
-		return HinemosPropertyUtil.getHinemosPropertyNum("monitor.process.valid.second", Long.valueOf(50)).intValue();
+		return HinemosPropertyCommon.monitor_process_valid_second.getIntegerValue();
 	}
 
 	/**
@@ -63,13 +56,13 @@ public class ProcessProperties {
 	 */
 	public boolean isDetailedDisplay() {
 		/** オリジナルメッセージにプロセスを表示させるかのフラグ */
-		return HinemosPropertyUtil.getHinemosPropertyBool("monitor.process.details.display", false);
+		return HinemosPropertyCommon.monitor_process_details_display.getBooleanValue();
 	}
 	
 	/**
 	 * @return マネージャ起動直後の初回閾値判定処理を行うまでの待ち時間を返します。 
 	 */
 	public int getCollectInitDelaySecond() {
-		return HinemosPropertyUtil.getHinemosPropertyNum("monitor.process.collect.initdelay.second", Long.valueOf(60)).intValue();
+		return HinemosPropertyCommon.monitor_process_collect_initdelay_second.getIntegerValue();
 	}
 }

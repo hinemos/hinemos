@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
 package com.clustercontrol.performance.monitor.model;
 
 import java.io.Serializable;
@@ -14,8 +22,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 
 
@@ -38,14 +44,8 @@ public class CollectorCategoryCollectMstEntity implements Serializable {
 	public CollectorCategoryCollectMstEntity() {
 	}
 
-	public CollectorCategoryCollectMstEntity(CollectorCategoryCollectMstEntityPK pk,
-			CollectorCategoryMstEntity collectorCategoryMstEntity,
-			CollectorPlatformMstEntity collectorPlatformMstEntity) {
+	public CollectorCategoryCollectMstEntity(CollectorCategoryCollectMstEntityPK pk) {
 		this.setId(pk);
-		HinemosEntityManager em = new JpaTransactionManager().getEntityManager();
-		em.persist(this);
-		this.relateToCollectorCategoryMstEntity(collectorCategoryMstEntity);
-		this.relateToCollectorPlatformMstEntity(collectorPlatformMstEntity);
 	}
 
 	public CollectorCategoryCollectMstEntity(CollectorPlatformMstEntity collectorPlatformMstEntity,
@@ -54,8 +54,7 @@ public class CollectorCategoryCollectMstEntity implements Serializable {
 		this(new CollectorCategoryCollectMstEntityPK(
 				collectorPlatformMstEntity.getPlatformId(),
 				subPlatformId,
-				collectorCategoryMstEntity.getCategoryCode()),
-				collectorCategoryMstEntity, collectorPlatformMstEntity);
+				collectorCategoryMstEntity.getCategoryCode()));
 	}
 
 

@@ -1,0 +1,38 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"LogfileMonitorList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Monitor.Description",
+			"Monitor.FacilityId",
+			"Monitor.Scope",
+			"Monitor.MonitorType",
+			"Monitor.MonitorTypeId",
+			"Monitor.RunInterval",
+			"Monitor.CalendarId",
+			"Monitor.OwnerRoleId",
+			"LogfileInfo.Directory",
+			"LogfileInfo.FileName",
+			"Monitor.MonitorFlg",
+			"Monitor.Application",
+			"Monitor.CollectorFlg",
+			"StringValue",
+			"StringValue.*.Description",
+			"StringValue.*.OrderNo",
+			"StringValue.*.Pattern",
+			"StringValue.*.ProcessType",
+			"StringValue.*.CaseSensitivityFlg",
+			"StringValue.*.Message",
+			"StringValue.*.ValidFlg",
+			"StringValue.*.Priority"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"LogfileMonitor",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

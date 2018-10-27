@@ -1,0 +1,107 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"mib",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_mib"}
+	]},
+
+	{
+	"propName":"uei",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_uei"}
+	]},
+
+	{
+	"propName":"version",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_version"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_snmptrap_v1"},
+				{"value":"1", "name":"name_snmptrap_v2"}
+			]
+		}
+	]},
+
+	{
+	"propName":"trapOid",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_trapOid"}
+	]},
+
+	{
+	"propName":"genericId",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_genericId"}
+	]},
+
+	{
+	"propName":"specificId",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_specificId"}
+	]},
+
+	{
+	"propName":"logmsg",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_logmsg"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_description"}
+	]},
+
+	{
+	"propName":"processingVarbindSpecified",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_processingVarbindSpecified"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_notify_regardless_of_the_variable"},
+				{"value":"true", "name":"name_determine_by_specified_variable"}
+			]
+		}
+	]},
+
+	{
+	"propName":"priorityAnyVarbind",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_priorityAnyVarbind"},
+		{
+			"type":"Translate", 
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+
+	{
+	"propName":"formatVarBinds",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_formatVarBinds"}
+	]},
+	
+	{
+	"propName":"varBindPatterns",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"orderNo"},
+		{"type":"Column", "columnName":"VarBindPattern_varBindPatterns"},
+		{"type":"Ignore", "propNames":["orderNo"]}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"TrapValueInfo_validFlg"}
+	]}
+]
+}

@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"InfraFile_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"FileId",
+			"FileName"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"InfraFileInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -1,0 +1,765 @@
+   MTA-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+      OBJECT-TYPE, Counter32, Gauge32, MODULE-IDENTITY, mib-2
+        FROM SNMPv2-SMI
+      TimeInterval
+        FROM SNMPv2-TC
+      MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF
+      SnmpAdminString
+          FROM SNMP-FRAMEWORK-MIB
+      applIndex, URLString
+        FROM NETWORK-SERVICES-MIB;
+
+   mta MODULE-IDENTITY
+      LAST-UPDATED "200003030000Z"
+      ORGANIZATION "IETF Mail and Directory Management Working Group"
+      ::= {mib-2 28}
+
+   mtaTable OBJECT-TYPE
+      SYNTAX SEQUENCE OF MtaEntry
+      MAX-ACCESS not-accessible
+      STATUS current
+      ::= {mta 1}
+
+   mtaEntry OBJECT-TYPE
+      SYNTAX MtaEntry
+      MAX-ACCESS not-accessible
+      STATUS current
+      INDEX {applIndex}
+      ::= {mtaTable 1}
+
+
+
+
+
+   MtaEntry ::= SEQUENCE {
+      mtaReceivedMessages
+        Counter32,
+      mtaStoredMessages
+        Gauge32,
+      mtaTransmittedMessages
+        Counter32,
+      mtaReceivedVolume
+        Counter32,
+      mtaStoredVolume
+        Gauge32,
+      mtaTransmittedVolume
+        Counter32,
+      mtaReceivedRecipients
+        Counter32,
+      mtaStoredRecipients
+        Gauge32,
+      mtaTransmittedRecipients
+        Counter32,
+      mtaSuccessfulConvertedMessages
+        Counter32,
+      mtaFailedConvertedMessages
+        Counter32,
+      mtaLoopsDetected
+        Counter32
+   }
+
+   mtaReceivedMessages OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 1}
+
+   mtaStoredMessages OBJECT-TYPE
+      SYNTAX Gauge32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 2}
+
+
+
+
+
+   mtaTransmittedMessages OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 3}
+
+   mtaReceivedVolume OBJECT-TYPE
+      SYNTAX Counter32
+      UNITS "K-octets"
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 4}
+
+   mtaStoredVolume OBJECT-TYPE
+      SYNTAX Gauge32
+      UNITS "K-octets"
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 5}
+
+   mtaTransmittedVolume OBJECT-TYPE
+      SYNTAX Counter32
+
+
+
+
+
+      UNITS "K-octets"
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 6}
+
+   mtaReceivedRecipients OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 7}
+
+   mtaStoredRecipients OBJECT-TYPE
+      SYNTAX Gauge32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 8}
+
+   mtaTransmittedRecipients OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+
+
+
+
+
+      STATUS current
+      ::= {mtaEntry 9}
+
+   mtaSuccessfulConvertedMessages OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 10}
+
+   mtaFailedConvertedMessages OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 11}
+
+   mtaLoopsDetected OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaEntry 12}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   mtaGroupTable OBJECT-TYPE
+       SYNTAX SEQUENCE OF MtaGroupEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       ::= {mta 2}
+
+   mtaGroupEntry OBJECT-TYPE
+       SYNTAX MtaGroupEntry
+       MAX-ACCESS not-accessible
+       STATUS current
+       INDEX {applIndex, mtaGroupIndex}
+       ::= {mtaGroupTable 1}
+
+   MtaGroupEntry ::= SEQUENCE {
+      mtaGroupIndex
+          INTEGER,
+      mtaGroupReceivedMessages
+          Counter32,
+      mtaGroupRejectedMessages
+
+
+
+
+
+          Counter32,
+      mtaGroupStoredMessages
+          Gauge32,
+      mtaGroupTransmittedMessages
+          Counter32,
+      mtaGroupReceivedVolume
+          Counter32,
+      mtaGroupStoredVolume
+          Gauge32,
+      mtaGroupTransmittedVolume
+          Counter32,
+      mtaGroupReceivedRecipients
+          Counter32,
+      mtaGroupStoredRecipients
+          Gauge32,
+      mtaGroupTransmittedRecipients
+          Counter32,
+      mtaGroupOldestMessageStored
+          TimeInterval,
+      mtaGroupInboundAssociations
+          Gauge32,
+      mtaGroupOutboundAssociations
+          Gauge32,
+      mtaGroupAccumulatedInboundAssociations
+          Counter32,
+      mtaGroupAccumulatedOutboundAssociations
+          Counter32,
+      mtaGroupLastInboundActivity
+          TimeInterval,
+      mtaGroupLastOutboundActivity
+          TimeInterval,
+      mtaGroupLastOutboundAssociationAttempt
+          TimeInterval,
+      mtaGroupRejectedInboundAssociations
+          Counter32,
+      mtaGroupFailedOutboundAssociations
+          Counter32,
+      mtaGroupInboundRejectionReason
+          SnmpAdminString,
+      mtaGroupOutboundConnectFailureReason
+          SnmpAdminString,
+      mtaGroupScheduledRetry
+          TimeInterval,
+      mtaGroupMailProtocol
+          OBJECT IDENTIFIER,
+      mtaGroupName
+          SnmpAdminString,
+      mtaGroupSuccessfulConvertedMessages
+
+
+
+
+
+          Counter32,
+      mtaGroupFailedConvertedMessages
+          Counter32,
+      mtaGroupDescription
+          SnmpAdminString,
+      mtaGroupURL
+          URLString,
+      mtaGroupCreationTime
+          TimeInterval,
+      mtaGroupHierarchy
+          INTEGER,
+      mtaGroupOldestMessageId
+          SnmpAdminString,
+      mtaGroupLoopsDetected
+          Counter32
+   }
+
+   mtaGroupIndex OBJECT-TYPE
+      SYNTAX INTEGER (1..2147483647)
+      MAX-ACCESS not-accessible
+      STATUS current
+      ::= {mtaGroupEntry 1}
+
+   mtaGroupReceivedMessages OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 2}
+
+   mtaGroupRejectedMessages OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 3}
+
+   mtaGroupStoredMessages OBJECT-TYPE
+      SYNTAX Gauge32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 4}
+
+   mtaGroupTransmittedMessages OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 5}
+
+   mtaGroupReceivedVolume OBJECT-TYPE
+      SYNTAX Counter32
+      UNITS "K-octets"
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 6}
+
+   mtaGroupStoredVolume OBJECT-TYPE
+      SYNTAX Gauge32
+      UNITS "K-octets"
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 7}
+
+   mtaGroupTransmittedVolume OBJECT-TYPE
+      SYNTAX Counter32
+      UNITS "K-octets"
+      MAX-ACCESS read-only
+      STATUS current
+
+
+
+
+
+      ::= {mtaGroupEntry 8}
+
+   mtaGroupReceivedRecipients OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 9}
+
+   mtaGroupStoredRecipients OBJECT-TYPE
+      SYNTAX Gauge32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 10}
+
+   mtaGroupTransmittedRecipients OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 11}
+
+   mtaGroupOldestMessageStored OBJECT-TYPE
+      SYNTAX TimeInterval
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 12}
+
+   mtaGroupInboundAssociations OBJECT-TYPE
+      SYNTAX Gauge32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 13}
+
+   mtaGroupOutboundAssociations OBJECT-TYPE
+      SYNTAX Gauge32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 14}
+
+   mtaGroupAccumulatedInboundAssociations OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 15}
+
+   mtaGroupAccumulatedOutboundAssociations OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 16}
+
+   mtaGroupLastInboundActivity OBJECT-TYPE
+      SYNTAX TimeInterval
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 17}
+
+
+
+
+
+
+   mtaGroupLastOutboundActivity OBJECT-TYPE
+      SYNTAX TimeInterval
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 18}
+
+   mtaGroupLastOutboundAssociationAttempt OBJECT-TYPE
+      SYNTAX TimeInterval
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 34}
+
+   mtaGroupRejectedInboundAssociations OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 19}
+
+   mtaGroupFailedOutboundAssociations OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 20}
+
+   mtaGroupInboundRejectionReason OBJECT-TYPE
+      SYNTAX SnmpAdminString
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 21}
+
+   mtaGroupOutboundConnectFailureReason OBJECT-TYPE
+      SYNTAX SnmpAdminString
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 22}
+
+   mtaGroupScheduledRetry OBJECT-TYPE
+      SYNTAX TimeInterval
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 23}
+
+   mtaGroupMailProtocol OBJECT-TYPE
+      SYNTAX OBJECT IDENTIFIER
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 24}
+
+   mtaGroupName OBJECT-TYPE
+      SYNTAX SnmpAdminString
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 25}
+
+   mtaGroupSuccessfulConvertedMessages OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 26}
+
+   mtaGroupFailedConvertedMessages OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 27}
+
+   mtaGroupDescription OBJECT-TYPE
+      SYNTAX SnmpAdminString
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 28}
+
+   mtaGroupURL OBJECT-TYPE
+      SYNTAX URLString
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 29}
+
+
+
+
+
+
+   mtaGroupCreationTime OBJECT-TYPE
+      SYNTAX TimeInterval
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 30}
+
+   mtaGroupHierarchy OBJECT-TYPE
+      SYNTAX INTEGER (-2147483648..2147483647)
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 31}
+
+   mtaGroupOldestMessageId OBJECT-TYPE
+      SYNTAX SnmpAdminString
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 32}
+
+   mtaGroupLoopsDetected OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupEntry 33}
+
+
+   mtaGroupAssociationTable OBJECT-TYPE
+      SYNTAX SEQUENCE OF MtaGroupAssociationEntry
+      MAX-ACCESS not-accessible
+      STATUS current
+      ::= {mta 3}
+
+   mtaGroupAssociationEntry OBJECT-TYPE
+      SYNTAX MtaGroupAssociationEntry
+      MAX-ACCESS not-accessible
+      STATUS current
+      INDEX {applIndex, mtaGroupIndex, mtaGroupAssociationIndex}
+      ::= {mtaGroupAssociationTable 1}
+
+   MtaGroupAssociationEntry ::= SEQUENCE {
+      mtaGroupAssociationIndex
+          INTEGER
+   }
+
+   mtaGroupAssociationIndex OBJECT-TYPE
+      SYNTAX INTEGER (1..2147483647)
+      MAX-ACCESS read-only
+      STATUS current
+
+
+
+
+
+      ::= {mtaGroupAssociationEntry 1}
+
+
+   mtaGroupErrorTable OBJECT-TYPE
+      SYNTAX SEQUENCE OF MtaGroupErrorEntry
+      MAX-ACCESS not-accessible
+      STATUS current
+      ::= {mta 5}
+
+   mtaGroupErrorEntry OBJECT-TYPE
+      SYNTAX MtaGroupErrorEntry
+      MAX-ACCESS not-accessible
+      STATUS current
+      INDEX {applIndex, mtaGroupIndex, mtaStatusCode}
+      ::= {mtaGroupErrorTable 1}
+
+   MtaGroupErrorEntry ::= SEQUENCE {
+      mtaStatusCode
+          INTEGER (4000000..5999999),
+      mtaGroupInboundErrorCount
+          Counter32,
+      mtaGroupInternalErrorCount
+          Counter32,
+      mtaGroupOutboundErrorCount
+          Counter32
+   }
+
+   mtaGroupInboundErrorCount OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupErrorEntry 1}
+
+   mtaGroupInternalErrorCount OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupErrorEntry 2}
+
+   mtaGroupOutboundErrorCount OBJECT-TYPE
+      SYNTAX Counter32
+      MAX-ACCESS read-only
+      STATUS current
+      ::= {mtaGroupErrorEntry 3}
+
+   mtaStatusCode OBJECT-TYPE
+      SYNTAX INTEGER (4000000..5999999)
+      MAX-ACCESS not-accessible
+      STATUS current
+      ::= {mtaGroupErrorEntry 4}
+
+
+   mtaConformance OBJECT IDENTIFIER ::= {mta 4}
+
+   mtaGroups      OBJECT IDENTIFIER ::= {mtaConformance 1}
+   mtaCompliances OBJECT IDENTIFIER ::= {mtaConformance 2}
+
+
+
+   mtaCompliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC1566Group}
+      ::= {mtaCompliances 1}
+
+   mtaAssocCompliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC1566Group, mtaRFC1566AssocGroup}
+      ::= {mtaCompliances 2}
+
+   mtaRFC2249Compliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC2249Group}
+      ::= {mtaCompliances 5}
+
+   mtaRFC2249AssocCompliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC2249Group, mtaRFC2249AssocGroup}
+      ::= {mtaCompliances 6}
+
+   mtaRFC2249ErrorCompliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC2249Group, mtaRFC2249ErrorGroup}
+      ::= {mtaCompliances 7}
+
+   mtaRFC2249FullCompliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC2249Group, mtaRFC2249AssocGroup,
+                          mtaRFC2249ErrorGroup}
+      ::= {mtaCompliances 8}
+
+   mtaRFC2789Compliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC2789Group}
+      ::= {mtaCompliances 9}
+
+   mtaRFC2789AssocCompliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC2789Group, mtaRFC2789AssocGroup}
+      ::= {mtaCompliances 10}
+
+   mtaRFC2789ErrorCompliance MODULE-COMPLIANCE
+
+
+
+
+
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC2789Group, mtaRFC2789ErrorGroup}
+      ::= {mtaCompliances 11}
+
+   mtaRFC2789FullCompliance MODULE-COMPLIANCE
+      STATUS current
+      MODULE  -- this module
+        MANDATORY-GROUPS {mtaRFC2789Group, mtaRFC2789AssocGroup,
+                          mtaRFC2789ErrorGroup}
+      ::= {mtaCompliances 12}
+
+
+   mtaRFC1566Group OBJECT-GROUP
+      OBJECTS {
+        mtaReceivedMessages, mtaStoredMessages,
+        mtaTransmittedMessages, mtaReceivedVolume, mtaStoredVolume,
+        mtaTransmittedVolume, mtaReceivedRecipients,
+        mtaStoredRecipients, mtaTransmittedRecipients,
+        mtaGroupReceivedMessages, mtaGroupRejectedMessages,
+        mtaGroupStoredMessages, mtaGroupTransmittedMessages,
+        mtaGroupReceivedVolume, mtaGroupStoredVolume,
+        mtaGroupTransmittedVolume, mtaGroupReceivedRecipients,
+        mtaGroupStoredRecipients, mtaGroupTransmittedRecipients,
+        mtaGroupOldestMessageStored, mtaGroupInboundAssociations,
+        mtaGroupOutboundAssociations,
+        mtaGroupAccumulatedInboundAssociations,
+        mtaGroupAccumulatedOutboundAssociations,
+        mtaGroupLastInboundActivity, mtaGroupLastOutboundActivity,
+        mtaGroupRejectedInboundAssociations,
+        mtaGroupFailedOutboundAssociations,
+        mtaGroupInboundRejectionReason,
+        mtaGroupOutboundConnectFailureReason,
+        mtaGroupScheduledRetry, mtaGroupMailProtocol, mtaGroupName}
+      STATUS current
+
+
+
+
+
+      ::= {mtaGroups 10}
+
+   mtaRFC1566AssocGroup OBJECT-GROUP
+      OBJECTS {
+        mtaGroupAssociationIndex}
+      STATUS current
+      ::= {mtaGroups 11}
+
+   mtaRFC2249Group OBJECT-GROUP
+      OBJECTS {
+        mtaReceivedMessages, mtaStoredMessages,
+        mtaTransmittedMessages, mtaReceivedVolume, mtaStoredVolume,
+        mtaTransmittedVolume, mtaReceivedRecipients,
+        mtaStoredRecipients, mtaTransmittedRecipients,
+        mtaSuccessfulConvertedMessages, mtaFailedConvertedMessages,
+        mtaGroupReceivedMessages, mtaGroupRejectedMessages,
+        mtaGroupStoredMessages, mtaGroupTransmittedMessages,
+        mtaGroupReceivedVolume, mtaGroupStoredVolume,
+        mtaGroupTransmittedVolume, mtaGroupReceivedRecipients,
+        mtaGroupStoredRecipients, mtaGroupTransmittedRecipients,
+        mtaGroupOldestMessageStored, mtaGroupInboundAssociations,
+        mtaGroupOutboundAssociations, mtaLoopsDetected,
+        mtaGroupAccumulatedInboundAssociations,
+        mtaGroupAccumulatedOutboundAssociations,
+        mtaGroupLastInboundActivity, mtaGroupLastOutboundActivity,
+        mtaGroupLastOutboundAssociationAttempt,
+        mtaGroupRejectedInboundAssociations,
+        mtaGroupFailedOutboundAssociations,
+        mtaGroupInboundRejectionReason,
+        mtaGroupOutboundConnectFailureReason,
+        mtaGroupScheduledRetry, mtaGroupMailProtocol, mtaGroupName,
+        mtaGroupSuccessfulConvertedMessages,
+        mtaGroupFailedConvertedMessages, mtaGroupDescription,
+        mtaGroupURL, mtaGroupCreationTime, mtaGroupHierarchy,
+        mtaGroupOldestMessageId, mtaGroupLoopsDetected}
+      STATUS current
+      ::= {mtaGroups 4}
+
+   mtaRFC2249AssocGroup OBJECT-GROUP
+      OBJECTS {
+        mtaGroupAssociationIndex}
+
+
+
+
+
+      STATUS current
+      ::= {mtaGroups 5}
+
+   mtaRFC2249ErrorGroup OBJECT-GROUP
+      OBJECTS {
+        mtaGroupInboundErrorCount, mtaGroupInternalErrorCount,
+        mtaGroupOutboundErrorCount}
+      STATUS current
+      ::= {mtaGroups 6}
+
+   mtaRFC2789Group OBJECT-GROUP
+      OBJECTS {
+        mtaReceivedMessages, mtaStoredMessages,
+        mtaTransmittedMessages, mtaReceivedVolume, mtaStoredVolume,
+        mtaTransmittedVolume, mtaReceivedRecipients,
+        mtaStoredRecipients, mtaTransmittedRecipients,
+        mtaSuccessfulConvertedMessages, mtaFailedConvertedMessages,
+        mtaGroupReceivedMessages, mtaGroupRejectedMessages,
+        mtaGroupStoredMessages, mtaGroupTransmittedMessages,
+        mtaGroupReceivedVolume, mtaGroupStoredVolume,
+        mtaGroupTransmittedVolume, mtaGroupReceivedRecipients,
+        mtaGroupStoredRecipients, mtaGroupTransmittedRecipients,
+        mtaGroupOldestMessageStored, mtaGroupInboundAssociations,
+        mtaGroupOutboundAssociations, mtaLoopsDetected,
+        mtaGroupAccumulatedInboundAssociations,
+        mtaGroupAccumulatedOutboundAssociations,
+        mtaGroupLastInboundActivity, mtaGroupLastOutboundActivity,
+        mtaGroupLastOutboundAssociationAttempt,
+        mtaGroupRejectedInboundAssociations,
+        mtaGroupFailedOutboundAssociations,
+        mtaGroupInboundRejectionReason,
+        mtaGroupOutboundConnectFailureReason,
+        mtaGroupScheduledRetry, mtaGroupMailProtocol, mtaGroupName,
+        mtaGroupSuccessfulConvertedMessages,
+        mtaGroupFailedConvertedMessages, mtaGroupDescription,
+        mtaGroupURL, mtaGroupCreationTime, mtaGroupHierarchy,
+        mtaGroupOldestMessageId, mtaGroupLoopsDetected}
+      STATUS current
+      ::= {mtaGroups 7}
+
+   mtaRFC2789AssocGroup OBJECT-GROUP
+      OBJECTS {
+        mtaGroupAssociationIndex}
+      STATUS current
+      ::= {mtaGroups 8}
+
+   mtaRFC2789ErrorGroup OBJECT-GROUP
+      OBJECTS {
+        mtaGroupInboundErrorCount, mtaGroupInternalErrorCount,
+        mtaGroupOutboundErrorCount}
+      STATUS current
+      ::= {mtaGroups 9}
+
+   END

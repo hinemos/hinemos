@@ -1,16 +1,9 @@
 /*
-
-Copyright (C) 2011 NTT DATA Corporation
-
-This program is free software; you can redistribute it and/or
-Modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, version 2.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
+ * Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
  */
 
 package com.clustercontrol.agent.job;
@@ -22,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
@@ -276,8 +270,13 @@ public class PublicKeyThread extends AgentThread {
 
 			// ファイルをロック
 			for (int i = 0; i < (FILELOCK_TIMEOUT / FILELOCK_WAIT); i++) {
-				if (null != (lock = channel.tryLock())) {
-					break;
+				try {
+					if (null != (lock = channel.tryLock())) {
+						break;
+					}
+				} catch (OverlappingFileLockException e) {
+					// OverlappingFileLockExceptionはログ出力だけして無視する
+					m_log.info("addKey() : " + e.getClass().getSimpleName());
 				}
 				m_log.info("waiting for locked file... [" + (i + 1) + "/" + (FILELOCK_TIMEOUT / FILELOCK_WAIT) + " : " + fileName + "]");
 				Thread.sleep(FILELOCK_WAIT);
@@ -368,8 +367,13 @@ public class PublicKeyThread extends AgentThread {
 
 			// ファイルをロック
 			for (int i = 0; i < (FILELOCK_TIMEOUT / FILELOCK_WAIT); i++) {
-				if (null != (lock = channel.tryLock())) {
-					break;
+				try {
+					if (null != (lock = channel.tryLock())) {
+						break;
+					}
+				} catch (OverlappingFileLockException e) {
+					// OverlappingFileLockExceptionはログ出力だけして無視する
+					m_log.info("addKey() : " + e.getClass().getSimpleName());
 				}
 				m_log.info("waiting for locked file... [" + (i + 1) + "/" + (FILELOCK_TIMEOUT / FILELOCK_WAIT) + " : " + fileName + "]");
 				Thread.sleep(FILELOCK_WAIT);
