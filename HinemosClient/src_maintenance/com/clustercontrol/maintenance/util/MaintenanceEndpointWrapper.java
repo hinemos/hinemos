@@ -41,7 +41,7 @@ public class MaintenanceEndpointWrapper {
 	}
 
 	public static MaintenanceEndpointWrapper getWrapper(String managerName) {
-		return new MaintenanceEndpointWrapper(EndpointManager.get(managerName));
+		return new MaintenanceEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	private static List<EndpointSetting<MaintenanceEndpoint>> getMaintenanceEndpoint(EndpointUnit endpointUnit) {

@@ -181,7 +181,11 @@ public class FluentdTransferFactory implements TransferFactory {
 					root.put("monitor_id", numeric.key.getMonitorId());
 					root.put("facility_id", numeric.key.getFacilityid());
 					root.put("time", numeric.data.getTime());
-					root.put("value", numeric.data.getValue());
+					if (numeric.data.getValue().isNaN()) {
+						root.putNull("value");
+					} else {
+						root.put("value", numeric.data.getValue());
+					}
 					root.put("position", numeric.data.getPosition());
 					
 					String url = binder.bind(numeric.key, numeric.data, urlStr);

@@ -171,7 +171,8 @@ public class SearchNodeBySNMP {
 		boolean verbose = HinemosPropertyUtil.getHinemosPropertyBool("repository.device.search.verbose", false);
 
 		//ノード情報"説明"の生成
-		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())) != null){
+		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())) != null
+				&& ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())).getValue() != null){
 			if(((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())).getValue()).length() !=0){
 				property.setDescription("Auto detect at " + HinemosTime.getDateString());
 			}
@@ -214,7 +215,8 @@ public class SearchNodeBySNMP {
 		property.setSnmpPrivProtocol(privProtocol);
 
 		//hostname の設定
-		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidName())) != null){
+		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidName())) != null
+				&& ret.getValue(getEntryKey(SearchDeviceProperties.getOidName())).getValue() != null){
 			String hostname = (String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidName())).getValue();
 			m_log.debug("hostname=" + hostname);
 			if(hostname.length() != 0){
@@ -238,7 +240,8 @@ public class SearchNodeBySNMP {
 
 
 		//連絡先はsnmpd.confに書かれている内容を設定する。
-		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())) != null){
+		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())) != null
+				&& ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())).getValue() != null){
 			if(((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())).getValue()).length() != 0){
 				property.setAdministrator((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())).getValue());
 			}
@@ -246,7 +249,8 @@ public class SearchNodeBySNMP {
 
 		//プラットフォーム名は、Windows, Linux, Solaris以外はOtherとする
 		String platform = "OTHER";
-		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())) != null){
+		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())) != null
+				&& ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())).getValue() != null){
 			String description = ((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())).getValue());
 			if(description.length() != 0){
 				String OsName = "";

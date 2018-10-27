@@ -26,6 +26,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -33,6 +34,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,6 +64,8 @@ public class ServiceObserver {
 	private static String restartCommand;
 	private static String observCommand;
 	
+	private static String observMode;
+	
 	private ResourceBundle bundle;
 	
 	PopupMenu menu;
@@ -72,7 +76,18 @@ public class ServiceObserver {
 		runCommand = "cmd /c \"" + homeDir + "\\bin\\ManagerStart.cmd\"";
 		stopCommand = "cmd /c \"" + homeDir + "\\bin\\ManagerStop.cmd\"";
 		restartCommand = "cmd /c \"" + homeDir + "\\bin\\ManagerRestart.cmd\"";
-		observCommand = "cmd /c powershell \"&\'" + homeDir + "\\sbin\\service_observer.ps1\'\"";
+		observCommand = "cmd /c sc query Hinemos_Manager";
+		
+		Properties properties = new Properties();
+		try {
+			properties.load(new FileInputStream(homeDir + "\\etc\\hinemos_tasktray.properties"));
+			observMode = properties.getProperty("observe.mode");
+			if(observMode != null && "powershell".equals(observMode)) {
+				observCommand = "cmd /c powershell \"&\'" + homeDir + "\\sbin\\service_observer.ps1\'\"";
+			}
+		} catch (IOException e) {
+			System.out.println(e.getMessage());
+		}
 		
 		bundle = ResourceBundle.getBundle("messages_tasktray");
 	}
@@ -246,22 +261,10 @@ public class ServiceObserver {
 						inStreamReader.join();
 						List<String> result = inStreamReader.getResult();
 						
-						for (String line : result) {
-							if (line != null && line.startsWith("State:")) {
-								line = line.replace("State:", "");
-								running = "Running".equals(line);
-								
-								if (firstCheck || (prevRunning != running)) {
-									if (running) {
-										handler.onStartService();
-									} else {
-										handler.onStopService();
-									}
-								}
-								
-								firstCheck = false;
-								prevRunning = running;
-							}
+						if(observMode != null && "powershell".equals(observMode)) {
+							statusCheckPsResult(result);
+						} else {
+							statusCheckScResult(result);
 						}
 					}
 					
@@ -280,6 +283,47 @@ public class ServiceObserver {
 					Thread.sleep(TASK_SLEEP);
 				} catch (InterruptedException e) {}
 				
+			}
+		}
+		
+		private void statusCheckPsResult(List<String> result) {
+			for (String line : result) {
+				if (line != null && line.startsWith("State:")) {
+					line = line.replace("State:", "");
+					running = "Running".equals(line);
+					
+					if (firstCheck || (prevRunning != running)) {
+						if (running) {
+							handler.onStartService();
+						} else {
+							handler.onStopService();
+						}
+					}
+					
+					firstCheck = false;
+					prevRunning = running;
+				}
+			}
+		}
+		
+		private void statusCheckScResult(List<String> result) {
+			for (String line : result) {
+				line = line.replace(" ", "");
+				if (line != null && line.startsWith("STATE:")) {
+					line = line.replace("STATE:", "");
+					running = "4RUNNING".equals(line);
+					
+					if (firstCheck || (prevRunning != running)) {
+						if (running) {
+							handler.onStartService();
+						} else {
+							handler.onStopService();
+						}
+					}
+					
+					firstCheck = false;
+					prevRunning = running;
+				}
 			}
 		}
 	}

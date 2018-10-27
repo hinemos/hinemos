@@ -36,6 +36,7 @@ import com.clustercontrol.nodemap.bean.Association;
 import com.clustercontrol.nodemap.bean.NodeMapModel;
 import com.clustercontrol.nodemap.session.NodeMapControllerBean;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -482,6 +483,6 @@ public class NodeMapEndpoint {
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
-		return "1.0";
+		return KeyCheck.getResultEnterprise();
 	}
 }

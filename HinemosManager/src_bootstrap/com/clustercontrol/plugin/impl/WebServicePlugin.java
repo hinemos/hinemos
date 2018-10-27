@@ -100,7 +100,7 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 	}
 
 	public static int getQueueSize() {
-		return _threadPool.getPoolSize();
+		return _threadPool.getQueue().size();
 	}
 
 	/**

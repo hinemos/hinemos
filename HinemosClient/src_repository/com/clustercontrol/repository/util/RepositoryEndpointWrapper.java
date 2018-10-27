@@ -50,7 +50,7 @@ public class RepositoryEndpointWrapper {
 	}
 
 	public static RepositoryEndpointWrapper getWrapper(String managerName) {
-		return new RepositoryEndpointWrapper(EndpointManager.get(managerName));
+		return new RepositoryEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	private static List<EndpointSetting<RepositoryEndpoint>> getRepositoryEndpoint(EndpointUnit endpointUnit) {

@@ -42,7 +42,7 @@ public class MonitorSettingEndpointWrapper{
 	}
 
 	public static MonitorSettingEndpointWrapper getWrapper(String managerName) {
-		return new MonitorSettingEndpointWrapper(EndpointManager.get(managerName));
+		return new MonitorSettingEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	private static List<EndpointSetting<MonitorSettingEndpoint>> getMonitorSettingEndpoint(EndpointUnit endpointUnit) {

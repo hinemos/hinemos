@@ -29,6 +29,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.commons.session.CheckFacility;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -96,6 +97,11 @@ public class InfraControllerBean implements CheckFacility {
 			
 			//入力チェック
 			InfraManagementValidator.validateInfraManagementInfo(info);
+			
+			//ユーザがオーナーロールIDに所属しているかチェック
+			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 
 			ModifyInfraManagement proc = new ModifyInfraManagement();
 			flag = proc.add(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
@@ -511,6 +517,11 @@ public class InfraControllerBean implements CheckFacility {
 				
 				//入力チェック
 				InfraManagementValidator.validateInfraFileInfo(fileInfo);
+				
+				//ユーザがオーナーロールIDに所属しているかチェック
+				RoleValidator.validateUserBelongRole(fileInfo.getOwnerRoleId(),
+						(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+						(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 				
 				if (fileContent == null) {
 					InvalidSetting e = new InvalidSetting("fileContent is not defined.");

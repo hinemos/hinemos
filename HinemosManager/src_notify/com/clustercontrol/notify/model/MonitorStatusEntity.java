@@ -81,12 +81,11 @@ public class MonitorStatusEntity implements Serializable, Cloneable {
 				MonitorStatusEntity.class.getSimpleName(), id, counter, lastUpdate, priority);
 	};
 	
+	@Override
 	public MonitorStatusEntity clone() {
 		try {
 			MonitorStatusEntity entity = (MonitorStatusEntity)super.clone();
-			entity.counter = this.counter;
-			entity.lastUpdate = this.lastUpdate;
-			entity.priority = this.priority;
+			entity.setId (new MonitorStatusEntityPK(id.getFacilityId(), id.getPluginId(), id.getMonitorId(), id.getSubKey()));
 			return entity;
 		} catch (CloneNotSupportedException e) {
 		}

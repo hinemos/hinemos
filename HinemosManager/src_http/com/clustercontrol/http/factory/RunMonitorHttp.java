@@ -97,7 +97,6 @@ public class RunMonitorHttp extends RunMonitorNumericValueType {
 		if (m_now != null){
 			m_nodeDate = m_now.getTime();
 		}
-		m_value = 0;
 		m_message = "";
 		m_messageOrg = "";
 
@@ -120,7 +119,7 @@ public class RunMonitorHttp extends RunMonitorNumericValueType {
 				.build()) {
 			result = m_request.execute(url);
 			if(result){
-				m_value = m_request.getResponseTime();
+				m_value = (double) m_request.getResponseTime();
 
 				m_message = MessageConstant.RESPONSE_TIME_MILLI_SEC.getMessage() + " : " + NumberFormat.getNumberInstance().format(m_value);
 

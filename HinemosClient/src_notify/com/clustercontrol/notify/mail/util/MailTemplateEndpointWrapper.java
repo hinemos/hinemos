@@ -39,7 +39,7 @@ public class MailTemplateEndpointWrapper {
 	}
 
 	public static MailTemplateEndpointWrapper getWrapper(String managerName) {
-		return new MailTemplateEndpointWrapper(EndpointManager.get(managerName));
+		return new MailTemplateEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	private static List<EndpointSetting<MailTemplateEndpoint>> getMailTemplateEndpoint(EndpointUnit endpointUnit) {

@@ -171,18 +171,7 @@ public class NodeProperty {
 			}
 		}
 		
-		try {
-			_lock.writeLock();
-			
-			ConcurrentHashMap<String, NodeInfo> cache = getCache();
-			
-			NodeInfo facilityEntity = QueryUtil.getNodePK(facilityId);
-			cache.put(facilityId, facilityEntity);
-			storeCache(cache);
-			
-			return facilityEntity;
-		} finally {
-			_lock.writeUnlock();
-		}
+		NodeInfo nodeInfo = QueryUtil.getNodePK(facilityId);
+		return nodeInfo;
 	}
 }

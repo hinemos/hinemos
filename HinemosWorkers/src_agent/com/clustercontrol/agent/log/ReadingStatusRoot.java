@@ -7,6 +7,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -375,15 +378,25 @@ public class ReadingStatusRoot {
 		
 		/**
 		 * ファイル状態の情報を書き出す。
+		 * 本処理中にHinemosエージェントが停止する可能性を考慮して、一度、tmpファイルに書き出し、ファイルをリネームする。
 		 */
 		public void store() {
-			try (FileOutputStream fi = new FileOutputStream(rsFilePath)) {
+			File tmpFilePath = new File(rsFilePath + ".tmp");
+			try (FileOutputStream fi = new FileOutputStream(tmpFilePath)) {
 				Properties props = new Properties();
 				props.put(ReadingStatusRoot.prefix, prefix);
 				props.put(ReadingStatusRoot.position, String.valueOf(position));
 				props.put(ReadingStatusRoot.carryover, carryover);
 				props.put(ReadingStatusRoot.prevSize, String.valueOf(prevSize));
 				props.store(fi, filePath.getAbsolutePath());
+			} catch (IOException e) {
+				log.warn(e.getMessage(), e);
+			}
+			
+			try {
+				Path source = tmpFilePath.toPath();
+				Path target = rsFilePath.toPath();
+				Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException e) {
 				log.warn(e.getMessage(), e);
 			}

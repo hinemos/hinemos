@@ -469,7 +469,7 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 		
 		if (curTable == null || curTable.keySet().size() == 0 || prvTable == null || prvTable.keySet().size() == 0) {
 			// DataTalbeを2回分取得できなかった場合にはnullを返す（何も通知しない）
-			m_log.info("calcValue() : polling have not done enough count.");
+			m_log.info("calcValue() : polling have not done enough count." + facilityName + ", " + itemCode + ", " + deviceName);
 			return null;
 		}
 		boolean ret;
@@ -583,7 +583,7 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 			}
 
 			outputBasicInfo.setFacilityId(facilityId);
-			outputBasicInfo.setScopeText(facilityId);
+			outputBasicInfo.setScopeText(monitorInfo.getScope());
 			outputBasicInfo.setPriority(resultInfo.getPriority());
 			outputBasicInfo.setMessage(resultInfo.getMessage());
 			outputBasicInfo.setMessageOrg(resultInfo.getMessageOrg());

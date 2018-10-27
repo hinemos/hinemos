@@ -329,7 +329,7 @@ public class EndpointUnit {
 		m_log.debug("connect : " + urlList);
 
 		// Check login result at first
-		int managerTZOffset = AccessEndpointWrapper.getWrapper(managerName).checkLogin( this );
+		int managerTZOffset = AccessEndpointWrapper.getWrapperLoginCheck(managerName).checkLogin( this );
 		
 		// タイムゾーンの取得
 		Integer clientTZOffset = TimezoneUtil.getTimeZoneOffset();

@@ -126,6 +126,9 @@ public class CollectDataUtil {
 			String monitorId = sample.getMonitorId();
 			
 			Long time = HinemosTime.currentTimeMillis();
+			if (sample.getDateTime() != null) {
+				time = sample.getDateTime().getTime();
+			}
 			for (PerfData data : list) {
 				m_log.debug("persist itemCode = " + data.getItemName());
 				String itemName = data.getItemName();
@@ -165,18 +168,16 @@ public class CollectDataUtil {
 					SummaryHour summaryHour = QueryUtil.getSummaryHour(pk_h);
 					summaryHour_c = summaryHour.clone();
 					Integer h_count = summaryHour_c.getCount();
-					if(value != null){
+					if(value != null && !Float.isNaN(value)){
 						summaryHour_c.setAvg((value + summaryHour_c.getAvg() * h_count) / (h_count + 1));
 						summaryHour_c.setMin(summaryHour_c.getMin() < value ? summaryHour_c.getMin() : value);
 						summaryHour_c.setMax(summaryHour_c.getMax() > value ? summaryHour_c.getMax() : value);
-					}else{
-						summaryHour_c.setAvg(summaryHour_c.getAvg() * h_count / (h_count + 1));
-						summaryHour_c.setMin(summaryHour_c.getMin());
-						summaryHour_c.setMax(summaryHour_c.getMax());
+						summaryHour_c.setCount(h_count + 1);
 					}
-					summaryHour_c.setCount(h_count + 1);
 				} catch (CollectKeyNotFound e) {
-					summaryHour_c = new SummaryHour(pk_h, value, value, value, 1);
+					if(value != null && !Float.isNaN(value)) {
+						summaryHour_c = new SummaryHour(pk_h, value, value, value, 1);
+					}
 				}
 
 				// SummaryDay
@@ -185,19 +186,16 @@ public class CollectDataUtil {
 					SummaryDay summaryDay = QueryUtil.getSummaryDay(pk_d);
 					summaryDay_c = summaryDay.clone();
 					Integer d_count = summaryDay_c.getCount();
-					if(value != null){
+					if(value != null && !Float.isNaN(value)){
 						summaryDay_c.setAvg((value + summaryDay_c.getAvg() * d_count) / (d_count + 1));
 						summaryDay_c.setMin(summaryDay_c.getMin() < value ? summaryDay_c.getMin() : value);
 						summaryDay_c.setMax(summaryDay_c.getMax() > value ? summaryDay_c.getMax() : value);
-					}else{
-						summaryDay_c.setAvg(summaryDay_c.getAvg() * d_count / (d_count + 1));
-						summaryDay_c.setMin(summaryDay_c.getMin());
-						summaryDay_c.setMax(summaryDay_c.getMax());
+						summaryDay_c.setCount(d_count + 1);
 					}
-					summaryDay_c.setCount(d_count + 1);
-					
 				} catch (CollectKeyNotFound e) {
-					summaryDay_c = new SummaryDay(pk_d, value, value, value, 1);
+					if(value != null && !Float.isNaN(value)) {
+						summaryDay_c = new SummaryDay(pk_d, value, value, value, 1);
+					}
 				}
 
 				// SummaryMonth
@@ -206,23 +204,24 @@ public class CollectDataUtil {
 					SummaryMonth summaryMonth = QueryUtil.getSummaryMonth(pk_m);
 					summaryMonth_c = summaryMonth.clone();
 					Integer m_count = summaryMonth_c.getCount();
-					if(value != null){
+					if(value != null && !Float.isNaN(value)){
 						summaryMonth_c.setAvg((value + summaryMonth_c.getAvg() * m_count) / (m_count + 1));
 						summaryMonth_c.setMin(summaryMonth_c.getMin() < value ? summaryMonth_c.getMin() : value);
 						summaryMonth_c.setMax(summaryMonth_c.getMax() > value ? summaryMonth_c.getMax() : value);
-					}else{
-						summaryMonth_c.setAvg(summaryMonth_c.getAvg() * m_count / (m_count + 1));
-						summaryMonth_c.setMin(summaryMonth_c.getMin());
-						summaryMonth_c.setMax(summaryMonth_c.getMax());
+						summaryMonth_c.setCount(m_count + 1);
 					}
-					summaryMonth_c.setCount(m_count + 1);
 				} catch (CollectKeyNotFound e) {
-					summaryMonth_c = new SummaryMonth(pk_m, value, value, value, 1);
+					if(value != null && !Float.isNaN(value)) {
+						summaryMonth_c = new SummaryMonth(pk_m, value, value, value, 1);
+					}
 				}
 
-				summaryhour_entities.add(summaryHour_c);
-				summaryday_entities.add(summaryDay_c);
-				summarymonth_entities.add(summaryMonth_c);
+				// 各Summaryについて、追加するデータの精査を行う
+				if (value != null && !Float.isNaN(value)) {
+					summaryhour_entities.add(summaryHour_c);
+					summaryday_entities.add(summaryDay_c);
+					summarymonth_entities.add(summaryMonth_c);
+				}
 			}
 			m_log.debug(
 					"insert() end : dateTime = " + sample.getDateTime());

@@ -22,11 +22,18 @@ import java.util.List;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Pattern;
 
+import javax.persistence.EntityManager;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
+import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfoPK;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeUtil;
+import com.clustercontrol.accesscontrol.util.UserRoleCache;
+import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
@@ -48,6 +55,7 @@ public class EventCache {
 	 */
 	private static ConcurrentSkipListSet<EventLogEntity> eventCache = null;
 	private static boolean eventCacheFull = false;
+	private static Object lock = new Object();
 	
 	/** 「含まない」検索を行うかの判断に使う値 */
 	private static final String SEARCH_PARAM_NOT_INCLUDE = "NOT:";
@@ -63,7 +71,15 @@ public class EventCache {
 		eventCache = new ConcurrentSkipListSet<EventLogEntity>(new Comparator<EventLogEntity>() {
 			@Override
 			public int compare(EventLogEntity o1, EventLogEntity o2) {
-				return (int) (- o1.getId().getOutputDate() + o2.getId().getOutputDate());
+				int result = 0;
+				Long compareValue = - o1.getId().getOutputDate() + o2.getId().getOutputDate();
+				
+				if (compareValue > 0) {
+					result = 1;
+				} else if (compareValue < 0){
+					result = -1;
+				}
+				return result;
 			}
 		});
 		
@@ -93,11 +109,14 @@ public class EventCache {
 	public static void addEventCache(EventLogEntity e) {
 		eventCache.add(cloneWithoutOrg(e));
 		m_log.trace("add=" + e.getId());
-		while (eventCache.size() > getEventCacheLimit()) { // .size()はそこそこ重い処理
-			EventLogEntity last = eventCache.last();
-			m_log.trace("last=" + last.getId());
-			eventCache.remove(last);
-			eventCacheFull = true;
+		
+		synchronized (lock) {
+			int size = eventCache.size();
+			for (int i = 0; i < size - getEventCacheLimit() && i < 100; i ++) {
+				EventLogEntity last = eventCache.pollLast();
+				m_log.trace("last=" + last.getId());
+				eventCacheFull = true;
+			}
 		}
 		if (m_log.isTraceEnabled()) {
 			long now = HinemosTime.currentTimeMillis();
@@ -317,12 +336,40 @@ public class EventCache {
 			return false;
 		}
 		try {
-			ObjectPrivilegeUtil.getObjectPrivilegeObject("MON", entity.getId().getMonitorId(), ObjectPrivilegeMode.READ);
-		} catch (JobMasterNotFound | ObjectPrivilege_InvalidRole e) {
+			
+			// ADMINISTRATOR 所属のユーザの場合、オーナーロール、オブジェクト権限のチェックは行わず表示する
+			Boolean isAdministrator = (Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);
+			if (isAdministrator != null && isAdministrator) {
+				return true;
+			}
+			
+			// イベント履歴のオーナーロールに所属していれば表示する
+			String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+			List<String> roleIdList = UserRoleCache.getRoleIdList(loginUser);
+			if (roleIdList.contains(entity.getOwnerRoleId())) {
+				return true;
+			}
+			
+			// 通知元が監視設定の場合、オブジェクト権限のチェックまで実施する
+			String pluginId = entity.getId().getPluginId();
+			if(pluginId.startsWith(HinemosModuleConstant.MONITOR)) {
+				EntityManager em = new JpaTransactionManager().getEntityManager();
+				for (String roleId : roleIdList) {
+					ObjectPrivilegeInfoPK objectPrivilegeEntityPK = 
+							new ObjectPrivilegeInfoPK(HinemosModuleConstant.MONITOR, entity.getId().getMonitorId(), 
+									roleId, ObjectPrivilegeMode.READ.name());
+					ObjectPrivilegeInfo objectPrivilegeEntity = em.find(ObjectPrivilegeInfo.class, objectPrivilegeEntityPK);
+					if (objectPrivilegeEntity != null) {
+						m_log.debug("filterCheck() ObjectPrivilegeInfo=" + objectPrivilegeEntity.getId().toString());
+						return true;
+					}
+				}
+			}
+		} catch (Exception e) {
 			m_log.debug("getEventList : " + e.getClass().getName() + ", "+ e.getMessage());
 			return false;
 		}
-		return true;
+		return false;
 	}
 	
 	public static void setEventRange(ViewListInfo ret) {

@@ -66,7 +66,6 @@ import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
-import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -140,6 +139,7 @@ public class ReceivedCustomTrapFilter {
 				}
 			}
 
+			List<Sample> collectedSamples = new ArrayList<>();
 			/* 監視ジョブ以外 */
 			// 受信データ分処理を行う
 			for (CustomTrap receivedCustomTrap : receivedCustomTraps.getCustomTraps()) {
@@ -165,8 +165,8 @@ public class ReceivedCustomTrapFilter {
 					continue;
 				}
 				double value = 0;// 数値用値
+				String key = "";
 				List<StringSample> collectedStringSamples = new ArrayList<>();
-				List<Sample> collectedSamples = new ArrayList<>();
 				Sample sample = null;
 				StringSample stringSample = null;
 				for (MonitorInfo monitor : monitorList) {
@@ -189,8 +189,8 @@ public class ReceivedCustomTrapFilter {
 					// 数値で差分取得の場合、Value値をsample/notify前に計算する
 					if (receivedCustomTrap.getType() == Type.NUM) {
 						value = Double.parseDouble(receivedCustomTrap.getMsg());
-						String key = receivedCustomTrap.getKey();
-						sample = new Sample(HinemosTime.getDateInstance(), monitor.getMonitorId());
+						key = receivedCustomTrap.getKey();
+						sample = new Sample(new Date(receivedCustomTrap.getSampledTime()), monitor.getMonitorId());
 						if (monitor.getCustomTrapCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_DELTA) {
 							Double oldData = null;
 							logger.debug("work() : monitor.Customtrap.RecentData.Map.size=" + resentDataMap.size());
@@ -231,7 +231,7 @@ public class ReceivedCustomTrapFilter {
 						for (String facilityIdElement : validFacilityIdList) {
 							switch (receivedCustomTrap.getType()) {
 							case STRING: {
-								stringSample = new StringSample(new Date(HinemosTime.currentTimeMillis()), monitor.getMonitorId());
+								stringSample = new StringSample(new Date(receivedCustomTrap.getSampledTime()), monitor.getMonitorId());
 
 								// 抽出したタグ
 								List<StringSampleTag> tags = new ArrayList<>();
@@ -261,24 +261,30 @@ public class ReceivedCustomTrapFilter {
 								break;
 							}
 							case NUM: {
-								sample.set(facilityIdElement, monitor.getItemName(), value,
-										CollectedDataErrorTypeConstant.NOT_ERROR);
-								collectedSamples.add(sample);
+								boolean overlapCheck = false;
+								// keyの重複チェック
+								for (Sample cSample : collectedSamples){
+									// カスタムトラップ監視ではcollectedSamplesの1要素に対してperfDataは1つのため、以下で対応
+									if (cSample.getMonitorId().equals(monitor.getMonitorId())
+											&& cSample.getDateTime().getTime() == receivedCustomTrap.getSampledTime()
+											&& cSample.getPerfDataList().get(0).getFacilityId().equals(facilityIdElement)
+											&& cSample.getPerfDataList().get(0).getDisplayName().equals(key)
+											&& cSample.getPerfDataList().get(0).getItemName().equals(monitor.getItemName())) {
+										overlapCheck = true;
+										break;
+									}
+								}
+								if (!overlapCheck) {
+									sample.set(facilityIdElement, monitor.getItemName(), value,
+											CollectedDataErrorTypeConstant.NOT_ERROR, key);
+									collectedSamples.add(sample);
+								}
 								break;
 							}
 							}
 						}
 					} else {
 						logger.debug("work() : CustomTrap CollectorFlg==false");
-					}
-					// DB登録
-					if (!collectedStringSamples.isEmpty()) {
-						logger.debug("work() : CustomTrap collectedStringSamples " + collectedStringSamples.size() + "data");
-						CollectStringDataUtil.store(collectedStringSamples);
-					}
-					if (!collectedSamples.isEmpty()) {
-						logger.debug("work() : CustomTrap collectedSamples " + collectedSamples.size() + "data");
-						CollectDataUtil.put(collectedSamples);
 					}
 
 					// 通知処理
@@ -397,6 +403,17 @@ public class ReceivedCustomTrapFilter {
 						}
 					}
 				}
+				// DB登録
+				if (!collectedStringSamples.isEmpty()) {
+					logger.debug("work() : CustomTrap collectedStringSamples " + collectedStringSamples.size() + "data");
+					CollectStringDataUtil.store(collectedStringSamples);
+				}
+			}
+
+			// DB登録(数値)
+			if (!collectedSamples.isEmpty()) {
+				logger.debug("work() : CustomTrap collectedSamples " + collectedSamples.size() + "data");
+				CollectDataUtil.put(collectedSamples);
 			}
 
 			/* 監視ジョブ */

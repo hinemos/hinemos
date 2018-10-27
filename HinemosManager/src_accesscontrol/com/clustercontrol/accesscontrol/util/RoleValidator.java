@@ -370,5 +370,20 @@ public class RoleValidator {
 		}
 	}
 
+	/**
+	 * ユーザがロールに所属しているかチェックする
+	 * (ADMINISTRATORS所属のユーザの場合はチェックしない)
+	 * 
+	 * @param role
+	 * @param user
+	 * @param isAdmin
+	 * @throw InvalidSetting
+	 */
+	public static void validateUserBelongRole(String role, String user, boolean isAdmin) throws InvalidSetting{
 
+		if(!isAdmin && !UserRoleCache.getRoleIdList(user).contains(role)) {
+			String args[] = {user, role};
+			throw new InvalidSetting(MessageConstant.MESSAGE_USER_DOES_NOT_BELONG_TO_ROLE.getMessage(args));
+		}
+	}
 }

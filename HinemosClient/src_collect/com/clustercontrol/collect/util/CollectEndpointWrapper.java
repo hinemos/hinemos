@@ -46,7 +46,7 @@ public class CollectEndpointWrapper {
 	}
 
 	public static CollectEndpointWrapper getWrapper(String managerName) {
-		return new CollectEndpointWrapper(EndpointManager.get(managerName));
+		return new CollectEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	private static List<EndpointSetting<CollectEndpoint>> getCollectEndpoint(EndpointUnit endpointUnit) {

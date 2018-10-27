@@ -15,6 +15,7 @@ import org.apache.log4j.Logger;
 
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -106,6 +107,7 @@ public class CommandModuleInfo extends InfraModuleInfo<CommandModuleInfo> {
 		String facilityId = node.getFacilityId();
 		String address = node.getAvailableIpAddress();
 		
+		JpaTransactionManager jtm = new JpaTransactionManager();
 		List<InfraFileInfo> fileList = QueryUtil.getAllInfraFile();
 
 		// コマンド文字列の置換
@@ -130,6 +132,8 @@ public class CommandModuleInfo extends InfraModuleInfo<CommandModuleInfo> {
 			Logger.getLogger(this.getClass()).warn("execCommand() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			bindCommand = command;
+		} finally {
+			jtm.close();
 		}
 		
 		

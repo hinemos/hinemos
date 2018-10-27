@@ -42,7 +42,7 @@ public class CalendarEndpointWrapper {
 	}
 
 	public static CalendarEndpointWrapper getWrapper(String managerName) {
-		return new CalendarEndpointWrapper(EndpointManager.get(managerName));
+		return new CalendarEndpointWrapper(EndpointManager.getActive(managerName));
 	}
 
 	private static List<EndpointSetting<CalendarEndpoint>> getCalendarEndpoint(EndpointUnit endpointUnit) {

@@ -574,19 +574,19 @@ public class WaitRuleComposite extends Composite {
 			JobObjectInfo info = array2JobObjectInfo(tableLineData);
 			// 重複チェックをしてから、リストに追加する。
 			if (info.getType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS) {
-				Integer checkValue = map.get(info.getJobId() + info.getType());
+				Integer checkValue = map.get(info.getJobId() + info.getType() + info.getValue());
 				if (checkValue == null
 						|| !checkValue.equals(info.getValue())) {
 					list.add(info);
-					map.put(info.getJobId() + info.getType(), info.getValue());
+					map.put(info.getJobId() + info.getType() + info.getValue(), info.getValue());
 				}
 			}
 			else if (info.getType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE) {
-				Integer checkValue = map.get(info.getJobId() + info.getType());
+				Integer checkValue = map.get(info.getJobId() + info.getType() + info.getValue());
 				if (checkValue == null
-						|| checkValue.equals(info.getValue())) {
+						|| !checkValue.equals(info.getValue())) {
 					list.add(info);
-					map.put(info.getJobId() + info.getType(), info.getValue());
+					map.put(info.getJobId() + info.getType() + info.getValue(), info.getValue());
 				}
 			}
 			else if (info.getType() == JudgmentObjectConstant.TYPE_TIME) {

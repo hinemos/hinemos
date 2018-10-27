@@ -1,6 +1,7 @@
 package com.clustercontrol.agent.winevent;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -179,7 +180,7 @@ public class WinEventReader {
 	 *            チャネル名
 	 */
 	public void updateBookmark(String bookmarkFileName, String logName) throws Win32Exception, IOException {
-		String query = "<QueryList><Query><Select Path='" + logName + "'>*</Select></Query></QueryList>";
+		String query = "<QueryList><Query><Select Path='" + WinEventMonitor.pergeEventLogNameEnclosure(logName) + "'>*</Select></Query></QueryList>";
 		
 		HANDLE hResult = null;
 		HANDLE hBookmark = null;
@@ -199,6 +200,17 @@ public class WinEventReader {
 			HANDLE[] saveHandles = new HANDLE[1];
 			IntByReference returnedHandleSize = new IntByReference(0);
 			if (!wevtapi.INSTANCE.EvtNext(hResult, 1, saveHandles, new DWORD(wevtapi.INFINITE), 0, returnedHandleSize)) {
+				if (WinError.ERROR_NO_MORE_ITEMS == getLastError()) {
+					// ERROR_NO_MORE_ITEMS の場合、引数チャネルのイベント数が0件である。
+					// ブックマークファイルが存在しなければ、RecordId を 0 としてブックマークファイルを作成する。
+					if(!new File(bookmarkFileName).exists()) {
+						String bookmarkString = "<BookmarkList><Bookmark Channel='" + WinEventMonitor.pergeEventLogNameEnclosure(logName) +
+								"' RecordId='0' IsCurrent='true'/></BookmarkList>";
+						saveBookmarkFile(bookmarkFileName, bookmarkString);
+						m_log.info("updateBookmark() create " + bookmarkFileName + " with RecordId 0");
+					}
+					return;
+				}
 				m_log.warn("updateBookmark() EvtNext error=" + Win32Error.getMessage(getLastError()));
 				throw new Win32Exception(getLastError());
 			}
@@ -243,11 +255,13 @@ public class WinEventReader {
 	 * @param logName
 	 *            チャネル名
 	 * 
-	 * @return 取得したイベントログを連結した文字列。
+	 * @return 取得したイベントログを連結した文字列とレンダリングに失敗したイベントログがあるかどうかを格納した配列
+	 *          (インデックス 0：イベントログ、インデックス 1：レンダリングに失敗したかどうか)
 	 */
-	public String readEventLog(String bookmarkFileName, String query, int maxEvents, long timeout, String logName) throws Win32Exception, IOException {
+	public String[] readEventLog(String bookmarkFileName, String query, int maxEvents, long timeout, String logName) throws Win32Exception, IOException {
 		HANDLE hResults = null;
 		HANDLE hBookmark = null;
+		String[] ret = new String[2];
 		try {
 			StringBuffer eventLog = new StringBuffer();
 			
@@ -287,14 +301,29 @@ public class WinEventReader {
 						throw new Win32Exception(getLastError());
 					}
 				} else {
+					//レンダリングに失敗したイベントログがあるかどうか
+					boolean renderFailed = false;
 					//最後のインデックスのハンドルはブックマークの更新に必要なためループ内では処理しない
 					int lastIndex = returnedHandleSize.getValue() - 1;
 					for (int i = 0; i < lastIndex; i++) {
-						eventLog.append(formatEvent(handles[i]));
-						wevtapi.INSTANCE.EvtClose(handles[i]);
-						handles[i] = null;
+						try {
+							eventLog.append(formatEvent(handles[i]));
+							wevtapi.INSTANCE.EvtClose(handles[i]);
+							handles[i] = null; 
+						} catch (Win32Exception e) {
+							renderFailed = true;
+						}
 					}
-					eventLog.append(formatEvent(handles[lastIndex]));
+					
+					try {
+						eventLog.append(formatEvent(handles[lastIndex]));
+					} catch (Win32Exception e) {
+						renderFailed = true;
+					}
+					
+					if(renderFailed) {
+						ret[1] = "renderFailed";
+					}
 					
 					if (!wevtapi.INSTANCE.EvtUpdateBookmark(hBookmark, handles[lastIndex])) {
 						m_log.warn("readEventLog() EvtUpdateBookmark error=" + Win32Error.getMessage(getLastError()));
@@ -306,7 +335,9 @@ public class WinEventReader {
 					saveBookmarkFile(bookmarkFileName, saveBookmarkString);
 				}
 			}
-			return eventLog.toString();
+			
+			ret[0] = eventLog.toString();
+			return ret;
 		} finally {
 			if (hResults != null) {
 				wevtapi.INSTANCE.EvtClose(hResults);
@@ -367,10 +398,13 @@ public class WinEventReader {
 			String provider = renderEvent(h, wevtapi.EvtRenderEventValues);
 			hProviderMetadata = wevtapi.INSTANCE.EvtOpenPublisherMetadata(null, new WString(provider), null, 0, 0);
 			if (hProviderMetadata == null) {
-				m_log.warn("formatEvent() EvtOpenPublisherMetadata error=" + Win32Error.getMessage(getLastError()) + ", provider is " + provider);
-				throw new Win32Exception(getLastError());
+				// プロバイダ情報が取得できない場合は renderEvent でイベントログをレンダリングする
+				// 以下の EvtFormatMessage と比較する <RenderingInfo>要素がレンダリングされない
+				m_log.debug("formatEvent() EvtOpenPublisherMetadata error=" + Win32Error.getMessage(getLastError()) + ", provider is " + provider);
+				return renderEvent(h, wevtapi.EvtRenderEventXml);
 			}
 
+			// プロバイダ情報が取得できた場合は EvtFormatMessage でイベントログをレンダリングする
 			Pointer buffer = null;
 			int bufferSize = 0;
 			IntByReference bufferUsed = new IntByReference(0);
