@@ -29,6 +29,7 @@ subprojects{
 				options.fork = true
 				options.bootstrapClasspath = files("$System.env.JDK7_HOME/jre/lib/rt.jar", "$File.pathSeparator$System.env.JDK7_HOME/jre/lib/jsse.jar")
 			}else if (System.env.JAVA_HOME != null) {
+				// Overcome "package com.sun.xml.internal.xxx does not exist" when compiling
 				options.fork = true
 				options.forkOptions.executable = 'javac'
 				options.compilerArgs << '-XDignore.symbol.file'
