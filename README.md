@@ -9,23 +9,11 @@ Forked from [here](https://github.com/hinemos/hinemos).
 > SET JDK7_HOME=C:\Program Files\Java\jdk1.7.0_80
 
 > gradle :common:build
+> gradle :common:deploy
+
 > gradle :manager:build
-
-> gradle :manager:buildws
-
-
-
-Check Jar contents!!!
-
-
-> cd ..\manager
-> gradle build
-> gradle exportWS
-> gradle export
-
-> cd ..\agent
-> gradle build
-> gradle export
+> gradle :manager:deployManager
+> gradle :manager:deployRHEL
 
 
 # MISC

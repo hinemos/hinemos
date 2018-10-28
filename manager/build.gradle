@@ -147,7 +147,7 @@ sourceSets{
 				file('src/main/src_port'),
 				file('src/main/src_priority'),
 				file('src/main/src_process'),
-				file('src/main/src_publish_oss'),
+				//file('src/main/src_publish_oss'),
 				file('src/main/src_reporting'),
 				file('src/main/src_repository'),
 				file('src/main/src_selfcheck'),
@@ -167,37 +167,31 @@ sourceSets{
 	}
 }
 
-//// Seperate and rename jar for deploying to Hinemos
-//task exportModel(type: Jar){
-//	description 'Generate HinemosModel.jar that you can replace to the original one directly.'
-//	archiveName = 'HinemosModel.jar'
-//	dependsOn classes
-//	includeEmptyDirs = false
-//	// Include model/*.class and ORM XML
-//	from sourceSets.main.output
-//	//from sourceSets.main.allSource
-//	//from sourceSets.main.resources
-//	include '**/model/**.class'
-//	include 'META-INF/orm_*.xml'
-//
-//	manifest(manifestDef)
-//} 
-//
-//task exportManager(type: Jar){
-//	description 'Generate HinemosManager.jar that you can replace to the original one directly.'
-//	archiveName = 'HinemosManager.jar'
-//	dependsOn classes
-//	includeEmptyDirs = false
-//	from sourceSets.main.output
-//	//from sourceSets.main.resources
-//	exclude '**/model/**.class'
-//	exclude 'META-INF/orm_*.xml'
-//
-//	manifest(manifestDef)
-//} 
-//
-//task export{
-//	description 'Generate both HinemosManager.jar and HinemosModel.jar at once.'
-//	dependsOn exportManager
-//	dependsOn exportModel
-//}
+// Seperate and rename jar for deploying to Hinemos
+task deployRHEL(type: Jar){
+	description 'Generate HinemosModel.jar that you can replace to the original one directly.'
+	archiveName = "${theJarName}Rhel.jar"
+	dependsOn classes
+	includeEmptyDirs = false
+	// Include model/*.class and ORM XML
+	from sourceSets.main.output
+	//from sourceSets.main.allSource
+	//from sourceSets.main.resources
+	include 'com/clustercontrol/platform/**/*.class'
+	include 'META-INF/orm_*_diff.xml'
+
+	manifest = project.manifest{ from sharedManifest }
+} 
+
+task deployManager(type: Jar){
+	description 'Generate HinemosManager.jar that you can replace to the original one directly.'
+	archiveName = "${theJarName}.jar"
+	dependsOn classes
+	includeEmptyDirs = false
+	from sourceSets.main.output
+	//from sourceSets.main.resources
+	exclude 'com/clustercontrol/platform/**'
+	exclude 'META-INF/orm_*_diff.xml'
+
+	manifest = project.manifest{ from sharedManifest }
+} 
