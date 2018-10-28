@@ -2,5 +2,6 @@ rootProject.name = 'hinemos'
 
 include 'common'
 include 'manager'
+include 'agent'
 include 'client'
 include 'webclient'

@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<!-- 
+   Hinemos (http://www.hinemos.info/)
+   
+   Copyright (c) 2018 NTT DATA INTELLILINK Corporation. All rights reserved.
+ -->
+
+<!-- execute Ant (Run in the same JRE as the workspace -->
+
+<project name="Win_Tasktray" default="all" basedir=".">
+	
+	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<import file="../HinemosCommon/ant_config/build_common.xml"/>
+	
+	<property name="project.name" value="HinemosWorkers" />
+	<property name="jar.file" value="HinemosTasktray.jar" />
+	<property name="src.dir" value="src_win_tasktray" />
+	<property name="build.dir" value="build/win_tasktray" />
+	<!-- <property name="jar.include.properties" value="true" /> -->
+	
+	<!-- Classpath -->
+	<path id="id.compile.classpath.local" />
+
+	<path id="id.compile.sourcepath.local">
+		<pathelement path="${src.dir}" />
+	</path>
+	
+	<target name="clean" description="Clean Java's Class files and JAR files">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${build.dir}/${class.dir}" />
+		
+		<mkdir dir="${jar.dir}" />
+		<delete includeemptydirs="true" failonerror="true" verbose="true">
+			<fileset dir="${jar.dir}">
+				<include name="**/${jar.file}" />
+			</fileset>
+		</delete>
+		<delete dir="${build.dir}/${class.dir}" failonerror="true" />
+		<mkdir dir="${build.dir}/${class.dir}" />
+	</target>
+	
+	<target name="compile" description="Compile Java sources">
+		<javac
+			destdir="${build.dir}/${class.dir}"
+			failonerror="true"
+			classpathref="id.compile.classpath.local"
+			includeantruntime="false"
+			source="${compile.version}" target="${compile.version}" encoding="${compile.encode}"
+			debug="on">
+			<src path="${src.dir}" />
+			<src path="resources" />
+		</javac>
+	</target>
+	
+	<!-- All -->
+	<target name="all">
+		<delete dir="${build.dir}" failonerror="true" />
+		<antcall target="clean" />
+		<antcall target="compile" />
+		<antcall target="jar_main" />
+		<antcall target="refresh" />
+	</target>
+	
+	<target name="jar_main" description="Generate JAR file">
+		<jar jarfile="${jar.dir}/${jar.file}">
+			<manifest>
+				<attribute name="Main-Class" value="com.clustercontrol.tasktray.HinemosTasktrayMain" />
+			</manifest>
+			<fileset dir="${build.dir}/${class.dir}" />
+			<fileset dir="resources/win_tasktray" />
+		</jar>
+	</target>
+	
+	<target name="refresh" if="eclipse_jar_available">
+		<eclipse.refreshLocal resource="${project.name}" depth="infinite" />
+		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
+	</target>
+</project>

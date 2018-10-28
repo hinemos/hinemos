@@ -18,8 +18,5 @@ Forked from [here](https://github.com/hinemos/hinemos).
 
 > gradle :agent:build
 > gradle :agent:deploy
+> gradle :agent:deployManagerCli
 
-
-# MISC
-
-* -XDignore.symbol.file=true
