@@ -93,9 +93,7 @@ public class DownOrderInfraModuleAction extends AbstractHandler implements IElem
 					}
 					if(selection != null && selection.size() == 1
 							&& view.getComposite().getTable().getItemCount() > 1
-							// error: incompatible types: CAP#1 cannot be converted to int
-							//&& (int)((ArrayList<?>)selection.getFirstElement()).get(GetInfraModuleTableDefine.ORDER_NO) < view.getComposite().getTable().getItemCount()){
-							&& (Integer)((ArrayList<?>)selection.getFirstElement()).get(GetInfraModuleTableDefine.ORDER_NO) < view.getComposite().getTable().getItemCount()){
+							&& (int)((ArrayList<?>)selection.getFirstElement()).get(GetInfraModuleTableDefine.ORDER_NO) < view.getComposite().getTable().getItemCount()){
 						enable = true;
 					}
 				}
