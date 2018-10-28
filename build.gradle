@@ -30,9 +30,11 @@ subprojects{
 				options.bootstrapClasspath = files("$System.env.JDK7_HOME/jre/lib/rt.jar", "$File.pathSeparator$System.env.JDK7_HOME/jre/lib/jsse.jar")
 			}else if (System.env.JAVA_HOME != null) {
 				options.fork = true
-				options.bootstrapClasspath = files("$System.env.JAVA_HOME/jre/lib/rt.jar",
-					"$File.pathSeparator$System.env.JAVA_HOME/jre/lib/jce.jar",
-					"$File.pathSeparator$System.env.JAVA_HOME/jre/lib/jsse.jar")
+				options.forkOptions.executable = 'javac'
+				options.compilerArgs << '-XDignore.symbol.file'
+				//options.bootstrapClasspath = files("$System.env.JAVA_HOME/jre/lib/rt.jar",
+				//	"$File.pathSeparator$System.env.JAVA_HOME/jre/lib/jce.jar",
+				//	"$File.pathSeparator$System.env.JAVA_HOME/jre/lib/jsse.jar")
 			}
 		}
 	}

@@ -40,6 +40,7 @@ dependencies{
 	compile group: 'joda-time', name: 'joda-time', version: '2.9.7'
 }
 
+jar.baseName theName
 jar.manifest = project.manifest{ from sharedManifest }
 eclipse{
 	project.name = theJarName
@@ -58,10 +59,12 @@ eclipse{
 
 // Doc
 task sourcesJar(type: Jar, dependsOn: classes){
+	baseName theName
 	classifier = 'sources'
 	from sourceSets.main.allSource
 }
 task javadocJar(type: Jar, dependsOn: javadoc){
+	baseName theName
 	classifier = 'javadoc'
 	from javadoc.destinationDir
 }

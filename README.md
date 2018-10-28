@@ -14,6 +14,10 @@ Forked from [here](https://github.com/hinemos/hinemos).
 > gradle :manager:build
 > gradle :manager:deployManager
 > gradle :manager:deployRHEL
+> gradle :manager:deployWS
+
+> gradle :agent:build
+> gradle :agent:deploy
 
 
 # MISC

@@ -8,7 +8,9 @@ dependencies{
 	jaxws 'com.sun.xml.ws:jaxws-tools:2.2.10'
 	genws group: 'commons-logging', name: 'commons-logging', version: '1.2'
 	genws group: 'org.eclipse.persistence', name: 'javax.persistence', version: '2.1.1'
-	genws files('../common/build/libs/HinemosCommon.jar')
+
+	genws group: 'info.hinemos', name: 'hinemos-common', version: version
+	//genws files('../common/build/libs/HinemosCommon.jar')
 }
 
 def manifestDef = {
@@ -19,7 +21,7 @@ def manifestDef = {
 
 // Extract WSDL from HinemosManager.jar
 task genWS{
-	def inputDir = file("${buildDir}/classes/main")
+	def inputDir = file("${buildDir}/classes/java/main")
 	def classesDir = file("${buildDir}/wsgen/classes")
 	def srcDir = file("${buildDir}/wsgen/src")
 	def wsdlDir = file("${buildDir}/wsgen/wsdl")
@@ -27,7 +29,8 @@ task genWS{
 	dependsOn compileJava
 
 	inputs.dir inputDir
-	outputs.files classesDir, srcDir, wsdlDir
+	outputs.dir classesDir
+	//outputs.files classesDir, srcDir, wsdlDir
 
 	doLast{
 		classesDir.mkdirs()
@@ -42,23 +45,25 @@ task genWS{
 
 			// Search for endpoint classes from source and run wsgen
 			sourceSets.main.output.asFileTree.matching{
-				include '**/*Endpoint.class'
+				include 'com/clustercontrol/ws/*/*Endpoint.class'
+				include 'com/clustercontrol/ws/*/*EndpointImpl.class'
+				exclude '**/ws/xcloud/CloudEndpoint.class'
 			}.each{
-					logger.info "Found $it..."
-					def classname = it.path.replace('\\', '/').replaceFirst(/.*\/(com\/clustercontrol)/, '$1').replaceFirst(/\.class$/, '').replaceAll('/', '.')
-					if(classname ==~ /com\..+Endpoint/){
-						logger.info "wsgen ${classname}..."
-						wsgen(
-							verbose   : true,
-							debug     : true,
-							keep      : false,
-							destdir   : classesDir,
-							sourcedestdir   : srcDir,
-							resourcedestdir : wsdlDir,
-							genwsdl   : true,
-							classpath : files(configurations.genws, sourceSets.main.output).asPath,
-							sei       : classname)
-					}
+				logger.info "Found $it..."
+				def classname = it.path.replace('\\', '/').replaceFirst(/.*\/(com\/clustercontrol)/, '$1').replaceFirst(/\.class$/, '').replaceAll('/', '.')
+				if(classname ==~ /com\..+Endpoint/){
+					logger.info "wsgen ${classname}..."
+					wsgen(
+						verbose   : true,
+						debug     : true,
+						keep      : false,
+						destdir   : classesDir,
+						sourcedestdir   : srcDir,
+						resourcedestdir : wsdlDir,
+						genwsdl   : true,
+						classpath : files(configurations.genws, sourceSets.main.output).asPath,
+						sei       : classname)
+				}
 			}
 		}
 	}	
@@ -141,7 +146,7 @@ task importAgentWS(dependsOn: genWS){
 }
 
 // Pack ClientWS.jar (for Client only)
-task exportClientWS(type: Jar){
+task deployClientWS(type: Jar){
 	description 'Generate ClientWS.jar.'
 
 	archiveName = 'ClientWS.jar'
@@ -154,7 +159,7 @@ task exportClientWS(type: Jar){
 }
 
 // Pack AgentWS.jar (for Client only)
-task exportAgentWS(type: Jar){
+task deployAgentWS(type: Jar){
 	description 'Generate AgentWS.jar.'
 
 	archiveName = 'AgentWS.jar'
@@ -166,9 +171,9 @@ task exportAgentWS(type: Jar){
 	manifest(manifestDef)
 }
 
-task exportWS(type: Jar){
+task deployWS(type: Jar){
 	description 'Generate both ClientWS.jar and AgentWS.jar at once.'
-	dependsOn exportClientWS
-	dependsOn exportAgentWS
+	dependsOn deployClientWS
+	dependsOn deployAgentWS
 }
 
