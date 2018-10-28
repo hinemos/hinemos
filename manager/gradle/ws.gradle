@@ -51,7 +51,7 @@ task genWS{
 			}.each{
 				logger.info "Found $it..."
 				def classname = it.path.replace('\\', '/').replaceFirst(/.*\/(com\/clustercontrol)/, '$1').replaceFirst(/\.class$/, '').replaceAll('/', '.')
-				if(classname ==~ /com\..+Endpoint/){
+				if(classname ==~ /com\..+Endpoint/ || classname ==~ /com\..+EndpointImpl/){
 					logger.info "wsgen ${classname}..."
 					wsgen(
 						verbose   : true,
@@ -88,8 +88,8 @@ task importClientWS(dependsOn: genWS){
 
 			logger.info "${wsdlFileTree.files.size()} file(s) matched"
 			wsdlFileTree.each{
-				// Exclude AgentEndpointService.wsdl and CloudCommonEndpointService.wsdl (for agent only)
-				if(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /CloudCommonEndpointService\.wsdl/ || it.name ==~ /AgentHubEndpointService\.wsdl/) return
+				// Exclude need Agent*EndpointService.wsdl (for agent only)
+				if(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /AgentBinaryEndpointService\.wsdl/ || it.name ==~ /AgentHubEndpointService\.wsdl/) return
 
 				logger.info "wsimport ${it}..."
 
@@ -126,8 +126,8 @@ task importAgentWS(dependsOn: genWS){
 
 			logger.info "${wsdlFileTree.files.size()} file(s) matched"
 			wsdlFileTree.each{
-				// Only need AgentEndpointService.wsdl and CloudCommonEndpointService.wsdl
-				if(!(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /CloudCommonEndpointService\.wsdl/ || it.name ==~ /AgentHubEndpointService\.wsdl/)) return
+				// Only need Agent*EndpointService.wsdl
+				if(!(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /AgentBinaryEndpointService\.wsdl/ || it.name ==~ /AgentHubEndpointService\.wsdl/)) return
 
 				logger.info "wsimport ${it}..."
 
