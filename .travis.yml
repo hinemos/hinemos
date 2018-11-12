@@ -16,5 +16,4 @@ matrix:
     env: SUB_PROJECT=manager
   - name: "Build agent"
     env: SUB_PROJECT=agent
-
-script: gradle :$SUB_PROJECT:build
+  script: gradle :$SUB_PROJECT:build
