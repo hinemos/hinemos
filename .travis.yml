@@ -8,7 +8,7 @@ matrix:
   include:
   - name: "Build common"
     jdk:
-      - openjdk7
+      # - openjdk7 # Execution failed for task ':manager:compileJava'. Could not target platform: 'Java SE 8' using tool chain: 'JDK 7 (1.7)'.
       - openjdk8
     env: SUB_PROJECT=common
     script:
