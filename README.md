@@ -2,7 +2,10 @@
 
 Forked from [here](https://github.com/hinemos/hinemos).
 
-Current target version: **6.1** [![Build Status](https://travis-ci.org/pango853/hinemos.svg?branch=6.1g)](https://travis-ci.org/pango853/hinemos)
+Current target version: **6.1**
+[![Build Status](https://travis-ci.org/pango853/hinemos.svg?branch=6.1g)](https://travis-ci.org/pango853/hinemos)
+[![Maintainability](https://api.codeclimate.com/v1/badges/56927da1c9becc9ae9fe/maintainability)](https://codeclimate.com/github/pango853/hinemos/maintainability)
+
 
 # HOWTO
 
