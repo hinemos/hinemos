@@ -1,11 +1,13 @@
-# Another Hinemos Fork (ver.6.0)
+# Another Hinemos Fork
 
 Forked from [here](https://github.com/hinemos/hinemos).
 
+Current target version: **6.1**
 
 # HOWTO
 
 ## Build
+```
 > SET JDK7_HOME=C:\Program Files\Java\jdk1.7.0_80
 
 > gradle :common:build
@@ -19,4 +21,4 @@ Forked from [here](https://github.com/hinemos/hinemos).
 > gradle :agent:build
 > gradle :agent:deploy
 > gradle :agent:deployManagerCli
-
+```

@@ -1,6 +1,7 @@
 .DS_Store
 Thumbs.db
 *~
+*.lnk
 
 *.swp
 *.class
@@ -19,4 +20,3 @@ lib/
 .classpath
 .project
 .settings/
-

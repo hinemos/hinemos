@@ -1,0 +1,11 @@
+language: java
+jdk:
+  - openjdk7
+  - openjdk8
+
+# Deal with multi-projects repo
+env:
+  - SUB_PROJECT=common
+  - SUB_PROJECT=manager
+  - SUB_PROJECT=agent
+script: gradle :$SUB_PROJECT:build
