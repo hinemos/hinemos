@@ -12,4 +12,4 @@ matrix:
       - openjdk8
     env: SUB_PROJECT=common
     script:
-      - gradle :common:build
+      - gradle :$SUB_PROJECT:build
