@@ -6,6 +6,7 @@ Thumbs.db
 *.swp
 *.class
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.zip
 bin/
 build/

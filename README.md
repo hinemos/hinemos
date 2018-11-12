@@ -2,7 +2,7 @@
 
 Forked from [here](https://github.com/hinemos/hinemos).
 
-Current target version: **6.1**
+Current target version: **6.1** [![Build Status](https://travis-ci.org/pango853/hinemos.svg?branch=6.1g)](https://travis-ci.org/pango853/hinemos)
 
 # HOWTO
 
