@@ -4,8 +4,11 @@ jdk:
   - openjdk8
 
 # Deal with multi-projects repo
-env:
-  - SUB_PROJECT=common
-  - SUB_PROJECT=manager
-  - SUB_PROJECT=agent
-script: gradle :$SUB_PROJECT:build
+matrix:
+  include:
+  - name: "Build common"
+    jdk:
+      - openjdk7
+      - openjdk8
+    env: SUB_PROJECT=common
+    script: gradle :$SUB_PROJECT:build
