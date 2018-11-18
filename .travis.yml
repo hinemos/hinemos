@@ -27,6 +27,6 @@ script:
   - ./gradlew :$SUB_PROJECT:jacocoTestReport
 after_script:
   - cd $SUB_PROJECT/src/main/java/
-  - ../../../../cc-test-reporter format-coverage ../../../build/reports/jacoco/test/jacocoTestReport.xml -t jacoco
+  - mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml
   - ../../../../cc-test-reporter after-build -t jacoco --exit-code $TRAVIS_TEST_RESULT
   - cd ../../../../
