@@ -23,14 +23,9 @@ matrix:
     env: SUB_PROJECT=agent
 
 script:
-  - pwd
-  - ls
-  - echo :$SUB_PROJECT:build
-  - gradle :$SUB_PROJECT:build
-  - gradle :$SUB_PROJECT:jacocoTestReport
+  - gradlew :$SUB_PROJECT:build
+  - gradlew :$SUB_PROJECT:jacocoTestReport
 after_script:
-  - pwd
-  - ls
   - cd $SUB_PROJECT/src/main/java/
   - ../../../../cc-test-reporter format-coverage ../../../build/reports/jacoco/test/jacocoTestReport.xml -t jacoco
   - ../../../../cc-test-reporter after-build -t jacoco --exit-code $TRAVIS_TEST_RESULT
