@@ -25,6 +25,7 @@ matrix:
 script:
   - pwd
   - ls
+  - echo :$SUB_PROJECT:build
   - gradle :$SUB_PROJECT:build
   - gradle :$SUB_PROJECT:jacocoTestReport
 after_script:
