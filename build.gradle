@@ -1,10 +1,12 @@
-apply plugin: 'maven'
-apply plugin: 'java'
-apply plugin: 'eclipse'
-
 allprojects{
 	group = 'info.hinemos'
 	version = '6.1.2'
+
+	apply plugin: 'java'
+	apply plugin: 'maven'
+	apply plugin: 'jacoco'
+
+	apply plugin: 'eclipse'
 
 	task hello{
 		doLast{ task->

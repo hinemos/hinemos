@@ -39,3 +39,11 @@ test {
 		events 'PASSED', 'FAILED', 'SKIPPED'
 	}
 }
+
+jacocoTestReport {
+	reports {
+		html.enabled false
+		xml.enabled true
+		//html.destination file("${buildDir}/reports/coverage")
+	}
+}

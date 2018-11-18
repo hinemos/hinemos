@@ -25,3 +25,7 @@ Current target version: **6.1**
 > gradle :agent:deploy
 > gradle :agent:deployManagerCli
 ```
+
+# TODO
+
+- [ ] Measure coverage
