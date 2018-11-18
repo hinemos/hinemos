@@ -23,8 +23,8 @@ matrix:
     env: SUB_PROJECT=agent
 
 script:
-  - gradlew :$SUB_PROJECT:build
-  - gradlew :$SUB_PROJECT:jacocoTestReport
+  - ./gradlew :$SUB_PROJECT:build
+  - ./gradlew :$SUB_PROJECT:jacocoTestReport
 after_script:
   - cd $SUB_PROJECT/src/main/java/
   - ../../../../cc-test-reporter format-coverage ../../../build/reports/jacoco/test/jacocoTestReport.xml -t jacoco
