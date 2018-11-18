@@ -39,30 +39,31 @@ public class FileUtil {
 	 * 
 	 */
 	public static void addDirList(File dir, List<File> dirList, long max) {
-
 		File[] fileDirArray = dir.listFiles();
 		if (fileDirArray == null || fileDirArray.length <= 0 || dirList == null) {
 			return;
-		} else if (dirList.size() >= max) {
-			return;
-		} else {
-			// 取得したファイルリストがディレクトリか判定.
-			for (File fileDir : fileDirArray) {
-				if (!fileDir.exists()) {
-					// 存在しない場合は無視.
-					continue;
-				} else if (fileDir.isDirectory()) {
-					// ディレクトリの場合はサブディレクトリ検索.
-					dirList.add(fileDir);
-					addDirList(fileDir, dirList, max);
-				} else {
-					// ファイルの場合は無視.
-					continue;
-				}
-			}
-			// ループ終わったら処理終了.
+		}
+
+		if (dirList.size() >= max) {
 			return;
 		}
+
+		// 取得したファイルリストがディレクトリか判定.
+		for (File fileDir : fileDirArray) {
+			if (!fileDir.exists()) {
+				// 存在しない場合は無視.
+				continue;
+			} else if (fileDir.isDirectory()) {
+				// ディレクトリの場合はサブディレクトリ検索.
+				dirList.add(fileDir);
+				addDirList(fileDir, dirList, max);
+			} else {
+				// ファイルの場合は無視.
+				continue;
+			}
+		}
+		// ループ終わったら処理終了.
+		//return;
 	}
 
 	/**
@@ -101,37 +102,37 @@ public class FileUtil {
 		File[] fileDirArray = dir.listFiles();
 		if (fileDirArray == null || fileDirArray.length <= 0) {
 			return;
-		} else if (fileList.size() >= max) {
-			return;
-		} else {
-			// 取得したファイルリストがディレクトリか判定.
-			for (File fileDir : fileDirArray) {
-				if (!fileDir.exists()) {
-					// 存在しない場合は無視.
-					continue;
-				} else if (fileDir.isDirectory()) {
-					// ディレクトリの場合はサブディレクトリ検索.
-					if (inSubdir) {
-						addFileList(fileDir, fileList, namePattern, max, inSubdir);
-					}
-				} else {
-					// ファイルの場合は追加.
-					if (namePattern != null && !namePattern.isEmpty()) {
-						Matcher matcher = pattern.matcher(fileDir.getName());
-						if (!matcher.matches()) {
-							// パターンマッチしなかった場合はskip.
-							log.debug(methodName + DELIMITER + String.format("don't match. filename=%s, pattern=%s",
-									fileDir.getName(), namePattern));
-							continue;
-						}
-					}
-					fileList.add(fileDir);
-					continue;
-				}
-			}
-			// ループ終わったら処理終了.
+		}
+		if (fileList.size() >= max) {
 			return;
 		}
+		// 取得したファイルリストがディレクトリか判定.
+		for (File fileDir : fileDirArray) {
+			if (!fileDir.exists()) {
+				// 存在しない場合は無視.
+				continue;
+			} else if (fileDir.isDirectory()) {
+				// ディレクトリの場合はサブディレクトリ検索.
+				if (inSubdir) {
+					addFileList(fileDir, fileList, namePattern, max, inSubdir);
+				}
+			} else {
+				// ファイルの場合は追加.
+				if (namePattern != null && !namePattern.isEmpty()) {
+					Matcher matcher = pattern.matcher(fileDir.getName());
+					if (!matcher.matches()) {
+						// パターンマッチしなかった場合はskip.
+						log.debug(methodName + DELIMITER + String.format("don't match. filename=%s, pattern=%s",
+								fileDir.getName(), namePattern));
+						continue;
+					}
+				}
+				fileList.add(fileDir);
+				continue;
+			}
+		}
+		// ループ終わったら処理終了.
+		//return;
 	}
 
 	/**
@@ -231,15 +232,26 @@ public class FileUtil {
 		// ファイル名変換.
 		for (int i = 0; i < inName.length(); i++) {
 			// 文字列判定.
-			if (inName.charAt(i) == '\\' || inName.charAt(i) == ':' || inName.charAt(i) == '*'
-					|| inName.charAt(i) == '?' || inName.charAt(i) == '.' || inName.charAt(i) == '<'
-					|| inName.charAt(i) == '>' || inName.charAt(i) == '|' || inName.charAt(i) == '\n'
-					|| inName.charAt(i) == '\t' || inName.charAt(i) == ' ' || inName.charAt(i) == '%') {
+			switch(inName.charAt(i)) {
+			case '\\':
+			case ':':
+			case '*':
+			case '?':
+			case '.':
+			case '<':
+			case '>':
+			case '|':
+			case '\n':
+			case '\t':
+			case ' ':
+			case '%':
 				// ファイル名に利用できない文字列の場合は置換.
 				sbuf.append(replaceStr);
-			} else {
+				break;
+			default:
 				// 利用できる文字列なのでそのまま.
 				sbuf.append(inName.charAt(i));
+				break;
 			}
 		}
 		fileName = sbuf.toString();

@@ -9,7 +9,10 @@
 package com.clustercontrol.bean;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Hinemosの機能を定数として格納するクラス<BR>
@@ -278,182 +281,142 @@ public class HinemosModuleConstant {
 	 *
 	 */
 	public static boolean isExist(String typeId){
-
-		if(typeId.equals(PLATFORM) ||
-				typeId.equals(PLATFORM_NOTIFY) ||
-				typeId.equals(PLATFORM_MAIL_TEMPLATE) ||
-				typeId.equals(PLATFORM_CALENDAR) ||
-				typeId.equals(PLATFORM_CALENDAR_PATTERN) ||
-				typeId.equals(PLATFORM_ACCESS) ||
-				typeId.equals(PLATFORM_PRIORITY_JUDGMENT) ||
-				typeId.equals(PLATFORM_REPOSITORY) ||
-				typeId.equals(PLATFORM_REPSITORY_NODE) ||
-				typeId.equals(PLATFORM_REPSITORY_SCOPE) ||
-				typeId.equals(MONITOR) ||
-				typeId.equals(MONITOR_AGENT ) ||
-				typeId.equals(MONITOR_CUSTOM_N) ||
-				typeId.equals(MONITOR_CUSTOM_S) ||
-				typeId.equals(MONITOR_HTTP_N) ||
-				typeId.equals(MONITOR_HTTP_S) ||
-				typeId.equals(MONITOR_HTTP_SCENARIO) ||
-				typeId.equals(MONITOR_LOGFILE) ||
-				typeId.equals(MONITOR_LOGCOUNT) ||
-				typeId.equals(MONITOR_PERFORMANCE) ||
-				typeId.equals(MONITOR_PING) ||
-				typeId.equals(MONITOR_PORT ) ||
-				typeId.equals(MONITOR_PROCESS) ||
-				typeId.equals(MONITOR_SNMP_N ) ||
-				typeId.equals(MONITOR_SNMP_S ) ||
-				typeId.equals(MONITOR_SNMPTRAP) ||
-				typeId.equals(MONITOR_SQL_N ) ||
-				typeId.equals(MONITOR_SQL_S ) ||
-				typeId.equals(MONITOR_SYSTEMLOG) ||
-				typeId.equals(MONITOR_SCOPE) ||
-				typeId.equals(MONITOR_STATUS) ||
-				typeId.equals(MONITOR_EVENT) ||
-				typeId.equals(MONITOR_WINSERVICE) ||
-				typeId.equals(MONITOR_WINEVENT) ||
-				typeId.equals(MONITOR_JMX) ||
-				typeId.equals(MONITOR_CUSTOMTRAP_N) ||
-				typeId.equals(MONITOR_CUSTOMTRAP_S) ||
-				typeId.equals(MONITOR_CORRELATION) ||
-				typeId.equals(MONITOR_INTEGRATION) ||
-				typeId.equals(MONITOR_BINARYFILE_BIN) ||
-				typeId.equals(MONITOR_PCAP_BIN) ||
-				typeId.equals(HUB_LOGFORMAT) ||
-				typeId.equals(HUB_TRANSFER) ||
-				typeId.equals(PERFORMANCE) ||
-				typeId.equals(PERFORMANCE_RECORD) ||
-				typeId.equals(PERFORMANCE_REALTIME) ||
-				typeId.equals(JOB ) ||
-				typeId.equals(JOB_MST ) ||
-				typeId.equals(JOB_SESSION) ||
-				typeId.equals(JOB_SESSION_DETAIL) ||
-				typeId.equals(JOB_SESSION_NODE) ||
-				typeId.equals(JOB_KICK) ||
-				typeId.equals(JOB_SCHEDULE_RUN_DETAIL) ||
-				typeId.equals(JOB_SESSION_FILE ) ||
-				typeId.equals(SYSYTEM ) ||
-				typeId.equals(SYSYTEM_MAINTENANCE) ||
-				typeId.equals(SYSYTEM_SELFCHECK) ||
-				typeId.equals(INFRA) ||
-				typeId.equals(INFRA_FILE) ||
-				typeId.equals(REPORTING)){
-
+		switch(typeId){
+		case PLATFORM:
+		case PLATFORM_NOTIFY:
+		case PLATFORM_MAIL_TEMPLATE:
+		case PLATFORM_CALENDAR:
+		case PLATFORM_CALENDAR_PATTERN:
+		case PLATFORM_ACCESS:
+		case PLATFORM_PRIORITY_JUDGMENT:
+		case PLATFORM_REPOSITORY:
+		case PLATFORM_REPSITORY_NODE:
+		case PLATFORM_REPSITORY_SCOPE:
+		case MONITOR:
+		case MONITOR_AGENT:
+		case MONITOR_CUSTOM_N:
+		case MONITOR_CUSTOM_S:
+		case MONITOR_HTTP_N:
+		case MONITOR_HTTP_S:
+		case MONITOR_HTTP_SCENARIO:
+		case MONITOR_LOGFILE:
+		case MONITOR_LOGCOUNT:
+		case MONITOR_PERFORMANCE:
+		case MONITOR_PING:
+		case MONITOR_PORT:
+		case MONITOR_PROCESS:
+		case MONITOR_SNMP_N:
+		case MONITOR_SNMP_S:
+		case MONITOR_SNMPTRAP:
+		case MONITOR_SQL_N:
+		case MONITOR_SQL_S:
+		case MONITOR_SYSTEMLOG:
+		case MONITOR_SCOPE:
+		case MONITOR_STATUS:
+		case MONITOR_EVENT:
+		case MONITOR_WINSERVICE:
+		case MONITOR_WINEVENT:
+		case MONITOR_JMX:
+		case MONITOR_CUSTOMTRAP_N:
+		case MONITOR_CUSTOMTRAP_S:
+		case MONITOR_CORRELATION:
+		case MONITOR_INTEGRATION:
+		case MONITOR_BINARYFILE_BIN:
+		case MONITOR_PCAP_BIN:
+		case HUB_LOGFORMAT:
+		case HUB_TRANSFER:
+		case PERFORMANCE:
+		case PERFORMANCE_RECORD:
+		case PERFORMANCE_REALTIME:
+		case JOB:
+		case JOB_MST:
+		case JOB_SESSION:
+		case JOB_SESSION_DETAIL:
+		case JOB_SESSION_NODE:
+		case JOB_KICK:
+		case JOB_SCHEDULE_RUN_DETAIL:
+		case JOB_SESSION_FILE:
+		case SYSYTEM:
+		case SYSYTEM_MAINTENANCE:
+		case SYSYTEM_SELFCHECK:
+		case INFRA:
+		case INFRA_FILE:
+		case REPORTING:
 			return true;
-		} else if(!extensionTypeList.isEmpty()){
-			for(ExtensionType extensionType: extensionTypeList){
-				if(typeId.equals(extensionType.getTypeId())){
-					return true;
+		default:
+			if(!extensionTypeList.isEmpty()){
+				for(ExtensionType extensionType: extensionTypeList){
+					if(typeId.equals(extensionType.getTypeId())){
+						return true;
+					}
 				}
 			}
+			return false;
 		}
-
-		return false;
 	}
 	
-	public static String nameToMessageCode(String string) {
-		if (string.equals(PLATFORM_ACCESS)) {
-			return "ACCESSCONTROL";
-		} else if (string.equals(PLATFORM_PRIORITY_JUDGMENT)) {
-			return "PRIORITY_JUDGMENT";
-		} else if (string.equals(PLATFORM_CALENDAR)) {
-			return "CALENDAR";
-		} else if (string.equals(PLATFORM_CALENDAR_PATTERN)) {
-			return "CALENDAR_PATTERN";
-		} else if (string.equals(PLATFORM_REPOSITORY)) {
-			return "REPOSITORY";
-		} else if (string.equals(PLATFORM_NOTIFY)) {
-			return "NOTIFY";
-		} else if (string.equals(PLATFORM_MAIL_TEMPLATE)) {
-			return "MAIL_TEMPLATE";
-		} else if (string.equals(MONITOR)) {
-			return "MONITOR_SETTING";
-		} else if (string.equals(MONITOR_AGENT)) {
-			return "AGENT_MONITOR";
-		} else if (string.equals(MONITOR_CUSTOM_N)) {
-			return "CUSTOM_MONITOR_N";
-		} else if (string.equals(MONITOR_CUSTOM_S)) {
-			return "CUSTOM_MONITOR_S";
-		} else if (string.equals(MONITOR_HTTP_N)) {
-			return "HTTP_MONITOR_N";
-		} else if (string.equals(MONITOR_HTTP_S)) {
-			return "HTTP_MONITOR_S";
-		} else if (string.equals(MONITOR_HTTP_SCENARIO)) {
-			return "HTTP_MONITOR_SCENARIO";
-		} else if (string.equals(MONITOR_PING)) {
-			return "PING_MONITOR";
-		} else if (string.equals(MONITOR_PROCESS)) {
-			return "PROCESS_MONITOR";
-		} else if (string.equals(MONITOR_SNMP_N)) {
-			return "SNMP_MONITOR_N";
-		} else if (string.equals(MONITOR_SNMP_S)) {
-			return "SNMP_MONITOR_S";
-		} else if (string.equals(MONITOR_SNMPTRAP)) {
-			return "SNMPTRAP_MONITOR";
-		} else if (string.equals(MONITOR_SQL_N)) {
-			return "SQL_MONITOR_N";
-		} else if (string.equals(MONITOR_SQL_S)) {
-			return "SQL_MONITOR_S";
-		} else if (string.equals(MONITOR_PERFORMANCE)) {
-			return "PERFORMANCE_MONITOR";
-		} else if (string.equals(MONITOR_PORT)) {
-			return "PORT_MONITOR";
-		} else if (string.equals(MONITOR_WINSERVICE)) {
-			return "WINSERVICE_MONITOR";
-		} else if (string.equals(MONITOR_WINEVENT)) {
-			return "WINEVENT_MONITOR";
-		} else if (string.equals(MONITOR_JMX)) {
-			return "JMX_MONITOR";
-		} else if (string.equals(HUB_LOGFORMAT)) {
-			return "LOG_FORMAT";
-		} else if (string.equals(HUB_TRANSFER)) {
-			return "LOG_TRANSFER";
-		} else if (string.equals(MONITOR_SYSTEMLOG)) {
-			return "SYSTEMLOG_MONITOR";
-		} else if (string.equals(MONITOR_LOGFILE)) {
-			return "LOGFILE_MONITOR";
-		} else if (string.equals(MONITOR_LOGCOUNT)) {
-			return "LOGCOUNT_MONITOR";
-		} else if (string.equals(MONITOR_CORRELATION)) {
-			return "COLLECT_MONITOR";
-		} else if (string.equals(MONITOR_INTEGRATION)) {
-			return "INTEGRATION_MONITOR";
-		} else if (string.equals(PERFORMANCE)) {
-			return "PERFORMANCE";
-		} else if (string.equals(JOB)) {
-			return "JOB_MANAGEMENT";
-		} else if (string.equals(JOB_MST)) {
-			return "JOB_MANAGEMENT";
-		} else if (string.equals(JOB_KICK)) {
-			return "JOB_KICK";
-		} else if (string.equals(SYSYTEM_MAINTENANCE)) {
-			return "MAINTENANCE_NAME";
-		} else if (string.equals(SYSYTEM_SELFCHECK)) {
-			return "SELFCHECK_NAME";
-		} else if (string.equals(INFRA)) {
-			return "INFRA_MANAGEMENT";
-		} else if (string.equals(INFRA_FILE)) {
-			return "INFRA_FILE_MANAGER";
-		} else if (string.equals(REPORTING)) {
-			return "REPORTING";
-		} else if (string.equals(HINEMOS_MANAGER_MONITOR)) {
-			return "MNG";
-		} else if (string.equals(MONITOR_CUSTOMTRAP_N)) {
-			return "CUSTOMTRAP_MONITOR_N";
-		} else if (string.equals(MONITOR_CUSTOMTRAP_S)){
-			return "CUSTOMTRAP_MONITOR_S";
-		} else if (string.equals(MONITOR_BINARYFILE_BIN)){
-			return "BINARYFILE_MONITOR_BIN";
-		} else if (string.equals(MONITOR_PCAP_BIN)){
-			return "PCAP_MONITOR_BIN";
-		} else if(!extensionTypeList.isEmpty()){
-			for(ExtensionType extensionType: extensionTypeList){
-				if(string.equals(extensionType.getTypeId())){
-					return extensionType.getStringType();
+	public static String nameToMessageCode(String str) {
+		final Map<String, String> codeMap = Collections.unmodifiableMap(new HashMap<String, String>() {{
+			put(PLATFORM_ACCESS, "ACCESSCONTROL");
+			put(PLATFORM_PRIORITY_JUDGMENT, "PRIORITY_JUDGMENT");
+			put(PLATFORM_CALENDAR, "CALENDAR");
+			put(PLATFORM_CALENDAR_PATTERN, "CALENDAR_PATTERN");
+			put(PLATFORM_REPOSITORY, "REPOSITORY");
+			put(PLATFORM_NOTIFY, "NOTIFY");
+			put(PLATFORM_MAIL_TEMPLATE, "MAIL_TEMPLATE");
+			put(MONITOR, "MONITOR_SETTING");
+			put(MONITOR_AGENT, "AGENT_MONITOR");
+			put(MONITOR_CUSTOM_N, "CUSTOM_MONITOR_N");
+			put(MONITOR_CUSTOM_S, "CUSTOM_MONITOR_S");
+			put(MONITOR_HTTP_N, "HTTP_MONITOR_N");
+			put(MONITOR_HTTP_S, "HTTP_MONITOR_S");
+			put(MONITOR_HTTP_SCENARIO, "HTTP_MONITOR_SCENARIO");
+			put(MONITOR_PING, "PING_MONITOR");
+			put(MONITOR_PROCESS, "PROCESS_MONITOR");
+			put(MONITOR_SNMP_N, "SNMP_MONITOR_N");
+			put(MONITOR_SNMP_S, "SNMP_MONITOR_S");
+			put(MONITOR_SNMPTRAP, "SNMPTRAP_MONITOR");
+			put(MONITOR_SQL_N, "SQL_MONITOR_N");
+			put(MONITOR_SQL_S, "SQL_MONITOR_S");
+			put(MONITOR_PERFORMANCE, "PERFORMANCE_MONITOR");
+			put(MONITOR_PORT, "PORT_MONITOR");
+			put(MONITOR_WINSERVICE, "WINSERVICE_MONITOR");
+			put(MONITOR_WINEVENT, "WINEVENT_MONITOR");
+			put(MONITOR_JMX, "JMX_MONITOR");
+			put(HUB_LOGFORMAT, "LOG_FORMAT");
+			put(HUB_TRANSFER, "LOG_TRANSFER");
+			put(MONITOR_SYSTEMLOG, "SYSTEMLOG_MONITOR");
+			put(MONITOR_LOGFILE, "LOGFILE_MONITOR");
+			put(MONITOR_LOGCOUNT, "LOGCOUNT_MONITOR");
+			put(MONITOR_CORRELATION, "COLLECT_MONITOR");
+			put(MONITOR_INTEGRATION, "INTEGRATION_MONITOR");
+			put(PERFORMANCE, "PERFORMANCE");
+			put(JOB, "JOB_MANAGEMENT");
+			put(JOB_MST, "JOB_MANAGEMENT");
+			put(JOB_KICK, "JOB_KICK");
+			put(SYSYTEM_MAINTENANCE, "MAINTENANCE_NAME");
+			put(SYSYTEM_SELFCHECK, "SELFCHECK_NAME");
+			put(INFRA, "INFRA_MANAGEMENT");
+			put(INFRA_FILE, "INFRA_FILE_MANAGER");
+			put(REPORTING, "REPORTING");
+			put(HINEMOS_MANAGER_MONITOR, "MNG");
+			put(MONITOR_CUSTOMTRAP_N, "CUSTOMTRAP_MONITOR_N");
+			put(MONITOR_CUSTOMTRAP_S, "CUSTOMTRAP_MONITOR_S");
+			put(MONITOR_BINARYFILE_BIN, "BINARYFILE_MONITOR_BIN");
+			put(MONITOR_PCAP_BIN, "PCAP_MONITOR_BIN");
+		}});
+
+		if(codeMap.containsKey(str)) {
+			return codeMap.get(str);
+		} else {
+			if(!extensionTypeList.isEmpty()){
+				for(ExtensionType extensionType: extensionTypeList){
+					if(str.equals(extensionType.getTypeId())){
+						return extensionType.getStringType();
+					}
 				}
 			}
+			return "";
 		}
-		return "";
 	}
 }
