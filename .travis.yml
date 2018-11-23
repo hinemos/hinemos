@@ -2,6 +2,11 @@ language: java
 jdk:
   # - openjdk7 # Execution failed for task ':manager:compileJava'. Could not target platform: 'Java SE 8' using tool chain: 'JDK 7 (1.7)'.
   - openjdk8
+addons:
+  sonarcloud:
+    organization: "pango853-github"
+    #token:
+    #  secure: ********* # Define SONAR_TOKEN instead
 
 before_install:
   - chmod +x gradlew
@@ -25,6 +30,7 @@ matrix:
 script:
   - ./gradlew :$SUB_PROJECT:build
   - ./gradlew :$SUB_PROJECT:jacocoTestReport
+  - sonar-scanner
 after_script:
   - cd $SUB_PROJECT/src/main/java/
   - mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml

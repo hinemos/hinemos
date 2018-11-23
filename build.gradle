@@ -5,8 +5,8 @@ allprojects{
 	apply plugin: 'java'
 	apply plugin: 'maven'
 	apply plugin: 'jacoco'
-
 	apply plugin: 'eclipse'
+	//apply plugin: 'org.sonarqube' version '2.6'
 
 	task hello{
 		doLast{ task->

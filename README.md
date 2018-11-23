@@ -5,7 +5,7 @@ Forked from [here](https://github.com/hinemos/hinemos).
 Current target version: **6.1**
 [![Build Status](https://travis-ci.org/pango853/hinemos.svg?branch=6.1g)](https://travis-ci.org/pango853/hinemos)
 [![Maintainability](https://api.codeclimate.com/v1/badges/56927da1c9becc9ae9fe/maintainability)](https://codeclimate.com/github/pango853/hinemos/maintainability)
-
+[![Sonarcloud Status](https://sonarcloud.io/api/project_badges/measure?project=pango853_hinemos&metric=alert_status)](https://sonarcloud.io/dashboard?id=pango853_hinemos)
 
 # HOWTO
 
