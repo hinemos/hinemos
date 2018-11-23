@@ -30,7 +30,7 @@ matrix:
 script:
   - ./gradlew :$SUB_PROJECT:build
   - ./gradlew :$SUB_PROJECT:jacocoTestReport
-  - sonar-scanner
+  - sonar-scanner -Dsonar.projectKey=$SUB_PROJECT -Dsonar.projectName=$SUB_PROJECT -Dsonar.sources=$SUB_PROJECT/src/main
 after_script:
   - cd $SUB_PROJECT/src/main/java/
   - mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml
