@@ -14,6 +14,19 @@ allprojects{
 		}
 	}
 }
+//project(':common'){
+//	dependencies {}
+//}
+//project(':manager') {
+//	dependencies {
+//		compile project(':common')
+//	}
+//}
+//project(':agent') {
+//	dependencies {
+//		compile project(':manager')
+//	}
+//}
 
 ext.sharedManifest = manifest{
 	attributes('Hinemos-Version': version, 'Build-Date': new Date().format('yyyy-MM-dd HH:mm:ss', TimeZone.getTimeZone('UTC')))
