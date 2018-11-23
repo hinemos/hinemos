@@ -31,8 +31,12 @@ jobs:
     #- script: ./gradlew :manager:jacocoTestReport # TODO
     #- script: ./gradlew :agent:jacocoTestReport # TODO
     - stage: codeclimate
-      script: cd common/src/main/java/; mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml; ../../../../cc-test-reporter after-build -t jacoco --exit-code $TRAVIS_TEST_RESULT; cd ../../../../
-   - stage: sonar
+      script:
+        cd common/src/main/java/;
+        mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml;
+        ../../../../cc-test-reporter after-build -t jacoco --exit-code $TRAVIS_TEST_RESULT;
+        cd ../../../../
+    - stage: sonar
       script: sonar-scanner
 
 
