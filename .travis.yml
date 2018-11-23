@@ -20,14 +20,15 @@ before_script:
 # Deal with multi-projects repo
 jobs:
   include:
-    - stage: common
-      script: ./gradlew :commonr:build
-    - script: ./gradlew :common:jacocoTestReport
-    - stage: manager
+    - stage: buildCommon
+      script: ./gradlew :common:build
+    - stage: buildManager
       script: ./gradlew :manager:build
-    #- script: ./gradlew :manager:jacocoTestReport # TODO
-    - stage: agent
+    - stage: buildAgent
       script: ./gradlew :agent:build
+    - stage: jtr
+      script: ./gradlew :common:jacocoTestReport
+    #- script: ./gradlew :manager:jacocoTestReport # TODO
     #- script: ./gradlew :agent:jacocoTestReport # TODO
     - stage: sonar
       script: sonar-scanner
