@@ -18,21 +18,42 @@ before_script:
   - ./cc-test-reporter before-build
 
 # Deal with multi-projects repo
-matrix:
+jobs:
   include:
-  - name: "Build common"
-    env: SUB_PROJECT=common
-  - name: "Build manager"
-    env: SUB_PROJECT=manager
-  - name: "Build agent"
-    env: SUB_PROJECT=agent
+    - stage: common
+      script: ./gradlew :commonr:build
+    - script: ./gradlew :common:jacocoTestReport
+    - stage: manager
+      script: ./gradlew :manager:build
+    #- script: ./gradlew :manager:jacocoTestReport # TODO
+    - stage: agent
+      script: ./gradlew :agent:build
+    #- script: ./gradlew :agent:jacocoTestReport # TODO
+    - stage: sonar
+      script: sonar-scanner
 
-script:
-  - ./gradlew :$SUB_PROJECT:build
-  - ./gradlew :$SUB_PROJECT:jacocoTestReport
-  - sonar-scanner -Dsonar.projectKey=$SUB_PROJECT -Dsonar.projectName=$SUB_PROJECT -Dsonar.sources=$SUB_PROJECT/src/main
 after_script:
-  - cd $SUB_PROJECT/src/main/java/
+  - cd common/src/main/java/
   - mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml
   - ../../../../cc-test-reporter after-build -t jacoco --exit-code $TRAVIS_TEST_RESULT
   - cd ../../../../
+
+
+#matrix:
+#  include:
+#  - name: "Build common"
+#    env: SUB_PROJECT=common
+#  - name: "Build manager"
+#    env: SUB_PROJECT=manager
+#  - name: "Build agent"
+#    env: SUB_PROJECT=agent
+#
+#script:
+#  - ./gradlew :$SUB_PROJECT:build
+#  - ./gradlew :$SUB_PROJECT:jacocoTestReport
+#  - sonar-scanner -Dsonar.projectKey=$SUB_PROJECT -Dsonar.projectName=$SUB_PROJECT -Dsonar.sources=$SUB_PROJECT/src/main
+#after_script:
+#  - cd $SUB_PROJECT/src/main/java/
+#  - mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml
+#  - ../../../../cc-test-reporter after-build -t jacoco --exit-code $TRAVIS_TEST_RESULT
+#  - cd ../../../../
