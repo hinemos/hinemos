@@ -118,7 +118,8 @@ public class FileUtil {
 				}
 			} else {
 				// ファイルの場合は追加.
-				if (namePattern != null && !namePattern.isEmpty()) {
+				//if (namePattern != null && !namePattern.isEmpty()) {
+				if (pattern != null) {
 					Matcher matcher = pattern.matcher(fileDir.getName());
 					if (!matcher.matches()) {
 						// パターンマッチしなかった場合はskip.

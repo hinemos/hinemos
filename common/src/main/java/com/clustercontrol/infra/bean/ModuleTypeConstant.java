@@ -22,13 +22,4 @@ public class ModuleTypeConstant {
 	public static final int TYPE_FILETRANSFER = 1;
 	/** 参照環境構築モジュール */
 	public static final int TYPE_REFERMANAGEMENT = 2;
-	
-	public static int classToType(String className){
-		if(className.equals("")){
-			
-		} else if (className.equals("")){
-			
-		}
-		return -1;
-	}
 }

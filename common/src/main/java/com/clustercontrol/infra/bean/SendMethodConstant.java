@@ -17,15 +17,6 @@ public class SendMethodConstant {
 	/** WinRMで実行 */
 	public static final int TYPE_WINRM = 1;
 
-	public static int classToType(String className){
-		if(className.equals("")){
-			
-		} else if (className.equals("")){
-			
-		}
-		return -1;
-	}
-	
 	public static List<Integer> getTypeList() {
 		return Arrays.asList(TYPE_SCP, TYPE_WINRM);
 	}
