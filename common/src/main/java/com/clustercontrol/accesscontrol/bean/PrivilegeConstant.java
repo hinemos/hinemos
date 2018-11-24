@@ -21,7 +21,7 @@ public class PrivilegeConstant {
 	public static enum ObjectPrivilegeMode {READ, MODIFY, EXEC, NONE}
 	
 	// オブジェクト権限で登録されるもの
-	public static ObjectPrivilegeMode[] objectPrivilegeModes = {
+	public static final ObjectPrivilegeMode[] objectPrivilegeModes = {
 		ObjectPrivilegeMode.READ,
 		ObjectPrivilegeMode.MODIFY,
 		ObjectPrivilegeMode.EXEC,

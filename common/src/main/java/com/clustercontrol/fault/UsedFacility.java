@@ -16,10 +16,12 @@ public class UsedFacility extends HinemosException {
 
 	private static final long serialVersionUID = 631321828052534786L;
 
+	@Deprecated
 	/**
 	 * 機能ID(com.clustercontrol.bean.PluginConstant)
-	 */
-	public int plugin = 0;
+	 * @deprecated Don't know what is this for. Switch to private to prevent being used.
+ 	 */
+	private int plugin = 0;
 
 	/**
 	 * UsedFacilityExceptionコンストラクタ

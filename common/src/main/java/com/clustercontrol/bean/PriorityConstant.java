@@ -36,7 +36,7 @@ public class PriorityConstant {
 	public static final int TYPE_FAILURE = -1;
 
 	/** 重要度のリスト（重要度の高いもの順） **/
-	public static int[] PRIORITY_LIST = {
+	public static final int[] PRIORITY_LIST = {
 		TYPE_CRITICAL,
 		TYPE_UNKNOWN,
 		TYPE_WARNING,
