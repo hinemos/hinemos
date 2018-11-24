@@ -17,44 +17,12 @@ before_script:
   - chmod +x ./cc-test-reporter
   - ./cc-test-reporter before-build
 
-# Deal with multi-projects repo
-jobs:
-  include:
-    - stage: buildCommon
-      script: ./gradlew :common:build
-    - stage: buildManager
-      script: ./gradlew :manager:build
-    - stage: buildAgent
-      script: ./gradlew :agent:build
-    - stage: jacoco
-      script: ./gradlew :common:jacocoTestReport
-    #- script: ./gradlew :manager:jacocoTestReport # TODO
-    #- script: ./gradlew :agent:jacocoTestReport # TODO
-    - stage: codeclimate
-      script:
-        cd common/src/main/java/;
-        mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml;
-        ../../../../cc-test-reporter after-build -t jacoco --exit-code $TRAVIS_TEST_RESULT;
-        cd ../../../../
-    - stage: sonar
-      script: sonar-scanner
-
-
-#matrix:
-#  include:
-#  - name: "Build common"
-#    env: SUB_PROJECT=common
-#  - name: "Build manager"
-#    env: SUB_PROJECT=manager
-#  - name: "Build agent"
-#    env: SUB_PROJECT=agent
-#
-#script:
-#  - ./gradlew :$SUB_PROJECT:build
-#  - ./gradlew :$SUB_PROJECT:jacocoTestReport
-#  - sonar-scanner -Dsonar.projectKey=$SUB_PROJECT -Dsonar.projectName=$SUB_PROJECT -Dsonar.sources=$SUB_PROJECT/src/main
-#after_script:
-#  - cd $SUB_PROJECT/src/main/java/
-#  - mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml
-#  - ../../../../cc-test-reporter after-build -t jacoco --exit-code $TRAVIS_TEST_RESULT
-#  - cd ../../../../
+after_script:
+  - ./gradlew :common:jacocoTestReport
+  #- ./gradlew :manager:jacocoTestReport # TODO
+  #- ./gradlew :agent:jacocoTestReport # TODO
+  - cd common/src/main/java/;
+    mv ../../../build/reports/jacoco/test/jacocoTestReport.xml jacoco.xml;
+    ../../../../cc-test-reporter after-build -t jacoco --exit-code $TRAVIS_TEST_RESULT;
+    cd ../../../../
+  - sonar-scanner
