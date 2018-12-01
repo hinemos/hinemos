@@ -83,4 +83,8 @@ public class DelayNotifyConstant {
 		notify = getNotify(notify);
 		return notify + operation;
 	}
+
+	private DelayNotifyConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

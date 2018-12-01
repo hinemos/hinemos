@@ -219,4 +219,8 @@ public class SystemParameterConstant {
 	public static String getParamId(String paramText){
 		return paramText.substring(PREFIX.length(), paramText.length()-SUFFIX.length());
 	}
+
+	private SystemParameterConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

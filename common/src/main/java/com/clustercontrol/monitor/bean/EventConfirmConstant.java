@@ -24,4 +24,7 @@ public class EventConfirmConstant {
 	/** 破棄（種別）。 */
 	public static final int TYPE_DESTRUCTION = 2;
 
+	private EventConfirmConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

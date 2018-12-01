@@ -23,4 +23,8 @@ public class ScheduleConstant {
 
 	/** p分からq分毎に繰り返し実行の場合 */
 	public static final int TYPE_REPEAT = 3;
+
+	private ScheduleConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

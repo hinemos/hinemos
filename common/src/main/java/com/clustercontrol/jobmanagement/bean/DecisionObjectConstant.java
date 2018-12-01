@@ -38,4 +38,8 @@ public class DecisionObjectConstant {
 
 	/** !=(文字列) */
 	public static final int NOT_EQUAL_STRING = 7;
+
+	private DecisionObjectConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

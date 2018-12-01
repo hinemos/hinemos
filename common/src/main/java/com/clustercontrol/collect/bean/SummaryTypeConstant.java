@@ -49,4 +49,8 @@ public class SummaryTypeConstant {
 		}
 		return "";
 	}
+
+	private SummaryTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

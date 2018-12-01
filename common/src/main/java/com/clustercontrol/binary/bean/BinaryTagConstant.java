@@ -23,6 +23,7 @@ public final class BinaryTagConstant {
 
 	// インスタンス化防止コンストラクタ.
 	private BinaryTagConstant() {
+		throw new IllegalStateException("ConstClass");
 	}
 
 	/** ファイル共通タグ **/
@@ -1384,5 +1385,4 @@ public final class BinaryTagConstant {
 		}
 
 	}
-
 }

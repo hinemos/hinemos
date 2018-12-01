@@ -42,4 +42,8 @@ public class StatusValidPeriodConstant {
 
 	/** 1日（種別）。 */
 	public static final int TYPE_DAY_1 = 1440;
+
+	private StatusValidPeriodConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

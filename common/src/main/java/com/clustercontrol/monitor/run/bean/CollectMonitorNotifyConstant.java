@@ -19,4 +19,8 @@ public class CollectMonitorNotifyConstant {
 
 	/** 通知グループID（変化点用）Prefix */
 	public static final String CHANGE_NOTIFY_GROUPID_PREFIX = MonitorNumericType.TYPE_CHANGE.getType() + "_";
+
+	private CollectMonitorNotifyConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

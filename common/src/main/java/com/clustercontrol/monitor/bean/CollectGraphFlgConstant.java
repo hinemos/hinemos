@@ -37,4 +37,8 @@ public class CollectGraphFlgConstant {
 		}
 		return "";
 	}
+
+	private CollectGraphFlgConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

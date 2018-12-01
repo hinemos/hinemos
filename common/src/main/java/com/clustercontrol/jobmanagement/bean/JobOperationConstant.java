@@ -29,4 +29,7 @@ public class JobOperationConstant {
 	/** 終了値 */
 	public static final String END_VALUE = "endValue";
 
+	private JobOperationConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

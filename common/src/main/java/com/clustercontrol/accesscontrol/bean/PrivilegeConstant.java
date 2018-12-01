@@ -30,4 +30,8 @@ public class PrivilegeConstant {
 	// システム権限設定種別
 	public static final String SYSTEMPRIVILEGE_EDITTYPE_NONE = "0";
 	public static final String SYSTEMPRIVILEGE_EDITTYPE_DIALOG = "1";
+
+	private PrivilegeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

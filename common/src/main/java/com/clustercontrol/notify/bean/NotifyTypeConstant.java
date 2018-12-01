@@ -67,4 +67,7 @@ public class NotifyTypeConstant {
 		return types;
 	}
 
+	private NotifyTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

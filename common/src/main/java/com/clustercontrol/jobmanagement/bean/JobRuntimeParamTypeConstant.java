@@ -25,4 +25,8 @@ public class JobRuntimeParamTypeConstant {
 
 	/** 固定の場合 */
 	public static final int TYPE_FIXED = 3;
+
+	private JobRuntimeParamTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

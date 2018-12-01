@@ -22,4 +22,7 @@ public class RoleTypeConstant {
 	/** Hinemos内部ロール　*/
 	public static final String INTERNAL_ROLE = "2";
 
+	private RoleTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

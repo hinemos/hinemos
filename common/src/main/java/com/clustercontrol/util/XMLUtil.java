@@ -1185,4 +1185,8 @@ public class XMLUtil {
 		System.out.println("OUTPUT:");
 		System.out.println(XMLUtil.ignoreInvalidString("<?xml version='1.0' encoding='UTF-8'?>\n<test_xml>" + ((char)0x7) + "\n</test_xml>\n"));
 	}
+
+	private XMLUtil() {
+		throw new IllegalStateException("UtilClass");
+	}
 }

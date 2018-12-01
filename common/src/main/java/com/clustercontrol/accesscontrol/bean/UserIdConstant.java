@@ -18,4 +18,8 @@ public class UserIdConstant {
 	
 	/** HINEMOS_AGENT */
 	public static final String AGENT = "HINEMOS_AGENT";
+
+	private UserIdConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

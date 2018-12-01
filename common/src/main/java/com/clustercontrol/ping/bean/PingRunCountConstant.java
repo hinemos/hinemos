@@ -21,4 +21,8 @@ public class PingRunCountConstant {
 
 	/** 2回（種別）。 */
 	public static final int TYPE_COUNT_02 = 2;
+
+	private PingRunCountConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

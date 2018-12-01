@@ -22,4 +22,7 @@ public class UserTypeConstant {
 	/** Hinemos内部ユーザ　*/
 	public static final String INTERNAL_USER = "2";
 
+	private UserTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

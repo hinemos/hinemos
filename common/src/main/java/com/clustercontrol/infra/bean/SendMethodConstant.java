@@ -20,4 +20,8 @@ public class SendMethodConstant {
 	public static List<Integer> getTypeList() {
 		return Arrays.asList(TYPE_SCP, TYPE_WINRM);
 	}
+
+	private SendMethodConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

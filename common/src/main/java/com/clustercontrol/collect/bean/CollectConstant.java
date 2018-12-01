@@ -19,4 +19,8 @@ public class CollectConstant {
 
 	// ジョブセッション時間 区切り文字
 	public static final String COLLECT_TYPE_JOB_DELIMITER = ":";
+
+	private CollectConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

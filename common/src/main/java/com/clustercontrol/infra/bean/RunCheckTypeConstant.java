@@ -21,4 +21,8 @@ public class RunCheckTypeConstant {
 	public static final int TYPE_CHECK = 2;
 	/** プレチェック */
 	public static final int TYPE_PRECHECK = 3;
+
+	private RunCheckTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

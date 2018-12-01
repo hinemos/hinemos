@@ -72,4 +72,8 @@ public class OperationConstant {
 		}
 		return "";
 	}
+
+	private OperationConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

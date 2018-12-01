@@ -22,4 +22,7 @@ public class ConvertValueConstant {
 	/** 差をとる */
 	public static final int TYPE_DELTA = 1;
 
+	private ConvertValueConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

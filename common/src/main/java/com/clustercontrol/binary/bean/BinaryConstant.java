@@ -122,6 +122,6 @@ public final class BinaryConstant {
 
 	// インスタンス化防止コンストラクタ.
 	private BinaryConstant() {
+		throw new IllegalStateException("ConstClass");
 	}
-
 }

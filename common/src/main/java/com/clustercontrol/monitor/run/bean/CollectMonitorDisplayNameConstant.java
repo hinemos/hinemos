@@ -19,4 +19,8 @@ public class CollectMonitorDisplayNameConstant {
 	public final static String PREDICTION_MONITOR_DETAIL_PREFIX = "[PREDICT]";
 	// 変化量監視
 	public final static String CHANGE_MONITOR_DETAIL_PREFIX = "[CHANGE]";
+
+	private CollectMonitorDisplayNameConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

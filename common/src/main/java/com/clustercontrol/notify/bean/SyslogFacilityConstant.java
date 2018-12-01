@@ -242,4 +242,8 @@ public class SyslogFacilityConstant {
 		}
 		return -1;
 	}
+
+	private SyslogFacilityConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

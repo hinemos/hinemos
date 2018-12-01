@@ -73,5 +73,7 @@ public class WinEventConstant {
 	public final static String WDI_DIAG_STRING = "WDI Diag";
 	public final static long WDI_DIAG_LONG = 1125899906842624l;
 
-
+	private WinEventConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

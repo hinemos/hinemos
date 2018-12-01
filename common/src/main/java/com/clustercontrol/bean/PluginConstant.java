@@ -65,4 +65,8 @@ public class PluginConstant {
 	public static final int TYPE_INFRA = 24;
 	/** カスタムトラップ監視 */
 	public static final int TYPE_CUSTOMTRAP_MONITOR = 25;
+
+	private PluginConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

@@ -21,4 +21,8 @@ public class RunStatusConstant {
 	public static final int END = 1;
 	/** 失敗 */
 	public static final int ERROR = 2;
+
+	private RunStatusConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

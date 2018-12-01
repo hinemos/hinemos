@@ -33,4 +33,7 @@ public class JobApprovalStatusConstant {
 	/** 承認済(状態の種別) */
 	public static final int TYPE_FINISHED = 1;
 	
+	private JobApprovalStatusConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

@@ -23,4 +23,8 @@ public class JobKickConstant {
 
 	/** マニュアル実行の場合 */
 	public static final int TYPE_MANUAL = 2;
+
+	private JobKickConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

@@ -17,4 +17,8 @@ public class TopicFlagConstant {
 	public static final long WINEVENT_CHANGED = 1 << 5;
 	public static final long FILECHECK_CHANGED = 1 << 6;
 	public static final long BINARY_CHANGED = 1 << 7;
+
+	private TopicFlagConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

@@ -66,4 +66,8 @@ public class OkNgConstant {
 		}
 		return -1;
 	}
+
+	private OkNgConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

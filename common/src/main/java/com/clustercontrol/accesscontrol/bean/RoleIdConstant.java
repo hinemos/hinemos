@@ -37,4 +37,7 @@ public class RoleIdConstant {
 		return false;
 	}
 	
+	private RoleIdConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

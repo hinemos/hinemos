@@ -252,4 +252,7 @@ public class BinaryBeanUtil {
 
 	}
 
+	private BinaryBeanUtil() {
+		throw new IllegalStateException("UtilClass");
+	}
 }

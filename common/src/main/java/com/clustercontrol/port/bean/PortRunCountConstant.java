@@ -24,4 +24,8 @@ public class PortRunCountConstant {
 
 	/** 3回（種別）。 */
 	public static final int TYPE_COUNT_03 = 3;
+
+	private PortRunCountConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

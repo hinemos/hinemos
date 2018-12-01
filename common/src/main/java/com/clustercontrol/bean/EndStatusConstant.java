@@ -38,4 +38,8 @@ public class EndStatusConstant {
 
 	/** 異常 */
 	public static final int INITIAL_VALUE_ABNORMAL = -1;
+
+	private EndStatusConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

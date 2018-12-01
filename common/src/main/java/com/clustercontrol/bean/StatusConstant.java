@@ -131,4 +131,8 @@ public class StatusConstant {
 		}
 		return "";
 	}
+
+	private StatusConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

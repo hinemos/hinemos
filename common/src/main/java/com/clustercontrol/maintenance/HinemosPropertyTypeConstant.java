@@ -30,4 +30,8 @@ public class HinemosPropertyTypeConstant {
 	
 	/** 真偽値:false */
 	public static final String BOOL_FALSE = "false";
+
+	private HinemosPropertyTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

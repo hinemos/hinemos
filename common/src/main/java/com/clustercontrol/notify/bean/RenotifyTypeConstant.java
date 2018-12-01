@@ -23,4 +23,8 @@ public class RenotifyTypeConstant {
 
 	/** 再通知しない（種別）。 */
 	public static final int TYPE_NO_NOTIFY = 2;
+
+	private RenotifyTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

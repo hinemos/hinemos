@@ -25,4 +25,8 @@ public class FileCheckConstant {
 	public static final int TYPE_MODIFY_TIMESTAMP = 0;
 	/** 変更 - ファイルサイズの場合 */
 	public static final int TYPE_MODIFY_FILESIZE = 1;
+
+	private FileCheckConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

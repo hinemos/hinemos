@@ -20,4 +20,8 @@ public class ProcessingMethodConstant {
 
 	/** 正常終了するまでノードを順次リトライ */
 	public static final int TYPE_RETRY = 1;
+
+	private ProcessingMethodConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

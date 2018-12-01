@@ -19,4 +19,8 @@ public class CommandStopTypeConstant {
 	public static final int EXECUTE_COMMAND = 0;
 	/** プロセスを終了 */
 	public static final int DESTROY_PROCESS= 1;
+
+	private CommandStopTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

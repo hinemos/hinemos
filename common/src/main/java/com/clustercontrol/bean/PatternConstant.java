@@ -16,4 +16,8 @@ package com.clustercontrol.bean;
  */
 public class PatternConstant {
 	public static final String HINEMOS_ID_PATTERN = "^[A-Za-z0-9-_.@]+$";
+
+	private PatternConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

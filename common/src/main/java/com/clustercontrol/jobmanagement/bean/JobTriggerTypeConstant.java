@@ -47,4 +47,8 @@ public class JobTriggerTypeConstant {
 		}
 		return "UNKNOWN";
 	}
+
+	private JobTriggerTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

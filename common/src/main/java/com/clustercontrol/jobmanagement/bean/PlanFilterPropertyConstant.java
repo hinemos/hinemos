@@ -22,4 +22,8 @@ public class PlanFilterPropertyConstant {
 
 	/** スケジュールID */
 	public static final String JOBKICK_ID = "jobkickId";
+
+	private PlanFilterPropertyConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

@@ -23,4 +23,7 @@ public class ScopeConstant {
 	/** アイコンイメージ */
 	public static final String ICONIMAGE= "iconImage";
 
+	private ScopeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

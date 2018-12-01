@@ -25,4 +25,8 @@ public class InfraNodeInputConstant {
 	
 	/** デフォルト値 */
 	public static final int TYPE_DEFAULT = TYPE_NODE_PARAM;
+
+	private InfraNodeInputConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

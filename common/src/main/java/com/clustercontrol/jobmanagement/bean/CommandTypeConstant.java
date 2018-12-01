@@ -20,4 +20,8 @@ public class CommandTypeConstant {
 	public static final int NORMAL = 0;
 	/** 停止コマンド */
 	public static final int STOP = 1;
+
+	private CommandTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

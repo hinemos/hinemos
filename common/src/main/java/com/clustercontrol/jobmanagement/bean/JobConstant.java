@@ -79,4 +79,8 @@ public class JobConstant {
 		}
 		return STRING_COMPOSITE;
 	}
+
+	private JobConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

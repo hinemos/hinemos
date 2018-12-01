@@ -41,4 +41,8 @@ public class StatusExpirationConstant {
 
 	/** 存続期間経過後の更新時の重要度：なし（種別）。 */
 	public static final int TYPE_NONE = PriorityConstant.TYPE_NONE;
+
+	private StatusExpirationConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

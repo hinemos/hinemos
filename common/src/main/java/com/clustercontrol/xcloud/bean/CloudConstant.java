@@ -42,4 +42,8 @@ public class CloudConstant {
 	// 
 	public static final String filename_vmware = "/sdk/vimService";
 	public static final String filename_hyperv = "/wsman";
+
+	private CloudConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

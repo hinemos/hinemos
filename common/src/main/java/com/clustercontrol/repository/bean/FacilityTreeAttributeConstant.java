@@ -67,4 +67,8 @@ public class FacilityTreeAttributeConstant {
 	public static boolean isBuiltinScope(String facilityId) {
 		return buildinScopeFacilityIdSet.contains(facilityId);
 	}
+
+	private FacilityTreeAttributeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

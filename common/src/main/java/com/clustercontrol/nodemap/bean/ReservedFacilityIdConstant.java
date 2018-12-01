@@ -46,4 +46,8 @@ public class ReservedFacilityIdConstant {
 		}
 		return false;
 	}
+
+	private ReservedFacilityIdConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

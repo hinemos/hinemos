@@ -20,4 +20,8 @@ public class ExecFacilityConstant {
 
 	/** 固定スコープ（種別）。 */
 	public static final int TYPE_FIX = 1;
+
+	private ExecFacilityConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

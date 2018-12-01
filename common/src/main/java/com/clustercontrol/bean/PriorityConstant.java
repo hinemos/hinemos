@@ -63,4 +63,7 @@ public class PriorityConstant {
 		return "";
 	}
 	
+	private PriorityConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

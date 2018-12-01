@@ -118,4 +118,8 @@ public class SyslogSeverityConstant {
 		}
 		return -1;
 	}
+
+	private SyslogSeverityConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

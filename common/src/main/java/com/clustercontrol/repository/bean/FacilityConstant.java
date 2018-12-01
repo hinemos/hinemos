@@ -67,4 +67,8 @@ public class FacilityConstant {
 
 	/** コンポジット（ファシリティの種別） */
 	public static final String STRING_COMPOSITE = "";
+
+	protected FacilityConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

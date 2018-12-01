@@ -32,4 +32,7 @@ public class ProtocolConstant {
 	public static final int DEFAULT_PORT_NUM_PROTOCOL_NTP = 123;
 	public static final int DEFAULT_PORT_NUM_PROTOCOL_DNS = 53;
 
+	private ProtocolConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

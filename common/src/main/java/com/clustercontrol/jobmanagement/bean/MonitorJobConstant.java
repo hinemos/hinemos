@@ -25,4 +25,8 @@ public class MonitorJobConstant {
 	public static final int INITIAL_END_VALUE_UNKNOWN = -1;
 	/** 待ち間隔 */
 	public static final int INITIAL_WAIT_INTERVAL_MINUTE = 1;
+
+	private MonitorJobConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

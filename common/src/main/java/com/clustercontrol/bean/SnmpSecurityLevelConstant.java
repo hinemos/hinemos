@@ -25,4 +25,7 @@ public class SnmpSecurityLevelConstant {
 	/**  認証あり・暗号化あり */
 	public static final String  AUTH_PRIV = "auth_priv";
 
+	private SnmpSecurityLevelConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

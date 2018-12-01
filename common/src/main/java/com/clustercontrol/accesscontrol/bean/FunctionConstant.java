@@ -51,4 +51,8 @@ public final class FunctionConstant {
 	public static final String HUB = "Hub";
 	/** 遠隔管理 */
 	public static final String INQUIRY = "Inquiry";
+
+	private FunctionConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

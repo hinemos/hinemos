@@ -21,4 +21,8 @@ public class TruthConstant {
 
 	/** 偽。 */
 	public static final int TYPE_FALSE = 0;
+
+	private TruthConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

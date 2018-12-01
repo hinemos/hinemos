@@ -88,4 +88,7 @@ public class DataRangeConstant {
 	/** SNMP TRAPのgeneric trap の上限 */
 	public static final int GENERIC_ID_HIGH = 6;
 
+	private DataRangeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

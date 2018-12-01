@@ -18,4 +18,8 @@ package com.clustercontrol.jobmanagement.bean;
 public class TopicConstant {
 	/** ジョブ実行用トピック名 */
 	public static final String TOPIC_NAME_EXECUTE = "topic/clustercontrolJobManagementExecute";
+
+	private TopicConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

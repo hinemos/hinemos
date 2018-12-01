@@ -139,4 +139,8 @@ public class MonitorTypeMstConstant {
 	public static ArrayList<ArrayList<Object>> getListAll() {
 		return monitorTypeMst;
 	}
+
+	private MonitorTypeMstConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

@@ -15,4 +15,8 @@ public class FacilityIdConstant {
 
 	/** _ROOT_ */
 	public static final String ROOT = "_ROOT_";
+
+	private FacilityIdConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

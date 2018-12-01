@@ -36,4 +36,8 @@ public class FacilityTargetConstant {
 		}
 		return "";
 	}
+
+	private FacilityTargetConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

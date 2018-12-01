@@ -48,4 +48,8 @@ public class JobKickFilterConstant {
 	public static final String UPDATE_FROM_DATE = "updateFromDate";
 	/** 最終変更日時(TO) */
 	public static final String UPDATE_TO_DATE = "updateToDate";
+
+	private JobKickFilterConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

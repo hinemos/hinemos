@@ -20,4 +20,8 @@ public class EndStatusCheckConstant {
 	public static final int NO_WAIT_JOB = 0;
 	/** 全ジョブの終了状態をチェックする */
 	public static final int ALL_JOB = 1;
+
+	private EndStatusCheckConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

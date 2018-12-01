@@ -40,4 +40,7 @@ public class DeviceTypeConstant {
 	/** 汎用デバイス */
 	public static final String DEVICE_GENERAL = "general";
 
+	private DeviceTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

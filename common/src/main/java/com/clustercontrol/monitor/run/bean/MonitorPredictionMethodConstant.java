@@ -60,4 +60,7 @@ public class MonitorPredictionMethodConstant {
 		return typeList;
 	}
 
+	private MonitorPredictionMethodConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

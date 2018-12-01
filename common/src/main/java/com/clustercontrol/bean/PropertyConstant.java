@@ -36,4 +36,8 @@ public class PropertyConstant {
 	public static final String MAP_VALUE = "value";
 
 	public static final String MAP_PROPERTY = "property";
+
+	private PropertyConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

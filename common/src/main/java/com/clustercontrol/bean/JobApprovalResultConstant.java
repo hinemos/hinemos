@@ -20,4 +20,8 @@ public class JobApprovalResultConstant {
 
 	/** 否認 */
 	public static final int TYPE_DENIAL = 9;
+
+	private JobApprovalResultConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

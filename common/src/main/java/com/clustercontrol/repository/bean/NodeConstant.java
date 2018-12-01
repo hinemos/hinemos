@@ -300,4 +300,7 @@ public class NodeConstant extends FacilityConstant{
 	/** 保守 */
 	public static final String MAINTENANCE = "maintenance";
 
+	private NodeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

@@ -30,4 +30,8 @@ public class CollectedDataErrorTypeConstant {
 
 	// その他不明
 	public static final int UNKNOWN = -1;
+
+	private CollectedDataErrorTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

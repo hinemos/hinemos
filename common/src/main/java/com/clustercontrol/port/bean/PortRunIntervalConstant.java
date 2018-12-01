@@ -24,4 +24,8 @@ public class PortRunIntervalConstant {
 
 	/** 5秒（種別）。 */
 	public static final int TYPE_SEC_05 = 5000;
+
+	private PortRunIntervalConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

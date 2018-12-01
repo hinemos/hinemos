@@ -42,4 +42,8 @@ public class InfraParameterConstant {
 		WINRM_USER,
 		WINRM_PASSWORD
 	};
+
+	private InfraParameterConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

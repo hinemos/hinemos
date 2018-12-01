@@ -23,4 +23,8 @@ public class HttpAuthTypeConstant {
 
 	/** NTLM認証(種別) */
 	public static final String NTLM = "NTLM";
+
+	private HttpAuthTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

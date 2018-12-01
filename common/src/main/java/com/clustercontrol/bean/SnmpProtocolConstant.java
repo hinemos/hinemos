@@ -47,5 +47,7 @@ public class SnmpProtocolConstant {
 		return list;
 	}
 	
-	
+	private SnmpProtocolConstant() {
+		throw new IllegalStateException("ConstClass");
+	}	
 }

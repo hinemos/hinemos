@@ -22,4 +22,7 @@ public final class RoleSettingTreeConstant {
 	/** マネージャのID */
 	public static final String MANAGER = "MANAGER";
 
+	private RoleSettingTreeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

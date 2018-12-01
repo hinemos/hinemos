@@ -56,4 +56,8 @@ public class HistoryFilterPropertyConstant {
 
 	/** オーナーロールID */
 	public static final String OWNER_ROLE_ID = "ownerRoleId";
+
+	private HistoryFilterPropertyConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

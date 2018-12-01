@@ -647,4 +647,7 @@ public class BinaryUtil {
 		}
 	}
 
+	private BinaryUtil() {
+		throw new IllegalStateException("UtilClass");
+	}
 }

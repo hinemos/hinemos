@@ -53,4 +53,8 @@ public class SnmpVersionConstant {
 		}
 		return -1;
 	}
+
+	private SnmpVersionConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

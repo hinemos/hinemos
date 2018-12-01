@@ -32,4 +32,8 @@ public class MonitorTypeConstant {
 
 	/** バイナリ（種別）。 */
 	public static final int TYPE_BINARY = 5;	
+
+	private MonitorTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

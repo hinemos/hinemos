@@ -41,4 +41,8 @@ public class NodeFilterConstant {
 	public static final String OS = "os";
 	/** 保守 */
 	public static final String MAINTENANCE = "maintenance";
+
+	private NodeFilterConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

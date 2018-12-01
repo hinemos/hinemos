@@ -27,4 +27,7 @@ public class JobParamTypeConstant {
 	/** ランタイムパラメータ */
 	public static final int TYPE_RUNTIME = 3;
 
+	private JobParamTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

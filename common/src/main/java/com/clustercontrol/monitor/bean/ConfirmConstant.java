@@ -37,4 +37,8 @@ public class ConfirmConstant {
 		}
 		return "";
 	}
+
+	private ConfirmConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

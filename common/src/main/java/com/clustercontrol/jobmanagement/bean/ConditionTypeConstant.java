@@ -22,4 +22,8 @@ public class ConditionTypeConstant {
 
 	/** OR条件（数値） */
 	public static final int TYPE_OR = 1;
+
+	private ConditionTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

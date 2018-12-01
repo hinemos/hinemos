@@ -22,4 +22,8 @@ public class ModuleTypeConstant {
 	public static final int TYPE_FILETRANSFER = 1;
 	/** 参照環境構築モジュール */
 	public static final int TYPE_REFERMANAGEMENT = 2;
+
+	private ModuleTypeConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

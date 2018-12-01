@@ -450,4 +450,8 @@ public class HinemosModuleConstant {
 		}
 		return "";
 	}
+
+	private HinemosModuleConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }
