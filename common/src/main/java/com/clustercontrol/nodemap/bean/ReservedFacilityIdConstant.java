@@ -26,12 +26,15 @@ public class ReservedFacilityIdConstant {
 	public static final String INTERNAL_SCOPE="INTERNAL";
 	public static final String INTERNAL_SCOPE_TEXT="Hinemos_Internal";
 
-	public static final String[] reservedIds = {
+	protected static final String[] reservedIds = {
 		REGISTEREFD_SCOPE,
 		UNREGISTEREFD_SCOPE,
 		INTERNAL_SCOPE,
 		ROOT_SCOPE
 	};
+	public static String[] getReservedIDs() {
+		return reservedIds.clone();
+	}
 
 	/**
 	 * 指定のファシリティIDがシステム予約IDか否かを調べます

@@ -105,7 +105,7 @@ public class SystemParameterConstant {
 	public static final String SUFFIX = "]";
 
 	// ジョブパラメータ情報から取得
-	public static final String SYSTEM_ID_LIST_JOB_PARAM[] = {
+	protected static final String SYSTEM_ID_LIST_JOB_PARAM[] = {
 		APPLICATION,
 		FACILITY_ID,
 		FILENAME,
@@ -117,17 +117,23 @@ public class SystemParameterConstant {
 		PLUGIN_ID,
 		PRIORITY
 	};
+	public static String[] getSystemIDListJobParam() {
+		return SYSTEM_ID_LIST_JOB_PARAM.clone();
+	}
 
 	// ジョブセッション情報から取得
-	public static final String SYSTEM_ID_LIST_JOB_SESSION[] = {
+	protected static final String SYSTEM_ID_LIST_JOB_SESSION[] = {
 		SESSION_ID,
 		START_DATE,
 		TRIGGER_INFO,
 		TRIGGER_TYPE
 	};
+	public static String[] getSystemIDListJobSession() {
+		return SYSTEM_ID_LIST_JOB_SESSION.clone();
+	}
 
 	// ノード情報から取得
-	public static final String SYSTEM_ID_LIST_NODE_INFO [] = {
+	protected static final String SYSTEM_ID_LIST_NODE_INFO [] = {
 		FACILITY_NAME,
 		IP_ADDRESS_VERSION,
 		IP_ADDRESS,
@@ -180,6 +186,9 @@ public class SystemParameterConstant {
 		CLOUD_RESOURCE_NAME,
 		CLOUD_LOCATION
 	};
+	public static String[] getSystemIDListNodeInfo() {
+		return SYSTEM_ID_LIST_NODE_INFO.clone();
+	}
 
 	/**
 	 * strが#[param]の形式であるかを判定する

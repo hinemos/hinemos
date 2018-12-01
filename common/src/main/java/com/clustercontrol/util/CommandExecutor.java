@@ -204,15 +204,15 @@ public class CommandExecutor {
 		private final long timeout;
 
 		// maximun size of received string
-		public final int bufferSize;
+		private final int bufferSize;
 
 		// buffer discarded or not
-		public boolean bufferDiscarded = false;
+		private boolean bufferDiscarded = false;
 
 		// charset of receive string
-		public final Charset charset;
+		private final Charset charset;
 
-		public final Process process;
+		private final Process process;
 
 		// thread for receive stdout and stderr
 		private final ExecutorService _receiverService;

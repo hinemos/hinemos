@@ -8,13 +8,11 @@
 
 package com.clustercontrol.util;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.codehaus.plexus.util.cli.CommandLineUtils;
 
 import com.clustercontrol.fault.HinemosUnknown;
 
@@ -28,13 +26,6 @@ public class CommandCreator {
 
 	public static final String osName;
 	public static final PlatformType sysPlatform;
-
-	// Windows用コマンドの分割パターン。
-	// 先頭に空白文字1個以上があり、その後ろに
-	// 1. ダブルクォートでくくられた（空白を含む）文字列塊
-	// 2. ダブルクォートと空白文字を除く任意文字列塊
-	// の、1・2が複数個（1個以上）連なった形で、1つの引数を構成する。
-	private static final Pattern winCmdSplitPattern = Pattern.compile("^\\s+(((\".*?\")|([^\"\\s]+?))+)");
 
 	static {
 		sysUser = System.getProperty("user.name");
@@ -148,40 +139,16 @@ public class CommandCreator {
 	private static String[] createWindowsCommand(String execUser, String execCommand) throws HinemosUnknown {
 		// Local Variables
 		String[] command = null;
-		ArrayList<String> commandList = new ArrayList<String>();
 		boolean isDebugEnable = log.isDebugEnabled();
 		
 		// MAIN
 		if (execUser.equals(sysUser)) {
-			
-			// 引数を分割するための正規表現は、空白文字＋文字列を１つの塊として判断するため、
-			// 与えられたコマンド文字列の先頭に空白を付与して分解を開始する。
-			String splitTarget = " " + execCommand;
-			
-			while (true) {
-				if (isDebugEnable) {
-					log.debug("parse command for windows. split target = " + splitTarget);
-				}
-				Matcher match = winCmdSplitPattern.matcher(splitTarget);
-				if (match.find()){
-					// マッチした場合、空白文字を除いた部分を有効な文字列（コマンド or 引数）として取り出す。
-					// 具体的には、正規表現 "^\\s+(((\".*?\")|([^\"\\s]+?))+)" の中の、
-					// 頭の ^\\s+ を取り除いた、 (((\".*?\")|([^\"\\s]+?))+) の部分を有効な引数として取り出している。
-					String arg = match.group(1);
-					if (isDebugEnable) {
-						log.debug("parse command for windows. find arg = " + arg);
-					}
-					commandList.add(arg);
-					splitTarget = splitTarget.substring(match.end());
-				} else {
-					if (isDebugEnable) {
-						log.debug("parse command for windows. can't find args");
-					}
-					break;
-				}
+			try {
+				command = CommandLineUtils.translateCommandline(execCommand);
+			} catch (Exception e) {
+				log.warn(e);
+				command = new String[]{};
 			}
-			
-			command = commandList.toArray(new String[commandList.size()]);
 			if (isDebugEnable) {
 				log.debug("created command for windows. (cmd = " + Arrays.toString(command) + ")");
 			}

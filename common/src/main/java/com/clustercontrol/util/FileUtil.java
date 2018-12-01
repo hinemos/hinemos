@@ -259,4 +259,8 @@ public class FileUtil {
 
 		return fileName;
 	}
+
+	private FileUtil() {
+		throw new IllegalStateException("UtilClass");
+	}
 }

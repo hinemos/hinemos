@@ -34,7 +34,7 @@ public class InfraParameterConstant {
 	public final static String PARAMETER_DELIMITER = ":";
 
 	// アクセス情報
-	public static final String ACCESS_INFO_LIST_PARAM[] = {
+	protected static final String ACCESS_INFO_LIST_PARAM[] = {
 		SSH_USER,
 		SSH_PASSWORD,
 		SSH_PRIVATE_KEY_FILEPATH,
@@ -42,6 +42,9 @@ public class InfraParameterConstant {
 		WINRM_USER,
 		WINRM_PASSWORD
 	};
+	public static String[] getAccessInfoListParam() {
+		return ACCESS_INFO_LIST_PARAM.clone();
+	}
 
 	private InfraParameterConstant() {
 		throw new IllegalStateException("ConstClass");

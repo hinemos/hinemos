@@ -21,16 +21,19 @@ public class PrivilegeConstant {
 	public static enum ObjectPrivilegeMode {READ, MODIFY, EXEC, NONE}
 	
 	// オブジェクト権限で登録されるもの
-	public static final ObjectPrivilegeMode[] objectPrivilegeModes = {
+	protected static final ObjectPrivilegeMode[] objectPrivilegeModes = {
 		ObjectPrivilegeMode.READ,
 		ObjectPrivilegeMode.MODIFY,
 		ObjectPrivilegeMode.EXEC,
 	};
+	public static final ObjectPrivilegeMode[] getObjectPrivilegeMode() {
+		return objectPrivilegeModes.clone();
+	}
 
 	// システム権限設定種別
 	public static final String SYSTEMPRIVILEGE_EDITTYPE_NONE = "0";
 	public static final String SYSTEMPRIVILEGE_EDITTYPE_DIALOG = "1";
-
+	
 	private PrivilegeConstant() {
 		throw new IllegalStateException("ConstClass");
 	}

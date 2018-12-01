@@ -10,6 +10,7 @@ package com.clustercontrol.binary.util;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.clustercontrol.binary.bean.BinaryConstant;
 import com.clustercontrol.binary.bean.BinarySearchBean;
@@ -200,7 +201,8 @@ public class BinaryBeanUtil {
 
 		// 16進数の文字列以外が入力されている場合はエラー.
 		String hexStr = searchString.substring(2);
-		if (!hexStr.matches("^[a-fA-F0-9]+$")) {
+		// Might be CPU-intensive: if (!hexStr.matches("^[a-fA-F0-9]+$")) {
+		if(Pattern.compile("[^a-fA-F0-9]").matcher(hexStr).find()) {
 			binarySearchBean.setSearchType(BinaryConstant.SearchType.ERROR);
 			binarySearchBean.setSearchError(BinaryConstant.SearchError.INVALID_HEX);
 			return binarySearchBean;
