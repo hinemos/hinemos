@@ -80,7 +80,7 @@ public class Messages {
 	public static String getString(String key, String def, Locale locale) {
 		Set<String> bundleNames = missing.get(locale);
 		if (bundleNames == null) {
-			bundleNames = new HashSet<>();
+			bundleNames = new HashSet<String>();
 			missing.put(locale, bundleNames);
 		}
 		

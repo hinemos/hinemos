@@ -31,7 +31,7 @@ public enum IntegrationComparisonMethod {
 	private final String symbol;
 
 	static {
-		final List<String> _values = new ArrayList<>();
+		final List<String> _values = new ArrayList<String>();
 		for (IntegrationComparisonMethod method : values()) {
 			_values.add(method.symbol);
 		}

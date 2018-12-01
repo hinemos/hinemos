@@ -202,7 +202,7 @@ public class StringBinder {
 		StringBinder.setReplace(true);
 		System.out.println("BINDED   : " + binder.bindParam(str));
 		
-		Map<String, String> param2 = new HashMap<>();
+		Map<String, String> param2 = new HashMap<String, String>();
 		param2.put("FOO", "foo");
 		param2.put("BAR", "$[bar]");
 		param2.put("HOGE:uga", "hoge");

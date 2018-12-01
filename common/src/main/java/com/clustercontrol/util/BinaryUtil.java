@@ -596,12 +596,23 @@ public class BinaryUtil {
 	 *            true:追記モード、false:新規作成.
 	 **/
 	public static void outputBinary(List<Byte> recordBinary, File outputFile, boolean addMode) {
-		try (FileOutputStream output = new FileOutputStream(outputFile, addMode)) {
+		FileOutputStream output = null;
+		//try (FileOutputStream output = new FileOutputStream(outputFile, addMode)) {
+		try {
+			output = new FileOutputStream(outputFile, addMode);
 			output.write(BinaryUtil.listToArray(recordBinary));
 		} catch (FileNotFoundException e) {
 			log.warn(e.getMessage(), e);
 		} catch (IOException e) {
 			log.warn(e.getMessage(), e);
+		} finally {
+			if(null != output) {
+				try {
+					output.close();
+				} catch (IOException e) {
+					log.warn(e.getMessage(), e);
+				}
+			}
 		}
 	}
 
@@ -616,12 +627,23 @@ public class BinaryUtil {
 	 *            true:追記モード、false:新規作成.
 	 **/
 	public static void outputBinary(byte[] recordBinary, File outputFile, boolean addMode) {
-		try (FileOutputStream output = new FileOutputStream(outputFile, addMode)) {
+		FileOutputStream output = null;
+		//try (FileOutputStream output = new FileOutputStream(outputFile, addMode)) {
+		try {
+			output = new FileOutputStream(outputFile, addMode);
 			output.write(recordBinary);
 		} catch (FileNotFoundException e) {
 			log.warn(e.getMessage(), e);
 		} catch (IOException e) {
 			log.warn(e.getMessage(), e);
+		} finally {
+			if(null != output) {
+				try {
+					output.close();
+				} catch (IOException e) {
+					log.warn(e.getMessage(), e);
+				}
+			}
 		}
 	}
 

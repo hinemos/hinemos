@@ -11,6 +11,7 @@ package com.clustercontrol.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,10 +46,10 @@ public class CommandExecutor {
 	private final String _commandLine; //ログ出力用コマンド文字列
 
 	private final Charset _charset;
-	public static final Charset _defaultCharset = Charset.forName("UTF-8");
+	public static final Charset _defaultCharset = StandardCharsets.UTF_8;
 
 	private final long _timeout;
-	private static final long _defaultTimeout = 30000;
+	private static final long DEFAULT_TIMEOUT = 30000;
 	public static final long _disableTimeout = -1;
 
 	private final int _bufferSize;
@@ -63,7 +64,7 @@ public class CommandExecutor {
 	}
 
 	public CommandExecutor(String[] command, Charset charset) throws HinemosUnknown {
-		this(command, charset, _defaultTimeout);
+		this(command, charset, DEFAULT_TIMEOUT);
 	}
 
 	public CommandExecutor(String[] command, long timeout) throws HinemosUnknown {
@@ -250,7 +251,7 @@ public class CommandExecutor {
 		 */
 		@Override
 		public CommandResult call() {
-			Process process = this.process;
+			//Process process = this.process;
 
 			Future<String> stdoutTask = null;
 			Future<String> stderrTask = null;

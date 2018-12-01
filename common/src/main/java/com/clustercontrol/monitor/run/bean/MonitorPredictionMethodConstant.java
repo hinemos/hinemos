@@ -53,7 +53,7 @@ public class MonitorPredictionMethodConstant {
 	 * @return
 	 */
 	public static List<String> types() {
-		List<String> typeList = new ArrayList<>();
+		List<String> typeList = new ArrayList<String>();
 		typeList.add(POLYNOMIAL_1);
 		typeList.add(POLYNOMIAL_2);
 		typeList.add(POLYNOMIAL_3);

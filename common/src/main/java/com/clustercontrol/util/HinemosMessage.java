@@ -66,7 +66,7 @@ public class HinemosMessage {
 
 		// 変数名
 		String variableName = "";
-		List<String> args = new ArrayList<>();
+		List<String> args = new ArrayList<String>();
 
 		// 引数あり変数を検索する
 		Matcher matcherArgs = patternArgs.matcher(messageSetting.message.substring(startIdx));
