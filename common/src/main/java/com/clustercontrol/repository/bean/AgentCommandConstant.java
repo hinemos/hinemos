@@ -10,7 +10,10 @@ package com.clustercontrol.repository.bean;
 
 public class AgentCommandConstant {
 
-	public static int RESTART = 1;
-	public static int UPDATE = 2;
+	public static final int RESTART = 1;
+	public static final int UPDATE = 2;
 
+	private AgentCommandConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

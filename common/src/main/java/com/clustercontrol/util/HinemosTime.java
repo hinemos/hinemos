@@ -30,9 +30,13 @@ public class HinemosTime {
 	private static Log log = LogFactory.getLog(HinemosTime.class);
 
 	private static volatile long timeOffsetMillis = 0;
-	private static volatile TimeZone timeZone = TimeZone.getDefault();
+	//private static volatile TimeZone timeZone = TimeZone.getDefault();
+	private static TimeZone timeZone = TimeZone.getDefault();
 	
-	
+	private HinemosTime() {
+		throw new IllegalStateException("UtilClass");
+	}
+
 	/**
 	 * HinemosManagerで管理する現在時刻（Hinemos時刻）を返す。<br>
 	 * @return
@@ -145,7 +149,8 @@ public class HinemosTime {
 	 */
 	public static void setTimeZoneOffset(int offset) {
 		log.debug("setTimeZoneOffset(): " + getTimeZoneOffset() + " -> " + offset);
-		timeZone.setRawOffset(offset);
+		synchronized (timeZone) {
+			timeZone.setRawOffset(offset);
+		}
 	}
-
 }

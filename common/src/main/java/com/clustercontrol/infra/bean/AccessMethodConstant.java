@@ -20,4 +20,8 @@ public class AccessMethodConstant {
 	public static List<Integer> getTypeList() {
 		return Arrays.asList(TYPE_SSH, TYPE_WINRM);
 	}
+
+	private AccessMethodConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }

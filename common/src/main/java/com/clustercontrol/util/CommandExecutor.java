@@ -251,8 +251,6 @@ public class CommandExecutor {
 		 */
 		@Override
 		public CommandResult call() {
-			//Process process = this.process;
-
 			Future<String> stdoutTask = null;
 			Future<String> stderrTask = null;
 
@@ -284,6 +282,9 @@ public class CommandExecutor {
 				stdout = "";
 				stderr = "Internal Error : " + e.getMessage();
 				exitCode = -1;
+
+				// Re-interrupt. InterruptedException should never be swallowed.
+				Thread.currentThread().interrupt();
 			} catch (Exception e) {
 				log.warn("command executor failure. (command = " + _commandLine + ") " + e.getMessage(), e);
 				stdout = "";

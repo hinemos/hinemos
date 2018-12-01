@@ -33,4 +33,7 @@ public class CommandConstant {
 	/** 監視ジョブコマンド */
 	public static final String MONITOR = "monitor";
 
+	private CommandConstant() {
+		throw new IllegalStateException("ConstClass");
+	}
 }
