@@ -181,141 +181,273 @@ public class HinemosModuleConstant {
 				}
 			}
 			return null;
-			// OR throw new IllegalArgumentException("undefined " + type);
+			// OR throw an IllegalArgumentException("undefined " + type) here
 		}
 	}
 
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String HINEMOS_MANAGER_MONITOR = ModuleType.HINEMOS_MANAGER_MONITOR.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM = ModuleType.PLATFORM.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM_NOTIFY = ModuleType.PLATFORM_NOTIFY.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM_MAIL_TEMPLATE = ModuleType.PLATFORM_MAIL_TEMPLATE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM_CALENDAR = ModuleType.PLATFORM_CALENDAR.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM_CALENDAR_PATTERN = ModuleType.PLATFORM_CALENDAR_PATTERN.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM_ACCESS = ModuleType.PLATFORM_ACCESS.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM_PRIORITY_JUDGMENT = ModuleType.PLATFORM_PRIORITY_JUDGMENT.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM_REPOSITORY = ModuleType.PLATFORM_REPOSITORY.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM_REPSITORY_NODE = ModuleType.PLATFORM_REPSITORY_NODE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PLATFORM_REPSITORY_SCOPE = ModuleType.PLATFORM_REPSITORY_SCOPE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR = ModuleType.MONITOR.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_AGENT = ModuleType.MONITOR_AGENT.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_CUSTOM_N = ModuleType.MONITOR_CUSTOM_N.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_CUSTOM_S = ModuleType.MONITOR_CUSTOM_S.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_HTTP_N = ModuleType.MONITOR_HTTP_N.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_HTTP_S = ModuleType.MONITOR_HTTP_S.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_HTTP_SCENARIO = ModuleType.MONITOR_HTTP_SCENARIO.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_PERFORMANCE = ModuleType.MONITOR_PERFORMANCE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_PING = ModuleType.MONITOR_PING.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_PORT = ModuleType.MONITOR_PORT.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_PROCESS = ModuleType.MONITOR_PROCESS.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_SNMP_N = ModuleType.MONITOR_SNMP_N.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_SNMP_S = ModuleType.MONITOR_SNMP_S.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_SNMPTRAP = ModuleType.MONITOR_SNMPTRAP.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_SQL_N = ModuleType.MONITOR_SQL_N.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_SQL_S = ModuleType.MONITOR_SQL_S.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_SYSTEMLOG = ModuleType.MONITOR_SYSTEMLOG.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_LOGFILE = ModuleType.MONITOR_LOGFILE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_LOGCOUNT = ModuleType.MONITOR_LOGCOUNT.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_WINSERVICE = ModuleType.MONITOR_WINSERVICE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_WINEVENT = ModuleType.MONITOR_WINEVENT.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_CUSTOMTRAP_N = ModuleType.MONITOR_CUSTOMTRAP_N.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_CUSTOMTRAP_S = ModuleType.MONITOR_CUSTOMTRAP_S.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_CORRELATION = ModuleType.MONITOR_CORRELATION.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_INTEGRATION = ModuleType.MONITOR_INTEGRATION.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_BINARYFILE_BIN = ModuleType.MONITOR_BINARYFILE_BIN.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_PCAP_BIN = ModuleType.MONITOR_PCAP_BIN.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_SCOPE = ModuleType.MONITOR_SCOPE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_STATUS = ModuleType.MONITOR_STATUS.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_EVENT = ModuleType.MONITOR_EVENT.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String MONITOR_JMX = ModuleType.MONITOR_JMX.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String HUB_LOGFORMAT = ModuleType.HUB_LOGFORMAT.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String HUB_TRANSFER = ModuleType.HUB_TRANSFER.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PERFORMANCE = ModuleType.PERFORMANCE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PERFORMANCE_RECORD = ModuleType.PERFORMANCE_RECORD.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String PERFORMANCE_REALTIME = ModuleType.PERFORMANCE_REALTIME.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOB = ModuleType.JOB.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOB_MST = ModuleType.JOB_MST.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOB_SESSION = ModuleType.JOB_SESSION.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOB_SESSION_DETAIL = ModuleType.JOB_SESSION_DETAIL.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOB_SESSION_NODE = ModuleType.JOB_SESSION_NODE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOB_SCHEDULE_RUN = ModuleType.JOB_SCHEDULE_RUN.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOB_SCHEDULE_RUN_DETAIL = ModuleType.JOB_SCHEDULE_RUN_DETAIL.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOB_SESSION_FILE = ModuleType.JOB_SESSION_FILE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOB_KICK = ModuleType.JOB_KICK.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String JOBMAP_IMAGE_FILE = ModuleType.JOBMAP_IMAGE_FILE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String REPOSITORY_DEVICE_SEARCH = ModuleType.REPOSITORY_DEVICE_SEARCH.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String SYSYTEM = ModuleType.SYSYTEM.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String SYSYTEM_MAINTENANCE = ModuleType.SYSYTEM_MAINTENANCE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String SYSYTEM_SELFCHECK = ModuleType.SYSYTEM_SELFCHECK.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String SYSYTEM_SELFCHECK_ID = ModuleType.SYSYTEM_SELFCHECK_ID.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String INFRA = ModuleType.INFRA.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String INFRA_FILE = ModuleType.INFRA_FILE.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String REPORTING = ModuleType.REPORTING.getType();
-	// @deprecated (Should use enum directly)
+	/*
+	 * @deprecated (Should use enum directly)
+	 */
 	@Deprecated public static final String INQUIRY = ModuleType.INQUIRY.getType();
 
 	/** マネージャ操作ログタイトル */

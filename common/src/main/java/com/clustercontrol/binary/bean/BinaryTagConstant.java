@@ -27,58 +27,77 @@ public final class BinaryTagConstant {
 	}
 
 	/** ファイル共通タグ **/
-	public final static class CommonTagName {
+	public static final class CommonTagName {
 		/** ファイル名(絶対パス) **/
-		public final static String FILE_NAME = "FileName";
+		public static final String FILE_NAME = "FileName";
 	}
 
 	/** ファイル共通_メタデータ **/
-	public final static class CommonFileAttributes {
+	public static final class CommonFileAttributes {
+		private CommonFileAttributes() {
+			throw new IllegalStateException("ConstClass");
+		}
 
 		/** 基本ファイルメタデータ **/
-		public final static class BasicFileAttributes {
+		public static final class BasicFileAttributes {
 			/** 作成日時() **/
-			public final static String CREATION_TIME_TAGNAME = "CreationTime";
+			public static final String CREATION_TIME_TAGNAME = "CreationTime";
 			/** サイズ(byte) **/
-			public final static String SIZE_TAGNAME = "FileSize(byte)";
+			public static final String SIZE_TAGNAME = "FileSize(byte)";
+
+			private BasicFileAttributes() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 		/** DOS属性ファイルメタデータ **/
-		public final static class DosFileAttributes {
+		public static final class DosFileAttributes {
 			/** 読み取り専用 **/
-			public final static String READONLY_TAGNAME = "ReadOnlyFile";
+			public static final String READONLY_TAGNAME = "ReadOnlyFile";
 			/** 隠しファイル **/
-			public final static String HIDDEN_TAGNAME = "HiddenFile";
+			public static final String HIDDEN_TAGNAME = "HiddenFile";
 			/** アーカイブファイル **/
-			public final static String ARCHIVE_TAGNAME = "ArchiveFile";
+			public static final String ARCHIVE_TAGNAME = "ArchiveFile";
 			/** システムファイル **/
-			public final static String SYSTEM_TAGNAME = "SystemFile";
+			public static final String SYSTEM_TAGNAME = "SystemFile";
+
+			private DosFileAttributes() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 		/** Posix属性ファイルメタデータ **/
-		public final static class PosixFileAttributes {
+		public static final class PosixFileAttributes {
 			/** ファイルアクセス権 **/
-			public final static String PERMISSIONS_TAGNAME = "FilePermissions";
+			public static final String PERMISSIONS_TAGNAME = "FilePermissions";
 			/** ファイル所有者 **/
-			public final static String OWNER_TAGNAME = "FileOwner";
+			public static final String OWNER_TAGNAME = "FileOwner";
 			/** 所有グループ **/
-			public final static String GROUP_TAGNAME = "GroupOwner";
+			public static final String GROUP_TAGNAME = "GroupOwner";
+
+			private PosixFileAttributes() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 		/** ファイル所有者メタデータ **/
-		public final static class AclFileAttributes {
+		public static final class AclFileAttributes {
 			/** ファイルアクセス制御リスト(末尾連番) **/
-			public final static String ACL_TAGNAME = "AccessControlList";
+			public static final String ACL_TAGNAME = "AccessControlList";
 			/** ファイル所有者 **/
-			public final static String OWNER_TAGNAME = "FileOwner";
+			public static final String OWNER_TAGNAME = "FileOwner";
+
+			private AclFileAttributes() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 		/** 共通value **/
-		public final static class CommonValue {
+		public static final class CommonValue {
 			/** boolean値用TagValue **/
-			public final static String TRUE_TAGVALUE = "yes";
+			public static final String TRUE_TAGVALUE = "yes";
 			/** boolean値用TagValue **/
-			public final static String FALSETAGVALUE = "no";
+			public static final String FALSETAGVALUE = "no";
 
 			/** boolean値のtagValue変換 **/
 			public static String flgToString(boolean flg) {
@@ -89,41 +108,66 @@ public final class BinaryTagConstant {
 				}
 			}
 
+			private CommonValue() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 	}
 	
 	/** レコード共通タグ **/
-	public final static class CommonRecordTag {
+	public static final class CommonRecordTag {
 		/** レコードサイズ **/
-		public final static String RECORD_SIZE = "RecordSize(byte)";
+		public static final String RECORD_SIZE = "RecordSize(byte)";
+
+		private CommonRecordTag() {
+			throw new IllegalStateException("ConstClass");
+		}
 	}
 
 	/** pacctファイル向けタグ **/
-	public final static class Pacct {
+	public static final class Pacct {
+		private Pacct() {
+			throw new IllegalStateException("ConstClass");
+		}
 
 		/** コマンド名 **/
-		public final static class CommandName {
+		public static final class CommandName {
 			/** tag名称 **/
-			public final static String TAGNAME = "CommandName";
+			public static final String TAGNAME = "CommandName";
+
+			private CommandName() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 		/** 実行ユーザーID **/
-		public final static class UserID {
+		public static final class UserID {
 			/** tag名称 **/
-			public final static String TAGNAME = "AccountingUserID";
+			public static final String TAGNAME = "AccountingUserID";
+
+			private UserID() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 		/** 実行GroupID **/
-		public final static class GroupID {
+		public static final class GroupID {
 			/** tag名称 **/
-			public final static String TAGNAME = "AccountingGroupID";
+			public static final String TAGNAME = "AccountingGroupID";
+
+			private GroupID() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 	}
 
 	/** pcapファイル向けタグ **/
-	public final static class Pcap {
+	public static final class Pcap {
+		private Pcap() {
+			throw new IllegalStateException("ConstClass");
+		}
 
 		/**
 		 * リンクヘッダタイプ<br>
@@ -134,216 +178,220 @@ public final class BinaryTagConstant {
 		 * http://www.tcpdump.org/linktypes.html<br>
 		 * 
 		 */
-		public final static class LinkType {
+		public static final class LinkType {
+			private LinkType() {
+				throw new IllegalStateException("ConstClass");
+			}
+
 			// tag名称
 			/** tag名称 **/
-			public final static String TAGNAME = "Link-LayerHeaderType";
+			public static final String TAGNAME = "Link-LayerHeaderType";
 
 			// tagValue
 			/** null **/
-			public final static String NULL = "null";
+			public static final String NULL = "null";
 			/** IEEE 802.3 Ethernet **/
-			public final static String ETHERNET = "IEEE 802.3 Ethernet ";
+			public static final String ETHERNET = "IEEE 802.3 Ethernet ";
 			/** AX.25 **/
-			public final static String AX25 = "AX.25";
+			public static final String AX25 = "AX.25";
 			/** IEEE 802.5 Token Ring **/
-			public final static String IEEE802_5 = "IEEE 802.5 Token Ring";
+			public static final String IEEE802_5 = "IEEE 802.5 Token Ring";
 			/** ARCNET Data Packets **/
-			public final static String ARCNET = "ARCNET Data Packets";
+			public static final String ARCNET = "ARCNET Data Packets";
 			/** SLIP **/
-			public final static String SLIP = "SLIP";
+			public static final String SLIP = "SLIP";
 			/** PPP **/
-			public final static String PPP = "PPP";
+			public static final String PPP = "PPP";
 			/** FDDI **/
-			public final static String FDDI = "FDDI";
+			public static final String FDDI = "FDDI";
 			/** PPP in HDLC-like framing **/
-			public final static String PPP_HDLC = "PPP in HDLC-like framing";
+			public static final String PPP_HDLC = "PPP in HDLC-like framing";
 			/** PPPoE **/
-			public final static String PPP_ETHER = "PPPoE";
+			public static final String PPP_ETHER = "PPPoE";
 			/** LLC/SNAP-encapsulated ATM **/
-			public final static String ATM_RFC1483 = "LLC/SNAP-encapsulated ATM";
+			public static final String ATM_RFC1483 = "LLC/SNAP-encapsulated ATM";
 			/** Raw IP **/
-			public final static String RAW = "Raw IP";
+			public static final String RAW = "Raw IP";
 			/** Cisco PPP with HDLC framing **/
-			public final static String C_HDLC = "Cisco PPP with HDLC framing";
+			public static final String C_HDLC = "Cisco PPP with HDLC framing";
 			/** IEEE 802.11 wireless LAN **/
-			public final static String IEEE802_11 = "IEEE 802.11 wireless LAN";
+			public static final String IEEE802_11 = "IEEE 802.11 wireless LAN";
 			/** Frame Relay **/
-			public final static String FRELAY = "Frame Relay";
+			public static final String FRELAY = "Frame Relay";
 			/** OpenBSD loopback encapsulation **/
-			public final static String LOOP = "OpenBSD loopback encapsulation";
+			public static final String LOOP = "OpenBSD loopback encapsulation";
 			/** Linux "cooked" capture encapsulation **/
-			public final static String LINUX_SLL = "Linux \"cooked\" capture encapsulation";
+			public static final String LINUX_SLL = "Linux \"cooked\" capture encapsulation";
 			/** Apple LocalTalk **/
-			public final static String LTALK = "Apple LocalTalk";
+			public static final String LTALK = "Apple LocalTalk";
 			/** OpenBSD pflog **/
-			public final static String PFLOG = "OpenBSD pflog";
+			public static final String PFLOG = "OpenBSD pflog";
 			/** Prism monitor mode information **/
-			public final static String IEEE802_11_PRISM = "Prism monitor mode information";
+			public static final String IEEE802_11_PRISM = "Prism monitor mode information";
 			/** IP-over-Fibre Channel **/
-			public final static String IP_OVER_FC = "IP-over-Fibre Channel";
+			public static final String IP_OVER_FC = "IP-over-Fibre Channel";
 			/** SunATM devices **/
-			public final static String SUNATM = "used by SunATM devices";
+			public static final String SUNATM = "used by SunATM devices";
 			/** Radiotap link-layer information **/
-			public final static String IEEE802_11_RADIOTAP = "Radiotap link-layer information";
+			public static final String IEEE802_11_RADIOTAP = "Radiotap link-layer information";
 			/** ARCNET Data Packets **/
-			public final static String ARCNET_LINUX = "ARCNET Data Packets";
+			public static final String ARCNET_LINUX = "ARCNET Data Packets";
 			/** Apple IP-over-IEEE 1394 **/
-			public final static String APPLE_IP_OVER_IEEE1394 = "Apple IP-over-IEEE 1394";
+			public static final String APPLE_IP_OVER_IEEE1394 = "Apple IP-over-IEEE 1394";
 			/** Message Transfer Part Level 2, preceded by a pseudo-header **/
-			public final static String MTP2_WITH_PHDR = "Message Transfer Part Level 2, preceded by a pseudo-header";
+			public static final String MTP2_WITH_PHDR = "Message Transfer Part Level 2, preceded by a pseudo-header";
 			/** Message Transfer Part Level 2 **/
-			public final static String MTP2 = "Message Transfer Part Level 2";
+			public static final String MTP2 = "Message Transfer Part Level 2";
 			/** Message Transfer Part Level 3 **/
-			public final static String MTP3 = "Message Transfer Part Level 3";
+			public static final String MTP3 = "Message Transfer Part Level 3";
 			/** Signalling Connection Control Part **/
-			public final static String SCCP = "Signalling Connection Control Part";
+			public static final String SCCP = "Signalling Connection Control Part";
 			/** DOCSIS MAC frames **/
-			public final static String DOCSIS = "DOCSIS MAC frames";
+			public static final String DOCSIS = "DOCSIS MAC frames";
 			/** Linux-IrDA packets **/
-			public final static String LINUX_IRDA = "Linux-IrDA packets";
+			public static final String LINUX_IRDA = "Linux-IrDA packets";
 			/** Reserved for private use **/
-			public final static String USER0_LINKTYPE_USER15 = "Reserved for private use";
+			public static final String USER0_LINKTYPE_USER15 = "Reserved for private use";
 			/** AVS monitor mode information **/
-			public final static String IEEE802_11_AVS = "AVS monitor mode information";
+			public static final String IEEE802_11_AVS = "AVS monitor mode information";
 			/** BACnet MS/TP frames **/
-			public final static String BACNET_MS_TP = "BACnet MS/TP frames";
+			public static final String BACNET_MS_TP = "BACnet MS/TP frames";
 			/** PPP in HDLC-like encapsulation **/
-			public final static String PPP_PPPD = "PPP in HDLC-like encapsulation";
+			public static final String PPP_PPPD = "PPP in HDLC-like encapsulation";
 			/** Transparent-mapped generic framing procedure **/
-			public final static String GPF_T = "Transparent-mapped generic framing procedure";
+			public static final String GPF_T = "Transparent-mapped generic framing procedure";
 			/** Frame-mapped generic framing procedure **/
-			public final static String GPF_F = "Frame-mapped generic framing procedure";
+			public static final String GPF_F = "Frame-mapped generic framing procedure";
 			/** Link Access Procedures on the D Channel (LAPD) frames **/
-			public final static String LINUX_LAPD = "Link Access Procedures on the D Channel (LAPD) frames";
+			public static final String LINUX_LAPD = "Link Access Procedures on the D Channel (LAPD) frames";
 			/** Bluetooth HCI UART transport layer **/
-			public final static String BLUETOOTH_HCI_H4 = "Bluetooth HCI UART transport layer";
+			public static final String BLUETOOTH_HCI_H4 = "Bluetooth HCI UART transport layer";
 			/** Linux USB header **/
-			public final static String USB_LINUX = "Linux USB header";
+			public static final String USB_LINUX = "Linux USB header";
 			/** Per-Packet Information **/
-			public final static String PPI = "Per-Packet Information";
+			public static final String PPI = "Per-Packet Information";
 			/** IEEE 802.15.4 wireless Personal Area Network **/
-			public final static String IEEE802_15_4 = "IEEE 802.15.4 wireless Personal Area Network";
+			public static final String IEEE802_15_4 = "IEEE 802.15.4 wireless Personal Area Network";
 			/** a pseudo-header, for SITA. **/
-			public final static String SITA = "a pseudo-header, for SITA.";
+			public static final String SITA = "a pseudo-header, for SITA.";
 			/** pseudo-header, for Endace DAG cards **/
-			public final static String ERF = " pseudo-header, for Endace DAG cards";
+			public static final String ERF = " pseudo-header, for Endace DAG cards";
 			/** Bluetooth HCI UART transport layer **/
-			public final static String BLUETOOTH_HCI_H4_WITH_PHDR = "Bluetooth HCI UART transport layer";
+			public static final String BLUETOOTH_HCI_H4_WITH_PHDR = "Bluetooth HCI UART transport layer";
 			/** AX.25 packet with KISS header **/
-			public final static String AX25_KISS = "AX.25 packet with KISS header";
+			public static final String AX25_KISS = "AX.25 packet with KISS header";
 			/** Link Access Procedures on the D Channel (LAPD) frames **/
-			public final static String LAPD = "Link Access Procedures on the D Channel (LAPD) frames";
+			public static final String LAPD = "Link Access Procedures on the D Channel (LAPD) frames";
 			/** PPP, as per RFC 1661 and RFC 1662 **/
-			public final static String PPP_WITH_DIR = "PPP, as per RFC 1661 and RFC 1662";
+			public static final String PPP_WITH_DIR = "PPP, as per RFC 1661 and RFC 1662";
 			/** Cisco PPP with HDLC framing,with a one-byte pseudo-header **/
-			public final static String C_HDLC_WITH_DIR = "Cisco PPP with HDLC framing,with a one-byte pseudo-header";
+			public static final String C_HDLC_WITH_DIR = "Cisco PPP with HDLC framing,with a one-byte pseudo-header";
 			/** Frame Relay,with a one-byte pseudo-header **/
-			public final static String FRELAY_WITH_DIR = "Frame Relay,with a one-byte pseudo-header";
+			public static final String FRELAY_WITH_DIR = "Frame Relay,with a one-byte pseudo-header";
 			/** IPMB over an I2C circuit **/
-			public final static String IPMB_LINUX = "IPMB over an I2C circuit";
+			public static final String IPMB_LINUX = "IPMB over an I2C circuit";
 			/** IEEE 802.15.4 wireless Personal Area Network **/
-			public final static String IEEE802_15_4_NONASK_PHY = "IEEE 802.15.4 wireless Personal Area Network";
+			public static final String IEEE802_15_4_NONASK_PHY = "IEEE 802.15.4 wireless Personal Area Network";
 			/** USB packets, beginning with a Linux USB headert **/
-			public final static String USB_LINUX_MMAPPED = "USB packets, beginning with a Linux USB headert";
+			public static final String USB_LINUX_MMAPPED = "USB packets, beginning with a Linux USB headert";
 			/** Fibre Channel FC-2 frames **/
-			public final static String FC_2 = "Fibre Channel FC-2 frames";
+			public static final String FC_2 = "Fibre Channel FC-2 frames";
 			/** Fibre Channel FC-2 frames, beginning an encoding of the SOF **/
-			public final static String FC_2_WITH_FRAME_DELIMS = "Fibre Channel FC-2 frames, beginning an encoding of the SOF";
+			public static final String FC_2_WITH_FRAME_DELIMS = "Fibre Channel FC-2 frames, beginning an encoding of the SOF";
 			/** Solaris ipnet pseudo-header **/
-			public final static String IPNET = "Solaris ipnet pseudo-header";
+			public static final String IPNET = "Solaris ipnet pseudo-header";
 			/** CAN (Controller Area Network) frames **/
-			public final static String CAN_SOCKETCAN = "CAN (Controller Area Network) frames";
+			public static final String CAN_SOCKETCAN = "CAN (Controller Area Network) frames";
 			/** Raw IPv4 **/
-			public final static String IPV4 = "Raw IPv4";
+			public static final String IPV4 = "Raw IPv4";
 			/** Raw IPv6; **/
-			public final static String IPV6 = "Raw IPv6;";
+			public static final String IPV6 = "Raw IPv6;";
 			/** IEEE 802.15.4 wireless Personal Area Network **/
-			public final static String IEEE802_15_4_NOFCS = "IEEE 802.15.4 wireless Personal Area Network";
+			public static final String IEEE802_15_4_NOFCS = "IEEE 802.15.4 wireless Personal Area Network";
 			/** Raw D-Bus messages **/
-			public final static String DBUS = "Raw D-Bus messages";
+			public static final String DBUS = "Raw D-Bus messages";
 			/** DVB Common Interface **/
-			public final static String DVB_CI = "DVB Common Interface for communication between a PC Card module and a DVB receiver";
+			public static final String DVB_CI = "DVB Common Interface for communication between a PC Card module and a DVB receiver";
 			/** Variant of 3GPP TS 27.010 multiplexing protocol **/
-			public final static String MUX27010 = "Variant of 3GPP TS 27.010 multiplexing protocol ";
+			public static final String MUX27010 = "Variant of 3GPP TS 27.010 multiplexing protocol ";
 			/** D_PDUs as described by NATO standard STANAG 5066 **/
-			public final static String STANAG_5066_D_PDU = "D_PDUs as described by NATO standard STANAG 5066";
+			public static final String STANAG_5066_D_PDU = "D_PDUs as described by NATO standard STANAG 5066";
 			/** Linux netlink NETLINK NFLOG socket log messages **/
-			public final static String NFLOG = "Linux netlink NETLINK NFLOG socket log messages";
+			public static final String NFLOG = "Linux netlink NETLINK NFLOG socket log messages";
 			/**
 			 * Pseudo-header for Hilscher Gesellschaft für Systemautomation mbH
 			 * netANALYZER devices
 			 **/
-			public final static String NETANALYZER = "Pseudo-header for Hilscher Gesellschaft für Systemautomation mbH netANALYZER devices";
+			public static final String NETANALYZER = "Pseudo-header for Hilscher Gesellschaft für Systemautomation mbH netANALYZER devices";
 			/**
 			 * Pseudo-header for Hilscher Gesellschaft für Systemautomation mbH
 			 * netANALYZER devices, beginning with the preamble
 			 **/
-			public final static String NETANALYZER_TRANSPARENT = "Pseudo-header for Hilscher Gesellschaft für Systemautomation mbH netANALYZER devices, beginning with the preamble";
+			public static final String NETANALYZER_TRANSPARENT = "Pseudo-header for Hilscher Gesellschaft für Systemautomation mbH netANALYZER devices, beginning with the preamble";
 			/** IP-over-InfiniBand **/
-			public final static String IPOIB = "IP-over-InfiniBand";
+			public static final String IPOIB = "IP-over-InfiniBand";
 			/** MPEG_2_TS **/
-			public final static String MPEG_2_TS = "MPEG-2 Transport Stream";
+			public static final String MPEG_2_TS = "MPEG-2 Transport Stream";
 			/**
 			 * Pseudo-header for ng4T GmbH's UMTS Iub/Iur-over-ATM and
 			 * Iub/Iur-over-IP format as used by their ng40 protocol tester
 			 **/
-			public final static String NG40 = "Pseudo-header for ng4T GmbH's UMTS Iub/Iur-over-ATM and Iub/Iur-over-IP format as used by their ng40 protocol tester";
+			public static final String NG40 = "Pseudo-header for ng4T GmbH's UMTS Iub/Iur-over-ATM and Iub/Iur-over-IP format as used by their ng40 protocol tester";
 			/** Pseudo-header for NFC LLCP packet captures **/
-			public final static String NFC_LLCP = "Pseudo-header for NFC LLCP packet captures";
+			public static final String NFC_LLCP = "Pseudo-header for NFC LLCP packet captures";
 			/** Raw InfiniBand frames **/
-			public final static String INFINIBAND = "Raw InfiniBand frames";
+			public static final String INFINIBAND = "Raw InfiniBand frames";
 			/** SCTP packets **/
-			public final static String SCTP = "SCTP packets";
+			public static final String SCTP = "SCTP packets";
 			/** USBPcap header **/
-			public final static String USBPCAP = "USBPcap header";
+			public static final String USBPCAP = "USBPcap header";
 			/**
 			 * Serial-line packet header for the Schweitzer Engineering
 			 * Laboratories "RTAC" product
 			 **/
-			public final static String RTAC_SERIAL = "Serial-line packet header for the Schweitzer Engineering Laboratories \"RTAC\" product";
+			public static final String RTAC_SERIAL = "Serial-line packet header for the Schweitzer Engineering Laboratories \"RTAC\" product";
 			/** Bluetooth Low Energy air interface Link Layer packets **/
-			public final static String BLUETOOTH_LE_LL = "Bluetooth Low Energy air interface Link Layer packets";
+			public static final String BLUETOOTH_LE_LL = "Bluetooth Low Energy air interface Link Layer packets";
 			/** Linux Netlink capture encapsulation **/
-			public final static String NETLINK = "Linux Netlink capture encapsulation";
+			public static final String NETLINK = "Linux Netlink capture encapsulation";
 			/** Bluetooth Linux Monitor **/
-			public final static String BLUETOOTH_LINUX_MONITOR = "Bluetooth Linux Monitor";
+			public static final String BLUETOOTH_LINUX_MONITOR = "Bluetooth Linux Monitor";
 			/** Frame **/
-			public final static String BLUETOOTH_BREDR_BB = "Bluetooth Basic Rate and Enhanced Data Rate baseband packets";
+			public static final String BLUETOOTH_BREDR_BB = "Bluetooth Basic Rate and Enhanced Data Rate baseband packets";
 			/** Bluetooth Low Energy link-layer packets **/
-			public final static String BLUETOOTH_LE_LL_WITH_PHDR = "Bluetooth Low Energy link-layer packets";
+			public static final String BLUETOOTH_LE_LL_WITH_PHDR = "Bluetooth Low Energy link-layer packets";
 			/** PROFIBUS data link layer packets **/
-			public final static String PROFIBUS_DL = "PROFIBUS data link layer packets";
+			public static final String PROFIBUS_DL = "PROFIBUS data link layer packets";
 			/** Apple PKTAP capture encapsulation **/
-			public final static String PKTAP = "Apple PKTAP capture encapsulation";
+			public static final String PKTAP = "Apple PKTAP capture encapsulation";
 			/** Ethernet-over-passive-optical-network packets **/
-			public final static String EPON = "Ethernet-over-passive-optical-network packets";
+			public static final String EPON = "Ethernet-over-passive-optical-network packets";
 			/** IPMI trace packets **/
-			public final static String IPMI_HPM_2 = "IPMI trace packets";
+			public static final String IPMI_HPM_2 = "IPMI trace packets";
 			/** Z-Wave RF profile R1 and R2 packets **/
-			public final static String ZWAVE_R1_R2 = "Z-Wave RF profile R1 and R2 packets";
+			public static final String ZWAVE_R1_R2 = "Z-Wave RF profile R1 and R2 packets";
 			/** Z-Wave RF profile R3 packets **/
-			public final static String ZWAVE_R3 = "Z-Wave RF profile R3 packets";
+			public static final String ZWAVE_R3 = "Z-Wave RF profile R3 packets";
 			/**
 			 * Formats for WattStopper Digital Lighting Management (DLM) and
 			 * Legrand Nitoo Open protocol
 			 **/
-			public final static String WATTSTOPPER_DLM = "Formats for WattStopper Digital Lighting Management (DLM) and Legrand Nitoo Open protocol";
+			public static final String WATTSTOPPER_DLM = "Formats for WattStopper Digital Lighting Management (DLM) and Legrand Nitoo Open protocol";
 			/** Messages between ISO 14443 contactless smartcards **/
-			public final static String ISO_14443 = "Messages between ISO 14443 contactless smartcards";
+			public static final String ISO_14443 = "Messages between ISO 14443 contactless smartcards";
 			/** Radio data system (RDS) groups **/
-			public final static String RDS = "Radio data system (RDS) groups";
+			public static final String RDS = "Radio data system (RDS) groups";
 			/** Darwin (macOS, etc.) USB header **/
-			public final static String USB_DARWIN = "Darwin (macOS, etc.) USB header";
+			public static final String USB_DARWIN = "Darwin (macOS, etc.) USB header";
 			/** SDLC packets **/
-			public final static String SDLC = "SDLC packets";
+			public static final String SDLC = "SDLC packets";
 
 			/** 定義なし(pcapファイルのバージョンがHinemos対応バージョンより後の場合等.) **/
-			public final static String UNDEFINED = "undefined";
+			public static final String UNDEFINED = "undefined";
 
 			// 他、tag生成時に利用する情報.
 			/** バイナリvalueマップ(key:バイナリ上のvalue value:タグバリュー) **/
-			public final static Map<Integer, String> BINARY_VALUE_MAP;
+			public static final Map<Integer, String> BINARY_VALUE_MAP;
 
 			// マップ等の定数初期化.
 			static {
@@ -446,418 +494,430 @@ public final class BinaryTagConstant {
 		}
 
 		/** 宛先MACアドレス **/
-		public final static class DestinationMAC {
+		public static final class DestinationMAC {
 			/** tag名称 **/
-			public final static String TAGNAME = "DestinationMacAddress";
+			public static final String TAGNAME = "DestinationMacAddress";
+
+			private DestinationMAC() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 		/** 送信元MACアドレス **/
-		public final static class SourceMAC {
+		public static final class SourceMAC {
 			/** tag名称 **/
-			public final static String TAGNAME = "SourceMacAddress";
+			public static final String TAGNAME = "SourceMacAddress";
+
+			private SourceMAC() {
+				throw new IllegalStateException("ConstClass");
+			}
 		}
 
 		/** プロトコル */
-		public final static class Protocol {
+		public static final class Protocol {
+			private Protocol() {
+				throw new IllegalStateException("ConstClass");
+			}
+
 			// tag名称.
 			/** tag名称 **/
-			public final static String TAGNAME = "Protocol";
+			public static final String TAGNAME = "Protocol";
 
 			// tagValue.
 			/** IEEE802.3 Length Field **/
-			public final static String IEEE802_3_LENGTH = "IEEE802.3 Length Field";
+			public static final String IEEE802_3_LENGTH = "IEEE802.3 Length Field";
 			/** Experimental **/
-			public final static String EXPERIMENTAL = "Experimental";
+			public static final String EXPERIMENTAL = "Experimental";
 			/** XEROX PUP **/
-			public final static String XEROX_PUP = "XEROX PUP";
+			public static final String XEROX_PUP = "XEROX PUP";
 			/** PUP Addr Trans **/
-			public final static String PUP_ADDR_TRANS = "PUP Addr Trans";
+			public static final String PUP_ADDR_TRANS = "PUP Addr Trans";
 			/** Nixdorf **/
-			public final static String NIXDORF = "Nixdorf";
+			public static final String NIXDORF = "Nixdorf";
 			/** XEROX NS IDP **/
-			public final static String XEROX_NS_IDP = "XEROX NS IDP";
+			public static final String XEROX_NS_IDP = "XEROX NS IDP";
 			/** DLOG **/
-			public final static String DLOG = "DLOG";
+			public static final String DLOG = "DLOG";
 			/** IPv4 **/
-			public final static String IPV4 = "Internet Protocol version 4 (IPv4)";
+			public static final String IPV4 = "Internet Protocol version 4 (IPv4)";
 			/** X.75 Internet **/
-			public final static String X75_INTERNET = "X.75 Internet";
+			public static final String X75_INTERNET = "X.75 Internet";
 			/** NBS Internet **/
-			public final static String NBS_INTERNET = "NBS Internet";
+			public static final String NBS_INTERNET = "NBS Internet";
 			/** ECMA Internet **/
-			public final static String ECMA_INTERNET = "ECMA Internet";
+			public static final String ECMA_INTERNET = "ECMA Internet";
 			/** Chaosnet **/
-			public final static String CHAOSNET = "Chaosnet";
+			public static final String CHAOSNET = "Chaosnet";
 			/** X.25 Level 3 **/
-			public final static String X25_LEVEL3 = "X.25 Level 3";
+			public static final String X25_LEVEL3 = "X.25 Level 3";
 			/** ARP **/
-			public final static String ARP = "Address Resolution Protocol (ARP)";
+			public static final String ARP = "Address Resolution Protocol (ARP)";
 			/** XNS Compatability **/
-			public final static String XNS_COMPATABILITY = "XNS Compatability";
+			public static final String XNS_COMPATABILITY = "XNS Compatability";
 			/** Frame Relay ARP **/
-			public final static String FR_ARP = "Frame Relay ARP";
+			public static final String FR_ARP = "Frame Relay ARP";
 			/** Symbolics Private **/
-			public final static String SYMBOLICS_PRIVATE = "Symbolics Private";
+			public static final String SYMBOLICS_PRIVATE = "Symbolics Private";
 			/** Xyplex **/
-			public final static String XYPLEX = "Xyplex";
+			public static final String XYPLEX = "Xyplex";
 			/** Ungermann-Bass net debugr **/
-			public final static String UNG_BASS_NET_DBG = "Ungermann-Bass net debugr";
+			public static final String UNG_BASS_NET_DBG = "Ungermann-Bass net debugr";
 			/** Xerox IEEE802.3 PUP **/
-			public final static String XEROX_IEEE802_3_PUP = "Xerox IEEE802.3 PUP";
+			public static final String XEROX_IEEE802_3_PUP = "Xerox IEEE802.3 PUP";
 			/** Banyan VINES **/
-			public final static String BANYAN_VINES = "Banyan VINES";
+			public static final String BANYAN_VINES = "Banyan VINES";
 			/** VINES Loopback **/
-			public final static String VINES_LOOPBK = "VINES Loopback";
+			public static final String VINES_LOOPBK = "VINES Loopback";
 			/** VINES Echo **/
-			public final static String VINES_ECHO = "VINES Echo";
+			public static final String VINES_ECHO = "VINES Echo";
 			/** Berkeley Trailer nego **/
-			public final static String BERKELEY_TRAILER_NEGO = "Berkeley Trailer nego";
+			public static final String BERKELEY_TRAILER_NEGO = "Berkeley Trailer nego";
 			/** Berkeley Trailer encap/IP **/
-			public final static String BERKELEY_TRAILER_ENCAP = "Berkeley Trailer encap/IP";
+			public static final String BERKELEY_TRAILER_ENCAP = "Berkeley Trailer encap/IP";
 			/** Valid Systems **/
-			public final static String VALID_SYSTEMS = "Valid Systems";
+			public static final String VALID_SYSTEMS = "Valid Systems";
 			/** TRILL **/
-			public final static String TRILL = "TRILL";
+			public static final String TRILL = "TRILL";
 			/** L2-IS-IS **/
-			public final static String L2_IS_IS = "L2-IS-IS";
+			public static final String L2_IS_IS = "L2-IS-IS";
 			/** PCS Basic Block Protocol **/
-			public final static String PCS_BASIC = "PCS Basic Block Protocol";
+			public static final String PCS_BASIC = "PCS Basic Block Protocol";
 			/** BBN Simnet **/
-			public final static String BBN_SIMNET = "BBN Simnet";
+			public static final String BBN_SIMNET = "BBN Simnet";
 			/** DEC Unassigned (Exp.) **/
-			public final static String DEC_UNASSIGNED_EXP = "DEC Unassigned (Exp.)";
+			public static final String DEC_UNASSIGNED_EXP = "DEC Unassigned (Exp.)";
 			/** DEC MOP Dump/Load **/
-			public final static String DEC_MOP_DUMP = "DEC MOP Dump/Load";
+			public static final String DEC_MOP_DUMP = "DEC MOP Dump/Load";
 			/** DEC MOP Remote Console **/
-			public final static String DEC_MOP_REMOTE_CONSOLE = "DEC MOP Remote Console	";
+			public static final String DEC_MOP_REMOTE_CONSOLE = "DEC MOP Remote Console	";
 			/** DEC DECNET Phase IV Route **/
-			public final static String DEC_DECNET_PHASE = "DEC DECNET Phase IV Route";
+			public static final String DEC_DECNET_PHASE = "DEC DECNET Phase IV Route";
 			/** DEC LAT **/
-			public final static String DEC_LAT = "DEC LAT";
+			public static final String DEC_LAT = "DEC LAT";
 			/** DEC Diagnostic Protocol **/
-			public final static String DEC_DIAGNOSTIC = "DEC Diagnostic Protocol";
+			public static final String DEC_DIAGNOSTIC = "DEC Diagnostic Protocol";
 			/** DEC Customer Protocol **/
-			public final static String DEC_CUSTOMER = "DEC Customer Protocol";
+			public static final String DEC_CUSTOMER = "DEC Customer Protocol";
 			/** DEC LAVC, SCA **/
-			public final static String DEC_LAVC = "DEC LAVC, SCA";
+			public static final String DEC_LAVC = "DEC LAVC, SCA";
 			/** DEC Unassigned **/
-			public final static String DEC_UNASSIGNED = "DEC Unassigned";
+			public static final String DEC_UNASSIGNED = "DEC Unassigned";
 			/** 3Com Corporation **/
-			public final static String THREE_COM_CORORATION = "3Com Corporation";
+			public static final String THREE_COM_CORORATION = "3Com Corporation";
 			/** Trans Ether Bridging **/
-			public final static String TRANS_ETHER_BRIDGING = "Trans Ether Bridging";
+			public static final String TRANS_ETHER_BRIDGING = "Trans Ether Bridging";
 			/** Raw Frame Relay **/
-			public final static String RF_RELAY = "Raw Frame Relay";
+			public static final String RF_RELAY = "Raw Frame Relay";
 			/** Ungermann-Bass download **/
-			public final static String UNG_BASS_DOWNLOAD = "Ungermann-Bass download";
+			public static final String UNG_BASS_DOWNLOAD = "Ungermann-Bass download";
 			/** Ungermann-Bass dia/loop **/
-			public final static String UNG_BASS_DIA = "Ungermann-Bass dia/loop";
+			public static final String UNG_BASS_DIA = "Ungermann-Bass dia/loop";
 			/** LRT **/
-			public final static String LRT = "LRT";
+			public static final String LRT = "LRT";
 			/** Proteon **/
-			public final static String PROTEON = "Proteon";
+			public static final String PROTEON = "Proteon";
 			/** Cabletron **/
-			public final static String CABLETRON = "Cabletron";
+			public static final String CABLETRON = "Cabletron";
 			/** Cronus VLN **/
-			public final static String CRONUS_VLN = "Cronus VLN";
+			public static final String CRONUS_VLN = "Cronus VLN";
 			/** Cronus Direct **/
-			public final static String CRONUS_DIRECT = "Cronus Direct";
+			public static final String CRONUS_DIRECT = "Cronus Direct";
 			/** HP Probe **/
-			public final static String HP_PROBE = "HP Probe";
+			public static final String HP_PROBE = "HP Probe";
 			/** IPv4 **/
-			public final static String NESTER = "Nestar";
+			public static final String NESTER = "Nestar";
 			/** AT&T **/
-			public final static String AT_AND_T = "AT&T";
+			public static final String AT_AND_T = "AT&T";
 			/** Excelan **/
-			public final static String EXCELAN = "Excelan";
+			public static final String EXCELAN = "Excelan";
 			/** SGI diagnostics **/
-			public final static String SGI_DIAGNOSTICS = "SGI diagnostics";
+			public static final String SGI_DIAGNOSTICS = "SGI diagnostics";
 			/** SGI network games **/
-			public final static String SGI_NETWORK_GAMES = "SGI network games";
+			public static final String SGI_NETWORK_GAMES = "SGI network games";
 			/** SGI reserved **/
-			public final static String SGI_RESERVED = "SGI reserved";
+			public static final String SGI_RESERVED = "SGI reserved";
 			/** SGI bounce server **/
-			public final static String SGI_BOUNCE_SERVER = "SGI bounce server";
+			public static final String SGI_BOUNCE_SERVER = "SGI bounce server";
 			/** Apollo Domain **/
-			public final static String APOLLO_DOMAIN = "Apollo Domain";
+			public static final String APOLLO_DOMAIN = "Apollo Domain";
 			/** Tymshare **/
-			public final static String TYMSHARE = "Tymshare";
+			public static final String TYMSHARE = "Tymshare";
 			/** Tigan, Inc. **/
-			public final static String TIGAN_INC = "Tigan, Inc.";
+			public static final String TIGAN_INC = "Tigan, Inc.";
 			/** Reverse Address Resolution Protocol (RARP) **/
-			public final static String RARP = "Reverse Address Resolution Protocol (RARP)";
+			public static final String RARP = "Reverse Address Resolution Protocol (RARP)";
 			/** Aeonic Systems **/
-			public final static String AEONIC_SYSTEMS = "Aeonic Systems";
+			public static final String AEONIC_SYSTEMS = "Aeonic Systems";
 			/** DEC LANBridge **/
-			public final static String DEC_LANBRIDGE = "DEC LANBridge";
+			public static final String DEC_LANBRIDGE = "DEC LANBridge";
 			/** DEC Ethernet Encryption **/
-			public final static String DEC_ETHERNET_ENCRYPTION = "DEC Ethernet Encryption";
+			public static final String DEC_ETHERNET_ENCRYPTION = "DEC Ethernet Encryption";
 			/** DEC LAN Traffic Monitor **/
-			public final static String DEC_LAN_TRAFFIC_MONITOR = "DEC LAN Traffic Monitor";
+			public static final String DEC_LAN_TRAFFIC_MONITOR = "DEC LAN Traffic Monitor";
 			/** Planning Research Corp. **/
-			public final static String PLANNING_RESEARCH_CORP = "Planning Research Corp.";
+			public static final String PLANNING_RESEARCH_CORP = "Planning Research Corp.";
 			/** ExperData **/
-			public final static String EXPER_DATA = "ExperData";
+			public static final String EXPER_DATA = "ExperData";
 			/** Stanford V Kernel exp. **/
-			public final static String STANFORD_V_KERNEL_EXP = "Stanford V Kernel exp.";
+			public static final String STANFORD_V_KERNEL_EXP = "Stanford V Kernel exp.";
 			/** Stanford V Kernel prod. **/
-			public final static String STANFORD_V_KERNEL_PROD = "Stanford V Kernel prod.";
+			public static final String STANFORD_V_KERNEL_PROD = "Stanford V Kernel prod.";
 			/** Evans & Sutherland **/
-			public final static String EVANS_AND_SUTHERLAND = "Evans & Sutherland";
+			public static final String EVANS_AND_SUTHERLAND = "Evans & Sutherland";
 			/** Little Machines **/
-			public final static String LITTLE_MACHINES = "Little Machines";
+			public static final String LITTLE_MACHINES = "Little Machines";
 			/** Counterpoint Computers **/
-			public final static String COUNTERPOINT_COMPUTERS = "Counterpoint Computers";
+			public static final String COUNTERPOINT_COMPUTERS = "Counterpoint Computers";
 			/** Univ. of Mass. @ Amherst **/
-			public final static String UNIV_MASS_AMHERST = "Univ. of Mass. @ Amherst";
+			public static final String UNIV_MASS_AMHERST = "Univ. of Mass. @ Amherst";
 			/** Veeco Integrated Auto. **/
-			public final static String VEECO_INTEGRATED_AUTO = "Veeco Integrated Auto.";
+			public static final String VEECO_INTEGRATED_AUTO = "Veeco Integrated Auto.";
 			/** General Dynamics **/
-			public final static String GENERAL_DYNAMICS = "General Dynamics";
+			public static final String GENERAL_DYNAMICS = "General Dynamics";
 			/** Autophon **/
-			public final static String AUTOPHON = "Autophon";
+			public static final String AUTOPHON = "Autophon";
 			/** ComDesign **/
-			public final static String COM_DESIGN = "ComDesign";
+			public static final String COM_DESIGN = "ComDesign";
 			/** Computgraphic Corp. **/
-			public final static String COMPUTERGRAPHIC_CORP = "Computgraphic Corp.";
+			public static final String COMPUTERGRAPHIC_CORP = "Computgraphic Corp.";
 			/** Landmark Graphics Corp. **/
-			public final static String LANDMARK_GRAPHICS_CORP = "Landmark Graphics Corp.";
+			public static final String LANDMARK_GRAPHICS_CORP = "Landmark Graphics Corp.";
 			/** Matra **/
-			public final static String MATRA = "Matra";
+			public static final String MATRA = "Matra";
 			/** Dansk Data Elektronik **/
-			public final static String DNSK_DATA_ELECTRONIK = "Dansk Data Elektronik";
+			public static final String DNSK_DATA_ELECTRONIK = "Dansk Data Elektronik";
 			/** Merit Internodal **/
-			public final static String MERIT_INTERNODAL = "Merit Internodal";
+			public static final String MERIT_INTERNODAL = "Merit Internodal";
 			/** Vitalink Communications **/
-			public final static String VITALINK_COMMUNICATIONS = "Vitalink Communications";
+			public static final String VITALINK_COMMUNICATIONS = "Vitalink Communications";
 			/** Vitalink TransLAN III **/
-			public final static String VITALINK_TRANSLAN_THREE = "Vitalink TransLAN III";
+			public static final String VITALINK_TRANSLAN_THREE = "Vitalink TransLAN III";
 			/** Appletalk **/
-			public final static String APPLETALK = "Appletalk";
+			public static final String APPLETALK = "Appletalk";
 			/** Datability **/
-			public final static String DATABILITY = "Datability";
+			public static final String DATABILITY = "Datability";
 			/** Spider Systems Ltd. **/
-			public final static String SPIDER_SYSTEMS_LTD = "Spider Systems Ltd.";
+			public static final String SPIDER_SYSTEMS_LTD = "Spider Systems Ltd.";
 			/** Nixdorf Computers **/
-			public final static String NIXDORF_COMPUTERS = "Nixdorf Computers";
+			public static final String NIXDORF_COMPUTERS = "Nixdorf Computers";
 			/** Siemens Gammasonics Inc. **/
-			public final static String SIEMENS_GAMMASONICS_INC = "Siemens Gammasonics Inc.";
+			public static final String SIEMENS_GAMMASONICS_INC = "Siemens Gammasonics Inc.";
 			/** DCA Data Exchange Cluster **/
-			public final static String DCA_DATA_EXCHANGE_CLUSTER = "DCA Data Exchange Cluster";
+			public static final String DCA_DATA_EXCHANGE_CLUSTER = "DCA Data Exchange Cluster";
 			/** Banyan Systems **/
-			public final static String BANYAN_SYSTEMS = "Banyan Systems";
+			public static final String BANYAN_SYSTEMS = "Banyan Systems";
 			/** Pacer Software **/
-			public final static String PACER_SOFTWARE = "Pacer Software";
+			public static final String PACER_SOFTWARE = "Pacer Software";
 			/** Applitek Corporation **/
-			public final static String APPLITEK_CORPORATION = "Applitek Corporation";
+			public static final String APPLITEK_CORPORATION = "Applitek Corporation";
 			/** Intergraph Corporation **/
-			public final static String INTERGRAPH_CORPORATION = "Intergraph Corporation";
+			public static final String INTERGRAPH_CORPORATION = "Intergraph Corporation";
 			/** Harris Corporation **/
-			public final static String HARRIS_CORPORATION = "Harris Corporation";
+			public static final String HARRIS_CORPORATION = "Harris Corporation";
 			/** Taylor Instrument **/
-			public final static String TAYLOR_INSTRUMENT = "Taylor Instrument";
+			public static final String TAYLOR_INSTRUMENT = "Taylor Instrument";
 			/** Rosemount Corporation **/
-			public final static String ROSEMOUNT_CORPORATION = "Rosemount Corporation";
+			public static final String ROSEMOUNT_CORPORATION = "Rosemount Corporation";
 			/** IBM SNA Service on Ether **/
-			public final static String IBM_SNA_SERVICE_ON_ETHER = "IBM SNA Service on Ether";
+			public static final String IBM_SNA_SERVICE_ON_ETHER = "IBM SNA Service on Ether";
 			/** Varian Associates **/
-			public final static String VARIAN_ASSOCIATES = "Varian Associates";
+			public static final String VARIAN_ASSOCIATES = "Varian Associates";
 			/** Integrated Solutions TRFS **/
-			public final static String INTEGRATED_SOLUTIONS_TRFS = "Integrated Solutions TRFS";
+			public static final String INTEGRATED_SOLUTIONS_TRFS = "Integrated Solutions TRFS";
 			/** Allen-Bradley **/
-			public final static String ALLEN_BRADLEY = "Allen-Bradley";
+			public static final String ALLEN_BRADLEY = "Allen-Bradley";
 			/** Retix **/
-			public final static String RETIX = "Retix";
+			public static final String RETIX = "Retix";
 			/** AppleTalk AARP (Kinetics) **/
-			public final static String APPLETALK_AARP_KINETICS = "AppleTalk AARP (Kinetics)";
+			public static final String APPLETALK_AARP_KINETICS = "AppleTalk AARP (Kinetics)";
 			/** Kinetics **/
-			public final static String KINETICS = "Kinetics";
+			public static final String KINETICS = "Kinetics";
 			/** Apollo Computer **/
-			public final static String APOLLO_COMPUTER = "Apollo Computer";
+			public static final String APOLLO_COMPUTER = "Apollo Computer";
 			/** Wellfleet Communications **/
-			public final static String WELLFLEET_COMMUNICATIONS = "Wellfleet Communications";
+			public static final String WELLFLEET_COMMUNICATIONS = "Wellfleet Communications";
 			/**
 			 * Customer VLAN Tag Type (C-Tag, formerly called the Q-Tag)
 			 * (initially Wellfleet)
 			 **/
-			public final static String CUSTOMER_VLAN_TAG_TYPE = "Customer VLAN Tag Type (C-Tag, formerly called the Q-Tag) (initially Wellfleet)";
+			public static final String CUSTOMER_VLAN_TAG_TYPE = "Customer VLAN Tag Type (C-Tag, formerly called the Q-Tag) (initially Wellfleet)";
 			/** Hayes Microcomputers **/
-			public final static String HAYES_MICROCOMPUTERS = "Hayes Microcomputers";
+			public static final String HAYES_MICROCOMPUTERS = "Hayes Microcomputers";
 			/** VG Laboratory Systems **/
-			public final static String VG_LABORATORY_SYSTEMS = "VG Laboratory Systems";
+			public static final String VG_LABORATORY_SYSTEMS = "VG Laboratory Systems";
 			/** Bridge Communications **/
-			public final static String BRIDGE_COMMUNICATIONS = "Bridge Communications";
+			public static final String BRIDGE_COMMUNICATIONS = "Bridge Communications";
 			/** Novell, Inc. **/
-			public final static String NOVELL_INC = "Novell, Inc.";
+			public static final String NOVELL_INC = "Novell, Inc.";
 			/** KTI **/
-			public final static String KTI = "KTI";
+			public static final String KTI = "KTI";
 			/** Logicraft **/
-			public final static String LOGICRAFT = "Logicraft";
+			public static final String LOGICRAFT = "Logicraft";
 			/** Network Computing Devices **/
-			public final static String NETWORK_COMPUTING_DEVICES = "Network Computing Devices";
+			public static final String NETWORK_COMPUTING_DEVICES = "Network Computing Devices";
 			/** Alpha Micro **/
-			public final static String ALPHA_MICRO = "Alpha Micro";
+			public static final String ALPHA_MICRO = "Alpha Micro";
 			/** SNMP **/
-			public final static String SNMP = "SNMP";
+			public static final String SNMP = "SNMP";
 			/** BIIN **/
-			public final static String BIIN = "BIIN";
+			public static final String BIIN = "BIIN";
 			/** Technically Elite Concept **/
-			public final static String TECHNICALLY_ELITE_CONCEPT = "Technically Elite Concept";
+			public static final String TECHNICALLY_ELITE_CONCEPT = "Technically Elite Concept";
 			/** Rational Corp **/
-			public final static String RATIONAL_CORP = "Rational Corp";
+			public static final String RATIONAL_CORP = "Rational Corp";
 			/** Qualcomm **/
-			public final static String QUALCOMM = "Qualcomm";
+			public static final String QUALCOMM = "Qualcomm";
 			/** Computer Protocol Pty Ltd **/
-			public final static String COMPUTER_PROTOCOL_PTY_LTD = "Computer Protocol Pty Ltd";
+			public static final String COMPUTER_PROTOCOL_PTY_LTD = "Computer Protocol Pty Ltd";
 			/** Charles River Data System **/
-			public final static String CHARLES_RIVER_DATA_SYSTEM = "Charles River Data System";
+			public static final String CHARLES_RIVER_DATA_SYSTEM = "Charles River Data System";
 			/** XTP **/
-			public final static String XTP = "XTP";
+			public static final String XTP = "XTP";
 			/** SGI/Time Warner prop. **/
-			public final static String SGI_TIME_WARNER_PROP = "SGI/Time Warner prop.";
+			public static final String SGI_TIME_WARNER_PROP = "SGI/Time Warner prop.";
 			/** HIPPI-FP encapsulation **/
-			public final static String HIPPI_FP_ENCAPSULATION = "HIPPI-FP encapsulation";
+			public static final String HIPPI_FP_ENCAPSULATION = "HIPPI-FP encapsulation";
 			/** STP, HIPPI-ST **/
-			public final static String STP_HIPPI_ST = "STP, HIPPI-ST";
+			public static final String STP_HIPPI_ST = "STP, HIPPI-ST";
 			/** Reserved for HIPPI-6400 **/
-			public final static String RESERVED_FOR_HIPPI6400 = "Reserved for HIPPI-6400";
+			public static final String RESERVED_FOR_HIPPI6400 = "Reserved for HIPPI-6400";
 			/** Silicon Graphics prop. **/
-			public final static String SILICON_GRAPHICS_PROP = "Silicon Graphics prop.";
+			public static final String SILICON_GRAPHICS_PROP = "Silicon Graphics prop.";
 			/** Motorola Computer **/
-			public final static String MOTOROLA_COMPUTER = "Motorola Computer";
+			public static final String MOTOROLA_COMPUTER = "Motorola Computer";
 			/** ARAI Bunkichi **/
-			public final static String ARAI_BUNKICHI = "ARAI Bunkichi";
+			public static final String ARAI_BUNKICHI = "ARAI Bunkichi";
 			/** RAD Network Devices **/
-			public final static String RAD_NETWORK_DEVICES = "RAD Network Devices";
+			public static final String RAD_NETWORK_DEVICES = "RAD Network Devices";
 			/** Apricot Computers **/
-			public final static String APRICOT_COMPUTERS = "Apricot Computers";
+			public static final String APRICOT_COMPUTERS = "Apricot Computers";
 			/** Artisoft **/
-			public final static String ARTISOFT = "Artisoft";
+			public static final String ARTISOFT = "Artisoft";
 			/** Polygon **/
-			public final static String POLYGON = "Polygon";
+			public static final String POLYGON = "Polygon";
 			/** Comsat Labs **/
-			public final static String COMSAT_LABS = "Comsat Labs";
+			public static final String COMSAT_LABS = "Comsat Labs";
 			/** SAIC **/
-			public final static String SAIC = "SAIC";
+			public static final String SAIC = "SAIC";
 			/** VG Analytical **/
-			public final static String VG_ANALYTICAL = "VG Analytical";
+			public static final String VG_ANALYTICAL = "VG Analytical";
 			/** Quantum Software **/
-			public final static String QUANTUM_SOFTWARE = "Quantum Software";
+			public static final String QUANTUM_SOFTWARE = "Quantum Software";
 			/** Ascom Banking Systems **/
-			public final static String ASCOM_BANKING_SYSTEMS = "Ascom Banking Systems";
+			public static final String ASCOM_BANKING_SYSTEMS = "Ascom Banking Systems";
 			/** Advanced Encryption Syste **/
-			public final static String ADVANCED_ENCRYPTION_SYSTE = "Advanced Encryption Syste";
+			public static final String ADVANCED_ENCRYPTION_SYSTE = "Advanced Encryption Syste";
 			/** Athena Programming **/
-			public final static String ATHENA_PROGRAMMING = "Athena Programming";
+			public static final String ATHENA_PROGRAMMING = "Athena Programming";
 			/** Inst Ind Info Tech **/
-			public final static String INST_IND_INFO_TECH = "Inst Ind Info Tech";
+			public static final String INST_IND_INFO_TECH = "Inst Ind Info Tech";
 			/** Taurus Controls **/
-			public final static String TAURUS_CONTROLS = "Taurus Controls";
+			public static final String TAURUS_CONTROLS = "Taurus Controls";
 			/** Walker Richer & Quinn **/
-			public final static String WALKER_RICHER_AND_QUINN = "Walker Richer & Quinn";
+			public static final String WALKER_RICHER_AND_QUINN = "Walker Richer & Quinn";
 			/** Idea Courier **/
-			public final static String IDEA_COURIER = "Idea Courier";
+			public static final String IDEA_COURIER = "Idea Courier";
 			/** Computer Network Tech **/
-			public final static String COMPUTER_NETWORK_TECH = "Computer Network Tech";
+			public static final String COMPUTER_NETWORK_TECH = "Computer Network Tech";
 			/** Gateway Communications **/
-			public final static String GATEWAY_COMMUNICATIONS = "Gateway Communications";
+			public static final String GATEWAY_COMMUNICATIONS = "Gateway Communications";
 			/** SECTRA **/
-			public final static String SECTRA = "SECTRA";
+			public static final String SECTRA = "SECTRA";
 			/** Delta Controls **/
-			public final static String DELTA_CONTROLS = "Delta Controls";
+			public static final String DELTA_CONTROLS = "Delta Controls";
 			/** Internet Protocol version 6 (IPv6) **/
-			public final static String IPV6 = "Internet Protocol version 6 (IPv6)";
+			public static final String IPV6 = "Internet Protocol version 6 (IPv6)";
 			/** ATOMIC **/
-			public final static String ATOMIC = "ATOMIC";
+			public static final String ATOMIC = "ATOMIC";
 			/** Landis & Gyr Powers **/
-			public final static String LANDIS_AND_GYR_POWERS = "Landis & Gyr Powers";
+			public static final String LANDIS_AND_GYR_POWERS = "Landis & Gyr Powers";
 			/** Motorola **/
-			public final static String MOTOROLA = "Motorola";
+			public static final String MOTOROLA = "Motorola";
 			/** TCP/IP Compression **/
-			public final static String TCP_IP_COMPRESSION = "TCP/IP Compression";
+			public static final String TCP_IP_COMPRESSION = "TCP/IP Compression";
 			/** IP Autonomous Systems **/
-			public final static String IP_AUTONOMOUS_SYSTEMS = "IP Autonomous Systems";
+			public static final String IP_AUTONOMOUS_SYSTEMS = "IP Autonomous Systems";
 			/** Secure Data **/
-			public final static String SECURE_DATA = "Secure Data";
+			public static final String SECURE_DATA = "Secure Data";
 			/** IEEE Std 802.3 - Ethernet Passive Optical Network (EPON) **/
-			public final static String IEEESTD8023_ETHERNET_PASSIVE = "IEEE Std 802.3 - Ethernet Passive Optical Network (EPON)";
+			public static final String IEEESTD8023_ETHERNET_PASSIVE = "IEEE Std 802.3 - Ethernet Passive Optical Network (EPON)";
 			/** Point-to-Point Protocol (PPP) **/
-			public final static String PPP = "Point-to-Point Protocol (PPP)";
+			public static final String PPP = "Point-to-Point Protocol (PPP)";
 			/** General Switch Management Protocol (GSMP) **/
-			public final static String GSMP = "General Switch Management Protocol (GSMP)";
+			public static final String GSMP = "General Switch Management Protocol (GSMP)";
 			/** MPLS **/
-			public final static String MPLS = "MPLS";
+			public static final String MPLS = "MPLS";
 			/** MPLS with upstream-assigned label **/
-			public final static String MPLS_UPSTREAM_ASSIGNED_LABEL = "MPLS with upstream-assigned label";
+			public static final String MPLS_UPSTREAM_ASSIGNED_LABEL = "MPLS with upstream-assigned label";
 			/** Multicast Channel Allocation Protocol (MCAP) **/
-			public final static String MCAP = "Multicast Channel Allocation Protocol (MCAP)";
+			public static final String MCAP = "Multicast Channel Allocation Protocol (MCAP)";
 			/** PPP over Ethernet (PPPoE) Discovery Stage **/
-			public final static String PPPOE_DISCOVERY = "PPP over Ethernet (PPPoE) Discovery Stage";
+			public static final String PPPOE_DISCOVERY = "PPP over Ethernet (PPPoE) Discovery Stage";
 			/** PPP over Ethernet (PPPoE) Session Stage **/
-			public final static String PPPOE_SESSION = "PPP over Ethernet (PPPoE) Session Stage";
+			public static final String PPPOE_SESSION = "PPP over Ethernet (PPPoE) Session Stage";
 			/** IEEE Std 802.1X - Port-based network access control **/
-			public final static String IEEESTD8021X_PORT_NAC = "IEEE Std 802.1X - Port-based network access control";
+			public static final String IEEESTD8021X_PORT_NAC = "IEEE Std 802.1X - Port-based network access control";
 			/** IEEE Std 802.1Q - Service VLAN tag identifier (S-Tag) **/
-			public final static String IEEESTD8021Q_STAG = "IEEE Std 802.1Q - Service VLAN tag identifier (S-Tag)";
+			public static final String IEEESTD8021Q_STAG = "IEEE Std 802.1Q - Service VLAN tag identifier (S-Tag)";
 			/** Invisible Software **/
-			public final static String INVISIBLE_SOFTWARE = "Invisible Software";
+			public static final String INVISIBLE_SOFTWARE = "Invisible Software";
 			/** IEEE Std 802 - Local Experimental Ethertype **/
-			public final static String IEEESTD802_LOCAL_EXP_ETHERTYPE = "IEEE Std 802 - Local Experimental Ethertype";
+			public static final String IEEESTD802_LOCAL_EXP_ETHERTYPE = "IEEE Std 802 - Local Experimental Ethertype";
 			/** IEEE Std 802 - OUI Extended Ethertype **/
-			public final static String IEEESTD802_OUI_EXT_ETHERTYPE = "IEEE Std 802 - OUI Extended Ethertype";
+			public static final String IEEESTD802_OUI_EXT_ETHERTYPE = "IEEE Std 802 - OUI Extended Ethertype";
 			/** IEEE Std 802.11 - Pre-Authentication (802.11i) **/
-			public final static String IEEESTD80211_80211I = "IEEE Std 802.11 - Pre-Authentication (802.11i)";
+			public static final String IEEESTD80211_80211I = "IEEE Std 802.11 - Pre-Authentication (802.11i)";
 			/** IEEE Std 802.1AB - Link Layer Discovery Protocol (LLDP) **/
-			public final static String IEEESTD8021AB_LLDP = "IEEE Std 802.1AB - Link Layer Discovery Protocol (LLDP)";
+			public static final String IEEESTD8021AB_LLDP = "IEEE Std 802.1AB - Link Layer Discovery Protocol (LLDP)";
 			/** IEEE Std 802.1AE - Media Access Control Security **/
-			public final static String IEEESTD8021AE_MACS = "IEEE Std 802.1AE - Media Access Control Security";
+			public static final String IEEESTD8021AE_MACS = "IEEE Std 802.1AE - Media Access Control Security";
 			/** Provider Backbone Bridging Instance tag **/
-			public final static String BRIDGING_INSTANCE_TAG = "Provider Backbone Bridging Instance tag";
+			public static final String BRIDGING_INSTANCE_TAG = "Provider Backbone Bridging Instance tag";
 			/** IEEE Std 802.1Q - Multiple VLAN Registration Protocol (MVRP) **/
-			public final static String IEEESTD8021Q_MVRP = "IEEE Std 802.1Q - Multiple VLAN Registration Protocol (MVRP)";
+			public static final String IEEESTD8021Q_MVRP = "IEEE Std 802.1Q - Multiple VLAN Registration Protocol (MVRP)";
 			/**
 			 * IEEE Std 802.1Q - Multiple Multicast Registration Protocol (MMRP)
 			 **/
-			public final static String IEEESTD8021Q_MMRP = "IEEE Std 802.1Q - Multiple Multicast Registration Protocol (MMRP)";
+			public static final String IEEESTD8021Q_MMRP = "IEEE Std 802.1Q - Multiple Multicast Registration Protocol (MMRP)";
 			/** IEEE Std 802.11 - Fast Roaming Remote Request (802.11r) **/
-			public final static String IEEESTD80211_80211R = "IEEE Std 802.11 - Fast Roaming Remote Request (802.11r)";
+			public static final String IEEESTD80211_80211R = "IEEE Std 802.11 - Fast Roaming Remote Request (802.11r)";
 			/** IEEE Std 802.21 - Media Independent Handover Protocol **/
-			public final static String IEEESTD80221_MIH_PROTOCOL = "IEEE Std 802.21 - Media Independent Handover Protocol";
+			public static final String IEEESTD80221_MIH_PROTOCOL = "IEEE Std 802.21 - Media Independent Handover Protocol";
 			/** IEEE Std 802.1Qbe - Multiple I-SID Registration Protocol **/
-			public final static String IEEESTD8021QBE_MISR_PROTOCOL = "IEEE Std 802.1Qbe - Multiple I-SID Registration Protocol";
+			public static final String IEEESTD8021QBE_MISR_PROTOCOL = "IEEE Std 802.1Qbe - Multiple I-SID Registration Protocol";
 			/** TRILL Fine Grained Labeling (FGL) **/
-			public final static String FGL = "TRILL Fine Grained Labeling (FGL)";
+			public static final String FGL = "TRILL Fine Grained Labeling (FGL)";
 			/** IEEE Std 802.1Qbg - ECP Protocol (also used in 802.1BR) **/
-			public final static String IEEESTD8021QBG_ECP_PROTOCOL = "IEEE Std 802.1Qbg - ECP Protocol (also used in 802.1BR)";
+			public static final String IEEESTD8021QBG_ECP_PROTOCOL = "IEEE Std 802.1Qbg - ECP Protocol (also used in 802.1BR)";
 			/** TRILL RBridge Channel **/
-			public final static String TRILL_RBRIDGE_CHANNEL = "TRILL RBridge Channel";
+			public static final String TRILL_RBRIDGE_CHANNEL = "TRILL RBridge Channel";
 			/** GeoNetworking as defined in ETSI EN 302 636-4-1 **/
-			public final static String GEONETWORKING_ETSI_EN_302_636_4_1 = "GeoNetworking as defined in ETSI EN 302 636-4-1";
+			public static final String GEONETWORKING_ETSI_EN_302_636_4_1 = "GeoNetworking as defined in ETSI EN 302 636-4-1";
 			/** Loopback **/
-			public final static String LOOPBACK = "Loopback";
+			public static final String LOOPBACK = "Loopback";
 			/** 3Com(Bridge) XNS Sys Mgmt **/
-			public final static String THREE_COM_XNS_SYS_MGMT = "3Com(Bridge) XNS Sys Mgmt";
+			public static final String THREE_COM_XNS_SYS_MGMT = "3Com(Bridge) XNS Sys Mgmt";
 			/** 3Com(Bridge) TCP-IP Sys **/
-			public final static String THREE_COM_TCP_IP_SYS = "3Com(Bridge) TCP-IP Sys";
+			public static final String THREE_COM_TCP_IP_SYS = "3Com(Bridge) TCP-IP Sys";
 			/** 3Com(Bridge) loop detect **/
-			public final static String THREE_COM_LOOP_DETECT = "3Com(Bridge) loop detect";
+			public static final String THREE_COM_LOOP_DETECT = "3Com(Bridge) loop detect";
 			/** LoWPAN encapsulation **/
-			public final static String LOWPAN_ENCAPSULATION = "LoWPAN encapsulation";
+			public static final String LOWPAN_ENCAPSULATION = "LoWPAN encapsulation";
 			/**
 			 * The Ethertype will be used to identify a "Channel" in which
 			 * control messages are encapsulated as payload of GRE packets. When
 			 * a GRE packet tagged with the Ethertype is received, the payload
 			 * will be handed to the network processor for processing.
 			 **/
-			public final static String ETHERTYPE_GRE_PACKET = "The Ethertype will be used to identify a \"Channel\" in which control messages are encapsulated as payload of GRE packets. When a GRE packet tagged with the Ethertype is received, the payload will be handed to the network processor for processing.";
+			public static final String ETHERTYPE_GRE_PACKET = "The Ethertype will be used to identify a \"Channel\" in which control messages are encapsulated as payload of GRE packets. When a GRE packet tagged with the Ethertype is received, the payload will be handed to the network processor for processing.";
 			/** BBN VITAL-LanBridge cache **/
-			public final static String BBN_VITAL_LANBRIDGE_CACHE = "BBN VITAL-LanBridge cache";
+			public static final String BBN_VITAL_LANBRIDGE_CACHE = "BBN VITAL-LanBridge cache";
 			/** ISC Bunker Ramo **/
-			public final static String ISC_BUNKER_RAMO = "ISC Bunker Ramo";
+			public static final String ISC_BUNKER_RAMO = "ISC Bunker Ramo";
 			/** Reserved **/
-			public final static String RESERVED = "Reserved";
+			public static final String RESERVED = "Reserved";
 			/** 定義なし(EtherNetのバージョンがHinemos対応バージョンより後の場合等.) **/
-			public final static String UNDEFINED = "undefined";
+			public static final String UNDEFINED = "undefined";
 
 			// 他、tag生成時に利用する情報.
 			/**
@@ -869,7 +929,7 @@ public final class BinaryTagConstant {
 			 * https://www.iana.org/assignments/ieee-802-numbers/ieee-802-
 			 * numbers.xhtml#ieee-802-numbers-1<br>
 			 **/
-			public final static Map<String, String> ETHERNET_VALUE_MAP;
+			public static final Map<String, String> ETHERNET_VALUE_MAP;
 
 			// マップ等の定数初期化.
 			static {
