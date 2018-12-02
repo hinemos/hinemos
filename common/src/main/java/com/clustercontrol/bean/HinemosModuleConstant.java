@@ -23,146 +23,146 @@ public class HinemosModuleConstant {
 
 	public enum ModuleType{
 		// Hinemos Manager Monitor
-		HINEMOS_MANAGER_MONITOR("MNG"), //public static final String HINEMOS_MANAGER_MONITOR = "MNG";
+		HINEMOS_MANAGER_MONITOR("MNG"), // HINEMOS_MANAGER_MONITOR = "MNG"
 
 		// 共通プラットフォーム
-		PLATFORM("PLT"), //public static final String PLATFORM  = "PLT";
+		PLATFORM("PLT"), // PLATFORM  = "PLT"
 		// 通知
-		PLATFORM_NOTIFY("PLT_NTF"), //public static final String PLATFORM_NOTIFY = "PLT_NTF";
+		PLATFORM_NOTIFY("PLT_NTF"), // PLATFORM_NOTIFY = "PLT_NTF"
 		// メールテンプレート
-		PLATFORM_MAIL_TEMPLATE("PLT_MIL_TMP"), //public static final String PLATFORM_MAIL_TEMPLATE = "PLT_MIL_TMP";
+		PLATFORM_MAIL_TEMPLATE("PLT_MIL_TMP"), // PLATFORM_MAIL_TEMPLATE = "PLT_MIL_TMP"
 		// カレンダ
-		PLATFORM_CALENDAR("PLT_CAL"), //public static final String PLATFORM_CALENDAR = "PLT_CAL";
+		PLATFORM_CALENDAR("PLT_CAL"), // PLATFORM_CALENDAR = "PLT_CAL"
 		// カレンダパターン
-		PLATFORM_CALENDAR_PATTERN("PLT_CAL_PTN"), //public static final String PLATFORM_CALENDAR_PATTERN = "PLT_CAL_PTN";
+		PLATFORM_CALENDAR_PATTERN("PLT_CAL_PTN"), // PLATFORM_CALENDAR_PATTERN = "PLT_CAL_PTN"
 		// アクセス
-		PLATFORM_ACCESS("PLT_ACC"), //public static final String PLATFORM_ACCESS 	= "PLT_ACC";
+		PLATFORM_ACCESS("PLT_ACC"), // PLATFORM_ACCESS 	= "PLT_ACC"
 		// 重要度判定
-		PLATFORM_PRIORITY_JUDGMENT("PLT_PRI_JMT"), //public static final String PLATFORM_PRIORITY_JUDGMENT = "PLT_PRI_JMT";
+		PLATFORM_PRIORITY_JUDGMENT("PLT_PRI_JMT"), // PLATFORM_PRIORITY_JUDGMENT = "PLT_PRI_JMT"
 		// リポジトリ
-		PLATFORM_REPOSITORY("PLT_REP"), //public static final String PLATFORM_REPOSITORY = "PLT_REP";
+		PLATFORM_REPOSITORY("PLT_REP"), // PLATFORM_REPOSITORY = "PLT_REP"
 		// リポジトリ
-		PLATFORM_REPSITORY_NODE("PLT_REP_NOD"), //public static final String PLATFORM_REPSITORY_NODE = "PLT_REP_NOD";
+		PLATFORM_REPSITORY_NODE("PLT_REP_NOD"), // PLATFORM_REPSITORY_NODE = "PLT_REP_NOD"
 		// リポジトリ
-		PLATFORM_REPSITORY_SCOPE("PLT_REP_SCP"), //public static final String PLATFORM_REPSITORY_SCOPE = "PLT_REP_SCP";
+		PLATFORM_REPSITORY_SCOPE("PLT_REP_SCP"), // PLATFORM_REPSITORY_SCOPE = "PLT_REP_SCP"
 
 		// 監視設定
-		MONITOR("MON"), //public static final String MONITOR = "MON";
+		MONITOR("MON"), // MONITOR = "MON"
 		// Hinemosエージェント監視
-		MONITOR_AGENT("MON_AGT_B"), //public static final String MONITOR_AGENT = "MON_AGT_B";
+		MONITOR_AGENT("MON_AGT_B"), // MONITOR_AGENT = "MON_AGT_B"
 		// カスタム監視 （数値）
-		MONITOR_CUSTOM_N("MON_CUSTOM_N"), //public static final String MONITOR_CUSTOM_N = "MON_CUSTOM_N";
+		MONITOR_CUSTOM_N("MON_CUSTOM_N"), // MONITOR_CUSTOM_N = "MON_CUSTOM_N"
 		// カスタム監視 （文字列）
-		MONITOR_CUSTOM_S("MON_CUSTOM_S"), //public static final String MONITOR_CUSTOM_S = "MON_CUSTOM_S";	
+		MONITOR_CUSTOM_S("MON_CUSTOM_S"), // MONITOR_CUSTOM_S = "MON_CUSTOM_S"	
 		// HTTP監視（数値）
-		MONITOR_HTTP_N("MON_HTP_N"), //public static final String MONITOR_HTTP_N = "MON_HTP_N";
+		MONITOR_HTTP_N("MON_HTP_N"), // MONITOR_HTTP_N = "MON_HTP_N"
 		// HTTP監視（文字列）
-		MONITOR_HTTP_S("MON_HTP_S"), //public static final String MONITOR_HTTP_S = "MON_HTP_S";
+		MONITOR_HTTP_S("MON_HTP_S"), // MONITOR_HTTP_S = "MON_HTP_S"
 		// HTTP監視（シナリオ）
-		MONITOR_HTTP_SCENARIO("MON_HTP_SCE"), //public static final String MONITOR_HTTP_SCENARIO = "MON_HTP_SCE";
+		MONITOR_HTTP_SCENARIO("MON_HTP_SCE"), // MONITOR_HTTP_SCENARIO = "MON_HTP_SCE"
 		// リソース監視
-		MONITOR_PERFORMANCE("MON_PRF_N"), //public static final String MONITOR_PERFORMANCE = "MON_PRF_N";
+		MONITOR_PERFORMANCE("MON_PRF_N"), // MONITOR_PERFORMANCE = "MON_PRF_N"
 		// PING監視
-		MONITOR_PING("MON_PNG_N"), //public static final String MONITOR_PING = "MON_PNG_N";
+		MONITOR_PING("MON_PNG_N"), // MONITOR_PING = "MON_PNG_N"
 		// サービス・ポート監視
-		MONITOR_PORT("MON_PRT_N"), //public static final String MONITOR_PORT = "MON_PRT_N";
+		MONITOR_PORT("MON_PRT_N"), // MONITOR_PORT = "MON_PRT_N"
 		// プロセス監視
-		MONITOR_PROCESS("MON_PRC_N"), //public static final String MONITOR_PROCESS = "MON_PRC_N";
+		MONITOR_PROCESS("MON_PRC_N"), // MONITOR_PROCESS = "MON_PRC_N"
 		// SNMP監視（数値）
-		MONITOR_SNMP_N("MON_SNMP_N"), //public static final String MONITOR_SNMP_N = "MON_SNMP_N";
+		MONITOR_SNMP_N("MON_SNMP_N"), // MONITOR_SNMP_N = "MON_SNMP_N"
 		// SNMP監視（文字列）
-		MONITOR_SNMP_S("MON_SNMP_S"), //public static final String MONITOR_SNMP_S = "MON_SNMP_S";
+		MONITOR_SNMP_S("MON_SNMP_S"), // MONITOR_SNMP_S = "MON_SNMP_S"
 		// SNMPTRAP監視
-		MONITOR_SNMPTRAP("MON_SNMP_TRP"), //public static final String MONITOR_SNMPTRAP = "MON_SNMP_TRP";
+		MONITOR_SNMPTRAP("MON_SNMP_TRP"), // MONITOR_SNMPTRAP = "MON_SNMP_TRP"
 		// SQL監視（数値）
-		MONITOR_SQL_N("MON_SQL_N"), //public static final String MONITOR_SQL_N = "MON_SQL_N";
+		MONITOR_SQL_N("MON_SQL_N"), // MONITOR_SQL_N = "MON_SQL_N"
 		// SQL監視（文字列）
-		MONITOR_SQL_S("MON_SQL_S"), //public static final String MONITOR_SQL_S = "MON_SQL_S";
+		MONITOR_SQL_S("MON_SQL_S"), // MONITOR_SQL_S = "MON_SQL_S"
 		// システムログ監視（文字列）
-		MONITOR_SYSTEMLOG("MON_SYSLOG_S"), //public static final String MONITOR_SYSTEMLOG = "MON_SYSLOG_S";
+		MONITOR_SYSTEMLOG("MON_SYSLOG_S"), // MONITOR_SYSTEMLOG = "MON_SYSLOG_S"
 		// ログファイル監視
-		MONITOR_LOGFILE("MON_LOGFILE_S"), //public static final String MONITOR_LOGFILE = "MON_LOGFILE_S";
+		MONITOR_LOGFILE("MON_LOGFILE_S"), // MONITOR_LOGFILE = "MON_LOGFILE_S"
 		// ログ件数監視
-		MONITOR_LOGCOUNT("MON_LOGCOUNT_N"), //public static final String MONITOR_LOGCOUNT = "MON_LOGCOUNT_N";
+		MONITOR_LOGCOUNT("MON_LOGCOUNT_N"), // MONITOR_LOGCOUNT = "MON_LOGCOUNT_N"
 		// Windowsサービス監視
-		MONITOR_WINSERVICE("MON_WINSERVICE_B"), //public static final String MONITOR_WINSERVICE = "MON_WINSERVICE_B";
+		MONITOR_WINSERVICE("MON_WINSERVICE_B"), // MONITOR_WINSERVICE = "MON_WINSERVICE_B"
 		// Windowsイベント監視
-		MONITOR_WINEVENT("MON_WINEVENT_S"), //public static final String MONITOR_WINEVENT = "MON_WINEVENT_S";
+		MONITOR_WINEVENT("MON_WINEVENT_S"), // MONITOR_WINEVENT = "MON_WINEVENT_S"
 		// カスタムトラップ監視 （数値）
-		MONITOR_CUSTOMTRAP_N("MON_CUSTOMTRAP_N"), //public static final String MONITOR_CUSTOMTRAP_N = "MON_CUSTOMTRAP_N";
+		MONITOR_CUSTOMTRAP_N("MON_CUSTOMTRAP_N"), // MONITOR_CUSTOMTRAP_N = "MON_CUSTOMTRAP_N"
 		// カスタムトラップ監視 （文字列）
-		MONITOR_CUSTOMTRAP_S("MON_CUSTOMTRAP_S"), //public static final String MONITOR_CUSTOMTRAP_S = "MON_CUSTOMTRAP_S";
+		MONITOR_CUSTOMTRAP_S("MON_CUSTOMTRAP_S"), // MONITOR_CUSTOMTRAP_S = "MON_CUSTOMTRAP_S"
 		// 相関係数監視（数値）
-		MONITOR_CORRELATION("MON_CORRELATION_N"), //public static final String MONITOR_CORRELATION = "MON_CORRELATION_N";
+		MONITOR_CORRELATION("MON_CORRELATION_N"), // MONITOR_CORRELATION = "MON_CORRELATION_N"
 		// 収集値統合監視(真偽値)
-		MONITOR_INTEGRATION("MON_COMPOUND_B"), //public static final String MONITOR_INTEGRATION = "MON_COMPOUND_B";
+		MONITOR_INTEGRATION("MON_COMPOUND_B"), // MONITOR_INTEGRATION = "MON_COMPOUND_B"
 		// バイナリファイル監視 （バイナリ）
-		MONITOR_BINARYFILE_BIN("MON_BINARYFILE_BIN"), //public static final String MONITOR_BINARYFILE_BIN = "MON_BINARYFILE_BIN";	
+		MONITOR_BINARYFILE_BIN("MON_BINARYFILE_BIN"), // MONITOR_BINARYFILE_BIN = "MON_BINARYFILE_BIN"	
 		// パケットキャプチャ （バイナリ）
-		MONITOR_PCAP_BIN("MON_PCAP_BIN"), //public static final String MONITOR_PCAP_BIN = "MON_PCAP_BIN";	
+		MONITOR_PCAP_BIN("MON_PCAP_BIN"), // MONITOR_PCAP_BIN = "MON_PCAP_BIN"	
 		// スコープ
-		MONITOR_SCOPE("MON_SCP"), //public static final String MONITOR_SCOPE = "MON_SCP";
+		MONITOR_SCOPE("MON_SCP"), // MONITOR_SCOPE = "MON_SCP"
 		// ステータス
-		MONITOR_STATUS("MON_STA"), //public static final String MONITOR_STATUS = "MON_STA";
+		MONITOR_STATUS("MON_STA"), // MONITOR_STATUS = "MON_STA"
 		// イベント
-		MONITOR_EVENT("MON_EVT"), //public static final String MONITOR_EVENT = "MON_EVT";
+		MONITOR_EVENT("MON_EVT"), // MONITOR_EVENT = "MON_EVT"
 		// JMX
-		MONITOR_JMX("MON_JMX_N"), //public static final String MONITOR_JMX = "MON_JMX_N";
+		MONITOR_JMX("MON_JMX_N"), // MONITOR_JMX = "MON_JMX_N"
 		
 		// ログフォーマット
-		HUB_LOGFORMAT("HUB_LF"), //public static final String HUB_LOGFORMAT = "HUB_LF";
+		HUB_LOGFORMAT("HUB_LF"), // HUB_LOGFORMAT = "HUB_LF"
 		// 収集蓄積 転送
-		HUB_TRANSFER("HUB_TRF"), //public static final String HUB_TRANSFER = "HUB_TRF";
+		HUB_TRANSFER("HUB_TRF"), // HUB_TRANSFER = "HUB_TRF"
 		
 		// 性能管理
-		PERFORMANCE("PRF"), //public static final String PERFORMANCE = "PRF";
+		PERFORMANCE("PRF"), // PERFORMANCE = "PRF"
 		// 性能管理
-		PERFORMANCE_RECORD("PRF_REC"), //public static final String PERFORMANCE_RECORD = "PRF_REC";
+		PERFORMANCE_RECORD("PRF_REC"), // PERFORMANCE_RECORD = "PRF_REC"
 		// 性能管理
-		PERFORMANCE_REALTIME("PRT_RT"), //public static final String PERFORMANCE_REALTIME = "PRT_RT";
+		PERFORMANCE_REALTIME("PRT_RT"), // PERFORMANCE_REALTIME = "PRT_RT"
 
 		// ジョブ管理
-		JOB("JOB"), //public static final String JOB = "JOB";
+		JOB("JOB"), // JOB = "JOB"
 		// ジョブ管理
-		JOB_MST("JOB_MST"), //public static final String JOB_MST  = "JOB_MST";
+		JOB_MST("JOB_MST"), // JOB_MST  = "JOB_MST"
 		// ジョブ管理
-		JOB_SESSION("JOB_SES"), //public static final String JOB_SESSION = "JOB_SES";
+		JOB_SESSION("JOB_SES"), // JOB_SESSION = "JOB_SES"
 		// ジョブ管理
-		JOB_SESSION_DETAIL("JOB_SES_DTL"), //public static final String JOB_SESSION_DETAIL = "JOB_SES_DTL";
+		JOB_SESSION_DETAIL("JOB_SES_DTL"), // JOB_SESSION_DETAIL = "JOB_SES_DTL"
 		// ジョブ管理
-		JOB_SESSION_NODE("JOB_SES_NOD"), //public static final String JOB_SESSION_NODE = "JOB_SES_NOD";
+		JOB_SESSION_NODE("JOB_SES_NOD"), // JOB_SESSION_NODE = "JOB_SES_NOD"
 		// ジョブ管理
-		JOB_SCHEDULE_RUN("JOB_SCH_RUN"), //public static final String JOB_SCHEDULE_RUN  = "JOB_SCH_RUN";
+		JOB_SCHEDULE_RUN("JOB_SCH_RUN"), // JOB_SCHEDULE_RUN  = "JOB_SCH_RUN"
 		// ジョブ管理
-		JOB_SCHEDULE_RUN_DETAIL("JOB_SCH_RUN_DTL"), //public static final String JOB_SCHEDULE_RUN_DETAIL  = "JOB_SCH_RUN_DTL";
+		JOB_SCHEDULE_RUN_DETAIL("JOB_SCH_RUN_DTL"), // JOB_SCHEDULE_RUN_DETAIL  = "JOB_SCH_RUN_DTL"
 		// ジョブ管理
-		JOB_SESSION_FILE("JOB_SES_FIL"), //public static final String JOB_SESSION_FILE = "JOB_SES_FIL";
+		JOB_SESSION_FILE("JOB_SES_FIL"), // JOB_SESSION_FILE = "JOB_SES_FIL"
 		// ジョブ管理
-		JOB_KICK("JOB_KICK"), //public static final String JOB_KICK  = "JOB_KICK";
+		JOB_KICK("JOB_KICK"), // JOB_KICK  = "JOB_KICK"
 		// ジョブ管理
-		JOBMAP_IMAGE_FILE("JOBMAP_IMAGE_FILE"), //public static final String JOBMAP_IMAGE_FILE  = "JOBMAP_IMAGE_FILE";
+		JOBMAP_IMAGE_FILE("JOBMAP_IMAGE_FILE"), // JOBMAP_IMAGE_FILE  = "JOBMAP_IMAGE_FILE"
 
 		// 自動デバイスサーチ
-		REPOSITORY_DEVICE_SEARCH("REP_DS"), //public static final String REPOSITORY_DEVICE_SEARCH = "REP_DS";
+		REPOSITORY_DEVICE_SEARCH("REP_DS"), // REPOSITORY_DEVICE_SEARCH = "REP_DS"
 
 		// Hinemos自身の処理
-		SYSYTEM("SYS"), //public static final String SYSYTEM = "SYS";
+		SYSYTEM("SYS"), // SYSYTEM = "SYS"
 		// メンテナンス
-		SYSYTEM_MAINTENANCE("MAINTENANCE"), //public static final String SYSYTEM_MAINTENANCE = "MAINTENANCE";
+		SYSYTEM_MAINTENANCE("MAINTENANCE"), // SYSYTEM_MAINTENANCE = "MAINTENANCE"
 		// セルフチェック
-		SYSYTEM_SELFCHECK("SYS_SFC"), //public static final String SYSYTEM_SELFCHECK = "SYS_SFC";
+		SYSYTEM_SELFCHECK("SYS_SFC"), // SYSYTEM_SELFCHECK = "SYS_SFC"
 		// セルフチェックのデフォルトID
-		SYSYTEM_SELFCHECK_ID("DEFAULT"), //public static final String SYSYTEM_SELFCHECK_ID = "DEFAULT";
+		SYSYTEM_SELFCHECK_ID("DEFAULT"), // SYSYTEM_SELFCHECK_ID = "DEFAULT"
 
 		// 環境構築
-		INFRA("INFRA"), //public static final String INFRA = "INFRA";
-		INFRA_FILE("INFRA_FILE"), //public static final String INFRA_FILE = "INFRA_FILE";
+		INFRA("INFRA"), // INFRA = "INFRA"
+		INFRA_FILE("INFRA_FILE"), // INFRA_FILE = "INFRA_FILE"
 
 		// レポーティング
-		REPORTING("REPORTING"), //public static final String REPORTING = "REPORTING"; 
+		REPORTING("REPORTING"), // REPORTING = "REPORTING"
 
 		// 遠隔管理
-		INQUIRY("INQUIRY"); //public static final String INQUIRY = "INQUIRY"; 
+		INQUIRY("INQUIRY"); // INQUIRY = "INQUIRY"
 
 		private String type;
 
@@ -185,71 +185,137 @@ public class HinemosModuleConstant {
 		}
 	}
 
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String HINEMOS_MANAGER_MONITOR = ModuleType.HINEMOS_MANAGER_MONITOR.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM = ModuleType.PLATFORM.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM_NOTIFY = ModuleType.PLATFORM_NOTIFY.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM_MAIL_TEMPLATE = ModuleType.PLATFORM_MAIL_TEMPLATE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM_CALENDAR = ModuleType.PLATFORM_CALENDAR.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM_CALENDAR_PATTERN = ModuleType.PLATFORM_CALENDAR_PATTERN.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM_ACCESS = ModuleType.PLATFORM_ACCESS.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM_PRIORITY_JUDGMENT = ModuleType.PLATFORM_PRIORITY_JUDGMENT.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM_REPOSITORY = ModuleType.PLATFORM_REPOSITORY.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM_REPSITORY_NODE = ModuleType.PLATFORM_REPSITORY_NODE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PLATFORM_REPSITORY_SCOPE = ModuleType.PLATFORM_REPSITORY_SCOPE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR = ModuleType.MONITOR.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_AGENT = ModuleType.MONITOR_AGENT.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_CUSTOM_N = ModuleType.MONITOR_CUSTOM_N.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_CUSTOM_S = ModuleType.MONITOR_CUSTOM_S.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_HTTP_N = ModuleType.MONITOR_HTTP_N.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_HTTP_S = ModuleType.MONITOR_HTTP_S.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_HTTP_SCENARIO = ModuleType.MONITOR_HTTP_SCENARIO.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_PERFORMANCE = ModuleType.MONITOR_PERFORMANCE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_PING = ModuleType.MONITOR_PING.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_PORT = ModuleType.MONITOR_PORT.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_PROCESS = ModuleType.MONITOR_PROCESS.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_SNMP_N = ModuleType.MONITOR_SNMP_N.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_SNMP_S = ModuleType.MONITOR_SNMP_S.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_SNMPTRAP = ModuleType.MONITOR_SNMPTRAP.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_SQL_N = ModuleType.MONITOR_SQL_N.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_SQL_S = ModuleType.MONITOR_SQL_S.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_SYSTEMLOG = ModuleType.MONITOR_SYSTEMLOG.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_LOGFILE = ModuleType.MONITOR_LOGFILE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_LOGCOUNT = ModuleType.MONITOR_LOGCOUNT.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_WINSERVICE = ModuleType.MONITOR_WINSERVICE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_WINEVENT = ModuleType.MONITOR_WINEVENT.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_CUSTOMTRAP_N = ModuleType.MONITOR_CUSTOMTRAP_N.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_CUSTOMTRAP_S = ModuleType.MONITOR_CUSTOMTRAP_S.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_CORRELATION = ModuleType.MONITOR_CORRELATION.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_INTEGRATION = ModuleType.MONITOR_INTEGRATION.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_BINARYFILE_BIN = ModuleType.MONITOR_BINARYFILE_BIN.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_PCAP_BIN = ModuleType.MONITOR_PCAP_BIN.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_SCOPE = ModuleType.MONITOR_SCOPE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_STATUS = ModuleType.MONITOR_STATUS.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_EVENT = ModuleType.MONITOR_EVENT.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String MONITOR_JMX = ModuleType.MONITOR_JMX.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String HUB_LOGFORMAT = ModuleType.HUB_LOGFORMAT.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String HUB_TRANSFER = ModuleType.HUB_TRANSFER.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PERFORMANCE = ModuleType.PERFORMANCE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PERFORMANCE_RECORD = ModuleType.PERFORMANCE_RECORD.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String PERFORMANCE_REALTIME = ModuleType.PERFORMANCE_REALTIME.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOB = ModuleType.JOB.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOB_MST = ModuleType.JOB_MST.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOB_SESSION = ModuleType.JOB_SESSION.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOB_SESSION_DETAIL = ModuleType.JOB_SESSION_DETAIL.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOB_SESSION_NODE = ModuleType.JOB_SESSION_NODE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOB_SCHEDULE_RUN = ModuleType.JOB_SCHEDULE_RUN.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOB_SCHEDULE_RUN_DETAIL = ModuleType.JOB_SCHEDULE_RUN_DETAIL.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOB_SESSION_FILE = ModuleType.JOB_SESSION_FILE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOB_KICK = ModuleType.JOB_KICK.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String JOBMAP_IMAGE_FILE = ModuleType.JOBMAP_IMAGE_FILE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String REPOSITORY_DEVICE_SEARCH = ModuleType.REPOSITORY_DEVICE_SEARCH.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String SYSYTEM = ModuleType.SYSYTEM.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String SYSYTEM_MAINTENANCE = ModuleType.SYSYTEM_MAINTENANCE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String SYSYTEM_SELFCHECK = ModuleType.SYSYTEM_SELFCHECK.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String SYSYTEM_SELFCHECK_ID = ModuleType.SYSYTEM_SELFCHECK_ID.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String INFRA = ModuleType.INFRA.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String INFRA_FILE = ModuleType.INFRA_FILE.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String REPORTING = ModuleType.REPORTING.getType();
+	// @deprecated (Should use enum directly)
 	@Deprecated public static final String INQUIRY = ModuleType.INQUIRY.getType();
 
 	/** マネージャ操作ログタイトル */

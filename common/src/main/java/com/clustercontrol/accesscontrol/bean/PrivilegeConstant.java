@@ -16,9 +16,9 @@ package com.clustercontrol.accesscontrol.bean;
 public class PrivilegeConstant {
 
 	// システム権限
-	public static enum SystemPrivilegeMode {ADD, READ, MODIFY, EXEC, APPROVAL}
+	public enum SystemPrivilegeMode {ADD, READ, MODIFY, EXEC, APPROVAL}
 	// オブジェクト権限（NONE=オブジェクト権限チェックしない)
-	public static enum ObjectPrivilegeMode {READ, MODIFY, EXEC, NONE}
+	public enum ObjectPrivilegeMode {READ, MODIFY, EXEC, NONE}
 	
 	// オブジェクト権限で登録されるもの
 	protected static final ObjectPrivilegeMode[] objectPrivilegeModes = {

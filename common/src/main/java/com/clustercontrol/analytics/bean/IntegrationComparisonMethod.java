@@ -31,11 +31,11 @@ public enum IntegrationComparisonMethod {
 	private final String symbol;
 
 	static {
-		final List<String> _values = new ArrayList<String>();
+		final List<String> values = new ArrayList<String>();
 		for (IntegrationComparisonMethod method : values()) {
-			_values.add(method.symbol);
+			values.add(method.symbol);
 		}
-		symbols = Collections.unmodifiableList(new CopyOnWriteArrayList<String>(_values));
+		symbols = Collections.unmodifiableList(new CopyOnWriteArrayList<String>(values));
 	}
 	private IntegrationComparisonMethod(String symbol) {
 		this.symbol = symbol;
