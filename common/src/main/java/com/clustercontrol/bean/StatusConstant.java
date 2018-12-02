@@ -18,54 +18,147 @@ import java.util.ArrayList;
  * @since 1.0.0
  */
 public class StatusConstant {
-	/** 待機(状態の種別) */
-	public static final int TYPE_WAIT = 0;
 
-	/** 保留中(状態の種別) */
-	public static final int TYPE_RESERVING = 1;
+	public enum Status{
+		// 待機(状態の種別)
+		TYPE_WAIT(0, "WAIT"),
+		// 保留中(状態の種別)
+		TYPE_RESERVING(1, "RESERVING"),
+		// スキップ(状態の種別)
+		TYPE_SKIP(2, "SKIP"),
+		// 実行中(状態の種別)
+		TYPE_RUNNING(100, "RUNNING"),
+		// 停止処理中(状態の種別)
+		TYPE_STOPPING(101, "STOPPING"),
+		// 中断(状態の種別)
+		TYPE_SUSPEND(200, "SUSPEND"),
+		// コマンド停止(状態の種別)
+		TYPE_STOP(201, "STOP_AT_ONCE"),
+		// 終了(状態の種別)
+		TYPE_END(300, "END"),
+		// 変更済(状態の種別)
+		TYPE_MODIFIED(301, "MODIFIED"),
+		// 終了(条件未達成) (状態の種別)
+		TYPE_END_UNMATCH(302, "END_UNMATCH"),
+		// 終了(カレンダ) (状態の種別)
+		TYPE_END_CALENDAR(303, "END_CALENDAR"),
+		// 終了(スキップ) (状態の種別)
+		TYPE_END_SKIP(304, "END_SKIP"),
+		// 終了(開始遅延) (状態の種別)
+		TYPE_END_START_DELAY(305, "END_START_DELAY"),
+		// 終了(終了遅延) (状態の種別)
+		TYPE_END_END_DELAY(306, "END_END_DELAY"),
 
-	/** スキップ(状態の種別) */
-	public static final int TYPE_SKIP = 2;
+		// 終了(排他条件分岐) (状態の種別)
+		TYPE_END_EXCLUSIVE_BRANCH(307, "END_EXCLUSIVE_BRANCH"),
+		// 起動失敗(状態の種別)
+		TYPE_ERROR(400, "START_ERROR");
 
-	/** 実行中(状態の種別) */
-	public static final int TYPE_RUNNING = 100;
+		private int code;
+		private String msg;
 
-	/** 停止処理中(状態の種別) */
-	public static final int TYPE_STOPPING = 101;
+		private Status(int code, String msg) {
+			this.code = code;
+			this.msg = msg;
+		}
 
-	/** 中断(状態の種別) */
-	public static final int TYPE_SUSPEND = 200;
+		public int getCode() {
+			return this.code;
+		}
+		public String getMsg() {
+			return this.msg;
+		}
 
-	/** コマンド停止(状態の種別) */
-	public static final int TYPE_STOP = 201;
+		public static Status fromInt(int code) {
+			for(Status status: Status.values()){
+				if(status.getCode() == code) {
+					return status;
+				}
+			}
+			throw new IllegalArgumentException("Unknown code: " + code);
+		}
+	}
 
-	/** 終了(状態の種別) */
-	public static final int TYPE_END = 300;
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_WAIT = Status.TYPE_WAIT.getCode();
 
-	/** 変更済(状態の種別) */
-	public static final int TYPE_MODIFIED = 301;
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_RESERVING = Status.TYPE_RESERVING.getCode();
 
-	/** 終了(条件未達成) (状態の種別) */
-	public static final int TYPE_END_UNMATCH = 302;
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_SKIP = Status.TYPE_SKIP.getCode();
 
-	/** 終了(カレンダ) (状態の種別) */
-	public static final int TYPE_END_CALENDAR = 303;
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_RUNNING = Status.TYPE_RUNNING.getCode();
 
-	/** 終了(スキップ) (状態の種別) */
-	public static final int TYPE_END_SKIP = 304;
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_STOPPING = Status.TYPE_STOPPING.getCode();
 
-	/** 終了(開始遅延) (状態の種別) */
-	public static final int TYPE_END_START_DELAY = 305;
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_SUSPEND = Status.TYPE_SUSPEND.getCode();
 
-	/** 終了(終了遅延) (状態の種別) */
-	public static final int TYPE_END_END_DELAY = 306;
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_STOP = Status.TYPE_STOP.getCode();
+
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_END = Status.TYPE_END.getCode();
+
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_MODIFIED = Status.TYPE_MODIFIED.getCode();
+
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_END_UNMATCH = Status.TYPE_END_UNMATCH.getCode();
+
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_END_CALENDAR = Status.TYPE_END_CALENDAR.getCode();
+
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_END_SKIP = Status.TYPE_END_SKIP.getCode();
+
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_END_START_DELAY = Status.TYPE_END_START_DELAY.getCode();
+
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_END_END_DELAY = Status.TYPE_END_END_DELAY.getCode();
 	
-	/** 終了(排他条件分岐) (状態の種別) */
-	public static final int TYPE_END_EXCLUSIVE_BRANCH = 307;
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_END_EXCLUSIVE_BRANCH = Status.TYPE_END_EXCLUSIVE_BRANCH.getCode();
 
-	/** 起動失敗(状態の種別) */
-	public static final int TYPE_ERROR = 400;
-	
+	/*
+	 * @deprecated (Should use enum instead)
+	 */
+	@Deprecated public static final int TYPE_ERROR = Status.TYPE_ERROR.getCode();
+
 	/**
 	 * TYPE_END(300), TYPE_MODIFY(301),
 	 * TYPE_END_UNMATCH(302), TYPE_END_CALENDAR(303), TYPE_END_SKIP(304),
@@ -75,18 +168,18 @@ public class StatusConstant {
 	 * @return
 	 */
 	public static boolean isEndGroup(int type) {
-		return (type / 100 == StatusConstant.TYPE_END / 100);
+		return (type / 100 == Status.TYPE_END.getCode() / 100);
 	}
 	
 	public static ArrayList<Integer> getEndList() {
 		ArrayList<Integer> list = new ArrayList<Integer>();
-		list.add(StatusConstant.TYPE_END);
-		list.add(StatusConstant.TYPE_MODIFIED);
-		list.add(StatusConstant.TYPE_END_UNMATCH);
-		list.add(StatusConstant.TYPE_END_CALENDAR);
-		list.add(StatusConstant.TYPE_END_SKIP);
-		list.add(StatusConstant.TYPE_END_START_DELAY);
-		list.add(StatusConstant.TYPE_END_END_DELAY);
+		list.add(Status.TYPE_END.getCode());
+		list.add(Status.TYPE_MODIFIED.getCode());
+		list.add(Status.TYPE_END_UNMATCH.getCode());
+		list.add(Status.TYPE_END_CALENDAR.getCode());
+		list.add(Status.TYPE_END_SKIP.getCode());
+		list.add(Status.TYPE_END_START_DELAY.getCode());
+		list.add(Status.TYPE_END_END_DELAY.getCode());
 		return list;
 	}
 	
@@ -96,40 +189,11 @@ public class StatusConstant {
 	 * @return
 	 */
 	public static String typeToMessageCode(int type) {
-		if (type == TYPE_RUNNING) {
-			return "RUNNING";
-		} else if (type == TYPE_END) {
-			return "END";
-		} else if (type == TYPE_WAIT) {
-			return "WAIT";
-		} else if (type == TYPE_STOPPING) {
-			return "STOPPING";
-		} else if (type == TYPE_STOP) {
-			return "STOP_AT_ONCE";
-		} else if (type == TYPE_RESERVING) {
-			return "RESERVING";
-		} else if (type == TYPE_MODIFIED) {
-			return "MODIFIED";
-		} else if (type == TYPE_END_CALENDAR) {
-			return "END_CALENDAR";
-		} else if (type == TYPE_END_UNMATCH) {
-			return "END_UNMATCH";
-		} else if (type == TYPE_END_SKIP) {
-			return "END_SKIP";
-		} else if (type == TYPE_END_START_DELAY) {
-			return "END_START_DELAY";
-		} else if (type == TYPE_END_END_DELAY) {
-			return "END_END_DELAY";
-		} else if (type == TYPE_ERROR) {
-			return "START_ERROR";
-		} else if (type == TYPE_SKIP) {
-			return "SKIP";
-		} else if (type == TYPE_SUSPEND) {
-			return "SUSPEND";
-		} else if (type == TYPE_END_EXCLUSIVE_BRANCH) {
-			return "END_EXCLUSIVE_BRANCH";
+		try {
+			return Status.fromInt(type).getMsg();
+		} catch(IllegalArgumentException e) {
+			return "";
 		}
-		return "";
 	}
 
 	private StatusConstant() {

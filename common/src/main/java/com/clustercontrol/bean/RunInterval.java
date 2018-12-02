@@ -25,45 +25,43 @@ import com.clustercontrol.util.Messages;
  *   
  */
 public enum RunInterval {
+	TYPE_SEC_30(30),
+	TYPE_MIN_01(60),
+	TYPE_MIN_05(300),
+	TYPE_MIN_10(600),
+	TYPE_MIN_30(1800),
+	TYPE_MIN_60(3600);
 	
-	TYPE_SEC_30(30,   30 + Messages.getString("second")),
-	TYPE_MIN_01(60,   1 + Messages.getString("minute")),
-	TYPE_MIN_05(300,  5 + Messages.getString("minute")),
-	TYPE_MIN_10(600,  10 + Messages.getString("minute")),
-	TYPE_MIN_30(1800, 30 + Messages.getString("minute")),
-	TYPE_MIN_60(3600, 60 + Messages.getString("minute"));
-	
-	private final int intervalSec;
-	private final String readableString;
-	private RunInterval(int _intervalSec, String _readableSuffix) {
+	private int intervalSec;
+	private RunInterval(int _intervalSec) {
 		this.intervalSec = _intervalSec;
-		this.readableString = _readableSuffix;
 	}
+
 	public int toSec() {
 		return intervalSec;
 	}
 	
-	private static final int max;
+	private static final int MAX;
 	/**
 	 * 最大の監視間隔（秒）を返す
 	 */
 	public static int max() {
-		return max;
+		return MAX;
 	}
-	private static final int min;
+	private static final int MIN;
 	/**
 	 * 最小の監視間隔（秒）を返す
 	 */
 	public static int min() {
-		return min;
+		return MIN;
 	}
-	private static final List<Integer> intValues;
+	private static final List<Integer> INT_VALUES;
 	/**
 	 * 全ての監視間隔（秒）を返す
 	 * @return
 	 */
 	public static Collection<Integer> intValues() {
-		return intValues;
+		return new ArrayList<Integer>( INT_VALUES );
 	}
 	
 	public static RunInterval valueOf(int sec) {
@@ -80,7 +78,7 @@ public enum RunInterval {
 	 */
 	public static RunInterval stringToType(String readableString) {
 		for (RunInterval val : values()) {
-			if (val.readableString.equals(readableString)) {
+			if (val.toString().equals(readableString)) {
 				return val;
 			}
 		}
@@ -91,7 +89,11 @@ public enum RunInterval {
 	 * "1分" などの可読文字列を返す
 	 */
 	public String toString() {
-		return readableString;
+		if(60 > this.intervalSec) {
+			return this.intervalSec + Messages.getString("second");
+		} else {
+			return this.intervalSec/60 + Messages.getString("minute");
+		}
 	}
 	
 	static {
@@ -106,12 +108,12 @@ public enum RunInterval {
 				_min = current;
 			}
 		}
-		max = _max;
-		min = _min;
-		final List<Integer> _intValues = new ArrayList<Integer>();
+		MAX = _max;
+		MIN = _min;
+		List<Integer> _intValues = new ArrayList<Integer>();
 		for (RunInterval interval : values()) {
 			_intValues.add(interval.toSec());
 		}
-		intValues = Collections.unmodifiableList(new CopyOnWriteArrayList<Integer>(_intValues));
+		INT_VALUES = Collections.unmodifiableList(new CopyOnWriteArrayList<Integer>(_intValues));
 	}
 }
