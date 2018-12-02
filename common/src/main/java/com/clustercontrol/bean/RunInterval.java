@@ -88,7 +88,7 @@ public enum RunInterval {
 	/**
 	 * "1分" などの可読文字列を返す
 	 */
-	public String toString() {
+	@Override public String toString() {
 		if(60 > this.intervalSec) {
 			return this.intervalSec + Messages.getString("second");
 		} else {
@@ -97,23 +97,23 @@ public enum RunInterval {
 	}
 	
 	static {
-		int _max = 0;
-		int _min = Integer.MAX_VALUE;
+		int max = 0;
+		int min = Integer.MAX_VALUE;
 		for (RunInterval val : values()) {
 			int current = val.toSec();
-			if (_max < current) {
-				_max = current;
+			if (max < current) {
+				max = current;
 			}
-			if (current < _min) {
-				_min = current;
+			if (current < min) {
+				min = current;
 			}
 		}
-		MAX = _max;
-		MIN = _min;
-		List<Integer> _intValues = new ArrayList<Integer>();
+		MAX = max;
+		MIN = min;
+		List<Integer> intValues = new ArrayList<Integer>();
 		for (RunInterval interval : values()) {
-			_intValues.add(interval.toSec());
+			intValues.add(interval.toSec());
 		}
-		INT_VALUES = Collections.unmodifiableList(new CopyOnWriteArrayList<Integer>(_intValues));
+		INT_VALUES = Collections.unmodifiableList(new CopyOnWriteArrayList<Integer>(intValues));
 	}
 }

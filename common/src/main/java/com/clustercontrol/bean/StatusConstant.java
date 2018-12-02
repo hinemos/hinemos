@@ -79,82 +79,82 @@ public class StatusConstant {
 		}
 	}
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_WAIT = Status.TYPE_WAIT.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_RESERVING = Status.TYPE_RESERVING.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_SKIP = Status.TYPE_SKIP.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_RUNNING = Status.TYPE_RUNNING.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_STOPPING = Status.TYPE_STOPPING.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_SUSPEND = Status.TYPE_SUSPEND.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_STOP = Status.TYPE_STOP.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_END = Status.TYPE_END.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_MODIFIED = Status.TYPE_MODIFIED.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_END_UNMATCH = Status.TYPE_END_UNMATCH.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_END_CALENDAR = Status.TYPE_END_CALENDAR.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_END_SKIP = Status.TYPE_END_SKIP.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_END_START_DELAY = Status.TYPE_END_START_DELAY.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_END_END_DELAY = Status.TYPE_END_END_DELAY.getCode();
 	
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_END_EXCLUSIVE_BRANCH = Status.TYPE_END_EXCLUSIVE_BRANCH.getCode();
 
-	/*
+	/**
 	 * @deprecated (Should use enum instead)
 	 */
 	@Deprecated public static final int TYPE_ERROR = Status.TYPE_ERROR.getCode();

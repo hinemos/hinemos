@@ -483,8 +483,7 @@ public class BinaryUtil {
 	 *            部分一致条件バイナリ
 	 * @return 一致なしなら -1 , 一致ありなら 一致した箇所の先頭
 	 */
-	public static int byteListIndexOf(List<Byte> srcList, 
-			List<Byte> tagList) {
+	public static int byteListIndexOf(List<Byte> srcList, List<Byte> tagList) {
 		if (existList(srcList) == null || existList(tagList) == null) {
 			return -1;
 		}
@@ -496,9 +495,9 @@ public class BinaryUtil {
 		
 		if (fromIndex >= sourceCount) {
 			if(targetCount == 0){
-				return	sourceCount;
+				return sourceCount;
 			}else{
-				return	-1;
+				return -1;
 			}
 		}
 		if (fromIndex < 0) {

@@ -20,10 +20,11 @@ import java.util.Map;
  * 
  **/
 public final class BinaryTagConstant {
+	private static final String EXC_MSG = "ConstClass";
 
 	// インスタンス化防止コンストラクタ.
 	private BinaryTagConstant() {
-		throw new IllegalStateException("ConstClass");
+		throw new IllegalStateException(EXC_MSG);
 	}
 
 	/** ファイル共通タグ **/
@@ -35,7 +36,7 @@ public final class BinaryTagConstant {
 	/** ファイル共通_メタデータ **/
 	public static final class CommonFileAttributes {
 		private CommonFileAttributes() {
-			throw new IllegalStateException("ConstClass");
+			throw new IllegalStateException(EXC_MSG);
 		}
 
 		/** 基本ファイルメタデータ **/
@@ -46,7 +47,7 @@ public final class BinaryTagConstant {
 			public static final String SIZE_TAGNAME = "FileSize(byte)";
 
 			private BasicFileAttributes() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
@@ -62,7 +63,7 @@ public final class BinaryTagConstant {
 			public static final String SYSTEM_TAGNAME = "SystemFile";
 
 			private DosFileAttributes() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
@@ -76,7 +77,7 @@ public final class BinaryTagConstant {
 			public static final String GROUP_TAGNAME = "GroupOwner";
 
 			private PosixFileAttributes() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
@@ -88,7 +89,7 @@ public final class BinaryTagConstant {
 			public static final String OWNER_TAGNAME = "FileOwner";
 
 			private AclFileAttributes() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
@@ -109,7 +110,7 @@ public final class BinaryTagConstant {
 			}
 
 			private CommonValue() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
@@ -121,14 +122,14 @@ public final class BinaryTagConstant {
 		public static final String RECORD_SIZE = "RecordSize(byte)";
 
 		private CommonRecordTag() {
-			throw new IllegalStateException("ConstClass");
+			throw new IllegalStateException(EXC_MSG);
 		}
 	}
 
 	/** pacctファイル向けタグ **/
 	public static final class Pacct {
 		private Pacct() {
-			throw new IllegalStateException("ConstClass");
+			throw new IllegalStateException(EXC_MSG);
 		}
 
 		/** コマンド名 **/
@@ -137,7 +138,7 @@ public final class BinaryTagConstant {
 			public static final String TAGNAME = "CommandName";
 
 			private CommandName() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
@@ -147,7 +148,7 @@ public final class BinaryTagConstant {
 			public static final String TAGNAME = "AccountingUserID";
 
 			private UserID() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
@@ -157,7 +158,7 @@ public final class BinaryTagConstant {
 			public static final String TAGNAME = "AccountingGroupID";
 
 			private GroupID() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
@@ -166,7 +167,7 @@ public final class BinaryTagConstant {
 	/** pcapファイル向けタグ **/
 	public static final class Pcap {
 		private Pcap() {
-			throw new IllegalStateException("ConstClass");
+			throw new IllegalStateException(EXC_MSG);
 		}
 
 		/**
@@ -180,7 +181,7 @@ public final class BinaryTagConstant {
 		 */
 		public static final class LinkType {
 			private LinkType() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 
 			// tag名称
@@ -499,7 +500,7 @@ public final class BinaryTagConstant {
 			public static final String TAGNAME = "DestinationMacAddress";
 
 			private DestinationMAC() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
@@ -509,14 +510,14 @@ public final class BinaryTagConstant {
 			public static final String TAGNAME = "SourceMacAddress";
 
 			private SourceMAC() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 		}
 
 		/** プロトコル */
 		public static final class Protocol {
 			private Protocol() {
-				throw new IllegalStateException("ConstClass");
+				throw new IllegalStateException(EXC_MSG);
 			}
 
 			// tag名称.
