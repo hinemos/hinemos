@@ -753,11 +753,11 @@ public enum MessageConstant {
 	MESSAGE_INQUIRY_TARGET_NOT_FOUND
 	;
 	
-	public static final String DELIMITER = ":";
+	public static final char DELIMITER = ':';
 	public static final String ARGS_SEPARATOR = "\"";
 	private static final String PREFIX = "$[";
-	private static final String POSTFIX = "]";
-	private static final String ESCAPE = ".";
+	private static final char SUFFIX = ']';
+	private static final char ESCAPE = '.';
 	
 	private static Log m_log = LogFactory.getLog( MessageConstant.class );
 	public String getMessage(String... args) {
@@ -767,11 +767,11 @@ public enum MessageConstant {
 			ret += DELIMITER + ARGS_SEPARATOR + s + ARGS_SEPARATOR;
 		}
 		m_log.trace("after = " + ret);
-		return ret + POSTFIX;
+		return ret + SUFFIX;
 	}
 	
 	public static String escape (String s) {
-		return s.replaceAll("$\\[", ESCAPE).replaceAll("\\]", ESCAPE).replaceAll("\\:", ESCAPE);
+		return s.replace(PREFIX, String.valueOf(ESCAPE)).replace(SUFFIX, ESCAPE).replace(DELIMITER, ESCAPE);
 	}
 	
 	public static void main (String args[]) {

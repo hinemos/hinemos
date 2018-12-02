@@ -24,9 +24,9 @@ public class HinemosMessage {
 	private static Log m_log = LogFactory.getLog( HinemosMessage.class );
 
 	// 引数なし変数
-	private static Pattern patternNoArgs = Pattern.compile("\\$\\[([0-9a-zA-Z_]*?)\\]", Pattern.DOTALL);
+	private static Pattern patternNoArgs = Pattern.compile("\\$\\[(\\w+)\\]");
 	// 引数あり変数
-	private static Pattern patternArgs = Pattern.compile("\\$\\[([0-9a-zA-Z_]*?):\"", Pattern.DOTALL);
+	private static Pattern patternArgs = Pattern.compile("\\$\\[(\\w+):\"");
 
 	public static String replace(String message) {
 		return replace (message, null);
@@ -152,42 +152,6 @@ public class HinemosMessage {
 					+ messageSetting.message.substring(startIdx + matcherNoArgs.end());
 			messageSetting.curIdx = startIdx + matcherNoArgs.start() + ret_str.length();
 		}
-	}
-
-	/**
-	 * messages.propertiesの存在する、HinemosClient/libにクラスパスを通すこと。
-	 * 
-	 * @param args
-	 */
-	public static void main(String args[]) {
-		String test = "[2016/11/18 10:12:33] stdout=$[MESSAGE_JOB_MONITOR_ORGMSG_JMX:\"$[JMX_DB_CONNECTION_COUNT]\":\"19000\":\"null\":\"$[CONVERT_NO]\"]";
-		Pattern pattern = Pattern.compile("\\$\\[([0-9a-zA-Z_]*?)\\]", Pattern.DOTALL);
-		Matcher matcher = pattern.matcher(test);
-		System.out.println(matcher.find());
-//		int okCounter = 0;
-//		int ngCounter = 0;
-//		for (MessageConstant messageConstant : MessageConstant.values()) {
-//			String id = messageConstant.getMessage("aaa", "bbb", "ccc");
-//			String message = replace(id);
-//			if (id.equals(message)) {
-//				System.out.println("error. message doesn't change. " + message);
-//				ngCounter ++;
-//			} else {
-//				System.out.println("id=" + id + ", message=" + message);
-//				okCounter ++;
-//			}
-//		}
-//
-//		// OKの数がHinemosManager/resource/manager_messages.propertiesのメッセージ数と等しいことを確認する。
-//		System.out.println("OK=" + okCounter + ", NG=" + ngCounter);
-//		System.out.println("------------");
-//
-//		// message.repository.1=ノード 「{0}」(ID\={1}) を削除します。よろしいですか？
-//		String str = "hoge$[message.repository.1:\"$[edit]\":\"$[message.repository.1:aaa:bbb]\"]\nhoge";
-//		System.out.println("str1=" + str);
-//		System.out.println("str2=" + replace(str));
-//		
-//		// str2=hogeノード 「編集」(ID=ノード 「aaa」(ID=bbb) を削除します。よろしいですか？) を削除します。よろしいですか？\nhoge
 	}
 
 	/**

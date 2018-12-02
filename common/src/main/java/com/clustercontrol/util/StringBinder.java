@@ -38,7 +38,7 @@ public class StringBinder {
 	*  )*? -> 上記の最短一致
 	* -----
 	*/
-	private static Pattern pattern = Pattern.compile("#\\[((?!#\\[.*]).)*?\\]", Pattern.DOTALL);
+	private static Pattern pattern = Pattern.compile("#\\[((?!#\\[.*]).)*?\\]");
 
 	/**
 	 * 置換のマッピングを引数としたコンストラクタ
