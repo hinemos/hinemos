@@ -43,7 +43,6 @@ import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
-import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.model.NotifyCommandInfo;
@@ -170,16 +169,13 @@ public class NotifyUtil {
 			String monitorId = outputInfo.getMonitorId();
 			param.put(_KEY_MONITOR_ID, outputInfo.getMonitorId());
 			if (monitorId != null && pluginId != null && pluginId.startsWith("MON_")) {
-				MonitorSettingControllerBean controller = new MonitorSettingControllerBean();
 				try {
-					MonitorInfo monitorInfo = controller.getMonitor(monitorId);
+					MonitorInfo monitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK(monitorId);
 					param.put(_KEY_MONITOR_DESCRIPTION, monitorInfo.getDescription());
 					param.put(_KEY_CALENDAR_ID, monitorInfo.getCalendarId());
 					param.put(_KEY_MONITOR_OWNER_ROLE_ID, monitorInfo.getOwnerRoleId());
 				} catch (MonitorNotFound e) {
 					log.debug("createParameter() : monitor not found. " + e.getMessage());
-				} catch (HinemosUnknown e) {
-					log.debug("createParameter() : HinemosUnknown. " + e.getMessage());
 				} catch (InvalidRole e) {
 					log.debug("createParameter() : InvalidRole. " + e.getMessage());
 				}

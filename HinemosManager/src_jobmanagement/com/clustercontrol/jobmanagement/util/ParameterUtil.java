@@ -351,6 +351,7 @@ public class ParameterUtil {
 		// Main
 		if (commandOrig == null) {
 			m_log.info("registed command is invalid. (session_id = " + sessionId + ", facility_id = " + facilityId + ", command_orig = null)");
+			throw new HinemosUnknown();
 		} else {
 			m_log.debug("generating command string... (session_id = " + sessionId + ", facility_id = " + facilityId + ", command_orig = " + commandOrig + ")");
 		}

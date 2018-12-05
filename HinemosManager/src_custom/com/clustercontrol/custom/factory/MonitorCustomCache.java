@@ -35,7 +35,7 @@ public class MonitorCustomCache {
 			
 			ConcurrentHashMap<MonitorCustomValuePK, MonitorCustomValue> cache = getCache();
 			if (cache == null) {	// not null when clustered
-				update(null, null, null);
+				update(null, null, null, null);
 			}
 		} finally {
 			_lock.writeUnlock();
@@ -87,10 +87,12 @@ public class MonitorCustomCache {
 
 		private String monitorId;
 		private String facilityId;
+		private String key;
 
-		public MonitorCustomValuePK(String monitorId, String facilityId) {
+		public MonitorCustomValuePK(String monitorId, String facilityId, String key) {
 			this.setMonitorId(monitorId);
 			this.setFacilityId(facilityId);
+			this.setKey(key);
 		}
 
 		public void setMonitorId(String monitorId) {
@@ -101,6 +103,10 @@ public class MonitorCustomCache {
 			this.facilityId = facilityId;
 		}
 
+		public void setKey(String key) {
+			this.key = key;
+		}
+		
 		@Override
 		public boolean equals(Object other) {
 			if (this == other) {
@@ -112,7 +118,8 @@ public class MonitorCustomCache {
 			MonitorCustomValuePK castOther = (MonitorCustomValuePK)other;
 			return
 					this.monitorId.equals(castOther.monitorId)
-					&& this.facilityId.equals(castOther.facilityId);
+					&& this.facilityId.equals(castOther.facilityId)
+					&& this.key.equals(castOther.key);
 		}
 
 		@Override
@@ -121,6 +128,7 @@ public class MonitorCustomCache {
 			int hash = 17;
 			hash = hash * prime + this.monitorId.hashCode();
 			hash = hash * prime + this.facilityId.hashCode();
+			hash = hash * prime + this.key.hashCode();
 
 			return hash;
 		}
@@ -129,11 +137,13 @@ public class MonitorCustomCache {
 		public String toString() {
 			String[] names = {
 					"monitorId",
-					"facilityId"
+					"facilityId",
+					"key"
 			};
 			String[] values = {
 					this.monitorId,
-					this.facilityId
+					this.facilityId,
+					this.key
 			};
 			return Arrays.toString(names) + " = " + Arrays.toString(values);
 		}
@@ -159,14 +169,14 @@ public class MonitorCustomCache {
 	 * @param facilityId ファシリティID
 	 * @param valueEntity カスタム監視結果情報
 	 */
-	public static void update(String m_monitorId, String facilityId, MonitorCustomValue valueEntity) {
+	public static void update(String m_monitorId, String facilityId, String key,MonitorCustomValue valueEntity) {
 		try {
 			_lock.writeLock();
 
 			ConcurrentHashMap<MonitorCustomValuePK, MonitorCustomValue> cache 
 				= new ConcurrentHashMap<MonitorCustomValuePK, MonitorCustomValue>();
 
-			MonitorCustomValuePK valueEntityPk = new MonitorCustomValuePK(m_monitorId, facilityId);
+			MonitorCustomValuePK valueEntityPk = new MonitorCustomValuePK(m_monitorId, facilityId, key);
 
 			synchronized (cacheLock) {
 				if (valueEntityPk != null && getCache() != null) {
@@ -192,9 +202,9 @@ public class MonitorCustomCache {
 	 * @param facilityId ファシリティID
 	 * @return カスタム監視結果情報
 	 */
-	public static MonitorCustomValue getMonitorCustomValue(String m_monitorId, String facilityId) {
+	public static MonitorCustomValue getMonitorCustomValue(String m_monitorId, String facilityId,String key) {
 
-		MonitorCustomValuePK valueEntityPk = new MonitorCustomValuePK(m_monitorId, facilityId);
+		MonitorCustomValuePK valueEntityPk = new MonitorCustomValuePK(m_monitorId, facilityId, key);
 		ConcurrentHashMap<MonitorCustomValuePK, MonitorCustomValue> cache = getCache();
 		if (cache.get(valueEntityPk) == null) {
 			return new MonitorCustomValue(valueEntityPk);

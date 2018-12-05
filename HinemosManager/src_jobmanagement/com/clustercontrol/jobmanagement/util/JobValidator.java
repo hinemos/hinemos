@@ -594,6 +594,12 @@ public class JobValidator {
 		if (jobInfo.getType() == JobConstant.TYPE_JOB) {
 			JobCommandInfo command = jobInfo.getCommand();
 
+			// 実行コマンドが存在するかチェック
+			if (command.getStartCommand() == null || "".equals(command.getStartCommand())) {
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_COMMAND.getMessage());
+				m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
 			// 実行するファシリティIDのチェック
 			if(command.getFacilityID() == null || "".equals(command.getFacilityID())){
 				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SCOPE.getMessage());
@@ -700,6 +706,18 @@ public class JobValidator {
 		} else if (jobInfo.getType() == JobConstant.TYPE_FILEJOB) {
 			JobFileInfo file = jobInfo.getFile();
 
+			// 転送ファイルの入力が存在するかチェック
+			if (file.getSrcFile() == null || "".equals(file.getSrcFile())) {
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_FILE_NOT_FOUND.getMessage(jobInfo.getId()));
+				m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			// 受信先ディレクトリの入力が存在するかチェック
+			if (file.getDestDirectory() == null || "".equals(file.getDestDirectory())) {
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_DIR.getMessage());
+				m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
 			// 送信元ファシリティID(ノード)
 			if(file.getSrcFacilityID() == null || "".equals(file.getSrcFacilityID())){
 				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_NODE.getMessage());

@@ -14,79 +14,141 @@ PURPOSE.  See the GNU General Public License for more details.
  */
 package com.clustercontrol.winsyslog;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Properties;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 
-/**
+/*
  * syslog.confファイルに設定されているプロパティ値を
  * 取得するためのユーティリティクラス
  */
-public class WinSyslogConfig {
-	private static Log log = LogFactory.getLog(WinSyslogConfig.class);
-
-	private static final Properties properties = new Properties();
-
-	private WinSyslogConfig(){
-	}
-
-	public static void init(String confFile){
-		log.debug("init() : propFileName = " + confFile);
-		FileInputStream inputStream = null;
-		try {
-			inputStream = new FileInputStream(confFile);
-			properties.load(inputStream);
-		} catch (FileNotFoundException e) {
-			log.error(e.getMessage(), e);
-		} catch (IOException e) {
-			log.error(e.getMessage(), e);
-		} finally {
-			if(inputStream != null){
+public enum WinSyslogConfig {
+	// TCP 受信の実施可否
+	receive_tcp("syslog.receive.tcp", PropertyType.bool, true),
+	// UDP 受信の実施可否
+	receive_udp("syslog.receive.udp", PropertyType.bool, true),
+	// 待ち受けポート
+	receive_port("syslog.receive.port", PropertyType.integer, 514),
+	// 転送先
+	send_targets("syslog.send.targets", PropertyType.string, "127.0.0.1:24514"),
+	// TCP の読み込みのタイムアウト
+	receive_tcp_read_timeout("syslog.receive.tcp.read.timeout", PropertyType.integer, 1000 * 10),
+	// UDP の受信バッファー
+	receive_udp_buffer("syslog.receive.udp.buffer", PropertyType.integer),
+	// 分割に利用する文字コード（複数指定する場合は「,」で区切る。分割不要の場合は空文字とする。）
+	split_code("syslog.split.code", PropertyType.string, "10"),
+	// デバッグ時に使用する文字セット
+	debug_charset("syslog.debug.charset", PropertyType.string, "utf-8"),
+	// TCP の最大受信サイズ
+	receive_tcp_read_max_size("syslog.receive.tcp.read.max_size", PropertyType.string, "4096"),
+	// 最大ワーカースレッド数
+	worker_thread_max_size("syslog.worker.thread.max_size", PropertyType.integer, 1000),
+	// ワーカースレッドがシュリンクするまでのタイムアウト
+	worker_thread_keepalive_timeout("syslog.worker.thread.keepalive.timeout", PropertyType.integer, 5000),
+	;
+	
+	private static Logger logger = Logger.getLogger(WinSyslogConfig.class);
+	
+	public interface PropertyType<T> {
+		PropertyType<Integer> integer = new PropertyType<Integer>(){
+			@Override
+			public Integer parse(String prop) {
 				try {
-					inputStream.close();
-				} catch (IOException e) {
-					log.error(e.getMessage(), e);
+					return Integer.parseInt(prop);
+				} catch(NumberFormatException e) {
+					throw new IllegalArgumentException(e);
 				}
 			}
+			@Override
+			public String toString() {
+				return "integer";
+			}
+		};
+		PropertyType<Boolean> bool = new PropertyType<Boolean>(){
+			@Override
+			public Boolean parse(String prop) {
+				return Boolean.parseBoolean(prop);
+			}
+			@Override
+			public String toString() {
+				return "bool";
+			}
+		};
+		PropertyType<String> string = new PropertyType<String>(){
+			@Override
+			public String parse(String prop) {
+				return prop;
+			}
+			@Override
+			public String toString() {
+				return "string";
+			}
+		};
+		
+		T parse(String prop) throws IllegalArgumentException;
+	}
+	
+	private static Properties properties = new Properties();
+	
+	public final String key;
+	public final Object defaultValue;
+	public final PropertyType<?> type;
+	
+	private <T> WinSyslogConfig(String id, PropertyType<T> type, T defaultValue) {
+		this.key = id;
+		this.type = type;
+		this.defaultValue = defaultValue;
+	}
+	
+	private <T> WinSyslogConfig(String id, PropertyType<T> type) {
+		this.key = id;
+		this.type = type;
+		this.defaultValue = null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <T> T value(){
+		String prop = properties.getProperty(key);
+		if (prop != null) {
+			try {
+				return (T)type.parse(prop);
+			} catch(IllegalArgumentException e) {
+				logger.debug(String.format("value() : %s can not be parsed. value=%s", key, prop));
+				return (T)defaultValue;
+			}
+		} else {
+			logger.debug(String.format("value() : %s is null", key));
+			return (T)defaultValue;
 		}
 	}
-
-	public static String getProperty(String key){
-		log.debug(key + " = " + properties.getProperty(key));
-		return properties.getProperty(key);
-	}
-
-	public static String getProperty(String key, String defaultValue){
-		log.debug(key + " = " + properties.getProperty(key) + ", defaultValue = " + defaultValue);
-		return properties.getProperty(key, defaultValue);
+	
+	@SuppressWarnings("unchecked")
+	public <T> T value(T defaultValue){
+		String prop = properties.getProperty(key);
+		if (prop != null) {
+			try {
+				return (T)type.parse(prop);
+			} catch(IllegalArgumentException e) {
+				logger.debug(String.format("value() : %s can not be parsed. value=%s", key, prop));
+				return defaultValue;
+			}
+		} else {
+			logger.debug(String.format("value() : %s is null", key));
+			return defaultValue;
+		}
 	}
 	
-	public static boolean getBooleanProperty(String key){
-		log.debug(key + " = " + properties.getProperty(key));
-		return Boolean.parseBoolean(properties.getProperty(key));
+	@SuppressWarnings("unchecked")
+	public <T> T defaultValue() {
+		return (T)defaultValue;
 	}
 	
-	public static boolean getBooleanProperty(String key, boolean defaultValue){
-		log.debug(key + " = " + properties.getProperty(key));
-		return Boolean.parseBoolean(properties.getProperty(key, String.valueOf(defaultValue)));
+	@Override
+	public String toString() {
+		return String.format("%s=%s (%s)", key, properties.getProperty(key), defaultValue);
 	}
 	
-	public static int getIntegerProperty(String key){
-		log.debug(key + " = " + properties.getProperty(key));
-		return Integer.parseInt(properties.getProperty(key));
-	}
-	
-	public static int getIntegerProperty(String key, int defaultValue){
-		log.debug(key + " = " + properties.getProperty(key));
-		return Integer.parseInt(properties.getProperty(key, String.valueOf(defaultValue)));
-	}
-
-	public static Properties getProperties(){
-		log.debug("getProperties() : call");
-		return properties;
+	public static void setProperties(Properties properties) {
+		WinSyslogConfig.properties = properties;
 	}
 }

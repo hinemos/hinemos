@@ -147,6 +147,8 @@ public class RevercePorlishNotation extends Operator {
 					} else {
 						_stack.push(getVal(expArray[i], currentTable, previousTable, deviceName));
 					}
+				} catch (CollectedDataNotFoundWithNoPollingException e) {
+					throw e;
 				} catch (CollectedDataNotFoundException | IllegalStateException | EmptyStackException e) {
 					log.warn("calc [" + expression + "], " + e.getClass().getName() + ", " + e.getMessage());
 					throw new InvalidValueException(e.getMessage());

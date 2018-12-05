@@ -397,10 +397,28 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="JobStartJobMstEntity.findByJobunitId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobStartJobMstEntity a
+				WHERE a.id.jobunitId = :jobunitId
+				ORDER BY a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
 	<named-query name="JobCommandParamMstEntity.findAll">
 		<query>
 			<![CDATA[
 				SELECT a FROM JobCommandParamMstEntity a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobCommandParamMstEntity.findByJobunitId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobCommandParamMstEntity a
+				WHERE a.id.jobunitId = :jobunitId
+				ORDER BY a.id.jobunitId, a.id.jobId
 			]]>
 		</query>
 	</named-query>
@@ -411,10 +429,28 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="JobEnvVariableMstEntity.findByJobunitId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobEnvVariableMstEntity a
+				WHERE a.id.jobunitId = :jobunitId
+				ORDER BY a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
 	<named-query name="JobStartParamMstEntity.findAll">
 		<query>
 			<![CDATA[
 				SELECT a FROM JobStartParamMstEntity a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobStartParamMstEntity.findByJobunitId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobStartParamMstEntity a
+				WHERE a.id.jobunitId = :jobunitId
+				ORDER BY a.id.jobunitId, a.id.jobId
 			]]>
 		</query>
 	</named-query>

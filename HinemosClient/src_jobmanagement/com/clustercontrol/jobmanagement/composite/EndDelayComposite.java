@@ -931,8 +931,8 @@ public class EndDelayComposite extends Composite {
 		m_timeValue.setEditable(m_timeCondition.getSelection() && enabled);
 		m_andCondition.setEnabled(enabled);
 		m_orCondition.setEnabled(enabled);
-		m_notifyCondition.setEnabled(m_notifyCondition.getSelection() && enabled);
-		m_notifyPriority.setEnabled(enabled);
+		m_notifyCondition.setEnabled(enabled);
+		m_notifyPriority.setEnabled(m_notifyCondition.getSelection() && enabled);
 		m_operationCondition.setEnabled(enabled);
 		m_operationType.setEnabled(m_operationCondition.getSelection() && enabled);
 		m_operationStatus.setEnabled(m_operationCondition.getSelection() && enabled);

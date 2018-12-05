@@ -226,7 +226,11 @@ public class OutputStatus implements DependDbNotifier {
 		} else {
 			// ステータス情報の更新
 			outputStatus.setApplication(outputInfo.getApplication());
-			outputStatus.setMessage(outputInfo.getMessage());
+			if (outputInfo.getMessage().length() > 255) {
+				outputStatus.setMessage(outputInfo.getMessage().substring(0, 255));
+			} else {
+				outputStatus.setMessage(outputInfo.getMessage());
+			}
 
 			// 重要度が変更されていた場合、出力日時を更新する
 			if (outputStatus.getPriority().intValue() != outputInfo.getPriority()) {

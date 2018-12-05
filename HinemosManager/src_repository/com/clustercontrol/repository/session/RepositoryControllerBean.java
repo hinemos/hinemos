@@ -2292,10 +2292,10 @@ public class RepositoryControllerBean {
 	 * @throws HinemosUnknown
 	 * @see com.clustercontrol.repository.bean.AgentCommandConstant
 	 */
-	public HashMap<String, String> getAgentLibMap () throws HinemosUnknown {
+	public HashMap<String, String> getAgentLibMap (ArrayList<String> facilityIdList) throws HinemosUnknown {
 		HashMap<String, String> map = null;
 		try {
-			map = AgentLibDownloader.getAgentLibMap();
+			map = AgentLibDownloader.getAgentLibMap(facilityIdList, false);
 		} catch (Exception e) {
 			m_log.warn("getAgentLibMap() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);

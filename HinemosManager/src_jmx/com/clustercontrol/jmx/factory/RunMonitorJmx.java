@@ -186,8 +186,9 @@ public class RunMonitorJmx extends RunMonitorNumericValueType {
 				valueEntity.setGetDate(m_nodeDate);
 				
 				if (!m_isMonitorJob) {
-					// 監視処理時に対象の監視項目IDが有効である場合にキャッシュを更新
-					if (m_monitor.getMonitorFlg()) MonitorJmxCache.update(m_monitorId, facilityId, valueEntity);
+					// 監視処理時に対象の監視項目IDが有効、または収集が有効である場合にキャッシュを更新
+					if (m_monitor.getMonitorFlg() || m_monitor.getCollectorFlg())
+						MonitorJmxCache.update(m_monitorId, facilityId, valueEntity);
 	
 					int m_validSecond = HinemosPropertyUtil.getHinemosPropertyNum("monitor.jmx.valid.second", Long.valueOf(15)).intValue();
 					// 前回値取得時刻が取得許容時間よりも前だった場合、値取得失敗

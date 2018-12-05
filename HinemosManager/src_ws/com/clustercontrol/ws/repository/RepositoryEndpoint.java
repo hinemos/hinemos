@@ -1097,7 +1097,7 @@ public class RepositoryEndpoint {
 		msg.append(validFlag);
 
 		try {
-			NodeInfo info = new RepositoryControllerBean().getNode(facilityId);
+			NodeInfo info = new RepositoryControllerBean().getNode(facilityId).clone();
 			info.setValid(validFlag);
 			new RepositoryControllerBean().modifyNode(info);
 		} catch (Exception e) {

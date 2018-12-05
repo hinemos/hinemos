@@ -31,6 +31,7 @@ import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.repository.model.FacilityRelationEntity;
 import com.clustercontrol.repository.model.ScopeInfo;
+import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 
@@ -57,7 +58,9 @@ public class OsScopeInitializerPlugin implements HinemosPlugin {
 		Set<String> platformIdSet = new HashSet<String>();
 		Set<String> osFacilityIdSet = new HashSet<String>();
 		String osParentFacilityId = FacilityTreeAttributeConstant.OS_PARENT_SCOPE;
+		JpaTransactionManager jtm = null;
 		try {
+			jtm = new JpaTransactionManager();
 			for (CollectorPlatformMstEntity platformMstEntity : QueryUtil.getAllCollectorPlatformMst()) {
 				String platformId = platformMstEntity.getPlatformId();
 				platformIdSet.add(platformId);
@@ -72,11 +75,15 @@ public class OsScopeInitializerPlugin implements HinemosPlugin {
 		} catch(Exception e) {
 			log.error(e);
 			return;
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
 		}
 
 		//setting.cc_collector_platform_mstにある、setting.cc_cfg_facilityにない
 		//OSをOS別スコープに登録
-		JpaTransactionManager jtm = null;
+		jtm = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
@@ -89,35 +96,36 @@ public class OsScopeInitializerPlugin implements HinemosPlugin {
 
 			long now = HinemosTime.currentTimeMillis();
 			FacilityInfo osParentFacilityEntity = QueryUtil.getFacilityPK_NONE(osParentFacilityId);
-			for (String facilityIdToAdd : facilityIdToAddSet) {
-				CollectorPlatformMstEntity platformMstEntity = platformMap.get(facilityIdToAdd);
-
-				ScopeInfo facilityEntityToAdd = new ScopeInfo(facilityIdToAdd);
-
-				facilityEntityToAdd.setFacilityName(platformMstEntity.getPlatformName());
-				facilityEntityToAdd.setDescription(platformMstEntity.getPlatformName());
-				facilityEntityToAdd.setDisplaySortOrder(platformMstEntity.getOrderNo());
-
-				facilityEntityToAdd.setFacilityType(osParentFacilityEntity.getFacilityType());
-				facilityEntityToAdd.setIconImage(osParentFacilityEntity.getIconImage());
-				facilityEntityToAdd.setValid(osParentFacilityEntity.getValid());
-				facilityEntityToAdd.setOwnerRoleId(osParentFacilityEntity.getOwnerRoleId());
-				facilityEntityToAdd.setCreateUserId(osParentFacilityEntity.getCreateUserId());
-				facilityEntityToAdd.setCreateDatetime(now);
-				facilityEntityToAdd.setModifyUserId(osParentFacilityEntity.getModifyUserId());
-				facilityEntityToAdd.setModifyDatetime(now);
-				
-				facilityEntityToAdd.persistSelf(em);
-				
-				em.flush();
-
-				log.info(String.format("The OS scope %s will be added.", facilityIdToAdd));
-				FacilityRelationEntity relation = new FacilityRelationEntity(osParentFacilityId, facilityIdToAdd);
-				em.persist(relation);
+			synchronized( FacilityTreeCache.class ){ //FacilityTreeCache更新との排他制御
+				for (String facilityIdToAdd : facilityIdToAddSet) {
+					CollectorPlatformMstEntity platformMstEntity = platformMap.get(facilityIdToAdd);
+	
+					ScopeInfo facilityEntityToAdd = new ScopeInfo(facilityIdToAdd);
+	
+					facilityEntityToAdd.setFacilityName(platformMstEntity.getPlatformName());
+					facilityEntityToAdd.setDescription(platformMstEntity.getPlatformName());
+					facilityEntityToAdd.setDisplaySortOrder(platformMstEntity.getOrderNo());
+	
+					facilityEntityToAdd.setFacilityType(osParentFacilityEntity.getFacilityType());
+					facilityEntityToAdd.setIconImage(osParentFacilityEntity.getIconImage());
+					facilityEntityToAdd.setValid(osParentFacilityEntity.getValid());
+					facilityEntityToAdd.setOwnerRoleId(osParentFacilityEntity.getOwnerRoleId());
+					facilityEntityToAdd.setCreateUserId(osParentFacilityEntity.getCreateUserId());
+					facilityEntityToAdd.setCreateDatetime(now);
+					facilityEntityToAdd.setModifyUserId(osParentFacilityEntity.getModifyUserId());
+					facilityEntityToAdd.setModifyDatetime(now);
+					
+					facilityEntityToAdd.persistSelf(em);
+					
+					em.flush();
+	
+					log.info(String.format("The OS scope %s will be added.", facilityIdToAdd));
+					FacilityRelationEntity relation = new FacilityRelationEntity(osParentFacilityId, facilityIdToAdd);
+					em.persist(relation);
+				}
 			}
-
 			jtm.commit();
-
+			FacilityTreeCache.refresh();
 			if (!facilityIdToAddSet.isEmpty()) {
 				builtinScopeFacilityIdSet.addAll(facilityIdToAddSet);
 				osScopeIdSet.addAll(facilityIdToAddSet);

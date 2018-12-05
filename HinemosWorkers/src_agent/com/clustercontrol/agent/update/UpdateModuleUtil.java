@@ -34,7 +34,9 @@ public class UpdateModuleUtil {
 	
 	// ファイルのダウンロードが行われた場合はtrue(一回の起動時に複数回ダウンロードしないようにする）
 	private static boolean isDownload = false;
-
+	
+	private static final String agentLibDir = Agent.getAgentHome() + "lib/";
+	
 	/**
 	 * Hinemosマネージャからファイルを取得するメソッド。
 	 * MD5を確認してから、Hinemosマネージャの/opt/hinemos/lib/agent/?を
@@ -54,29 +56,33 @@ public class UpdateModuleUtil {
 		}
 		
 		// マネージャからリストを取得する。
-		HashMap<String, String> managerMap = AgentEndPointWrapper.getAgentLibMap();
+		HashMap<String, String> managerMap = AgentEndPointWrapper.getAgentLibMap();	
 		boolean ret = false;
 		for (Entry<String, String> entry : managerMap.entrySet()) {
 			String md5Manager = entry.getValue();
-			String filename = entry.getKey();
-			String md5Agent = getAgentMap().get(filename);
-			m_log.debug("update() : filename=" + filename +
+			String filePath = entry.getKey();
+			String agentLibFilePath = filePath.replace("/", File.separator).replace("\\", File.separator);
+			String md5Agent = getAgentMap().get(agentLibFilePath);
+			m_log.debug("update() : filename=" + agentLibFilePath +
 					", manager=" + md5Manager +
 					", agent=" + md5Agent);
 			if (!md5Manager.equals(md5Agent)) {
 				// バックアップを取得する。(AGENT_HOME/lib/*)
-				backup(Agent.getAgentHome() + "lib/" + filename);
+				backup(filePath);
 
 				// ファイルを作成する。(AGENT_HOME/download/*)
 				FileOutputStream fileOutputStream = null;
 				try {
-					DataHandler handler = AgentEndPointWrapper.downloadModule(filename);
-					File file = new File(Agent.getAgentHome() + "download/" + filename);
-					if (!file.createNewFile())
-						throw new InternalError("can not create file, filename : " + filename);
-					fileOutputStream = new FileOutputStream(file);
+					DataHandler handler = AgentEndPointWrapper.downloadModule(filePath);
+					
+					File srcFile = new File(new File(Agent.getAgentHome(), "download"), agentLibFilePath);
+					
+					createDir(srcFile);
+					if (!srcFile.createNewFile())
+						throw new InternalError("can not create file, filename : " + agentLibFilePath);
+					fileOutputStream = new FileOutputStream(srcFile);
 					handler.writeTo(fileOutputStream);
-					m_log.info("update() : download filename=" + file.getAbsolutePath() +
+					m_log.info("update() : download filename=" + srcFile.getAbsolutePath() +
 							", md5(manager)=" + md5Manager + ", md5(agent)=" + md5Agent);
 				} catch (IOException e) {
 					m_log.warn("update() : IOException, " + e.getMessage());
@@ -102,17 +108,27 @@ public class UpdateModuleUtil {
 			return agentMap;
 		}
 		agentMap = new HashMap<String, String>();
-		String agentLibDir = Agent.getAgentHome() + "lib/";
 		File dir = new File(agentLibDir);
+		return putAgentLibMap(agentMap, dir);
+	}
+	
+	private synchronized static HashMap<String, String> putAgentLibMap(HashMap<String, String> agentMap, File dir) {
 		File[] files = dir.listFiles();
-		if (files != null) {
-			for (File file : files) {
+		if (files == null) {
+			m_log.info(String.format("files is null, %s=%s",dir.getName(), dir.getAbsolutePath()));
+			return agentMap;
+		}
+		
+		for (File file : files) {
+			if (file.isDirectory()) {
+				putAgentLibMap(agentMap, file);
+			} else {
 				if (file.isFile()) {
-					agentMap.put(file.getName(), getMD5(file.getAbsolutePath()));
+					File agentLibDir = new File(Agent.getAgentHome(), "lib");
+					String libPath = file.getAbsolutePath().replace(agentLibDir.getAbsolutePath() + File.separator, "");
+					agentMap.put(libPath, getMD5(file.getAbsolutePath()));
 				}
 			}
-		} else {
-			m_log.warn("agentLibDir=" + agentLibDir);
 		}
 		return agentMap;
 	}
@@ -167,23 +183,31 @@ public class UpdateModuleUtil {
 
 	/**
 	 * ファイルをバックアップする。
-	 * @param srcPath
+	 * @param filePath
 	 */
-	private static void backup(String srcPath) {
+	private static void backup(String libPath) {
 		FileInputStream inStream = null;
 		FileOutputStream outStream = null;
 		FileChannel srcChannel = null;
 		FileChannel destChannel = null;
-
-		// バックアップファイル名
-		File srcFile = new File(srcPath);
-		String parent = srcFile.getParent();
-
+		
+		File agentLibDir = new File(Agent.getAgentHome(), "lib");
+		File srcFile = new File(agentLibDir, libPath);
+		if(!srcFile.exists()) {
+			return;
+		}
+		
+		String srcPath = srcFile.getAbsolutePath();
+		
 		Date date1 = HinemosTime.getDateInstance();
 		SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMdd-HHmmss");
 		sdf1.setTimeZone(HinemosTime.getTimeZone());
-		String destPath = parent + "/backup/" + srcFile.getName() + "_" + sdf1.format(date1);
-
+		
+		File destFile =new File(agentLibDir, "backup"+ File.separator + libPath + "_" + sdf1.format(date1));
+		String destPath = destFile.getAbsolutePath();
+		
+		createDir(destFile);
+		
 		try {
 			inStream = new FileInputStream(srcPath);
 			srcChannel = inStream.getChannel();
@@ -219,7 +243,13 @@ public class UpdateModuleUtil {
 			}
 		}
 	}
-
+	
+	private static void createDir(File dir) {
+		if(!dir.getParentFile().exists()) {
+			dir.getParentFile().mkdirs();
+		}
+	}
+	
 	public static void main (String args[]) {
 		String filename = "hinemos_install.log";
 		System.out.println("filename=" + filename);

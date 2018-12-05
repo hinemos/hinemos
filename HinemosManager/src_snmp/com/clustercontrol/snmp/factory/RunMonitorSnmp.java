@@ -184,6 +184,7 @@ public class RunMonitorSnmp extends RunMonitorNumericValueType {
 				MonitorSnmpValue valueEntity = null;
 				Double prevValue = 0d;
 				Long prevDate = 0l;
+				m_value = -1d;
 				if (!m_isMonitorJob) {
 					// 監視ジョブ以外の場合
 					// cacheより前回情報を取得
@@ -219,8 +220,9 @@ public class RunMonitorSnmp extends RunMonitorNumericValueType {
 				valueEntity.setGetDate(date);
 
 				if (!m_isMonitorJob) {
-					// 監視処理時に対象の監視項目IDが有効である場合にキャッシュを更新
-					if (m_monitor.getMonitorFlg()) MonitorSnmpCache.update(m_monitorId, facilityId, valueEntity);
+					// 監視処理時に対象の監視項目IDが有効、または収集が有効である場合にキャッシュを更新
+					if (m_monitor.getMonitorFlg() || m_monitor.getCollectorFlg())
+						MonitorSnmpCache.update(m_monitorId, facilityId, valueEntity);
 
 					// 前回値取得時刻がSNMP取得許容時間よりも前だった場合、値取得失敗
 					int tolerance = (m_runInterval + SnmpProperties.getProperties().getValidSecond()) * 1000;

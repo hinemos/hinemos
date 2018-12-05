@@ -60,5 +60,7 @@
 	<classpathentry kind="lib" path="lib/jackson-core-2.8.2.jar"/>
 	<classpathentry kind="lib" path="lib/jackson-databind-2.8.2.jar"/>
 	<classpathentry kind="lib" path="lib/sqljdbc42.jar"/>
+	<classpathentry kind="lib" path="manager_switch/lib_platform_win/jna-platform.jar"/>
+	<classpathentry kind="lib" path="manager_switch/lib_platform_win/jna.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

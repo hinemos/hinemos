@@ -96,18 +96,23 @@ public class HinemosPropertyInfoCache {
 	 * キャッシュを更新
 	 */
 	public static synchronized void refresh() {
+		JpaTransactionManager jtm = null;
 		try {
 			_lock.writeLock();
 			
 			long startTime = HinemosTime.currentTimeMillis();
 			
-			new JpaTransactionManager().getEntityManager().clear();
+			jtm = new JpaTransactionManager();
+			jtm.getEntityManager().clear();
 			HashMap<String, HinemosPropertyInfo> cache = createHinemosPropertyInfoMap();
 			storeCache(cache);
 			
 			log.info(String.format("refresh: %dms size=%d", HinemosTime.currentTimeMillis() - startTime, cache.size()));
 		} finally {
 			_lock.writeUnlock();
+			if(jtm != null) {
+				jtm.close();
+			}
 		}
 	}
 

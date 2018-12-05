@@ -225,7 +225,7 @@ abstract public class Operator {
 						// エラー処理
 						String message = "getDifferenceValue() deviceName : " + deviceName + ", previousIndex is null";
 						m_log.debug(message);
-						throw new CollectedDataNotFoundException(message);
+						throw new CollectedDataNotFoundWithNoPollingException(message);
 					}
 
 					// pollingTargetにTableEntryから取得するためのKeyを与える
@@ -624,6 +624,12 @@ abstract public class Operator {
 		// return用の変数
 		double ret = 0;
 
+		// 前回収集時の値がなく、今回収集時の値がある場合は、異常ではなく初回収集と判断する
+		if (previousTable.getValue(previousEntryKey) == null && currentTable.getValue(currentEntryKey) != null) {
+			m_log.info("getMibValueDiff() : polling have not done enough count.");
+			throw new CollectedDataNotFoundWithNoPollingException("previous data is null");
+		}
+
 		// 前回収集時の値を取得
 		long previousValue =  getMibValueLong(previousTable, data, previousEntryKey);
 
@@ -802,6 +808,14 @@ abstract public class Operator {
 		private static final long serialVersionUID = 6306555743811316089L;
 		
 		public CollectedDataNotFoundException(String messages) {
+			super(messages + ", itemcode=" + itemCode);
+		}
+	}
+
+	public class CollectedDataNotFoundWithNoPollingException extends CollectedDataNotFoundException {
+		private static final long serialVersionUID = 9166324575275897346L;
+
+		public CollectedDataNotFoundWithNoPollingException(String messages) {
 			super(messages + ", itemcode=" + itemCode);
 		}
 	}

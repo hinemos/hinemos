@@ -20,33 +20,100 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 
-/**
+/*
  * レシーバが受信したシステムログをUDPで送信するクラス
  */
 public class UdpSender {
-	private static Log log = LogFactory.getLog(UdpSender.class);
+	private static Logger logger = Logger.getLogger(UdpSender.class);
 	
-	private static InetSocketAddress[] toAddresses = null;
+	private Counter counter = new Counter("The number of sended syslog");
+
+	private DatagramSocket socket;
+	private List<InetSocketAddress> addresses;
 	
-	/**
-	 * 初期化処理
-	 * @param configValue 送信先の設定値
+	// 最大リトライ数
+	private final static int MAX_RETRY_COUNT = 10;
+	
+	private SyslogPacketHelper parser = new SyslogPacketHelper();
+	
+	public UdpSender(List<InetSocketAddress> addresses) throws SocketException {
+		this.addresses = Collections.unmodifiableList(new ArrayList<>(addresses));
+		this.socket = new DatagramSocket();
+	}
+	
+	/*
+	 * 複数のターゲットへ送信。
 	 */
-	public static void init(String configValue) {
+	public void send(byte[] message) {
+		if (logger.isTraceEnabled()) {
+			String[] result;
+			try {
+				result = parser.splitSyslogMessage(message);
+				if (result != null) {
+					logger.trace(String.format("send() : %s, header=%s, message=%s", addresses, result[0], result[1]));
+				} else {
+					logger.warn(String.format("send() : %s, string=%s, array=%s", addresses, new String(message, parser.getHdrCharset()), Arrays.toString(message)));
+				}
+			} catch (IOException e) {
+				logger.warn(e.getMessage(), e);
+			}
+		}
+		
+		int count = 0;
+		
+		List<InetSocketAddress> targets = new ArrayList<>(addresses);
+		while(!targets.isEmpty() && count < MAX_RETRY_COUNT) {
+			// 送信
+			Iterator<InetSocketAddress> iter = targets.iterator();
+			while(iter.hasNext()) {
+				InetSocketAddress addr = iter.next();
+				
+				try {
+					if (logger.isTraceEnabled())
+						logger.trace("send() : send to [" + addr + "]");
+					DatagramPacket packet =  new DatagramPacket(message, message.length, addr);
+					socket.send(packet);
+					counter.incrementSuccess();
+					iter.remove();
+				} catch (IOException e) {
+					logger.warn(e.getMessage() + " : " + addr, e);
+				}
+			}
+			
+			++count;
+			
+			if (!targets.isEmpty()) {
+				if (logger.isDebugEnabled())
+					logger.debug(String.format("send() : wait to retry. count=%d", count));
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+		
+		for (int i = 0; i < targets.size(); ++i) {
+			counter.incrementFailed();
+		}
+	}
+	
+	public static UdpSender build(String targets) throws SocketException {
 		// 設定値を分解する
 		// ex)192.168.0.1:24001,192.168.0.2:24001
-		List<InetSocketAddress> sockets = new ArrayList<InetSocketAddress>();
-		if (configValue != null && configValue.length() > 0) {
-			String[] targetsArray = configValue.split(",");
+		List<InetSocketAddress> sockets = new ArrayList<>();
+		if (targets != null && targets.length() > 0) {
+			String[] targetsArray = targets.split(",");
 			for (String target : targetsArray) {
 				String[] address = target.split(":");
 				if (address.length != 2) {
-					log.warn("illegal configuration value line \"syslog.send.targets\":" + target);
+					logger.warn("build() : illegal configuration value line \"syslog.send.targets\":" + target);
 					continue;
 				}
 				
@@ -54,58 +121,25 @@ public class UdpSender {
 					InetSocketAddress socketAddress = new InetSocketAddress(address[0].trim(), Integer.parseInt(address[1].trim()));
 					sockets.add(socketAddress);
 				} catch (Exception e) {
-					log.warn("illegal configuration value line \"syslog.send.targets\":" + target, e);
+					logger.warn("build() : illegal configuration value line \"syslog.send.targets\":" + target, e);
 				}
 			}
 			
 		} else {
-			log.warn("configuration value \"syslog.send.targets\" is not defined.");
+			logger.warn("build() : configuration value \"syslog.send.targets\" is not defined.");
 		}
-		toAddresses = sockets.toArray(new InetSocketAddress[0]);
+		return build(sockets);
 	}
 	
-	/**
-	 * データを送信する
-	 * @param sendBuff 送信データ
-	 */
-	public static void send(byte[] sendBuff) {
-		if (toAddresses == null) {
-			log.warn("UdpSender is not Initialised.");
-			return;
-		} else if (toAddresses.length == 0) {
-			log.warn("send target is none.");
-			return;
-		}
-		
-		SenderTask sender = new SenderTask(sendBuff);
-		Thread thread = new Thread(sender);
-		thread.start();
+	public static UdpSender build(List<InetSocketAddress> addresses) throws SocketException {
+		return new UdpSender(addresses);
 	}
 	
-	private static class SenderTask implements Runnable {
-		private byte[] sendBuff;
-		
-		public SenderTask(byte[] sendBuff) {
-			this.sendBuff = sendBuff;
-		}
-		
-		@Override
-		public void run() {
-			try {
-				for (InetSocketAddress addr : toAddresses) {
-					log.debug("send to [" + addr.toString() + "]");
-					DatagramSocket dataSocket = new DatagramSocket();
-					DatagramPacket packet =  new DatagramPacket(sendBuff, sendBuff.length, addr);
-					dataSocket.send(packet);
-					dataSocket.close();
-				}
-				
-			} catch (SocketException e) {
-				log.error("send failed." , e);
-			} catch (IOException e) {
-				log.error("send failed." , e);
-			}
-		}
+	public void setSyslogPacketParser(SyslogPacketHelper parser) {
+		this.parser = parser;
 	}
 	
+	public void close() {
+		socket.close();
+	}
 }

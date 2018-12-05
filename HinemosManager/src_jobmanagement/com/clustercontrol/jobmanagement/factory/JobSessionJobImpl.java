@@ -59,6 +59,7 @@ import com.clustercontrol.jobmanagement.model.JobStartJobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobStartParamInfoEntity;
 import com.clustercontrol.jobmanagement.util.ParameterUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
+import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.util.HinemosTime;
 
 public class JobSessionJobImpl {
@@ -426,6 +427,7 @@ public class JobSessionJobImpl {
 				// 判定値1の置換
 				decisionValue01 = ParameterUtil.replaceSessionParameterValue(
 						sessionId, job.getFacilityId(), jobStartParamInfoEntity.getId().getStartDecisionValue01());
+				decisionValue01 = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, decisionValue01);
 				
 				// 判定値1が置換されているかどうか再度検証し、置換されていなければ次の判定処理まで待機
 				if (pattern.matcher(decisionValue01).find()) {
@@ -443,6 +445,7 @@ public class JobSessionJobImpl {
 				// 判定値2の置換
 				decisionValue02 = ParameterUtil.replaceSessionParameterValue(
 						sessionId, job.getFacilityId(), jobStartParamInfoEntity.getId().getStartDecisionValue02());
+				decisionValue02 = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, decisionValue02);
 				
 				// 判定値2が置換されているかどうか再度検証し、置換されていなければ次の判定処理まで待機
 				if (pattern.matcher(decisionValue02).find()) {
@@ -1470,6 +1473,18 @@ public class JobSessionJobImpl {
 		//同一階層のジョブが全て完了したかチェック
 		boolean endAll = true;
 		for (JobSessionJobEntity sessionJob1 : QueryUtil.getChildJobSessionJob(sessionId, parentJobunitId, parentJobId)) {
+			// 待ち条件を設定していないジョブのみを対象とする
+			if (HinemosPropertyUtil.getHinemosPropertyBool("job.end.criteria", false)) {
+				//待ち条件に指定されているかチェック
+				Collection<JobStartJobInfoEntity> targetJobList = null;
+				targetJobList = em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
+						.setParameter("sessionId", sessionId)
+						.setParameter("targetJobId", sessionJob1.getId().getJobId())
+						.getResultList();
+				if(targetJobList.size() > 0){
+					continue;
+				}
+			}
 			//実行状態が終了または変更済以外の場合、同一階層のジョブは未完了
 			if(!StatusConstant.isEndGroup(sessionJob1.getStatus())){
 				endAll = false;

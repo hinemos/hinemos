@@ -75,7 +75,7 @@ public class RecordDataWriter implements Runnable {
 	/**
 	 * セパレータ
 	 */
-	private static final String SQUARE_SEPARATOR = "#";
+	private static final String SQUARE_SEPARATOR = "\u2029";
 
 	/**
 	 * デフォルトコンストラクタ

@@ -265,8 +265,13 @@ public class JobSessionNodeImpl {
 			return -1;
 		}
 
-		//ノード詳細の実行状態が待機でない場合
-		if(sessionNode.getStatus() != StatusConstant.TYPE_WAIT){
+		// ノード詳細が起動失敗の場合は、waitQueueから削除させるため、意図とは異なるが1を返す。
+		if(sessionNode.getStatus() == StatusConstant.TYPE_ERROR) {
+			return 1;
+		}
+		//ノード詳細の実行状態が待機ではない、かつ終了ではない場合
+		if(sessionNode.getStatus() != StatusConstant.TYPE_WAIT 
+			&& sessionNode.getStatus() != StatusConstant.TYPE_END){
 			return -1;
 		}
 		
@@ -950,6 +955,11 @@ public class JobSessionNodeImpl {
 		JobSessionNodeEntity sessionNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
 		m_log.debug("checkTimeout() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 
+		// 監視ジョブの場合はタイムアウトチェック対象外とする。
+		if (sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB) {
+			m_log.debug("checkTimeout() : job_type is monitor_job");
+			return;
+		}
 		//待ち条件ジョブ判定
 		if(sessionNode.getStatus() != StatusConstant.TYPE_RUNNING){
 			// 1分に1回のタイムアウトチェック中にエージェントの応答があると、
@@ -1194,6 +1204,11 @@ public class JobSessionNodeImpl {
 			sessionNode.setStartDate(null);
 			return false;
 		} else if (sessionJob.getStatus() != StatusConstant.TYPE_RUNNING) {
+			return false;
+		}
+
+		// AgentTimeoutErrorの場合は再実行せずに終了
+		if(sessionNode.getRetryCount() >= sessionNode.getJobSessionJobEntity().getJobInfoEntity().getMessageRetry()) {
 			return false;
 		}
 

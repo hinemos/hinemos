@@ -19,7 +19,7 @@ import com.clustercontrol.maintenance.util.HinemosPropertyUtil;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 
 /**
- * プロセス監視プロパティ情報取得クラス
+ * PING監視プロパティ情報取得クラス
  *
  * @version 2.3.0 bata
  * @since 2.3.0
@@ -34,7 +34,7 @@ public class PingProperties {
 	 * @version 2.0.0
 	 * @since 2.0.0
 	 *
-	 * @return ConnectionManager コネクションマネージャ
+	 * @return PingProperties Pingプロパティ
 	 */
 	public synchronized static PingProperties getProperties() {
 		if (m_instance==null) {
@@ -43,7 +43,7 @@ public class PingProperties {
 		return m_instance;
 	}
 
-	protected static int getFpingCount() {
+	public static int getFpingCount() {
 		/** fping利用時のデフォルトの　ping回数 */
 		return HinemosPropertyUtil.getHinemosPropertyNum("monitor.ping.fping.count", Long.valueOf(1)).intValue();
 	}
@@ -53,27 +53,27 @@ public class PingProperties {
 		return HinemosPropertyUtil.getHinemosPropertyBool("monitor.ping.fping.enable", true);
 	}
 
-	protected static int getFpingInterval() {
+	public static int getFpingInterval() {
 		/** fping利用時のデフォルトの　pingインターバル msec*/
 		return HinemosPropertyUtil.getHinemosPropertyNum("monitor.ping.fping.interval", Long.valueOf(1000)).intValue();
 	}
 
-	protected static int getFpingTimeout() {
+	public static int getFpingTimeout() {
 		/** fping利用時のデフォルトの　pingタイムアウト msec*/
 		return HinemosPropertyUtil.getHinemosPropertyNum("monitor.ping.fping.timeout", Long.valueOf(1000)).intValue();
 	}
 
-	protected static int getFpingBytes() {
+	public static int getFpingBytes() {
 		/** fping利用時のデフォルトの　ping送信データサイズ byte*/
 		return HinemosPropertyUtil.getHinemosPropertyNum("monitor.ping.fping.bytes", Long.valueOf(56)).intValue();
 	}
 
-	protected static String getFpingPath() {
+	public static String getFpingPath() {
 		/** fping のパス **/
 		return HinemosPropertyUtil.getHinemosPropertyStr("monitor.ping.fping.path", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.MONITOR_PING_FPING_PATH));
 	}
 
-	protected static String getFping6Path() {
+	public static String getFping6Path() {
 		/** fping6 のパス **/
 		return HinemosPropertyUtil.getHinemosPropertyStr("monitor.ping.fping6.path", HinemosPropertyDefault.getString(HinemosPropertyDefault.StringKey.MONITOR_PING_FPING6_PATH));
 	}

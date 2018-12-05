@@ -123,6 +123,7 @@ public class CalendarUtil {
 					if (!detailInfo.isSubstituteFlg()) {
 						continue;
 					}
+					checkEnd:
 					for (int limit = 1; limit <= detailInfo.getSubstituteLimit(); limit++) {
 						Date substituteDate = new Date(date.getTime() - (parseDate(detailInfo.getSubstituteTime()) + HinemosTime.getTimeZoneOffset()) *limit);
 						m_log.trace("SubstituteDate:" + substituteDate + ", description:" + detailInfo.getDescription() + ", limit:" + limit);
@@ -131,7 +132,7 @@ public class CalendarUtil {
 							if (detailInfo.equals(detailInfo2)) {
 								if (!findhikadou) {
 									m_log.trace("非稼動チェックでヒットしなかった、振り替えない。return false.");
-									return new Object[]{false};
+									break checkEnd;
 								} else {
 									if (!isRunByDetailDateTime(detailInfo2, substituteDate)) {
 										m_log.trace("対象日は非稼動だ、振り替えにはヒットしなかった。次の候補日チェックする。フラグおろす。break.");

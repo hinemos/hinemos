@@ -171,6 +171,62 @@ public class RunCustom extends RunCustomBase{
 					if (m_log.isDebugEnabled()) {
 						m_log.debug("command monitoring : judgement values [" + result + ", key = " + key + "]");
 					}
+					
+					// 前回値に関するパラメータを宣言
+					MonitorCustomValue valueEntity = null;
+					Double prevValue = 0d;
+					Long prevDate = 0l;
+					int m_validSecond = Integer.MIN_VALUE;
+					int tolerance = Integer.MIN_VALUE;
+					
+					// 差分値をとる場合は、値の精査を行う。
+					if (monitor.getCustomCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_DELTA) {
+						// cacheより前回情報を取得
+						if (!isMonitorJob) {
+							// 監視ジョブ以外
+							valueEntity = MonitorCustomCache.getMonitorCustomValue(monitor.getMonitorId(), monitor.getFacilityId(), key);
+							prevValue = (Double)valueEntity.getValue();
+							// 前回の取得値
+							if (valueEntity.getGetDate() != null) {
+								prevDate = valueEntity.getGetDate();
+							}
+						} else {
+							// 監視ジョブ
+							valueEntity = (MonitorCustomValue)MonitorJobWorker.getPrevMonitorValue(result.getRunInstructionInfo());
+							if (valueEntity != null) {
+								// 前回値が存在する場合
+								prevValue = (Double)valueEntity.getValue();
+								prevDate = valueEntity.getGetDate();
+							} else {
+								valueEntity = new MonitorCustomValue(new MonitorCustomValuePK(monitor.getMonitorId(), monitor.getFacilityId(), key));
+							}
+						}
+						// 前回値情報を今回の取得値に更新
+						valueEntity.setValue(result.getResults().get(key));
+						valueEntity.setGetDate(result.getCollectDate());
+						if (!isMonitorJob) {
+							// 監視ジョブ以外
+							// 監視処理時に対象の監視項目IDが有効である場合にキャッシュを更新
+							MonitorCustomCache.update(monitor.getMonitorId(), monitor.getFacilityId(), key, valueEntity);
+							
+							m_validSecond = HinemosPropertyUtil.getHinemosPropertyNum("monitor.custom.valid.second", Long.valueOf(15)).intValue();
+							// 前回値取得時刻が取得許容時間よりも前だった場合、値取得失敗
+							tolerance = (monitor.getRunInterval() + m_validSecond) * 1000;
+							
+							if(prevDate > result.getCollectDate() - tolerance){
+								if (prevValue != null) {
+									value = (Double)result.getResults().get(key) - prevValue;
+								}
+							}
+							else{
+								if (prevDate == 0l) {
+									// 差分処理の初回取得処理のため、処理終了
+									return;
+								}
+							}
+						}
+					}
+					
 					if (isMonitorJob || monitor.getMonitorFlg()) {	// monitor each value
 						// 差分判定
 						if (monitor.getCustomCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_NO) {
@@ -202,53 +258,14 @@ public class RunCustom extends RunCustomBase{
 
 						} else if (monitor.getCustomCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_DELTA) {
 							// 取得した値と前回情報の差分をとり、閾値判定を行う。
-							// 前回値を取得
-							MonitorCustomValue valueEntity = null;
-							Double prevValue = 0d;
-							Long prevDate = 0l;
-
-							// cacheより前回情報を取得
 							if (!isMonitorJob) {
-								// 監視ジョブ以外
-								valueEntity = MonitorCustomCache.getMonitorCustomValue(monitor.getMonitorId(), monitor.getFacilityId());
-
-								prevValue = (Double)valueEntity.getValue();
-								// 前回の取得値
-								if (valueEntity.getGetDate() != null) {
-									prevDate = valueEntity.getGetDate();
-								}
-							} else {
-								// 監視ジョブ
-								valueEntity = (MonitorCustomValue)MonitorJobWorker.getPrevMonitorValue(result.getRunInstructionInfo());
-								if (valueEntity != null) {
-									// 前回値が存在する場合
-									prevValue = (Double)valueEntity.getValue();
-									prevDate = valueEntity.getGetDate();
-									
-								} else {
-									valueEntity = new MonitorCustomValue(new MonitorCustomValuePK(monitor.getMonitorId(), monitor.getFacilityId()));
-								}
-							}
-
-							// 前回値情報を今回の取得値に更新
-							valueEntity.setValue(result.getResults().get(key));
-							valueEntity.setGetDate(result.getCollectDate());
-
-							if (!isMonitorJob) {
-								// 監視処理時に対象の監視項目IDが有効である場合にキャッシュを更新
-								MonitorCustomCache.update(monitor.getMonitorId(), monitor.getFacilityId(), valueEntity);
-
-								int m_validSecond = HinemosPropertyUtil.getHinemosPropertyNum("monitor.custom.valid.second", Long.valueOf(15)).intValue();
 								// 前回値取得時刻が取得許容時間よりも前だった場合、値取得失敗
-								int tolerance = (monitor.getRunInterval() + m_validSecond) * 1000;
-
 								if(prevDate > result.getCollectDate() - tolerance){
 									if (prevValue == null) {
 										m_log.debug("collect() : prevValue is null");
 										notify(PriorityConstant.TYPE_UNKNOWN, monitor, result.getFacilityId(), facilityPath, null, msg, msgOrig, HinemosModuleConstant.MONITOR_CUSTOM_N);
 										return;
 									}
-									value = (Double)result.getResults().get(key) - prevValue;
 								}
 								else{
 									if (prevDate != 0l) {
@@ -257,10 +274,6 @@ public class RunCustom extends RunCustomBase{
 										String[] args = {df.format(new Date(prevDate))};
 										msg = MessageConstant.MESSAGE_TOO_OLD_TO_CALCULATE.getMessage(args);
 										notify(PriorityConstant.TYPE_UNKNOWN, monitor, result.getFacilityId(), facilityPath, null, msg, msgOrig, HinemosModuleConstant.MONITOR_CUSTOM_N);
-										return;
-									}
-									else {
-										// 差分処理の初回取得処理のため、処理終了
 										return;
 									}
 								}
@@ -323,11 +336,11 @@ public class RunCustom extends RunCustomBase{
 						// keyの重複チェック
 						for (Sample lSample : sampleList){
 							// カスタム監視ではcollectedSamplesの1要素に対してperfDataは1つのため、以下で対応
-							if (!(lSample.getMonitorId().equals(monitor.getMonitorId())
+							if (lSample.getMonitorId().equals(monitor.getMonitorId())
 									&& lSample.getDateTime().getTime() == result.getCollectDate()
 									&& lSample.getPerfDataList().get(0).getFacilityId().equals(result.getFacilityId())
 									&& lSample.getPerfDataList().get(0).getDisplayName().equals(key)
-									&& lSample.getPerfDataList().get(0).getItemName().equals(monitor.getItemName()))) {
+									&& lSample.getPerfDataList().get(0).getItemName().equals(monitor.getItemName())) {
 								overlapCheck = true;
 								break;
 							}

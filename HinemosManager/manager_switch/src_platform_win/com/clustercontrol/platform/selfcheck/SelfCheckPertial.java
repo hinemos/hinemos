@@ -39,7 +39,7 @@ public class SelfCheckPertial {
 			+ " + CAST(CAST((DATEDIFF (MS, start_time, GETDATE()) / 1000.0) AS DECIMAL(38,3)) as VARCHAR) + ' sec'"
 			+ " FROM sys.dm_exec_requests req"
 			+ " CROSS APPLY sys.dm_exec_sql_text(req.sql_handle) sql"
-			+ " WHERE DATEDIFF (MS ,start_time, GETDATE()) > (%d * 1000)";
+			+ " WHERE GETDATE() > DATEADD( ss, 86400, start_time)";
 
 	public static String getDbLongTranValidationQuery(){
 		logger.debug("db longtran validationQuery(Windows) : " + DB_LONG_TRAN_VALIDATION_QUERY);

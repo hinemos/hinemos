@@ -78,7 +78,7 @@ public class Snmp4jPollerImpl {
 	private final static String PROP_MAX_REPETITIONS = "monitor.poller.snmp.bulk.maxrepetitions";
 	private final static String PROP_NOT_V3_SNMP_POOL_SIZE = "monitor.poller.snmp.not.v3.snmp.pool.size";
 	public final static String LABEL_REPLACE_KEY = "monitor.resource.label.replace"; 
-	public final static String LABEL_REPLACE_DEFAULT = " Label:\\S*  Serial Number .*"; 
+	public final static String LABEL_REPLACE_DEFAULT = " Label:.*  Serial Number .*"; 
 
 
 	private final List<String> processOidList;

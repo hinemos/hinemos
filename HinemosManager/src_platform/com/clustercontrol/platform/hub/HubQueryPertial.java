@@ -25,7 +25,25 @@ public class HubQueryPertial {
 
 	private static final String SEQUENCE_SQL = "SELECT last_value, max_value FROM %s";
 
+	private static final String SEQUENCE_MIN_POS_SQL = "SELECT MIN(t0.position) FROM %s t0 WHERE t0.position > (SELECT last_value FROM %s) AND t0.position <= (SELECT max_value FROM %s)";
+	
 	public static String getSequenceSql() {
 		return SEQUENCE_SQL;
+	}
+	
+	public static String getSequenceMinPosSql() {
+		return SEQUENCE_MIN_POS_SQL;
+	}
+	
+	public static String getSequenceTableNameEventLog() {
+		return "log.cc_event_log_position_seq";
+	}
+	
+	public static String getSequenceTableNameJobSession() {
+		return "log.cc_job_session_position_seq";
+	}
+	
+	public static String getSequenceTableNameCollectDataRaw() {
+		return "log.cc_collect_data_raw_position_seq";
 	}
 }

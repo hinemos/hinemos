@@ -51,6 +51,7 @@ import com.clustercontrol.performance.monitor.util.PerfDataQueue;
 import com.clustercontrol.performance.monitor.util.QueryUtil;
 import com.clustercontrol.performance.operator.Operator;
 import com.clustercontrol.performance.operator.Operator.CollectedDataNotFoundException;
+import com.clustercontrol.performance.operator.Operator.CollectedDataNotFoundWithNoPollingException;
 import com.clustercontrol.performance.util.CalculationMethod;
 import com.clustercontrol.performance.util.PollingDataManager;
 import com.clustercontrol.performance.util.code.CollectorItemCodeTable;
@@ -476,6 +477,10 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 		try {
 			m_value = CalculationMethod.getPerformance(platform, subPlatform, itemInfo, deviceName, curTable, prvTable);
 			ret = true;
+		} catch (CollectedDataNotFoundWithNoPollingException e) {
+			// DataTalbeを2回分取得できなかった場合にはnullを返す（何も通知しない）
+			m_log.info("calcValue() : previous polling have not done." + facilityName + ", " + itemCode + ", " + deviceName);
+			return null;
 		} catch (CollectedDataNotFoundException | IllegalStateException | Operator.InvalidValueException e) {
 			m_value = Double.NaN;
 			m_errorMessage = e.getMessage();

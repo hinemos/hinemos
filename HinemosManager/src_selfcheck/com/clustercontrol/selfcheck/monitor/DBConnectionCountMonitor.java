@@ -96,7 +96,7 @@ public class DBConnectionCountMonitor extends SelfCheckMonitorBase {
 			
 			if (count == -1) {
 				m_log.info("skipped monitoring database connection. (threshold=" + threshold);
-				return;
+				continue;
 			} else if (count <= threshold) {
 				m_log.debug("the number of database connection is low. (count = " + count + ", threshold = " + threshold + ")");
 				warn = false;
@@ -106,7 +106,7 @@ public class DBConnectionCountMonitor extends SelfCheckMonitorBase {
 				m_log.info("the number of database connection is too many. (count= "  + count + ", threshold = " + threshold + ")");
 			}
 			if (!isNotify(subKey, warn)) {
-				return;
+				continue;
 			}
 
 			String[] msgAttr1 = { Integer.toString(count),

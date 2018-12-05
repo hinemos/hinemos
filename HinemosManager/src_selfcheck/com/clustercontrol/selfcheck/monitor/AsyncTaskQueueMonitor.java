@@ -104,7 +104,7 @@ public class AsyncTaskQueueMonitor extends SelfCheckMonitorBase {
 			}
 
 			if (!isNotify(subKey, warn)) {
-				return;
+				continue;
 			}
 			String[] msgAttr1 = { Integer.toString(queueSize), Integer.toString(threshold) };
 			AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_011_SYS_SFC, msgAttr1,

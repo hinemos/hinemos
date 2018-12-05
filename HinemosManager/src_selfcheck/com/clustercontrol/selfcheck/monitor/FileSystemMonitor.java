@@ -18,6 +18,8 @@ package com.clustercontrol.selfcheck.monitor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -89,10 +91,11 @@ public class FileSystemMonitor extends SelfCheckMonitorBase {
 				"selfcheck.monitoring.filesystem.usage.list",
 				"/:50");
 		List<FileSystemUsageConfig> fsUsages = new ArrayList<FileSystemUsageConfig>();
+		Pattern p = Pattern.compile("(.*):([0-9]+)");
 		for (String fs : fsUsageRaw.split(",")) {
-			String[] pair = fs.split(":");
-			if (pair.length == 2) {
-				fsUsages.add(new FileSystemUsageConfig(pair[0], Integer.parseInt(pair[1])));
+			Matcher m = p.matcher(fs);
+			if (m.matches()) {
+				fsUsages.add(new FileSystemUsageConfig(m.group(1), Integer.parseInt(m.group(2))));
 			}
 		}
 		List<FileSystemUsageConfig> fsUsageList = Collections.unmodifiableList(fsUsages);
@@ -121,7 +124,7 @@ public class FileSystemMonitor extends SelfCheckMonitorBase {
 	
 			if (fileSystemUsage == -1 || fileSystemTotal == -1) {
 				m_log.info("skipped monitoring file system usage. (mountPoint = " + mountPoint + ", threshold = " + thresholdPer + " [%])");
-				return;
+				continue;
 			} else {
 				if (fileSystemUsagePer <= thresholdPer) {
 					m_log.debug("usage of file system is low. (mountPoint = " + mountPoint
@@ -135,9 +138,9 @@ public class FileSystemMonitor extends SelfCheckMonitorBase {
 			}
 	
 			if (!isNotify(subKey, warn)) {
-				return;
+				continue;
 			}
-			String[] msgAttr1 = { mountPoint, String.format("%.2f", fileSystemUsagePer), Integer.toString(thresholdPer)};
+			String[] msgAttr1 = { mountPoint.replace(":\\", ":/"), String.format("%.2f", fileSystemUsagePer), Integer.toString(thresholdPer)};
 			AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_002_SYS_SFC, msgAttr1,
 					"usage of filesystem(" +
 							mountPoint +

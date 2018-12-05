@@ -88,8 +88,8 @@ public class CollectSettingComposite extends Composite {
 
 	private static final int SUMMARY_CODE_INVALID = -1;
 	
-	/** 区切り文字(#) */
-	protected static final String SEPARATOR_HASH = "#";
+	/** 区切り文字(\u2029) */
+	protected static final String SEPARATOR_HASH = "\u2029";
 	/** 区切り文字(##@##) */
 	protected static final String SEPARATOR_HASH_HASH_AT_HASH_HASH = "##@##";
 	/** 区切り文字(#!#) */
@@ -807,7 +807,7 @@ public class CollectSettingComposite extends Composite {
 
 	/**
 	 * 画面の選択順番はindex番号で管理し、監視項目名を取得して<br>
-	 * 項目名を「#」で連結して返します。<br>
+	 * 項目名を区切り文字で連結して返します。<br>
 	 * List.getSelectionIndex：rcpの場合は選択したindexが取れるが、rapの場合は選択したindexが取れない。<br>
 	 * List.getSelectionIndices：rcpの場合は選択順番どおりに取れない(Listに追加順で取れる)が、rapの場合は選択順番どおりに取れる。<br>
 	 * List.getSelection：rcpの場合は選択した順番どおりに取れない(Listに追加順で取れる)が、rapの場合は選択順番どおりに取れる。<br>
@@ -836,7 +836,7 @@ public class CollectSettingComposite extends Composite {
 	}
 	
 	/**
-	 * preferenceで保持していた監視項目選択情報(監視項目名の「#」連結)から<br>
+	 * preferenceで保持していた監視項目選択情報(区切り文字で連結されている監視項目名)から<br>
 	 * index番号に変換してリストで返します。<br>
 	 * @return
 	 */

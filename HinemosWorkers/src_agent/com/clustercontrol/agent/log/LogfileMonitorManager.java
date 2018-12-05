@@ -74,6 +74,7 @@ public class LogfileMonitorManager {
 	
 	private static List<MonitorInfoWrapper> monitorList;
 	
+	private static boolean isRunning = false;
 	
 	/**
 	 * コンストラクタ
@@ -205,7 +206,17 @@ public class LogfileMonitorManager {
 						logfileMonitorCache.put(cacheKey, logfileMonitor);
 						log.debug("refresh() : LogfileMonitor is created.");
 					} else {
-						log.debug("refresh() : LogfileMonitor is being cached.");
+						// getFilePath には正式なディレクトリおよびファイル名が記録されているがwrapper のファイル名については
+						// 正規表現が入力されている可能性があるので、ファイルパスで前方一致を行う
+						if (logfileMonitor.getFilePath().startsWith(directoryPath)) {
+						        log.debug("refresh() : LogfileMonitor is being cached.");
+						} else {
+						        // ディレクトリが一致していない場合は再作成
+						        // ファイル監視オブジェクトを生成。
+						        logfileMonitor = new LogfileMonitor(wrapper, status);
+						        logfileMonitorCache.put(cacheKey, logfileMonitor);
+						        log.debug("refresh() : LogfileMonitor is created. Because the directory has been changed.");
+						}
 					}
 					
 					logfileMonitor.setMonitor(wrapper);
@@ -261,12 +272,19 @@ public class LogfileMonitorManager {
 		public void run() {
 			log.info("run LogfileThread");
 			while (loop) {
+				isRunning = true;
+				long start = HinemosTime.currentTimeMillis();
 				synchronized(LogfileMonitorManager.class) {
 					try {
 						refresh();
 						for (String filePath : logfileMonitorCache.keySet()) {
 							LogfileMonitor logfileMonitor = logfileMonitorCache.get(filePath);
-							logfileMonitor.run();
+							// terminateされた場合次の監視は実行しない
+							if(loop) {
+								logfileMonitor.run();
+							} else {
+								break;
+							}
 						}
 					} catch (Exception e) {
 						log.warn("LogfileThread : " + e.getClass().getCanonicalName() + ", " +
@@ -274,16 +292,20 @@ public class LogfileMonitorManager {
 					} catch (Throwable e) {
 						log.error("LogfileThread : " + e.getClass().getCanonicalName() + ", " +
 								e.getMessage(), e);
+					} finally {
+						isRunning = false;
 					}
 				}
 				
 				try {
+					log.debug(String.format("LogfileThread run() : elapsed=%d ms.", System.currentTimeMillis() - start));
 					Thread.sleep(runInterval);
 				} catch (InterruptedException e) {
 					log.info("LogfileThread is Interrupted");
 					break;
 				}
 			}
+			isRunning = false;
 			log.info("terminate LogfileThread");
 		}
 		
@@ -326,5 +348,9 @@ public class LogfileMonitorManager {
 		String home = Agent.getAgentHome();
 		String storepath = new File(new File(home), "readingstatus").getAbsolutePath();
 		return storepath;
+	}
+	
+	public static boolean isRunning() {
+		return isRunning;
 	}
 }

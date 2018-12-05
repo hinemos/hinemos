@@ -402,6 +402,9 @@ public class NotifyEndpoint {
 
 		// 認証済み操作ログ
 		try {
+			ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.NOTIFY, SystemPrivilegeMode.READ));
+			HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 			new NotifyControllerBean().notify(
 					pluginId,
 					monitorId,

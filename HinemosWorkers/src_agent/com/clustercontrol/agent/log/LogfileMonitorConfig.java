@@ -41,7 +41,9 @@ public class LogfileMonitorConfig {
 	private static final String MONITOR_LOGFILE_MESSAGE_LENGTH = "monitor.logfile.message.length";
 
 	private static final String MONITOR_LOGFILE_MESSAGE_LINE = "monitor.logfile.message.line";
-	
+
+	private static final String READ_CARRYOVER_LENGTH = "monitor.logfile.read.carryover.length";
+
 	/** ファイル変更チェック期間設定（ミリ秒） */
 	protected static int unchangedStatsPeriod = 0;
 
@@ -57,11 +59,14 @@ public class LogfileMonitorConfig {
 	/** 上限ファイル数 */
 	protected static long fileMaxFiles = 0;
 
-	/** オリジナルメッセージのサイズ上限（Byte）*/
-	protected static int logfilMessageLength = 0;
+	/** オリジナルメッセージのサイズ上限 */
+	private static int logfilMessageLength = 0;
 	
 	/** オリジナルメッセージの読み込み行数上限*/
 	protected static int logfilMessageLine = 0;
+
+	/** ログファイル読込繰越データ長：ログファイル読込（バッファ単位取得、末尾まで連続）次回繰越データ最大長 */
+	protected static int logfileReadCarryOverLength = 0;
 
 	protected static final String HINEMOS_LOG_AGENT = "hinemos_agent";
 
@@ -150,6 +155,20 @@ public class LogfileMonitorConfig {
 			m_log.warn("LogfileManager() : " + MONITOR_LOGFILE_MESSAGE_LINE, e);
 		}
 		m_log.debug(MONITOR_LOGFILE_MESSAGE_LINE + " = " + logfilMessageLine);
+
+		// ログファイル読込繰越データ長
+		String logfileReadCarryOverLengthStr = AgentProperties.getProperty(READ_CARRYOVER_LENGTH, "102400");
+		
+		m_log.info(READ_CARRYOVER_LENGTH + " = " + logfileReadCarryOverLengthStr + " characters");
+		try {
+			logfileReadCarryOverLength = Integer.parseInt(logfileReadCarryOverLengthStr);
+		} catch (NumberFormatException e) {
+			m_log.warn("LogfileManager() : " + READ_CARRYOVER_LENGTH, e);
+		} catch (Exception e) {
+			m_log.warn("LogfileManager() : " + READ_CARRYOVER_LENGTH, e);
+		}
+		m_log.debug(READ_CARRYOVER_LENGTH + " = " + logfileReadCarryOverLength);
+		
 		
 		// プログラム名を設定
 		program = AgentProperties.getProperty(PROGRAM, HINEMOS_LOG_AGENT);

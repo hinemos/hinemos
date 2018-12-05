@@ -125,8 +125,7 @@ public abstract class JpaQueryUtil<T, R> {
 
 		String tableName = t.schema() + "." + t.name();
 		Query cycledPosQuery = em.createNativeQuery(
-				String.format("SELECT MIN(t0.position) FROM %s t0 WHERE t0.position > (SELECT last_value FROM %s) AND t0.position <= (SELECT max_value FROM %s)",
-						tableName, getSequenceTableName(), getSequenceTableName()));
+				String.format(HubQueryPertial.getSequenceMinPosSql(), tableName, getSequenceTableName(), getSequenceTableName()));
 		Long cycled = (Long)cycledPosQuery.getSingleResult();
 		
 		// 位置情報の最新値と最大値を取得
@@ -307,7 +306,7 @@ public abstract class JpaQueryUtil<T, R> {
 
 			@Override
 			protected String getSequenceTableName() {
-				return "log.cc_event_log_position_seq";
+				return HubQueryPertial.getSequenceTableNameEventLog();
 			}
 		};
 	}
@@ -367,7 +366,7 @@ public abstract class JpaQueryUtil<T, R> {
 
 			@Override
 			protected String getSequenceTableName() {
-				return "log.cc_job_session_position_seq";
+				return HubQueryPertial.getSequenceTableNameJobSession();
 			}
 		};
 	}
@@ -460,7 +459,7 @@ public abstract class JpaQueryUtil<T, R> {
 
 			@Override
 			protected String getSequenceTableName() {
-				return "log.cc_collect_data_raw_position_seq";
+				return HubQueryPertial.getSequenceTableNameCollectDataRaw();
 			}
 		};
 	}

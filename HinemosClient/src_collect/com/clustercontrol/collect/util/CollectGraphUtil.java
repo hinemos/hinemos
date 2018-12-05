@@ -97,7 +97,7 @@ public class CollectGraphUtil {
 	/**
 	 * セパレータ
 	 */
-	private static final String SQUARE_SEPARATOR = "#";
+	private static final String SQUARE_SEPARATOR = "\u2029";
 
 	/**
 	 * 現在表示中のグラフ表示の最古時間
@@ -262,7 +262,7 @@ public class CollectGraphUtil {
 					isHttpSce = thresholdStr.split(",")[7];
 				}
 				
-				//  #でsplitしてaddPoints
+				// separatorでsplitしてaddPoints
 				for (String plotStr : plotList) {
 					String split_plot[] = plotStr.split(SQUARE_SEPARATOR);
 					String facilityId = split_plot[0];

@@ -80,7 +80,7 @@ public class ExportDialog extends Dialog {
 	private Integer m_summaryType = null;
 	private List<CollectKeyInfoPK> m_collectKeyInfoPkList = null;	
 	private TreeMap<String, List<String>> m_targetManagerFacilityMap = null;
-	private static final String SQUARE_SEPARATOR = "#";
+	private static final String SQUARE_SEPARATOR = "\u2029";
 	/**
 	 * コンストラクタ
 	 */

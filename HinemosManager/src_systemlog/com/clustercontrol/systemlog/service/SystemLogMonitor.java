@@ -220,23 +220,10 @@ public class SystemLogMonitor implements SyslogHandler{
 					return;
 				}
 
-				// syslogヘッダのhostnameから該当ファシリティを取得
-				Map<String, Set<String>> syslogHostnameFacilityIdSetMap = new HashMap<String, Set<String>>();
-				for (SyslogMessage syslog : syslogList) {
-					String hostname = SearchNodeBySNMP.getShortName(syslog.hostname);
-					if (syslogHostnameFacilityIdSetMap.containsKey(hostname)) {
-						continue;
-					}
-					
-					Set<String> facilityIdSet = resolveFacilityId(syslog.hostname);
-					syslogHostnameFacilityIdSetMap.put(hostname, facilityIdSet);
-				}
-				
 				// 収集処理
 				List<StringSample> collectedSamples = new ArrayList<>();
 				for (SyslogMessage syslog : syslogList) {
-					// syslog.hostname に該当するノードがないと "UNREGISTERED" が含まれるリストを返すようだ。
-					Set<String> facilityIdSet = syslogHostnameFacilityIdSetMap.get(syslog.hostname);
+					Set<String> facilityIdSet = resolveFacilityId(syslog.hostname);
 					
 					for (MonitorInfo monitor : monitorList) {
 						// 管理対象フラグが無効であれば、次の設定の処理へスキップする
@@ -270,13 +257,13 @@ public class SystemLogMonitor implements SyslogHandler{
 
 				// 監視ジョブ以外
 				for (MonitorInfo monitor : monitorList) {
-					notifySyslog(syslogHostnameFacilityIdSetMap, monitor, null);
+					notifySyslog(monitor, null);
 				}
 
 				// 監視ジョブ
 				for (Map.Entry<RunInstructionInfo, MonitorInfo> entry 
 						: MonitorJobWorker.getMonitorJobMap(HinemosModuleConstant.MONITOR_SYSTEMLOG).entrySet()) {
-					notifySyslog(syslogHostnameFacilityIdSetMap, entry.getValue(), entry.getKey());
+					notifySyslog(entry.getValue(), entry.getKey());
 				}
 
 				tm.commit();
@@ -295,13 +282,11 @@ public class SystemLogMonitor implements SyslogHandler{
 		/**
 		 * システムログの通知処理を行う
 		 * 
-		 * @param syslogHostnameFacilityIdSetMap ホスト名・ファシリティID紐付けマップ
 		 * @param monitorInfo 監視情報
 		 * @param runInstructionInfo ジョブ実行指示
 		 * @throws HinemosUnknown
 		 */
 		private void notifySyslog(
-				Map<String, Set<String>> syslogHostnameFacilityIdSetMap,
 				MonitorInfo monitorInfo,
 				RunInstructionInfo runInstructionInfo) throws HinemosUnknown {
 
@@ -334,10 +319,9 @@ public class SystemLogMonitor implements SyslogHandler{
 					continue;
 				}
 
-				String hostname = SearchNodeBySNMP.getShortName(syslog.hostname);
-				Set<String> facilityIdSet = syslogHostnameFacilityIdSetMap.get(hostname);
+				Set<String> facilityIdSet = resolveFacilityId(syslog.hostname);
 				if (facilityIdSet == null) {
-					log.warn("target facility not found: " + hostname);
+					log.warn("target facility not found: " + syslog.hostname);
 					continue;
 				}
 				List<String> validFacilityIdList = getValidFacilityIdList(facilityIdSet, monitorInfo, runInstructionInfo);
