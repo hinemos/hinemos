@@ -1,0 +1,17 @@
+.DS_Store
+Thumbs.db
+*~
+*.swp
+
+.gradle/
+
+# output
+build/
+bin/
+.classpath
+.project
+.settings/
+
+# libs
+lib/
+

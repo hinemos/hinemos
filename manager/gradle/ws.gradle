@@ -1,0 +1,179 @@
+
+configurations{
+	jaxws
+	genws
+}
+dependencies{
+	// WS
+	jaxws 'com.sun.xml.ws:jaxws-tools:2.2.10'
+	genws group: 'commons-logging', name: 'commons-logging', version: '1.2'
+	genws group: 'org.eclipse.persistence', name: 'javax.persistence', version: '2.1.1'
+
+	genws group: 'info.hinemos', name: 'hinemos-common', version: version
+	//genws files('../common/build/libs/HinemosCommon.jar')
+}
+
+def manifestDef = {
+	attributes(
+		'Hinemos-Version': version,
+		'Build-Date': new Date().format('yyyy-MM-dd HH:mm:ss', TimeZone.getTimeZone('UTC')))
+}
+
+// Extract WSDL from HinemosManager.jar
+task genWS{
+	def inputDir = file("${buildDir}/classes/java/main")
+	def classesDir = file("${buildDir}/wsgen/classes")
+	def srcDir = file("${buildDir}/wsgen/src")
+	def wsdlDir = file("${buildDir}/wsgen/wsdl")
+
+	dependsOn compileJava
+
+	inputs.dir inputDir
+	outputs.dir classesDir
+	//outputs.files classesDir, srcDir, wsdlDir
+
+	doLast{
+		classesDir.mkdirs()
+		srcDir.mkdirs()
+		wsdlDir.mkdirs()
+
+		//wsgen -s build/wsgen/src -d build/wsgen/classes -cp ../common/build/libs/HinemosCommon.jar:lib/commons-logging-1.2.jar:build/libs/HinemosManager.jar:build/libs/HinemosModel.jar:build/classes/main com.clustercontrol.ws.access.AccessEndpoint
+		//OR wsgen -s build/wsgen/src -d build/wsgen/classes -cp ../common/build/libs/HinemosCommon.jar:lib/commons-logging-1.2.jar:build/classes/main com.clustercontrol.ws.access.AccessEndpoint
+		//wsgen -d build/wsgen/classes -wsdl -cp ../common/build/libs/HinemosCommon.jar:lib/commons-logging-1.2.jar:build/classes/main com.clustercontrol.ws.access.AccessEndpoint
+		ant{
+			taskdef(name:'wsgen', classname:'com.sun.tools.ws.ant.WsGen', classpath: configurations.jaxws.asPath)
+
+			// Search for endpoint classes from source and run wsgen
+			sourceSets.main.output.asFileTree.matching{
+				include 'com/clustercontrol/ws/*/*Endpoint.class'
+				include 'com/clustercontrol/ws/*/*EndpointImpl.class'
+				exclude '**/ws/xcloud/CloudEndpoint.class'
+			}.each{
+				logger.info "Found $it..."
+				def classname = it.path.replace('\\', '/').replaceFirst(/.*\/(com\/clustercontrol)/, '$1').replaceFirst(/\.class$/, '').replaceAll('/', '.')
+				if(classname ==~ /com\..+Endpoint/ || classname ==~ /com\..+EndpointImpl/){
+					logger.info "wsgen ${classname}..."
+					wsgen(
+						verbose   : true,
+						debug     : true,
+						keep      : false,
+						destdir   : classesDir,
+						sourcedestdir   : srcDir,
+						resourcedestdir : wsdlDir,
+						genwsdl   : true,
+						classpath : files(configurations.genws, sourceSets.main.output).asPath,
+						sei       : classname)
+				}
+			}
+		}
+	}	
+}
+
+// Also generate web service source for client based on the generated WSDL
+task importClientWS(dependsOn: genWS){
+	ext.wsdlDir = "${buildDir}/wsgen/wsdl"
+	ext.wsdlFileTree = fileTree(dir: wsdlDir, include: '*EndpointService.wsdl')
+	ext.outputDir = "${buildDir}/ws-client/src"
+	ext.classesDir = "${buildDir}/ws-client/classes"
+
+	inputs.dir wsdlDir
+	outputs.dir outputDir
+
+	doLast{
+		project.ant{
+			taskdef(name:'wsimport', classname:'com.sun.tools.ws.ant.WsImport', classpath:configurations.jaxws.asPath)
+
+			mkdir(dir: outputDir)
+			mkdir(dir: classesDir)
+
+			logger.info "${wsdlFileTree.files.size()} file(s) matched"
+			wsdlFileTree.each{
+				// Exclude need Agent*EndpointService.wsdl (for agent only)
+				if(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /AgentBinaryEndpointService\.wsdl/ || it.name ==~ /AgentHubEndpointService\.wsdl/) return
+
+				logger.info "wsimport ${it}..."
+
+				// wsimport -s build/wsimport/src/ http://localhost:8080/WS/Hello?wsdl
+				wsimport(
+					debug     : false,
+					verbose   : false,
+					sourcedestdir : outputDir,
+					destdir   : classesDir,
+					keep      : false,
+					extension : false,
+					wsdl      : it)
+			}
+		}
+	}
+}
+
+// Also generate web service source for client based on the generated WSDL
+task importAgentWS(dependsOn: genWS){
+	ext.wsdlDir = "${buildDir}/wsgen/wsdl"
+	ext.wsdlFileTree = fileTree(dir: wsdlDir, include: '*EndpointService.wsdl')
+	ext.outputDir = "${buildDir}/ws-agent/src"
+	ext.classesDir = "${buildDir}/ws-agent/classes"
+
+	inputs.dir wsdlDir
+	outputs.dir outputDir
+
+	doLast{
+		project.ant{
+			taskdef(name:'wsimport', classname:'com.sun.tools.ws.ant.WsImport', classpath:configurations.jaxws.asPath)
+
+			mkdir(dir: outputDir)
+			mkdir(dir: classesDir)
+
+			logger.info "${wsdlFileTree.files.size()} file(s) matched"
+			wsdlFileTree.each{
+				// Only need Agent*EndpointService.wsdl
+				if(!(it.name ==~ /AgentEndpointService\.wsdl/ || it.name ==~ /AgentBinaryEndpointService\.wsdl/ || it.name ==~ /AgentHubEndpointService\.wsdl/)) return
+
+				logger.info "wsimport ${it}..."
+
+				// wsimport -s build/wsimport/src/ http://localhost:8080/WS/Hello?wsdl
+				wsimport(
+					debug     : false,
+					verbose   : false,
+					sourcedestdir : outputDir,
+					destdir   : classesDir,
+					keep      : false,
+					extension : false,
+					wsdl      : it)
+			}
+		}
+	}
+}
+
+// Pack ClientWS.jar (for Client only)
+task deployClientWS(type: Jar){
+	description 'Generate ClientWS.jar.'
+
+	archiveName = 'ClientWS.jar'
+	dependsOn importClientWS
+
+	includeEmptyDirs = false
+	from file("${buildDir}/ws-client/classes")
+
+	manifest(manifestDef)
+}
+
+// Pack AgentWS.jar (for Client only)
+task deployAgentWS(type: Jar){
+	description 'Generate AgentWS.jar.'
+
+	archiveName = 'AgentWS.jar'
+	dependsOn importAgentWS
+
+	includeEmptyDirs = false
+	from file("${buildDir}/ws-agent/classes")
+
+	manifest(manifestDef)
+}
+
+task deployWS(type: Jar){
+	description 'Generate both ClientWS.jar and AgentWS.jar at once.'
+	dependsOn deployClientWS
+	dependsOn deployAgentWS
+}
+

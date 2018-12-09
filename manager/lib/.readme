@@ -1,0 +1,15 @@
+
+Prepare the following jar manually because they are not showing up in maven repository yet.
+
+* jpasecurity-core-0.4.0.jar
+  Download from https://sourceforge.net/projects/jpasecurity/files/jpasecurity/jpasecurity-0.4.0/jpasecurity-core-0.4.0.jar
+
+* sblimCIMClient.jar
+  Download from https://sourceforge.net/projects/sblim/files/sblim-cim-client/1.3.9.3/sblim-cim-client-1.3.9.3-bin.zip
+
+* intel-wsman-1.0.1-mod.jar
+  The most convenient way to get this jar is to install Hinemos Manager and copy fron the library directory.
+  Note that the Hinemos's version is not exactly the same as Intel's original one. They fixed some bugs and rebuilt.
+  You can also download and build from source yourself (at your own risk. I never tried myself).
+  https://software.intel.com/en-us/articles/download-the-latest-intel-ws-management-java-client-library
+

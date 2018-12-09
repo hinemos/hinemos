@@ -1,2 +1,0 @@
-Hinemos-Version: @VERSION@
-Build-Date: @BUILD_DATE@

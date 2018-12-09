@@ -1,0 +1,34 @@
+version: "2"
+checks:
+  argument-count:
+    enabled: true
+    config:
+      threshold: 5 # Default: 4. A bit more
+  complex-logic:
+    enabled: true
+    config:
+      threshold: 4
+  file-lines:
+    enabled: true
+    config:
+      threshold: 500 # Default: 250. A bit more
+  method-complexity:
+    enabled: true
+    config:
+      threshold: 5
+  method-count:
+    enabled: true
+    config:
+      threshold: 20
+  method-lines:
+    enabled: true
+    config:
+      threshold: 100 # Default: 25. A bit more
+  nested-control-flow:
+    enabled: true
+    config:
+      threshold: 4
+  return-statements:
+    enabled: true
+    config:
+      threshold: 4

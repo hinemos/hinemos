@@ -1,0 +1,89 @@
+allprojects{
+	group = 'info.hinemos'
+	version = '6.1.2'
+
+	apply plugin: 'java'
+	apply plugin: 'maven'
+	apply plugin: 'jacoco'
+	apply plugin: 'eclipse'
+	//apply plugin: 'org.sonarqube' version '2.6'
+
+	task hello{
+		doLast{ task->
+			println "I'm $task.project.name"
+		}
+	}
+}
+//project(':common'){
+//	dependencies {}
+//}
+//project(':manager') {
+//	dependencies {
+//		compile project(':common')
+//	}
+//}
+//project(':agent') {
+//	dependencies {
+//		compile project(':manager')
+//	}
+//}
+
+ext.sharedManifest = manifest{
+	attributes('Hinemos-Version': version, 'Build-Date': new Date().format('yyyy-MM-dd HH:mm:ss', TimeZone.getTimeZone('UTC')))
+}
+
+subprojects{
+	repositories{
+		mavenCentral()
+		maven { url 'http://pango853.github.io/mvnrepo' }
+	}
+	tasks.withType(JavaCompile){
+		options.encoding = 'UTF-8'
+		doFirst {
+			if (sourceCompatibility == '1.7' && System.env.JDK7_HOME != null) {
+				options.fork = true
+				options.bootstrapClasspath = files("$System.env.JDK7_HOME/jre/lib/rt.jar", "$File.pathSeparator$System.env.JDK7_HOME/jre/lib/jsse.jar")
+			}else if (System.env.JAVA_HOME != null) {
+				// Overcome "package com.sun.xml.internal.xxx does not exist" when compiling
+				options.fork = true
+				options.forkOptions.executable = 'javac'
+				options.compilerArgs << '-XDignore.symbol.file'
+				//options.bootstrapClasspath = files("$System.env.JAVA_HOME/jre/lib/rt.jar",
+				//	"$File.pathSeparator$System.env.JAVA_HOME/jre/lib/jce.jar",
+				//	"$File.pathSeparator$System.env.JAVA_HOME/jre/lib/jsse.jar")
+			}
+		}
+	}
+	jar{
+		manifest = project.manifest { from sharedManifest }
+	}
+
+	// Rename jar for deploying to Hinemos
+	task deploy(type: Copy, dependsOn: build){
+		description 'Rename the jar file to its original name then you can replace to Hinemos directly.'
+		from "${project.buildDir}/${project.libsDirName}"
+		into "${project.buildDir}/${project.libsDirName}"
+		rename "${project.name}-$version", project.theJarName
+	}
+
+	// Upload jar to maven repository
+	uploadArchives {
+		repositories {
+			mavenDeployer {
+				repository(url: "file:${System.getProperty('user.home')}/.m2/repository")
+			}
+		}
+	}
+}
+
+Closure cl = { task -> println "I'm $task.project.name" }
+task('hello2').doLast(cl)
+project(':common'){
+	task('hello2').doLast(cl)
+}
+
+project(':manager').hello{
+	doLast{
+		println "- I'm the largest animal that has ever lived on this planet."
+	}
+}

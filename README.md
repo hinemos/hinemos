@@ -1,52 +1,40 @@
-## Hinemos
+# Another Hinemos Fork
 
-<p align="center"> 
-  <img alt="download" src="https://img.shields.io/github/downloads/hinemos/hinemos/total.svg"/>
-  <img alt="license" src="https://img.shields.io/badge/license-GPL-blue.svg"/> 
-  <a href=https://twitter.com/Hinemos_INFO> 
-    <img alt="twitter" src="https://img.shields.io/twitter/follow/Hinemos_INFO.svg?style=social&label=Follow&maxAge=2592000"/>
-  </a>
-</p>
+Forked from [here](https://github.com/hinemos/hinemos).
 
-![Hinemos-logo](http://www.hinemos.info/files/images/HinemosLogo.png)
+Current target version: **6.1**
 
-Hinemos is an open source integrated system management software providing both monitoring and job management (workload scheduling) features, to implement system operation automation.
+[![Build Status](https://travis-ci.org/pango853/hinemos.svg?branch=6.1g)](https://travis-ci.org/pango853/hinemos)
+[![Maintainability](https://api.codeclimate.com/v1/badges/56927da1c9becc9ae9fe/maintainability)](https://codeclimate.com/github/pango853/hinemos/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/56927da1c9becc9ae9fe/test_coverage)](https://codeclimate.com/github/pango853/hinemos/test_coverage)
 
-[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v6.1.2#packages)
+[![Sonarcloud Status](https://sonarcloud.io/api/project_badges/measure?project=pango853_hinemos&metric=alert_status)](https://sonarcloud.io/dashboard?id=pango853_hinemos)
+[![Technical debt](https://sonarcloud.io/api/project_badges/measure?project=pango853_hinemos&metric=sqale_index)](https://sonarcloud.io/component_measures?id=pango853_hinemos&metric=sqale_index)
+[![Code smells](https://sonarcloud.io/api/project_badges/measure?project=pango853_hinemos&metric=code_smells)](https://sonarcloud.io/component_measures?id=pango853_hinemos&metric=code_smells)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=pango853_hinemos&metric=bugs)](https://sonarcloud.io/component_measures?id=pango853_hinemos&metric=bugs)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=pango853_hinemos&metric=coverage)](https://sonarcloud.io/component_measures?id=pango853_hinemos&metric=coverage)
 
-## Installation
 
-You can install hinemos with the following commands.
+# HOWTO
 
-- Manager Installation
+## Build
+```
+> SET JDK7_HOME=C:\Program Files\Java\jdk1.7.0_80
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.2/hinemos-6.1-manager-6.1.2-1.el7.x86_64.rpm```
+> gradle :common:build
+> gradle :common:deploy
 
-- Web Client Installation
+> gradle :manager:build
+> gradle :manager:deployManager
+> gradle :manager:deployRHEL
+> gradle :manager:deployWS
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.2/hinemos-6.1-web-6.1.2-1.el7.x86_64.rpm```
+> gradle :agent:build
+> gradle :agent:deploy
+> gradle :agent:deployManagerCli
+```
 
-See the install document for details.
+# TODO
 
-## What's new in ver.6.1
-
-* Monitoring of Silent Failure 
-  - Features to monitor trends and correlations is newly added, for monitoring silent failures of systems.
-
-* Binary Data Collection
-  - Binary data such as packed capture and binary logs are now collectable.
-
-* Enhanced Workload Automation Feature
-  - Workload automation feature are enhanced, which enables to automate system management automation more easily.
-
-See the [release notes](https://github.com/hinemos/hinemos/releases) for details.
-
-## Documentation
-
-- Installation Manual ([en_Install_Linux_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.1/en_Install_Linux_6.1_rev1.pdf) )
-- User Manual ( [en_User_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.1/en_User_6.1_rev1.pdf) )
-- Administrator's Guide ( [en_Admin_Linux_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.1/en_Admin_Linux_6.1_rev1.pdf) )
-
-## License
-
-GNU General Public License (GPL)
+- [ ] Measure coverage
+- [ ] SonarCloud check for manager and agent modules

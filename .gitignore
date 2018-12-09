@@ -1,12 +1,23 @@
 .DS_Store
 Thumbs.db
 *~
+*.lnk
 
 *.swp
 *.class
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.zip
 bin/
 build/
 package/
 tmp/
+lib/
+
+# gradle
+.gradle/
+
+# eclipse
+.classpath
+.project
+.settings/
