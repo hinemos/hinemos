@@ -42,18 +42,8 @@ public class NodeConstant extends FacilityConstant{
 	public static final String IP_ADDRESS_V6 = "ipAddressV6";
 	/** ホスト名(複数設定可) */
 	public static final String HOST_NAME = "hostName";
-
-	/** ----- OS関連 ----- */
 	/** ノード名 */
 	public static final String NODE_NAME = "nodeName";
-	/** OS名 */
-	public static final String OS_NAME = "osName";
-	/** OSリリース */
-	public static final String OS_RELEASE = "osRelease";
-	/** OSバージョン */
-	public static final String OS_VERSION = "osVersion";
-	/** 文字セット */
-	public static final String CHARACTER_SET = "characterSet";
 
 	/** ----- Hinemosエージェント関連 ----- */
 	/** 即時反映用ポート番号 */
@@ -158,6 +148,22 @@ public class NodeConstant extends FacilityConstant{
 	public static final String SSH_TIMEOUT = "sshTimeout";
 	
 	/** ------------------ */
+	/** ----- 構成情報 ----- */
+	/** ------------------ */
+
+	/** ----- OS関連 ----- */
+	/** OS名 */
+	public static final String OS_NAME = "osName";
+	/** OSリリース */
+	public static final String OS_RELEASE = "osRelease";
+	/** OSバージョン */
+	public static final String OS_VERSION = "osVersion";
+	/** 文字セット */
+	public static final String CHARACTER_SET = "characterSet";
+	/** 起動日時 */
+	public static final String OS_STARTUP_DATE_TIME = "osStartupDateTime";
+
+	/** ------------------ */
 	/** ----- デバイス ----- */
 	/** ------------------ */
 
@@ -179,6 +185,12 @@ public class NodeConstant extends FacilityConstant{
 
 
 	/** ----- デバイス項目(CPU) ----- */
+	/** コア数 */
+	public static final String CPU_CORE_COUNT = "cpuCoreCount";
+	/** スレッド数 */
+	public static final String CPU_THREAD_COUNT = "cpuThreadCount";
+	/** クロック数 */
+	public static final String CPU_CLOCK_COUNT = "cpuClockCount";
 
 	/** ----- デバイス項目(MEM) ----- */
 
@@ -198,6 +210,110 @@ public class NodeConstant extends FacilityConstant{
 	public static final String FILE_SYSTEM_TYPE = "fileSystemType"; // NFTS,FAT32,ext3,ext4,...
 
 
+	/** -------------------- */
+	/** ----- ネットワーク接続 ----- */
+	/** -------------------- */
+
+	/** ----- ネットワーク接続 ----- */
+	/** プロトコル */
+	public static final String NETSTAT_PROTOCOL = "netstatProtocol";
+	/** ローカルIPアドレス */
+	public static final String NETSTAT_LOCAL_IP_ADDRESS = "netstatLocalIpAddress";
+	/** ローカルポート */
+	public static final String NETSTAT_LOCAL_PORT = "netstatLocalPort";
+	/** 外部IPアドレス */
+	public static final String NETSTAT_FOREIGN_IP_ADDRESS = "netstatForeignIpAddress";
+	/** 外部ポート */
+	public static final String NETSTAT_FOREIGN_PORT = "netstatForeignPort";
+	/** プロセス名 */
+	public static final String NETSTAT_PROCESS_NAME = "netstatProcessName";
+	/** PID */
+	public static final String NETSTAT_PID = "netstatPid";
+	/** 状態 */
+	public static final String NETSTAT_STATUS = "netstatStatus";
+
+	/** -------------------- */
+	/** ----- プロセス ----- */
+	/** -------------------- */
+
+	/** ----- プロセス情報 ----- */
+	/** プロセス名 */
+	public static final String PROCESS_NAME = "processName";
+	/** PID */
+	public static final String PROCESS_PID = "processPid";
+	/** 引数付フルパス */
+	public static final String PROCESS_PATH = "processPath";
+	/** 実行ユーザ */
+	public static final String PROCESS_EXEC_USER = "processExecUser";
+	/** 起動日時 */
+	public static final String PROCESS_STARTUP_DATE_TIME = "processStartupDateTime";
+
+
+	/** -------------------- */
+	/** ----- パッケージ ----- */
+	/** -------------------- */
+
+	/** ----- パッケージ情報 ----- */
+	/** パッケージID */
+	public static final String PACKAGE_ID = "packageId";
+	/** パッケージ名 */
+	public static final String PACKAGE_NAME = "packageName";
+	/** バージョン */
+	public static final String PACKAGE_VERSION = "packageVersion";
+	/** リリース番号 */
+	public static final String PACKAGE_RELEASE = "packageRelease";
+	/** インストール日時 */
+	public static final String PACKAGE_INSTALL_DATE = "packageInstallDate";
+	/** ベンダ */
+	public static final String PACKAGE_VENDOR = "packageVendor";
+	/** アーキテクチャ */
+	public static final String PACKAGE_ARCHITECTURE = "packageArchitecture";
+
+
+	/** -------------------- */
+	/** ----- 個別導入製品 ----- */
+	/** -------------------- */
+
+	/** ----- 個別導入製品情報 ----- */
+	/** 名前 */
+	public static final String PRODUCT_NAME = "productName";
+	/** バージョン */
+	public static final String PRODUCT_VERSION = "productVersion";
+	/** インストールパス */
+	public static final String PRODUCT_PATH = "productPath";
+
+
+	/** -------------------- */
+	/** ----- ライセンス ----- */
+	/** -------------------- */
+
+	/** ----- ライセンス情報 ----- */
+	/** 製品名 */
+	public static final String LICENSE_PRODUCT_NAME = "productName";
+	/** ベンダ */
+	public static final String LICENSE_VENDOR = "licenseVendor";
+	/** ベンダ連絡先 */
+	public static final String LICENSE_VENDOR_CONTACT = "licenseVendorContact";
+	/** シリアルナンバー */
+	public static final String LICENSE_SERIAL_NUMBER = "licenseSerialNumber";
+	/** 数量 */
+	public static final String LICENSE_COUNT = "licenseCount";
+	/** 有効期限 */
+	public static final String LICENSE_EXPIRATION_DATE = "licenseExpirationDate";
+
+
+	
+	/** -------------------- */
+	/** ----- ノード変数 ----- */
+	/** -------------------- */
+
+	/** ----- ノード変数 ----- */
+	/** 変数名 */
+	public static final String NODE_VARIABLE_NAME = "nodeVariableName";
+	/** 値 */
+	public static final String NODE_VARIABLE_VALUE = "nodeVariableValue";
+
+
 	/** ----------------- */
 	/** ----- 仮想化 ----- */
 	/** ----------------- */
@@ -215,17 +331,7 @@ public class NodeConstant extends FacilityConstant{
 	public static final String CLOUDRESOURCEID= "cloudResourceId";
 	/** クラウドロケーション */
 	public static final String CLOUDLOCATION= "cloudLocation";
-
-	/** -------------------- */
-	/** ----- ノード変数 ----- */
-	/** -------------------- */
-
-	/** ----- ノード変数 ----- */
-	/** 変数名 */
-	public static final String NODE_VARIABLE_NAME = "nodeVariableName";
-	/** 値 */
-	public static final String NODE_VARIABLE_VALUE = "nodeVariableValue";
-
+	
 	/** ----------------- */
 	/** ----- 保守 ----- */
 	/** ----------------- */
@@ -249,23 +355,14 @@ public class NodeConstant extends FacilityConstant{
 	public static final String HARDWARE = "hardware";
 	/** ネットワーク */
 	public static final String NETWORK = "network";
-	/** OS */
-	public static final String OS = "os";
 	/** Hinemosエージェント */
 	public static final String AGENT = "agent";
 
-	/** ----- サービス----- */
-	public static final String SERVICE ="service";
-	/** SNMP */
-	public static final String SNMP ="snmp";
-	/** WBEM */
-	public static final String WBEM = "wbem";
-	/** IPMI */
-	public static final String IPMI = "ipmi";
-	/** WinRM */
-	public static final String WINRM = "winrm";
-	/** SSH */
-	public static final String SSH = "ssh";
+	/** ----- 構成情報 ----- */
+	/** 構成情報 */
+	public static final String NODE_CONFIG_INFORMATION = "nodeConfigInformation";
+	/** OS */
+	public static final String OS = "os";
 
 	/** ----- デバイス----- */
 	public static final String DEVICE = "device";
@@ -288,14 +385,52 @@ public class NodeConstant extends FacilityConstant{
 	public static final String FILE_SYSTEM = "fileSystem";
 	public static final String FILE_SYSTEM_LIST = "fileSystemList";
 
-	/** ----- クラウド・仮想化----- */
-	public static final String CLOUD_MANAGEMENT = "cloudManagement";
+	/** ----- ネットワーク接続----- */
+	public static final String NETSTAT = "netstat";
+	public static final String NETSTAT_LIST = "netstatList";
+
+	/** ----- プロセス----- */
+	public static final String PROCESS = "process";
+	public static final String PROCESS_LIST = "processList";
+
+	/** ----- パッケージ----- */
+	public static final String PACKAGE = "package";
+	public static final String PACKAGE_LIST = "packageList";
+
+	/** ----- 個別導入製品----- */
+	public static final String PRODUCT = "product";
+	public static final String PRODUCT_LIST = "productList";
+
+	/** ----- ライセンス----- */
+	public static final String LICENSE = "license";
+	public static final String LICENSE_LIST = "licenseList";
 
 	/** ----- ノード変数----- */
 	/** ノード変数 */
 	public static final String NODE_VARIABLE = "nodeVariable";
 	/** ノード変数 */
 	public static final String GENERAL_NODE_VARIABLE = "generalNodeVariable";
+
+	/** -----ユーザ任意情報----- */
+	/** ユーザ任意情報 */
+	public static final String CUSTOM = "custom";
+	public static final String CUSTOM_LIST = "customList";
+
+	/** ----- サービス----- */
+	public static final String SERVICE ="service";
+	/** SNMP */
+	public static final String SNMP ="snmp";
+	/** WBEM */
+	public static final String WBEM = "wbem";
+	/** IPMI */
+	public static final String IPMI = "ipmi";
+	/** WinRM */
+	public static final String WINRM = "winrm";
+	/** SSH */
+	public static final String SSH = "ssh";
+
+	/** ----- クラウド・仮想化----- */
+	public static final String CLOUD_MANAGEMENT = "cloudManagement";
 
 	/** 保守 */
 	public static final String MAINTENANCE = "maintenance";

@@ -41,10 +41,14 @@ public class EventSearchRunUtil extends MultiManagerRunUtil{
 	private static Log m_log = LogFactory.getLog(EventSearchRunUtil.class);
 
 	public Map<String, ViewListInfo> searchInfo(List<String> managerList, String facilityId, EventFilterInfo filter, int messages) {
-		Map<String, ViewListInfo> dispDataMap= new ConcurrentHashMap<>();
+		Map<String, ViewListInfo> dispDataMap = new ConcurrentHashMap<>();
 		Map<String, String> errMsgs = new ConcurrentHashMap<>();
 		long start = System.currentTimeMillis();
-
+		
+		if (managerList == null) {
+			return dispDataMap;
+		}
+		
 		try {
 			String threadName = Thread.currentThread().getName() + "-EventSearch";
 			List<EventSearchTask> searchList = new ArrayList<EventSearchTask>();

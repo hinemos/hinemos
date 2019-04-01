@@ -25,6 +25,7 @@ public class PropertyDefineConstant {
 	public static final String EDITOR_DATETIME = com.clustercontrol.editor.DateTimePropertyDefine.class.getName();
 	public static final String EDITOR_TIME = com.clustercontrol.editor.TimePropertyDefine.class.getName();
 	public static final String EDITOR_NUM = com.clustercontrol.editor.IntegerPropertyDefine.class.getName();
+	public static final String EDITOR_NUM_LONG = com.clustercontrol.editor.LongPropertyDefine.class.getName();
 	public static final String EDITOR_JOB = com.clustercontrol.jobmanagement.editor.JobPropertyDefine.class.getName();
 	public static final String EDITOR_IPV4 = com.clustercontrol.editor.IPv4PropertyDefine.class.getName();
 	public static final String EDITOR_IPV6 = com.clustercontrol.editor.IPv6PropertyDefine.class.getName();

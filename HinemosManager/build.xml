@@ -41,6 +41,10 @@
 			<include name="**/*.jar" />
 			<exclude name="**/eclipselink-src.jar" />
 		</fileset>
+		<fileset dir="./lib_rest">
+			<exclude name="**/*sources.jar" />
+			<include name="**/*.jar" />
+		</fileset>
 		<fileset dir="./platform_switch/lib_platform_win">
 			<include name="**/*.jar" />
 		</fileset>
@@ -482,6 +486,9 @@
 
 		<wsgen.mac sei.class="com.clustercontrol.ws.access.AccessEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.agent.AgentEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.agentbinary.AgentBinaryEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.agentnodeconfig.AgentNodeConfigEndpoint"/>
+		<wsgen.mac sei.class="com.clustercontrol.ws.agenthub.AgentHubEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.calendar.CalendarEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.cloud.CloudCommonEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.collect.CollectEndpoint"/>
@@ -502,8 +509,6 @@
 		<wsgen.mac sei.class="com.clustercontrol.ws.utility.UtilityEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.hub.HubEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.hub.BinaryEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.agenthub.AgentHubEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.agentbinary.AgentBinaryEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.xcloud.CloudEndpointImpl"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.inquiry.InquiryEndpoint"/>
 		<taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
@@ -526,9 +531,9 @@
 		</macrodef>
 
 		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentEndpointService.wsdl" />
-		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentHubEndpointService.wsdl" />
 		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentBinaryEndpointService.wsdl" />
-
+		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentNodeConfigEndpointService.wsdl" />
+		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentHubEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="CloudCommonEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="AccessEndpointService.wsdl" />
 		<wsimport.mac dir="${clientws.dir}" service.wsdl="CalendarEndpointService.wsdl" />
@@ -608,6 +613,33 @@
 		<antcall target="refresh" />
 	</target>
 
+	<target name="allfortest" depends="dependency">
+		<!-- <delete> will recursely remove files under build\tmp\src_platform -->
+		<exec executable="CMD" failonerror="false">
+			<arg line="/C rmdir build\tmp\src_platform" />
+		</exec>
+		<delete dir="build" failonerror="true" />
+		<antcall target="clean" />
+
+		<!-- rhel -->
+		<antcall target="rhel_quick" />
+		<antcall target="jpa_config_rhel" />
+		
+		<!-- win -->
+		<antcall target="win_quick" />
+		<antcall target="jpa_config_win" />
+
+		<antcall target="jar_main" />
+		<antcall target="build_publish" />
+		<antcall target="copy_messages" />
+		<antcall target="webclient" />
+		<antcall target="install" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
+	
 	<target name="win" depends="dependency">
 		<delete dir="build" failonerror="true" />
 		<antcall target="clean" />

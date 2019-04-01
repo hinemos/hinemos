@@ -37,7 +37,6 @@ public final class ReportingUtil{
 
 		int avg = 1;
 
-		// TODO Make it proportional to output duration
 		int day_period = output_period_for;
 		if (day_period <= 1){
 			if (run_interval < 5 * 60){

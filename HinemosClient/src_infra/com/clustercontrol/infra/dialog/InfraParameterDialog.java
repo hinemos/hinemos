@@ -176,7 +176,7 @@ public class InfraParameterDialog extends CommonDialog {
 		// パスワード表示にする
 		this.m_chkPasswordFlg = new Button(composite, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_chkPasswordFlg", this.m_chkPasswordFlg);
-		this.m_chkPasswordFlg.setLayoutData(new GridData(220, SizeConstant.SIZE_BUTTON_HEIGHT));
+		this.m_chkPasswordFlg.setLayoutData(new GridData(150, SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_chkPasswordFlg.setText(Messages.getString("show.password"));
 		this.m_chkPasswordFlg.addSelectionListener(new SelectionAdapter() {
 			@Override

@@ -787,7 +787,7 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 		WidgetTestUtil.setTestId(this, "collecteachpage", m_chkbxCollectEachPage);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH_TITLE + 10;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_chkbxCollectEachPage.setLayoutData(gridData);
 		m_chkbxCollectEachPage.setText(Messages.getString("monitor.http.scenario.collect.each.page"));
@@ -999,7 +999,15 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 
 		httpScenarioCheckInfo.setProxyFlg(this.m_chkbxProxy.getSelection());
 		httpScenarioCheckInfo.setProxyUrl(this.m_textProxyUrl.getText());
-		httpScenarioCheckInfo.setProxyPort(Integer.valueOf(this.m_textProxyPort.getText()));
+		
+		Integer port = null;
+		try { 
+			port = Integer.valueOf(this.m_textProxyPort.getText());
+		} catch (NumberFormatException e) {
+			//ignore
+		}
+		
+		httpScenarioCheckInfo.setProxyPort(port);
 		httpScenarioCheckInfo.setProxyUser(this.m_textProxyUser.getText());
 		httpScenarioCheckInfo.setProxyPassword(this.m_textProxyPassword.getText());
 

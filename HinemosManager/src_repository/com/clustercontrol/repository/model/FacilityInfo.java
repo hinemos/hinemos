@@ -230,4 +230,24 @@ public class FacilityInfo extends ObjectPrivilegeTargetInfo implements Cloneable
 	public void persistSelf() {
 		preparePersisting();
 	}
+
+	@Override
+	public String toString() {
+		return "FacilityInfo ["
+				+ "facilityId=" + facilityId
+				+ ", facilityName=" + facilityName
+				+ ", facilityType=" + facilityType
+				+ ", description=" + description
+				+ ", displaySortOrder=" + displaySortOrder
+				+ ", iconImage=" + iconImage
+				+ ", valid=" + valid
+				+ ", createUserId=" + createUserId
+				+ ", createDatetime=" + createDatetime 
+				+ ", modifyUserId=" + modifyUserId 
+				+ ", modifyDatetime=" + modifyDatetime 
+				+ ", builtInFlg=" + builtInFlg 
+				+ ", notReferFlg=" + notReferFlg
+				+ "]";
+	}
+
 }

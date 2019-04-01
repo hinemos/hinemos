@@ -248,7 +248,6 @@ public class LogFormatKeyListComposite extends Composite {
 		ArrayList<Object> listAll = new ArrayList<Object>();
 		for (LogFormatKey key : getLogFormatKeyList()) {
 			ArrayList<Object> list = new ArrayList<Object>();
-			//FIXME バリデート?
 			list.add(key.getKey());
 			list.add(key.getDescription());
 			list.add(key.getPattern());

@@ -77,6 +77,24 @@ public interface HinemosPropertyAbstract {
 	 * Hinemosプロパティ名の"$"を、指定された置換文字列で置換する。
 	 * 
 	 * @param replaceStr　置換文字列
+	 * @return Hinemosプロパティ値
+	 * @throws NullPointerException
+	 */
+	default String getStringValue(String replaceStr) throws NullPointerException {
+		String ret = getStringValue(replaceStr , null);
+		if (ret == null) {
+			HinemosPropertyBean bean = getBean();
+			return bean.getDefaultStringValue();
+		}
+		return ret;
+	}
+	
+	/**
+	 * Hinemosプロパティ（文字列）取得
+	 * 存在しない場合はデフォルト値を使用
+	 * Hinemosプロパティ名の"$"を、指定された置換文字列で置換する。
+	 * 
+	 * @param replaceStr　置換文字列
 	 * @param defaultValue　デフォルト値
 	 * @return Hinemosプロパティ値
 	 * @throws NullPointerException
@@ -116,6 +134,24 @@ public interface HinemosPropertyAbstract {
 		return info.getValueNumeric();
 	}
 
+	/**
+	 * Hinemosプロパティ（数値）取得
+	 * 存在しない場合はデフォルト値を使用
+	 * Hinemosプロパティ名の"$"を、指定された置換文字列で置換する。
+	 * 
+	 * @param replaceStr　置換文字列
+	 * @return Hinemosプロパティ値
+	 * @throws NullPointerException
+	 */
+	default Long getNumericValue(String replaceStr) throws NullPointerException {
+		Long ret = getNumericValue(replaceStr , null);
+		if (ret == null) {
+			HinemosPropertyBean bean = getBean();
+			return bean.getDefaultNumericValue();
+		}
+		return ret;
+	}
+	
 	/**
 	 * Hinemosプロパティ（数値）取得
 	 * 存在しない場合はデフォルト値を使用
@@ -162,6 +198,30 @@ public interface HinemosPropertyAbstract {
 	 * Hinemosプロパティ（Integer）取得
 	 * 存在しない場合はデフォルト値を使用
 	 * Hinemosプロパティ名の"$"を、指定された置換文字列で置換する。
+	 * 
+	 * @param replaceStr　置換文字列
+	 * @return Hinemosプロパティ値
+	 * @throws NullPointerException
+	 */
+	default Integer getIntegerValue(String replaceStr) throws NullPointerException {
+		Integer ret = getIntegerValue(replaceStr , null);
+		if (ret == null) {
+			Long longValue = getNumericValue();
+			if (longValue == null) {
+				return null;
+			} else if (longValue.compareTo(Long.valueOf(Integer.MAX_VALUE)) > 0) {
+				return Integer.MAX_VALUE;
+			} else {
+				return longValue.intValue();
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * Hinemosプロパティ（Integer）取得
+	 * 存在しない場合はデフォルト値を使用
+	 * Hinemosプロパティ名の"$"を、指定された置換文字列で置換する。
 	 * Integerの最大値を超過した値の場合は、最大値を返す。
 	 * 
 	 * @param replaceStr　置換文字列
@@ -200,6 +260,24 @@ public interface HinemosPropertyAbstract {
 		return info.getValueBoolean();
 	}
 
+	/**
+	 * Hinemosプロパティ（真偽値）取得
+	 * 存在しない場合はデフォルト値を使用
+	 * Hinemosプロパティ名の"$"を、指定された置換文字列で置換する。
+	 * 
+	 * @param replaceStr　置換文字列
+	 * @return Hinemosプロパティ値
+	 * @throws NullPointerException
+	 */
+	default Boolean getBooleanValue(String replaceStr) throws NullPointerException {
+		Boolean ret = getBooleanValue(replaceStr , null);
+		if (ret == null) {
+			HinemosPropertyBean bean = getBean();
+			return bean.getDefaultBooleanValue();
+		}
+		return ret;
+	}
+	
 	/**
 	 * Hinemosプロパティ（真偽値）取得
 	 * 存在しない場合はデフォルト値を使用

@@ -33,7 +33,6 @@ import com.clustercontrol.infra.dialog.ChangeBackgroundModifyListener;
  * @version 5.0.0
  * @since 5.0.0
  */
-// TODO Encapsulate this class with FileDialog.
 public class UploadComponent{
 	// ログ
 	private static Log m_log = LogFactory.getLog( UploadComponent.class );

@@ -60,7 +60,7 @@ public class AgentRegister implements Runnable {
 		if (maxCount <= count) {
 			logger.warn("Timed-out. Failed to connect with " + facilityId + "'s agent.");
 			// 終了のために RuntimeException をスロー。
-			throw new RuntimeException(); // TODO Runtime?
+			throw new RuntimeException();
 		}
 	}
 

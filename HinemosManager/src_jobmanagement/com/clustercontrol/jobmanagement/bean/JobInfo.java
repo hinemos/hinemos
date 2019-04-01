@@ -951,7 +951,7 @@ public class JobInfo implements Serializable {
 
 		JobFileInfo file = JobFileInfo.createSampleInfo();
 
-		JobWaitRuleInfo waitRule= JobWaitRuleInfo.createSampleInfo();
+		JobWaitRuleInfo waitRule= createJobWaitRuleSample();
 
 		ArrayList<JobEndStatusInfo> endStatusList = new ArrayList<JobEndStatusInfo>();
 		JobEndStatusInfo endStatus = JobEndStatusInfo.createSampleInfo();
@@ -970,4 +970,109 @@ public class JobInfo implements Serializable {
 		return info;
 	}
 
+	/**
+	 * ジョブの待ち条件に関する情報のサンプルデータを作成する
+	 * 単体テスト用
+	 * @return
+	 */
+	public static JobWaitRuleInfo createJobWaitRuleSample() {
+		JobWaitRuleInfo info1 = new JobWaitRuleInfo();
+		info1.setSuspend(false);
+
+		info1.setSkip(false);
+		info1.setSkipEndStatus(0);
+		info1.setSkipEndValue(0);
+
+		info1.setJobRetryFlg(false);
+		info1.setJobRetryEndStatus(0);
+		info1.setJobRetry(0);
+
+		info1.setCondition(0);
+		ArrayList<JobObjectInfo> objList = new ArrayList<JobObjectInfo>();
+		{
+			JobObjectInfo objInfo = new JobObjectInfo();
+			objInfo.setType(0);
+			objInfo.setJobId("jobId");
+			objInfo.setJobName("jobName");
+			objInfo.setValue(0);
+			objInfo.setTime(0L);
+			objInfo.setDescription("description");
+			objList.add(objInfo);
+		}
+		info1.setObject(objList);
+		info1.setEndCondition(false);
+		info1.setEndStatus(0);
+		info1.setEndValue(0);
+		info1.setCalendar(false);
+		info1.setCalendarId("calendarId");
+		info1.setCalendarEndStatus(0);
+		info1.setCalendarEndValue(0);
+
+		info1.setStart_delay(false);
+		info1.setStart_delay_session(false);
+		info1.setStart_delay_session_value(0);
+
+		info1.setStart_delay_time(false);
+		info1.setStart_delay_time_value(0L);
+
+		info1.setStart_delay_condition_type(0);
+
+		info1.setStart_delay_notify(false);
+		info1.setStart_delay_notify_priority(0);
+
+		info1.setStart_delay_operation(false);
+		info1.setStart_delay_operation_type(0);
+		info1.setStart_delay_operation_end_status(0);
+		info1.setStart_delay_operation_end_value(0);
+
+		info1.setEnd_delay(false);
+
+		info1.setEnd_delay_session(false);
+		info1.setEnd_delay_session_value(0);
+
+		info1.setEnd_delay_job(false);
+		info1.setEnd_delay_job_value(0);
+
+		info1.setEnd_delay_time(false);
+		info1.setEnd_delay_time_value(0L);
+
+		info1.setEnd_delay_condition_type(0);
+
+		info1.setEnd_delay_notify(false);
+		info1.setEnd_delay_notify_priority(0);
+
+		info1.setEnd_delay_operation(false);
+		info1.setEnd_delay_operation_type(0);
+		info1.setEnd_delay_operation_end_status(0);
+		info1.setEnd_delay_operation_end_value(0);
+
+		info1.setEnd_delay_change_mount(false);
+		info1.setEnd_delay_change_mount_value(1D);
+
+		info1.setMultiplicityNotify(false);
+		info1.setMultiplicityNotifyPriority(0);
+		info1.setMultiplicityOperation(0);
+		info1.setMultiplicityEndValue(0);
+
+		info1.setExclusiveBranch(false);
+		info1.setExclusiveBranchEndStatus(0);
+		info1.setExclusiveBranchEndValue(0);
+		ArrayList<JobNextJobOrderInfo> nextJobOrderInfos = new ArrayList<>();
+		{
+			JobNextJobOrderInfo nextJobOrderInfo1 = new JobNextJobOrderInfo();
+			nextJobOrderInfo1.setJobId("job_id");
+			nextJobOrderInfo1.setJobunitId("jobunit_id");
+			nextJobOrderInfo1.setNextJobId("next_job_id1");
+			nextJobOrderInfos.add(nextJobOrderInfo1);
+
+			JobNextJobOrderInfo nextJobOrderInfo2 = new JobNextJobOrderInfo();
+			nextJobOrderInfo2.setJobId("job_id");
+			nextJobOrderInfo2.setJobunitId("jobunit_id");
+			nextJobOrderInfo2.setNextJobId("next_job_id2");
+			nextJobOrderInfos.add(nextJobOrderInfo2);
+		}
+		info1.setExclusiveBranchNextJobOrderList(nextJobOrderInfos);
+
+		return info1;
+	}
 }

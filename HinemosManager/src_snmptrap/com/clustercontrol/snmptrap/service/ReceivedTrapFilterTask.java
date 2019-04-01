@@ -59,6 +59,7 @@ import com.clustercontrol.snmptrap.util.SnmpTrapConstants;
 import com.clustercontrol.snmptrap.util.SnmpTrapNotifier;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -482,8 +483,9 @@ public class ReceivedTrapFilterTask implements Runnable {
 				// 収集値の入れ物を作成
 				StringSample strSample = new StringSample(date, monitorInfo.getMonitorId());
 				for (String facilityId : notifyFacilityIdList) {
-					//masg[1]はオリジナルメッセージ
-					strSample.set(facilityId, "", msgs[1]);
+					//msgs[1]はオリジナルメッセージ
+					String replacedMsg = XMLUtil.ignoreInvalidString(msgs[1]);
+					strSample.set(facilityId, "", replacedMsg);
 				}
 				if (strSample != null) {
 					collectedSamples.add(strSample);

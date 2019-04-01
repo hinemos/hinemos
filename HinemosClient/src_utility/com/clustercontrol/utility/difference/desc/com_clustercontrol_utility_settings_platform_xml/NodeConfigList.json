@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"NodeConfigList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"SettingName",
+			"Description",
+			"FacilityId",
+			"OwnerRoleId",
+			"RunInterval",
+			"CalendarId",
+			"ValidFlg",
+			"SettingItemList.*",
+			"CustomItemInfo.displayName",
+			"CustomItemInfo.description",
+			"CustomItemInfo.command",
+			"CustomItemInfo.specifyUser",
+			"CustomItemInfo.effectiveUser",
+			"CustomItemInfo.validFlg"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"NodeConfigInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

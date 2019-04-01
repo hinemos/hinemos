@@ -187,7 +187,7 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_confirmValid.setLayoutData(gridData);
 		this.m_confirmValid.setText(Messages.getString("setting.valid.confirmed"));

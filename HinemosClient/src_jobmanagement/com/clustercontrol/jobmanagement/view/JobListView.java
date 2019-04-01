@@ -27,6 +27,8 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand;
+import com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand;
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
@@ -320,6 +322,8 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 			service.refreshElements(JobObjectPrivilegeAction.ID, null);
 			service.refreshElements(RunJobAction.ID, null);
 			service.refreshElements(EditModeAction.ID, null);
+			service.refreshElements(ImportJobCommand.ID, null);
+			service.refreshElements(ExportJobCommand.ID, null);
 
 			// Update ToolBar after elements refreshed
 			// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.

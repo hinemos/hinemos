@@ -24,11 +24,10 @@ import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.monitor.bean.EventBatchConfirmInfo;
 import com.clustercontrol.monitor.bean.EventDataInfo;
+import com.clustercontrol.monitor.bean.UpdateEventFilterInternal;
 import com.clustercontrol.monitor.run.util.EventCacheModifyCallback;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.notify.monitor.util.QueryUtil;
-import com.clustercontrol.repository.bean.FacilityTargetConstant;
-import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 
 
@@ -46,10 +45,10 @@ public class ModifyEventConfirm {
 	/**
 	 * 引数で指定されたイベント情報一覧の確認を更新します。<BR>
 	 * 確認ユーザとして、操作を実施したユーザを設定します。<BR>
-	 * 取得したイベント情報の確認フラグを更新します。確認フラグが済の場合は、確認済み日時も更新します。
+	 * 取得したイベント情報の確認フラグを更新します。確認フラグの更新値が確認中、確認済の場合は、確認日時も更新します。
 	 * 
 	 * @param list 更新対象のイベント情報一覧（EventLogDataが格納されたArrayList）
-	 * @param confirmType 確認フラグ（未／済）（更新値）
+	 * @param confirmType 確認（未確認／確認中／確認済）（更新値）
 	 * @param confirmUser 確認ユーザ
 	 * 
 	 * @throws MonitorNotFound
@@ -66,7 +65,8 @@ public class ModifyEventConfirm {
 
 			// 確認済み日時
 			Long confirmDate = null;
-			if(confirmType == ConfirmConstant.TYPE_CONFIRMED){
+			if (confirmType == ConfirmConstant.TYPE_CONFIRMED
+					|| confirmType == ConfirmConstant.TYPE_CONFIRMING){
 				confirmDate = HinemosTime.currentTimeMillis();
 			}
 
@@ -79,8 +79,6 @@ public class ModifyEventConfirm {
 							event.getMonitorDetailId(),
 							event.getPluginId(),
 							event.getFacilityId(),
-							event.getPriority(),
-							event.getGenerationDate(),
 							event.getOutputDate(),
 							confirmDate,
 							confirmType,
@@ -97,13 +95,12 @@ public class ModifyEventConfirm {
 	 * 取得したイベント情報の確認フラグを更新します。確認フラグが済の場合は、確認済み日時も更新します。
 	 * 
 	 * @param monitorId 更新対象の監視項目ID
+	 * @param monitorDetailId 更新対象の監視詳細
 	 * @param pluginId 更新対象のプラグインID
 	 * @param facilityId 更新対象のファシリティID
-	 * @param priority 更新対象の重要度
-	 * @param generateDate 更新対象の出力日時
 	 * @param outputDate 更新対象の受信日時
-	 * @param confirmDate 更新対象の確認済み日時
-	 * @param confirmType 確認フラグ（未／済）（更新値）
+	 * @param confirmDate 確認日時
+	 * @param confirmType 確認（未確認／確認中／確認済）（更新値）
 	 * @param confirmUser 確認ユーザ
 	 * @throws MonitorNotFound
 	 * @throws InvalidRole
@@ -116,8 +113,6 @@ public class ModifyEventConfirm {
 			String monitorDetailId,
 			String pluginId,
 			String facilityId,
-			int priority,
-			Long generateDate,
 			Long outputDate,
 			Long confirmDate,
 			int confirmType,
@@ -135,19 +130,10 @@ public class ModifyEventConfirm {
 			} catch (InvalidRole e) {
 				throw e;
 			}
-
-			// 確認有無を変更
-			event.setConfirmFlg(confirmType);
-
-			if(confirmType == ConfirmConstant.TYPE_CONFIRMED){
-				if(confirmDate == null){
-					confirmDate = HinemosTime.currentTimeMillis();
-				}
-				event.setConfirmDate(confirmDate);
-			}
-
-			// 確認を実施したユーザを設定
-			event.setConfirmUser(confirmUser);
+			
+			long date = HinemosTime.currentTimeMillis();
+			
+			ModifyEventInfo.setConfirmFlgChange(jtm, event, confirmType, date, confirmUser);
 			
 			jtm.addCallback(new EventCacheModifyCallback(false, event));
 		}
@@ -157,15 +143,14 @@ public class ModifyEventConfirm {
 	 * 引数で指定された条件に一致するイベント情報の確認を一括更新します。
 	 * <p>
 	 * <ol>
-	 * <li>引数で指定されたプロパティに格納された更新条件を、プロパティユーティリティ（{@link com.clustercontrol.util.PropertyUtil}）を使用して取得します。</li>
 	 * <li>引数で指定されたファシリティ配下のファシリティと更新条件を基に、イベント情報を取得します。</li>
 	 * <li>確認ユーザとして、操作を実施したユーザを設定します。</li>
-	 * <li>取得したイベント情報の確認フラグを更新します。確認フラグが済の場合は、確認済み日時も更新します。</li>
+	 * <li>取得したイベント情報の確認フラグを更新します。確認フラグが確認中／確認済の場合は、確認日時も更新します。</li>
 	 * <li>イベント情報Entity Beanのキャッシュをフラッシュします。</li>
 	 * 
-	 * @param confirmType 確認フラグ（未／済）（更新値）
+	 * @param confirmType 確認フラグ（未確認／確認中／確認済）（更新値）
 	 * @param facilityId 更新対象の親ファシリティID
-	 * @param property 更新条件
+	 * @param info 更新条件
 	 * @param confirmUser 確認ユーザ
 	 * @throws HinemosUnknown
 	 * 
@@ -176,162 +161,33 @@ public class ModifyEventConfirm {
 	 */
 	public void modifyBatchConfirm(int confirmType, String facilityId, EventBatchConfirmInfo info, String confirmUser) throws HinemosUnknown {
 
-		Integer[] priorityIds = null;
-		Long outputFromDate = null;
-		Long outputToDate = null;
-		Long generationFromDate = null;
-		Long generationToDate = null;
-		String monitorId = null;
-		String monitorDetailId = null;
-		int facilityType = 0;
-		String application = null;
-		String message = null;
-		String comment = null;
-		String commentUser = null;
-		Boolean collectGraphFlg = null;
-
-		//重要度取得
-		if(info.getPriorityList() == null){
+		if (info.getPriorityList() == null){
 			throw new HinemosUnknown("priority is null");
 		}
-		priorityIds = info.getPriorityList();
 		
-		//更新日時（自）取得
-		if(info.getOutputFromDate() != null){
-			outputFromDate = info.getOutputFromDate();
-			outputFromDate -= (outputFromDate % 1000);	//ミリ秒の桁を0にする
-		}
-
-		//更新日時（至）取得
-		if(info.getOutputToDate() != null){
-			outputToDate = info.getOutputToDate();
-			outputToDate += (999 - (outputToDate % 1000));	//ミリ秒の桁を999にする
-		}
-
-		//出力日時（自）取得
-		if(info.getGenerationFromDate() != null){
-			generationFromDate = info.getGenerationFromDate();
-			generationFromDate -= (generationFromDate % 1000);	//ミリ秒の桁を0にする
-		}
-
-		//出力日時（至）取得
-		if(info.getGenerationToDate() != null){
-			generationToDate = info.getGenerationToDate();
-			generationToDate += (999 - (generationToDate % 1000));	//ミリ秒の桁を999にする
-		}
-
-		//監視項目ID取得
-		if(!"".equals(info.getMonitorId())){
-			monitorId = info.getMonitorId();
-		}
-
-		//監視詳細取得
-		if(!"".equals(info.getMonitorDetailId())){
-			monitorDetailId = info.getMonitorDetailId();
-		}
-
-		//対象ファシリティ種別取得
-		if(info.getFacilityType() != null){
-			facilityType = info.getFacilityType();
-		}
-
-		//アプリケーション取得
-		if(!"".equals(info.getApplication())){
-			application = info.getApplication();
-		}
-
-		//メッセージ取得
-		if(!"".equals(info.getMessage())){
-			message = info.getMessage();
-		}
-		//コメント
-		if(!"".equals(info.getComment())){
-			comment = info.getComment();
-		}
-		//コメントユーザ
-		if(!"".equals(info.getCommentUser())){
-			commentUser = info.getCommentUser();
-		}
-		// 性能グラフ用フラグ
-		if (info.getCollectGraphFlg() != null) {
-			collectGraphFlg = info.getCollectGraphFlg();
-		}
-
-		// 対象ファシリティのファシリティIDを取得
-		// ファシリティが指定されない（最上位）場合は、ファシリティIDを指定せずに検索を行う
-		String[] facilityIds = null;
-		ArrayList<String> facilityIdList = null;
-		if(facilityId != null && !"".equals(facilityId)){
-
-			int level = RepositoryControllerBean.ALL;
-			if(FacilityTargetConstant.TYPE_BENEATH == facilityType){
-				level = RepositoryControllerBean.ONE_LEVEL;
-			}
-
-			facilityIdList = new RepositoryControllerBean().getFacilityIdList(facilityId, level);
-
-			// スコープの場合
-			if(facilityIdList != null && facilityIdList.size() > 0){
-				facilityIds = new String[facilityIdList.size()];
-				facilityIdList.toArray(facilityIds);
-			}
-			// ノードの場合
-			else{
-				facilityIds = new String[1];
-				facilityIds[0] = facilityId;
-			}
-		}
-
+		//フィルタ条件を変換
+		UpdateEventFilterInternal filterIntenal = new UpdateEventFilterInternal();
+		filterIntenal.setFilter(facilityId, info);
+		
 		// アップデートする設定フラグ
 		Long confirmDate = HinemosTime.currentTimeMillis();
 		Integer confirmFlg = Integer.valueOf(confirmType);
-
+		
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			
 			int rtn = QueryUtil.updateEventLogFlgByFilter(
-					facilityIds,
-					priorityIds,
-					outputFromDate,
-					outputToDate,
-					generationFromDate,
-					generationToDate,
-					monitorId,
-					monitorDetailId,
-					application,
-					message,
+					filterIntenal,
 					confirmFlg,
 					confirmUser,
-					comment,
-					commentUser,
-					confirmType,
-					confirmDate,
-					collectGraphFlg);
+					confirmDate);
 			m_log.debug("The result of updateEventLogFlgByFilter is: " + rtn);
 			
 			// イベントキャッシュの更新
-			ArrayList<Integer> priorityList = new ArrayList<>();
-			for (Integer i : priorityIds) {
-				priorityList.add(i);
-			}
-			String ownerRoleId = null;
 			jtm.addCallback(new EventCacheModifyCallback(
-					facilityIdList,
-					priorityList,
-					outputFromDate,
-					outputToDate,
-					generationFromDate,
-					generationToDate,
-					monitorId,
-					monitorDetailId,
-					application,
-					message,
+					filterIntenal,
 					confirmFlg,
 					confirmUser,
-					comment,
-					commentUser,
-					confirmType,
-					confirmDate,
-					collectGraphFlg,
-					ownerRoleId));
+					confirmDate));
 		}
 	}
 }

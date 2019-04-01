@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
@@ -38,7 +39,9 @@ import com.clustercontrol.commons.util.ILockManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.NodeConfigSettingNotFound;
 import com.clustercontrol.hinemosagent.bean.AgentInfo;
 import com.clustercontrol.hinemosagent.bean.TopicInfo;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
@@ -48,9 +51,12 @@ import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.factory.NotifyEventTaskFactory;
 import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
+import com.clustercontrol.repository.bean.AgentCommandConstant;
 import com.clustercontrol.repository.factory.FacilitySelector;
 import com.clustercontrol.repository.factory.NodeProperty;
+import com.clustercontrol.repository.model.NodeConfigSettingInfo;
 import com.clustercontrol.repository.model.NodeInfo;
+import com.clustercontrol.repository.session.NodeConfigSettingControllerBean;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 
 public class AgentConnectUtil {
@@ -58,13 +64,11 @@ public class AgentConnectUtil {
 	private static Log m_log = LogFactory.getLog( AgentConnectUtil.class );
 
 	private static ILock _agentCacheLock;
-	private static ILock _agentLibMd5CacheLock;
 	private static ILock _agentTopicCacheLock;
 	
 	static {
 		ILockManager lockManager = LockManagerFactory.instance().create();
 		_agentCacheLock = lockManager.create(AgentConnectUtil.class.getName() + "-" + AbstractCacheManager.KEY_AGENT);
-		_agentLibMd5CacheLock = lockManager.create(AgentConnectUtil.class.getName() + "-" + AbstractCacheManager.KEY_AGENT_LIBMD5);
 		_agentTopicCacheLock = lockManager.create(AgentConnectUtil.class.getName() + "-" + AbstractCacheManager.KEY_AGENT_TOPIC);
 		
 		init();
@@ -81,18 +85,6 @@ public class AgentConnectUtil {
 		} finally {
 			_agentCacheLock.writeUnlock();
 		}
-		
-		try {
-			_agentLibMd5CacheLock.writeLock();
-			
-			Map<String, Map<String, String>> agentLibMd5Cache = getAgentLibMd5Cache();
-			if (agentLibMd5Cache == null) {	// not null when clustered
-				storeAgentLibMd5Cache(new HashMap<String, Map<String, String>>());
-			}
-		} finally {
-			_agentLibMd5CacheLock.writeUnlock();
-		}
-		
 		
 		try {
 			_agentTopicCacheLock.writeLock();
@@ -121,29 +113,6 @@ public class AgentConnectUtil {
 		cm.store(AbstractCacheManager.KEY_AGENT, newCache);
 	}
 	
-	// 接続しているエージェントのライブラリのMD5
-	// HashMap<facilityId, HashMap<filename, md5>>
-	@SuppressWarnings("unchecked")
-	private static HashMap<String, Map<String, String>> getAgentLibMd5Cache() {
-		ICacheManager cm = CacheManagerFactory.instance().create();
-		Serializable cache = cm.get(AbstractCacheManager.KEY_AGENT_LIBMD5);
-		if (m_log.isDebugEnabled()) m_log.debug("get cache " + AbstractCacheManager.KEY_AGENT_LIBMD5 + " : " + cache);
-		return cache == null ? null : (HashMap<String, Map<String, String>>)cache;
-	}
-	
-	private static void storeAgentLibMd5Cache(HashMap<String, Map<String, String>> newCache) {
-		ICacheManager cm = CacheManagerFactory.instance().create();
-		if (m_log.isDebugEnabled()) m_log.debug("store cache " + AbstractCacheManager.KEY_AGENT_LIBMD5 + " : " + newCache);
-		cm.store(AbstractCacheManager.KEY_AGENT_LIBMD5, newCache);
-	}
-
-	/**
-	 * TODO
-	 * このHashMapはejbを利用してテーブルに置き、session beanでアクセスする事。
-	 * (src_agentに移動すること。)
-	 * そうしないと、HashMapに入っていてエージェントに送る前にシャットダウンすると、
-	 * データが損失してしまう。
-	 */
 	@SuppressWarnings("unchecked")
 	private static HashMap<String, List<TopicInfo>> getAgentTopicCache() {
 		ICacheManager cm = CacheManagerFactory.instance().create();
@@ -248,7 +217,33 @@ public class AgentConnectUtil {
 		printRunInstructionInfo(facilityId, infoList);
 	}
 
-
+	/**
+	 * 現在のTopicのリストから、エージェントアップデート指示を除去します。
+	 * 
+	 * @param facilityId 対象ノードのファシリティID。
+	 */
+	public static void removeAgentUpdateTopic(String facilityId) {
+		try {
+			_agentTopicCacheLock.writeLock();
+			HashMap<String, List<TopicInfo>> topicMap = getAgentTopicCache();
+			List<TopicInfo> topics = topicMap.get(facilityId);
+			if (topics != null) {
+				topics.removeIf(topic -> {
+					if (topic.getAgentCommand() == AgentCommandConstant.UPDATE) {
+						m_log.info("removeAgentUpdateTopic: removed. topic=" + topic);
+						return true;
+					}
+					return false;
+				});
+				// HinemosのCacheManagerの仕様として、返された値(ここではmap)のステート変更が
+				// キャッシュ側の値へ反映されることは保証されないため、新たな値としてstoreし直す必要がある。
+				storeAgentTopicCache(topicMap);
+			}
+		} finally {
+			_agentTopicCacheLock.writeUnlock();
+		}
+	}
+	
 	/**
 	 * [Topic]
 	 * ファシリティIDをキーにして、トピックのリストを取得
@@ -574,73 +569,10 @@ public class AgentConnectUtil {
 		} finally {
 			_agentCacheLock.writeUnlock();
 		}
-		
-		try {
-			_agentLibMd5CacheLock.writeLock();
-			
-			HashMap<String, Map<String, String>> agentLibMd5 = getAgentLibMd5Cache();
-			agentLibMd5.remove(facilityId);
-			storeAgentLibMd5Cache(agentLibMd5);
-		} finally {
-			_agentLibMd5CacheLock.writeUnlock();
-		}
-		
+
 		//実行中のノード情報を異常停止にする
 		JobSessionNodeImpl nodeImple = new JobSessionNodeImpl();
 		nodeImple.endNodeByAgent(facilityId, agentInfo, true);
-	}
-
-
-
-	//////////////////////////////////
-	// エージェント　リモートアップデート機能
-	//////////////////////////////////
-	public static HashMap<String, String> getAgentLibMd5(String facilityId) {
-		try {
-			_agentLibMd5CacheLock.readLock();
-			
-			Map<String, Map<String, String>> agentLibMd5 = getAgentLibMd5Cache();
-			Map<String, String> map = agentLibMd5.get(facilityId);
-			return map == null ? new HashMap<String, String>() : new HashMap<String, String>(map);
-		} finally {
-			_agentLibMd5CacheLock.readUnlock();
-		}
-	}
-
-	/**
-	 * AgentLibMd5にファシリティIDとMD5の組がセットされているかチェックする。
-	 * セットされていない場合は、トピックを発行して、情報取得を依頼する。
-	 * (その直後にsetAgentLibMd5がやってくるはず。)
-	 * @param facilityId
-	 */
-	public static void checkAgentLibMd5(String facilityId) {
-		try {
-			_agentLibMd5CacheLock.readLock();
-			
-			Map<String, Map<String, String>> agentLibMd5 = getAgentLibMd5Cache();
-			Map<String, String> map = agentLibMd5.get(facilityId);
-			if (map != null) {
-				return;
-			}
-		} finally {
-			_agentLibMd5CacheLock.readUnlock();
-		}
-		
-		TopicInfo topicInfo = new TopicInfo();
-		topicInfo.setNewFacilityFlag(true);
-		AgentConnectUtil.setTopic(facilityId, topicInfo);
-	}
-
-	public static void setAngetLibMd5(String facilityId, HashMap<String, String> map) {
-		try {
-			_agentLibMd5CacheLock.writeLock();
-			
-			HashMap<String, Map<String, String>> agentLibMd5 = getAgentLibMd5Cache();
-			agentLibMd5.put(facilityId, map);
-			storeAgentLibMd5Cache(agentLibMd5);
-		} finally {
-			_agentLibMd5CacheLock.writeUnlock();
-		}
 	}
 
 	//////////////////////////////////
@@ -651,7 +583,15 @@ public class AgentConnectUtil {
 					throws HinemosUnknown, FacilityNotFound {
 		// 監視情報を取得
 		ArrayList<String> facilityList = null;
-		if (!"SYS".equals(outputBasicInfo.getMonitorId())) {
+		if (HinemosModuleConstant.NODE_CONFIG_SETTING.equals(outputBasicInfo.getPluginId())){
+			try {
+				NodeConfigSettingInfo entity = new NodeConfigSettingControllerBean().getNodeConfigSettingInfo(outputBasicInfo.getMonitorId());
+				String nodeConfigFacilityId = entity.getFacilityId();
+				facilityList = FacilitySelector.getFacilityIdList(nodeConfigFacilityId, entity.getOwnerRoleId(), 0, false, false);
+			} catch (NodeConfigSettingNotFound | InvalidRole e) {
+				m_log.warn(e.getMessage() + " (" + outputBasicInfo.getMonitorId() + ")", e);
+			}
+		} else if (!"SYS".equals(outputBasicInfo.getMonitorId())) {
 			try {
 				MonitorInfo entity = QueryUtil.getMonitorInfoPK_NONE(outputBasicInfo.getMonitorId());
 				String monitorFacilityId = entity.getFacilityId();
@@ -659,6 +599,8 @@ public class AgentConnectUtil {
 			} catch (MonitorNotFound e) {
 				m_log.warn(e.getMessage() + " (" + outputBasicInfo.getMonitorId() + ")", e);
 			}
+		} else{
+			m_log.trace("MonitorId is SYS, so facilityList is null.");
 		}
 		for (String facilityId : facilityIdList) {
 			if (facilityList != null && !facilityList.contains(facilityId)) {
@@ -715,7 +657,6 @@ public class AgentConnectUtil {
 			throw e;
 		}
 
-		// FIXME 本関数内の処理では通信のタイムアウトなどを設けていないため、異常な応答などが返った場合に無限待ちとなる可能性がある
 		Socket socket = null;
 		InputStream is = null;
 		try {

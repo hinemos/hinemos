@@ -17,7 +17,7 @@ package com.clustercontrol.utility.settings.ui.dialog;
 public class ClientUtilityDialogService implements IUtilityDialogService {
 
 	@Override
-	public ImportProcessDialog createImportProcessDialog(String message) {
+	public UtilityProcessDialog createImportProcessDialog(String message) {
 		return new ClientImportProcessDialog(message);
 	}
 

@@ -48,7 +48,6 @@ import com.clustercontrol.util.WidgetTestUtil;
  * @version 6.0.0
  * @since 6.0.0
  */
-// TODO Encapsulate this class with FileDialog.
 public class ScriptComponent {
 	// ログ
 	private static Log m_log = LogFactory.getLog(ScriptComponent.class);

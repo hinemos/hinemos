@@ -8,6 +8,7 @@
 
 package com.clustercontrol.repository.session;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -15,11 +16,13 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import javax.activation.DataHandler;
 import javax.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
@@ -31,19 +34,23 @@ import com.clustercontrol.bean.SnmpSecurityLevelConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.EmptyJpaTransactionCallback;
-import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityDuplicate;
 import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.NodeConfigFilterNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.SnmpResponseError;
 import com.clustercontrol.fault.UsedFacility;
-import com.clustercontrol.hinemosagent.bean.TopicInfo;
-import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
+import com.clustercontrol.hinemosagent.bean.AgentRestartTaskParameter;
+import com.clustercontrol.hinemosagent.bean.AgentUpdateTaskParameter;
+import com.clustercontrol.hinemosagent.util.AgentLibraryManager;
+import com.clustercontrol.hinemosagent.util.AgentProfile;
+import com.clustercontrol.hinemosagent.util.AgentProfiles;
 import com.clustercontrol.infra.session.InfraControllerBean;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.monitor.run.util.NodeMonitorPollerController;
@@ -51,17 +58,24 @@ import com.clustercontrol.monitor.run.util.NodeToMonitorCacheChangeCallback;
 import com.clustercontrol.monitor.session.MonitorControllerBean;
 import com.clustercontrol.nodemap.session.NodeMapControllerBean;
 import com.clustercontrol.notify.session.NotifyControllerBean;
+import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
 import com.clustercontrol.repository.IRepositoryListener;
+import com.clustercontrol.repository.bean.AgentCommandConstant;
 import com.clustercontrol.repository.bean.AgentStatusInfo;
 import com.clustercontrol.repository.bean.FacilitySortOrderConstant;
+import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.bean.FacilityTreeItem;
+import com.clustercontrol.repository.bean.LatestNodeConfigWrapper;
+import com.clustercontrol.repository.bean.NodeConfigSettingConstant;
+import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.repository.bean.NodeInfoDeviceSearch;
 import com.clustercontrol.repository.bean.RepositoryTableInfo;
 import com.clustercontrol.repository.entity.CollectorPlatformMstData;
 import com.clustercontrol.repository.entity.CollectorSubPlatformMstData;
-import com.clustercontrol.repository.factory.AgentLibDownloader;
+import com.clustercontrol.repository.factory.AgentStatusCollector;
 import com.clustercontrol.repository.factory.FacilityModifier;
 import com.clustercontrol.repository.factory.FacilitySelector;
+import com.clustercontrol.repository.factory.NodeConfigSelector;
 import com.clustercontrol.repository.factory.NodeProperty;
 import com.clustercontrol.repository.factory.ScopeProperty;
 import com.clustercontrol.repository.factory.SearchNodeBySNMP;
@@ -69,6 +83,8 @@ import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 import com.clustercontrol.repository.model.CollectorSubPlatformMstEntity;
 import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.repository.model.NodeInfo;
+import com.clustercontrol.repository.model.NodePackageInfo;
+import com.clustercontrol.repository.model.NodeProcessInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.util.FacilityIdCacheInitCallback;
 import com.clustercontrol.repository.util.FacilityTreeCache;
@@ -77,12 +93,15 @@ import com.clustercontrol.repository.util.JobCacheUpdateCallback;
 import com.clustercontrol.repository.util.JobMultiplicityCacheKickCallback;
 import com.clustercontrol.repository.util.NodeCacheRemoveCallback;
 import com.clustercontrol.repository.util.NodeCacheUpdateCallback;
+import com.clustercontrol.repository.util.NodeConfigFilterUtil;
 import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.repository.util.RepositoryChangedNotificationCallback;
 import com.clustercontrol.repository.util.RepositoryListenerCallback;
 import com.clustercontrol.repository.util.RepositoryListenerCallback.Type;
 import com.clustercontrol.repository.util.RepositoryValidator;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
 
 /**
  *
@@ -100,7 +119,11 @@ public class RepositoryControllerBean {
 
 	private static final List<IRepositoryListener> _listenerList = new ArrayList<IRepositoryListener>();
 
-	public static final Long RESTART_AGENT_SLEEP_TIME = 500L;
+	// まとめてノード削除を行う上限
+	private static final int NODE_DELETE_MAX_COUNT = 1000;
+
+	// 構成情報検索でまとめて検索を行う上限
+	private static final int NODE_CONFIG_SEARCH_MAX_COUNT = 10000;
 
 	/**
 	 * ファシリティIDを条件としてFacilityEntity を取得します。
@@ -501,6 +524,11 @@ public class RepositoryControllerBean {
 	 * @throws HinemosUnknown
 	 */
 	public ArrayList<NodeInfo> getNodeList() throws HinemosUnknown {
+		m_log.debug("getNodeList() : start");
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
 		JpaTransactionManager jtm = null;
 		ArrayList<NodeInfo> list = null;
 
@@ -512,7 +540,7 @@ public class RepositoryControllerBean {
 			list = FacilitySelector.getNodeList();
 			jtm.commit();
 		} catch (Exception e) {
-			m_log.warn("getExecTargetFacilityTree() : "
+			m_log.warn("getNodeList() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
 				jtm.rollback();
@@ -521,43 +549,9 @@ public class RepositoryControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
-		return list;
-	}
-
-	/**
-	 * 詳細版ノード一覧を取得します。<BR>
-	 *
-	 * @version 4.0.0
-	 * @since 4.0.0
-	 *
-	 * @return NodeInfoの配列
-	 * @throws HinemosUnknown
-	 */
-	public List<NodeInfo> getNodeDetailList() throws HinemosUnknown {
-		JpaTransactionManager jtm = null;
-		List<NodeInfo> list = new ArrayList<NodeInfo>();
-		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			for (String facilityId : FacilitySelector.getFacilityIdList("REGISTERED", null, 0, false, false)) {
-				NodeInfo nodeInfo = NodeProperty.getProperty(facilityId);
-				list.add(nodeInfo);
-			}
-
-			jtm.commit();
-		} catch (FacilityNotFound e) {
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
-		} catch (Exception e) {
-			m_log.warn("getNodeDetailList() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("getNodeList() total time=" + (endtime - starttime) + "ms");
 		}
 		return list;
 	}
@@ -712,17 +706,32 @@ public class RepositoryControllerBean {
 	 * ノードの詳細プロパティを取得します。<BR>
 	 *
 	 * faciliyIDで指定されるノードの詳細プロパティを取得します。<BR>
+	 * 以下の詳細情報を含む
+	 * ・OS情報
+	 * ・汎用デバイス情報
+	 * ・CPU情報
+	 * ・メモリ情報
+	 * ・NIC情報
+	 * ・ディスク情報
+	 * ・ファイルシステム情報
+	 * ・ホスト名情報
+	 * ・備考情報
+	 * ・ノード変数情報
 	 *
 	 * @version 1.0.0
 	 * @since 1.0.0
 	 *
 	 * @param facilityId ファシリティID
-	 * @param locale クライアントのロケール
 	 * @return ノード情報プロパティ
 	 * @throws FacilityNotFound
 	 * @throws HinemosUnknown
 	 */
 	public NodeInfo getNode(String facilityId) throws FacilityNotFound, HinemosUnknown {
+		m_log.debug("getNode() : start");
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
 		JpaTransactionManager jtm = null;
 		NodeInfo nodeInfo = null;
 		try {
@@ -733,21 +742,142 @@ public class RepositoryControllerBean {
 			nodeInfo = NodeProperty.getProperty(facilityId);
 			jtm.commit();
 		} catch (FacilityNotFound e) {
-			jtm.rollback();
+			if (jtm != null) {
+				jtm.rollback();
+			}
 			throw e;
 		} catch (Exception e) {
 			m_log.warn("getNode() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
+		}
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("getNode() total time=" + (endtime - starttime) + "ms");
 		}
 		return nodeInfo;
 	}
 
+	/**
+	 * ノードの詳細プロパティを取得します。<BR>
+	 *
+	 * faciliyIDで指定されるノードの詳細プロパティを取得します。<BR>
+	 *
+	 * @version 6.2.0
+	 *
+	 * @param facilityId ファシリティID
+	 * @return ノード情報プロパティ
+	 * @throws FacilityNotFound
+	 * @throws HinemosUnknown
+	 */
+	public NodeInfo getNodeFull(String facilityId) throws FacilityNotFound, HinemosUnknown {
+		m_log.debug("getNodeFull() : start");
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
+		JpaTransactionManager jtm = null;
+		NodeInfo nodeInfo = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			/** メイン処理 */
+			nodeInfo = NodeProperty.getPropertyFull(facilityId);
+			jtm.commit();
+		} catch (FacilityNotFound e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("getNodeFull() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("getNodeFull() total time=" + (endtime - starttime) + "ms");
+		}
+		return nodeInfo;
+	}
+
+	/**
+	 * ノードの詳細プロパティを取得します。<BR>
+	 *
+	 * faciliyIDで指定されるノードの詳細プロパティを取得します。<BR>
+	 *
+	 * @version 6.2.0
+	 *
+	 * @param facilityId ファシリティID
+	 * @param targetDatetime 対象日時
+	 * @param nodeFilterInfo 検索条件
+	 * @return ノード情報プロパティ
+	 * @throws FacilityNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public NodeInfo getNodeFull(String facilityId, Long targetDatetime, NodeInfo nodeFilterInfo)
+			throws FacilityNotFound, InvalidRole, HinemosUnknown {
+		JpaTransactionManager jtm = null;
+		NodeInfo nodeInfo = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			if (nodeFilterInfo != null) {
+				/** バリデートチェック */
+				RepositoryValidator.validateFilterNodeInfo(nodeFilterInfo);
+			}
+
+			// オブジェクト権限チェック
+			QueryUtil.getFacilityPK(facilityId, ObjectPrivilegeMode.READ);
+
+			/** メイン処理 */
+			if (targetDatetime == null 	|| targetDatetime == 0L) {
+				nodeInfo = NodeProperty.getPropertyFull(facilityId, NodeConfigSettingConstant.REG_DATE_TO_DEFAULT_VALUE - 1, nodeFilterInfo);
+			} else {
+				nodeInfo = NodeProperty.getPropertyFull(facilityId, targetDatetime, nodeFilterInfo);
+			}
+			jtm.commit();
+		} catch (InvalidRole e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (FacilityNotFound e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("getNodeFull() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return nodeInfo;
+	}
 
 	/**
 	 * ファシリティパスを取得します。<BR>
@@ -988,7 +1118,33 @@ public class RepositoryControllerBean {
 	 * @throws HinemosUnknown
 	 */
 	public void addNode(NodeInfo nodeInfo) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
+		m_log.debug("addNode(NodeInfo) : start");
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
 		addNode(nodeInfo, true);
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("addNode(NodeInfo) total time=" + (endtime - starttime) + "ms");
+		}
+	}
+
+	/**
+	 * ノードを新規に追加します。<BR>
+	 * またこのメソッドで組み込みスコープである"登録済みノード"スコープにも
+	 * 割り当てが行われます。
+	 *
+	 * @version 3.1.0
+	 * @since 1.0.0
+	 *
+	 * @param nodeinfo 追加するノード情報のプロパティ
+	 * @throws FacilityDuplicate
+	 * @throws InvalidSetting
+	 * @throws HinemosUnknown
+	 */
+	public void addNode(final NodeInfo nodeInfo, boolean topicSendFlg) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
+		addNode(nodeInfo, topicSendFlg, false);
 	}
 
 	/**
@@ -1004,40 +1160,49 @@ public class RepositoryControllerBean {
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public void addNode(final NodeInfo nodeInfo, boolean topicSendFlg) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
-		 JpaTransactionManager jtm = new JpaTransactionManager();
+	public void addNode(final NodeInfo nodeInfo, boolean topicSendFlg, boolean auto) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
+		m_log.debug("addNode(NodeInfo, boolean, boolean) : start");
+
+		JpaTransactionManager jtm = new JpaTransactionManager();
 
 		try {
 			jtm.begin();
 
 			// メンバ変数にnullが含まれていることがあるので、nullをデフォルト値に変更する。
 			nodeInfo.setDefaultInfo();
+			m_log.debug("addNode(NodeInfo, boolean, boolean) : set default info success.");
 
 			// 入力チェック
-			RepositoryValidator.validateNodeInfo(nodeInfo);
+			RepositoryValidator.validateNodeInfo(nodeInfo, auto);
+			m_log.debug("addNode(NodeInfo, boolean, boolean) : validate success. facilityId=" + nodeInfo.getFacilityId());
 			
 			//ユーザがオーナーロールIDに所属しているかチェック
 			RoleValidator.validateUserBelongRole(nodeInfo.getOwnerRoleId(),
 					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
 					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
+			m_log.debug("addNode(NodeInfo, boolean, boolean) : validate user belong role success. facilityId=" + nodeInfo.getFacilityId());
 
 			FacilityModifier.addNode(
 					nodeInfo,
 					(String) HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
 					FacilitySortOrderConstant.DEFAULT_SORT_ORDER_NODE);
+			m_log.debug("addNode(NodeInfo, boolean, boolean) : add node success. facilityId=" + nodeInfo.getFacilityId());
 
 			jtm.addCallback(new NodeCacheUpdateCallback(nodeInfo.getFacilityId()));
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
 			jtm.addCallback(new NodeToMonitorCacheChangeCallback());
+			final String facilityId = nodeInfo.getFacilityId();
+			final int nodeMonitorDelaySec = nodeInfo.getNodeMonitorDelaySec();
 			jtm.addCallback(new EmptyJpaTransactionCallback() {
 				@Override
 				public void postCommit() {
-					NodeMonitorPollerController.registNodeMonitorPoller(nodeInfo);
+					NodeMonitorPollerController.registNodeMonitorPoller(facilityId, nodeMonitorDelaySec);
 				}
 			});
 
+			m_log.debug("addNode(NodeInfo, boolean, boolean) : read lock start. facilityId=" + nodeInfo.getFacilityId());
 			try {
 				ListenerReadWriteLock.readLock();
 				for (IRepositoryListener listener : _listenerList) {
@@ -1046,8 +1211,11 @@ public class RepositoryControllerBean {
 			} finally {
 				ListenerReadWriteLock.readUnlock();
 			}
+			m_log.debug("addNode(NodeInfo, boolean, boolean) : read lock success. facilityId=" + nodeInfo.getFacilityId());
 
+			m_log.debug("addNode(NodeInfo, boolean, boolean) : commit start. facilityId=" + nodeInfo.getFacilityId());
 			jtm.commit();
+			m_log.debug("addNode(NodeInfo, boolean, boolean) : commit success. facilityId=" + nodeInfo.getFacilityId());
 		} catch (EntityExistsException e) {
 			jtm.rollback();
 			throw new FacilityDuplicate(e.getMessage(), e);
@@ -1058,7 +1226,7 @@ public class RepositoryControllerBean {
 			jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (Exception e) {
-			m_log.warn("addNode() : "
+			m_log.warn("addNode(NodeInfo, boolean, boolean) : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
@@ -1080,6 +1248,12 @@ public class RepositoryControllerBean {
 	 * @throws HinemosUnknown
 	 */
 	public void modifyNode(NodeInfo info) throws InvalidSetting, InvalidRole, HinemosUnknown {
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
+		m_log.debug("modifyNode() : start");
+
 		JpaTransactionManager jtm = null;
 
 		try{
@@ -1088,35 +1262,22 @@ public class RepositoryControllerBean {
 
 			// メンバ変数にnullが含まれていることがあるので、nullをデフォルト値に変更する。
 			info.setDefaultInfo();
+			m_log.debug("modifyNode() : set default info success");
 
 			// 入力チェック
 			RepositoryValidator.validateNodeInfo(info);
+			m_log.debug("modifyNode() : validate success facilityId=" + info.getFacilityId());
 
 			/** メイン処理 */
-			FacilityModifier.modifyNode(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), true);
+			FacilityModifier.modifyNode(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+			m_log.debug("modifyNode() : add node success facilityId=" + info.getFacilityId());
 
-			jtm.addCallback(new NodeCacheUpdateCallback(info.getFacilityId()));
-			jtm.addCallback(new JobMultiplicityCacheKickCallback(info.getFacilityId()));
-			jtm.addCallback(new FacilityIdCacheInitCallback());
-			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
-			jtm.addCallback(new RepositoryChangedNotificationCallback());
-			jtm.addCallback(new JobCacheUpdateCallback());  // FacilityTreeCacheの更新より後に呼び出す必要がある
-			
-			// 変更前後で管理対象フラグの有無が異なる場合、ノードに対して実行すべき監視の情報を持つキャッシュを更新する
-			if (info.getValid().booleanValue() != this.getNode(info.getFacilityId()).getValid().booleanValue()) {
-				jtm.addCallback(new NodeToMonitorCacheChangeCallback());
-			}
+			// ノード情報変更時に呼び出すコールバックメソッド
+			addModifyNodeCallback(info, false);
 
-			try {
-				ListenerReadWriteLock.readLock();
-				for (IRepositoryListener listener : _listenerList) {
-					jtm.addCallback(new RepositoryListenerCallback(listener, Type.CHANGE_NODE, null, info.getFacilityId()));
-				}
-			} finally {
-				ListenerReadWriteLock.readUnlock();
-			}
-
+			m_log.debug("modifyNode() : commit start facilityId=" + info.getFacilityId());
 			jtm.commit();
+			m_log.debug("modifyNode() : commit success facilityId=" + info.getFacilityId());
 		} catch (InvalidSetting | InvalidRole e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -1135,8 +1296,58 @@ public class RepositoryControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("modifyNode() total time=" + (endtime - starttime) + "ms");
+		}
 	}
 
+	/**
+	 * ノード情報変更時に呼び出すコールバックメソッドを設定
+	 * 
+	 * ※構成情報収集のNodeInfoには構成情報以外は設定されていないため、扱い注意
+	 * 
+	 * @param nodeInfo ノード情報
+	 * @param isNodeConfig true : 構成情報、false : 構成情報以外(通常のノード登録)
+	 * @throws HinemosUnknown
+	 * @throws FacilityNotFound
+	 */
+	public void addModifyNodeCallback(NodeInfo nodeInfo, boolean isNodeConfig)
+			throws HinemosUnknown, FacilityNotFound {
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+
+			jtm.addCallback(new NodeCacheUpdateCallback(nodeInfo.getFacilityId()));
+			if (!isNodeConfig) {
+				jtm.addCallback(new JobMultiplicityCacheKickCallback(nodeInfo.getFacilityId()));
+			}
+			jtm.addCallback(new FacilityIdCacheInitCallback());
+			if (!isNodeConfig) {
+				jtm.addCallback(new FacilityTreeCacheRefreshCallback());
+			}
+			jtm.addCallback(new RepositoryChangedNotificationCallback());
+			if (!isNodeConfig) {
+				jtm.addCallback(new JobCacheUpdateCallback());  // FacilityTreeCacheの更新より後に呼び出す必要がある
+			}
+
+			if (!isNodeConfig) {
+				// 変更前後で管理対象フラグの有無が異なる場合、ノードに対して実行すべき監視の情報を持つキャッシュを更新する
+				if (nodeInfo.getValid() != null 
+						&& nodeInfo.getValid().booleanValue() != this.getNode(nodeInfo.getFacilityId()).getValid().booleanValue()) {
+					jtm.addCallback(new NodeToMonitorCacheChangeCallback());
+				}
+		
+				try {
+					ListenerReadWriteLock.readLock();
+					for (IRepositoryListener listener : _listenerList) {
+						jtm.addCallback(new RepositoryListenerCallback(listener, Type.CHANGE_NODE, null, nodeInfo.getFacilityId()));
+					}
+				} finally {
+					ListenerReadWriteLock.readUnlock();
+				}
+			}
+		}
+	}
 
 	/**
 	 * ノード情報を削除します。<BR>
@@ -1152,6 +1363,10 @@ public class RepositoryControllerBean {
 	 * @throws HinemosUnknown
 	 */
 	public void deleteNode(String[] facilityIds) throws UsedFacility, InvalidRole, HinemosUnknown {
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
 		JpaTransactionManager jtm = null;
 
 		/** メイン処理 */
@@ -1159,58 +1374,90 @@ public class RepositoryControllerBean {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			for (String facilityId : facilityIds) {
-				checkIsUseFacility(facilityId);
-				FacilityModifier.deleteNode(facilityId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), true);
-			}
+			// NODE_DELETE_MAX_COUNTよりノード数が超過する場合は、NODE_DELETE_MAX_COUNTごとに削除処理を行う。
+			for (int i = 0; i < facilityIds.length; i = i + NODE_DELETE_MAX_COUNT) {
 
-			for (final String facilityId : facilityIds) {
-				jtm.addCallback(new NodeCacheRemoveCallback(facilityId));
-				jtm.addCallback(new EmptyJpaTransactionCallback() {
-					@Override
-					public void postCommit() {
-						NodeMonitorPollerController.unregistNodeMonitorPoller(facilityId);
-					}
-				});
-			}
-			jtm.addCallback(new FacilityIdCacheInitCallback());
-			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
-			jtm.addCallback(new RepositoryChangedNotificationCallback());
-			jtm.addCallback(new NodeToMonitorCacheChangeCallback());
-
-			try {
-				ListenerReadWriteLock.readLock();
-				for (IRepositoryListener listener : _listenerList) {
-					for (String facilityId : facilityIds) {
-						jtm.addCallback(new RepositoryListenerCallback(listener, Type.REMOVE_NODE, null, facilityId));
-					}
+				m_log.debug("deleteNode() : loop start i=" + i);
+				String[] tmpFacilityIds = null;
+				if ((i + NODE_DELETE_MAX_COUNT) > facilityIds.length) {
+					tmpFacilityIds = Arrays.copyOfRange(facilityIds, i, facilityIds.length); 
+				} else {
+					tmpFacilityIds = Arrays.copyOfRange(facilityIds, i, i + NODE_DELETE_MAX_COUNT);
 				}
-			} finally {
-				ListenerReadWriteLock.readUnlock();
-			}
+				
+				m_log.debug("deleteNode() : copy of range success i=" + i);
+				for (String facilityId : tmpFacilityIds) {
+					checkIsUseFacility(facilityId);
+					FacilityModifier.deleteNode(facilityId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+				}
 
-			// ノードマップ
-			// ノードマップで対象スコープの対象ファシリティにつながっているパスを消す
-			new NodeMapControllerBean().deleteMapInfo(Arrays.asList(facilityIds), null);
+				m_log.debug("deleteNode() : delete node success i=" + i);
+				for (final String facilityId : tmpFacilityIds) {
+					jtm.addCallback(new NodeCacheRemoveCallback(facilityId));
+					jtm.addCallback(new EmptyJpaTransactionCallback() {
+						@Override
+						public void postCommit() {
+							NodeMonitorPollerController.unregistNodeMonitorPoller(facilityId);
+						}
+					});
+				}
+				jtm.addCallback(new FacilityIdCacheInitCallback());
+				jtm.addCallback(new FacilityTreeCacheRefreshCallback());
+				jtm.addCallback(new RepositoryChangedNotificationCallback());
+				jtm.addCallback(new NodeToMonitorCacheChangeCallback());
+
+				m_log.debug("deleteNode() : read lock start i=" + i);
+				try {
+					ListenerReadWriteLock.readLock();
+					for (IRepositoryListener listener : _listenerList) {
+						for (String facilityId : tmpFacilityIds) {
+							jtm.addCallback(new RepositoryListenerCallback(listener, Type.REMOVE_NODE, null, facilityId));
+						}
+					}
+				} finally {
+					ListenerReadWriteLock.readUnlock();
+				}
+				m_log.debug("deleteNode() : read lock success i=" + i);
+
+				// ノードマップ
+				// ノードマップで対象スコープの対象ファシリティにつながっているパスを消す
+				new NodeMapControllerBean().deleteMapInfo(Arrays.asList(tmpFacilityIds), null);
+				m_log.debug("deleteNode() : delete nodemap success i=" + i);
+			}
 			
+			m_log.debug("deleteNode() : commit start");
 			jtm.commit();
+			m_log.debug("deleteNode() : commit success");
 		} catch (UsedFacility | InvalidRole e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
 		} catch (FacilityNotFound e) {
-			jtm.rollback();
+			if (jtm != null){
+				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(), e);
+		} catch (HinemosUnknown e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
 		} catch (Exception e) {
 			m_log.warn("deleteNode() : "
 					+ e.getClass().getSimpleName() +", " + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null){
 				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(),e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
+		}
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("deleteNode() total time=" + (endtime - starttime) + "ms");
 		}
 	}
 
@@ -1347,36 +1594,12 @@ public class RepositoryControllerBean {
 	 * @since 1.0.0
 	 *
 	 * @param parentFacilityId
-	 * @param property
-	 * @param sortOrder
-	 * @throws FacilityDuplicate
-	 * @throws InvalidSetting
-	 * @throws InvalidRole
-	 * @throws HinemosUnknown
-	 */
-	public void addScope(String parentFacilityId, ScopeInfo property, int displaySortOrder)
-			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
-		addScope(parentFacilityId, property, displaySortOrder, true);
-	}
-
-	/**
-	 * スコープを新規に追加します(表示順指定、リポジトリ更新TOPIC未送信選択可能)。<BR>
-	 *
-	 * parentFacilityIdで指定されるスコープの下にpropertyで指定されるスコープを
-	 * 追加します。<BR>
-	 * 引数propertyには、"ファシリティID"、"ファシリティ名"、"説明"（任意）を含める必要があります。
-	 *
-	 * @version 3.1.0
-	 * @since 1.0.0
-	 *
-	 * @param parentFacilityId
 	 * @param info
-	 * @param sortOrder
 	 * @throws FacilityDuplicate
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public void addScope(String parentFacilityId, ScopeInfo info, int displaySortOrder, boolean topicSendFlg)
+	public void addScope(String parentFacilityId, ScopeInfo info, int displaySortOrder)
 			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
 
 		JpaTransactionManager jtm = null;
@@ -1398,8 +1621,7 @@ public class RepositoryControllerBean {
 					parentFacilityId,
 					info,
 					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
-					displaySortOrder,
-					topicSendFlg);
+					displaySortOrder);
 
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
@@ -1472,7 +1694,7 @@ public class RepositoryControllerBean {
 			checkIsBuildInScope(info.getFacilityId());
 
 			/** メイン処理 */
-			FacilityModifier.modifyScope(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), true);
+			FacilityModifier.modifyScope(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
@@ -1537,7 +1759,7 @@ public class RepositoryControllerBean {
 			for (String facilityId : facilityIds) {
 				checkIsBuildInScope(facilityId);
 				checkIsUseFacility(facilityId);
-				FacilityModifier.deleteScope(facilityId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), true);
+				FacilityModifier.deleteScope(facilityId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 				// ノードマップ
 				// ノードマップで対象スコープの対象ファシリティにつながっているパスを消す
@@ -1918,7 +2140,15 @@ public class RepositoryControllerBean {
 	 */
 	public void assignNodeScope(String parentFacilityId, String[] facilityIds)
 			throws InvalidSetting, InvalidRole, HinemosUnknown {
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
 		assignNodeScope(parentFacilityId, facilityIds, true);
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("assignNodeScope() total time=" + (endtime - starttime) + "ms");
+		}
 	}
 
 	/**
@@ -1937,26 +2167,6 @@ public class RepositoryControllerBean {
 	 */
 	public void releaseNodeScope(String parentFacilityId, String[] facilityIds)
 			throws InvalidSetting, InvalidRole, HinemosUnknown{
-		releaseNodeScope(parentFacilityId, facilityIds, true);
-	}
-
-
-	/**
-	 * ノードをスコープから削除します。（割り当てを解除します。リポジトリ更新TOPIC未送信選択可能）<BR>
-	 * parentFacilityIdで指定されるスコープからfacilityIdsで指定されるノード群を
-	 * 削除（割り当て解除）します。
-	 *
-	 * @version 3.1.0
-	 * @since 1.0.0
-	 *
-	 * @param parentFacilityId ノードを取り除くスコープ
-	 * @param facilityIds 取り除かれるノード（群）
-	 * @throws InvalidSetting
-	 * @throws InvalidRole
-	 * @throws HinemosUnknown
-	 */
-	public void releaseNodeScope(String parentFacilityId, String[] facilityIds, boolean topicSendFlg)
-			throws InvalidSetting, InvalidRole, HinemosUnknown{
 		JpaTransactionManager jtm = null;
 
 		try{
@@ -1973,8 +2183,7 @@ public class RepositoryControllerBean {
 			FacilityModifier.releaseNodeFromScope(
 					parentFacilityId,
 					facilityIds,
-					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
-					topicSendFlg);
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
@@ -2020,7 +2229,6 @@ public class RepositoryControllerBean {
 				jtm.close();
 		}
 	}
-
 
 	/**********************
 	 * その他のメソッド群
@@ -2198,23 +2406,23 @@ public class RepositoryControllerBean {
 	 * @return
 	 * @throws HinemosUnknown
 	 */
-	public ArrayList<AgentStatusInfo> getAgentStatusList() throws HinemosUnknown{
+	public List<AgentStatusInfo> getAgentStatusList() throws HinemosUnknown{
 		JpaTransactionManager jtm = null;
-		ArrayList<AgentStatusInfo> list = null;
+		List<AgentStatusInfo> list = null;
 
-		m_log.debug("getAgentStatusList() ");
+		m_log.debug("getAgentStatusList");
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
+			
+			list = new AgentStatusCollector().getAgentStatusList();
 
-			list = AgentLibDownloader.getAgentStatusList();
 			jtm.commit();
 		} catch (HinemosUnknown e) {
 			jtm.rollback();
 			throw e;
 		} catch (Exception e) {
-			m_log.warn("getAgentStatusList() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			m_log.warn("getAgentStatusList", e);
 			if (jtm != null)
 				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
@@ -2226,79 +2434,53 @@ public class RepositoryControllerBean {
 	}
 
 	/**
-	 * エージェントを再起動、アップデートします。<BR>
+	 * エージェントを再起動、あるいはアップデートします。
 	 *
-	 *
-	 * @param facilityId　ファシリティID
-	 * @param agentCommand エージェントに実行するコマンド。
-	 * @see com.clustercontrol.repository.bean.AgentCommandConstant
+	 * @param facilityId　エージェントのファシリティID。
+	 * @param agentCommand エージェントが実行すべき処理。{@link AgentCommandConstant}
 	 */
-	public void restartAgent(ArrayList<String> facilityIdList, int agentCommand) {
-		// Local Variables
-		TopicInfo topicInfo = null;
-
-		// MAIN
-		topicInfo = new TopicInfo();
-
-		/*
-		 * com.clustercontrol.repository.bean.AgentCommandConstant
-		 * public static int RESTART = 1;
-		 * public static int UPDATE = 2;
-		 */
-		topicInfo.setAgentCommand(agentCommand);
-
-		// 同時にアップデートされると困るので、ずらす。
-		int restartSleep = RepositoryControllerBean.RESTART_AGENT_SLEEP_TIME.intValue();
-		try {
-			restartSleep = HinemosPropertyCommon.repository_restart_sleep.getIntegerValue();
-			m_log.info("restartAgent() restart sleep = " + restartSleep);
-		} catch (Exception e) {
-			m_log.warn("restartAgent() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-		}
-		for (String facilityId : facilityIdList) {
-			if (AgentConnectUtil.isValidAgent(facilityId)) {
-
+	public void restartAgent(List<String> facilityIdList, int agentCommand) {
+		if (agentCommand == AgentCommandConstant.RESTART) {
+			for (String facilityId : facilityIdList) {
 				try {
-					// オブジェクト権限チェック
-					QueryUtil.getFacilityPK(facilityId, ObjectPrivilegeMode.EXEC);
-				} catch (InvalidRole e) {
-					// 権限がない場合は、該当のファシリティIDに対する処理は行わない
-					continue;
-				} catch (FacilityNotFound e) {
-					continue;
+					AsyncWorkerPlugin.addTask(AsyncWorkerPlugin.AGENT_RESTART_TASK_FACTORY,
+							new AgentRestartTaskParameter(facilityId), false);
+				} catch (HinemosUnknown e) {
+					m_log.warn("restartAgent: Failed to create a restart task. facilityId=" + facilityId, e);
 				}
-
-				m_log.info("restart() : setTopic(" + facilityId + ")");
-				AgentConnectUtil.setTopic(facilityId, topicInfo);
-				try {
-					Thread.sleep(restartSleep);
-				} catch (InterruptedException e) {
-					m_log.info("restartAgent : " + e.getMessage());
-				}
-			} else {
-				m_log.info("restartAgent() agent does not connect. " +
-						"(facilityId=" + facilityId + ")");
 			}
-		}
-	}
+		} else if (agentCommand == AgentCommandConstant.UPDATE) {
+			AgentProfiles profs = Singletons.get(AgentProfiles.class);
+			AgentLibraryManager libman = Singletons.get(AgentLibraryManager.class);
 
-	/**
-	 * @param facilityId　ファシリティID
-	 * @param agentCommand エージェントに実行するコマンド。
-	 * @throws HinemosUnknown
-	 * @see com.clustercontrol.repository.bean.AgentCommandConstant
-	 */
-	public HashMap<String, String> getAgentLibMap (ArrayList<String> facilityIdList) throws HinemosUnknown {
-		HashMap<String, String> map = null;
-		try {
-			map = AgentLibDownloader.getAgentLibMap(facilityIdList, false);
-		} catch (Exception e) {
-			m_log.warn("getAgentLibMap() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			throw new HinemosUnknown(e.getMessage(), e);
-		}
-		return map;
+			// ライブラリ情報を更新する (最新判定と、この後のエージェントアップデートのため)
+			libman.refresh();
+
+			for (String facilityId : facilityIdList) {
+				try {
+					AgentProfile prof = profs.getProfile(facilityId);
+					if (prof == null) {
+						m_log.info("restartAgent: Skip no profile. facilityId=" + facilityId);
+						continue;
+					}
+					if (prof.isV61Earlier()) {
+						m_log.info("restartAgent: Skip ver.6.1 earlier. facilityId=" + facilityId);
+						continue;
+					}
+					if (libman.isLatest(prof)) {
+						m_log.info("restartAgent: Skip latest version. facilityId=" + facilityId);
+						continue;
+					}
+
+					AsyncWorkerPlugin.addTask(AsyncWorkerPlugin.AGENT_UPDATE_TASK_FACTORY,
+							new AgentUpdateTaskParameter(facilityId), false);
+				} catch (HinemosUnknown e) {
+					m_log.warn("restartAgent: Failed to create an update task. facilityId=" + facilityId, e);
+				}
+			}
+		} else {
+			m_log.warn("restartAgent: Unknown command = " + agentCommand);
+		}		
 	}
 
 	public void checkIsUseFacility (String facilityId) throws HinemosUnknown, UsedFacility {
@@ -2320,6 +2502,11 @@ public class RepositoryControllerBean {
 		}
 		try {
 			new InfraControllerBean().isUseFacilityId(facilityId);
+		} catch(UsedFacility e) {
+			message += e.getMessage();
+		}
+		try {
+			new NodeConfigSettingControllerBean().isUseFacilityId(facilityId);
 		} catch(UsedFacility e) {
 			message += e.getMessage();
 		}
@@ -2528,11 +2715,11 @@ public class RepositoryControllerBean {
 			}
 			
 			jtm.addCallback(new NodeToMonitorCacheChangeCallback());
-			final NodeInfo _nodeInfo = nodeInfo;
+			final int nodeMonitorDelaySec = nodeInfo.getNodeMonitorDelaySec();
 			jtm.addCallback(new EmptyJpaTransactionCallback() {
 				@Override
 				public void postCommit() {
-					NodeMonitorPollerController.registNodeMonitorPoller(_nodeInfo);
+					NodeMonitorPollerController.registNodeMonitorPoller(facilityId, nodeMonitorDelaySec);
 				}
 			});
 
@@ -2612,6 +2799,151 @@ public class RepositoryControllerBean {
 			}
 		}
 	}
+	
+	/**
+	 * ノード構成情報のパッケージ取得<BR>
+	 *
+	 * @version 6.2.0
+	 * @since 6.2.0
+	 *
+	 * @param facilityId
+	 *            ファシリティID
+	 * @param date
+	 *            日付
+	 * @return 引数指定の日付に対して最新状態のパッケージリストが格納されたBean.
+	 * @throws HinemosUnknown
+	 *             DB接続不可など
+	 * @throws InvalidSetting
+	 *             引数不正(空文字もしくはnull)
+	 * @throws FacilityNotFound 
+	 */
+	public LatestNodeConfigWrapper<NodePackageInfo> getNodePackageList(String facilityId, Long date)
+			throws HinemosUnknown, InvalidSetting, FacilityNotFound {
+		
+		// 引数チェック.
+		if (facilityId == null || facilityId.isEmpty()) {
+			InvalidSetting e = new InvalidSetting("facility-ID is empty.");
+			throw e;
+		}
+
+		JpaTransactionManager jtm = null;
+		LatestNodeConfigWrapper<NodePackageInfo> latestPackage = null;
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			/** メイン処理 */
+			latestPackage = NodeConfigSelector.getNodePackageList(facilityId, date);
+			jtm.commit();
+		} catch (FacilityNotFound e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("getNodePackageList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return latestPackage;
+	}
+	
+	/**
+	 * ノード構成情報の最新プロセス全量取得<BR>
+	 *
+	 * @version 6.2.0
+	 * @since 6.2.0
+	 *
+	 * @param facilityId
+	 *            ファシリティID
+	 * @return 最新のプロセスリスト.
+	 * @throws HinemosUnknown
+	 *             DB接続不可など
+	 * @throws InvalidSetting
+	 *             引数不正(空文字もしくはnull)
+	 * @throws FacilityNotFound 
+	 */
+	public List<NodeProcessInfo> getNodeProcessList(String facilityId)
+			throws HinemosUnknown, InvalidSetting, FacilityNotFound {
+		
+		// 引数チェック.
+		if (facilityId == null || facilityId.isEmpty()) {
+			InvalidSetting e = new InvalidSetting("facility-ID is empty.");
+			throw e;
+		}
+
+		JpaTransactionManager jtm = null;
+		List<NodeProcessInfo> latestProcess = null;
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			/** メイン処理 */
+			latestProcess = NodeConfigSelector.getNodeProcessList(facilityId);
+			jtm.commit();
+		} catch (FacilityNotFound e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		}  catch (Exception e) {
+			m_log.warn("getNodeProcessList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return latestProcess;
+	}
+	
+	/**
+	 * ノード構成情報のNIC情報全量取得<BR>
+	 * 
+	 *
+	 * @version 6.2.0
+	 * @since 6.2.0
+	 *
+	 * @return NIC情報がセットされたノード情報.
+	 * @throws HinemosUnknown
+	 *             DB接続不可など
+	 */
+	public List<NodeInfo> getNodeNicList() throws HinemosUnknown {
+
+		JpaTransactionManager jtm = null;
+		List<NodeInfo> nodeList = null;
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			/** メイン処理 */
+			nodeList = NodeConfigSelector.getNodeNicList();
+			jtm.commit();
+		} catch (Exception e) {
+			m_log.warn("getNodeNicList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return nodeList;
+	}
 
 	private static class ListenerReadWriteLock {
 		private static final ReentrantReadWriteLock _lock = new ReentrantReadWriteLock();
@@ -2654,5 +2986,395 @@ public class RepositoryControllerBean {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
 		}
+	}
+
+	/**
+	 * 構成情報検索のデータを取得します。<BR>
+	 * 
+	 * @param parentFacilityId 親スコープのファシリティID
+	 * @param nodeFilterInfo 検索条件
+	 * @return 対象ノード情報の一覧
+	 * @throws InvalidSetting
+	 * @throws HinemosDbTimeout
+	 * @throws HinemosUnknown
+	 */
+	public List<NodeInfo> getNodeList(String parentFacilityId, NodeInfo nodeFilterInfo)
+			throws InvalidSetting, HinemosDbTimeout, HinemosUnknown {
+		m_log.debug("getNodeList(String, NodeInfo) : start");
+		long start = HinemosTime.currentTimeMillis();
+
+		JpaTransactionManager jtm = null;
+		List<NodeInfo> nodeList = null;
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			if (nodeFilterInfo != null) {
+				/** バリデートチェック */
+				RepositoryValidator.validateFilterNodeInfo(nodeFilterInfo);
+				m_log.debug("getNodeList(String, NodeInfo) : validate success.");
+			}
+			
+			nodeList = getNodeList(parentFacilityId, RepositoryControllerBean.ALL);
+			m_log.debug("getNodeList(String, NodeInfo) : getNodeList success.");
+
+			if (nodeList == null 
+					|| nodeList.size() == 0
+					|| nodeFilterInfo == null) {
+				return nodeList;
+			}
+
+			// 対象日時による存在確認
+			if (nodeFilterInfo.getNodeConfigTargetDatetime() != null
+					&& nodeFilterInfo.getNodeConfigTargetDatetime() != 0L) {
+				Iterator<NodeInfo> iter = nodeList.iterator();
+				while (iter.hasNext()) {
+					NodeInfo nodeInfo = iter.next();
+					if (nodeInfo.getCreateDatetime() > nodeFilterInfo.getNodeConfigTargetDatetime()) {
+						// 対象日時にノードが作成されていない場合は削除
+						iter.remove();
+					}
+				}
+			}
+			m_log.debug("getNodeList(String, NodeInfo) : remove before nodeInfo success.");
+
+			if (nodeFilterInfo.getNodeConfigFilterList() == null
+					|| nodeFilterInfo.getNodeConfigFilterList().size() == 0) {
+				throw new NodeConfigFilterNotFound("node config filter is not setting.");
+			}
+
+			// ノードのファシリティIDを抽出
+			List<String> filterFacilityIdList = new ArrayList<>();
+			int maxListSize = nodeList.size();
+			if (maxListSize > NODE_CONFIG_SEARCH_MAX_COUNT) {
+				maxListSize = NODE_CONFIG_SEARCH_MAX_COUNT;
+			}
+			m_log.debug("getNodeList(String, NodeInfo) : maxListSize=" + maxListSize + ", listSize=" + nodeList.size());
+			for (int i = 0; i < nodeList.size(); i = i + maxListSize) {
+				m_log.debug("getNodeList(String, NodeInfo) : for (int i = 0; i < nodeList.size(); i = i + NODE_CONFIG_SEARCH_MAX_COUNT) i=" + i);
+				List<String> nodeFacilityIdList = new ArrayList<>();
+
+				for (int j = 0; j < i + maxListSize; j++) {
+					NodeInfo nodeInfo = nodeList.get(j);
+					nodeFacilityIdList.add(nodeInfo.getFacilityId());
+				}
+				m_log.debug("getNodeList(String, NodeInfo) : add list success i=" + i);
+
+				// フィルタによる検索処理
+				filterFacilityIdList.addAll(FacilitySelector.getFilterNodeIdListByNodeConfig(nodeFilterInfo, nodeFacilityIdList));
+				m_log.debug("getNodeList(String, NodeInfo) : filter node success i=" + i);
+			}
+
+			// 全体から対象のみ抽出
+			Iterator<NodeInfo> iter = nodeList.iterator();
+			while (iter.hasNext()) {
+				NodeInfo nodeInfo = iter.next();
+				if (!filterFacilityIdList.contains(nodeInfo.getFacilityId())) {
+					// 対象が存在しない場合は削除
+					iter.remove();
+				}
+			}
+			jtm.commit();
+		} catch (NodeConfigFilterNotFound e) {
+			// 検索条件が設定されていない場合
+			m_log.info("getNodeList(String, NodeInfo) : " + e.getMessage());
+			if (jtm != null){
+				jtm.rollback();
+			}
+			return nodeList;
+		} catch (HinemosDbTimeout | InvalidSetting | HinemosUnknown e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("getNodeList(String, NodeInfo) : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("getNodeList(String parentFacilityId, NodeInfo nodeFilterInfo) " + (HinemosTime.currentTimeMillis() - start) + "ms.");
+			}
+		}
+
+		return nodeList;
+	}
+
+	/**
+	 * 構成情報ファイルの一時ファイルIDを返します。<BR><BR>
+	 * 
+	 * @return 一時ファイルID
+	 * @throws HinemosUnknown
+	 */
+	public String getNodeConfigFileId() 	throws HinemosUnknown {
+		try {
+			return NodeConfigFilterUtil.getNewFileId();
+		} catch (RuntimeException e) {
+			m_log.warn("getNodeConfigFileId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * 構成情報ファイルのヘッダー情報を返します。<BR><BR>
+	 * 
+	 * @param conditionStr 検索対象
+	 * @param filename ファイル名
+	 * @param locale ロケール
+	 * @return 構成情報ファイル
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public DataHandler downloadNodeConfigFileHeader(String conditionStr, String filename, Locale locale)
+			throws InvalidRole, HinemosUnknown{
+
+		m_log.debug("downloadNodeConfigFileHeader() : start");
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
+
+		JpaTransactionManager jtm = null;
+
+		String username = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+		DataHandler handler = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			if (filename == null || filename.isEmpty()) {
+				m_log.warn("downloadNodeConfigFile() : filename is invalid.");
+				return null;
+			}
+
+			long now = HinemosTime.currentTimeMillis();
+			handler = new FacilitySelector().getNodeConfigInfoFileHeader(conditionStr, filename, username, locale);
+			long end = HinemosTime.currentTimeMillis();
+			m_log.info("downloadNodeConfigFileHeader, time=" + (end - now) + "ms");
+			jtm.commit();
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (HinemosUnknown e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (IOException e) {
+			m_log.warn("downloadNodeConfigFileHeader() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("downloadNodeConfigFileHeader() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("downloadNodeConfigFileHeader() total time=" + (endtime - starttime) + "ms");
+		}
+		return handler;
+	}
+
+	/**
+	 * 引数で指定された条件に一致する構成情報ファイルを返します。<BR><BR>
+	 * 
+	 * @param facilityIdlist ファシリティID一覧
+	 * @param targetDatetime 対象日時
+	 * @param filename ファイル名
+	 * @param locale ロケール
+	 * @param managerName マネージャ名
+	 * @param itemNameList 構成情報ダウンロード対象一覧
+	 * @return 構成情報ファイル
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public DataHandler downloadNodeConfigFile(
+			List<String> facilityIdList, Long targetDatetime, String filename, Locale locale, String managerName, List<String> itemList)
+			throws InvalidRole, HinemosUnknown{
+		String strItem = "";
+		if (m_log.isDebugEnabled()) {
+			strItem = "";
+			if (itemList != null) {
+				strItem = Arrays.toString(itemList.toArray());
+			}
+		}
+		m_log.debug("downloadNodeConfigFile() : start. name=" + strItem);
+		
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
+
+		JpaTransactionManager jtm = null;
+
+		DataHandler handler = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			if (filename == null || filename.isEmpty()) {
+				m_log.warn("downloadNodeConfigFile() : filename is invalid.");
+				return null;
+			}
+
+			if (facilityIdList == null || facilityIdList.size() == 0) {
+				m_log.warn("downloadNodeConfigFile() : facilityIdList is empty.");
+				return null;
+			}
+
+			if (itemList == null) {
+				m_log.warn("downloadNodeConfigFile() : itemList is empty.");
+				return null;
+			}
+
+			List<NodeConfigSettingItem> nodeConfigSettingItemList = new ArrayList<>();
+			for (String item : itemList) {
+				try {
+					nodeConfigSettingItemList.add(NodeConfigSettingItem.valueOf(item));
+				} catch (IllegalArgumentException e) {
+					m_log.warn("downloadNodeConfigFile() : itemList is empty. name=" + item);
+					continue;
+				}
+			}
+
+			if (nodeConfigSettingItemList.size() == 0) {
+				m_log.warn("downloadNodeConfigFile() : itemList is empty.");
+				return null;
+			}
+
+			long now = HinemosTime.currentTimeMillis();
+			handler = new FacilitySelector().getNodeConfigInfoFile(
+					facilityIdList, targetDatetime, filename, locale, managerName, nodeConfigSettingItemList);
+			long end = HinemosTime.currentTimeMillis();
+			m_log.info("downloadNodeConfigFile, time=" + (end - now) + "ms, name=" + strItem);
+			jtm.commit();
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (HinemosUnknown e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (IOException e) {
+			m_log.warn("downloadNodeConfigFile() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("downloadNodeConfigFile() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("downloadNodeConfigFile() total time=" + (endtime - starttime) + "ms, name=" + strItem);
+		}
+		return handler;
+	}
+
+
+	/**
+	 * 一時ファイルとして作成した構成情報ファイルを削除します。<BR><BR>
+	 * 
+	 * @param fileName 削除対象ファイル名(クライアント側のファイル名とは異なる)
+	 */
+	public void deleteNodeConfigInfoFile(String filename) {
+		if (filename == null || filename.isEmpty()) {
+			m_log.warn("downloadNodeConfigFile() : facilityIdList is empty.");
+			return;
+		}
+		new FacilitySelector().deleteNodeConfigInfoFile(filename);
+	}
+
+	/**
+	 * 検索条件に一致するノードを割り当てたスコープを新規に追加します。<BR>
+	 *
+	 * parentFacilityIdで指定されるスコープの下にpropertyで指定されるスコープを
+	 * 追加します。<BR>
+	 * 引数propertyには、"ファシリティID"、"ファシリティ名"、"説明"（任意）を含める必要があります。
+	 *
+	 * @version 6.2.0
+	 * 
+	 * @param property スコープのプロパティ
+	 * @param facilityIdList 割当て対象ノードリスト
+	 * @throws FacilityDuplicate
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public void addFilterScope(ScopeInfo property, List<String> facilityIdList)
+			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
+		JpaTransactionManager jtm = null;
+
+		try{
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			// スコープの作成
+			addScope(FacilityTreeAttributeConstant.NODE_CONFIGURATION_SCOPE, property, FacilitySortOrderConstant.DEFAULT_SORT_ORDER_SCOPE);
+	
+			// スコープへの割当て
+			if (facilityIdList != null && facilityIdList.size() > 0) {
+				assignNodeScope(property.getFacilityId(), facilityIdList.toArray(new String[facilityIdList.size()]));
+			}
+
+			jtm.commit();
+
+		} catch (InvalidSetting | InvalidRole | HinemosUnknown | FacilityDuplicate e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("addFilterScope() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(),e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		
 	}
 }

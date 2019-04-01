@@ -14,7 +14,6 @@ import java.util.ArrayList;
 /**
  * 実行状態の定数クラス<BR>
  * 
- * @version 1.0.0
  * @since 1.0.0
  */
 public class StatusConstant {
@@ -33,11 +32,23 @@ public class StatusConstant {
 	/** 停止処理中(状態の種別) */
 	public static final int TYPE_STOPPING = 101;
 
+	/**
+	 * 実行中(キュー待機) (状態の種別)
+	 * @since 6.2.0
+	 */
+	public static final int TYPE_RUNNING_QUEUE = 102;
+	
 	/** 中断(状態の種別) */
 	public static final int TYPE_SUSPEND = 200;
 
 	/** コマンド停止(状態の種別) */
 	public static final int TYPE_STOP = 201;
+
+	/**
+	 * 中断(キュー待機) (状態の種別)
+	 * @since 6.2.0
+	 */
+	public static final int TYPE_SUSPEND_QUEUE = 202;
 
 	/** 終了(状態の種別) */
 	public static final int TYPE_END = 300;
@@ -63,14 +74,17 @@ public class StatusConstant {
 	/** 終了(排他条件分岐) (状態の種別) */
 	public static final int TYPE_END_EXCLUSIVE_BRANCH = 307;
 
+	/**
+	 * 終了(キューサイズ超過) (状態の種別)
+	 * @since 6.2.0
+	 */
+	public static final int TYPE_END_QUEUE_LIMIT = 308;
+
 	/** 起動失敗(状態の種別) */
 	public static final int TYPE_ERROR = 400;
 	
 	/**
-	 * TYPE_END(300), TYPE_MODIFY(301),
-	 * TYPE_END_UNMATCH(302), TYPE_END_CALENDAR(303), TYPE_END_SKIP(304),
-	 * TYPE_END_START_DELAY(305), TYPE_END_END_DELAY(306)
-	 * の場合はtrueを返す。
+	 * 「終了」状態に属する場合は true を返す。
 	 * @param type
 	 * @return
 	 */
@@ -87,6 +101,7 @@ public class StatusConstant {
 		list.add(StatusConstant.TYPE_END_SKIP);
 		list.add(StatusConstant.TYPE_END_START_DELAY);
 		list.add(StatusConstant.TYPE_END_END_DELAY);
+		list.add(StatusConstant.TYPE_END_QUEUE_LIMIT);
 		return list;
 	}
 	
@@ -128,6 +143,12 @@ public class StatusConstant {
 			return "SUSPEND";
 		} else if (type == TYPE_END_EXCLUSIVE_BRANCH) {
 			return "END_EXCLUSIVE_BRANCH";
+		} else if (type == TYPE_RUNNING_QUEUE) {
+			return "RUNNING_QUEUE";
+		} else if (type == TYPE_SUSPEND_QUEUE) {
+			return "SUSPEND_QUEUE";
+		} else if (type == TYPE_END_QUEUE_LIMIT) {
+			return "END_QUEUE_LIMIT";
 		}
 		return "";
 	}

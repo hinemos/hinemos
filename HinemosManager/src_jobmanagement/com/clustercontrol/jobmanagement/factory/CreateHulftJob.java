@@ -568,11 +568,11 @@ public class CreateHulftJob {
 
 			// 漢字コード種 (S:SHIFT-JIS  E:EUC  8:UTF-8  J:JEF  I:IBM  K:KEIS  N:NEC)
 			String encoding = "";
-			if (info.getCharacterSet().contains("UTF")) {
+			if (info.getNodeOsInfo() != null && info.getNodeOsInfo().getCharacterSet().contains("UTF")) {
 				encoding = "8";
-			} else if (info.getCharacterSet().contains("EUC")) {
+			} else if (info.getNodeOsInfo() != null && info.getNodeOsInfo().getCharacterSet().contains("EUC")) {
 				encoding = "E";
-			} else if (info.getCharacterSet().contains("JIS")) {
+			} else if (info.getNodeOsInfo() != null && info.getNodeOsInfo().getCharacterSet().contains("JIS")) {
 				encoding = "S";
 			} else if (info.getPlatformFamily().equals("WINDOWS")) {
 				encoding = "S";
@@ -656,11 +656,11 @@ public class CreateHulftJob {
 
 			// 漢字コード種 (S:SHIFT-JIS  E:EUC  8:UTF-8  J:JEF  I:IBM  K:KEIS  N:NEC)
 			String encoding = "";
-			if (info.getCharacterSet().contains("UTF")) {
+			if (info.getNodeOsInfo() != null && info.getNodeOsInfo().getCharacterSet().contains("UTF")) {
 				encoding = "8";
-			} else if (info.getCharacterSet().contains("EUC")) {
+			} else if (info.getNodeOsInfo() != null && info.getNodeOsInfo().getCharacterSet().contains("EUC")) {
 				encoding = "E";
-			} else if (info.getCharacterSet().contains("JIS")) {
+			} else if (info.getNodeOsInfo() != null && info.getNodeOsInfo().getCharacterSet().contains("JIS")) {
 				encoding = "S";
 			} else if (info.getPlatformFamily().equals("WINDOWS")) {
 				encoding = "S";

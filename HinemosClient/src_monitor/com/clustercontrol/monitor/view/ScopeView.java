@@ -15,6 +15,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
 import com.clustercontrol.monitor.composite.ScopeListComposite;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
 import com.clustercontrol.view.ScopeListBaseView;
@@ -67,7 +68,11 @@ public class ScopeView extends ScopeListBaseView {
 		layout.marginHeight = 0;
 		layout.marginWidth = 0;
 
-		this.tableComposite = new ScopeListComposite(parent, SWT.NONE);
+		ListLayout tableCompositeLayout = null;
+		if (this.getDefaultViewLayout() != null) {
+			tableCompositeLayout = this.getDefaultViewLayout().getViewItem(ScopeListComposite.class.getSimpleName(), ListLayout.class);
+		}
+		this.tableComposite = new ScopeListComposite(parent, SWT.NONE, tableCompositeLayout);
 		WidgetTestUtil.setTestId(this, null, tableComposite);
 		GridData gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
@@ -141,5 +146,10 @@ public class ScopeView extends ScopeListBaseView {
 	public void update(boolean refreshFlag) {
 		FacilityTreeItem item = this.getScopeTreeComposite().getSelectItem();
 		doSelectTreeItem( item );
+	}
+	
+	@Override
+	public boolean isDefaultLayoutView() {
+		return true;
 	}
 }

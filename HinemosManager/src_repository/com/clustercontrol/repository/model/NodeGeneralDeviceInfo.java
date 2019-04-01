@@ -8,9 +8,6 @@
 
 package com.clustercontrol.repository.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.persistence.Cacheable;
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -40,25 +37,6 @@ public class NodeGeneralDeviceInfo extends NodeDeviceInfo {
 	
 	public NodeGeneralDeviceInfo(NodeDeviceInfoPK pk) {
 		super(pk);
-	}
-	
-	@Override
-	public void relateToNodeEntity(NodeInfo nodeEntity) {
-		this.setNodeEntity(nodeEntity);
-		if (nodeEntity != null) {
-			List<NodeGeneralDeviceInfo> list = nodeEntity.getNodeDeviceInfo();
-			if (list == null) {
-				list = new ArrayList<NodeGeneralDeviceInfo>();
-			} else {
-				for(NodeGeneralDeviceInfo entity : list){
-					if (entity.getId().equals(this.getId())) {
-						return;
-					}
-				}
-			}
-			list.add(this);
-			nodeEntity.setNodeDeviceInfo(list);
-		}
 	}
 	
 	@Override

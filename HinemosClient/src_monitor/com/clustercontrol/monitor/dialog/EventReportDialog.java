@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +36,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
@@ -47,12 +49,14 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.action.GetEventReportProperty;
 import com.clustercontrol.monitor.bean.OutputFormConstant;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.util.EventFilterPropertyUtil;
 import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
 import com.clustercontrol.viewer.PropertySheet;
+import com.clustercontrol.ws.monitor.EventDataInfo;
 import com.clustercontrol.ws.monitor.EventFilterInfo;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
@@ -73,6 +77,12 @@ public class EventReportDialog extends CommonDialog {
 	private final int sizeX = 500;
 	private final int sizeY = 700;
 
+	private final int DIALOG_WIDTH = 15;
+	
+	private Group exportSourceGroup = null; //イベントのソースグループ
+	private Button selectEventRadio = null;//選択したイベント
+	private Button filterEventRadio = null;//フィルタ
+	
 	/** プロパティシート。 */
 	private PropertySheet propertySheet = null;
 
@@ -98,6 +108,14 @@ public class EventReportDialog extends CommonDialog {
 	/** マネージャ名 */
 	private String managerName = null;
 
+	/** 選択されたイベント情報 */
+	private List<EventDataInfo> selectEventList = null;
+	
+	/**
+	 * イベント表示設定情報
+	 */
+	private MultiManagerEventDisplaySettingInfo eventDspSetting = null;
+	
 	/**
 	 * インスタンスを返します。
 	 *
@@ -105,10 +123,12 @@ public class EventReportDialog extends CommonDialog {
 	 *            親のシェルオブジェクト
 	 * @param マネージャ名
 	 */
-	public EventReportDialog(Shell parent, String managerName, String facilityId) {
+	public EventReportDialog(Shell parent, String managerName, String facilityId, List<EventDataInfo> selectEventList, MultiManagerEventDisplaySettingInfo eventDspSetting) {
 		super(parent);
 		this.managerName = managerName;
 		this.facilityId = facilityId;
+		this.selectEventList = selectEventList;
+		this.eventDspSetting = eventDspSetting;
 	}
 
 	/**
@@ -145,9 +165,71 @@ public class EventReportDialog extends CommonDialog {
 		GridLayout layout = new GridLayout(1, true);
 		layout.marginWidth = 10;
 		layout.marginHeight = 10;
-		layout.numColumns = 15;
+		layout.numColumns = DIALOG_WIDTH;
 		parent.setLayout(layout);
-
+		
+		//イベントのソースグループ
+		exportSourceGroup = new Group(parent, SWT.NONE);
+		WidgetTestUtil.setTestId(this, "exportSource", exportSourceGroup);
+		layout = new GridLayout(1, true);
+		layout.marginWidth = 5;
+		layout.marginHeight = 5;
+		layout.numColumns = DIALOG_WIDTH;
+		exportSourceGroup.setLayout(layout);
+		gridData = new GridData();
+		gridData.horizontalSpan = DIALOG_WIDTH;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		exportSourceGroup.setLayoutData(gridData);
+		
+		//選択したイベント　ラジオボタン
+		selectEventRadio = new Button(exportSourceGroup, SWT.RADIO);
+		WidgetTestUtil.setTestId(this, "selectevent", selectEventRadio);
+		gridData = new GridData();
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		gridData.horizontalSpan = 15;
+		selectEventRadio.setLayoutData(gridData);
+		
+		//フィルタ　ラジオボタン
+		filterEventRadio = new Button(exportSourceGroup, SWT.RADIO);
+		WidgetTestUtil.setTestId(this, "filterevent", filterEventRadio);
+		filterEventRadio.setText(Messages.getString("dialog.monitor.events.download.filter"));
+		gridData = new GridData();
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		gridData.horizontalSpan = 15;
+		filterEventRadio.setLayoutData(gridData);
+		
+		//初期選択のセット
+		int count = 0;
+		
+		if (this.selectEventList != null) {
+			count = this.selectEventList.size();
+		}
+		
+		String text = 
+				Messages.getString("dialog.monitor.events.download.selectevent") + "   " +
+				Messages.getString("dialog.monitor.events.download.count") + " : " +
+				String.valueOf(count);
+				
+			selectEventRadio.setText(text);
+		
+		if (count <= 1) {
+			//選択されていない／1件のみ選択されている場合
+			//フィルタ
+			filterEventRadio.setSelection(true);
+			
+		} else {
+			//選択イベント
+			selectEventRadio.setSelection(true);
+		}
+		
+		if (count == 0) {
+			//1件も選択されていない場合、選択イベントは非活性
+			selectEventRadio.setEnabled(false);
+		}
+		
 		/*
 		 * 属性プロパティシート
 		 */
@@ -164,8 +246,6 @@ public class EventReportDialog extends CommonDialog {
 		Tree table = new Tree(parent, SWT.H_SCROLL | SWT.V_SCROLL
 				| SWT.FULL_SELECTION | SWT.MULTI | SWT.BORDER);
 		WidgetTestUtil.setTestId(this, null, table);
-		// table.setData(ClusterControlPlugin.CUSTOM_WIDGET_ID,
-		// Debug "eventReportDialogTable");
 		gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.verticalAlignment = GridData.FILL;
@@ -309,7 +389,16 @@ public class EventReportDialog extends CommonDialog {
 
 			// イベント一覧取得
 			PropertyUtil.deletePropertyDefine(condition);
-			EventFilterInfo filter = EventFilterPropertyUtil.property2dto(condition);
+			EventFilterInfo filter = EventFilterPropertyUtil.property2dto(condition, this.eventDspSetting, this.managerName);
+			
+			if (this.filterEventRadio != null 
+					&& this.selectEventList != null
+					&& this.selectEventRadio.getSelection() ) {
+				for (EventDataInfo info : this.selectEventList) {
+					filter.getSelectedEventList().add(info);
+				}
+			}
+			
 			MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(this.managerName);
 			String language = Locale.getDefault().getLanguage();
 			handler = wrapper.downloadEventFile(this.facilityId, filter, this.fileName, language);
@@ -420,7 +509,7 @@ public class EventReportDialog extends CommonDialog {
 	 * Initialize a filter property
 	 */
 	private Property initFilterProperty() {
-		Property property = new GetEventReportProperty().getProperty();
+		Property property = new GetEventReportProperty().getProperty(this.eventDspSetting, this.managerName);
 		filterPropertyCache.put(RWT.getUISession(), property);
 		return property;
 	}

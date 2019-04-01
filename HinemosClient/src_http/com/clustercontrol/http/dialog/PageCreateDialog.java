@@ -212,7 +212,8 @@ public class PageCreateDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textRequestUrl.setLayoutData(gridData);
-		this.m_textRequestUrl.setToolTipText(Messages.getString("monitor.http.scenario.page.request.url.tool.tip"));
+		String tooltipText = Messages.getString("monitor.http.scenario.page.request.url.tool.tip") + Messages.getString("replace.parameter.node");
+		this.m_textRequestUrl.setToolTipText(tooltipText);
 		this.m_textRequestUrl.setColor(new Color(parent.getDisplay(), new RGB(0, 0, 255)));
 		this.m_textRequestUrl.addModifyListener(new ModifyListener(){
 			@Override
@@ -272,7 +273,8 @@ public class PageCreateDialog extends CommonDialog {
 		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessVerticalSpace = true;
 		this.m_textPost.setLayoutData(gridData);
-		this.m_textPost.setToolTipText(Messages.getString("monitor.http.scenario.page.post.tooltip"));
+		tooltipText = Messages.getString("monitor.http.scenario.page.post.tooltip") + Messages.getString("replace.parameter.node");
+		this.m_textPost.setToolTipText(tooltipText);
 		this.m_textPost.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -581,7 +583,6 @@ public class PageCreateDialog extends CommonDialog {
 		}
 
 		// 変数に重複したものないかをチェック
-		// TODO 直接VariableCreateDialogでチェックしたほうがよいが、TableItemInfoComposite、TableItemManagerやModelを全体的に修正が必要
 		if(!this.m_variable.getItems().isEmpty()){
 			Set<String> uniqueSet = new HashSet<>();
 			for(Variable one : this.m_variable.getItems()){

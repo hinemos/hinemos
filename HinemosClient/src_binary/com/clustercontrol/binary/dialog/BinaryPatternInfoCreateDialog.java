@@ -374,7 +374,7 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "valid", m_buttonValid);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_buttonValid.setLayoutData(gridData);
 		this.m_buttonValid.setText(Messages.getString("setting.valid.confirmed"));

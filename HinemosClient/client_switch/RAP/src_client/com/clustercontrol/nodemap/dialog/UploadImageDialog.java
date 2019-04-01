@@ -255,8 +255,6 @@ public class UploadImageDialog extends CommonDialog {
 
 		ValidateResult result = null;
 
-		// TODO
-
 		return result;
 	}
 

@@ -20,7 +20,10 @@ import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.EndpointUnit;
 import com.clustercontrol.util.EndpointUnit.EndpointSetting;
 import com.clustercontrol.ws.monitor.EventBatchConfirmInfo;
+import com.clustercontrol.ws.monitor.EventCustomCommandInfoData;
+import com.clustercontrol.ws.monitor.EventCustomCommandResultRoot;
 import com.clustercontrol.ws.monitor.EventDataInfo;
+import com.clustercontrol.ws.monitor.EventDisplaySettingInfo;
 import com.clustercontrol.ws.monitor.EventFilterInfo;
 import com.clustercontrol.ws.monitor.EventLogNotFound_Exception;
 import com.clustercontrol.ws.monitor.FacilityNotFound_Exception;
@@ -255,4 +258,85 @@ public class MonitorEndpointWrapper {
 		}
 		throw wse;
 	}
+
+	public void modifyEventInfo(EventDataInfo eventDataInfo)
+			throws MonitorNotFound_Exception, HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, InvalidSetting_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorEndpoint> endpointSetting : getMonitorEndpoint(endpointUnit)) {
+			try {
+				MonitorEndpoint endpoint = (MonitorEndpoint) endpointSetting.getEndpoint();
+				
+				endpoint.modifyEventInfo(eventDataInfo);
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("modifyUserItem(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public EventDisplaySettingInfo getEventDisplaySettingInfo() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorEndpoint> endpointSetting : getMonitorEndpoint(endpointUnit)) {
+			try {
+				MonitorEndpoint endpoint = (MonitorEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getEventDisplaySettingInfo();
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getEventDisplaySettingInfo(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+	
+	public EventCustomCommandInfoData getEventCustomCommandSettingInfo() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorEndpoint> endpointSetting : getMonitorEndpoint(endpointUnit)) {
+			try {
+				MonitorEndpoint endpoint = (MonitorEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getEventCustomCommandSettingInfo();
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getEventCustomCommandSettingInfo(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+	
+	public String execEventCustomCommand(int cmdNo, List<EventDataInfo> eventDataList)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorEndpoint> endpointSetting : getMonitorEndpoint(endpointUnit)) {
+			try {
+				MonitorEndpoint endpoint = (MonitorEndpoint) endpointSetting.getEndpoint();
+				return endpoint.execEventCustomCommand(cmdNo, eventDataList);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("execEventCustomCommand(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public EventCustomCommandResultRoot getEventCustomCommandResult(String commandResultID)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<MonitorEndpoint> endpointSetting : getMonitorEndpoint(endpointUnit)) {
+			try {
+				MonitorEndpoint endpoint = (MonitorEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getEventCustomCommandResult(commandResultID);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getEventCustomCommandResult(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
 }

@@ -253,7 +253,7 @@ public class CalendarDetailDialog extends CommonDialog{
 		this.calDetailEveryYearRadio.setText(Messages.getString("calendar.detail.every.year"));
 		GridData gridYearRadio = new GridData();
 		gridYearRadio.horizontalSpan = 8;
-		gridYearRadio.horizontalAlignment = GridData.FILL;
+		gridYearRadio.horizontalAlignment = SWT.BEGINNING;
 		gridYearRadio.grabExcessHorizontalSpace = true;
 		this.calDetailEveryYearRadio.setLayoutData(gridYearRadio);
 		this.calDetailEveryYearRadio.setSelection(true);
@@ -264,10 +264,11 @@ public class CalendarDetailDialog extends CommonDialog{
 				update();
 			}
 		});
-		//「毎年」ラジオボタン
+
+		//「指定」ラジオボタン
 		this.calDetailSpecifyYearRadio = new Button(calDetailYearGroup, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "specifyyear", calDetailSpecifyYearRadio);
-		//毎年
+		//指定
 		this.calDetailSpecifyYearRadio.setText(Messages.getString("calendar.detail.specify.year"));
 		gridYearRadio = new GridData();
 		gridYearRadio.horizontalSpan = 3;
@@ -632,7 +633,7 @@ public class CalendarDetailDialog extends CommonDialog{
 		calDetailSubstituteCheck.setText(Messages.getString("calendar.detail.substitute.check"));
 		gridData = new GridData();
 		gridData.horizontalSpan = 8;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		calDetailSubstituteCheck.setLayoutData(gridData);
 		calDetailSubstituteCheck.setSelection(false);
@@ -1270,7 +1271,6 @@ public class CalendarDetailDialog extends CommonDialog{
 					this.calDetailDateRadio.setSelection(false);
 					this.calDetailCalPatternRadio.setSelection(true);
 				}else {
-					//FIXME 出力メッセージ要追加
 					m_log.error("Error Of DayType[" + detailInfo.getDayType() + "]");
 				}
 				//第x週

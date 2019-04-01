@@ -487,7 +487,6 @@ public class SystemPrivilegeDialog extends CommonDialog {
 		java.util.List<SystemPrivilegeInfo> roleSystemPrivilegeKeyList = null;
 		// 全システム権限を取得
 		allSystemPrivilegeList = SystemPrivilegePropertyUtil.getSystemPrivilegeNameList(managerName);
-		//TODO 保留！！！この修正では最初の時点でのソートしかできない。以降はSWTのオブジェクトを直接いじっているように見える
 		java.util.Collections.sort(allSystemPrivilegeList);
 		// 付与システム権限を取得
 		try {

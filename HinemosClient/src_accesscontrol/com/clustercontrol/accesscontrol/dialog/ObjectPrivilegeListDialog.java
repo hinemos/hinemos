@@ -143,8 +143,6 @@ public class ObjectPrivilegeListDialog extends CommonDialog{
 		gridData.heightHint = 220;
 		m_objPrivListComposite.setLayoutData(gridData);
 
-		//TODO 必要？ 画面中央に
-
 		Display objPrivListDisplay = shell.getDisplay();
 		shell.setLocation((objPrivListDisplay.getBounds().width - shell.getSize().x) / 2,
 				(objPrivListDisplay.getBounds().height - shell.getSize().y) / 2);
@@ -210,8 +208,7 @@ public class ObjectPrivilegeListDialog extends CommonDialog{
 				});
 
 		// 閉じるボタン
-		// TODO Remove the following hard-code. IDialogConstants.*_LABEL will causes IncompatibleClassChangeError on RAP
-		this.createButton( parent, IDialogConstants.CANCEL_ID, "Close", false );
+		this.createButton( parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false );
 	}
 
 }

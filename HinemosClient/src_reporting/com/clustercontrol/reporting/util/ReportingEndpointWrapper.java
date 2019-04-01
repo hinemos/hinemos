@@ -365,21 +365,5 @@ public class ReportingEndpointWrapper {
 		}
 		throw wse;
 	}
-	
-	public String getVersion() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
-		WebServiceException wse = null;
-		for (EndpointSetting<ReportingEndpoint> endpointSetting : getReportingEndpoint(endpointUnit)) {
-			try {
-				ReportingEndpoint endpoint = (ReportingEndpoint) endpointSetting.getEndpoint();
-				return endpoint.getVersion();
-			} catch (WebServiceException e) {
-				wse = e;
-				String errMessage = HinemosMessage.replace(e.getMessage());
-				m_log.warn("getVersion(), " + errMessage, e);
-				endpointUnit.changeEndpoint();
-			}
-		}
-		throw wse;
-	}
 
 }

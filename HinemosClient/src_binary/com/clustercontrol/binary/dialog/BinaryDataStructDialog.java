@@ -122,6 +122,21 @@ public class BinaryDataStructDialog extends CommonDialog {
 	}
 
 	/**
+	 * ラベルWidgetを追加します。(左寄せ)
+	 */
+	private void initGridData(Control widget, boolean beginning) {
+		if(beginning){
+			GridData gd = new GridData();
+			gd.grabExcessHorizontalSpace = true;
+			gd.horizontalAlignment = SWT.BEGINNING;
+			gd.horizontalSpan = 2;
+			widget.setLayoutData(gd);
+		} else {
+			initGridData(widget);
+		}
+	}
+
+	/**
 	 * ラベルWidgetを追加します。
 	 */
 	private Text addTextField(final Composite parent, String text, String tooltip) {
@@ -225,7 +240,7 @@ public class BinaryDataStructDialog extends CommonDialog {
 		// タイムスタンプ
 		addLabel(parent, "have.timestamp");
 		this.m_haveTimeStamp = new Button(parent, SWT.CHECK);
-		this.initGridData(this.m_haveTimeStamp);
+		this.initGridData(this.m_haveTimeStamp, true);
 		this.m_haveTimeStamp.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -249,7 +264,7 @@ public class BinaryDataStructDialog extends CommonDialog {
 		// リトルエンディアン方式
 		addLabel(parent, "little.endian");
 		this.m_littleEndian = new Button(parent, SWT.CHECK);
-		this.initGridData(this.m_littleEndian);
+		this.initGridData(this.m_littleEndian, true);
 
 		// コンボボックス表示文字列と別に多言語対応文字列をデータとしてセット.
 		expressionStr = Messages.getString(BinaryConstant.TS_TYPE_ONLY_SEC);

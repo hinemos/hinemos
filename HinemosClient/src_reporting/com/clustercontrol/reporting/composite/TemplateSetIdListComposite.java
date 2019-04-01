@@ -230,50 +230,25 @@ public class TemplateSetIdListComposite extends Composite {
 
 		// データ取得
 		List<String> list = new ArrayList<String>();
-
-		boolean key = false;
+		
 		try {
 			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.managerName);
-			String version = wrapper.getVersion();
-			m_log.debug("version : " + version);
-			key = true;
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							Messages.getString("message.expiration.term.invalid"));
-				}
+			List<TemplateSetInfo> listTmp = wrapper.getTemplateSetInfoList(ownerRoleId);
+			for(TemplateSetInfo info : listTmp) {
+				list.add(info.getTemplateSetId());
 			}
+		} catch (InvalidRole_Exception e) {
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					Messages.getString("message.accesscontrol.16"));
 		} catch (Exception e) {
-			String errMsg = HinemosMessage.replace(e.getMessage());
-			m_log.warn("getVersionError, " + errMsg);
+			String errMessage = HinemosMessage.replace(e.getMessage());
+			m_log.warn("update() getTemplateSetInfoList, " + errMessage, e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.expiration.term"));
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
 		}
-		if (key) {
-			try {
-				ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.managerName);
-				List<TemplateSetInfo> listTmp = wrapper.getTemplateSetInfoList(ownerRoleId);
-
-				for(TemplateSetInfo info : listTmp) {
-					list.add(info.getTemplateSetId());
-				}
-			} catch (InvalidRole_Exception e) {
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						Messages.getString("message.accesscontrol.16"));
-			} catch (Exception e) {
-				String errMessage = HinemosMessage.replace(e.getMessage());
-				m_log.warn("update() getTemplateSetInfoList, " + errMessage, e);
-				MessageDialog.openError(
-						null,
-						Messages.getString("failed"),
-						Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
-			}
-		}
+		
 		if(list != null){
 			// テンプレートIDリスト
 			for(int index=0; index<list.size(); index++){

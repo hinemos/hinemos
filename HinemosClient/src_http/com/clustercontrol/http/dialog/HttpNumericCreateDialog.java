@@ -142,7 +142,8 @@ public class HttpNumericCreateDialog extends CommonMonitorNumericDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textRequestUrl.setLayoutData(gridData);
 		this.m_textRequestUrl.setText("http://");
-		this.m_textRequestUrl.setToolTipText(Messages.getString("request.url.tooltip"));
+		String tooltipText = Messages.getString("request.url.tooltip") + Messages.getString("replace.parameter.node");
+		this.m_textRequestUrl.setToolTipText(tooltipText);
 		this.m_textRequestUrl.setColor(new Color(parent.getDisplay(), new RGB(0, 0, 255)));
 		this.m_textRequestUrl.addModifyListener(new ModifyListener(){
 			@Override

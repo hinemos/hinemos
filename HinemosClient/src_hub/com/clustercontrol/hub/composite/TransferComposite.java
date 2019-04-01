@@ -43,6 +43,7 @@ import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
+import com.clustercontrol.ws.hub.InvalidRole_Exception;
 import com.clustercontrol.ws.hub.TransferInfo;
 import com.clustercontrol.ws.hub.TransferType;
 
@@ -222,16 +223,21 @@ public class TransferComposite extends Composite {
 		List<TransferInfo> list = null;
 
 		//収集蓄積[転送]一覧情報取得
-		Map<String, List<TransferInfo>> dispDataMap= new ConcurrentHashMap<String, List<TransferInfo>>();
+		Map<String, List<TransferInfo>> dispDataMap = new ConcurrentHashMap<String, List<TransferInfo>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 		for(String managerName : EndpointManager.getActiveManagerSet()) {
 			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
 			try {
 				list = wrapper.getTransferInfoList();
 			} catch (Exception e) {
-				// 上記以外の例外
-				Logger.getLogger(this.getClass()).warn("update(), " + e.getMessage(), e);
-				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
+				if (e instanceof InvalidRole_Exception) {
+					// 権限なし
+					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
+				} else {
+					// 上記以外の例外
+					Logger.getLogger(this.getClass()).warn("update(), " + e.getMessage(), e);
+					errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
+				}
 			}
 			//一覧が空の場合
 			if (list == null) {
@@ -242,7 +248,6 @@ public class TransferComposite extends Composite {
 
 		//メッセージ表示
 		if( 0 < errorMsgs.size() ){
-			//TODO アクセス権限がないときのエラーハンドリング追加
 			UIManager.showMessageBox(errorMsgs, true);
 		}
 

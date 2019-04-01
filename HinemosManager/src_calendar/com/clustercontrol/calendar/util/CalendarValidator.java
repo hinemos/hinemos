@@ -31,6 +31,7 @@ import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.model.NotifyInfo;
+import com.clustercontrol.repository.model.NodeConfigSettingInfo;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -161,16 +162,19 @@ public class CalendarValidator {
 				throw e;
 			}
 		}
-		if (detailInfo.getAfterday() != null) {
-			if (-32768 > detailInfo.getAfterday() || detailInfo.getAfterday() > 32767) {
-				String[] args = {MessageConstant.CALENDAR_DETAIL_BEFORE_AFTER.getMessage(),
-						"-32768", "32767"};
-				m_log.warn("ValidAfterDay:" + Arrays.toString(args));
-				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_RANGE.getMessage(Arrays.toString(args)));
-			}
+		
+		CommonValidator.validateNull(MessageConstant.CALENDAR_DETAIL_BEFORE_AFTER.getMessage(), detailInfo.getAfterday());
+		
+		if (-32768 > detailInfo.getAfterday() || detailInfo.getAfterday() > 32767) {
+			String[] args = {MessageConstant.CALENDAR_DETAIL_BEFORE_AFTER.getMessage(),
+					"-32768", "32767"};
+			m_log.warn("ValidAfterDay:" + Arrays.toString(args));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_RANGE.getMessage(Arrays.toString(args)));
 		}
 		
 		// 振り替え
+		CommonValidator.validateNull(MessageConstant.CALENDAR_DETAIL_SUBSTITUTE_FLAG.getMessage(), detailInfo.isSubstituteFlg());
+		
 		// 振り替え間隔と振り替え上限が未入力の場合はエラーにする
 		if (detailInfo.getSubstituteTime() != null) {
 			if (detailInfo.getSubstituteTime() == 0 || detailInfo.getSubstituteTime() < (-24*366) || detailInfo.getSubstituteTime() > (24*366)) {
@@ -365,6 +369,18 @@ public class CalendarValidator {
 					if(notifyInfo.getCalendarId() != null){
 						String[] args = {notifyInfo.getNotifyId(), calendarId};
 						throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_NOTIFY_REFERENCE.getMessage(args));
+					}
+				}
+			}
+			//構成情報取得設定
+			List<NodeConfigSettingInfo> nodeConfigSettingInfoList =
+					com.clustercontrol.repository.util.QueryUtil.getNodeConfigSettingInfoFindByCalendarId_NONE(calendarId);
+			if (nodeConfigSettingInfoList != null) {
+				for(NodeConfigSettingInfo nodeConfigSettingInfo : nodeConfigSettingInfoList){
+					m_log.debug("valideDeleteCalendar() target NodeConfigSettingInfo " + nodeConfigSettingInfo.getSettingId() + ", calendarId = " + calendarId);
+					if(nodeConfigSettingInfo.getCalendarId() != null){
+						String[] args = {nodeConfigSettingInfo.getSettingId(), calendarId};
+						throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_NODECONFIG_REFERENCE.getMessage(args));
 					}
 				}
 			}

@@ -1,0 +1,60 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+	
+	]},
+
+	{
+	"propName":"protocol",
+	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_protocol"}
+	]},
+
+	{
+	"propName":"localIpAddress",
+	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_localIpAddress"}
+	]},
+
+	{
+	"propName":"localPort",
+	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_localPort"}
+	]},
+
+	{
+	"propName":"foreignIpAddress",
+	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_foreignIpAddress"}
+	]},
+
+	{
+	"propName":"foreignPort",
+	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_foreignPort"}
+	]},
+
+	{
+	"propName":"processName",
+	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_processName"}
+	]},
+
+	{
+	"propName":"pid",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"status",
+	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_status"}
+	]}
+]
+}

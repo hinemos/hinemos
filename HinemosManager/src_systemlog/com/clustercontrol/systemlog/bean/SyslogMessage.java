@@ -93,6 +93,9 @@ public class SyslogMessage implements Serializable {
 		 */
 		public static SyslogMessage parse(String syslog, String senderAddress) throws ParseException, HinemosUnknown {
 			StringBuffer readBuf = new StringBuffer(syslog);
+			if (log.isDebugEnabled()) {
+				log.debug("parsed start syslog : " + syslog + ",senderAddress=" +senderAddress);
+			}
 
 			//送信者IPアドレスに/が先頭に付与されるケースを補正
 			if(senderAddress.length() > 1 && senderAddress.substring(0,1).equals("/") ){
@@ -149,18 +152,17 @@ public class SyslogMessage implements Serializable {
 				return null;
 			} 
 			int readCnt ;
+			try{
 			for( readCnt = 1; readCnt < 5 ;readCnt++ ){
 				if( readCnt > 1 && readBuf.charAt(readCnt) == '>' ){
-					try{
 						Integer ret = Integer.valueOf(readBuf.substring(1, readCnt ));
 						readBuf.delete(0, readCnt+1);
 						return ret;
-					}catch(Exception e){
-						return null;
 					}
 				}
+			}catch(Exception e){
+				return null;
 			}
-			
 			return null;
 		}
 
@@ -186,6 +188,10 @@ public class SyslogMessage implements Serializable {
 			boolean isCiscoHead = false;
 			Object[] syslogArgs = null;
 			
+			//文字数不足チェック
+			if(readBuf.length() < 4){
+				return null;
+			} 
 			//先頭の4文字 形式チェック"MMM "形式(当てはまらないなら Rfc13164 形式にあらず)
 			if( ( readBuf.substring(3,4).equals(" ") == false ) || editCalendarMonth(readBuf.substring(0,3)) == Calendar.UNDECIMBER ){
 				notRfc13164 =true;
@@ -198,11 +204,11 @@ public class SyslogMessage implements Serializable {
 				} catch (ParseException e3) {
 					log.info("ParseException3 : message=" + e3.getMessage() + ", syslog_buf=" + readBuf.toString());
 				}
-				RetDate =parseRFC3339Date((String)syslogArgs[0]);
-				if(RetDate!=null){
-					readBuf.delete(0, readBuf.length());
-					readBuf.append((String)syslogArgs[1]);
-				}
+					RetDate =parseRFC3339Date((String)syslogArgs[0]);
+					if(RetDate!=null){
+						readBuf.delete(0, readBuf.length());
+						readBuf.append((String)syslogArgs[1]);
+					}
 				return RetDate;
 			}
 
@@ -568,6 +574,8 @@ public class SyslogMessage implements Serializable {
 				return Facility.SECURITY;
 			case 14 :
 				return Facility.CONSOLE;
+			case 15 :
+				return Facility.CRON;
 			case 16 :
 				return Facility.LOCAL0;
 			case 17 :

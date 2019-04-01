@@ -48,7 +48,7 @@ import com.clustercontrol.utility.settings.platform.xml.CalendarPatternInfo;
 import com.clustercontrol.utility.settings.platform.xml.CalendarPatternType;
 import com.clustercontrol.utility.settings.platform.xml.CalendarType;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
@@ -338,7 +338,7 @@ public class CalendarAction {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {info.getCalendarPatternId()};
-					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 				    ImportProcessMode.setProcesstype(dialog.open());
 				    ImportProcessMode.setSameprocess(dialog.getToggleState());
@@ -397,7 +397,7 @@ public class CalendarAction {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {info.getCalendarId()};
-					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 				    ImportProcessMode.setProcesstype(dialog.open());
 				    ImportProcessMode.setSameprocess(dialog.getToggleState());

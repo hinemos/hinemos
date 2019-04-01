@@ -8,12 +8,9 @@
 
 package com.clustercontrol.agent;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.activation.DataHandler;
@@ -26,8 +23,11 @@ import com.clustercontrol.agent.EndpointManager.EndpointSetting;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.util.StringBinder;
+import com.clustercontrol.util.WebServiceUtil;
 import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.ws.agent.AgentEndpoint;
+import com.clustercontrol.ws.agent.AgentInfo;
+import com.clustercontrol.ws.agent.AgentJavaInfo;
 import com.clustercontrol.ws.agent.AgentOutputBasicInfo;
 import com.clustercontrol.ws.agent.CustomInvalid_Exception;
 import com.clustercontrol.ws.agent.FacilityNotFound_Exception;
@@ -410,13 +410,13 @@ public class AgentEndPointWrapper {
 		throw wse;
 	}
 
-	public static DataHandler downloadModule(String filePath)
-			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, IOException {
+	public static DataHandler downloadAgentLib(String libPath)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
 		WebServiceException wse = null;
 		for (EndpointSetting endpointSetting : EndpointManager.getAgentEndpoint()) {
 			try {
 				AgentEndpoint endpoint = (AgentEndpoint) endpointSetting.getEndpoint();
-				return endpoint.downloadModule(filePath);
+				return endpoint.downloadAgentLib(libPath, Agent.getAgentInfo());
 			} catch (WebServiceException e) {
 				wse = e;
 				m_log.info("WebServiceException " + e.getMessage());
@@ -426,19 +426,30 @@ public class AgentEndPointWrapper {
 		throw wse;
 	}
 
-	public static HashMap<String, String> getAgentLibMap()
+	public static void cancelUpdate(String cause) throws FacilityNotFound_Exception, HinemosUnknown_Exception,
+			InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting endpointSetting : EndpointManager.getAgentEndpoint()) {
+			try {
+				AgentEndpoint endpoint = (AgentEndpoint) endpointSetting.getEndpoint();
+				endpoint.cancelUpdate(cause, Agent.getAgentInfo());
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.info("WebServiceException " + e.getMessage());
+				EndpointManager.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+	
+	public static Map<String, String> getAgentLibMap()
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception  {
 		WebServiceException wse = null;
 		for (EndpointSetting endpointSetting : EndpointManager.getAgentEndpoint()) {
 			try {
 				AgentEndpoint endpoint = (AgentEndpoint) endpointSetting.getEndpoint();
-				List<String> list = endpoint.getAgentLibMap(Agent.getAgentInfo());
-				Iterator<String> itr = list.iterator();
-				HashMap<String, String> ret = new HashMap<String, String>();
-				while (itr.hasNext()) {
-					ret.put(itr.next(), itr.next());
-				}
-				return ret;
+				return WebServiceUtil.convertToMap(endpoint.getAgentLibMap(Agent.getAgentInfo()));
 			} catch (WebServiceException e) {
 				wse = e;
 				m_log.info("WebServiceException " + e.getMessage());
@@ -448,19 +459,17 @@ public class AgentEndPointWrapper {
 		throw wse;
 	}
 
-	public static void setAgentLibMd5(HashMap<String, String> agentLibMd5)
+	public static void setAgentProfile(Map<String, String> libMd5Map)
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
 		WebServiceException wse = null;
 
-		ArrayList<String> agentLibMd5List = new ArrayList<String> ();
-		for (Entry<String, String> entry : agentLibMd5.entrySet()) {
-			agentLibMd5List.add(entry.getKey());
-			agentLibMd5List.add(entry.getValue());
-		}
+		List<String> libMd5List = WebServiceUtil.convertToList(libMd5Map);
+		AgentJavaInfo javaInfo = Agent.getJavaInfo();
+		AgentInfo agentInfo = Agent.getAgentInfo();
 		for (EndpointSetting endpointSetting : EndpointManager.getAgentEndpoint()) {
 			try {
 				AgentEndpoint endpoint = (AgentEndpoint) endpointSetting.getEndpoint();
-				endpoint.setAgentLibMd5(agentLibMd5List, Agent.getAgentInfo());
+				endpoint.setAgentProfile(libMd5List, javaInfo, agentInfo);
 				return;
 			} catch (WebServiceException e) {
 				wse = e;

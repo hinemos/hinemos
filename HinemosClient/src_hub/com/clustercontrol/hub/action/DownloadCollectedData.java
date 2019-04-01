@@ -62,7 +62,7 @@ public class DownloadCollectedData {
 	/**
 	 * クライアント内連番increment.
 	 */
-	private static int addSequeance() {
+	private static synchronized int addSequeance() {
 		return clientSequeance++;
 	}
 
@@ -92,7 +92,9 @@ public class DownloadCollectedData {
 			}
 		}
 
-		defaultFileName = this.renameFileName(defaultFileName);
+		if (defaultFileName != null) {
+			defaultFileName = this.renameFileName(defaultFileName);
+		}
 		fd.setFileName(defaultFileName);
 
 		String selectedFilePath = null;

@@ -56,6 +56,7 @@ import com.clustercontrol.xcloud.model.DataType;
 import com.clustercontrol.xcloud.model.ExtendedProperty;
 import com.clustercontrol.xcloud.model.FacilityAdditionEntity;
 import com.clustercontrol.xcloud.model.InstanceBackupEntity;
+import com.clustercontrol.xcloud.model.InstanceBackupEntryEntity;
 import com.clustercontrol.xcloud.model.InstanceEntity;
 import com.clustercontrol.xcloud.model.LocationEntity;
 import com.clustercontrol.xcloud.model.LocationResourceEntity;
@@ -65,9 +66,9 @@ import com.clustercontrol.xcloud.persistence.TransactionException;
 import com.clustercontrol.xcloud.persistence.Transactional;
 import com.clustercontrol.xcloud.util.Cidr;
 import com.clustercontrol.xcloud.util.CloudMessageUtil;
+import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.FacilityIdUtil;
-import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.NodeInfoCache;
 import com.clustercontrol.xcloud.util.RepositoryControllerBeanWrapper;
 
@@ -928,11 +929,26 @@ public class InstanceUpdater {
 				}
 				notifier.completed();
 				
-				IResourceManagement management = getResourceManagement(location, user);
-				// This method is called during instance update and the UnsupportedOperationException(on ESXi only) should be ignored
-				try{
-					management.deleteInstanceSnapshots(instance.getBackup().getEntries());
-				} catch(UnsupportedOperationException e) {}
+				if (HinemosPropertyCommon.xcloud_autodelete_node_backupimage.getBooleanValue()) {
+					IResourceManagement management = getResourceManagement(location, user);
+					// This method is called during instance update and the UnsupportedOperationException(on ESXi only) should be ignored
+					try{
+						management.deleteInstanceSnapshots(instance.getBackup().getEntries());
+					} catch(UnsupportedOperationException e) {}
+				} else {
+					if (!instance.getBackup().getEntries().isEmpty()) {
+						StringBuffer backupIDs = new StringBuffer();
+						for (InstanceBackupEntryEntity ent : instance.getBackup().getEntries()) {
+							if (backupIDs.length() > 0) {
+								backupIDs.append(",");
+							}
+							backupIDs.append(ent.getEntryId());
+						}
+						
+						logger.info(String.format("%s(ID=%s) was deleted, but %d snapshots are not deleted.ID=%s",
+								instance.getName(), instance.getResourceId(), instance.getBackup().getEntries().size(), backupIDs));
+					}
+				}
 			}
 		} else {
 			if (instance.getInstanceStatus() != InstanceStatus.missing)

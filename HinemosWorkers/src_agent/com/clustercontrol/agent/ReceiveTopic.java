@@ -29,7 +29,10 @@ import com.clustercontrol.agent.job.FileListThread;
 import com.clustercontrol.agent.job.PublicKeyThread;
 import com.clustercontrol.agent.job.RunHistoryUtil;
 import com.clustercontrol.agent.log.LogfileMonitorManager;
-import com.clustercontrol.agent.update.UpdateModuleUtil;
+import com.clustercontrol.agent.repository.NodeConfigCollector;
+import com.clustercontrol.agent.repository.NodeRegister;
+import com.clustercontrol.agent.repository.NodeConfigConstant.Function;
+import com.clustercontrol.agent.update.AgentUpdater;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.agent.util.CollectorId;
 import com.clustercontrol.agent.util.CollectorManager;
@@ -44,6 +47,7 @@ import com.clustercontrol.repository.bean.AgentCommandConstant;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.ws.agent.CustomInvalid_Exception;
 import com.clustercontrol.ws.agent.HashMapInfo;
+import com.clustercontrol.ws.agent.HashMapInfo.Map8;
 import com.clustercontrol.ws.agent.HinemosTopicInfo;
 import com.clustercontrol.ws.agent.HinemosUnknown_Exception;
 import com.clustercontrol.ws.agent.InvalidRole_Exception;
@@ -52,11 +56,15 @@ import com.clustercontrol.ws.agent.JobMasterNotFound_Exception;
 import com.clustercontrol.ws.agent.MonitorNotFound_Exception;
 import com.clustercontrol.ws.agent.SettingUpdateInfo;
 import com.clustercontrol.ws.agent.TopicInfo;
-import com.clustercontrol.ws.agent.HashMapInfo.Map8;
+import com.clustercontrol.ws.agentnodeconfig.FacilityNotFound_Exception;
+import com.clustercontrol.ws.agentnodeconfig.NodeConfigSettingNotFound_Exception;
 import com.clustercontrol.ws.jobmanagement.JobFileCheck;
 import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
 import com.clustercontrol.ws.monitor.CommandExecuteDTO;
 import com.clustercontrol.ws.monitor.MonitorInfo;
+import com.clustercontrol.ws.repository.NodeConfigRunCollectInfo;
+import com.clustercontrol.ws.repository.NodeConfigRunCollectInfo.InstructedInfoMap;
+import com.clustercontrol.ws.repository.NodeConfigSetting;
 
 /**
  * Topicを受信するクラス<BR>
@@ -64,7 +72,7 @@ import com.clustercontrol.ws.monitor.MonitorInfo;
  * 
  * Topicでマネージャからのジョブ実行指示を受け取ります。
  * 
- * @version 6.1.0 バイナリ監視対応
+ * @version 6.2.0 構成情報関連の対応
  */
 public class ReceiveTopic extends Thread {
 
@@ -84,6 +92,13 @@ public class ReceiveTopic extends Thread {
 	private long disconnectCounter = 1;
 	private static boolean m_clearFlg = false;
 	private static boolean m_reloadFlg = false;
+	
+	// ノード自動登録.
+	private static boolean retryToRegNode = true;
+	private static Object retryToRegNodeLock = new Object();
+	
+	// リモートアップデート処理オブジェクト
+	private AgentUpdater updater = new AgentUpdater();
 	
 	// topic受信とエージェント終了時の通信コンフリクトを防ぐためのロック
 	public static final Object lockTopicReceiveTiming = new Object();
@@ -148,6 +163,7 @@ public class ReceiveTopic extends Thread {
 		LogfileMonitorManager.setSendQueue(m_sendQueue);
 		BinaryMonitorManager.setSendQueue(m_sendQueue);
 		WinEventMonitorManager.setSendQueue(m_sendQueue);
+		NodeConfigCollector.setSendQueue(m_sendQueue);
 	}
 
 
@@ -155,13 +171,16 @@ public class ReceiveTopic extends Thread {
 	 * マネージャからのTopic(即時実行など)が発行された際に、ラッチを開放する。
 	 */
 	private CountDownLatch countDownLatch = null;
+	// 初期処理中にManagerから呼び出された場合にtrue
+	private boolean immediateRelease = false;
 
 	public void releaseLatch() {
 		if (countDownLatch == null) {
-			m_log.info("latch is null");
-			throw new InternalError("CountDownLatch is null");
+			m_log.debug("CountDownLatch is null");
+			immediateRelease = true;
+		} else {
+			countDownLatch.countDown();
 		}
-		countDownLatch.countDown();
 	}
 
 	/**
@@ -173,6 +192,23 @@ public class ReceiveTopic extends Thread {
 		m_log.info("run start");
 
 		while (true) {
+			// ノード自動登録、Manager接続に失敗した場合はリトライ.
+			if(retryToRegNode){
+				synchronized (retryToRegNodeLock) {
+					retryToRegNode = NodeRegister.callRegister();
+				}
+			}
+			if(retryToRegNode){
+				// リトライ時はノード登録前なのでgetTopic走らせない.
+				try {
+					Thread.sleep(m_topicInterval);
+				} catch (InterruptedException e) {
+					m_log.warn("NodeRegister() : " + e.getMessage());
+				}
+				m_log.info("NodeRegister() : " + "to retry to register node automatically.");
+				continue;
+			}
+			
 			/*
 			 * トピックの有無をマネージャにチェックし終わったら、sleepする。
 			 * 
@@ -180,14 +216,19 @@ public class ReceiveTopic extends Thread {
 			try {
 				int interval = m_topicInterval;
 				countDownLatch = new CountDownLatch(1);
-				if (!countDownLatch.await(interval, TimeUnit.MILLISECONDS))
-					m_log.debug("waiting is over");
+				if(!immediateRelease){
+					boolean awaiting = countDownLatch.await(interval, TimeUnit.MILLISECONDS);
+					if (!awaiting) {
+						m_log.debug("waiting is over");
+					}
+				}
 			} catch (InterruptedException e) {
 				m_log.warn("Interrupt " + e.getMessage());
 			} catch (Exception e) {
 				m_log.error("run() : " + e.getMessage(), e);
 			}
-
+			
+			immediateRelease = false;
 			try {
 				List<RunInstructionInfo> runInstructionList = new ArrayList<RunInstructionInfo>();
 				m_log.info("getTopic " + Agent.getAgentStr() + " start");
@@ -249,39 +290,56 @@ public class ReceiveTopic extends Thread {
 					reloadLogfileMonitor(updateInfo, true);
 					reloadBinaryMonitor(updateInfo, true);
 					reloadCustomMonitor(updateInfo, true);
+					reloadNodeConfigSetting(updateInfo, true);
+					reloadNodeConfigRunCollect(updateInfo, true);
 					reloadWinEventMonitor(updateInfo, true);
 					reloadJobFileCheck(updateInfo, true);
-					UpdateModuleUtil.setAgentLibMd5();
+					try {
+						updater.sendProfile();
+						// マネージャとの接続初回での、プロファイル送信成功なら、バックアップを削除する。
+						if (disconnectCounter != 0) {
+							if (Boolean.parseBoolean(AgentProperties.getProperty("update.backup.keep"))) {
+								m_log.info("run: Keep backup.");
+							} else {
+								updater.sweepBackup();
+							}
+						}
+					} catch (Exception e) {
+						m_log.warn("run: Failed to send profile.", e);
+					}
 					setReloadFlg(false);
 				}
 				disconnectCounter = 0;
 				setHistoryClear(false);
 
+				// topicリストの内容を仕分ける
 				m_log.debug("run : topicInfoList.size=" + topicInfoList.size());
+				int agentCommand = AgentCommandConstant.NONE;
 				for (TopicInfo topicInfo : topicInfoList) {
-					m_log.info("getTopic flag=" + topicInfo.getFlag());
+					long topicFlag = topicInfo.getFlag();
+					m_log.info("getTopic flag=" + topicFlag);
 
+					// ジョブ実行指示
 					RunInstructionInfo runInstructionInfo = topicInfo.getRunInstructionInfo();
 					if (runInstructionInfo != null) {
 						runInstructionList.add(runInstructionInfo);
 					}
 					
-					long topicFlag = topicInfo.getFlag();
-					if (topicInfo.getAgentCommand() != 0) {
-						int agentCommand = topicInfo.getAgentCommand();
-						m_log.debug("agentCommand : " + agentCommand);
-						if (agentCommand == AgentCommandConstant.UPDATE) {
-							// 1つもファイルをダウンロードしていない場合は、再起動しない。
-							if(!UpdateModuleUtil.update()) {
-								agentCommand = 0;
-							}
-						}
-						if (agentCommand != 0) {
-							Agent.restart(agentCommand);
+					// 複数の「再起動 or アップデート」指示は、アップデート優先で1つにする
+					if (topicInfo.getAgentCommand() != AgentCommandConstant.NONE) {
+						m_log.info("run: agentCommand=" + topicInfo.getAgentCommand());
+						if (agentCommand != AgentCommandConstant.UPDATE) {
+							agentCommand = topicInfo.getAgentCommand();
 						}
 					}
+
+					// プロファイル送信要求にはすぐに応答しておく (アップデート時に必要となるので)
 					if ((topicFlag & TopicFlagConstant.NEW_FACILITY) != 0) {
-						UpdateModuleUtil.setAgentLibMd5();
+						try {
+							updater.sendProfile();
+						} catch (Exception e) {
+							m_log.warn("run: Failed to send profile.", e);
+						}
 					}
 					if (newTopicMode) {
 						continue;
@@ -312,11 +370,22 @@ public class ReceiveTopic extends Thread {
 							(topicFlag & TopicFlagConstant.FILECHECK_CHANGED) != 0) {
 						reloadJobFileCheck(updateInfo, true);
 					}
+					if ((topicFlag & TopicFlagConstant.REPOSITORY_CHANGED) != 0 ||
+							(topicFlag & TopicFlagConstant.NEW_FACILITY) != 0 ||
+							(topicFlag & TopicFlagConstant.CALENDAR_CHANGED) != 0 ||
+							(topicFlag & TopicFlagConstant.NODE_CONFIG_SETTING_CHANGED) != 0) {
+						reloadNodeConfigSetting(updateInfo, true);
+					}
+					if ((topicFlag & TopicFlagConstant.NODE_CONFIG_RUN_COLLECT) != 0) {
+						reloadNodeConfigRunCollect(updateInfo, true);
+					}
 				}
 
 				reloadLogfileMonitor(updateInfo, false);
 				reloadBinaryMonitor(updateInfo, false);
 				reloadCustomMonitor(updateInfo, false);
+				reloadNodeConfigSetting(updateInfo, false);
+				reloadNodeConfigRunCollect(updateInfo, false);
 				reloadWinEventMonitor(updateInfo, false);
 				reloadJobFileCheck(updateInfo, false);
 
@@ -331,6 +400,28 @@ public class ReceiveTopic extends Thread {
 				for (RunInstructionInfo info : runInstructionList){
 					runJob(info);
 				}
+
+				// 再起動あるいは更新を実行する
+				if (agentCommand == AgentCommandConstant.RESTART) {
+					m_log.info("run: Execute restart command.");
+					Agent.restart(AgentCommandConstant.RESTART);
+				} else if (agentCommand == AgentCommandConstant.UPDATE) {
+					m_log.info("run: Execute update command.");
+					try {
+						if (updater.download()) {
+							Agent.restart(AgentCommandConstant.UPDATE);
+						}
+					} catch (Throwable e) {
+						m_log.warn("run: Failed to download update files.", e);
+						try {
+							AgentEndPointWrapper.cancelUpdate(e.getClass().getSimpleName() + ", " + e.getMessage());
+						} catch (Exception ee) {
+							// ログ出力だけして無視する
+							m_log.warn("run: Failed to cancel update.", ee);
+						}
+					}
+				}
+
 			} catch (Throwable e) {
 				m_log.error("run() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			}
@@ -359,7 +450,38 @@ public class ReceiveTopic extends Thread {
 			}
 		}
 	}
+	
+	private boolean isNodeConfigSettingReload(SettingUpdateInfo updateInfo) {
+		if (updateInfo == null) {
+			return false;
+		} else if (settingLastUpdateInfo == null) {
+			return true;
+		} else {
+			if (settingLastUpdateInfo.getNodeConfigSettingUpdateTime() == updateInfo.getNodeConfigSettingUpdateTime()
+					&& settingLastUpdateInfo.getCalendarUpdateTime() == updateInfo.getCalendarUpdateTime()
+					&& settingLastUpdateInfo.getRepositoryUpdateTime() == updateInfo.getRepositoryUpdateTime()) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+	}
 
+	private boolean isNodeConfigRunCollectReload(SettingUpdateInfo updateInfo) {
+		if (updateInfo == null) {
+			return false;
+		} else if (settingLastUpdateInfo == null) {
+			return true;
+		} else {
+			if (settingLastUpdateInfo.getNodeConfigRunCollectUpdateTime() == updateInfo
+					.getNodeConfigRunCollectUpdateTime()) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+	}
+	
 	private boolean isWinEventMonitorReload(SettingUpdateInfo updateInfo) {
 		if (updateInfo == null) {
 			return false;
@@ -451,7 +573,7 @@ public class ReceiveTopic extends Thread {
 				}
 				boolean unnecessary = true;
 				for (CommandExecuteDTO dto : dtos) {
-					if (collectId.id != null && collectId.id.equals(dto.getMonitorId())) {
+					if (collectId.id != null && collectId.id.equals(dto.getFacilityId() + dto.getMonitorId())) {
 						unnecessary = false;
 					}
 				}
@@ -474,6 +596,131 @@ public class ReceiveTopic extends Thread {
 			m_log.warn("reloadCommandMonitoring: " + e.getMessage());
 		} catch (InvalidUserPass_Exception e) {
 			m_log.warn("reloadCommandMonitoring: " + e.getMessage());
+		}
+
+	}
+	
+
+	private void reloadNodeConfigSetting(SettingUpdateInfo updateInfo, boolean force) {
+		if (!isNodeConfigSettingReload(updateInfo) && !force) {
+			return;
+		}
+		// Local Variables
+		List<NodeConfigSetting> dtoList = null;
+	
+		// MAIN
+		m_log.info("reloading configuration of nodeconfig setting...");
+		try {
+			dtoList = AgentNodeConfigEndPointWrapper.getNodeConfigSetting();
+				
+			// unregister unnecessary NodeConfig Collector
+			for (CollectorId collectId : CollectorManager.getAllCollectorIds()) {
+				if (collectId.type != NodeConfigCollector._collectorType) {
+					continue;
+				}
+				boolean unnecessary = true;
+				
+				for (NodeConfigSetting dto : dtoList) {
+					if (collectId.id != null && collectId.id.equals(dto.getFacilityId() + dto.getSettingId())) {
+						unnecessary = false;
+					}
+				}
+				if (unnecessary) {
+					CollectorManager.unregisterCollectorTask(collectId);
+				}
+			}
+		
+			for (NodeConfigSetting dto : dtoList) {
+				// reset Command Collector
+				m_log.info("reloaded configuration : " + dto.getSettingId());
+				CollectorManager.registerCollectorTask(new NodeConfigCollector(dto, Function.REGULAR_COLLECT));
+			}
+		} catch (com.clustercontrol.ws.agentnodeconfig.HinemosUnknown_Exception e) {
+			m_log.warn("un-expected internal failure occurs...", e);
+		} catch (com.clustercontrol.ws.agentnodeconfig.InvalidRole_Exception e) {
+			m_log.warn("reloadNodeConfigSetting: " + e.getMessage());
+		} catch (com.clustercontrol.ws.agentnodeconfig.InvalidUserPass_Exception e) {
+			m_log.warn("reloadNodeConfigSetting: " + e.getMessage());
+		} catch (com.clustercontrol.ws.agentnodeconfig.InvalidSetting_Exception e) {
+			m_log.warn("reloadNodeConfigSetting: " + e.getMessage());
+		} catch (FacilityNotFound_Exception e) {
+			m_log.warn("reloadNodeConfigSetting: " + e.getMessage());
+		} catch (NodeConfigSettingNotFound_Exception e) {
+			m_log.warn("reloadNodeConfigSetting: " + e.getMessage());
+		}
+	
+	}
+
+	private void reloadNodeConfigRunCollect(SettingUpdateInfo updateInfo, boolean force) {
+		//
+		if (!isNodeConfigRunCollectReload(updateInfo) && !force) {
+			return;
+		}
+		// Local Variables
+		NodeConfigRunCollectInfo runCollectInfo = null;
+
+		// Managerから即時実行に関する情報を取得.
+		m_log.info("reloading configuration of nodeconfig run-collect info...");
+		try {
+			runCollectInfo = AgentNodeConfigEndPointWrapper.getNodeConfigRunCollectInfo();
+		} catch (com.clustercontrol.ws.agentnodeconfig.HinemosUnknown_Exception e) {
+			m_log.warn("un-expected internal failure occurs...", e);
+			return;
+		} catch (com.clustercontrol.ws.agentnodeconfig.InvalidRole_Exception e) {
+			m_log.warn("reloadNodeConfigRunCollectInfo: " + e.getMessage());
+			return;
+		} catch (com.clustercontrol.ws.agentnodeconfig.InvalidUserPass_Exception e) {
+			m_log.warn("reloadNodeConfigRunCollectInfo: " + e.getMessage());
+			return;
+		} catch (FacilityNotFound_Exception e) {
+			m_log.warn("reloadNodeConfigRunCollectInfo: " + e.getMessage());
+			return;
+		}
+
+		// Managerからの取得値チェック.
+		if (runCollectInfo == null //
+				|| runCollectInfo.getInstructedInfoMap() == null //
+				|| runCollectInfo.getInstructedInfoMap().getEntry() == null) {
+			m_log.debug("failed to reload configuration of nodeconfig run-collect info." //
+					+ " for more information, see 'hinemos_manager.log'.");
+			return;
+		}
+		if (runCollectInfo.getInstructedInfoMap().getEntry().isEmpty()) {
+			m_log.debug("reloaded empty configuration of nodeconfig run-collect info.");
+			return;
+		}
+		Long loadDistributionTime = runCollectInfo.getLoadDistributionTime();
+		if (loadDistributionTime == null) {
+			m_log.warn("failed to reload load-distribution-time in configuration of nodeconfig run-collect info." //
+					+ " for more information, see 'hinemos_manager.log'.");
+			return;
+		}
+
+		// 即時実行情報に従って、即時実行スタート.
+		for (InstructedInfoMap.Entry entry : runCollectInfo.getInstructedInfoMap().getEntry()) {
+			// 値が不正な場合はスキップ.
+			if (entry == null) {
+				m_log.warn("failed to reload instructed information in configuration of nodeconfig run-collect info." //
+						+ " for more information, see 'hinemos_manager.log'.");
+				continue;
+			}
+			NodeConfigSetting setting = entry.getKey();
+			// 値が不正な場合はスキップ.
+			if (setting == null) {
+				m_log.warn("failed to reload instructed information in configuration of nodeconfig run-collect info." //
+						+ " for more information, see 'hinemos_manager.log'.");
+				continue;
+			}
+			Long instructedDate = entry.getValue();
+			if (instructedDate == null) {
+				m_log.warn("failed to reload instructed-date in configuration of nodeconfig run-collect info." //
+						+ " for more information, see 'hinemos_manager.log'.");
+				continue;
+			}
+			// 構成情報収集の設定情報毎に実行させる.
+			m_log.info("reloaded configuration : " + setting.getSettingId());
+			NodeConfigCollector collector = new NodeConfigCollector(setting, Function.RUN_COLLECT);
+			collector.runCollect(instructedDate, loadDistributionTime);
 		}
 
 	}
@@ -789,7 +1036,7 @@ public class ReceiveTopic extends Thread {
 				}
 			}
 		} catch(Throwable e) {
-			m_log.warn("hoge " + e.getMessage(), e);
+			m_log.warn("runJob() : " + e.getMessage(), e);
 		}
 	}
 

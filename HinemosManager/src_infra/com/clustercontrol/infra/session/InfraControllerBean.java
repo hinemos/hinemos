@@ -57,8 +57,6 @@ import com.clustercontrol.infra.model.InfraFileInfo;
 import com.clustercontrol.infra.model.InfraManagementInfo;
 import com.clustercontrol.infra.util.InfraManagementValidator;
 import com.clustercontrol.infra.util.QueryUtil;
-import com.clustercontrol.notify.bean.NotifyCheckIdResultInfo;
-import com.clustercontrol.notify.factory.SelectNotifyRelation;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.util.MessageConstant;
@@ -105,7 +103,7 @@ public class InfraControllerBean implements CheckFacility {
 
 			// コミット後にキャッシュクリア
 			NotifyRelationCache.refresh();
-		} catch (InfraManagementNotFound | NotifyDuplicate | HinemosUnknown e) {
+		} catch (InfraManagementNotFound | NotifyDuplicate | HinemosUnknown | InvalidSetting e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
@@ -156,7 +154,7 @@ public class InfraControllerBean implements CheckFacility {
 
 			// コミット後にキャッシュクリア
 			NotifyRelationCache.refresh();
-		} catch (NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidRole | InfraManagementNotFound e){
+		} catch (NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidRole | InfraManagementNotFound | InvalidSetting e ){
 			if (jtm != null){
 				jtm.rollback();
 			}
@@ -406,42 +404,6 @@ public class InfraControllerBean implements CheckFacility {
 	}
 
 	/**
-
-	 */
-	public void checkNotifyId(String[] notifyIds) throws InvalidRole, HinemosUnknown {
-		JpaTransactionManager jtm = null;
-
-		ArrayList<NotifyCheckIdResultInfo> ret = new ArrayList<NotifyCheckIdResultInfo>();
-		SelectNotifyRelation notify = new SelectNotifyRelation();
-		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			for (int i = 0; i < notifyIds.length; i++) {
-				String notifyId = notifyIds[i];
-				NotifyCheckIdResultInfo result = new NotifyCheckIdResultInfo();
-				result.setNotifyId(notifyId);
-				result.setNotifyGroupIdList(notify.getNotifyGroupIdBaseOnNotifyId(notifyId));
-				ret.add(result);
-			}
-			jtm.commit();
-		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
-			m_log.warn("checkNotifyId() : " + e.getClass().getSimpleName() +
-					", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
-		}
-	}
-	
-	/**
 	 * 指定したファシリティIDが利用されているか確認する
 	 *
 	 *
@@ -654,6 +616,13 @@ public class InfraControllerBean implements CheckFacility {
 			} catch (InfraFileTooLarge e) {
 				jtm.rollback();
 				throw e;
+			} catch (InvalidSetting e) {
+				//本来はInvalidSettingをそのままthrowすべきだが、本IFで
+				//InvalidSettingをthrows宣言していないため、
+				//IFの互換性を考慮し、HinemosUnknownとすうる
+				if (jtm != null)
+					jtm.rollback();
+				throw new HinemosUnknown(e.getMessage(), e);
 			} catch (Exception e){
 				m_log.warn("addInfraFile() : " + e.getClass().getSimpleName() +
 						", " + e.getMessage(), e);
@@ -782,6 +751,13 @@ public class InfraControllerBean implements CheckFacility {
 			} catch (InfraFileTooLarge e) {
 				jtm.rollback();
 				throw e;
+			} catch (InvalidSetting e) {
+				//本来はInvalidSettingをそのままthrowすべきだが、本IFで
+				//InvalidSettingをthrows宣言していないため、
+				//IFの互換性を考慮し、HinemosUnknownとすうる
+				if (jtm != null)
+					jtm.rollback();
+				throw new HinemosUnknown(e.getMessage(), e);
 			} catch (Exception e){
 				m_log.warn("modifyInfraFile() : " + e.getClass().getSimpleName() +
 						", " + e.getMessage(), e);

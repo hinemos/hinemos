@@ -44,7 +44,7 @@ import com.clustercontrol.utility.settings.nodemap.xml.NodeMapIconImageType;
 import com.clustercontrol.utility.settings.nodemap.xml.NodeMapBgImageInfo;
 import com.clustercontrol.utility.settings.nodemap.xml.NodemapIconImage;
 import com.clustercontrol.utility.settings.nodemap.xml.NodemapIconImageInfo;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.settings.ui.util.BackupUtil;
@@ -326,7 +326,7 @@ public class NodeMapImageAction {
 				if (wrapper.isBgImage(bgImageInfo.getFileName())){
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {bgImageInfo.getFileName()};
-						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 								null, Messages.getString("message.import.confirm2", args));
 						ImportProcessMode.setProcesstype(dialog.open());
 						ImportProcessMode.setSameprocess(dialog.getToggleState());
@@ -371,7 +371,7 @@ public class NodeMapImageAction {
 				if (wrapper.isIconImage(iconImageInfo.getIconId())){
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {iconImageInfo.getIconId()};
-						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 								null, Messages.getString("message.import.confirm2", args));
 						ImportProcessMode.setProcesstype(dialog.open());
 						ImportProcessMode.setSameprocess(dialog.getToggleState());

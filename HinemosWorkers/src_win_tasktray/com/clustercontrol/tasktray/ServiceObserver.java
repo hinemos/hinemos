@@ -147,7 +147,6 @@ public class ServiceObserver {
 				try {
 					Runtime.getRuntime().exec (runCommand);
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -161,7 +160,6 @@ public class ServiceObserver {
 				try {
 					Runtime.getRuntime().exec (stopCommand);
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -175,7 +173,6 @@ public class ServiceObserver {
 				try {
 					Runtime.getRuntime().exec (restartCommand);
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}

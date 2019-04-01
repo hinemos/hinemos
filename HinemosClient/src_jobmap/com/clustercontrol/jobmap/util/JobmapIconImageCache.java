@@ -357,10 +357,11 @@ public class JobmapIconImageCache {
 		m_graphicImageCacheIconIndex.clear();
 		//Hex一覧作成と アイコンインデックスを再設定
 		HashSet<String> curHexList = new HashSet<String>();
-		for( String mangaerName : m_jobmapIconImageCache.keySet() ){
-			Map<String, JobmapIconImage> managerCache = m_jobmapIconImageCache.get(mangaerName);
-			for( String icontName : managerCache.keySet() ){
-				JobmapIconImage icon = managerCache.get(icontName);
+		for(Map.Entry<String, Map<String, JobmapIconImage>> entry : m_jobmapIconImageCache.entrySet()){
+			String managerName = entry.getKey();
+			Map<String, JobmapIconImage> managerCache = m_jobmapIconImageCache.get(managerName);
+			for(Map.Entry<String, JobmapIconImage> childEntry : managerCache.entrySet()){
+				JobmapIconImage icon = managerCache.get(childEntry.getKey());
 				String hexcode = DatatypeConverter.printHexBinary(icon.getFiledata());
 				curHexList.add(hexcode);
 				loadGraphicImage(icon);
@@ -373,7 +374,7 @@ public class JobmapIconImageCache {
 				if(m_log.isDebugEnabled()){
 					m_log.debug("loadGraphicImage ( JobmapIconImage ) delete hex="+disposeKey);
 				}
-				//FIXME
+				//XXX
 				//Imageインスタンスはできれば廃棄（そのままだとリッチクライアントはGDIハンドルがリークする）したいが、
 				//いずれかのビューで表示中のインスタンスをdisposeすると処理全体が落ちる。
 				//ハンドルの上限10000までアイコン変更でリークすることは考えづらい。

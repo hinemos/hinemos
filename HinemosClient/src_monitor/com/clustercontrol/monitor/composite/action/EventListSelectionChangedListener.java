@@ -9,6 +9,7 @@
 package com.clustercontrol.monitor.composite.action;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -20,7 +21,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
-import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.monitor.view.EventView;
 
 /**
@@ -84,42 +84,36 @@ public class EventListSelectionChangedListener implements ISelectionChangedListe
 			}
 
 			if ( selection != null ) {
-				//選択アイテムが1つの場合
+
+				List<Integer> selectionConfirmList = new ArrayList<>();
+				
 				if ( selection.size() == 1) {
+					//選択アイテムが1つの場合
+					
 					list = (ArrayList<?>) selection.getFirstElement();
 					String pluginId = list.get(GetEventListTableDefine.PLUGIN_ID).toString();
-					view.setEnabledAction(((Integer)list.get(GetEventListTableDefine.CONFIRMED)).intValue(), pluginId, event.getSelection());
+					selectionConfirmList.add((Integer)list.get(GetEventListTableDefine.CONFIRMED));
+					view.setEnabledAction(selectionConfirmList, pluginId, event.getSelection());
 
-					//選択アイテムが複数の場合
 				} else if (selection.size() > 1){
+					//選択アイテムが複数の場合
 					Object [] obj = selection.toArray();
-					boolean confirmFlg = false;
-					boolean unconfirmFlg = false;
 
-					//選択アイテムの確認/未確認を全てチェックする
+					//選択アイテムの確認をリストに追加する
 					for (int i = 0; i < obj.length; i++) {
 						list = (ArrayList<?>) obj[i];
-						if (!confirmFlg && (Integer)list.get(GetEventListTableDefine.CONFIRMED) == ConfirmConstant.TYPE_CONFIRMED) {
-							confirmFlg = true;
-						} else if (!unconfirmFlg && (Integer)list.get(GetEventListTableDefine.CONFIRMED) == ConfirmConstant.TYPE_UNCONFIRMED) {
-							unconfirmFlg = true;
+						Integer confirm = (Integer)list.get(GetEventListTableDefine.CONFIRMED);
+						
+						if (!selectionConfirmList.contains(confirm)) {
+							selectionConfirmList.add(confirm);
 						}
 					}
-
-					//選択アイテムの確認/未確認の種別でボタン（アクション）の使用可/不可を設定する
-					//両方含まれている場合
-					if (confirmFlg && unconfirmFlg) {
-						view.setEnabledAction(-1, null, event.getSelection());
-						//未確認しかない場合
-					} else if (unconfirmFlg) {
-						view.setEnabledAction(ConfirmConstant.TYPE_UNCONFIRMED, null, event.getSelection());
-						//確認しかない場合
-					} else if (confirmFlg) {
-						view.setEnabledAction(ConfirmConstant.TYPE_CONFIRMED, null, event.getSelection());
-					}
-
-					//選択アイテムが0の場合
+					
+					view.setEnabledAction(selectionConfirmList, null, event.getSelection());
+					
+					
 				} else {
+					//選択アイテムが0の場合
 					view.initButton();
 				}
 			} else {

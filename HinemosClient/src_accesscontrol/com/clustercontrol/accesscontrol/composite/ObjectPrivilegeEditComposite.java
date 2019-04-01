@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -23,6 +22,7 @@ import org.eclipse.swt.widgets.TableItem;
 import com.clustercontrol.accesscontrol.action.GetObjectPrivilegeEditTableDefine;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeBean;
+import com.clustercontrol.util.CheckBoxSelectionAdapter;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
@@ -57,7 +57,7 @@ public class ObjectPrivilegeEditComposite extends Composite {
 		super(parent, style);
 		initialize(false);
 	}
-
+	
 	/**
 	 * コンポジットを配置します。
 	 */
@@ -90,7 +90,6 @@ public class ObjectPrivilegeEditComposite extends Composite {
 			table.getColumn(i).setMoveable(true);
 		}
 
-		// テーブル情報の初期表示 TODO: 外だししたほうがよい
 		ArrayList<ArrayList<Object>> listInput = new ArrayList<ArrayList<Object>>();
 		ArrayList<Object> a = new ArrayList<Object>();
 		a.add(Messages.getString("refer"));
@@ -113,50 +112,61 @@ public class ObjectPrivilegeEditComposite extends Composite {
 		this.m_viewer.setInput(listInput);
 
 		// table 選択時のチェックボックスの挙動
-		table.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-
-				// 選択されたTableColumnを取得します。
-				TableItem[] ti = table.getSelection();
-				for (int i = 0; i < ti.length; i++) {
-					@SuppressWarnings("unchecked")
-					ArrayList<Object> al = (ArrayList<Object>)ti[i].getData();
-					WidgetTestUtil.setTestId(this, "tableitem" + i, ti[i]);
-					if(!al.get(GetObjectPrivilegeEditTableDefine.PRIVILEGE).equals(ObjectPrivilegeMode.READ)){
-						// チェックボックスの状況を確認
-						if((Boolean)al.get(GetObjectPrivilegeEditTableDefine.ALLOW_CHECKBOX)){
-							// YESならNO
-							al.set(GetObjectPrivilegeEditTableDefine.ALLOW_CHECKBOX, false);
-
-							// オブジェクト権限設定の更新
-							if(al.get(GetObjectPrivilegeEditTableDefine.PRIVILEGE).equals(ObjectPrivilegeMode.MODIFY)){
-								m_objPriv.setWritePrivilege(false);
-							}
-							else if(al.get(GetObjectPrivilegeEditTableDefine.PRIVILEGE).equals(ObjectPrivilegeMode.EXEC)){
-								m_objPriv.setExecPrivilege(false);
-							}
-						} else {
-							// NOならYES
-							al.set(GetObjectPrivilegeEditTableDefine.ALLOW_CHECKBOX, true);
-
-							// オブジェクト権限設定の更新
-							if(al.get(GetObjectPrivilegeEditTableDefine.PRIVILEGE).equals(ObjectPrivilegeMode.MODIFY)){
-								m_objPriv.setWritePrivilege(true);
-							}
-							else if(al.get(GetObjectPrivilegeEditTableDefine.PRIVILEGE).equals(ObjectPrivilegeMode.EXEC)){
-								m_objPriv.setExecPrivilege(true);
-							}
-						}
-					}
-				}
-				// チェックが入るので、再描画
-				m_viewer.refresh();
-			}
-		});
-
+		/** チェックボックスの選択を制御するリスナー */
+		SelectionAdapter adapter = 
+				new ObjectPrivilegeSelectionAdapter(this, this.m_viewer, 
+				GetObjectPrivilegeEditTableDefine.ALLOW_CHECKBOX
+						);
+		table.addSelectionListener(adapter);
 	}
 
+	/**
+	 * テーブル選択とチェックボックスの状態、権限の値を同期するためのAdapter
+	 *
+	 */
+	public static class ObjectPrivilegeSelectionAdapter extends CheckBoxSelectionAdapter {
+		
+		private ObjectPrivilegeEditComposite composite;
+		
+		public ObjectPrivilegeSelectionAdapter(
+				ObjectPrivilegeEditComposite parent, CommonTableViewer tableViewer, int checkBoxColIndex) {
+			super(parent, tableViewer, checkBoxColIndex);
+			this.composite = parent;
+			
+		}
+
+		@Override
+		protected boolean isIgnoreRow(TableItem item) {
+			if (ObjectPrivilegeMode.READ.equals(getPrivilege(item))) {
+				//Readは操作しない（常にON）
+				return true;
+			}
+			return false;
+		}
+			
+		
+		@Override
+		protected void setCheckBoxValue(TableItem item, boolean check) {
+			super.setCheckBoxValue(item, check);
+			//チェックに変更があった時、権限も変更する
+			
+			ObjectPrivilegeBean objPriv = this.composite.getObjectPrivilege();
+			if (objPriv == null) {
+				return;
+			}
+			
+			if (ObjectPrivilegeMode.MODIFY.equals(getPrivilege(item))) {
+				objPriv.setWritePrivilege(check);
+			} else if (ObjectPrivilegeMode.EXEC.equals(getPrivilege(item))) {
+				objPriv.setExecPrivilege(check);
+			}
+		}
+		
+		private ObjectPrivilegeMode getPrivilege(TableItem item) {
+			return (ObjectPrivilegeMode) toRowValues(item).get(GetObjectPrivilegeEditTableDefine.PRIVILEGE);
+		}
+	}
+	
 	/**
 	 * 与えられたオブジェクト権限情報で再描画します。
 	 *
@@ -215,6 +225,10 @@ public class ObjectPrivilegeEditComposite extends Composite {
 	 */
 	public Table getTable() {
 		return m_viewer.getTable();
+	}
+	
+	public ObjectPrivilegeBean getObjectPrivilege() {
+		return m_objPriv;
 	}
 
 }

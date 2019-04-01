@@ -1,0 +1,47 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+	]},
+
+	{
+	"propName":"productName",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"vendor",
+	"annotations":[
+		{"type":"Column", "columnName":"LicenseInfo_vendor"}
+	]},
+
+	{
+	"propName":"vendorContact",
+	"annotations":[
+		{"type":"Column", "columnName":"LicenseInfo_vendorContact"}
+	]},
+
+	{
+	"propName":"serialNumber",
+	"annotations":[
+		{"type":"Column", "columnName":"LicenseInfo_serialNumber"}
+	]},
+
+	{
+	"propName":"count",
+	"annotations":[
+		{"type":"Column", "columnName":"LicenseInfo_count"}
+	]},
+
+	{
+	"propName":"expirationDate",
+	"annotations":[
+		{"type":"Column", "columnName":"LicenseInfo_expirationDate"}
+	]}
+]
+}

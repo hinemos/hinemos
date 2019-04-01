@@ -108,7 +108,6 @@ public class RunHistoryUtil {
 
 	/**
 	 * 実行履歴に入れるダミーのプロセスを生成します
-	 * FIXME
 	 * @return process
 	 */
 	protected static Process dummyProcess() {

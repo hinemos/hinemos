@@ -35,7 +35,8 @@ import com.clustercontrol.ws.calendar.CalendarInfo;
 import com.clustercontrol.ws.jobmanagement.JobFileCheck;
 
 /**
- * ログファイル監視<BR>
+ * ファイルチェックの対象ファイルごとに生成されるクラスです。
+ * 
  */
 public class FileCheck {
 
@@ -309,6 +310,10 @@ public class FileCheck {
 			resultRetrySleep = Integer.parseInt(str);
 			m_log.info("filecheck.retry.sleep=" + resultRetrySleep);
 		}
+
+		// ユニークIDを生成して、ファイル名の後ろへ付与する
+		FileCheckEventId uid = new FileCheckEventId();
+		jobFileCheck.setFileName(jobFileCheck.getFileName() + "/" + uid.getBase64());
 
 		for (int i = 0; i < resultRetryCount; i++) {
 			try {

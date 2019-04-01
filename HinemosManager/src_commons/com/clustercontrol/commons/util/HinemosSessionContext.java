@@ -64,5 +64,14 @@ public class HinemosSessionContext {
 		}
 		return;
 	}
+
+	public static String getLoginUserId() {
+		return (String) instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+	}
+
+	public static boolean isAdministrator() {
+		Boolean b = (Boolean) instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);
+		return b != null && b.booleanValue();
+	}
 }
 

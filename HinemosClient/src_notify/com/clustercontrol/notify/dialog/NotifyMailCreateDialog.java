@@ -272,7 +272,8 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 		});
 		this.m_textMailAddressInfo = this.getTextMailAddress(groupMail);
 		WidgetTestUtil.setTestId(this, "mailaddressinfo", m_textMailAddressInfo);
-		this.m_textMailAddressInfo.setToolTipText(Messages.getString("notify.parameter.tooltip"));
+		String tooltipText = Messages.getString("notify.parameter.tooltip") + Messages.getString("replace.parameter.notify") + Messages.getString("replace.parameter.node");
+		this.m_textMailAddressInfo.setToolTipText(tooltipText);
 		this.m_textMailAddressInfo.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -293,7 +294,7 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 		});
 		this.m_textMailAddressWarning = this.getTextMailAddress(groupMail);
 		WidgetTestUtil.setTestId(this, "mailaddresswarning", m_textMailAddressWarning);
-		this.m_textMailAddressWarning.setToolTipText(Messages.getString("notify.parameter.tooltip"));
+		this.m_textMailAddressWarning.setToolTipText(tooltipText);
 		this.m_textMailAddressWarning.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -314,7 +315,7 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 		});
 		this.m_textMailAddressCritical = this.getTextMailAddress(groupMail);
 		WidgetTestUtil.setTestId(this, "mailaddresscritical", m_textMailAddressCritical);
-		this.m_textMailAddressCritical.setToolTipText(Messages.getString("notify.parameter.tooltip"));
+		this.m_textMailAddressCritical.setToolTipText(tooltipText);
 		this.m_textMailAddressCritical.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -335,7 +336,7 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 		});
 		this.m_textMailAddressUnknown = this.getTextMailAddress(groupMail);
 		WidgetTestUtil.setTestId(this, "mailaddressunknown", m_textMailAddressUnknown);
-		this.m_textMailAddressUnknown.setToolTipText(Messages.getString("notify.parameter.tooltip"));
+		this.m_textMailAddressUnknown.setToolTipText(tooltipText);
 		this.m_textMailAddressUnknown.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -598,8 +599,7 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 		}
 		else{
 			// 閉じるボタン
-			// TODO Remove the following hard-code. IDialogConstants.*_LABEL will causes IncompatibleClassChangeError on RAP
-			this.createButton(parent, IDialogConstants.CANCEL_ID, "Close", false);
+			this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false);
 		}
 	}
 

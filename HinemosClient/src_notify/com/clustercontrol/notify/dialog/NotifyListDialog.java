@@ -382,13 +382,12 @@ public class NotifyListDialog extends CommonDialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		// TODO Remove the following hard-codes. IDialogConstants.*_LABEL will cause IncompatibleClassChangeError in RAP.
 		if(!isSelect){
 			// 閉じるボタン
-			this.createButton(parent, IDialogConstants.CANCEL_ID, "Close", false);
+			this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false);
 		}else{
 			// 閉じるボタン
-			this.createButton(parent, IDialogConstants.CANCEL_ID, "OK", false);
+			this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("ok"), false);
 		}
 	}
 

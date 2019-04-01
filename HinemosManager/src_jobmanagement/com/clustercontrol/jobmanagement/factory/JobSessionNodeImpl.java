@@ -63,6 +63,7 @@ import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntityPK;
 import com.clustercontrol.jobmanagement.util.FromRunningAfterCommitCallback;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
+import com.clustercontrol.jobmanagement.util.JobSessionNodeRetryController;
 import com.clustercontrol.jobmanagement.util.JobSessionJobUtil;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.jobmanagement.util.ParameterUtil;
@@ -82,11 +83,11 @@ public class JobSessionNodeImpl {
 
 
 	/**
-	 * ノードへの実行指示を行います。
+	 * 指定されたジョブ配下のノードへの実行指示を行います。
 	 *
 	 * @param sessionId セッションID
+	 * @param jobunitId ジョブユニットID
 	 * @param jobId ジョブID
-	 * @param facilityId ファシリティID
 	 * @return true：終了していた、false：実行された
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
@@ -94,82 +95,121 @@ public class JobSessionNodeImpl {
 	public boolean startNode(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
 		m_log.debug("startNode() : sessionId=" + sessionId + ", jobId=" + jobId);
 
-		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-
-			//セッションIDとジョブIDから、セッションジョブを取得
-			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-			Collection<JobSessionNodeEntity> jobSessionNodeList = sessionJob.getJobSessionNodeEntities();
-			if(jobSessionNodeList == null || jobSessionNodeList.size() == 0){
-				//ジョブ終了時関連処理（再帰呼び出し）
-				try {
-					new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, null, true);
-				} catch (HinemosUnknown e) {
-					m_log.warn("startNode() : no node. " + e.getMessage(), e);
-				} catch (FacilityNotFound e) {
-					m_log.warn("startNode() : no node. " + e.getMessage(), e);
-				}
-				return false;
-			}
-
-			//終了している場合はメソッドから抜ける。
-			if (checkAllNodeEnd(sessionJob)) {
-				return true;
-			}
-
-			//コマンドの実行が正常終了するまで順次リトライの場合
-			JobInfoEntity job = sessionJob.getJobInfoEntity();
-			if(job.getProcessMode() == ProcessingMethodConstant.TYPE_RETRY){
-				//実行中のノードが存在するかチェック
-				for (JobSessionNodeEntity sessionNode : jobSessionNodeList) {
-					// 停止処理中(終了遅延等)は後続のノードを実行させないため、「実行された」状態とする
-					if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING 
-							|| sessionNode.getStatus() == StatusConstant.TYPE_STOPPING) {
-						return false;
-					}
-				}
-			}
-
-			ArrayList<JobSessionNodeEntity> orderedNodeList = new ArrayList<JobSessionNodeEntity>();
-			ArrayList<String> validNodeList = AgentConnectUtil.getValidAgent();
-			ArrayList<JobSessionNodeEntity> invalidNodeList = new ArrayList<JobSessionNodeEntity>();
-
-			// 有効なノードがリストの前方にくるように並び替える
-			for (JobSessionNodeEntity sessionNode : jobSessionNodeList) {
-				if (validNodeList.contains(sessionNode.getId().getFacilityId())) {
-					orderedNodeList.add(sessionNode);
-				} else {
-					invalidNodeList.add(sessionNode);
-				}
-			}
-
-			// ノードの優先度順に並び替え
-			Collections.sort(orderedNodeList, new JobPriorityComparator());
-			Collections.sort(invalidNodeList, new JobPriorityComparator());
-
-			// 有効なノードの末尾に、有効でないノードを挿入する
-			orderedNodeList.addAll(invalidNodeList);
-
-			if (m_log.isDebugEnabled()) {
-				StringBuilder str = new StringBuilder();
-				for (JobSessionNodeEntity sessionNode : orderedNodeList) {
-					str.append(sessionNode.getNodeName()).append(" -> ");
-				}
-				m_log.debug("orderedNodeList: " + str);
-			}
-	
-			for (JobSessionNodeEntity sessionNode : orderedNodeList) {
-				if (checkMultiplicity(sessionNode)) {
-					m_log.debug("startNode() : jtm.addCallback() " + sessionNode.getId());
-					jtm.addCallback(new ToRunningAfterCommitCallback(sessionNode.getId()));
-					if (job.getProcessMode() == ProcessingMethodConstant.TYPE_RETRY) {
-						break;
-					}
-				}
+		//セッションIDとジョブIDから、セッションジョブを取得
+		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+		Collection<JobSessionNodeEntity> jobSessionNodeList = sessionJob.getJobSessionNodeEntities();
+		if(jobSessionNodeList == null || jobSessionNodeList.size() == 0){
+			//ジョブ終了時関連処理（再帰呼び出し）
+			try {
+				new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, null, true);
+			} catch (HinemosUnknown e) {
+				m_log.warn("startNode() : no node. " + e.getMessage(), e);
+			} catch (FacilityNotFound e) {
+				m_log.warn("startNode() : no node. " + e.getMessage(), e);
 			}
 			return false;
 		}
+
+		//終了している場合はメソッドから抜ける。
+		if (checkAllNodeEnd(sessionJob)) {
+			return true;
+		}
+
+		//コマンドの実行が正常終了するまで順次リトライの場合
+		JobInfoEntity job = sessionJob.getJobInfoEntity();
+		if(job.getProcessMode() == ProcessingMethodConstant.TYPE_RETRY){
+			//実行中のノードが存在するかチェック
+			for (JobSessionNodeEntity sessionNode : jobSessionNodeList) {
+				// 停止処理中(終了遅延等)は後続のノードを実行させないため、「実行された」状態とする
+				if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING 
+						|| sessionNode.getStatus() == StatusConstant.TYPE_STOPPING) {
+					return false;
+				}
+				// リトライ待機中の場合も実行中とみなす。
+				// - 後の方で同様の判定を行っており、本処理は冗長に見えるが、もし本処理が無かった場合、
+				// ノードの優先順位の変化により"リトライ待機中のノード"以外がorderedNodeListの先頭に来たケースにおいて、
+				// TYPE_RETRY(1つのノードで実行)であるにも関わらず、2つのノードが実行中となる恐れがある。
+				if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT
+						&& JobSessionNodeRetryController.isRegistered(sessionNode.getId())) {
+					m_log.debug("startNode() : Waiting to retry " + sessionNode.getId());
+					return false;
+				}
+			}
+		}
+
+		ArrayList<JobSessionNodeEntity> orderedNodeList = new ArrayList<JobSessionNodeEntity>();
+		ArrayList<String> validNodeList = AgentConnectUtil.getValidAgent();
+		ArrayList<JobSessionNodeEntity> invalidNodeList = new ArrayList<JobSessionNodeEntity>();
+
+		// 有効なノードがリストの前方にくるように並び替える
+		for (JobSessionNodeEntity sessionNode : jobSessionNodeList) {
+			if (validNodeList.contains(sessionNode.getId().getFacilityId())) {
+				orderedNodeList.add(sessionNode);
+			} else {
+				invalidNodeList.add(sessionNode);
+			}
+		}
+
+		// ノードの優先度順に並び替え
+		Collections.sort(orderedNodeList, new JobPriorityComparator());
+		Collections.sort(invalidNodeList, new JobPriorityComparator());
+
+		// 有効なノードの末尾に、有効でないノードを挿入する
+		orderedNodeList.addAll(invalidNodeList);
+
+		if (m_log.isDebugEnabled()) {
+			StringBuilder str = new StringBuilder();
+			for (JobSessionNodeEntity sessionNode : orderedNodeList) {
+				str.append(sessionNode.getNodeName()).append(" -> ");
+			}
+			m_log.debug("orderedNodeList: " + str);
+		}
+
+		for (JobSessionNodeEntity sessionNode : orderedNodeList) {
+			// リトライ待機中の場合、実行指示は別タイミングで行うので、ここではスキップする
+			if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT
+					&& JobSessionNodeRetryController.isRegistered(sessionNode.getId())) {
+				m_log.debug("startNode() : Skip, waiting to retry " + sessionNode.getId());
+				continue;
+			}
+			// ノード実行開始を試みる
+			if (startNodeSub(sessionNode)) {
+				// TYPE_RETRYの場合は、1つのノードで実行開始できれば良い
+				if (job.getProcessMode() == ProcessingMethodConstant.TYPE_RETRY) {
+					break;
+				}
+			}
+		}
+		return false;
 	}
 
+	/**
+	 * 指定されたノードを実行開始する。
+	 * <p>
+	 * 本メソッドは"post-commitコールバック"を登録するが、自身ではトランザクションは制御しない。
+	 * したがって、本メソッドの呼び出しを行うまでにトランザクションを開始しておく必要がある。
+	 * 
+	 * @param sessionNode
+	 * @return true:実行開始(コールバックを設定)できた。false:実行開始できなかった。
+	 */
+	public boolean startNodeSub(JobSessionNodeEntity sessionNode) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			if (!jtm.getEntityManager().getTransaction().isActive()) {
+				// 例外を投げても良いくらいだが、万が一バグが紛れてしまった場合に過剰な影響が出るのを防ぐため、
+				// エラーログを記録してfalseを返すに留める。
+				m_log.error("runNode() : A transaction has not been begun. " + sessionNode.getId());
+				return false;
+			}
+			if (!checkMultiplicity(sessionNode)) {
+				m_log.debug("runNode() : Multiplicity check was not passed. " + sessionNode.getId());
+				return false;
+			}
+			jtm.addCallback(new ToRunningAfterCommitCallback(sessionNode.getId()));
+			m_log.debug("runNode() : Set toRunning callback. " + sessionNode.getId());
+		}
+		return true;
+	}
+	
 	private boolean checkMultiplicity(JobSessionNodeEntity sessionNode) {
 		boolean startFlag = false;
 		String facilityId = sessionNode.getId().getFacilityId();
@@ -996,7 +1036,7 @@ public class JobSessionNodeImpl {
 			m_log.info("checkTimeout() : Agent Check NG : sessionId=" + sessionId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 
 			//実行結果情報を作成
-			RunResultInfo info = new RunResultInfo();
+			RunResultInfo info = new AgentTimeoutRunResultInfo();
 			info.setSessionId(sessionId);
 			info.setJobunitId(jobunitId);
 			info.setJobId(jobId);
@@ -1035,6 +1075,14 @@ public class JobSessionNodeImpl {
 		}
 	}
 
+	// エージェントタイムアウト専用の実行結果情報
+	private static class AgentTimeoutRunResultInfo extends RunResultInfo {
+		private static final long serialVersionUID = -28880960176647898L;
+
+		// 「エージェントタイムアウトによって生成されたRunResultInfoを識別する」という目的は、
+		// 専用クラスであるということだけで果たせるため、特別な実装はない。
+	}
+	
 	/**
 	 * 監視ジョブのタイムアウト可否を確認します。
 	 *
@@ -1250,7 +1298,9 @@ public class JobSessionNodeImpl {
 				return false;
 			}
 
-			if(sessionNode.getRetryCount() >= sessionNode.getJobSessionJobEntity().getJobInfoEntity().getMessageRetry()) {
+			// エージェントタイムアウト時はコマンドリトライしない
+			if (info instanceof AgentTimeoutRunResultInfo) {
+				m_log.debug("retryJob() : Agent timeout");
 				return false;
 			}
 
@@ -1260,36 +1310,24 @@ public class JobSessionNodeImpl {
 			int runCount = errorCount + 1;
 			m_log.debug("maxRetry:" + maxRetry + "runCount:" + runCount +  " errorCount:" + errorCount + " " + (maxRetry > runCount) + ", " + sessionNode.getId());
 			if (maxRetry > runCount) {
-				//再実行前にスリープ処理
-				int jobRetryInterval = HinemosPropertyCommon.job_retry_interval.getIntegerValue();
-				try {
-					Thread.sleep(jobRetryInterval);
-				} catch (InterruptedException e) {
-					m_log.warn("retryJob() : "
-							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-					return false;
-				}
-
 				//上限回数に達してない場合は再実行
 				//通算回数を加算
 				errorCount++;
 				m_log.debug("errRtryCnt++=" + errorCount);
 
 				//DB更新
-				String msg =info.getMessage() + info.getErrorMessage();
-				setMessage(sessionNode, msg);
+				setMessage(sessionNode, "stdout=" + info.getMessage() + ", stderr=" + info.getErrorMessage());
 				setMessage(sessionNode, MessageConstant.RETRYING.getMessage() + "(" + errorCount + ")");
 				sessionNode.setErrorRetryCount(errorCount);
 				sessionNode.setStatus(StatusConstant.TYPE_WAIT);
 				sessionNode.setStartDate(null);
 
-				//再実行
-				if(checkMultiplicity(sessionNode)) {
-					m_log.debug("retryJob() : jtm.addCallback() " + sessionNode.getId());
-					jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
-					jtm.addCallback(new ToRunningAfterCommitCallback(sessionNode.getId()));
-					return true;
-				}
+				jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
+				m_log.debug("retryJob() : jtm.addCallback() " + sessionNode.getId());
+
+				//再実行登録
+				JobSessionNodeRetryController.register(sessionNode.getId());
+				return true;
 			}
 	
 			return false;
@@ -1430,5 +1468,4 @@ public class JobSessionNodeImpl {
 		SendApprovalMail sendMail = new SendApprovalMail();
 		sendMail.sendResult(jobInfo, info);
 	}
-	
 }

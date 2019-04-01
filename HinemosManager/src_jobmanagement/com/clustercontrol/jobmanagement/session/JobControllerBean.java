@@ -48,6 +48,7 @@ import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
+import com.clustercontrol.commons.util.Transaction;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -61,6 +62,7 @@ import com.clustercontrol.fault.JobInvalid;
 import com.clustercontrol.fault.JobKickDuplicate;
 import com.clustercontrol.fault.JobMasterDuplicate;
 import com.clustercontrol.fault.JobMasterNotFound;
+import com.clustercontrol.fault.JobQueueNotFound;
 import com.clustercontrol.fault.JobSessionDuplicate;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
@@ -68,13 +70,14 @@ import com.clustercontrol.fault.OtherUserGetLock;
 import com.clustercontrol.fault.UpdateTimeNotLatest;
 import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.fault.UserNotFound;
+import com.clustercontrol.hub.session.TransferFactory.Property;
+import com.clustercontrol.jobmanagement.bean.JobApprovalFilter;
+import com.clustercontrol.jobmanagement.bean.JobApprovalInfo;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JobFileCheck;
 import com.clustercontrol.jobmanagement.bean.JobForwardFile;
 import com.clustercontrol.jobmanagement.bean.JobHistoryFilter;
 import com.clustercontrol.jobmanagement.bean.JobHistoryList;
-import com.clustercontrol.jobmanagement.bean.JobApprovalFilter;
-import com.clustercontrol.jobmanagement.bean.JobApprovalInfo;
 import com.clustercontrol.jobmanagement.bean.JobInfo;
 import com.clustercontrol.jobmanagement.bean.JobKick;
 import com.clustercontrol.jobmanagement.bean.JobKickConstant;
@@ -105,6 +108,15 @@ import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
+import com.clustercontrol.jobmanagement.queue.JobQueueNotFoundException;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueActivityViewFilter;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueActivityViewInfo;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueContentsViewInfo;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueReferrerViewInfo;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueSetting;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueSettingViewFilter;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueSettingViewInfo;
 import com.clustercontrol.jobmanagement.util.JobValidator;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.jobmanagement.util.SendTopic;
@@ -114,6 +126,7 @@ import com.clustercontrol.performance.util.PollingDataManager;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -3216,41 +3229,49 @@ public class JobControllerBean implements CheckFacility {
 		// 最終変更ユーザを設定
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 		JpaTransactionManager jtm = null;
-		
+		ILock lock = JobRunManagementBean.getLock(info.getSessionId());
 		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-			
-			m_log.debug("getResult():" + info.getResult());
-			m_log.debug("getStatus():" + info.getStatus());
-			
-			// 承認/却下操作時のみ承認処理実施
-			if(isApprove != null){
-				info.setApprovalUser(loginUser);
-				new JobSessionNodeImpl().approveJob(info);
-			}else{
-				// コメントのみ更新
-				modifyApprovalComment(info);
+			lock.writeLock();
+			try {
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+				
+				m_log.debug("getResult():" + info.getResult());
+				m_log.debug("getStatus():" + info.getStatus());
+				
+				// 承認/却下操作時のみ承認処理実施
+				if(isApprove != null){
+					info.setApprovalUser(loginUser);
+					new JobSessionNodeImpl().approveJob(info);
+				}else{
+					// コメントのみ更新
+					modifyApprovalComment(info);
+				}
+				
+				jtm.commit();
+			} catch (JobInfoNotFound | HinemosUnknown | InvalidRole | InvalidApprovalStatus e) {
+				if (jtm != null)
+					jtm.rollback();
+				throw e;
+			} catch (ObjectPrivilege_InvalidRole e) {
+				if (jtm != null)
+					jtm.rollback();
+				throw new InvalidRole(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("modifyApprovalInfo(): "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				if (jtm != null)
+					jtm.rollback();
+				throw new HinemosUnknown(e.getMessage(), e);
+			} finally {
+				if (jtm != null)
+					jtm.close();
 			}
-			
-			jtm.commit();
-		} catch (JobInfoNotFound | HinemosUnknown | InvalidRole | InvalidApprovalStatus e) {
-			if (jtm != null)
-				jtm.rollback();
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e) {
-			m_log.warn("modifyApprovalInfo(): "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("modifyApprovalInfo: Exception.", t);
+			throw new HinemosUnknown(t);
 		} finally {
-			if (jtm != null)
-				jtm.close();
+			lock.writeUnlock();
 		}
 	}
 	
@@ -3307,5 +3328,227 @@ public class JobControllerBean implements CheckFacility {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		} 
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)の設定を一覧表示するビューのための情報を返します。
+	 * 
+	 * @param filter フィルタ条件。nullの場合はフィルタなし。
+	 * @return
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InvalidSetting 
+	 */
+	public JobQueueSettingViewInfo getJobQueueSettingViewInfo(JobQueueSettingViewFilter filter)
+			throws InvalidRole, HinemosUnknown, InvalidSetting {
+		try (Transaction tx = new Transaction()) {
+			if (filter == null) filter = new JobQueueSettingViewFilter();
+			JobQueueSettingViewInfo result = Singletons.get(JobQueueContainer.class).collectSettingViewInfo(filter);
+			tx.commit();
+			return result;
+		} catch (InvalidSetting e) {
+			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("getJobQueueSettingViewInfo: Exception.", t);
+			throw new HinemosUnknown(t);
+		}
+	}
+	
+	/**
+	 * ジョブキュー(同時実行制御キュー)を参照しているジョブを一覧表示するビューのための情報を返します。
+	 * <p>
+	 * 通常、ジョブユニットの情報以外では{@link JobInfo}のオーナーロールIDはnullに設定されますが、
+	 * このメソッドが返す情報に含まれる{@link JobInfo}には、「当該ジョブの上位ジョブユニットのオーナーロールID」が設定されます。
+	 * 
+	 * @param 情報を取得するキューのID。
+	 * @throws InvalidRole 
+	 * @throws HinemosUnknown 
+	 * @throws JobQueueNotFound 
+	 */
+	public JobQueueReferrerViewInfo getJobQueueReferrerViewInfo(String queueId)
+			throws JobQueueNotFound, InvalidRole, HinemosUnknown {
+		try (Transaction tx = new Transaction()) {
+			JobQueueReferrerViewInfo result = Singletons.get(JobQueueContainer.class).get(queueId)
+					.collectReferrerViewInfo();
+			tx.commit();
+			return result;
+		} catch (JobQueueNotFoundException e) {
+			// 外部向け例外(fault)へ詰め替える
+			throw new JobQueueNotFound(MessageConstant.MESSAGE_JOBQUEUE_NOT_FOUND.getMessage(queueId), queueId);
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("getJobQueueReferrerViewInfo: Exception.", t);
+			throw new HinemosUnknown(t);
+		}
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)の活動状況を一覧表示するビューのための情報を返します。
+	 * 
+	 * @param filter フィルタ条件。nullの場合はフィルタなし。同時実行数(concurrency)のフィルタ条件は無効。
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public JobQueueActivityViewInfo getJobQueueActivityViewInfo(JobQueueActivityViewFilter filter)
+			throws InvalidRole, HinemosUnknown, InvalidSetting {
+		try (Transaction tx = new Transaction()) {
+			if (filter == null) filter = new JobQueueActivityViewFilter();
+			JobQueueActivityViewInfo result = Singletons.get(JobQueueContainer.class).collectActivityViewInfo(filter);
+			tx.commit();
+			return result;
+		} catch (InvalidSetting e) {
+			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("getJobQueueActivityViewInfo: Exception.", t);
+			throw new HinemosUnknown(t);
+		}
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)の内部状況を表示するビューのための情報を返します。
+	 * 
+	 * @param queueId 情報を取得するキューのID。
+	 * @throws JobQueueNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public JobQueueContentsViewInfo getJobQueueContentsViewInfo(String queueId)
+			throws JobQueueNotFound, InvalidRole, HinemosUnknown {
+		try (Transaction tx = new Transaction()) {
+			JobQueueContentsViewInfo result = Singletons.get(JobQueueContainer.class).get(queueId)
+					.collectContentsViewInfo();
+			tx.commit();
+			return result;
+		} catch (JobQueueNotFoundException e) {
+			// 外部向け例外(fault)へ詰め替える
+			throw new JobQueueNotFound(MessageConstant.MESSAGE_JOBQUEUE_NOT_FOUND.getMessage(queueId), queueId);
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("getJobQueueReferrerViewInfo: Exception.", t);
+			throw new HinemosUnknown(t);
+		}
+	}
+
+	/**
+	 * 指定されたロールから参照可能なジョブキュー(同時実行制御キュー)の設定情報のリストを返します。
+	 * 
+	 * @param roleId ロールID。
+	 * @return キューの設定情報のリスト。
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public List<JobQueueSetting> getJobQueueList(String roleId) throws InvalidRole, HinemosUnknown {
+		try (Transaction tx = new Transaction()) {
+			List<JobQueueSetting> result = Singletons.get(JobQueueContainer.class).findSettingsByRole(roleId);
+			tx.commit();
+			return result;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("getJobQueueList: Exception.", t);
+			throw new HinemosUnknown(t);
+		}
+	}
+	
+	/**
+	 * 指定されたジョブキュー(同時実行制御キュー)の設定情報を返します。
+	 * 
+	 * @param queueId キューID。
+	 * @return
+	 * @throws JobQueueNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public JobQueueSetting getJobQueue(String queueId) throws JobQueueNotFound, InvalidRole, HinemosUnknown {
+		try (Transaction tx = new Transaction()) {
+			JobQueueSetting result = Singletons.get(JobQueueContainer.class).get(queueId).getSetting();
+			tx.commit();
+			return result;
+		} catch (JobQueueNotFoundException e) {
+			// 外部向け例外(fault)へ詰め替える
+			throw new JobQueueNotFound(MessageConstant.MESSAGE_JOBQUEUE_NOT_FOUND.getMessage(queueId), queueId);
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("getJobQueue: Exception.", t);
+			throw new HinemosUnknown(t);
+		}
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)の設定を追加します。
+	 * 
+	 * @param setting キューの設定情報。
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public void addJobQueue(JobQueueSetting setting) throws InvalidSetting, InvalidRole, HinemosUnknown {
+		try (Transaction tx = new Transaction()) {
+			Singletons.get(JobQueueContainer.class).add(setting);
+			tx.commit();
+		} catch (InvalidSetting e) {
+			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("addJobQueue: Exception.", t);
+			throw new HinemosUnknown(t);
+		}
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)の設定を更新します。
+	 * 
+	 * @param setting キューの設定情報。
+	 * @throws JobQueueNotFound
+	 * @throws InvalidRole 
+	 * @throws InvalidSetting 
+	 * @throws HinemosUnknown 
+	 */
+	public void modifyJobQueue(JobQueueSetting setting)
+			throws JobQueueNotFound, InvalidRole, InvalidSetting, HinemosUnknown {
+		try (Transaction tx = new Transaction()) {
+			Singletons.get(JobQueueContainer.class).get(setting.getQueueId()).setSetting(setting);
+			tx.commit();
+		} catch (JobQueueNotFoundException e) {
+			String queueId = setting.getQueueId();
+			throw new JobQueueNotFound(MessageConstant.MESSAGE_JOBQUEUE_NOT_FOUND.getMessage(queueId), queueId);
+		} catch (InvalidSetting e) {
+			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("modifyJobQueue: Exception.", t);
+			throw new HinemosUnknown(t);
+		}
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)の設定を削除します。
+	 * 
+	 * @param queueId 削除対象のキューID。
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public void deleteJobQueue(String queueId) throws InvalidSetting, InvalidRole, HinemosUnknown {
+		try (Transaction tx = new Transaction()) {
+			Singletons.get(JobQueueContainer.class).remove(queueId);
+			tx.commit();
+		} catch (InvalidSetting e) {
+			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Throwable t) {
+			m_log.warn("deleteJobQueue: Exception.", t);
+			throw new HinemosUnknown(t);
+		}
 	}
 }

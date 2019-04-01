@@ -28,7 +28,6 @@ import org.eclipse.draw2d.PolylineConnection;
 import org.eclipse.draw2d.geometry.Dimension;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.PointList;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.graphics.Color;
 
@@ -50,13 +49,9 @@ import com.clustercontrol.jobmap.composite.JobMapComposite;
 import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.figure.JobMapColor;
 import com.clustercontrol.jobmap.preference.JobMapPreferencePage;
-import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
 import com.clustercontrol.ws.jobmanagement.JobDetailInfo;
 import com.clustercontrol.ws.jobmanagement.JobInfo;
 import com.clustercontrol.ws.jobmanagement.JobNextJobOrderInfo;
@@ -190,8 +185,10 @@ public class MapViewController {
 			}
 			
 		} catch (HinemosUnknown e) {
-			m_composite.clearCanvas();
-			m_composite.setErrorMessage(HinemosMessage.replace(e.getMessage()));
+			if (m_composite != null) {
+				m_composite.clearCanvas();
+				m_composite.setErrorMessage(HinemosMessage.replace(e.getMessage()));
+			}
 		}
 	}
 	
@@ -284,23 +281,6 @@ public class MapViewController {
 			}
 		}
 		
-		try {
-			String version = JobMapEndpointWrapper.getWrapper(m_managerName).getVersion();
-			m_log.debug("jobmap version " + version);
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							com.clustercontrol.jobmap.messages.Messages.getString("expiration.term.invalid"));
-				}
-			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					com.clustercontrol.jobmap.messages.Messages.getString("message.jobmapkeyfile.notfound.error"));
-			return;
-		}
 		// マネージャからジョブのセッション情報を取得
 		if (m_sessionId != null) {
 			try {

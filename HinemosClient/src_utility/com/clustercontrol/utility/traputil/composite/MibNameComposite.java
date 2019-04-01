@@ -86,7 +86,6 @@ public class MibNameComposite extends Composite{
 	@Override
 	public void update() {
 		this.clear();
-		// TODO: マネージャと接続する場合は、ここを修正
 		try {
 			mibList.add(MibManager.getInstance(isSync).getMibMasters().toArray());
 		} catch (InvocationTargetException e) {

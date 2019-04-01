@@ -34,15 +34,15 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.bean.Property;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.bean.SummaryTypeMessage;
 import com.clustercontrol.collect.preference.PerformancePreferencePage;
 import com.clustercontrol.collect.util.CollectGraphUtil;
 import com.clustercontrol.collect.view.CollectGraphView;
-import com.clustercontrol.monitor.action.CommentEvent;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.dialog.EventInfoDialog;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
+import com.clustercontrol.monitor.util.EventDisplaySettingGetUtil;
 import com.clustercontrol.monitor.view.action.MonitorModifyAction;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.EndpointUnit;
@@ -448,12 +448,10 @@ public class CollectGraphComposite extends Composite {
 				list.add(GetEventListTableDefine.MONITOR_ID, monitorId);
 				list.add(GetEventListTableDefine.MONITOR_DETAIL_ID, monitorDetailId);
 				list.add(GetEventListTableDefine.FACILITY_ID, facilityId);
-
-				EventInfoDialog dialog = new EventInfoDialog(m_collectGraphView.getSite().getShell(), list);
+				MultiManagerEventDisplaySettingInfo eventDspSetting = new EventDisplaySettingGetUtil().getEventDisplaySettingInfo(EndpointManager.getActiveManagerNameList());
+				EventInfoDialog dialog = new EventInfoDialog(m_collectGraphView.getSite().getShell(), list, eventDspSetting);
 				if (dialog.open() == IDialogConstants.OK_ID){
-					Property prop = dialog.getInputData();
-					CommentEvent comment = new CommentEvent();
-					comment.updateComment(managerName, prop);
+					dialog.okButtonPress(managerName);
 				}
 				return null;
 			}

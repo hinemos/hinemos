@@ -8,6 +8,7 @@
 
 package com.clustercontrol.infra.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,12 +65,12 @@ public class InfraParameterUtil {
 	 * @param paramMap 環境構築変数マップ
 	 * @return 置換用のマップ
 	 */
-	public static HashMap<String, String> createBindMap(NodeInfo nodeInfo, Map<String, String> paramMap) {
+	public static HashMap<String, String> createBindMap(NodeInfo nodeInfo, Map<String, String> paramMap, ArrayList<String> inKeyList) {
 		HashMap<String, String> map = new HashMap<>();
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		try {
 			// ノード変数
-			Map<String, String> variable = RepositoryUtil.createNodeParameter(nodeInfo);
+			Map<String, String> variable = RepositoryUtil.createNodeParameter(nodeInfo, inKeyList);
 			map.putAll(variable);
 
 			// 環境構築変数

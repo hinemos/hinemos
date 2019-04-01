@@ -28,6 +28,8 @@ public class OperationMessage {
 	public static final String STRING_START_SKIP = Messages.getString("job.start.release.skip");
 	/** 開始[保留解除] */
 	public static final String STRING_START_WAIT = Messages.getString("job.start.release.reserve");
+	/** 開始[強制実行] */
+	public static final String STRING_START_FORCE_RUN = Messages.getString("job.start.force.run");
 
 	/** 停止[コマンド] */
 	public static final String STRING_STOP_AT_ONCE = Messages.getString("job.stop.at.once");
@@ -62,6 +64,9 @@ public class OperationMessage {
 		}
 		else if(type == OperationConstant.TYPE_START_WAIT){
 			return STRING_START_WAIT;
+		}
+		else if(type == OperationConstant.TYPE_START_FORCE_RUN){
+			return STRING_START_FORCE_RUN;
 		}
 		else if(type == OperationConstant.TYPE_STOP_AT_ONCE){
 			return STRING_STOP_AT_ONCE;
@@ -105,6 +110,9 @@ public class OperationMessage {
 		}
 		else if(string.equals(STRING_START_WAIT)){
 			return OperationConstant.TYPE_START_WAIT;
+		}
+		else if(string.equals(STRING_START_FORCE_RUN)){
+			return OperationConstant.TYPE_START_FORCE_RUN;
 		}
 		else if(string.equals(STRING_STOP_AT_ONCE)){
 			return OperationConstant.TYPE_STOP_AT_ONCE;

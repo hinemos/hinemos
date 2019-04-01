@@ -159,9 +159,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 	protected List<OutputBasicInfo> collect() throws HinemosUnknown {
 		
 		logger.debug("collect()");
-		// FIXME
-		// 現状の実装だとdeadlockの可能性がある。
-		// collectメソッド内のnotifyをret.addに変更すること！
+		
 		List<OutputBasicInfo> ret = new ArrayList<>();
 		
 		try (SessionScope sessionScope = SessionScope.open()) {

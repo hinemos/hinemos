@@ -18,6 +18,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
@@ -124,7 +125,7 @@ public class OsScopeInitializerPlugin implements HinemosPlugin {
 				builtinScopeFacilityIdSet.addAll(facilityIdToAddSet);
 				osScopeIdSet.addAll(facilityIdToAddSet);
 			}
-		} catch (Exception e) {
+		} catch (RuntimeException | FacilityNotFound e) {
 			log.error(e);
 			if (jtm != null) {
 				jtm.rollback();

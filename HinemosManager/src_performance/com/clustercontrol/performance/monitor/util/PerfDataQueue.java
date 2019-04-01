@@ -147,7 +147,7 @@ public final class PerfDataQueue {
 						if (addTarget != null) {
 							buildData.putValue(addTarget);
 						} else {
-							// FIXME nagatsumas ポーリングデータとして存在しない場合はどうするべきか？
+							// XXX nagatsumas ポーリングデータとして存在しない場合はどうするべきか？
 						}
 					}
 				} else {
@@ -169,7 +169,7 @@ public final class PerfDataQueue {
 			while (queue.size() > 2) {
 				queue.removeFirst();
 			}
-			// FIXME nagatsumas pollingTarget.keySet() に存在しているにもかかわらず、そのとき何もデータが無かった場合、空のデータを入れる必要がある（このタイミングで該当する監視間隔の監視が1つも無かったことを意味している）
+			// XXX nagatsumas pollingTarget.keySet() に存在しているにもかかわらず、そのとき何もデータが無かった場合、空のデータを入れる必要がある（このタイミングで該当する監視間隔の監視が1つも無かったことを意味している）
 		}
 		// (デバッグ用)現在のキューの状態を表示する
 		if (log.isDebugEnabled()) {

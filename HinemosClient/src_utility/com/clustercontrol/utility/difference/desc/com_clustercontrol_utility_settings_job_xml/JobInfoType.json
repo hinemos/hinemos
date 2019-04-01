@@ -944,6 +944,19 @@
 		{"type":"Column", "columnName":"JobInfoType_exclusiveJobValue"},
 		{"type":"Array", "idType":"props", "props":["order"]},
 		{"type":"Ignore", "propNames":["order"]}
+	]},
+
+	{
+	"propName":"queueFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_queueFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"queueId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_queueId"}
 	]}
 ]
 }

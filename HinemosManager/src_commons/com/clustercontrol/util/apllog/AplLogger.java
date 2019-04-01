@@ -46,7 +46,7 @@ import com.clustercontrol.util.StringBinder;
 
 /**
  *
- * Hinemosの内部ログ（HinemosApp.log）の出力を行うクラス<BR>
+ * Hinemosの内部ログの出力を行うクラス<BR>
  *
  * Hinemos内部で発生する事象をログやHinemosのイベントとして
  * 処理します。
@@ -301,8 +301,19 @@ public class AplLogger {
 			String command = binder.bindParam(commandLine);
 
 			PlatformType platformType = PlatformDivergence.getPlatformType();
-			log.info("excuting command. (effectiveUser = " + commandUser + ", command = " + command + ", mode = " + platformType + ", timeout = " + commandTimeout + ")");
-			String[] cmd = CommandCreator.createCommand(commandUser, command, platformType);
+			
+			boolean specifyUser = false;
+			
+			if (commandUser != null && !"".equals(commandUser)) {
+				specifyUser = true;
+			}
+			
+			log.info(String.format(
+				"excuting command. (specifyUser = %s, effectiveUser = %s, command = %s, mode = %s, timeout = %d)",
+				specifyUser, commandUser, command, platformType.toString(), commandTimeout)
+			);
+			
+			String[] cmd = CommandCreator.createCommand(commandUser, command, platformType, specifyUser);
 			CommandExecutor cmdExec = new CommandExecutor(cmd, commandTimeout);
 			cmdExec.execute();
 			CommandResult ret = cmdExec.getResult();
@@ -311,7 +322,7 @@ public class AplLogger {
 				log.info("executed command. (exitCode = " + ret.exitCode + ", stdout = " + ret.stdout + ", stderr = " + ret.stderr + ")");
 			}
 		} catch (HinemosException | RuntimeException e) {
-			log.warn("fail putCommand monitorId=" + notifyInfo.getMonitorId() + ", message=" + notifyInfo.getMessage());
+			log.warn("fail putCommand monitorId=" + notifyInfo.getMonitorId() + ", message=" + notifyInfo.getMessage(), e);
 			return;
 		}
 	}

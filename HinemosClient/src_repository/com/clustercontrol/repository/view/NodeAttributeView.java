@@ -125,11 +125,10 @@ public class NodeAttributeView extends CommonViewPart {
 						.getTableColumnIndex(TableColumnInfo.FACILITY_ID));
 				managerName = (String) list.get(viewer
 						.getTableColumnIndex(TableColumnInfo.MANAGER_NAME));
-				if(managerName == null || managerName.equals("")) {
-					return;
+				if(managerName != null && !managerName.isEmpty()) {
+					String viewName = orgViewName + "(" + managerName + ")";
+					setPartName(viewName);
 				}
-				String viewName = orgViewName + "(" + managerName + ")";
-				setPartName(viewName);
 			}
 		} else {
 			m_log.info("update: view is null");

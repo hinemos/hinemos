@@ -611,20 +611,19 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 			// 定義済みキーワードの場合
 			if(WinEventUtil.containsKeywordString(keyword)){
 				longList.add(WinEventUtil.getKeywordLong(keyword));
-			}
-			else{
+			} else{
 				// 数値の場合
 				try{
 					longList.add(Long.parseLong(keyword));
-				}
-				// それ以外
-				catch (NumberFormatException e){
+				} catch (NumberFormatException e){
+					//それ以外
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("message"),
 							Messages.getString("message.winevent.7"));
 
-					m_log.error("unknown keyword : " + keyword);
+					m_log.info("unknown keyword : " + keyword);
+					
 					throw e;
 				}
 			}

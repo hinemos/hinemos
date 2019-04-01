@@ -43,6 +43,7 @@ import com.clustercontrol.util.FacilityTreeCache;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.ICloudModelContentProvider;
 import com.clustercontrol.xcloud.extensions.CloudModelContentProviderExtension;
+import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
 import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
@@ -113,8 +114,16 @@ public class CloudScopesView extends AbstractCloudViewPart {
 			List<ICloudScopes> newCloudScopes = new ArrayList<>();
 			for (IHinemosManager m: managers) {
 				try {
-					if (!initialize || (initialize && !m.isInitialized()))
-						m.update();
+					if (!initialize || (initialize && !m.isInitialized())){
+						//マネージャ毎に状態更新を行っているが、
+						//マルチマネージャ接続時にクラウド/ＶＭが有効になってないマネージャの混在がありえる（endpoint通信で異常が出る）ので
+						//異常発生時は該当の警告ログのみを表示する。
+						try{
+							m.update();
+						} catch(CloudModelException e) {
+							logger.warn("update() . Failed to update the status of the manager's cloud function. Manager="+m.getManagerName() );
+						}
+					}
 					newCloudScopes.add(m.getCloudScopes());
 				} catch (Exception e) {
 					logger.warn(e.getMessage(), e);

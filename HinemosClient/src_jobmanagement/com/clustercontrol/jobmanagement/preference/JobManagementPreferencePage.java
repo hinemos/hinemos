@@ -142,7 +142,7 @@ implements IWorkbenchPreferencePage {
 		IntegerFieldEditor plan =
 				new IntegerFieldEditor(
 						P_PLAN_MAX_SCHEDULE,
-						Messages.getString("number.of.display.list") + " :            ", planGroup);// FIXME レイアウトを整えるための空白
+						Messages.getString("number.of.display.list") + " :            ", planGroup);
 		plan.setValidRange(1, DataRangeConstant.SMALLINT_HIGH);
 		plan.setErrorMessage(Messages.getString("message.hinemos.8", argsPlan ));
 		this.addField(plan);

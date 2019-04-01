@@ -145,28 +145,6 @@ public class SelectScope {
 						Integer sortValue = facility.getDisplaySortOrder();
 
 						scopeInfo.setSortValue(sortValue);
-						/*
-						 * TODO
-						 * nodemap3.1の時の実装の一部を外す。
-						 * 後で解析して、仕様変更がどこに現れているか確認すること！
-						 */
-						/*
-						Collection fts = (Collection)ftHome.findByFacilityId(facilityIds[index]);
-						Iterator it = fts.iterator();
-						if(fts.size() != 0 ){
-							FacilityTreeLocal ftl =(FacilityTreeLocal) (it.next());
-							Integer sortValue = (Integer)(ftl.getSortValue());
-
-							// とりあえずコメントアウト
-							info.add(sortValue);
-							scopeInfo.setSortValue(sortValue);
-
-						}else{
-							// とりあえずコメントアウト
-							info.add(new Integer(100)); //デフォルト値100をとりあえず入れておく。
-
-						}
-						 */
 
 						list.add(scopeInfo);
 

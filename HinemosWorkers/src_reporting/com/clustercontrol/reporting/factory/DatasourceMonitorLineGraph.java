@@ -517,7 +517,7 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 					}
 				}
 			}
-		} catch (Exception e) {
+		} catch (RuntimeException | HinemosDbTimeout e) {
 			m_log.error(e, e);
 		}
 

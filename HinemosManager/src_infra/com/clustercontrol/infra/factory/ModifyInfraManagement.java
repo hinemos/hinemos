@@ -39,7 +39,6 @@ import com.clustercontrol.notify.factory.ModifyNotifyRelation;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.util.MessageConstant;
 
 
 /**

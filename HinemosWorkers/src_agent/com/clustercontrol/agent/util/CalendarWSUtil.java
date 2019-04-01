@@ -88,7 +88,6 @@ public class CalendarWSUtil {
 		}
 		com.clustercontrol.calendar.model.CalendarPatternInfo cInfo =
 				new com.clustercontrol.calendar.model.CalendarPatternInfo();
-		//TODO
 		if (wInfo.getYmd() != null) {
 			ArrayList<com.clustercontrol.calendar.model.YMD> list =
 					new ArrayList<com.clustercontrol.calendar.model.YMD>();

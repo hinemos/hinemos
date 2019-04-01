@@ -162,8 +162,8 @@ public class QueryExecutor {
 
 			setStatementTimeout(timeout);
 			Query query = em.createNativeQuery(queryString);
-			for (Integer key : parameters.keySet()) {
-				query.setParameter(key.intValue(), parameters.get(key));
+			for (Map.Entry<Integer, Object> entry : parameters.entrySet()) {
+				query.setParameter(entry.getKey().intValue(), parameters.get(entry.getKey()));
 			}
 			if (firstResult != null) {
 				query.setFirstResult(firstResult);
@@ -171,6 +171,7 @@ public class QueryExecutor {
 			if (maxResults != null) {
 				query.setMaxResults(maxResults);
 			}
+			@SuppressWarnings("unchecked")
 			List<T> list = query.getResultList();
 			resetStatementTimeout();
 			return list;

@@ -106,11 +106,9 @@ public class ScopeDeleteAction extends AbstractHandler implements IElementUpdate
 			}else if( obj instanceof List<?> ){//一覧からの選択向けの処理
 				List<?> list = (List<?>)obj;
 				String managerName = null;
-				if (list != null) {
-					managerName = (String) list.get(GetScopeListTableDefine.MANAGER_NAME);
-					if(map.get(managerName) == null) {
-						map.put(managerName, new ArrayList<String>());
-					}
+				managerName = (String) list.get(GetScopeListTableDefine.MANAGER_NAME);
+				if(map.get(managerName) == null) {
+					map.put(managerName, new ArrayList<String>());
 				}
 			}
 		}

@@ -56,7 +56,7 @@ public class BinaryAddTags {
 	private static final String DELIMITER = "() : ";
 
 	// 実行OSがWindowsであるかどうかのフラグ
-	// FIXME
+	// TODO
 	// HinemosCommonのCommandCreatorの実装を引用しているが、類似した実装がCloudやinquirtyに散っているので
 	// 統一が望ましい。commons-lang に含まれる SystemUtils.IS_OS_WINDOWS への置換も要検討
 	private static final boolean isWindows = (CommandCreator.sysPlatform ==  PlatformType.WINDOWS) ;
@@ -101,7 +101,6 @@ public class BinaryAddTags {
 	 *            タグ追加対象の監視結果ファイル情報.
 	 */
 	private static void addFileMetadataTags(FileReadingStatus readingStatus, BinaryFile fileResult) {
-		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		// 共通変数の初期化.
 		FileSystem fs = FileSystems.getDefault();
@@ -124,8 +123,20 @@ public class BinaryAddTags {
 			m_log.warn(e.getMessage(), e);
 		}
 
-		// DOS属性ファイルメタデータ(Windows系のみ).
+		if (isWindows) {
+			addFileMetadataTagsWindows(readingStatus, fileResult, path);
+		} else {
+			addFileMetadataTagsLinux(readingStatus, fileResult, path);
+		}
+	}
+
+	private static void addFileMetadataTagsWindows(FileReadingStatus readingStatus, BinaryFile fileResult, Path path) {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+		
+		String tagValue = "";
 		try {
+			
+			// DOS属性ファイルメタデータ(Windows系のみ).
 			DosFileAttributes dosAttr;
 			dosAttr = Files.readAttributes(path, DosFileAttributes.class);
 			// 読み取り専用.
@@ -143,74 +154,74 @@ public class BinaryAddTags {
 			tagValue = BinaryTagConstant.CommonFileAttributes.CommonValue.flgToString(dosAttr.isSystem());
 			fileResult.getTags().put(BinaryTagConstant.CommonFileAttributes.DosFileAttributes.SYSTEM_TAGNAME, tagValue);
 		} catch (IOException e) {
-			// Windows系以外の場合は取れない想定なのでinfo.
-			m_log.info(methodName + DELIMITER + "failed to get file attributes for DOS");
+			m_log.warn(methodName + DELIMITER + "failed to get file attributes for DOS path = " + path.toString() + " Exception: " + e.getClass().getName());
 		} catch (Exception e) {
-			// Windows系以外の場合は取れない想定なのでinfo.
-			m_log.info(methodName + DELIMITER + "failed to get file attributes for DOS");
+			m_log.warn(methodName + DELIMITER + "failed to get file attributes for DOS path = " + path.toString(), e);
 		}
 		
-		if(isWindows){
-			m_log.debug("run to get file attributes of ACL");
-			// ファイルアクセスメタデータ(ACL)(Windows系のみ).
-			try {
-				AclFileAttributeView aclAttrView;
-				aclAttrView = Files.getFileAttributeView(path, AclFileAttributeView.class);
-				// ファイル所有者.
-				tagValue = aclAttrView.getOwner().toString();
-				fileResult.getTags().put(BinaryTagConstant.CommonFileAttributes.AclFileAttributes.OWNER_TAGNAME, tagValue);
-				// ACLループ用変数.
-				int tagSeaquence = 1;
-				StringBuilder sb = null;
-				String tagname = "";
-				Iterator<AclEntryPermission> aclPermItr = null;
-				AclEntryPermission aclEntPerm = null;
-				Iterator<AclEntryFlag> aclFlgsItr = null;
-				AclEntryFlag aclEntFlg = null;
-				// ACLのtag設定(リスト保持なので複数tag)。
-				for (AclEntry aclEntry : aclAttrView.getAcl()) {
-					sb = new StringBuilder();
-					sb.append("princibal:" + aclEntry.principal() + "\n");
-					sb.append("permissions:");
-					aclPermItr = aclEntry.permissions().iterator();
-					while (aclPermItr.hasNext()) {
-						aclEntPerm = aclPermItr.next();
-						sb.append(aclEntPerm.toString());
-						if (aclPermItr.hasNext()) {
-							sb.append(",");
-						} else {
-							sb.append("\n");
-						}
+		m_log.debug("run to get file attributes of ACL");
+		// ファイルアクセスメタデータ(ACL)(Windows系のみ).
+		try {
+			AclFileAttributeView aclAttrView;
+			aclAttrView = Files.getFileAttributeView(path, AclFileAttributeView.class);
+			// ファイル所有者.
+			tagValue = aclAttrView.getOwner().toString();
+			fileResult.getTags().put(BinaryTagConstant.CommonFileAttributes.AclFileAttributes.OWNER_TAGNAME, tagValue);
+			// ACLループ用変数.
+			int tagSeaquence = 1;
+			StringBuilder sb = null;
+			String tagname = "";
+			Iterator<AclEntryPermission> aclPermItr = null;
+			AclEntryPermission aclEntPerm = null;
+			Iterator<AclEntryFlag> aclFlgsItr = null;
+			AclEntryFlag aclEntFlg = null;
+			// ACLのtag設定(リスト保持なので複数tag)。
+			for (AclEntry aclEntry : aclAttrView.getAcl()) {
+				sb = new StringBuilder();
+				sb.append("princibal:" + aclEntry.principal() + "\n");
+				sb.append("permissions:");
+				aclPermItr = aclEntry.permissions().iterator();
+				while (aclPermItr.hasNext()) {
+					aclEntPerm = aclPermItr.next();
+					sb.append(aclEntPerm.toString());
+					if (aclPermItr.hasNext()) {
+						sb.append(",");
+					} else {
+						sb.append("\n");
 					}
-					sb.append("type:" + aclEntry.type().toString() + "\n");
-					sb.append("flags:");
-					aclFlgsItr = aclEntry.flags().iterator();
-					while (aclFlgsItr.hasNext()) {
-						aclEntFlg = aclFlgsItr.next();
-						sb.append(aclEntFlg.toString());
-						if (aclFlgsItr.hasNext()) {
-							sb.append(",");
-						} else {
-							sb.append("\n");
-						}
-					}
-					// タグ追加.
-					tagValue = sb.toString();
-					tagname = BinaryTagConstant.CommonFileAttributes.AclFileAttributes.ACL_TAGNAME + tagSeaquence;
-					fileResult.getTags().put(tagname, tagValue);
-					tagSeaquence++;
 				}
-			} catch (IOException e) {
-				// Windows系以外の場合は取れない想定
-				m_log.warn(methodName + DELIMITER + "failed to get file attributes of ACL");
-			} catch (Exception e) {
-				// Windows系以外の場合は取れない想定
-				m_log.warn(methodName + DELIMITER + "failed to get file attributes of ACL");
+				sb.append("type:" + aclEntry.type().toString() + "\n");
+				sb.append("flags:");
+				aclFlgsItr = aclEntry.flags().iterator();
+				while (aclFlgsItr.hasNext()) {
+					aclEntFlg = aclFlgsItr.next();
+					sb.append(aclEntFlg.toString());
+					if (aclFlgsItr.hasNext()) {
+						sb.append(",");
+					} else {
+						sb.append("\n");
+					}
+				}
+				// タグ追加.
+				tagValue = sb.toString();
+				tagname = BinaryTagConstant.CommonFileAttributes.AclFileAttributes.ACL_TAGNAME + tagSeaquence;
+				fileResult.getTags().put(tagname, tagValue);
+				tagSeaquence++;
 			}
+		} catch (IOException e) {
+			m_log.warn(methodName + DELIMITER + "failed to get file attributes of ACL path = " + path.toString() + " Exception: " + e.getClass().getName());
+		} catch (Exception e) {
+			m_log.warn(methodName + DELIMITER + "failed to get file attributes of ACL path = " + path.toString(), e);
 		}
-
+	}
+	
+	private static void addFileMetadataTagsLinux(FileReadingStatus readingStatus, BinaryFile fileResult, Path path) {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+		String tagValue = "";
+		
 		// Posix属性ファイルメタデータ(Linux系, Solaris, HP-UX, AIX).
 		try {
+			
 			PosixFileAttributes posixAttr;
 			posixAttr = Files.readAttributes(path, PosixFileAttributes.class);
 			// ファイルアクセス権.
@@ -226,15 +237,12 @@ public class BinaryAddTags {
 			fileResult.getTags().put(BinaryTagConstant.CommonFileAttributes.PosixFileAttributes.GROUP_TAGNAME,
 					tagValue);
 		} catch (IOException e) {
-			// Linux系以外の場合は取れない想定なのでwarn.
-			m_log.info(methodName + DELIMITER + "failed to get file attributes for Posix");
+			m_log.warn(methodName + DELIMITER + "failed to get file attributes for Posix path = " + path.toString() + " Exception: " + e.getClass().getName());
 		} catch (Exception e) {
-			// Linux系以外の場合は取れない想定なのでinfo.
-			m_log.info(methodName + DELIMITER + "failed to get file attributes for Posix");
+			m_log.warn(methodName + DELIMITER + "failed to get file attributes for Posix path = " + path.toString(), e);
 		}
-
 	}
-
+	
 	/**
 	 * PCAPファイル用のレコードタグ追加.
 	 * 

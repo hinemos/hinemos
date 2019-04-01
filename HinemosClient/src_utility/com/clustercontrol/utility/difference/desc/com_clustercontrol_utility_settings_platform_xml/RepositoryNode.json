@@ -19,6 +19,7 @@
 			"OsRelease",
 			"OsVersion",
 			"CharacterSet",
+			"StartupDateTime",
 			"AgentAwakePort",
 			"JobMultiplicity",
 			"JobPriority",

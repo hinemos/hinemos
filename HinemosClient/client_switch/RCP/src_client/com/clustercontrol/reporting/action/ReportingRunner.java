@@ -151,7 +151,6 @@ public class ReportingRunner implements Runnable {
 					m_log.debug("download report file = " + fileName
 							+ ", create check. count = " + i);
 
-					// クライアントのヒープが小さい場合は下記の行で落ちる。(out of memory) // FIXME really?
 					if(wrapper == null) {
 						throw new Exception("failed to download");
 					}

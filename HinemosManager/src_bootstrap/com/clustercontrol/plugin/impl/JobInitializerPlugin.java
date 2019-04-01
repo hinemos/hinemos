@@ -15,8 +15,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.plugin.api.HinemosPlugin;
+import com.clustercontrol.util.Singletons;
 
 public class JobInitializerPlugin implements HinemosPlugin {
 	public static final Log log = LogFactory.getLog(JobInitializerPlugin.class);
@@ -44,7 +46,12 @@ public class JobInitializerPlugin implements HinemosPlugin {
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
+
 			JobMultiplicityCache.refresh();
+
+			// ジョブキューコンテナを生成(ジョブキュー機能を起動)
+			Singletons.get(JobQueueContainer.class);
+
 			jtm.commit();
 		} catch (Exception e) {
 			log.error(e);
@@ -60,6 +67,8 @@ public class JobInitializerPlugin implements HinemosPlugin {
 
 	@Override
 	public void deactivate() {
+		// ジョブキューコンテナを終了(ジョブキュー機能を終了)
+		Singletons.get(JobQueueContainer.class).terminate();
 	}
 
 	@Override

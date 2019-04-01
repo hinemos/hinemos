@@ -10,8 +10,6 @@ package com.clustercontrol.utility.constant;
 
 import com.clustercontrol.util.Messages;
 
-
-
 /**
  * Hinemosの機能を定数として格納するクラス<BR>
  *
@@ -123,6 +121,16 @@ public class HinemosModuleConstant {
 	public static final String STRING_PLATFORM_REPOSITORY_NODE_FS = Messages.getString("platform.repository.fs");
 	/** リポジトリ */
 	public static final String STRING_PLATFORM_REPOSITORY_NODE_DEVICE = Messages.getString("platform.repository.device");
+	/** リポジトリ */
+	public static final String STRING_PLATFORM_REPOSITORY_NODE_NETSTAT = Messages.getString("platform.repository.netstat");
+	/** リポジトリ */
+	public static final String STRING_PLATFORM_REPOSITORY_NODE_PROCESS = Messages.getString("platform.repository.process");
+	/** リポジトリ */
+	public static final String STRING_PLATFORM_REPOSITORY_NODE_PACKAGE = Messages.getString("platform.repository.package");
+	/** リポジトリ */
+	public static final String STRING_PLATFORM_REPOSITORY_NODE_PRODUCT = Messages.getString("platform.repository.product");
+	/** リポジトリ */
+	public static final String STRING_PLATFORM_REPOSITORY_NODE_LICENSE = Messages.getString("platform.repository.license");
 	/** リポジトリ */
 	public static final String STRING_PLATFORM_REPOSITORY_NODE_VARIABLE = Messages.getString("platform.repository.variable");
 	/** リポジトリ */
@@ -297,5 +305,14 @@ public class HinemosModuleConstant {
 	public static final String STRING_MONITOR_INTEGRATION = Messages.getString("integration.monitor");
 	/** 相関係数監視*/
 	public static final String STRING_MONITOR_CORRELATION = Messages.getString("correlation.monitor");
+	
+	/** 構成情報取得*/
+	public static final String PLATFORM_NODECONFIG = "PLT_NODE_CONFIG";
+	public static final String STRING_PLATFORM_NODECONFIG = Messages.getString("node.config.setting");
+
+	/** 同時実行制御キュー*/
+	public static final String JOB_QUEUE  = "JOB_QUEUE";
+	public static final String STRING_JOB_QUEUE = Messages.getString("jobqueue");
+	
 
 }

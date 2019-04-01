@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.activation.DataHandler;
 
@@ -31,7 +32,9 @@ import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.monitor.bean.EventBatchConfirmInfo;
 import com.clustercontrol.monitor.bean.EventDataInfo;
+import com.clustercontrol.monitor.bean.EventDisplaySettingInfo;
 import com.clustercontrol.monitor.bean.EventFilterInfo;
+import com.clustercontrol.monitor.bean.EventUserExtensionItemInfo;
 import com.clustercontrol.monitor.bean.ScopeDataInfo;
 import com.clustercontrol.monitor.bean.StatusDataInfo;
 import com.clustercontrol.monitor.bean.StatusFilterInfo;
@@ -41,11 +44,14 @@ import com.clustercontrol.monitor.factory.ManageStatus;
 import com.clustercontrol.monitor.factory.ModifyEventCollectGraphFlg;
 import com.clustercontrol.monitor.factory.ModifyEventComment;
 import com.clustercontrol.monitor.factory.ModifyEventConfirm;
+import com.clustercontrol.monitor.factory.ModifyEventInfo;
 import com.clustercontrol.monitor.factory.SelectEvent;
+import com.clustercontrol.monitor.factory.SelectEventHinemosProperty;
 import com.clustercontrol.monitor.factory.SelectScope;
 import com.clustercontrol.monitor.factory.SelectStatus;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.QueryUtil;
+import com.clustercontrol.monitor.run.util.EventMonitorValidator;
 import com.clustercontrol.notify.util.MonitorStatusCache;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
@@ -314,7 +320,7 @@ public class MonitorControllerBean implements CheckFacility {
 	}
 
 	/**
-	 * 引数で指定された条件に一致する帳票出力用イベント情報一覧を返します。<BR><BR>
+	 * 引数で指定された条件に一致する帳票ファイルのデータハンドラを返します。<BR><BR>
 	 * 
 	 * 引数のpropertyには、com.clustercontrol.monitor.factory.StatusFilterPropertyの属性が
 	 * １つ以上含まれます。<BR>
@@ -322,14 +328,16 @@ public class MonitorControllerBean implements CheckFacility {
 	 * com.clustercontrol.monitor.bean.ReportEventInfoがリストとして格納されます。
 	 * 
 	 * @param facilityId 取得対象の親ファシリティID
-	 * @param property 検索条件
-	 * @return 帳票出力用イベント情報一覧（{@link com.clustercontrol.monitor.bean.ReportEventInfo}のリスト）
+	 * @param filter 検索条件
+	 * @param filename 出力ファイル名
+	 * @param locale ロケール
+	 * @return 出力用ファイルのデータハンドラ
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * 
 	 * @since 2.1.0
 	 * 
-	 * @see com.clustercontrol.monitor.factory.SelectEvent#getEventListForReport(String, EventFilterInfo)
+	 * @see com.clustercontrol.monitor.factory.SelectEvent#getEventFile(facilityId, filter, filename, username, locale)
 	 */
 	public DataHandler downloadEventFile(String facilityId, EventFilterInfo filter, String filename, Locale locale)
 			throws InvalidRole, HinemosUnknown{
@@ -375,7 +383,7 @@ public class MonitorControllerBean implements CheckFacility {
 	/**
 	 * 一時ファイルとして作成したイベントファイルの削除。
 	 */
-	public void deleteEventFile (String filename) {
+	public void deleteEventFile(String filename) {
 		SelectEvent select = new SelectEvent();
 		select.deleteEventFile(filename);
 	}
@@ -384,10 +392,10 @@ public class MonitorControllerBean implements CheckFacility {
 	 * イベント詳細情報を取得します。<BR><BR>
 	 * 
 	 * @param monitorId 取得対象の監視項目ID
+	 * @param monitorDetailId 取得対象の監視詳細
 	 * @param pluginId 取得対象のプラグインID
 	 * @param facilityId 取得対象のファシリティID
 	 * @param outputDate 取得対象の受信日時
-	 * @param locale ロケール情報
 	 * @return イベント詳細情報
 	 * @throws MonitorNotFound
 	 * @throws InvalidRole
@@ -437,18 +445,19 @@ public class MonitorControllerBean implements CheckFacility {
 	 * コメント追記ユーザとして、コメントユーザを設定します。
 	 * 
 	 * @param monitorId 更新対象の監視項目ID
+	 * @param monitorDetailId 更新対象の監視詳細
 	 * @param pluginId 更新対象のプラグインID
 	 * @param facilityId 更新対象のファシリティID
-	 * @param outputDate 更新対象の受信日時ID
-	 * @param confirmDate 確認済み日時（更新値）
-	 * @param confirmType 確認タイプ（未／済）（更新値）
+	 * @param outputDate 更新対象の受信日時
+	 * @param comment コメント
+	 * @param commentDate コメント変更日時
+	 * @param commentUser コメント変更ユーザ
 	 * @throws HinemosUnknown
 	 * @throws EventLogNotFound
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 * 
-	 * @see com.clustercontrol.bean.ConfirmConstant
-	 * @see com.clustercontrol.monitor.factory.ModifyEventComment#modifyComment(String, String, String, Date, String, Date, String)
+	 * @see com.clustercontrol.monitor.factory.ModifyEventComment#modifyComment(String, String, String, String, Long, String, Long, String)
 	 */
 	public void modifyComment(
 			String monitorId,
@@ -477,7 +486,7 @@ public class MonitorControllerBean implements CheckFacility {
 			jtm.begin();
 
 			modify.modifyComment(monitorId, monitorDetailId, pluginId, facilityId, outputDate, comment, commentDate, commentUser);
-
+			
 			jtm.commit();
 		}catch(EventLogNotFound | InvalidRole e){
 			if (jtm != null){
@@ -499,24 +508,24 @@ public class MonitorControllerBean implements CheckFacility {
 				jtm.close();
 		}
 	}
-
-
+	
 	/**
 	 * 引数で指定されたイベント情報の確認を更新します。<BR><BR>
 	 * 確認ユーザとして、操作を実施したユーザを設定します。
 	 * 
 	 * @param monitorId 更新対象の監視項目ID
+	 * @param monitorDetailId 更新対象の監視詳細
 	 * @param pluginId 更新対象のプラグインID
 	 * @param facilityId 更新対象のファシリティID
-	 * @param outputDate 更新対象の受信日時ID
-	 * @param confirmDate 確認済み日時（更新値）
-	 * @param confirmType 確認タイプ（未／済）（更新値）
+	 * @param outputDate 更新対象の受信日時
+	 * @param confirmDate 確認日時（更新値）
+	 * @param confirmType 確認タイプ（未確認／確認中／確認済）（更新値）
 	 * @throws MonitorNotFound
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * 
 	 * @see com.clustercontrol.bean.ConfirmConstant
-	 * @see com.clustercontrol.monitor.factory.ModifyEventConfirm#modifyConfirm(String, String, String, Date, Date, int)
+	 * @see com.clustercontrol.monitor.factory.ModifyEventConfirm#modifyConfirm(String, String, String, Long, Long, int, String)
 	 * 
 	 */
 	public void modifyConfirm(
@@ -524,8 +533,6 @@ public class MonitorControllerBean implements CheckFacility {
 			String monitorDetailId,
 			String pluginId,
 			String facilityId,
-			int priority,
-			Long generateDate,
 			Long outputDate,
 			Long confirmDate,
 			int confirmType
@@ -541,7 +548,7 @@ public class MonitorControllerBean implements CheckFacility {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			modify.modifyConfirm(monitorId, monitorDetailId, pluginId, facilityId, priority, generateDate, outputDate, confirmDate, confirmType, confirmUser);
+			modify.modifyConfirm(monitorId, monitorDetailId, pluginId, facilityId, outputDate, confirmDate, confirmType, confirmUser);
 
 			jtm.commit();
 		} catch (MonitorNotFound | InvalidRole e) {
@@ -571,13 +578,13 @@ public class MonitorControllerBean implements CheckFacility {
 	 * 複数のイベント情報を更新します。
 	 * 
 	 * @param list 更新対象のイベント情報一覧（EventDataInfoが格納されたArrayList）
-	 * @param confirmType 確認タイプ（未／済）（更新値）
+	 * @param confirmType 確認タイプ（未確認／確認中／確認済）（更新値）
 	 * @throws MonitorNotFound
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * 
 	 * @see com.clustercontrol.bean.ConfirmConstant
-	 * @see com.clustercontrol.monitor.factory.ModifyEventConfirm#modifyConfirm(List, int)
+	 * @see com.clustercontrol.monitor.factory.ModifyEventConfirm#modifyConfirm(List, int, String)
 	 */
 	public void modifyConfirm(ArrayList<EventDataInfo> list,
 			int confirmType
@@ -621,14 +628,14 @@ public class MonitorControllerBean implements CheckFacility {
 	 * 引数で指定された条件に一致するイベント情報の確認を一括更新します。<BR><BR>
 	 * 確認ユーザとして、操作を実施したユーザを設定します。<BR>
 	 * 
-	 * @param confirmType 確認タイプ（未／済）（更新値）
+	 * @param confirmType 確認タイプ（未確認／確認中／確認済）（更新値）
 	 * @param facilityId 更新対象の親ファシリティID
-	 * @param property 更新条件
+	 * @param info 更新条件
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * 
 	 * @see com.clustercontrol.bean.ConfirmConstant
-	 * @see com.clustercontrol.monitor.factory.ModifyEventConfirm#modifyBatchConfirm(int, String, EventBatchConfirmInfo)
+	 * @see com.clustercontrol.monitor.factory.ModifyEventConfirm#modifyBatchConfirm(int, String, String)
 	 */
 	public void modifyBatchConfirm(int confirmType, String facilityId, EventBatchConfirmInfo info) throws InvalidRole, HinemosUnknown{
 
@@ -711,6 +718,105 @@ public class MonitorControllerBean implements CheckFacility {
 	}
 
 	/**
+	 * 引数で指定されたイベント情報を更新します。<BR><BR> 
+	 * 
+	 * @param info 更新対象のイベント情報
+	 * @throws EventLogNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InvalidSetting 
+	 */
+	public void modifyEventInfo(EventDataInfo info) throws MonitorNotFound, InvalidRole, HinemosUnknown, InvalidSetting{
+
+		JpaTransactionManager jtm = null;
+		
+		//入力チェック
+		try{
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			
+			//Hinemosプロパティを取得
+			Map<Integer, EventUserExtensionItemInfo> userItemInfoMap = SelectEventHinemosProperty.getEventUserExtensionItemInfo();
+			
+			//validation
+			EventMonitorValidator.validateModifyEventInfo(info, userItemInfoMap);
+			
+			// イベント情報を更新する
+			ModifyEventInfo modify = new ModifyEventInfo();
+			
+			modify.modifyEventInfo(info);
+			
+			jtm.commit();
+		} catch (EventLogNotFound e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw new MonitorNotFound(e.getMessage(), e);
+		} catch(InvalidRole | InvalidSetting e){
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("modifyEventInfo() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+	}
+	
+	/**
+	 * イベントの画面表示設定を取得します。<BR><BR> 
+	 * 
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public EventDisplaySettingInfo getEventDisplaySettingInfo() throws InvalidRole, HinemosUnknown{
+		
+		EventDisplaySettingInfo info = null;
+		
+		JpaTransactionManager jtm = null;
+		
+		//入力チェック
+		try{
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			
+			info = new EventDisplaySettingInfo();
+			
+			info.setUserItemInfoMap(SelectEventHinemosProperty.getEventUserExtensionItemInfo());
+			info.setEventNoInfo(SelectEventHinemosProperty.geEventNoDisplayInfo());
+			
+			jtm.commit();
+			
+
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("getEventDisplaySettingInfo() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+		
+		return info;
+	}
+	
+	/**
 	 * ファシリティが利用されているか確認する。
 	 * 
 	 * @throws UsedFacility
@@ -754,6 +860,8 @@ public class MonitorControllerBean implements CheckFacility {
 		}
 	}
 
+	
+	
 	public void persistMonitorStatusCache() {
 		MonitorStatusCache.persist();
 	}

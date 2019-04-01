@@ -39,6 +39,7 @@ import org.eclipse.swt.widgets.TableColumn;
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.util.FacilityTreeCache;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
+import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
 import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
@@ -206,8 +207,16 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 
 		try {
 			for (IHinemosManager manager: ClusterControlPlugin.getDefault().getHinemosManagers()) {
-				if (!manager.isInitialized())
-					manager.update();
+				if (!manager.isInitialized()){
+					//マネージャ毎に状態更新を行っているが、
+					//マルチマネージャ接続時にクラウド/ＶＭが有効になってないマネージャの混在がありえる（endpoint通信で異常が出る）ので
+					//異常発生時は該当の警告ログのみを表示する。
+					try{
+						manager.update();
+					} catch(CloudModelException e) {
+						logger.warn("internalCreatePartControl() . Failed to update the status of the manager's cloud function. Manager="+manager.getManagerName() );
+					}
+				}
 			}
 			
 			List<ICloudScopes> newCloudScopes = new ArrayList<>();
@@ -269,7 +278,14 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 				});
 			
 			for (IHinemosManager manager: ClusterControlPlugin.getDefault().getHinemosManagers()) {
-				manager.update();
+				//マネージャ毎に状態更新を行っているが、
+				//マルチマネージャ接続時にクラウド/ＶＭが有効になってないマネージャの混在がありえる（endpoint通信で異常が出る）ので
+				//異常発生時は該当の警告ログのみを表示する。
+				try{
+					manager.update();
+				} catch(CloudModelException e) {
+					logger.warn("refresh() . Failed to update the status of the manager's cloud function. Manager="+manager.getManagerName() );
+				}
 			}
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);

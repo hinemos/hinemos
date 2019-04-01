@@ -45,7 +45,6 @@ import com.clustercontrol.utility.util.UtilityPreferenceStore;
 public class SettingToolsXMLPreferencePage extends FieldEditorPreferencePage 
 implements IWorkbenchPreferencePage {
 
-	// TODO 6.2で全部PreferencePageConstantを参照
 	public static final String KEY_XML = PreferencePageConstant.KEY_XML;
 	public static final String VALUE_XML = PreferencePageConstant.VALUE_XML;
 	private UtilityDirectoryFieldEditor XML = null;
@@ -84,11 +83,17 @@ implements IWorkbenchPreferencePage {
 	private StringFieldEditor nodeDisk = null;
 	private StringFieldEditor nodeFS = null;
 	private StringFieldEditor nodeDevice = null;
+	private StringFieldEditor nodeNetstat = null;
+	private StringFieldEditor nodeProcess = null;
+	private StringFieldEditor nodePackage = null;
+	private StringFieldEditor nodeProduct = null;
+	private StringFieldEditor nodeLicence = null;
 	private StringFieldEditor nodeVariable = null;
 	private StringFieldEditor nodeNote = null;
 
 	private StringFieldEditor scope = null;
 	private StringFieldEditor scopeNode = null;
+	private StringFieldEditor nodeConfig = null;
 	private StringFieldEditor notify = null;
 	private StringFieldEditor mailTemplate = null;
 	private StringFieldEditor logformat = null;
@@ -130,6 +135,7 @@ implements IWorkbenchPreferencePage {
 	private StringFieldEditor jobSchedule = null;
 	private StringFieldEditor jobFileCheck = null;
 	private StringFieldEditor jobManual = null;
+	private StringFieldEditor jobQueue = null;
 	
 	private StringFieldEditor maintenance = null;
 	private StringFieldEditor hinemosProperty = null;
@@ -399,6 +405,41 @@ implements IWorkbenchPreferencePage {
 		nodeDevice.setTextLimit(256);
 		this.addField(nodeDevice);
 
+		// ネットワーク接続
+		nodeNetstat = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_NETSTAT,
+				HinemosModuleConstant.STRING_PLATFORM_REPOSITORY_NODE_NETSTAT ,
+				group);
+		nodeNetstat.setTextLimit(256);
+		this.addField(nodeNetstat);
+
+		// プロセス
+		nodeProcess = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_PROCESS,
+				HinemosModuleConstant.STRING_PLATFORM_REPOSITORY_NODE_PROCESS ,
+				group);
+		nodeProcess.setTextLimit(256);
+		this.addField(nodeProcess);
+
+		// パッケージ
+		nodePackage = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_PACKAGE,
+				HinemosModuleConstant.STRING_PLATFORM_REPOSITORY_NODE_PACKAGE ,
+				group);
+		nodePackage.setTextLimit(256);
+		this.addField(nodePackage);
+
+		// 個別導入製品
+		nodeProduct = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_PRODUCT,
+				HinemosModuleConstant.STRING_PLATFORM_REPOSITORY_NODE_PRODUCT ,
+				group);
+		nodeProduct.setTextLimit(256);
+		this.addField(nodeProduct);
+
+		// ライセンス
+		nodeLicence = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_LICENSE,
+				HinemosModuleConstant.STRING_PLATFORM_REPOSITORY_NODE_LICENSE ,
+				group);
+		nodeLicence.setTextLimit(256);
+		this.addField(nodeLicence);
+
 		// ノード変数名
 		nodeVariable = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_VARIABLE,
 				HinemosModuleConstant.STRING_PLATFORM_REPOSITORY_NODE_VARIABLE ,
@@ -426,6 +467,13 @@ implements IWorkbenchPreferencePage {
 				group);
 		scopeNode.setTextLimit(256);
 		this.addField(scopeNode);
+
+		//構成情報収集
+		nodeConfig = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_NODECONFIG,
+				HinemosModuleConstant.STRING_PLATFORM_NODECONFIG,
+				group);
+		nodeConfig.setTextLimit(256);
+		this.addField(nodeConfig);
 
 		//通知
 		notify = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_NOTIFY,
@@ -708,6 +756,13 @@ implements IWorkbenchPreferencePage {
 				group3);
 		jobManual.setTextLimit(256);
 		this.addField(jobManual);
+		
+		// ジョブキュー
+		jobQueue = new StringFieldEditor(XMLConstant.DEFAULT_XML_JOB_QUEUE,
+				HinemosModuleConstant.STRING_JOB_QUEUE,
+				group3);
+		jobQueue.setTextLimit(256);
+		this.addField(jobQueue);
 		
 		// Hub設定
 		Group groupHub = new Group(groupXMLFile, SWT.SHADOW_NONE);

@@ -84,6 +84,10 @@ public class CommandCollector implements CollectorTask, Runnable {
 	public static final String _returnCodeDefault = "\n";
 
 	private CommandExecuteDTO config;
+	
+	private static volatile int _schedulerThreadCount = 0;
+	
+	private static volatile int _workerThreadCount = 0;
 
 	static {
 		// read count of threads
@@ -150,10 +154,10 @@ public class CommandCollector implements CollectorTask, Runnable {
 		_executorService = Executors.newFixedThreadPool(
 				_workerThreads,
 				new ThreadFactory() {
-					private volatile int _count = 0;
 					@Override
 					public Thread newThread(Runnable r) {
-						return new Thread(r, "CommandCollectorWorker-" + _count++);
+						_workerThreadCount++;
+						return new Thread(r, "CommandCollectorWorker-" + _workerThreadCount);
 					}
 				}
 				);
@@ -256,10 +260,10 @@ public class CommandCollector implements CollectorTask, Runnable {
 		// initialize scheduler thread
 		_scheduler = Executors.newSingleThreadScheduledExecutor(
 				new ThreadFactory() {
-					private volatile int _count = 0;
 					@Override
 					public Thread newThread(Runnable r) {
-						return new Thread(r, "CommandCollectorScheduler-" + _count++);
+						_schedulerThreadCount++;
+						return new Thread(r, "CommandCollectorScheduler-" + _schedulerThreadCount);
 					}
 				}
 				);

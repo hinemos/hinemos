@@ -201,7 +201,7 @@ public class ReportFormatComposite extends Composite {
 		m_checkPage = new Button(group, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_checkPage.setLayoutData(gridData);
 		m_checkPage.setText(Messages.getString("report.page"));

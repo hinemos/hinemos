@@ -29,6 +29,7 @@ import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.maintenance.model.HinemosPropertyInfo;
 import com.clustercontrol.maintenance.session.HinemosPropertyControllerBean;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -221,5 +222,27 @@ public class HinemosPropertyEndpoint {
 				+ HttpAuthenticator.getUserAccountString(wsctx));
 
 		return new HinemosPropertyControllerBean().getHinemosPropertyList();
+	}
+
+	/**
+	 * 現在のHinemos時刻を返します。<br/>
+	 * システム権限は不要ですが、ユーザとパスワードのチェックは行います。
+	 * 
+	 * @return UTC 1970年1月1日0時からの経過ミリ秒により表現されるHinemos時刻。
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public long getHinemosTime() throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		m_log.debug("getHinemosTime");
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		try {
+			return HinemosTime.currentTimeMillis();
+		} catch (Throwable t) {
+			m_log.warn("Error.", t);
+			throw new HinemosUnknown("Failed to retrieve HinemosTime.");
+		}
 	}
 }

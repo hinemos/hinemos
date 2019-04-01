@@ -44,6 +44,14 @@ import com.clustercontrol.ws.jobmanagement.JobNodeDetail;
 import com.clustercontrol.ws.jobmanagement.JobOperationInfo;
 import com.clustercontrol.ws.jobmanagement.JobPlan;
 import com.clustercontrol.ws.jobmanagement.JobPlanFilter;
+import com.clustercontrol.ws.jobmanagement.JobQueueActivityViewFilter;
+import com.clustercontrol.ws.jobmanagement.JobQueueActivityViewInfo;
+import com.clustercontrol.ws.jobmanagement.JobQueueContentsViewInfo;
+import com.clustercontrol.ws.jobmanagement.JobQueueNotFound_Exception;
+import com.clustercontrol.ws.jobmanagement.JobQueueReferrerViewInfo;
+import com.clustercontrol.ws.jobmanagement.JobQueueSetting;
+import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewFilter;
+import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewInfo;
 import com.clustercontrol.ws.jobmanagement.JobSchedule;
 import com.clustercontrol.ws.jobmanagement.JobSessionDuplicate_Exception;
 import com.clustercontrol.ws.jobmanagement.JobTreeItem;
@@ -851,6 +859,155 @@ public class JobEndpointWrapper {
 			} catch (WebServiceException e) {
 				wse = e;
 				m_log.warn("getScriptContentMaxSize(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public JobQueueSettingViewInfo getJobQueueSettingViewInfo(JobQueueSettingViewFilter filter)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception,
+			InvalidSetting_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<JobEndpoint> endpointSetting : getJobEndpoint(endpointUnit)) {
+			try {
+				JobEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getJobQueueSettingViewInfo(filter);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getJobQueueSettingViewInfo(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public JobQueueReferrerViewInfo getJobQueueReferrerViewInfo(String queueId) throws HinemosUnknown_Exception,
+			InvalidRole_Exception, InvalidUserPass_Exception, JobQueueNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<JobEndpoint> endpointSetting : getJobEndpoint(endpointUnit)) {
+			try {
+				JobEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getJobQueueReferrerViewInfo(queueId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getJobQueueReferrerViewInfo(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public JobQueueActivityViewInfo getJobQueueActivityViewInfo(JobQueueActivityViewFilter filter)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception,
+			InvalidSetting_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<JobEndpoint> endpointSetting : getJobEndpoint(endpointUnit)) {
+			try {
+				JobEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getJobQueueActivityViewInfo(filter);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getJobQueueActivityViewInfo(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public JobQueueContentsViewInfo getJobQueueContentsViewInfo(String queueId) throws HinemosUnknown_Exception,
+			InvalidRole_Exception, InvalidUserPass_Exception, JobQueueNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<JobEndpoint> endpointSetting : getJobEndpoint(endpointUnit)) {
+			try {
+				JobEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getJobQueueContentsViewInfo(queueId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getJobQueueContentsViewInfo(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public List<JobQueueSetting> getJobQueueList(String roleId)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<JobEndpoint> endpointSetting : getJobEndpoint(endpointUnit)) {
+			try {
+				JobEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getJobQueueList(roleId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getJobQueueList(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public JobQueueSetting getJobQueue(String queueId) throws HinemosUnknown_Exception, InvalidRole_Exception,
+			InvalidUserPass_Exception, JobQueueNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<JobEndpoint> endpointSetting : getJobEndpoint(endpointUnit)) {
+			try {
+				JobEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getJobQueue(queueId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getJobQueue(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public void addJobQueue(JobQueueSetting setting) throws HinemosUnknown_Exception, InvalidRole_Exception,
+			InvalidUserPass_Exception, InvalidSetting_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<JobEndpoint> endpointSetting : getJobEndpoint(endpointUnit)) {
+			try {
+				JobEndpoint endpoint = endpointSetting.getEndpoint();
+				endpoint.addJobQueue(setting);
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("addJobQueue(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public void modifyJobQueue(JobQueueSetting setting) throws HinemosUnknown_Exception, InvalidRole_Exception,
+			InvalidSetting_Exception, InvalidUserPass_Exception, JobQueueNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<JobEndpoint> endpointSetting : getJobEndpoint(endpointUnit)) {
+			try {
+				JobEndpoint endpoint = endpointSetting.getEndpoint();
+				endpoint.modifyJobQueue(setting);
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("modifyJobQueue(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
+	public void deleteJobQueue(String queueId) throws HinemosUnknown_Exception, InvalidRole_Exception,
+			InvalidSetting_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<JobEndpoint> endpointSetting : getJobEndpoint(endpointUnit)) {
+			try {
+				JobEndpoint endpoint = endpointSetting.getEndpoint();
+				endpoint.deleteJobQueue(queueId);
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("deleteJobQueue(), " + e.getMessage());
 				endpointUnit.changeEndpoint();
 			}
 		}

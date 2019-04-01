@@ -11,7 +11,7 @@
 
 		<xs:sequence>
 			<xs:element name="schemaType" type="xs:string" minOccurs="0"
-				maxOccurs="1" default="H">
+				maxOccurs="1" default="I">
 				<xs:annotation>
 					<xs:documentation>データ型のタイプ</xs:documentation>
 				</xs:annotation>
@@ -312,6 +312,206 @@
 		</xs:complexType>
 	</xs:element>
 
+	<xs:element name="NetstatList">
+		<xs:annotation>
+			<xs:documentation>
+				ネットワーク接続情報一覧のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>
+					ネットワーク接続情報一覧のデータ型です。
+				</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="NetstatInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>
+							ネットワーク接続情報の配列
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="ProcessList">
+		<xs:annotation>
+			<xs:documentation>
+				プロセス情報一覧のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>
+					プロセス情報一覧のデータ型です。
+				</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="ProcessInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>
+							プロセス情報の配列
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="PackageList">
+		<xs:annotation>
+			<xs:documentation>
+				パッケージ情報一覧のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>
+					パッケージ情報一覧のデータ型です。
+				</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="PackageInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>
+							パッケージ情報の配列
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="ProductList">
+		<xs:annotation>
+			<xs:documentation>
+				個別導入製品情報一覧のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>
+					個別導入製品情報一覧のデータ型です。
+				</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="ProductInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>
+							個別導入製品情報の配列
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="LicenseList">
+		<xs:annotation>
+			<xs:documentation>
+				ライセンス情報一覧のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>
+					ライセンス情報一覧のデータ型です。
+				</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							XMLに付与する一般情報
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType"
+					minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="LicenseInfo" minOccurs="0"
+					maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>
+							ライセンス情報の配列
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
 	<xs:element name="NoteList">
 		<xs:annotation>
 			<xs:documentation>備考情報一覧のルートエレメントです。</xs:documentation>
@@ -500,6 +700,12 @@
 					<xs:documentation>文字セットです。</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="startupDateTime" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>OSの起動日時です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 			
 			<xs:attribute name="agentAwakePort" type="xs:integer"
 				use="optional">
@@ -653,7 +859,7 @@
 				<xs:annotation>
 					<xs:documentation>
 						WBEM接続リトライ回数です。
-						0から10の間の値をセットします。	
+						0から10の間の値をセットします。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
@@ -1372,4 +1578,160 @@
 		</xs:complexType>
 	</xs:element>
 
+	<xs:element name="NetstatInfo">
+		<xs:annotation>
+			<xs:documentation>ネットワーク接続情報のルートエレメント</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ネットワーク接続情報</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string" use="required">
+				<xs:annotation>ファシリティID</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="protocol" type="xs:string" use="required">
+				<xs:annotation>プロトコル</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="localIpAddress" type="xs:string" use="required">
+				<xs:annotation>ローカルIPアドレス</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="localPort" type="xs:string" use="required">
+				<xs:annotation>ローカルポート</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="foreignIpAddress" type="xs:string" use="required">
+				<xs:annotation>外部IPアドレス</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="foreignPort" type="xs:string" use="required">
+				<xs:annotation>外部ポート</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="processName" type="xs:string" use="required">
+				<xs:annotation>プロセス名</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="pid" type="xs:integer" use="required">
+				<xs:annotation>PID</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="status" type="xs:string" use="optional">
+				<xs:annotation>状態</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="ProcessInfo">
+		<xs:annotation>
+			<xs:documentation>プロセス情報のルートエレメント</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>プロセス情報</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string" use="required">
+				<xs:annotation>ファシリティID</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="processName" type="xs:string" use="required">
+				<xs:annotation>プロセス名</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="pid" type="xs:integer" use="required">
+				<xs:annotation>PID</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="path" type="xs:string" use="optional">
+				<xs:annotation>引数付きフルパス</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="execUser" type="xs:string" use="optional">
+				<xs:annotation>実行ユーザ</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="startupDateTime" type="xs:string" use="optional">
+				<xs:annotation>起動日時(YYYY-MM-DD hh:mm:ss)</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="PackageInfo">
+		<xs:annotation>
+			<xs:documentation>パッケージ情報のルートエレメント</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>パッケージ情報</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string" use="required">
+				<xs:annotation>ファシリティID</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="packageId" type="xs:string" use="required">
+				<xs:annotation>パッケージID</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="packageName" type="xs:string" use="optional">
+				<xs:annotation>パッケージ名</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="version" type="xs:string" use="optional">
+				<xs:annotation>バージョン</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="release" type="xs:string" use="optional">
+				<xs:annotation>リリース番号</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="installDate" type="xs:string" use="optional">
+				<xs:annotation>インストール日時(YYYY-MM-DD hh:mm:ss)</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="vendor" type="xs:string" use="optional">
+				<xs:annotation>ベンダ</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="architecture" type="xs:string" use="optional">
+				<xs:annotation>アーキテクチャ</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="ProductInfo">
+		<xs:annotation>
+			<xs:documentation>個別導入製品情報のルートエレメント</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>個別導入製品情報</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string" use="required">
+				<xs:annotation>ファシリティID</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="productName" type="xs:string" use="required">
+				<xs:annotation>名前</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="version" type="xs:string" use="optional">
+				<xs:annotation>バージョン</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="path" type="xs:string" use="optional">
+				<xs:annotation>インストールパス</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="LicenseInfo">
+		<xs:annotation>
+			<xs:documentation>ライセンス情報のルートエレメント</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ライセンス情報</xs:documentation>
+			</xs:annotation>
+			<xs:attribute name="facilityId" type="xs:string" use="required">
+				<xs:annotation>ファシリティID</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="productName" type="xs:string" use="required">
+				<xs:annotation>製品名</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="vendor" type="xs:string" use="optional">
+				<xs:annotation>ベンダ</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="vendorContact" type="xs:string" use="optional">
+				<xs:annotation>ベンダ連絡先</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="serialNumber" type="xs:string" use="optional">
+				<xs:annotation>シリアルナンバー</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="count" type="xs:integer" use="optional">
+				<xs:annotation>数量</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="expirationDate" type="xs:string" use="optional">
+				<xs:annotation>有効期限（YYYY-MM-DD hh:mm:ss）</xs:annotation>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
 </xs:schema>

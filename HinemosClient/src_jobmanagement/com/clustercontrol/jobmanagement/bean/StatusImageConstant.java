@@ -49,7 +49,7 @@ public class StatusImageConstant extends StatusConstant {
 		ImageRegistry registry = ClusterControlPlugin.getDefault()
 				.getImageRegistry();
 
-		if (type == TYPE_RUNNING) {
+		if (type == TYPE_RUNNING || type == TYPE_RUNNING_QUEUE) {
 			if (running == null)
 				running = registry.getDescriptor(
 						ClusterControlPlugin.IMG_STATUS_BLUE).createImage();
@@ -84,7 +84,7 @@ public class StatusImageConstant extends StatusConstant {
 				skip = registry.getDescriptor(
 						ClusterControlPlugin.IMG_STATUS_YELLOW).createImage();
 			return skip;
-		} else if (type == TYPE_SUSPEND) {
+		} else if (type == TYPE_SUSPEND || type == TYPE_SUSPEND_QUEUE) {
 			if (suspend == null)
 				suspend = registry.getDescriptor(
 						ClusterControlPlugin.IMG_STATUS_YELLOW).createImage();

@@ -308,7 +308,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		m_scp = new Button(fileDistributeMethod, SWT.RADIO);
 		gridData = new GridData();
 		gridData.horizontalSpan = 12;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_scp.setText(Messages.getString("infra.module.transfer.method.scp"));
 		m_scp.setLayoutData(gridData);
@@ -375,7 +375,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		m_winRm = new Button(fileDistributeMethod, SWT.RADIO);
 		gridData = new GridData();
 		gridData.horizontalSpan = 12;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_winRm.setText(Messages.getString("infra.module.transfer.method.winrm"));
 		m_winRm.setLayoutData(gridData);
@@ -397,7 +397,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		m_check = new Button(fileCheckComposite, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = 12;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_check.setText(Messages.getString("infra.module.inexec.after.transfer.error"));
 		m_check.setLayoutData(gridData);
@@ -407,7 +407,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		m_rename = new Button(fileCheckComposite, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = 12;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_rename.setText(Messages.getString("infra.module.same.file.maintain"));
 		m_rename.setLayoutData(gridData);
@@ -417,7 +417,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		m_md5Check = new Button(fileCheckComposite, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = 12;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_md5Check.setText(Messages.getString("infra.module.md5.check"));
 		m_md5Check.setLayoutData(gridData);
@@ -496,7 +496,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 		m_valid = new Button(fileCheckComposite, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = 12;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_valid.setText(Messages.getString("setting.valid.confirmed"));
 		m_valid.setLayoutData(gridData);

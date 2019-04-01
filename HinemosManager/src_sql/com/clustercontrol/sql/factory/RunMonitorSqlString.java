@@ -11,11 +11,13 @@ package com.clustercontrol.sql.factory;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorStringValueType;
@@ -102,7 +104,9 @@ public class RunMonitorSqlString extends RunMonitorStringValueType {
 		try {
 			// 変数を置換したURLの生成
 			if (nodeInfo != null && nodeInfo.containsKey(facilityId)) {
-				Map<String, String> nodeParameter = RepositoryUtil.createNodeParameter(nodeInfo.get(facilityId));
+				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+				ArrayList<String> inKeyList = StringBinder.getKeyList(m_url, maxReplaceWord);
+				Map<String, String> nodeParameter = RepositoryUtil.createNodeParameter(nodeInfo.get(facilityId), inKeyList);
 				StringBinder strbinder = new StringBinder(nodeParameter);
 				url = strbinder.bindParam(m_url);
 				if (m_log.isTraceEnabled()) m_log.trace("jdbc request. (nodeInfo = " + nodeInfo + ", facilityId = " + facilityId + ", url = " + url + ")");

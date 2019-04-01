@@ -30,10 +30,13 @@ import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
+import com.clustercontrol.jobmanagement.queue.JobQueueNotFoundException;
 import com.clustercontrol.jobmanagement.util.FromRunningAfterCommitCallback;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.notify.session.NotifyControllerBean;
+import com.clustercontrol.util.Singletons;
 
 /**
  * ジョブ操作の開始[即時]を行うクラスです。
@@ -103,7 +106,7 @@ public class OperateStartOfJob {
 		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 
-		//親ジョブの実行状態を実行中に遷移させる(自分自身の実行状態は JobSessionJobImpl().startJobで実施
+		// 親ジョブの実行状態を実行中に遷移させる(自分自身の実行状態は JobSessionJobImpl().startJobで実施
 		setStatus(sessionId, sessionJob.getParentJobunitId(), sessionJob.getParentJobId(), StatusConstant.TYPE_RUNNING);
 
 		return sessionJob;
@@ -129,6 +132,17 @@ public class OperateStartOfJob {
 
 		JobInfoEntity job = sessionJob.getJobInfoEntity();
 
+		// ジョブキューに登録されている可能性があるので、除去を試みる
+		String queueId = job.getQueueIdIfEnabled();
+		if (queueId != null) {
+			try {
+				Singletons.get(JobQueueContainer.class).get(queueId).remove(sessionId, jobunitId, jobId);
+			} catch (JobQueueNotFoundException e) {
+				// キューが存在しないなら、結果として"キューからの除去"という目的は果たせているので、ログだけ出して無視する。
+				m_log.info("clearStatus: " + e);
+			}
+		}
+		
 		//終了状態、終了値、終了・中断日時、開始・再実行日時をクリア
 		sessionJob.setEndStatus(null);
 		sessionJob.setEndValue(null);

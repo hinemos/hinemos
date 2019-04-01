@@ -44,7 +44,7 @@ import com.clustercontrol.utility.settings.jobmap.xml.JobmapType;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.settings.ui.util.BackupUtil;
@@ -277,7 +277,7 @@ public class JobmapImageAction {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {info.getIconId()};
-					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 					ImportProcessMode.setProcesstype(dialog.open());
 					ImportProcessMode.setSameprocess(dialog.getToggleState());

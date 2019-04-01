@@ -18,9 +18,13 @@ import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.monitor.bean.CollectGraphFlgMessage;
-import com.clustercontrol.monitor.bean.ConfirmMessage;
+import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.monitor.bean.EventFilterConstant;
+import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
+import com.clustercontrol.monitor.bean.EventInfoConstant;
 import com.clustercontrol.monitor.bean.StatusFilterConstant;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo.UserItemDisplayInfo;
 import com.clustercontrol.repository.bean.FacilityTargetMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
@@ -33,7 +37,7 @@ public class EventFilterPropertyUtil {
 	 * @param property
 	 * @return イベント情報フィルタ
 	 */
-	public static EventFilterInfo property2dto(Property property){
+	public static EventFilterInfo property2dto(Property property, MultiManagerEventDisplaySettingInfo eventDspSetting, String managerName){
 		EventFilterInfo info = new EventFilterInfo();
 
 		Timestamp outputFromDate = null;
@@ -52,6 +56,9 @@ public class EventFilterPropertyUtil {
 
 		ArrayList<?> values = null;
 
+		final int fromDateNanos = 0;
+		final int toDateNanos = 999999999;
+		
 		// 全検索
 		values = PropertyUtil.getPropertyValue(property,
 				EventFilterConstant.ALL_SEARCH);
@@ -94,7 +101,7 @@ public class EventFilterPropertyUtil {
 				EventFilterConstant.OUTPUT_FROM_DATE);
 		if (values.get(0) instanceof Date) {
 			outputFromDate = new Timestamp(((Date) values.get(0)).getTime());
-			outputFromDate.setNanos(0);
+			outputFromDate.setNanos(fromDateNanos);
 			info.setOutputDateFrom(outputFromDate.getTime());
 		}
 
@@ -103,7 +110,7 @@ public class EventFilterPropertyUtil {
 				EventFilterConstant.OUTPUT_TO_DATE);
 		if (values.get(0) instanceof Date) {
 			outputToDate = new Timestamp(((Date) values.get(0)).getTime());
-			outputToDate.setNanos(999999999);
+			outputToDate.setNanos(toDateNanos);
 			info.setOutputDateTo(outputToDate.getTime());
 		}
 
@@ -113,7 +120,7 @@ public class EventFilterPropertyUtil {
 		if (values.get(0) instanceof Date) {
 			generationFromDate = new Timestamp(((Date) values.get(0))
 					.getTime());
-			generationFromDate.setNanos(0);
+			generationFromDate.setNanos(fromDateNanos);
 			info.setGenerationDateFrom(generationFromDate.getTime());
 		}
 
@@ -123,7 +130,7 @@ public class EventFilterPropertyUtil {
 		if (values.get(0) instanceof Date) {
 			generationToDate = new Timestamp(((Date) values.get(0))
 					.getTime());
-			generationToDate.setNanos(999999999);
+			generationToDate.setNanos(toDateNanos);
 			info.setGenerationDateTo(generationToDate.getTime());
 		}
 
@@ -170,9 +177,26 @@ public class EventFilterPropertyUtil {
 
 		// 確認有無取得
 		values = PropertyUtil.getPropertyValue(property,
-				EventFilterConstant.CONFIRMED);
-		int confirmFlgType = ConfirmMessage.stringToType((String) values.get(0));
-		info.setConfirmFlgType(confirmFlgType);
+				EventFilterConstant.CONFIRMED_UNCONFIRMED);
+		if (!"".equals(values.get(0))) {
+			if ((Boolean)values.get(0)) {
+				info.getConfirmFlgTypeList().add(ConfirmConstant.TYPE_UNCONFIRMED);
+			}
+		}
+		values = PropertyUtil.getPropertyValue(property,
+				EventFilterConstant.CONFIRMED_CONFIRMING);
+		if (!"".equals(values.get(0))) {
+			if ((Boolean)values.get(0)) {
+				info.getConfirmFlgTypeList().add(ConfirmConstant.TYPE_CONFIRMING);
+			}
+		}
+		values = PropertyUtil.getPropertyValue(property,
+				EventFilterConstant.CONFIRMED_CONFIRMED);
+		if (!"".equals(values.get(0))) {
+			if ((Boolean)values.get(0)) {
+				info.getConfirmFlgTypeList().add(ConfirmConstant.TYPE_CONFIRMED);
+			}
+		}
 
 		// 確認ユーザ
 		values = PropertyUtil.getPropertyValue(property,
@@ -212,6 +236,39 @@ public class EventFilterPropertyUtil {
 		Boolean collectFlg = CollectGraphFlgMessage.stringToType((String)values.get(0));
 		info.setCollectGraphFlg(collectFlg);
 
+		//ユーザ項目の設定
+		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+			String userItemValue = null;
+			UserItemDisplayInfo userItemInfo = eventDspSetting.getUserItemDisplayInfo(managerName, i);
+			if (!userItemInfo.getDisplayEnable()) {
+				continue;
+			}
+			
+			values = PropertyUtil.getPropertyValue(property, 
+					EventFilterConstant.getUserItemConst(i));
+			if (!"".equals(values.get(0))) {
+				userItemValue = (String) values.get(0);
+			}
+			
+			EventUtil.setUserItemValue(info, i, userItemValue);
+		}
+		//イベント情報の設定
+		if (eventDspSetting.isEventNoDisplay(managerName)){ 
+			//イベント番号（自）取得
+			values = PropertyUtil.getPropertyValue(property,
+					EventFilterConstant.EVENT_NO_FROM);
+			if (values.get(0) instanceof Long) {
+				info.setPositionFrom((Long) values.get(0));
+			}
+
+			//イベント番号（至）取得
+			values = PropertyUtil.getPropertyValue(property,
+					EventFilterConstant.EVENT_NO_TO);
+			if (values.get(0) instanceof Long) {
+				info.setPositionTo((Long) values.get(0));
+			}
+		}
+		
 		return info;
 	}
 
@@ -266,7 +323,7 @@ public class EventFilterPropertyUtil {
 	 * @see com.clustercontrol.bean.FacilityTargetConstant
 	 * @see com.clustercontrol.bean.ConfirmConstant
 	 */
-	public static Property getProperty(Locale locale) {
+	public static Property getProperty(Locale locale, MultiManagerEventDisplaySettingInfo eventDspSetting, String managerName) {
 		//全検索
 		Property m_allSearch =
 				new Property(EventFilterConstant.ALL_SEARCH, Messages.getString("all.search", locale), PropertyDefineConstant.EDITOR_BOOL);
@@ -317,7 +374,16 @@ public class EventFilterPropertyUtil {
 				new Property(EventFilterConstant.MESSAGE, Messages.getString("message", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
 		//確認
 		Property m_confirmed =
-				new Property(EventFilterConstant.CONFIRMED, Messages.getString("confirmed", locale), PropertyDefineConstant.EDITOR_SELECT);
+				new Property(EventFilterConstant.CONFIRMED, Messages.getString("confirmed", locale), PropertyDefineConstant.EDITOR_TEXT);
+		//未確認
+		Property m_confirmedUnconfirmed =
+				new Property(EventFilterConstant.CONFIRMED_UNCONFIRMED, Messages.getString("monitor.unconfirmed", locale), PropertyDefineConstant.EDITOR_BOOL);
+		//確認中
+		Property m_confirmedConfirming =
+				new Property(EventFilterConstant.CONFIRMED_CONFIRMING, Messages.getString("monitor.confirming", locale), PropertyDefineConstant.EDITOR_BOOL);
+		//確認済
+		Property m_confirmedConfirmed =
+				new Property(EventFilterConstant.CONFIRMED_CONFIRMED, Messages.getString("monitor.confirmed", locale), PropertyDefineConstant.EDITOR_BOOL);
 		//受信日時
 		Property m_outputDate =
 				new Property(EventFilterConstant.OUTPUT_DATE, Messages.getString("receive.time", locale), PropertyDefineConstant.EDITOR_TEXT);
@@ -368,12 +434,10 @@ public class EventFilterPropertyUtil {
 		m_application.setValue("");
 		m_message.setValue("");
 
-		Object confirmedValues[][] = {
-				{"", ConfirmMessage.STRING_CONFIRMED, ConfirmMessage.STRING_UNCONFIRMED},
-				{"", ConfirmMessage.STRING_CONFIRMED, ConfirmMessage.STRING_UNCONFIRMED}};
-
-		m_confirmed.setSelectValues(confirmedValues);
-		m_confirmed.setValue(ConfirmMessage.STRING_UNCONFIRMED);
+		m_confirmed.setValue("");
+		m_confirmedUnconfirmed.setValue(true);
+		m_confirmedConfirming.setValue(true);
+		m_confirmedConfirmed.setValue(false);
 
 		m_outputDate.setValue("");
 		m_generationDate.setValue("");
@@ -408,8 +472,11 @@ public class EventFilterPropertyUtil {
 		m_facilityType.setModify(PropertyDefineConstant.MODIFY_OK);
 		m_application.setModify(PropertyDefineConstant.MODIFY_OK);
 		m_message.setModify(PropertyDefineConstant.MODIFY_OK);
-		m_confirmed.setModify(PropertyDefineConstant.MODIFY_OK);
-
+		m_confirmed.setModify(PropertyDefineConstant.MODIFY_NG);
+		m_confirmedUnconfirmed.setModify(PropertyDefineConstant.MODIFY_OK);
+		m_confirmedConfirming.setModify(PropertyDefineConstant.MODIFY_OK);
+		m_confirmedConfirmed.setModify(PropertyDefineConstant.MODIFY_OK);
+		
 		m_outputDate.setModify(PropertyDefineConstant.MODIFY_NG);
 		m_generationDate.setModify(PropertyDefineConstant.MODIFY_NG);
 
@@ -434,8 +501,13 @@ public class EventFilterPropertyUtil {
 		property.addChildren(m_monitorDetailId);
 		property.addChildren(m_facilityType);
 		property.addChildren(m_application);
-		property.addChildren(m_message);
+		property.addChildren(m_message);		
 		property.addChildren(m_confirmed);
+		property.addChildren(m_confirmedUser);
+		property.addChildren(m_comment);
+		property.addChildren(m_commentUser);
+		property.addChildren(m_collectGraphFlg);
+		property.addChildren(m_ownerRoleId);
 
 		// 重要度
 		m_priority.removeChildren();
@@ -454,15 +526,56 @@ public class EventFilterPropertyUtil {
 		m_generationDate.addChildren(m_generationFromDate);
 		m_generationDate.addChildren(m_generationToDate);
 
-		property.addChildren(m_confirmedUser);
-
-		property.addChildren(m_comment);
-		property.addChildren(m_commentUser);
-
-		property.addChildren(m_collectGraphFlg);
-
-		property.addChildren(m_ownerRoleId);
-
+		m_confirmed.removeChildren();
+		m_confirmed.addChildren(m_confirmedUnconfirmed);
+		m_confirmed.addChildren(m_confirmedConfirming);
+		m_confirmed.addChildren(m_confirmedConfirmed);
+		
+		//ユーザ項目の設定
+		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+			UserItemDisplayInfo userItemInfo = eventDspSetting.getUserItemDisplayInfo(managerName, i);
+			if (!userItemInfo.getDisplayEnable()) {
+				continue;
+			}
+			
+			Property userItemProperty =  new Property (
+					EventInfoConstant.getUserItemConst(i), 
+					EventHinemosPropertyUtil.getDisplayName(userItemInfo.getDisplayName(), i),
+					PropertyDefineConstant.EDITOR_TEXT,
+					DataRangeConstant.VARCHAR_128);
+			
+			userItemProperty.setModify(PropertyDefineConstant.MODIFY_OK);
+			userItemProperty.setValue("");
+			
+			property.addChildren(userItemProperty);
+			
+		}
+		
+		//イベント情報の設定
+		if (eventDspSetting.isEventNoDisplay(managerName)){ 
+			Property eventNo =  
+					new Property (EventInfoConstant.EVENT_NO, Messages.getString("monitor.eventno", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.TEXT);
+			
+			Property eventNoFrom =  
+					new Property (EventInfoConstant.EVENT_NO_FROM, Messages.getString("start", locale), PropertyDefineConstant.EDITOR_NUM_LONG, DataRangeConstant.INTEGER_HIGH, 0);
+						
+			Property eventNoTo =  
+					new Property (EventInfoConstant.EVENT_NO_TO, Messages.getString("end", locale), PropertyDefineConstant.EDITOR_NUM_LONG, DataRangeConstant.INTEGER_HIGH, 0);
+			
+			eventNo.setModify(PropertyDefineConstant.MODIFY_NG);
+			eventNoFrom.setModify(PropertyDefineConstant.MODIFY_OK);
+			eventNoTo.setModify(PropertyDefineConstant.MODIFY_OK);
+			
+			eventNo.setValue("");
+			eventNoFrom.setValue("");
+			eventNoTo.setValue("");
+			
+			property.addChildren(eventNo);
+			eventNo.removeChildren();
+			eventNo.addChildren(eventNoFrom);
+			eventNo.addChildren(eventNoTo);
+		}
+		
 		return property;
 	}
 }

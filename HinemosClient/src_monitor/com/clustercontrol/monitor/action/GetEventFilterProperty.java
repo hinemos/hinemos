@@ -11,6 +11,7 @@ package com.clustercontrol.monitor.action;
 import java.util.Locale;
 
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.util.EventFilterPropertyUtil;
 
 /**
@@ -28,7 +29,7 @@ public class GetEventFilterProperty {
 	 * 
 	 * @return イベント情報フィルタ用プロパティ
 	 */
-	public Property getProperty() {
-		return EventFilterPropertyUtil.getProperty(Locale.getDefault());
+	public Property getProperty(MultiManagerEventDisplaySettingInfo eventDspSetting, String managerName) {
+		return EventFilterPropertyUtil.getProperty(Locale.getDefault(), eventDspSetting, managerName);
 	}
 }

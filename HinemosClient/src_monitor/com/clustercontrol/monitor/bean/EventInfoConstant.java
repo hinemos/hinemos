@@ -43,7 +43,7 @@ public class EventInfoConstant {
 	 * @see com.clustercontrol.monitor.bean.ConfirmConstant
 	 */
 	public static final String CONFIRMED = "confirmed";
-	/** 確認済み日時。 */
+	/** 確認日時。 */
 	public static final String CONFIRM_DATE = "confirmDate";
 	/** 確認ユーザ */
 	public static final String CONFIRM_USER = "confirmUser";
@@ -57,7 +57,20 @@ public class EventInfoConstant {
 	public static final String COMMENT_USER = "commentUser";
 	/** 性能グラフ用フラグ */
 	public static final String COLLECT_GRAPH_FLG = "collectGraphFlg";
-
-	public static final String OWNER_ROLE_ID = "ocnerRoleId";
-
+	/** オーナーロールID */
+	public static final String OWNER_ROLE_ID = "ownerRoleId";
+	/** イベント操作履歴 */
+	public static final String EVENT_HISTORY = "eventHistory";
+	/** ユーザ項目フォーマット */
+	private static final String USER_ITEM_FORMAT = "userItem%02d";
+	/** イベント番号 */
+	public static final String EVENT_NO = "eventNo";
+	/** イベント番号(自) */
+	public static final String EVENT_NO_FROM = "eventNoFrom";
+	/** イベント番号(至) */
+	public static final String EVENT_NO_TO = "eventNoTo";
+	
+	public static String getUserItemConst(int index) {
+		return String.format(USER_ITEM_FORMAT, index);
+	}
 }

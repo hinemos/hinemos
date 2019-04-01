@@ -9,7 +9,10 @@
 package com.clustercontrol.monitor.action;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import org.eclipse.swt.SWT;
 
@@ -72,6 +75,27 @@ public class GetStatusListTableDefine {
 	/** 初期表示時ソートオーダー。 */
 	public static final int SORT_ORDER = 1;
 
+	/** カラム名からINDEXを取得するためのMap */
+	public static final Map<String, Integer> COLNAME_INDEX_MAP;
+	static {
+		Map<String, Integer> map = new LinkedHashMap<>();
+		
+		map.put("MANAGER_NAME", MANAGER_NAME);
+		map.put("PRIORITY", PRIORITY);
+		map.put("PLUGIN_ID", PLUGIN_ID);
+		map.put("MONITOR_ID", MONITOR_ID);
+		map.put("MONITOR_DETAIL_ID", MONITOR_DETAIL_ID);
+		map.put("FACILITY_ID", FACILITY_ID);
+		map.put("SCOPE", SCOPE);
+		map.put("APPLICATION", APPLICATION);
+		map.put("UPDATE_TIME", UPDATE_TIME);
+		map.put("OUTPUT_TIME", OUTPUT_TIME);
+		map.put("MESSAGE", MESSAGE);
+		map.put("OWNER_ROLE", OWNER_ROLE);
+		map.put("DUMMY", DUMMY);
+		COLNAME_INDEX_MAP = Collections.unmodifiableMap(map);
+	}
+	
 	/**
 	 * 監視[ステータス]ビューのテーブル定義情報を取得します。<BR><BR>
 	 * リストに、カラム毎にテーブルカラム情報をセットします。

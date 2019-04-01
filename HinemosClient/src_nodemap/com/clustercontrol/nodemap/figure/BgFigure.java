@@ -104,7 +104,7 @@ public class BgFigure extends FileImageFigure {
 		 * イベントビューとステータスビューの表示を変更する。
 		 */
 		RelationViewController.updateScopeTreeView(null, getFacilityId());
-		RelationViewController.updateStatusEventView(getFacilityId(), null);
+		RelationViewController.updateStatusEventView(null, getFacilityId());
 	}
 
 	@Override

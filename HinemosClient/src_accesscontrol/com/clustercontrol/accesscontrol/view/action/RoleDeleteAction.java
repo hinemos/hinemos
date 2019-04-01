@@ -154,8 +154,7 @@ public class RoleDeleteAction extends AbstractHandler implements IElementUpdater
 					// 削除処理
 					wrapper.deleteRoleInfo(roleIdList);
 				} catch (UsedFacility_Exception e) {
-					// FIXME
-					// FIXME
+					// TODO
 					// UsedFacilityのメンバ変数のfacilityIdを追加すること。
 					String roleId = roleIdList.get(0);
 

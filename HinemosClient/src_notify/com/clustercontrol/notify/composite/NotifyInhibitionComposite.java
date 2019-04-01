@@ -135,7 +135,7 @@ public class NotifyInhibitionComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "renotifyalways", m_radioRenotifyAlways);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH_ALL;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_radioRenotifyAlways.setLayoutData(gridData);
 		this.m_radioRenotifyAlways.setText(Messages.getString("suppress.no"));

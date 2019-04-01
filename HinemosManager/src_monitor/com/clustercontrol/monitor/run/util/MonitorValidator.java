@@ -696,10 +696,7 @@ public class MonitorValidator {
 	}
 	
 	/**
-	 * 数値用監視設定(MonitorInfo)の基本設定の妥当性チェック（関連テーブルへのリンク & NULL CHECK）
-	 * 
-	 * 変化点、将来予測がONの場合の収集ON／OFFチェックはマネージャ側では行わない。
-	 * クライアント側ではチェックを行う。
+	 * 数値用監視設定(MonitorInfo)の基本設定の妥当性チェック（関連テーブルへのリンク & NULL CHECK） 
 	 * 
 	 * @param monitorInfo
 	 * @throws InvalidSetting
@@ -726,7 +723,22 @@ public class MonitorValidator {
 
 		// prediction target
 		CommonValidator.validateInt(MessageConstant.PREDICTION_TARGET.getMessage(), monitorInfo.getPredictionTarget(), 1, DataRangeConstant.INTEGER_HIGH);
-
+		
+		// 将来予測
+		if(monitorInfo.getPredictionFlg() && !monitorInfo.getCollectorFlg()) {
+			InvalidSetting e = new InvalidSetting(
+				MessageConstant.MESSAGE_IVALID_RELATION.getMessage(
+						MessageConstant.MONITOR_PREDICTION.getMessage(),
+						MessageConstant.ENABLE.getMessage(),
+						MessageConstant.MONITOR_COLLECT.getMessage(),
+						MessageConstant.ENABLE.getMessage()
+				)					
+			);
+			m_log.info("validatePredictionFlg() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		
 		// application(将来予測) 
 		if(monitorInfo.getPredictionFlg()){ 
 			CommonValidator.validateString(MessageConstant.PREDICTION_APPLICATION.getMessage(), 
@@ -738,7 +750,22 @@ public class MonitorValidator {
 
 		// change analysys range
 		CommonValidator.validateInt(MessageConstant.CHANGE_ANALYSYS_RANGE.getMessage(), monitorInfo.getChangeAnalysysRange(), 1, DataRangeConstant.INTEGER_HIGH);
-
+		
+		// 変化量
+		if(monitorInfo.getChangeFlg() && !monitorInfo.getCollectorFlg()) {
+			InvalidSetting e = new InvalidSetting(
+				MessageConstant.MESSAGE_IVALID_RELATION.getMessage(
+						MessageConstant.MONITOR_CHANGE.getMessage(),
+						MessageConstant.ENABLE.getMessage(),
+						MessageConstant.MONITOR_COLLECT.getMessage(),
+						MessageConstant.ENABLE.getMessage()
+				)					
+			);
+			m_log.info("validatePredictionFlg() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		
 		// application(変更点) 
 		if(monitorInfo.getChangeFlg()){ 
 			CommonValidator.validateString(MessageConstant.CHANGE_APPLICATION.getMessage(), 
@@ -2325,8 +2352,7 @@ public class MonitorValidator {
 
 		Integer ii = null;
 
-		// FIXME メッセージは、後で修正すること
-		//eventId : smallint(winevent.id)
+		//eventId : int(winevent.id)
 		List<Integer> listi = checkInfo.getEventId();
 		Collections.sort(listi);
 		ii = null;
@@ -2340,7 +2366,7 @@ public class MonitorValidator {
 			ii = i;
 		}
 		for(Integer eventId : checkInfo.getEventId()){
-			CommonValidator.validateInt(MessageConstant.WINEVENT_ID.getMessage() + ":" + eventId, eventId, 0, 32767);
+			CommonValidator.validateInt(MessageConstant.WINEVENT_ID.getMessage() + ":" + eventId, eventId, 0, 65535);
 		}
 
 		//category : smallint（winevent.category）

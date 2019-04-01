@@ -35,7 +35,6 @@ public class JobOperationProperty {
 
 	private static Log m_log = LogFactory.getLog( JobOperationProperty.class );
 
-	//FIXME javadoc修正、操作用プロパティにjobunitIDが必要か確認。
 	public ArrayList<Integer> getAvailableStartOperation (String sessionId, String jobunitId, String jobId, String facilityId, Locale locale) {
 
 		int status = 0;
@@ -119,6 +118,9 @@ public class JobOperationProperty {
 		}
 		if(JobOperationJudgment.judgment(OperationConstant.TYPE_START_SKIP, jobType, status)){
 			values.add(OperationConstant.TYPE_START_SKIP);
+		}
+		if(JobOperationJudgment.judgment(OperationConstant.TYPE_START_FORCE_RUN, jobType, status)){
+			values.add(OperationConstant.TYPE_START_FORCE_RUN);
 		}
 
 		return values;

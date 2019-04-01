@@ -8,6 +8,8 @@
 
 package com.clustercontrol.commons.util;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -26,16 +28,6 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
 
-import net.sf.jpasecurity.jpql.parser.JpqlBrackets;
-import net.sf.jpasecurity.jpql.parser.JpqlFrom;
-import net.sf.jpasecurity.jpql.parser.JpqlParser;
-import net.sf.jpasecurity.jpql.parser.JpqlSelect;
-import net.sf.jpasecurity.jpql.parser.JpqlStatement;
-import net.sf.jpasecurity.jpql.parser.JpqlUpdate;
-import net.sf.jpasecurity.jpql.parser.JpqlWhere;
-import net.sf.jpasecurity.jpql.parser.Node;
-import net.sf.jpasecurity.jpql.parser.ToStringVisitor;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -48,15 +40,29 @@ import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfoPK;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.jobmanagement.factory.CreateJobSession;
+import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.apllog.AplLogger;
+
+import net.sf.jpasecurity.jpql.parser.JpqlBrackets;
+import net.sf.jpasecurity.jpql.parser.JpqlFrom;
+import net.sf.jpasecurity.jpql.parser.JpqlParser;
+import net.sf.jpasecurity.jpql.parser.JpqlSelect;
+import net.sf.jpasecurity.jpql.parser.JpqlStatement;
+import net.sf.jpasecurity.jpql.parser.JpqlUpdate;
+import net.sf.jpasecurity.jpql.parser.JpqlWhere;
+import net.sf.jpasecurity.jpql.parser.Node;
+import net.sf.jpasecurity.jpql.parser.ToStringVisitor;
 
 public class HinemosEntityManager implements EntityManager {
 
 	private static Log m_log = LogFactory.getLog(HinemosEntityManager.class);
+	private static ErrorNotification errorNotification = new ErrorNotification();
 
 	private EntityManager em;
-
+	
 	public EntityManager getEntityManager() {
 		return em;
 	}
@@ -347,7 +353,12 @@ public class HinemosEntityManager implements EntityManager {
 
 	@Override
 	public void flush() {
-		em.flush();
+		try {
+			em.flush();
+		} catch (Exception e) {
+			notifyUpdateError(e);
+			throw e;
+		}
 	}
 
 	@Override
@@ -878,5 +889,59 @@ public class HinemosEntityManager implements EntityManager {
 	@Override
 	public boolean isJoinedToTransaction() {
 		return em.isJoinedToTransaction();
+	}
+
+	/**
+	 * 更新エラーをINTERNALイベントとして通知する。
+	 * EntityManager外で独自更新を行っている処理で更新エラーが発生した場合に使用できる。
+	 * @param cause 発生した例外。
+	 */
+	public void notifyUpdateError(Exception cause) {
+		errorNotification.send(cause);
+	}
+	
+	// 更新エラーの通知を行うクラス
+	private static class ErrorNotification {
+		private static Log m_log = LogFactory.getLog(ErrorNotification.class);
+
+		private long lastNotified = 0;
+		private int suppressedCount = 0;
+
+		/**
+		 * 更新エラーをINTERNALイベントとして通知する。
+		 * @param cause 発生した例外。
+		 */
+		public synchronized void send(Exception cause) {
+			try {
+				// 今回通知すべきかの判定を行う。
+				boolean shouldNotify = false;
+
+				// 前回通知時刻との差分を求める。
+				// - 差分のみ重要であるため、わざわざHinemosTimeは使用していない。
+				long now = System.currentTimeMillis();
+				long timeDelta = now - lastNotified;
+
+				int span = HinemosPropertyCommon.common_db_error_notify_suppression_time.getIntegerValue();
+				if (timeDelta < 0 || timeDelta > span) {
+					lastNotified = now;
+					shouldNotify = true;
+				} else {
+					suppressedCount++;
+				}
+	
+				if (shouldNotify) {
+					AplLogger.put(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.HINEMOS_MANAGER_MONITOR,
+							MessageConstant.MESSAGE_SYS_024_MNG.getMessage(), cause.getMessage());
+	
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+					m_log.warn("send() : Notified. Next:" + sdf.format(new Date(lastNotified + span)) + ", Suppressed:"
+							+ suppressedCount);
+					suppressedCount = 0;
+				}
+			} catch (Exception e) {
+				m_log.warn("send() : Error.", e);
+				// 本処理中に万が一例外が発生した場合でも、呼び出し元には伝播させない。
+			}
+		}
 	}
 }

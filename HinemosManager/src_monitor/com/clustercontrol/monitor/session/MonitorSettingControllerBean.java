@@ -1338,28 +1338,22 @@ public class MonitorSettingControllerBean {
 			// オブジェクト権限チェック
 			QueryUtil.getMonitorInfoPK(monitorId, ObjectPrivilegeMode.MODIFY);
 
-			if (validFlag) {
-				if(!info.getMonitorFlg()
-						|| (info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC)
-						&& (!info.getChangeFlg() || !info.getPredictionFlg())) {
-					info.setMonitorFlg(true);
-					if(info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC){
-						info.setChangeFlg(true);
-						info.setPredictionFlg(true);
-					}
-					modifyMonitor(info);
+			if (isChangeNecessary(info, validFlag)) {
+				info.setMonitorFlg(validFlag);
+				
+				if (info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC &&
+						!(validFlag && !info.getCollectorFlg())) {
+					//数値監視 
+					//有効への変更は収集フラグがONの場合のみ変更
+					//無効への変更は収集フラグを判断せずに変更
+					//※不具合で発生した下記の状態を変更できるようにするため　
+					//  収集フラグ=OFF、変更量=ON、将来予測=ON
+					
+					//変化量、将来予測フラグを変更する
+					info.setChangeFlg(validFlag);
+					info.setPredictionFlg(validFlag);
 				}
-			} else {
-				if(info.getMonitorFlg()
-						|| (info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC)
-						&& (info.getChangeFlg() || info.getPredictionFlg())) {
-					info.setMonitorFlg(false);
-					if(info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC){
-						info.setChangeFlg(false);
-						info.setPredictionFlg(false);
-					}
-					modifyMonitor(info);
-				}
+				modifyMonitor(info);
 			}
 		} catch (MonitorNotFound | InvalidRole | HinemosUnknown e) {
 			throw e;
@@ -1370,6 +1364,34 @@ public class MonitorSettingControllerBean {
 		}
 	}
 
+	/**
+	 * 監視フラグ、変化量フラグ、将来予測フラグの変更要否のチェック
+	 * 
+	 * @param info 監視情報
+	 * @param valid 有効・無効
+	 * @return
+	 */
+	private boolean isChangeNecessary(MonitorInfo info, boolean validFlag) {
+		if (info.getMonitorFlg() != validFlag) {
+			//監視フラグが変更したい状態でない場合、変更が必要
+			return true;
+		}
+		
+		if (info.getMonitorType() != MonitorTypeConstant.TYPE_NUMERIC ||
+				(validFlag && !info.getCollectorFlg())) {
+			//数値監視でない場合
+			//有効への変更 かつ 収集フラグがONでない場合は変更不要
+			return false;
+		}
+		
+		if ((info.getChangeFlg() == validFlag) &&
+				(info.getPredictionFlg() == validFlag)) {
+			//変更量フラグ、将来予測フラグが既に変更したい状態の場合、変更不要
+			return false;
+		}
+		return true;
+	}
+	
 	/**
 	 *
 	 * 監視設定の収集を有効化/無効化します。<BR>
@@ -1520,24 +1542,26 @@ public class MonitorSettingControllerBean {
 				jtm.close();
 			}
 			// MonitorInfoからCheckInfoをはずす
-			for(MonitorInfo info : list) {
-				info.setCustomCheckInfo(null);
-				info.setCustomTrapCheckInfo(null);
-				info.setHttpCheckInfo(null);
-				info.setHttpScenarioCheckInfo(null);
-				info.setJmxCheckInfo(null);
-				info.setLogfileCheckInfo(null);
-				info.setBinaryCheckInfo(null);
-				info.setPerfCheckInfo(null);
-				info.setPingCheckInfo(null);
-				info.setPluginCheckInfo(null);
-				info.setPortCheckInfo(null);
-				info.setProcessCheckInfo(null);
-				info.setSnmpCheckInfo(null);
-				info.setSqlCheckInfo(null);
-				info.setTrapCheckInfo(null);
-				info.setWinEventCheckInfo(null);
-				info.setWinServiceCheckInfo(null);
+			if (list != null) {
+				for(MonitorInfo info : list) {
+					info.setCustomCheckInfo(null);
+					info.setCustomTrapCheckInfo(null);
+					info.setHttpCheckInfo(null);
+					info.setHttpScenarioCheckInfo(null);
+					info.setJmxCheckInfo(null);
+					info.setLogfileCheckInfo(null);
+					info.setBinaryCheckInfo(null);
+					info.setPerfCheckInfo(null);
+					info.setPingCheckInfo(null);
+					info.setPluginCheckInfo(null);
+					info.setPortCheckInfo(null);
+					info.setProcessCheckInfo(null);
+					info.setSnmpCheckInfo(null);
+					info.setSqlCheckInfo(null);
+					info.setTrapCheckInfo(null);
+					info.setWinEventCheckInfo(null);
+					info.setWinServiceCheckInfo(null);
+				}
 			}
 			time3 = System.currentTimeMillis();
 			long term = time3 - time1;

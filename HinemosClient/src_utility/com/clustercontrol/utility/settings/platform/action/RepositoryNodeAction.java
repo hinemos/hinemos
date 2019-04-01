@@ -56,8 +56,12 @@ import com.clustercontrol.utility.settings.platform.xml.FSInfo;
 import com.clustercontrol.utility.settings.platform.xml.FSList;
 import com.clustercontrol.utility.settings.platform.xml.HostnameInfo;
 import com.clustercontrol.utility.settings.platform.xml.HostnameList;
+import com.clustercontrol.utility.settings.platform.xml.LicenseInfo;
+import com.clustercontrol.utility.settings.platform.xml.LicenseList;
 import com.clustercontrol.utility.settings.platform.xml.MemoryInfo;
 import com.clustercontrol.utility.settings.platform.xml.MemoryList;
+import com.clustercontrol.utility.settings.platform.xml.NetstatInfo;
+import com.clustercontrol.utility.settings.platform.xml.NetstatList;
 import com.clustercontrol.utility.settings.platform.xml.NetworkInterfaceInfo;
 import com.clustercontrol.utility.settings.platform.xml.NetworkInterfaceList;
 import com.clustercontrol.utility.settings.platform.xml.NodeInfo;
@@ -65,9 +69,15 @@ import com.clustercontrol.utility.settings.platform.xml.NodeVariableInfo;
 import com.clustercontrol.utility.settings.platform.xml.NodeVariableList;
 import com.clustercontrol.utility.settings.platform.xml.NoteInfo;
 import com.clustercontrol.utility.settings.platform.xml.NoteList;
+import com.clustercontrol.utility.settings.platform.xml.PackageInfo;
+import com.clustercontrol.utility.settings.platform.xml.PackageList;
+import com.clustercontrol.utility.settings.platform.xml.ProcessInfo;
+import com.clustercontrol.utility.settings.platform.xml.ProcessList;
+import com.clustercontrol.utility.settings.platform.xml.ProductInfo;
+import com.clustercontrol.utility.settings.platform.xml.ProductList;
 import com.clustercontrol.utility.settings.platform.xml.RepositoryNode;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
@@ -174,7 +184,9 @@ public class RepositoryNodeAction {
 	@ExportMethod
 	public int exportRepositoryNode(String xmlNode, String xmlHostname, String xmlCPU, String xmlMemory,
 									String xmlNetworkInterface, String xmlDisk, String xmlFS,
-									String xmlDevice, String xmlVariable, String xmlNote) {
+									String xmlDevice, String xmlNetstat, String xmlProcess,
+									String xmlPackage, String xmlProduct, String xmlLicense, String xmlVariable,
+									String xmlNote) {
 
 		log.debug("Start Export PlatformRepositoryNode ");
 
@@ -188,6 +200,11 @@ public class RepositoryNodeAction {
 		DiskList disk = new DiskList();
 		FSList fs = new FSList();
 		DeviceList device = new DeviceList();
+		NetstatList netstat = new NetstatList();
+		ProcessList process = new ProcessList();
+		PackageList pack = new PackageList();
+		ProductList product = new ProductList();
+		LicenseList license = new LicenseList();
 		NodeVariableList variable = new NodeVariableList();
 		NoteList note = new NoteList();
 
@@ -219,6 +236,11 @@ public class RepositoryNodeAction {
 		List<DiskInfo> diskList = new ArrayList<DiskInfo>();
 		List<FSInfo> fsList = new ArrayList<FSInfo>();
 		List<DeviceInfo> deviceList = new ArrayList<DeviceInfo>();
+		List<NetstatInfo> netstatList = new ArrayList<>();
+		List<ProcessInfo> processList = new ArrayList<>();
+		List<PackageInfo> packList = new ArrayList<>();
+		List<ProductInfo> productList = new ArrayList<>();
+		List<LicenseInfo> licenseList = new ArrayList<>();
 		List<NodeVariableInfo> variableList = new ArrayList<NodeVariableInfo>();
 		List<NoteInfo> noteList = new ArrayList<NoteInfo>();
 
@@ -229,7 +251,7 @@ public class RepositoryNodeAction {
 			// ノード情報の取得
 			com.clustercontrol.ws.repository.NodeInfo nodeInfo;
 			try {
-				nodeInfo = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNode(nodeInfoList.get(i).getFacilityId());
+				nodeInfo = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeFull(nodeInfoList.get(i).getFacilityId());
 			} catch (Exception e) {
 				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
@@ -247,6 +269,11 @@ public class RepositoryNodeAction {
 			diskList.addAll(RepositoryConv.convDiskDto2Xml(nodeInfo));
 			fsList.addAll(RepositoryConv.convFSDto2Xml(nodeInfo));
 			deviceList.addAll(RepositoryConv.convDeviceDto2Xml(nodeInfo));
+			netstatList.addAll(RepositoryConv.convNetstatDto2Xml(nodeInfo));
+			processList.addAll(RepositoryConv.convProcessDto2Xml(nodeInfo));
+			packList.addAll(RepositoryConv.convPackageDto2Xml(nodeInfo));
+			productList.addAll(RepositoryConv.convProductDto2Xml(nodeInfo));
+			licenseList.addAll(RepositoryConv.convLicenseDto2Xml(nodeInfo));
 			variableList.addAll(RepositoryConv.convVariableDto2Xml(nodeInfo));
 			noteList.addAll(RepositoryConv.convNoteDto2Xml(nodeInfo));
 
@@ -291,6 +318,31 @@ public class RepositoryNodeAction {
 		device.setDeviceInfo(new DeviceInfo[deviceList.size()]);
 		for (int i = 0; i < deviceList.size(); i++) {
 			device.setDeviceInfo(i, deviceList.get(i));
+		}
+
+		netstat.setNetstatInfo(new NetstatInfo[netstatList.size()]);
+		for (int i = 0; i < netstatList.size(); i++) {
+			netstat.setNetstatInfo(i, netstatList.get(i));
+		}
+
+		process.setProcessInfo(new ProcessInfo[processList.size()]);
+		for (int i = 0; i < processList.size(); i++) {
+			process.setProcessInfo(i, processList.get(i));
+		}
+
+		pack.setPackageInfo(new PackageInfo[packList.size()]);
+		for (int i = 0; i < packList.size(); i++) {
+			pack.setPackageInfo(i, packList.get(i));
+		}
+
+		product.setProductInfo(new ProductInfo[productList.size()]);
+		for (int i = 0; i < productList.size(); i++) {
+			product.setProductInfo(i, productList.get(i));
+		}
+
+		license.setLicenseInfo(new LicenseInfo[licenseList.size()]);
+		for (int i = 0; i < licenseList.size(); i++) {
+			license.setLicenseInfo(i, licenseList.get(i));
 		}
 
 		variable.setNodeVariableInfo(new NodeVariableInfo[variableList.size()]);
@@ -361,6 +413,41 @@ public class RepositoryNodeAction {
 				fs.marshal(osw);
 			}
 			
+			netstat.setCommon(CommonConv.versionPlatformDto2Xml(Config.getVersion()));
+			netstat.setSchemaInfo(RepositoryConv.getSchemaVersionNode());
+			try(FileOutputStream fos = new FileOutputStream(xmlNetstat);
+				OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");){
+				netstat.marshal(osw);
+			}
+			
+			process.setCommon(CommonConv.versionPlatformDto2Xml(Config.getVersion()));
+			process.setSchemaInfo(RepositoryConv.getSchemaVersionNode());
+			try(FileOutputStream fos = new FileOutputStream(xmlProcess);
+				OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");){
+				process.marshal(osw);
+			}
+			
+			pack.setCommon(CommonConv.versionPlatformDto2Xml(Config.getVersion()));
+			pack.setSchemaInfo(RepositoryConv.getSchemaVersionNode());
+			try(FileOutputStream fos = new FileOutputStream(xmlPackage);
+				OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");){
+				pack.marshal(osw);
+			}
+			
+			product.setCommon(CommonConv.versionPlatformDto2Xml(Config.getVersion()));
+			product.setSchemaInfo(RepositoryConv.getSchemaVersionNode());
+			try(FileOutputStream fos = new FileOutputStream(xmlProduct);
+				OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");){
+				product.marshal(osw);
+			}
+			
+			license.setCommon(CommonConv.versionPlatformDto2Xml(Config.getVersion()));
+			license.setSchemaInfo(RepositoryConv.getSchemaVersionNode());
+			try(FileOutputStream fos = new FileOutputStream(xmlLicense);
+					OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");){
+				license.marshal(osw);
+			}
+			
 			variable.setCommon(CommonConv.versionPlatformDto2Xml(Config.getVersion()));
 			variable.setSchemaInfo(RepositoryConv.getSchemaVersionNode());
 			try(FileOutputStream fos = new FileOutputStream(xmlVariable);
@@ -402,7 +489,9 @@ public class RepositoryNodeAction {
 	@ImportMethod
 	public int importRepositoryNode(String xmlNode, String xmlHostname, String xmlCPU, String xmlMemory,
 									String xmlNetworkInterface, String xmlDisk, String xmlFS,
-									String xmlDevice, String xmlVariable, String xmlNote) {
+									String xmlDevice, String xmlNetstat, String xmlPackage,
+									String xmlProcess, String xmlProduct, String xmlLicense, String xmlVariable,
+									String xmlNote) {
 
 		log.debug("Start Import PlatformRepositoryNode ");
 
@@ -424,6 +513,9 @@ public class RepositoryNodeAction {
 		DiskList disk = null;
 		FSList fs = null;
 		DeviceList device = null;
+		NetstatList netstat = null;
+		LicenseList license = null;
+		ProductList product = null;
 		NodeVariableList variable = null;
 		NoteList note = null;
 		
@@ -437,8 +529,16 @@ public class RepositoryNodeAction {
 			disk = DiskList.unmarshal(new InputStreamReader(new FileInputStream(xmlDisk), "UTF-8"));
 			fs = FSList.unmarshal(new InputStreamReader(new FileInputStream(xmlFS), "UTF-8"));
 			device = DeviceList.unmarshal(new InputStreamReader(new FileInputStream(xmlDevice), "UTF-8"));
+			netstat = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat), "UTF-8"));
+			license = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense), "UTF-8"));
+			product = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct), "UTF-8"));
 			variable = NodeVariableList.unmarshal(new InputStreamReader(new FileInputStream(xmlVariable), "UTF-8"));
 			note = NoteList.unmarshal(new InputStreamReader(new FileInputStream(xmlNote), "UTF-8"));
+		} catch (MarshalException | ValidationException e) {
+			log.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
+			ret = SettingConstants.ERROR_INPROCESS;
+			log.debug("End Import PlatformRepositoryNode (Error)");
+			return ret;
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -458,6 +558,7 @@ public class RepositoryNodeAction {
 			com.clustercontrol.ws.repository.NodeInfo nodeInfo = RepositoryConv.convNodeXml2Dto(xmlNodeInfo, hostname.getHostnameInfo(), cpu.getCPUInfo(),
 													  memory.getMemoryInfo(), networkInterface.getNetworkInterfaceInfo(),
 													  disk.getDiskInfo(), fs.getFSInfo(), device.getDeviceInfo(),
+													  netstat.getNetstatInfo(), license.getLicenseInfo(), product.getProductInfo(),
 													  variable.getNodeVariableInfo(), note.getNoteInfo());
 
 			if (nodeInfo.getFacilityId() != null && !nodeInfo.getFacilityId().equals("")) {
@@ -468,7 +569,7 @@ public class RepositoryNodeAction {
 					//重複時、インポート処理方法を確認する
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {nodeInfo.getFacilityId()};
-						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 								null, Messages.getString("message.import.confirm2", args));
 					    ImportProcessMode.setProcesstype(dialog.open());
 					    ImportProcessMode.setSameprocess(dialog.getToggleState());
@@ -856,6 +957,234 @@ public class RepositoryNodeAction {
 		}
 	}
 
+	@DiffAnnotation(value={
+			"{\"type\":\"Root\", \"funcName\":\"NetstatList_funcName\"}",
+			"{\"type\":\"OrderBy\"," +
+					"\"props\":[" +
+					"\"NetstatInfo\"," +
+					"\"NetstatInfo.*.protocol\"," +
+					"\"NetstatInfo.*.localIpAddress\"," +
+					"\"NetstatInfo.*.localPort\"," +
+					"\"NetstatInfo.*.foreignIpAddress\"," +
+					"\"NetstatInfo.*.foreignPort\"," +
+					"\"NetstatInfo.*.processName\"," +
+					"\"NetstatInfo.*.pid\"," +
+					"\"NetstatInfo.*.status\"" +
+					"]}"
+	})
+	public static class NetstatRoot {
+		public Map<String, Netstat> netstatList = new HashMap<>();
+
+		@DiffAnnotation("{\"type\":\"Comparison\"}")
+		public Netstat[] getNetstatList() {
+			List<Netstat> list = new ArrayList<Netstat>(netstatList.values());
+			Collections.sort(list, new Comparator<Netstat>() {
+				@Override
+				public int compare(Netstat o1, Netstat o2) {
+					return o1.id.compareTo(o2.id);
+				}
+			});
+			return list.toArray(new Netstat[0]);
+		}
+	}
+
+	@DiffAnnotation("{\"type\":\"Element\"}")
+	public static class Netstat {
+		public String id;
+
+		public List<NetstatInfo> netstatInfo = new ArrayList<>();
+
+		@DiffAnnotation("{\"type\":\"PrimaryKey\"}")
+		public String getId() {
+			return id;
+		}
+
+		@DiffAnnotation(value = {"{\"type\":\"Column\", \"columnName\":\"DeviceInfo_deviceDisplayName\"}", "{\"type\":\"Array\"}"})
+		public NetstatInfo[] getNetstatInfo() {
+			return netstatInfo.toArray(new NetstatInfo[0]);
+		}
+	}
+
+	@DiffAnnotation(value={
+			"{\"type\":\"Root\", \"funcName\":\"ProcessList_funcName\"}",
+			"{\"type\":\"OrderBy\"," +
+					"\"props\":[" +
+					"\"ProcessInfo\"," +
+					"\"ProcessInfo.*.processName\"," +
+					"\"ProcessInfo.*.pid\"," +
+					"\"ProcessInfo.*.path\"," +
+					"\"ProcessInfo.*.execUser\"," +
+					"\"ProcessInfo.*.startupDateTime\"" +
+					"]}"
+	})
+	public static class ProcessRoot {
+		public Map<String, Process> processList = new HashMap<>();
+
+		@DiffAnnotation("{\"type\":\"Comparison\"}")
+		public Process[] getProcessList() {
+			List<Process> list = new ArrayList<Process>(processList.values());
+			Collections.sort(list, new Comparator<Process>() {
+				@Override
+				public int compare(Process o1, Process o2) {
+					return o1.id.compareTo(o2.id);
+				}
+			});
+			return list.toArray(new Process[0]);
+		}
+	}
+
+	@DiffAnnotation("{\"type\":\"Element\"}")
+	public static class Process {
+		public String id;
+
+		public List<ProcessInfo> processInfo = new ArrayList<>();
+
+		@DiffAnnotation("{\"type\":\"PrimaryKey\"}")
+		public String getId() {
+			return id;
+		}
+
+		@DiffAnnotation(value = {"{\"type\":\"Column\", \"columnName\":\"ProcessInfo_processName\"}", "{\"type\":\"Array\"}"})
+		public ProcessInfo[] getProcessInfo() {
+			return processInfo.toArray(new ProcessInfo[0]);
+		}
+	}
+	
+	@DiffAnnotation(value={
+			"{\"type\":\"Root\", \"funcName\":\"PackageList_funcName\"}",
+			"{\"type\":\"OrderBy\"," +
+					"\"props\":[" +
+					"\"PackageInfo\"," +
+					"\"PackageInfo.*.packageId\"," +
+					"\"PackageInfo.*.packageName\"," +
+					"\"PackageInfo.*.version\"," +
+					"\"PackageInfo.*.release\"," +
+					"\"PackageInfo.*.installDate\"," +
+					"\"PackageInfo.*.vendor\"," +
+					"\"PackageInfo.*.architecture\"" +
+					"]}"
+	})
+	public static class PackageRoot {
+		public Map<String, Package> packageList = new HashMap<>();
+
+		@DiffAnnotation("{\"type\":\"Comparison\"}")
+		public Package[] getPackageList() {
+			List<Package> list = new ArrayList<Package>(packageList.values());
+			Collections.sort(list, new Comparator<Package>() {
+				@Override
+				public int compare(Package o1, Package o2) {
+					return o1.id.compareTo(o2.id);
+				}
+			});
+			return list.toArray(new Package[0]);
+		}
+	}
+
+	@DiffAnnotation("{\"type\":\"Element\"}")
+	public static class Package {
+		public String id;
+
+		public List<PackageInfo> packageInfo = new ArrayList<>();
+
+		@DiffAnnotation("{\"type\":\"PrimaryKey\"}")
+		public String getId() {
+			return id;
+		}
+
+		@DiffAnnotation(value = {"{\"type\":\"Column\", \"columnName\":\"PackageInfo_packageId\"}", "{\"type\":\"Array\"}"})
+		public PackageInfo[] getPackageInfo() {
+			return packageInfo.toArray(new PackageInfo[0]);
+		}
+	}
+	
+	@DiffAnnotation(value={
+			"{\"type\":\"Root\", \"funcName\":\"ProductList_funcName\"}",
+			"{\"type\":\"OrderBy\"," +
+					"\"props\":[" +
+					"\"ProductInfo\"," +
+					"\"ProductInfo.*.productName\"," +
+					"\"ProductInfo.*.version\"," +
+					"\"ProductInfo.*.path\"" +
+					"]}"
+	})
+	public static class ProductRoot {
+		public Map<String, Product> productList = new HashMap<>();
+
+		@DiffAnnotation("{\"type\":\"Comparison\"}")
+		public Product[] getProductList() {
+			List<Product> list = new ArrayList<Product>(productList.values());
+			Collections.sort(list, new Comparator<Product>() {
+				@Override
+				public int compare(Product o1, Product o2) {
+					return o1.id.compareTo(o2.id);
+				}
+			});
+			return list.toArray(new Product[0]);
+		}
+	}
+
+	@DiffAnnotation("{\"type\":\"Element\"}")
+	public static class Product {
+		public String id;
+
+		public List<ProductInfo> productInfo = new ArrayList<>();
+
+		@DiffAnnotation("{\"type\":\"PrimaryKey\"}")
+		public String getId() {
+			return id;
+		}
+
+		@DiffAnnotation(value = {"{\"type\":\"Column\", \"columnName\":\"ProductInfo_productName\"}", "{\"type\":\"Array\"}"})
+		public ProductInfo[] getProductInfo() {
+			return productInfo.toArray(new ProductInfo[0]);
+		}
+	}
+	
+	@DiffAnnotation(value={
+			"{\"type\":\"Root\", \"funcName\":\"LicenseList_funcName\"}",
+			"{\"type\":\"OrderBy\"," +
+					"\"props\":[" +
+					"\"LicenseInfo\"," +
+					"\"LicenseInfo.*.productName\"," +
+					"\"LicenseInfo.*.vendor\"," +
+					"\"LicenseInfo.*.serialNumber\"," +
+					"\"LicenseInfo.*.count\"," +
+					"\"LicenseInfo.*.expirationDate\"" +
+					"]}"
+	})
+	public static class LicenseRoot {
+		public Map<String, License> licenseList = new HashMap<>();
+
+		@DiffAnnotation("{\"type\":\"Comparison\"}")
+		public License[] getLicenseList() {
+			List<License> list = new ArrayList<License>(licenseList.values());
+			Collections.sort(list, new Comparator<License>() {
+				@Override
+				public int compare(License o1, License o2) {
+					return o1.id.compareTo(o2.id);
+				}
+			});
+			return list.toArray(new License[0]);
+		}
+	}
+
+	@DiffAnnotation("{\"type\":\"Element\"}")
+	public static class License {
+		public String id;
+
+		public List<LicenseInfo> licenseInfo = new ArrayList<>();
+
+		@DiffAnnotation("{\"type\":\"PrimaryKey\"}")
+		public String getId() {
+			return id;
+		}
+
+		@DiffAnnotation(value = {"{\"type\":\"Column\", \"columnName\":\"LicenseInfo_productName\"}", "{\"type\":\"Array\"}"})
+		public LicenseInfo[] getLicenseInfo() {
+			return licenseInfo.toArray(new LicenseInfo[0]);
+		}
+	}
+	
 	@DiffAnnotation("{\"type\":\"Root\", \"funcName\":\"NodeVariableList_funcName\"}")
 	public static class NodeVariableRoot {
 		public Map<String, NodeVariable> nodeVariableList = new HashMap<String, NodeVariable>();
@@ -960,6 +1289,11 @@ public class RepositoryNodeAction {
 			String xmlDisk1,
 			String xmlFS1,
 			String xmlDevice1,
+			String xmlNetstat1,
+			String xmlProcess1,
+			String xmlPackage1,
+			String xmlProduct1,
+			String xmlLicense1,
 			String xmlVariable1,
 			String xmlNote1,
 			String xmlNode2,
@@ -970,6 +1304,11 @@ public class RepositoryNodeAction {
 			String xmlDisk2,
 			String xmlFS2,
 			String xmlDevice2,
+			String xmlNetstat2,
+			String xmlProcess2,
+			String xmlPackage2,
+			String xmlProduct2,
+			String xmlLicense2,
 			String xmlVariable2,
 			String xmlNote2) {
 
@@ -1005,6 +1344,21 @@ public class RepositoryNodeAction {
 		DeviceList device1 = null;
 		DeviceList device2 = null;
 
+		NetstatList netstat1 = null;
+		NetstatList netstat2 = null;
+
+		ProcessList process1 = null;
+		ProcessList process2 = null;
+
+		PackageList package1 = null;
+		PackageList package2 = null;
+
+		ProductList product1 = null;
+		ProductList product2 = null;
+
+		LicenseList license1 = null;
+		LicenseList license2 = null;
+
 		NodeVariableList variable1 = null;
 		NodeVariableList variable2 = null;
 
@@ -1036,6 +1390,21 @@ public class RepositoryNodeAction {
 
 			device1 = DeviceList.unmarshal(new InputStreamReader(new FileInputStream(xmlDevice1), "UTF-8"));
 			device2 = DeviceList.unmarshal(new InputStreamReader(new FileInputStream(xmlDevice2), "UTF-8"));
+
+			netstat1 = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat1), "UTF-8"));
+			netstat2 = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat2), "UTF-8"));
+
+			process1 = ProcessList.unmarshal(new InputStreamReader(new FileInputStream(xmlProcess1), "UTF-8"));
+			process2 = ProcessList.unmarshal(new InputStreamReader(new FileInputStream(xmlProcess2), "UTF-8"));
+
+			package1 = PackageList.unmarshal(new InputStreamReader(new FileInputStream(xmlPackage1), "UTF-8"));
+			package2 = PackageList.unmarshal(new InputStreamReader(new FileInputStream(xmlPackage2), "UTF-8"));
+
+			product1 = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct1), "UTF-8"));
+			product2 = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct2), "UTF-8"));
+
+			license1 = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense1), "UTF-8"));
+			license2 = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense2), "UTF-8"));
 
 			variable1 = NodeVariableList.unmarshal(new InputStreamReader(new FileInputStream(xmlVariable1), "UTF-8"));
 			variable2 = NodeVariableList.unmarshal(new InputStreamReader(new FileInputStream(xmlVariable2), "UTF-8"));
@@ -1070,7 +1439,7 @@ public class RepositoryNodeAction {
 			ret = SettingConstants.ERROR_SCHEMA_VERSION;
 			return ret;
 		}
-//		try {
+
 		//リポジトリノード差分比較
 		//例外が発生したら、trueが返され、エラー種別をリターンする。
 		if(output2(node1, node2, RepositoryNode.class,xmlNode2,diffFlg)){
@@ -1375,7 +1744,166 @@ public class RepositoryNodeAction {
 			ret += SettingConstants.SUCCESS_DIFF_10;
 		}
 
+		//ネットワーク情報
+		NetstatRoot netstatRoot1 = new NetstatRoot();
+		for (NetstatInfo info: netstat1.getNetstatInfo()) {
+			Netstat scope = netstatRoot1.netstatList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new Netstat();
+				scope.id = info.getFacilityId();
+				netstatRoot1.netstatList.put(info.getFacilityId(), scope);
+			}
+			scope.netstatInfo.add(info);
+		}
+		NetstatRoot netstatRoot2 = new NetstatRoot();
+		for (NetstatInfo info: netstat2.getNetstatInfo()) {
+			Netstat scope = netstatRoot2.netstatList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new Netstat();
+				scope.id = info.getFacilityId();
+				netstatRoot2.netstatList.put(info.getFacilityId(), scope);
+			}
+			scope.netstatInfo.add(info);
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(netstatRoot1, netstatRoot2, NetstatRoot.class,xmlNetstat2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_11;
+		}
 		
+		//プロセス情報
+		ProcessRoot processRoot1 = new ProcessRoot();
+		for (ProcessInfo info: process1.getProcessInfo()) {
+			Process scope = processRoot1.processList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new Process();
+				scope.id = info.getFacilityId();
+				processRoot1.processList.put(info.getFacilityId(), scope);
+			}
+			scope.processInfo.add(info);
+		}
+		ProcessRoot processRoot2 = new ProcessRoot();
+		for (ProcessInfo info: process2.getProcessInfo()) {
+			Process scope = processRoot2.processList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new Process();
+				scope.id = info.getFacilityId();
+				processRoot2.processList.put(info.getFacilityId(), scope);
+			}
+			scope.processInfo.add(info);
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(processRoot1, processRoot2, ProcessRoot.class,xmlProcess2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_12;
+		}
+
+		//パッケージ情報
+		PackageRoot packageRoot1 = new PackageRoot();
+		for (PackageInfo info: package1.getPackageInfo()) {
+			Package scope = packageRoot1.packageList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new Package();
+				scope.id = info.getFacilityId();
+				packageRoot1.packageList.put(info.getFacilityId(), scope);
+			}
+			scope.packageInfo.add(info);
+		}
+		PackageRoot packageRoot2 = new PackageRoot();
+		for (PackageInfo info: package2.getPackageInfo()) {
+			Package scope = packageRoot2.packageList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new Package();
+				scope.id = info.getFacilityId();
+				packageRoot2.packageList.put(info.getFacilityId(), scope);
+			}
+			scope.packageInfo.add(info);
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(packageRoot1, packageRoot2, PackageRoot.class,xmlPackage2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_13;
+		}
+
+		//個別導入製品情報
+		ProductRoot productRoot1 = new ProductRoot();
+		for (ProductInfo info: product1.getProductInfo()) {
+			Product scope = productRoot1.productList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new Product();
+				scope.id = info.getFacilityId();
+				productRoot1.productList.put(info.getFacilityId(), scope);
+			}
+			scope.productInfo.add(info);
+		}
+		ProductRoot productRoot2 = new ProductRoot();
+		for (ProductInfo info: product2.getProductInfo()) {
+			Product scope = productRoot2.productList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new Product();
+				scope.id = info.getFacilityId();
+				productRoot2.productList.put(info.getFacilityId(), scope);
+			}
+			scope.productInfo.add(info);
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(productRoot1, productRoot2, ProductRoot.class,xmlProduct2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_14;
+		}
+
+		//ライセンス情報
+		LicenseRoot licenseRoot1 = new LicenseRoot();
+		for (LicenseInfo info: license1.getLicenseInfo()) {
+			License scope = licenseRoot1.licenseList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new License();
+				scope.id = info.getFacilityId();
+				licenseRoot1.licenseList.put(info.getFacilityId(), scope);
+			}
+			scope.licenseInfo.add(info);
+		}
+		LicenseRoot licenseRoot2 = new LicenseRoot();
+		for (LicenseInfo info: license2.getLicenseInfo()) {
+			License scope = licenseRoot2.licenseList.get(info.getFacilityId());
+			if (scope == null) {
+				scope = new License();
+				scope.id = info.getFacilityId();
+				licenseRoot2.licenseList.put(info.getFacilityId(), scope);
+			}
+			scope.licenseInfo.add(info);
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(licenseRoot1, licenseRoot2, LicenseRoot.class,xmlLicense2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_15;
+		}
+
 		// 処理の終了
 		if ((ret >= SettingConstants.SUCCESS) && (ret<=SettingConstants.SUCCESS_MAX)){
 			log.info(Messages.getString("SettingTools.DiffCompleted"));

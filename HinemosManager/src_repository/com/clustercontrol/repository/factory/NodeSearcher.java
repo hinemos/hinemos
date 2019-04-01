@@ -214,7 +214,7 @@ public class NodeSearcher {
 						}
 						try {
 							//性能改善のためリフレッシュは全ノード登録後に一度のみ行う
-							controller.addNodeWithoutRefresh(nodeInfo);
+							controller.addNode(nodeInfo);
 							commitFlag = true;
 						} catch (FacilityDuplicate | InvalidSetting | HinemosUnknown e) {
 							String errorMessage = "" + e.getMessage();

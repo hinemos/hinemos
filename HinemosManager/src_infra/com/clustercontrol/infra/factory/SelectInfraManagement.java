@@ -98,11 +98,9 @@ public class SelectInfraManagement {
 		}
 		
 		// 通知情報を設定する
-		// FIXME: NotifyRelationCacheの適用
 		info.setNotifyRelationList(
 			new NotifyControllerBean().getNotifyRelation(info.getNotifyGroupId()));
 		
-		// FIXME:
 		Collections.sort(info.getModuleList(), new Comparator<InfraModuleInfo<?>>() {
 			@Override
 			public int compare(InfraModuleInfo<?> o1, InfraModuleInfo<?> o2) {
@@ -117,11 +115,9 @@ public class SelectInfraManagement {
 		List<InfraManagementInfo> list = QueryUtil.getAllInfraManagementInfo();
 		for (InfraManagementInfo info: list) {
 			// 通知情報を設定する
-			// FIXME: NotifyRelationCacheの適用
 			info.setNotifyRelationList(
 				new NotifyControllerBean().getNotifyRelation(info.getNotifyGroupId()));
 
-			// FIXME:
 			Collections.sort(info.getModuleList(), new Comparator<InfraModuleInfo<?>>() {
 				@Override
 				public int compare(InfraModuleInfo<?> o1, InfraModuleInfo<?> o2) {
@@ -138,10 +134,8 @@ public class SelectInfraManagement {
 		List<InfraManagementInfo> list = QueryUtil.getAllInfraManagementInfoOrderByInfraManagementId_OR(ownerRoleId);
 		for (InfraManagementInfo info: list) {
 			// 通知情報を設定する
-			// FIXME: NotifyRelationCacheの適用
 			info.setNotifyRelationList(
 				new NotifyControllerBean().getNotifyRelation(info.getNotifyGroupId()));
-			// FIXME:
 			Collections.sort(info.getModuleList(), new Comparator<InfraModuleInfo<?>>() {
 				@Override
 				public int compare(InfraModuleInfo<?> o1, InfraModuleInfo<?> o2) {
@@ -393,16 +387,18 @@ public class SelectInfraManagement {
 					|| !moduleInfo.getValidFlg()) {
 				continue;
 			}
+			String subModuleId = null;
+			
 			if (moduleId.equals("")) {
-				moduleId = moduleInfo.getModuleId();
+				subModuleId = moduleInfo.getModuleId();
 			} else {
-				moduleId = String.format("%s" + AccessInfo.MODULEID_DELIMITER + "%s", moduleId, moduleInfo.getModuleId());
+				subModuleId = String.format("%s" + AccessInfo.MODULEID_DELIMITER + "%s", moduleId, moduleInfo.getModuleId());
 			}
 			accessInfoList = createAccessInfoList(
 					accessInfoList, 
 					localAccessInfoMap, 
 					((ReferManagementModuleInfo)moduleInfo).getReferManagementId(),
-					moduleId,
+					subModuleId,
 					nodeInputType,
 					nodeIdList,
 					null);

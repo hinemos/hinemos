@@ -11,8 +11,6 @@ package com.clustercontrol.monitor.factory;
 import java.util.ArrayList;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.InvalidRole;
@@ -20,8 +18,6 @@ import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.bean.StatusDataInfo;
 import com.clustercontrol.notify.monitor.model.StatusInfoEntity;
 import com.clustercontrol.notify.monitor.util.QueryUtil;
-import com.clustercontrol.util.MessageConstant;
-import com.clustercontrol.util.apllog.AplLogger;
 
 
 /**
@@ -71,8 +67,6 @@ public class DeleteStatus {
 				try {
 					statusInfo = QueryUtil.getStatusInfoPK(facilityId, monitorId, monitorDetailId, pluginId, ObjectPrivilegeMode.MODIFY);
 				} catch (MonitorNotFound e) {
-					String[] args = {facilityId, monitorId, pluginId};
-					AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_004_SYS_SFC, args);
 					throw e;
 				} catch (InvalidRole e) {
 					throw e;

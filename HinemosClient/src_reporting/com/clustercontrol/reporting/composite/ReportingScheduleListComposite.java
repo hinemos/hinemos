@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -32,9 +31,7 @@ import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.reporting.HinemosUnknown_Exception;
 import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.InvalidUserPass_Exception;
 import com.clustercontrol.ws.reporting.ReportingInfo;
 
 /**
@@ -142,35 +139,17 @@ public class ReportingScheduleListComposite extends Composite {
 		
 		for(String managerName : EndpointManager.getActiveManagerSet()) {
 			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			boolean key = false;
+		
 			try {
-				String version = wrapper.getVersion();
-				m_log.debug("version:" + version);
-				key = true;
-				if (version.length() > 7) {
-					boolean result = Boolean.valueOf(version.substring(7, version.length()));
-					if (!result) {
-						MessageDialog.openWarning(
-								null,
-								Messages.getString("warning"),
-								Messages.getString("message.expiration.term.invalid"));
-					}
-				}
-			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
-				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
-			}
-			if (key) {
-				try {
-					reportingList = wrapper.getReportingList();
-				} catch (InvalidRole_Exception e) {
-					// 権限なし
-					errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
-				} catch (Exception e) {
-					// 上記以外の例外
-					String errMessage = HinemosMessage.replace(e.getMessage());
-					m_log.warn("update(), " + errMessage, e);
-					errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
-				}
+				reportingList = wrapper.getReportingList();
+			} catch (InvalidRole_Exception e) {
+				// 権限なし
+				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
+			} catch (Exception e) {
+				// 上記以外の例外
+				String errMessage = HinemosMessage.replace(e.getMessage());
+				m_log.warn("update(), " + errMessage, e);
+				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
 			}
 			if (reportingList == null) {
 				reportingList = new ArrayList<ReportingInfo>();

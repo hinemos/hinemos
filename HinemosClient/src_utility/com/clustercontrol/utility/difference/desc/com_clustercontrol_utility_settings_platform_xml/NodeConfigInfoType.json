@@ -1,0 +1,80 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"settingId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"settingName",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeConfigInfoType_settingName"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeConfigInfoType_description"}
+	]},
+
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeConfigInfoType_facilityId"}
+	]},
+	{
+	"propName":"scope",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeConfigInfoType_scope"}
+	]},
+	{
+	"propName":"runInterval",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeConfigInfoType_runInterval"},
+		{"type":"Translate",
+			"values":[
+				{"value":"21600", "name":"name_sixTime"},
+				{"value":"43200", "name":"name_twelveHours"},
+				{"value":"86400", "name":"name_twentyfourHours"}
+			]
+		}
+	]},
+
+	{
+	"propName":"calendarId",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeConfigInfoType_calendarId"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeConfigInfoType_ownerRoleId"}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeConfigInfoType_validFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"settingItemInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"ItemInfo"},
+		{"type":"Array", "idType":"pk"}
+	]},
+	
+	{
+	"propName":"customItemInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"CustomItem"},
+		{"type":"Array", "idType":"props", "props":["settingCustomId"]}
+	]}
+]
+}

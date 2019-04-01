@@ -8,7 +8,6 @@
 
 package com.clustercontrol.notify.factory;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -18,7 +17,6 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.monitor.bean.EventConfirmConstant;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.notify.util.OutputEvent;
 import com.clustercontrol.plugin.api.AsyncTaskFactory;
 
@@ -50,22 +48,19 @@ public class NotifyEventTaskFactory implements AsyncTaskFactory {
 			log.debug("run() message : " + msg);
 
 			JpaTransactionManager jtm = null;
-			List<EventLogEntity> eventList = null;
 			try {
 				jtm = new JpaTransactionManager();
 				jtm.begin();
 
 				if (msg instanceof NotifyRequestMessage) {
 					NotifyRequestMessage message = (NotifyRequestMessage) msg;
-					eventList = new ArrayList<>();
-					eventList.add(_outputEvent.outputEvent(message.getOutputInfo(), message.getNotifyId()));
+					_outputEvent.outputEvent(message.getOutputInfo(), message.getNotifyId());
 				} else if (msg instanceof OutputBasicInfo) {
-					eventList = new ArrayList<>();
-					eventList.add(_outputEvent.insertEventLog((OutputBasicInfo)msg, EventConfirmConstant.TYPE_UNCONFIRMED));
+					_outputEvent.insertEventLog((OutputBasicInfo)msg, EventConfirmConstant.TYPE_UNCONFIRMED);
 				} else if (msg instanceof List) {
 					@SuppressWarnings("unchecked")
 					List<NotifyRequestMessage> msgList = (List<NotifyRequestMessage>)msg;
-					eventList = _outputEvent.notify(msgList);
+					_outputEvent.notify(msgList);
 				} else {
 					log.warn("message type is not expected : " + msg.getClass().getName());
 				}

@@ -70,11 +70,11 @@ public class EventConfirmAction extends AbstractHandler implements IElementUpdat
 	}
 
 	/**
-	 * 監視[イベント]ビューの選択されたアイテムを確認に更新し、ビューを更新します。
+	 * 監視[イベント]ビューの選択されたアイテムを確認済に更新し、ビューを更新します。
 	 * <p>
 	 * <ol>
 	 * <li>監視[イベント]ビューで、選択されているアイテムを取得します。</li>
-	 * <li>取得したイベント情報の確認を確認済みに更新します。 </li>
+	 * <li>取得したイベント情報の確認状態を確認済に更新します。 </li>
 	 * <li>監視[イベント]ビューを更新します。</li>
 	 * </ol>
 	 *
@@ -172,24 +172,36 @@ public class EventConfirmAction extends AbstractHandler implements IElementUpdat
 	public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters) {
 		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		// page may not start at state restoring
-		if( null != window ){
-			IWorkbenchPage page = window.getActivePage();
-			if( null != page ){
-				IWorkbenchPart part = page.getActivePart();
-
-				boolean editEnable = false;
-				if(part instanceof EventView){
-					// Enable button when 1 item is selected
-					EventView view = (EventView)part;
-
-					if(view.getConfirmType() == ConfirmConstant.TYPE_UNCONFIRMED) {
-						editEnable = true;
-					}
-				}
-				this.setBaseEnabled(editEnable);
-			} else {
-				this.setBaseEnabled(false);
-			}
+   		if (window == null) {
+			return;
 		}
+		
+		IWorkbenchPage page = window.getActivePage();
+
+		if (page == null) {
+			this.setBaseEnabled(false);
+			return;
+		}
+		
+			
+		IWorkbenchPart part = page.getActivePart();
+		
+		if (!(part instanceof EventView)) {
+			this.setBaseEnabled(false);
+			return;
+		}
+
+		// Enable button when not confirming items were selected		
+
+		boolean editEnable = true;
+
+		EventView view = (EventView)part;
+		
+		if (view.getConfirmTypeList() == null ||
+				view.getConfirmTypeList().contains(ConfirmConstant.TYPE_CONFIRMED)) {
+				//全く選択されていないか、確認済が選択されている場合、非活性
+				editEnable = false;
+		}
+		this.setBaseEnabled(editEnable);
 	}
 }

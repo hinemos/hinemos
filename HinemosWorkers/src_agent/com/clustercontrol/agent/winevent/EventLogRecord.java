@@ -161,7 +161,7 @@ public class EventLogRecord {
 		this.keywordsDisplayNames = keywordsDisplayNames;
 	}
 
-	// TODO 設定ファイルで指定できるようにする？
+	// 設定ファイルで指定できるようにする？
 	public String toString(){
 		return  "<" + this.logName + ";" + this.providerName + ";" + level2char(this.level) + this.id + ";>" + (this.message!=null? this.message:this.data);
 	}

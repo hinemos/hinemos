@@ -20,6 +20,9 @@ public class EventConfirmMessage {
 	/** 確認済（文字列）。 */
 	public static final String STRING_CONFIRMED = Messages.getString("notify.event.confirmed");
 
+	/** 確認中（文字列）。 */
+	public static final String STRING_CONFIRMING = Messages.getString("notify.event.confirming");
+
 	/** 未確認（文字列）。 */
 	public static final String STRING_UNCONFIRMED = Messages.getString("notify.event.unconfirmed");
 
@@ -37,8 +40,8 @@ public class EventConfirmMessage {
 			return STRING_CONFIRMED;
 		} else if (type == EventConfirmConstant.TYPE_UNCONFIRMED) {
 			return STRING_UNCONFIRMED;
-		} else if (type == EventConfirmConstant.TYPE_DESTRUCTION) {
-			return STRING_DESTRUCTION;
+		} else if (type == EventConfirmConstant.TYPE_CONFIRMING) {
+			return STRING_CONFIRMING;
 		}
 		return "";
 	}
@@ -54,8 +57,8 @@ public class EventConfirmMessage {
 			return EventConfirmConstant.TYPE_CONFIRMED;
 		} else if (string.equals(STRING_UNCONFIRMED)) {
 			return EventConfirmConstant.TYPE_UNCONFIRMED;
-		} else if (string.equals(STRING_DESTRUCTION)) {
-			return EventConfirmConstant.TYPE_DESTRUCTION;
+		} else if (string.equals(STRING_CONFIRMING)) {
+			return EventConfirmConstant.TYPE_CONFIRMING;
 		}
 		return -1;
 	}

@@ -40,22 +40,17 @@ public class NodeMonitorPollerController {
 	 * 本メソッドは、Hinemos起動直後に1回のみ実行すること。
 	 */
 	public static void init() throws HinemosUnknown {
-		try {
-			for (final NodeInfo node : new RepositoryControllerBean().getNodeList()) {
-				registNodeMonitorPoller(node, true);
-			}
-			log.info("init() : regist all node to poller completed.");;
-		} catch (HinemosUnknown e) {
-			log.error("init() : failed to regist all node to poller.", e);
-			throw e;
+		for (final NodeInfo node : new RepositoryControllerBean().getNodeList()) {
+				registNodeMonitorPoller(node.getFacilityId(), node.getNodeMonitorDelaySec(), true);
 		}
+		log.info("init() : regist all node to poller completed.");;
 	}
 	
 	private static final String[] targetMonitorTypes =
 			new String[] {HinemosModuleConstant.MONITOR_PROCESS, HinemosModuleConstant.MONITOR_PERFORMANCE};
 	
-	public static void registNodeMonitorPoller(NodeInfo node) {
-		registNodeMonitorPoller(node, false);
+	public static void registNodeMonitorPoller(String facilityId, int nodeMonitorDelaySec) {
+		registNodeMonitorPoller(facilityId, nodeMonitorDelaySec, false);
 	}
 	
 	/**
@@ -66,7 +61,8 @@ public class NodeMonitorPollerController {
 	 * @param node 対象のノード
 	 * @param isInitManager 起動直後の初期化のフラグ
 	 */
-	public static void registNodeMonitorPoller(NodeInfo node, boolean isInitManager) {
+	public static void registNodeMonitorPoller(String facilityId, int nodeMonitorDelaySec, boolean isInitManager) {
+
 		// 各監視項目タイプごとにQuartz登録する（今のところ、プロセスと、リソース）
 		for (final String monitorTypeId : targetMonitorTypes) {
 			// Quartzからコールバックされる際に、コールバックメソッドに渡される引数を構築する
@@ -78,18 +74,18 @@ public class NodeMonitorPollerController {
 			args[0] = monitorTypeId;
 			// 第2引数：FacilityId
 			argTypes[1] = String.class;
-			args[1] = node.getFacilityId();
+			args[1] = facilityId;
 			// 第3引数:監視判定タイプ
 			argTypes[2] = Integer.class;
-			args[2] = Integer.valueOf(1); // FIXME nagatsumas 監視判定タイプを固定で「数値」としているが、実際には監視タイプIDに応じて監視判定タイプを変えるべき
+			args[2] = Integer.valueOf(1); // XXX nagatsumas 監視判定タイプを固定で「数値」としているが、実際には監視タイプIDに応じて監視判定タイプを変えるべき
 			
 			// Quartzに登録
 			try {
 				SchedulerPlugin.scheduleSimpleJob(
 						SchedulerType.RAM,
-						node.getFacilityId(),
+						facilityId,
 						monitorTypeId,
-						ModifySchedule.calcSimpleTriggerStartTime(RunInterval.min(), node.getNodeMonitorDelaySec() % RunInterval.min(), isInitManager),
+						ModifySchedule.calcSimpleTriggerStartTime(RunInterval.min(), nodeMonitorDelaySec % RunInterval.min(), isInitManager),
 						RunInterval.min(),
 						true, 
 						MonitorRunManagementBean.class.getName(),
@@ -97,9 +93,9 @@ public class NodeMonitorPollerController {
 						argTypes,
 						args);
 				if (log.isDebugEnabled())
-					log.debug("registNodeMonitorPoller() : regist node to poller. facilityId = " + node.getFacilityId() + ", monitorTypeId = " + monitorTypeId);
+					log.debug("registNodeMonitorPoller() : regist node to poller. facilityId = " + facilityId + ", monitorTypeId = " + monitorTypeId);
 			} catch (HinemosUnknown e) {
-				log.error("registNodeMonitorPoller() : failed to regist node to poller. facilityId = " + node.getFacilityId() + ", monitorTypeId = " + monitorTypeId, e);
+				log.error("registNodeMonitorPoller() : failed to regist node to poller. facilityId = " + facilityId + ", monitorTypeId = " + monitorTypeId, e);
 			}
 		}
 	}

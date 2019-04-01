@@ -32,7 +32,7 @@ public class UtilityDialogInjector {
 		UtilityDialogInjector._service = service;
 	}
 
-	public static ImportProcessDialog createImportProcessDialog(Object shell, String message) {
+	public static UtilityProcessDialog createImportProcessDialog(Object shell, String message) {
 		assert shell == null : "Shell must be null here";
 		
 		return _service.createImportProcessDialog(message);

@@ -8,6 +8,7 @@
 
 package com.clustercontrol.monitor.run.session;
 
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -64,6 +65,10 @@ public class MonitorRunManagementBean {
 	 * @since 4.0.0
 	 */
 	public void runMonitorAggregatedMonitorId(String monitorTypeId, String monitorId, Integer monitorType) throws FacilityNotFound, MonitorNotFound, HinemosUnknown {
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
 		m_log.debug("runMonitorAggregatedMonitorId() monitorTypeId = " + monitorTypeId + ", monitorId = " + monitorId + ", monitorType = " + monitorType);
 
 		JpaTransactionManager jtm = null;
@@ -255,6 +260,10 @@ public class MonitorRunManagementBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("runMonitorAggregatedMonitorId() total time=" + (endtime - starttime) + "ms");
+		}
 	}
 	
 	/**
@@ -272,6 +281,10 @@ public class MonitorRunManagementBean {
 	 * @since 5.1.0
 	 */
 	public void runMonitorAggregatedFacilityId(String monitorTypeId, String facilityId, Integer monitorType) throws FacilityNotFound, MonitorNotFound, HinemosUnknown {
+		Long starttime = 0L;
+		if (m_log.isDebugEnabled()) {
+			starttime = new Date().getTime();
+		}
 		m_log.debug("runMonitorAggregatedFacilityId() monitorTypeId = " + monitorTypeId + ", facilityId = " + facilityId + ", monitorType = " + monitorType);
 
 		JpaTransactionManager jtm = null;
@@ -381,6 +394,10 @@ public class MonitorRunManagementBean {
 		} finally {
 			if (jtm != null)
 				jtm.close();
+		}
+		if (m_log.isDebugEnabled()) {
+			Long endtime = new Date().getTime();
+			m_log.debug("runMonitorAggregatedFacilityId() total time=" + (endtime - starttime) + "ms");
 		}
 	}
 }

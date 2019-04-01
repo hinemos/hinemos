@@ -125,17 +125,18 @@ public class BinaryCollector {
 		}
 
 		// 監視対象のバイナリファイルをreadedSize分読込む.
-		if (bm.getReadingStatus().isToSkipRecord()) {
-			// レコード区切る時の位置調整用のサイズをセット.
+		if (bm.getReadingStatus().isToSkipRecord() && bm.getReadingStatus().getSkipSize() == 0) {
+			// レコード区切る時の位置調整用のサイズをセット(設定されていない場合のみ).
 			bm.getReadingStatus().setSkipSize(bm.getReadingStatus().getPrevSize() - fileHeadSize);
 		}
 		bm.getFileChannel().position(bm.getReadingStatus().getPosition());
 		m_log.debug(methodName + DELIMITER
 				+ String.format(
 						"prepared to read file from the position."
-								+ " monitorId=%s, file=[%s], position=%d, toSkipRecord=%b",
+								+ " monitorId=%s, file=[%s], position=%d, toSkipRecord=%b, skipSize=%d",
 						bm.getM_wrapper().getId(), bm.getReadingStatus().getMonFileName(),
-						bm.getFileChannel().position(), bm.getReadingStatus().isToSkipRecord()));
+						bm.getFileChannel().position(), bm.getReadingStatus().isToSkipRecord(),
+						bm.getReadingStatus().getSkipSize()));
 		int readSize = BinaryUtil.longParseInt(bm.getReadedSize());
 		readSuccess = addBinaryList(setList, bm.getFileChannel(), readSize);
 		// 実際に読込んだファイルサイズを格納.

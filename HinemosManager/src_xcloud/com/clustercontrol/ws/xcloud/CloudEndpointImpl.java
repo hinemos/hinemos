@@ -18,6 +18,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.clustercontrol.util.KeyCheck;
+import com.clustercontrol.accesscontrol.util.VersionUtil;
 
 import javax.activation.DataHandler;
 import javax.annotation.Resource;
@@ -31,7 +33,6 @@ import org.apache.log4j.Logger;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.model.RoleInfo;
-import com.clustercontrol.accesscontrol.util.VersionUtil;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
@@ -42,7 +43,6 @@ import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.hinemosagent.bean.AgentInfo;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
-import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.xcloud.security.HinemosAccessRight;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.PluginException;
@@ -1068,19 +1068,6 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 			@ParamId("XCLOUD_CORE_ROLE_ID") @NotNull String roleId) throws CloudManagerException, InvalidUserPass, InvalidRole {
 		return CloudManager.singleton().getCloudScopes().getPlatformServiceConditions(cloudScopeId, locationId);
 	}
-
-	@Override
-	@HinemosAccessRight(roleName=CLOUDMANAGEMENT, right=SystemPrivilegeMode.READ)
-	public String getVersion() throws CloudManagerException, InvalidUserPass, InvalidRole {
-		String version = KeyCheck.getResultXcloud();
-		Logger.getLogger(this.getClass()).debug(version);
-		boolean result = Boolean.valueOf(version.substring(7, version.length()));
-		if(!result) {
-			throw new CloudManagerException("expiration of a term", ErrorCode.UNEXPECTED.getMessage());
-		}
-		return VersionUtil.getVersion();
-	}
-
 	@Override
 	@HinemosAccessRight(roleName=CLOUDMANAGEMENT, right=SystemPrivilegeMode.MODIFY)
 	@CustomMethodValidation(AuthorizingValidator_scope_location.class)
@@ -1305,7 +1292,19 @@ public class CloudEndpointImpl implements CloudEndpoint, IWebServiceBase, CloudR
 		StorageEntity storageEntity = CloudManager.singleton().getStorages(user, user.getCloudScope().getLocation(locationId)).cloneBackupedStorage(request);
 		return Storage.convertWebEntity(storageEntity);
 	}
-
+	
+	@Override
+	@HinemosAccessRight(roleName=CLOUDMANAGEMENT, right=SystemPrivilegeMode.READ)
+	public String getVersion() throws CloudManagerException, InvalidUserPass, InvalidRole {
+		String version = KeyCheck.getResultXcloud();
+		Logger.getLogger(this.getClass()).debug(version);
+		boolean result = Boolean.valueOf(version.substring(7, version.length()));
+		if(!result) {
+			throw new CloudManagerException("expiration of a term", ErrorCode.UNEXPECTED.getMessage());
+		}
+		return VersionUtil.getVersion();
+	}
+	
 	@Override
 	@HinemosAccessRight(roleName=CLOUDMANAGEMENT, right=SystemPrivilegeMode.READ)
 	@CustomMethodValidation(AuthorizingValidator_scope_location.class)

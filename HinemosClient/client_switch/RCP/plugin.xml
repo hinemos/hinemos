@@ -132,6 +132,18 @@
 		<view class="com.clustercontrol.jobmanagement.view.JobPlanListView"
 			id="com.clustercontrol.jobmanagement.view.JobPlanListView" name="%view.job.plan">
 		</view>
+		<view class="com.clustercontrol.jobmanagement.view.JobQueueSettingView"
+			id="com.clustercontrol.jobmanagement.view.JobQueueSettingView" name="%view.job.queue.setting">
+		</view>
+		<view class="com.clustercontrol.jobmanagement.view.JobQueueReferrerView"
+			id="com.clustercontrol.jobmanagement.view.JobQueueReferrerView" name="%view.job.queue.referrer">
+		</view>
+		<view class="com.clustercontrol.jobmanagement.view.JobQueueActivityView"
+			id="com.clustercontrol.jobmanagement.view.JobQueueActivityView" name="%view.job.queue.activity">
+		</view>
+		<view class="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
+			id="com.clustercontrol.jobmanagement.view.JobQueueContentsView" name="%view.job.queue.contents">
+		</view>
 		<view class="com.clustercontrol.monitor.view.ScopeView" id="com.clustercontrol.monitor.view.ScopeView"
 			name="%view.monitor.history.scope">
 		</view>
@@ -158,6 +170,9 @@
 		</view>
 		<view class="com.clustercontrol.repository.view.NodeListView" id="com.clustercontrol.repository.view.NodeListView"
 			name="%view.repository.node">
+		</view>
+		<view class="com.clustercontrol.repository.view.NodeConfigSettingListView" id="com.clustercontrol.repository.view.NodeConfigSettingListView"
+			name="%view.repository.nodeconfigsetting">
 		</view>
 		<view class="com.clustercontrol.repository.view.AgentListView"
 			id="com.clustercontrol.repository.view.AgentListView" name="%view.repository.agent">
@@ -300,6 +315,14 @@
 			id="com.clustercontrol.nodemap.view.EventViewM"
 			name="%view.event"
 			restorable="true">
+		</view>
+		<view
+			allowMultiple="true"
+			category="com.clustercontrol.categories.options"
+			class="com.clustercontrol.nodemap.view.NodeListView"
+			id="com.clustercontrol.nodemap.view.NodeListView"
+			name="%view.nodesearch"
+			restorable="false">
 		</view>
 		<!-- Reporting -->
 		<view class="com.clustercontrol.reporting.view.ReportingScheduleView"
@@ -533,6 +556,14 @@
 						commandId="com.clustercontrol.jobmanagement.etc.action.ForwardFileListAction"
 						label="%view.job.forward.fileF" style="push">
 					</command>
+					<command
+						commandId="com.clustercontrol.jobmanagement.etc.action.JobQueueActivityAction"
+						label="%view.job.queue.activityA" style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.jobmanagement.etc.action.JobQueueContentsAction"
+						label="%view.job.queue.contentsC" style="push">
+					</command>
 				</menu>
 				<menu id="com.clustercontrol.job.setting" label="%job.settingJ">
 					<command
@@ -547,10 +578,21 @@
 						commandId="com.clustercontrol.jobmanagement.etc.action.JobListAction"
 						label="%view.job.listL" style="push">
 					</command>
+					<command
+						commandId="com.clustercontrol.jobmanagement.etc.action.JobQueueSettingAction"
+						label="%view.job.queue.settingQ" style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.jobmanagement.etc.action.JobQueueReferrerAction"
+						label="%view.job.queue.referrerR" style="push">
+					</command>
 				</menu>
 				<menu id="com.clustercontrol.repository" label="%repositoryR">
 					<command commandId="com.clustercontrol.repository.etc.action.NodeListAction"
 						label="%view.repository.nodeN" style="push">
+					</command>
+					<command commandId="com.clustercontrol.repository.etc.action.NodeConfigSettingListAction"
+						label="%view.repository.nodeconfigsettingC" style="push">
 					</command>
 					<command commandId="com.clustercontrol.repository.etc.action.AgentListAction"
 						label="%view.repository.agentA" style="push">
@@ -966,12 +1008,12 @@
 			</command>
 			<separator name="jobListViewSeparator5" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ImportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand"
 				icon="icons/import.gif" label="%import" style="push"
 				tooltip="%import">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ExportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand"
 				icon="icons/export.gif" label="%export" style="push"
 				tooltip="%export">
 			</command>
@@ -1045,12 +1087,12 @@
 			</command>
 			<separator name="jobListViewSeparator4" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ImportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand"
 				icon="icons/import.gif" label="%import" style="push"
 				tooltip="%import">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ExportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand"
 				icon="icons/export.gif" label="%export" style="push"
 				tooltip="%export">
 			</command>
@@ -1169,6 +1211,96 @@
 				icon="icons/searchres.gif" label="%filter" style="toggle" tooltip="%filter">
 			</command>
 		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.jobmanagement.view.JobQueueSettingView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobQueueAction"
+				icon="icons/add_obj.gif" label="%create" style="push" tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ModifyJobQueueAction"
+				icon="icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.DeleteJobQueueAction"
+				icon="icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
+			</command>
+			<command commandId="com.clustercontrol.jobmanagement.view.action.CopyJobQueueAction"
+				icon="icons/copy_obj.gif" label="%copy" style="push" tooltip="%copy">
+			</command>
+			<separator name="jobQueueSettingViewPopupSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobQueueAction"
+				icon="icons/obj_priv.gif" label="%object.privilege.setting" style="push" tooltip="%object.privilege.setting">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.jobmanagement.view.JobQueueSettingView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobQueueAction"
+				icon="icons/add_obj.gif" label="%create" style="push" tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ModifyJobQueueAction"
+				icon="icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.DeleteJobQueueAction"
+				icon="icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
+			</command>
+			<command commandId="com.clustercontrol.jobmanagement.view.action.CopyJobQueueAction"
+				icon="icons/copy_obj.gif" label="%copy" style="push" tooltip="%copy">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobQueueAction"
+				icon="icons/obj_priv.gif" label="%object.privilege.setting" style="push" tooltip="%object.privilege.setting">
+			</command>
+			<separator name="jobQueueSettingViewToolbarSeparator1" visible="true"></separator>
+			<command commandId="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueSettingAction"
+				icon="icons/refresh.gif" label="%update" style="push" tooltip="%update">
+			</command>
+			<command commandId="com.clustercontrol.jobmanagement.view.action.FilterJobQueueSettingAction"
+				icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.jobmanagement.view.JobQueueReferrerView" allPopups="false">
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.jobmanagement.view.JobQueueReferrerView" allPopups="false">
+			<command commandId="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueReferrerAction"
+				icon="icons/refresh.gif" label="%update" style="push" tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.jobmanagement.view.JobQueueActivityView" allPopups="false">
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.jobmanagement.view.JobQueueActivityView" allPopups="false">
+			<command commandId="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueActivityAction"
+				icon="icons/refresh.gif" label="%update" style="push" tooltip="%update">
+			</command>
+			<command commandId="com.clustercontrol.jobmanagement.view.action.FilterJobQueueActivityAction"
+				icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.jobmanagement.view.JobQueueContentsView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.StartJobDetailAction"
+				icon="icons/enable/resume_co.gif" label="%start" style="push" tooltip="%start">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.StopJobDetailAction"
+				icon="icons/terminate_co.gif" label="%stop" style="push" tooltip="%stop">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.jobmanagement.view.JobQueueContentsView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.StartJobDetailAction"
+				icon="icons/enable/resume_co.gif" label="%start" style="push" tooltip="%start">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.StopJobDetailAction"
+				icon="icons/terminate_co.gif" label="%stop" style="push" tooltip="%stop">
+			</command>
+			<command commandId="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueContentsAction"
+				icon="icons/refresh.gif" label="%update" style="push" tooltip="%update">
+			</command>
+		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.collect.view.CollectGraphView" allPopups="false">
 			<command
 				commandId="com.clustercontrol.collect.view.action.ScopeShowAction"
@@ -1240,6 +1372,10 @@
 				icon="icons/booleantrue.gif" label="%confirmed" style="push"
 				tooltip="%confirmed">
 			</command>
+			<command commandId="com.clustercontrol.monitor.view.action.EventConfirmingAction"
+				icon="icons/booleantrue2.gif" label="%return.confirming" style="push"
+				tooltip="%return.confirming">
+			</command>
 			<command
 				commandId="com.clustercontrol.monitor.view.action.EventUnconfirmAction"
 				icon="icons/booleanfalse.gif" label="%return.unconfirmed" style="push"
@@ -1253,6 +1389,9 @@
 			<separator name="EventViewSeparator1" visible="true"></separator>
 			<command commandId="com.clustercontrol.monitor.view.action.EventReportAction"
 				icon="icons/newfile_wiz.gif" label="%download" style="push" tooltip="%download">
+			</command>
+			<command commandId="com.clustercontrol.monitor.view.action.EventCustomCommandAction"
+				icon="icons/lrun_obj.gif" label="%customcommand" style="push" tooltip="%customcommand">
 			</command>
 			<separator name="EventViewSeparator2" visible="true"></separator>
 			<command commandId="com.clustercontrol.monitor.view.action.EventDetailAction"
@@ -1294,9 +1433,15 @@
 				icon="icons/local_history_mode.gif" label="%job.history" style="push"
 				tooltip="%job.history">
 			</command>
-			<command commandId="com.clustercontrol.monitor.view.action.EventConfirmAction"
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventConfirmAction"
 				icon="icons/booleantrue.gif" label="%confirmed" style="push"
 				tooltip="%confirmed">
+			</command>
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventConfirmingAction"
+				icon="icons/booleantrue2.gif" label="%return.confirming" style="push"
+				tooltip="%return.confirming">
 			</command>
 			<command
 				commandId="com.clustercontrol.monitor.view.action.EventUnconfirmAction"
@@ -1304,6 +1449,11 @@
 				tooltip="%return.unconfirmed">
 			</command>
 			<separator name="EventViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventCustomCommandAction"
+				icon="icons/lrun_obj.gif" label="%customcommand" style="push"
+				tooltip="%customcommand">
+			</command>
 			<command
 				commandId="com.clustercontrol.monitor.view.action.EventCollectGraphOnAction"
 				icon="icons/tag.gif" label="%collect.graph.flg.on" style="push"
@@ -1670,6 +1820,57 @@
 				commandId="com.clustercontrol.repository.view.action.AgentUpdateAction"
 				icon="icons/enable/synch_participants.gif" label="%update.module"
 				style="push" tooltip="%update.module">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.repository.view.NodeConfigSettingListView" allPopups="false">
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigSettingAddAction"
+				icon="icons/add_obj.gif" label="%create" style="push" tooltip="%create">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigSettingModifyAction"
+				icon="icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigSettingDeleteAction"
+				icon="icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigSettingCopyAction"
+				icon="icons/copy_obj.gif" label="%copy" style="push" tooltip="%copy">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigEnableAction"
+				icon="icons/booleantrue.gif" label="%enable" style="push" tooltip="%enable">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigDisableAction"
+				icon="icons/booleanfalse.gif" label="%disable" style="push" tooltip="%disable">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigRunAction"
+				icon="icons/node_refresh.png" label="%node.config.run" style="push" tooltip="%node.config.run">
+			</command>
+			<separator name="NodeConfigSettingListViewSeparator1" visible="true"></separator>
+			<command commandId="com.clustercontrol.repository.view.action.RefreshAction"
+				icon="icons/refresh_tab.gif" label="%update" style="push" tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.repository.view.NodeConfigSettingListView" allPopups="false">
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigSettingAddAction"
+				icon="icons/add_obj.gif" label="%create" style="push" tooltip="%create">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigSettingModifyAction"
+				icon="icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigSettingDeleteAction"
+				icon="icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
+			</command>
+			<separator name="NodeConfigSettingListViewSeparator1" visible="true"></separator>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigSettingCopyAction"
+				icon="icons/copy_obj.gif" label="%copy" style="push" tooltip="%copy">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigEnableAction"
+				icon="icons/booleantrue.gif" label="%enable" style="push" tooltip="%enable">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigDisableAction"
+				icon="icons/booleanfalse.gif" label="%disable" style="push" tooltip="%disable">
+			</command>
+			<command commandId="com.clustercontrol.repository.view.action.NodeConfigRunAction"
+				icon="icons/node_refresh.png" label="%node.config.run" style="push" tooltip="%node.config.run">
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.repository.view.NodeScopeView" allPopups="false">
@@ -2623,12 +2824,12 @@
 			</command>
 			<separator name="JobTreeViewSeparator4" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ImportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommandJobTree"
 				icon="icons/import.gif" label="%import" style="push"
 				tooltip="%import">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ExportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommandJobTree"
 				icon="icons/export.gif" label="%export" style="push"
 				tooltip="%export">
 			</command>
@@ -2744,12 +2945,12 @@
 			</command>
 			<separator name="JobMapEditorSeparator4" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ImportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand"
 				icon="icons/import.gif" label="%import" style="push"
 				tooltip="%import">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ExportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand"
 				icon="icons/export.gif" label="%export" style="push"
 				tooltip="%export">
 			</command>
@@ -2887,12 +3088,12 @@
 			</command>
 			<separator name="JobMapEditorToolbarSeparator5" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ImportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand"
 				icon="icons/import.gif" label="%import" style="push"
 				tooltip="%import">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ExportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand"
 				icon="icons/export.gif" label="%export" style="push"
 				tooltip="%export">
 			</command>
@@ -3169,6 +3370,26 @@
 				tooltip="%zoom-in">
 			</command>
 		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.nodemap.view.NodeListView" allPopups="false">
+			<command commandId="com.clustercontrol.enterprise.nodemap.view.action.NodeListFindAction"
+				icon="icons/find.png"
+				label="%find"
+				style="push"
+				tooltip="%find">
+			</command>
+			<command commandId="com.clustercontrol.enterprise.nodemap.view.action.NodeListScopeAddAction"
+				icon="icons/add_obj.gif"
+				label="%create.scope"
+				style="push"
+				tooltip="%create.scope">
+			</command>
+			<command commandId="com.clustercontrol.enterprise.nodemap.view.action.NodeListDownloadAction"
+				icon="icons/file_obj.gif"
+				label="%download"
+				style="push"
+				tooltip="%download">
+			</command>
+		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.nodemap.view.ScopeTreeView" allPopups="true">
 			<command
 				commandId="com.clustercontrol.enterprise.nodemap.view.action.OpenNodeMapAction"
@@ -3176,6 +3397,13 @@
 				label="%openview"
 				style="push"
 				tooltip="%openview">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.nodemap.view.action.OpenNodeListAction"
+				icon="icons/scope.gif"
+				label="%opennodelist"
+				style="push"
+				tooltip="%opennodelist">
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.nodemap.view.ScopeTreeView" allPopups="false">
@@ -3185,6 +3413,13 @@
 				label="%openview"
 				style="push"
 				tooltip="%openview">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.nodemap.view.action.OpenNodeListAction"
+				icon="icons/scope.gif"
+				label="%opennodelist"
+				style="push"
+				tooltip="%opennodelist">
 			</command>
 			<command
 				commandId="com.clustercontrol.enterprise.nodemap.view.action.NodeSearchAction"
@@ -4301,6 +4536,26 @@
 			name="jobLickList">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobQueueSettingAction"
+			id="com.clustercontrol.jobmanagement.etc.action.JobQueueSettingAction"
+			name="jobQueueSetting">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobQueueReferrerAction"
+			id="com.clustercontrol.jobmanagement.etc.action.JobQueueReferrerAction"
+			name="jobQueueReferrer">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobQueueActivityAction"
+			id="com.clustercontrol.jobmanagement.etc.action.JobQueueActivityAction"
+			name="jobQueueActivity">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobQueueContentsAction"
+			id="com.clustercontrol.jobmanagement.etc.action.JobQueueContentsAction"
+			name="jobQueueContents">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
 			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobListAction"
 			id="com.clustercontrol.jobmanagement.etc.action.JobListAction" name="jobList">
 		</command>
@@ -4342,6 +4597,10 @@
 		<command categoryId="com.clustercontrol.categories.Repository"
 			defaultHandler="com.clustercontrol.repository.etc.action.NodeListAction"
 			id="com.clustercontrol.repository.etc.action.NodeListAction" name="nodeList">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Repository"
+			defaultHandler="com.clustercontrol.repository.etc.action.NodeConfigSettingListAction"
+			id="com.clustercontrol.repository.etc.action.NodeConfigSettingListAction" name="nodeConfigSettingList">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Repository"
 			defaultHandler="com.clustercontrol.repository.etc.action.NodeScopeAction"
@@ -4628,6 +4887,72 @@
 			id="com.clustercontrol.jobmanagement.view.action.StopJobDetailAction"
 			name="stopJobDetail">
 		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CreateJobQueueAction"
+			id="com.clustercontrol.jobmanagement.view.action.CreateJobQueueAction"
+			name="createJobQueue">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.ModifyJobQueueAction"
+			id="com.clustercontrol.jobmanagement.view.action.ModifyJobQueueAction"
+			name="modifyJobQueue">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.ShowJobQueueAction"
+			id="com.clustercontrol.jobmanagement.view.action.ShowJobQueueAction"
+			name="showJobQueue">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.DeleteJobQueueAction"
+			id="com.clustercontrol.jobmanagement.view.action.DeleteJobQueueAction"
+			name="deleteJobQueue">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CopyJobQueueAction"
+			id="com.clustercontrol.jobmanagement.view.action.CopyJobQueueAction"
+			name="copyJobQueue">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobQueueAction"
+			id="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobQueueAction"
+			name="objectPrivilegeJobQueue">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueSettingAction"
+			id="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueSettingAction"
+			name="refreshJobQueueSetting">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.FilterJobQueueSettingAction"
+			id="com.clustercontrol.jobmanagement.view.action.FilterJobQueueSettingAction"
+			name="filterJobQueueSetting">
+			<state class="org.eclipse.ui.handlers.RegistryToggleState:false"
+				id="org.eclipse.ui.commands.toggleState">
+			</state>
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueReferrerAction"
+			id="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueReferrerAction"
+			name="refreshJobQueueReferrer">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueActivityAction"
+			id="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueActivityAction"
+			name="refreshJobQueueActivity">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.FilterJobQueueActivityAction"
+			id="com.clustercontrol.jobmanagement.view.action.FilterJobQueueActivityAction"
+			name="filterJobQueueActivity">
+			<state class="org.eclipse.ui.handlers.RegistryToggleState:false"
+				id="org.eclipse.ui.commands.toggleState">
+			</state>
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueContentsAction"
+			id="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueContentsAction"
+			name="refreshJobQueueContentsAction">
+		</command>
 		<category id="com.clustercontrol.categories.Performance"
 			name="performance">
 		</category>
@@ -4711,6 +5036,14 @@
 		<command categoryId="com.clustercontrol.categories.Monitor"
 			defaultHandler="com.clustercontrol.monitor.view.action.EventConfirmAction"
 			id="com.clustercontrol.monitor.view.action.EventConfirmAction" name="eventConfirmAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Monitor"
+			defaultHandler="com.clustercontrol.monitor.view.action.EventConfirmingAction"
+			id="com.clustercontrol.monitor.view.action.EventConfirmingAction" name="eventConfirmingAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Monitor"
+			defaultHandler="com.clustercontrol.monitor.view.action.EventCustomCommandAction"
+			id="com.clustercontrol.monitor.view.action.EventCustomCommandAction" name="eventCustomCommandAction">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Monitor"
 			defaultHandler="com.clustercontrol.monitor.view.action.EventReportAction"
@@ -4917,6 +5250,34 @@
 			defaultHandler="com.clustercontrol.repository.view.action.RefreshAgentAction"
 			id="com.clustercontrol.repository.view.action.RefreshAgentAction"
 			name="refreshAgentAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Repository"
+			defaultHandler="com.clustercontrol.repository.view.action.NodeConfigSettingCopyAction"
+			id="com.clustercontrol.repository.view.action.NodeConfigSettingCopyAction" name="nodeConfigSettingCopyAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Repository"
+			defaultHandler="com.clustercontrol.repository.view.action.NodeConfigSettingDeleteAction"
+			id="com.clustercontrol.repository.view.action.NodeConfigSettingDeleteAction" name="nodeConfigSettingDeleteAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Repository"
+			defaultHandler="com.clustercontrol.repository.view.action.NodeConfigSettingModifyAction"
+			id="com.clustercontrol.repository.view.action.NodeConfigSettingModifyAction" name="nodeConfigSettingModifyAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Repository"
+			defaultHandler="com.clustercontrol.repository.view.action.NodeConfigSettingAddAction"
+			id="com.clustercontrol.repository.view.action.NodeConfigSettingAddAction" name="nodeConfigSettingAddAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Repository"
+			defaultHandler="com.clustercontrol.repository.view.action.NodeConfigEnableAction"
+			id="com.clustercontrol.repository.view.action.NodeConfigEnableAction" name="nodeConfigEnableAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Repository"
+			defaultHandler="com.clustercontrol.repository.view.action.NodeConfigDisableAction"
+			id="com.clustercontrol.repository.view.action.NodeConfigDisableAction" name="nodeConfigDisableAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Repository"
+			defaultHandler="com.clustercontrol.repository.view.action.NodeConfigRunAction"
+			id="com.clustercontrol.repository.view.action.NodeConfigRunAction" name="nodeConfigRunAction">
 		</command>
 		<category id="com.clustercontrol.categories.Maintenance" name="Maintenance" />
 		<command categoryId="com.clustercontrol.categories.Maintenance"
@@ -5868,6 +6229,21 @@
 			id="com.clustercontrol.categories.NodeMap"
 			name="NodeMap">
 		</category>
+		<command categoryId="com.clustercontrol.categories.NodeMap"
+			defaultHandler="com.clustercontrol.nodemap.view.action.NodeListFindAction"
+			id="com.clustercontrol.enterprise.nodemap.view.action.NodeListFindAction"
+			name="nodeListFindAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.NodeMap"
+			defaultHandler="com.clustercontrol.nodemap.view.action.NodeListScopeAddAction"
+			id="com.clustercontrol.enterprise.nodemap.view.action.NodeListScopeAddAction"
+			name="nodeListScopeAddAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.NodeMap"
+			defaultHandler="com.clustercontrol.nodemap.view.action.NodeListDownloadAction"
+			id="com.clustercontrol.enterprise.nodemap.view.action.NodeListDownloadAction"
+			name="nodeListDownloadAddAction">
+		</command>
 		<command
 			categoryId="com.clustercontrol.categories.NodeMap"
 			defaultHandler="com.clustercontrol.nodemap.view.action.SetListModeAction"
@@ -5958,9 +6334,21 @@
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.NodeMap"
+			defaultHandler="com.clustercontrol.nodemap.view.action.OpenNodeListAction"
+			id="com.clustercontrol.enterprise.nodemap.view.action.OpenNodeListAction"
+			name="openNodeList">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.NodeMap"
 			defaultHandler="com.clustercontrol.nodemap.etc.action.NodeMapViewAction"
 			id="com.clustercontrol.enterprise.nodemap.etc.action.NodeMapViewAction"
 			name="nodeMapView">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.NodeMap"
+			defaultHandler="com.clustercontrol.nodemap.etc.action.NodeListViewAction"
+			id="com.clustercontrol.enterprise.nodemap.etc.action.NodeListViewAction"
+			name="nodeListView">
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.NodeMap"
@@ -6111,14 +6499,26 @@
 		<command
 			categoryId="com.clustercontrol.categories.utility.jobutil"
 			defaultHandler="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand"
-			id="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ImportJobCommand"
+			id="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand"
 			name="ImportJob">
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.utility.jobutil"
+			defaultHandler="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommandJobTree"
+			id="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommandJobTree"
+			name="ImportJobJobTree">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.utility.jobutil"
 			defaultHandler="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand"
-			id="com.clustercontrol.enterprise.utility.jobutil.ui.views.commands.ExportJobCommand"
+			id="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand"
 			name="ExportJob">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.utility.jobutil"
+			defaultHandler="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommandJobTree"
+			id="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommandJobTree"
+			name="ExportJobJobTree">
 		</command>
 	</extension>
 	<extension point="org.eclipse.ui.bindings">
@@ -6628,6 +7028,18 @@
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+M3+ENTER">
 		</key>
+		<key
+			commandId="com.clustercontrol.monitor.view.action.EventConfirmingAction"
+			contextId="com.clustercontrol.monitor.view.EventView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+SPACE">
+		</key>
+		<key
+			commandId="com.clustercontrol.monitor.view.action.EventCustomCommandAction"
+			contextId="com.clustercontrol.monitor.view.EventView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ARROW_UP">
+		</key>
 		<!-- ScopeView -->
 		<key
 			commandId="com.clustercontrol.monitor.view.action.RefreshAction"
@@ -6894,6 +7306,82 @@
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+ARROW_DOWN">
 		</key>
+		<!-- JobQueueSettingView -->
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.CreateJobQueueAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+N">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.DeleteJobQueueAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="DEL">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.CopyJobQueueAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+D">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobQueueAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+O">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueSettingAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.FilterJobQueueSettingAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+F">
+		</key>
+		<!-- JobQueueReferrerView -->
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueReferrerAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueReferrerView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<!-- JobQueueActivityView -->
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueActivityAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueActivityView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.FilterJobQueueActivityAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueActivityView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+F">
+		</key>
+		<!-- JobQueueContentsView -->
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.StartJobDetailAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ARROW_UP">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.StopJobDetailAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ARROW_DOWN">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueContentsAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
 		<!-- HinemosPropertyView -->
 		<key
 			commandId="com.clustercontrol.maintenance.view.action.HinemosPropertyRefreshAction"
@@ -7066,6 +7554,49 @@
 			contextId="com.clustercontrol.repository.view.NodeListView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+ARROW_UP">
+		</key>
+		<!-- NodeConfigSettingListView -->
+		<key
+			commandId="com.clustercontrol.repository.view.action.NodeConfigSettingAddAction"
+			contextId="com.clustercontrol.repository.view.NodeConfigSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+N">
+		</key>
+		<key
+			commandId="com.clustercontrol.repository.view.action.NodeConfigSettingDeleteAction"
+			contextId="com.clustercontrol.repository.view.NodeConfigSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="DEL">
+		</key>
+		<key
+			commandId="com.clustercontrol.repository.view.action.NodeConfigSettingCopyAction"
+			contextId="com.clustercontrol.repository.view.NodeConfigSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+D">
+		</key>
+		<key
+			commandId="com.clustercontrol.repository.view.action.NodeConfigEnableAction"
+			contextId="com.clustercontrol.repository.view.NodeConfigSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ARROW_LEFT">
+		</key>
+		<key
+			commandId="com.clustercontrol.repository.view.action.NodeConfigDisableAction"
+			contextId="com.clustercontrol.repository.view.NodeConfigSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ARROW_RIGHT">
+		</key>
+		<key
+			commandId="com.clustercontrol.repository.view.action.NodeConfigRunAction"
+			contextId="com.clustercontrol.repository.view.NodeConfigSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+C">
+		</key>
+		<key
+			commandId="com.clustercontrol.repository.view.action.RefreshAction"
+			contextId="com.clustercontrol.repository.view.NodeConfigSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
 		</key>
 		<!-- NodeAttributeView -->
 		<key
@@ -7660,6 +8191,30 @@
 			name="com.clustercontrol.jobmanagement.view.JobNodeDetailView"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
+		<!-- JobQueueSettingView -->
+		<context
+			id="com.clustercontrol.jobmanagement.view.JobQueueSettingView"
+			name="com.clustercontrol.jobmanagement.view.JobQueueSettingView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- JobQueueReferrerView -->
+		<context
+			id="com.clustercontrol.jobmanagement.view.JobQueueReferrerView"
+			name="com.clustercontrol.jobmanagement.view.JobQueueReferrerView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- JobQueueActivityView -->
+		<context
+			id="com.clustercontrol.jobmanagement.view.JobQueueActivityView"
+			name="com.clustercontrol.jobmanagement.view.JobQueueActivityView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- JobQueueContentsView -->
+		<context
+			id="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
+			name="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
 		<!-- HinemosPropertyView -->
 		<context
 			id="com.clustercontrol.maintenance.view.HinemosPropertyView"
@@ -7688,6 +8243,12 @@
 		<context
 			id="com.clustercontrol.repository.view.NodeListView"
 			name="com.clustercontrol.repository.view.NodeListView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- NodeConfigSettingListView -->
+		<context
+			id="com.clustercontrol.repository.view.NodeConfigSettingListView"
+			name="com.clustercontrol.repository.view.NodeConfigSettingListView"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
 		<!-- NodeAttributeView -->
@@ -7782,6 +8343,11 @@
 		<context
 			id="com.clustercontrol.nodemap.view.NodeMapView"
 			name="com.clustercontrol.nodemap.view.NodeMapView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<context
+			id="com.clustercontrol.nodemap.view.NodeListView"
+			name="com.clustercontrol.nodemap.view.NodeListView"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
 		<context

@@ -39,10 +39,45 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="EventLogOperationHistoryEntity.deleteByGenerationDate">
+		<query>
+			<![CDATA[
+				DELETE FROM EventLogOperationHistoryEntity c
+				WHERE EXISTS (
+					select 'X'
+					FROM EventLogEntity a
+					WHERE a.generationDate < :generationDate
+					AND   a.id.monitorId = c.monitorId
+					AND   a.id.monitorDetailId = c.monitorDetailId
+					AND   a.id.pluginId = c.pluginId
+					AND   a.id.outputDate = c.outputDate
+					AND   a.id.facilityId = c.facilityId
+				)
+			]]>
+		</query>
+	</named-query>
 	<named-query name="EventLogEntity.deleteByGenerationDateConfigFlg">
 		<query>
 			<![CDATA[
 				DELETE FROM EventLogEntity c WHERE c.generationDate < :generationDate AND c.confirmFlg='1'
+			]]>
+		</query>
+	</named-query>
+	<named-query name="EventLogOperationHistoryEntity.deleteByGenerationDateConfigFlg">
+		<query>
+			<![CDATA[
+				DELETE FROM EventLogOperationHistoryEntity c
+				WHERE EXISTS (
+					select 'X'
+					FROM EventLogEntity a
+					WHERE a.generationDate < :generationDate
+					AND   a.confirmFlg='1'
+					AND   a.id.monitorId = c.monitorId
+					AND   a.id.monitorDetailId = c.monitorDetailId
+					AND   a.id.pluginId = c.pluginId
+					AND   a.id.outputDate = c.outputDate
+					AND   a.id.facilityId = c.facilityId
+				)
 			]]>
 		</query>
 	</named-query>
@@ -53,10 +88,47 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="EventLogOperationHistoryEntity.deleteByGenerationDateAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				DELETE FROM EventLogOperationHistoryEntity c
+				WHERE EXISTS (
+					select 'X'
+					FROM EventLogEntity a
+					WHERE a.generationDate < :generationDate
+					AND   a.ownerRoleId = :ownerRoleId
+					AND   a.id.monitorId = c.monitorId
+					AND   a.id.monitorDetailId = c.monitorDetailId
+					AND   a.id.pluginId = c.pluginId
+					AND   a.id.outputDate = c.outputDate
+					AND   a.id.facilityId = c.facilityId
+				)
+			]]>
+		</query>
+	</named-query>
 	<named-query name="EventLogEntity.deleteByGenerationDateConfigFlgAndOwnerRoleId">
 		<query>
 			<![CDATA[
 				DELETE FROM EventLogEntity c WHERE c.generationDate < :generationDate AND c.confirmFlg='1' AND c.ownerRoleId = :ownerRoleId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="EventLogOperationHistoryEntity.deleteByGenerationDateConfigFlgAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				DELETE FROM EventLogOperationHistoryEntity c
+				WHERE EXISTS (
+					select 'X'
+					FROM EventLogEntity a
+					WHERE a.generationDate < :generationDate
+					AND   a.confirmFlg='1'
+					AND   a.ownerRoleId = :ownerRoleId
+					AND   a.id.monitorId = c.monitorId
+					AND   a.id.monitorDetailId = c.monitorDetailId
+					AND   a.id.pluginId = c.pluginId
+					AND   a.id.outputDate = c.outputDate
+					AND   a.id.facilityId = c.facilityId
+				)
 			]]>
 		</query>
 	</named-query>

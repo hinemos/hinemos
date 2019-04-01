@@ -56,6 +56,7 @@ public class EventUnconfirmAction extends AbstractHandler implements IElementUpd
 	/** アクションID */
 	public static final String ID = EventUnconfirmAction.class.getName();
 
+	private IWorkbenchWindow window;
 	/** ビュー */
 	private IWorkbenchPart viewPart;
 
@@ -65,6 +66,7 @@ public class EventUnconfirmAction extends AbstractHandler implements IElementUpd
 	@Override
 	public void dispose() {
 		this.viewPart = null;
+		this.window = null;
 	}
 
 	/**
@@ -72,7 +74,7 @@ public class EventUnconfirmAction extends AbstractHandler implements IElementUpd
 	 * <p>
 	 * <ol>
 	 * <li>監視[イベント]ビューで、選択されているアイテムを取得します。</li>
-	 * <li>取得したイベント情報の確認を未確認に更新します。 </li>
+	 * <li>取得したイベント情報の確認状態を未確認に更新します。 </li>
 	 * <li>監視[イベント]ビューを更新します。</li>
 	 * </ol>
 	 *
@@ -82,25 +84,31 @@ public class EventUnconfirmAction extends AbstractHandler implements IElementUpd
 	 */
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
+		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
+		// In case this action has been disposed
+		if( null == this.window || !isEnabled() ){
+			return null;
+		}
+
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
 
-		EventView view = null;
+		EventView eventView = null;
 		try {
-			view = (EventView) this.viewPart.getAdapter(EventView.class);
+			eventView = (EventView) this.viewPart.getAdapter(EventView.class);
 		} catch (Exception e) { 
 			m_log.info("execute " + e.getMessage()); 
 			return null; 
 		}
 
-		if (view == null) {
+		if (eventView == null) {
 			m_log.info("execute: view is null"); 
 			return null;
 		}
 
-		EventListComposite composite = (EventListComposite) view
+		EventListComposite composite = (EventListComposite) eventView
 				.getListComposite();
-		WidgetTestUtil.setTestId(this, null, composite);
+				WidgetTestUtil.setTestId(this, null, composite);
 		StructuredSelection selection = (StructuredSelection) composite
 				.getTableViewer().getSelection();
 
@@ -136,7 +144,7 @@ public class EventUnconfirmAction extends AbstractHandler implements IElementUpd
 			if (eventInfoList != null && eventInfoList.size()>0) {
 				try {
 					wrapper.modifyConfirm(eventInfoList, ConfirmConstant.TYPE_UNCONFIRMED);
-					view.update(false);
+					eventView.update(false);
 				} catch (InvalidRole_Exception e) {
 					// アクセス権なしの場合、エラーダイアログを表示する
 					MessageDialog.openInformation(null, Messages.getString("message"),
@@ -154,9 +162,9 @@ public class EventUnconfirmAction extends AbstractHandler implements IElementUpd
 							Messages.getString("failed"),
 							Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 				}
-
 			}
 		}
+
 		return null;
 	}
 
@@ -164,24 +172,36 @@ public class EventUnconfirmAction extends AbstractHandler implements IElementUpd
 	public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters) {
 		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		// page may not start at state restoring
-		if( null != window ){
-			IWorkbenchPage page = window.getActivePage();
-			if( null != page ){
-				IWorkbenchPart part = page.getActivePart();
-
-				boolean editEnable = false;
-				if(part instanceof EventView){
-					// Enable button when 1 item is selected
-					EventView view = (EventView)part;
-
-					if(view.getConfirmType() == ConfirmConstant.TYPE_CONFIRMED) {
-						editEnable = true;
-					}
-				}
-				this.setBaseEnabled(editEnable);
-			} else {
-				this.setBaseEnabled(false);
-			}
+   		if (window == null) {
+			return;
 		}
+		
+		IWorkbenchPage page = window.getActivePage();
+
+		if (page == null) {
+			this.setBaseEnabled(false);
+			return;
+		}
+		
+			
+		IWorkbenchPart part = page.getActivePart();
+		
+		if (!(part instanceof EventView)) {
+			this.setBaseEnabled(false);
+			return;
+		}
+
+		// Enable button when not confirming items were selected		
+
+		boolean editEnable = true;
+
+		EventView view = (EventView)part;
+		
+		if (view.getConfirmTypeList() == null ||
+				view.getConfirmTypeList().contains(ConfirmConstant.TYPE_UNCONFIRMED)) {
+				//全く選択されていないか、未確認が選択されている場合、非活性
+				editEnable = false;
+		}
+		this.setBaseEnabled(editEnable);
 	}
 }

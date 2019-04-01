@@ -152,7 +152,6 @@ public class TemplateSetDetailInfoComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				// シェルを取得
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-				//FIXME
 				TemplateSetDetailDialog dialog = new TemplateSetDetailDialog(shell, templateSetDetailListComposite.getManagerName(), templateSetDetailListComposite.getOwnerRoleId());
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					templateSetDetailListComposite.getDetailList().add(dialog.getInputData());

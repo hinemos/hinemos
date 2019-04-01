@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"ProductList_funcName"}
+],
+"props":[
+	{
+	"propName":"ProductInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

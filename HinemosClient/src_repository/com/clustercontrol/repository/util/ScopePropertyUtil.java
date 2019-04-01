@@ -115,7 +115,7 @@ public class ScopePropertyUtil {
 				new Property(ScopeConstant.DESCRIPTION, Messages.getString("description", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_1024);
 		//アイコン
 		Property iconIname =
-				new Property(ScopeConstant.ICONIMAGE, Messages.getString("icon.image", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
+				new Property(ScopeConstant.ICONIMAGE, Messages.getString("icon.image", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
 
 		//値を初期化
 		facilityId.setValue("");

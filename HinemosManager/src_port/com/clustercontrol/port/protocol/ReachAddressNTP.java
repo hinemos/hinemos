@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -87,7 +86,6 @@ public class ReachAddressNTP extends ReachAddressProtocol {
 						} else {
 							result = result + ("\n" + "Response Time < 1ms");
 						}
-						result = new Date(time.getReturnTime()).toString();
 						retry = false;
 						isReachable = true;
 					} else {

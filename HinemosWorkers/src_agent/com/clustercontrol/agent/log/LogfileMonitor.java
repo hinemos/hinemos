@@ -276,16 +276,6 @@ public class LogfileMonitor {
 							// positionを取得してるfileChannel側でのposition管理が合致していない模様
 							status.position = fileChannel.position();
 							status.prevSize = currentFilesize;
-
-							// FIXME
-							// prefixは prefixBinaryにて代替となった為、判定上は不使用である
-							// ただし、r21858以前への切り戻し向けにprefixプロパティの更新は残す
-							// ver6.2 以降では この変数は不要なはずなので除去すること
-							if (status.prefix == null || status.prefix.isEmpty()) {
-								status.prefix = new String(cbuf, 0, Math.min(read, LogfileMonitorConfig.firstPartDataCheckSize));
-							} else if (status.prefix.length() < LogfileMonitorConfig.firstPartDataCheckSize) {
-								status.prefix = status.prefix + new String(cbuf, 0, Math.min(read, LogfileMonitorConfig.firstPartDataCheckSize - status.prefix.length()));
-							}
 							
 							//prefixBinary は必要な場合（未設定or長さが最大に達していない）のみ更新
 							if (status.prefixBinary == null || status.prefixBinary.isEmpty()) {

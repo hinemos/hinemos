@@ -9,14 +9,9 @@
 package com.clustercontrol.repository.model;
 
 import java.io.Serializable;
-import java.util.Iterator;
-import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
@@ -41,8 +36,6 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 	private Integer deviceSize = 0;
 	private String deviceSizeUnit = "";
 	private String deviceDescription = "";
-	
-	private NodeInfo nodeEntity;
 
 	/**
 	 * 空のコンストラクタです。setterで要素を追加して下さい。
@@ -63,7 +56,7 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 			Integer deviceIndex, 
 			String deviceType,
 			String deviceName) {
-		setFacilityId(deviceType);
+		setFacilityId(facilityId);
 		setDeviceType(deviceType);
 		setDeviceIndex(deviceIndex);
 		setDeviceName(deviceName);
@@ -233,82 +226,16 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 	public void setDeviceDescription(String deviceDescription) {
 		this.deviceDescription = deviceDescription;
 	}
-	
+
 	@Override
 	public String toString() {
-		StringBuffer str = new StringBuffer("{");
-
-		str.append("deviceType=" + getDeviceType() + " " + "deviceIndex="
-				+ getDeviceIndex() + " " + "deviceName=" + getDeviceName()
-				+ " " + "deviceDisplayName=" + getDeviceDisplayName() + " "
-				+ "seviceSize=" + getDeviceSize() + " " + "seviceSizeUnit="
-				+ getDeviceSizeUnit() + " " + "deviceDescription="
-				+ getDeviceDescription());
-		str.append('}');
-
-		return (str.toString());
-	}
-
-	
-	//bi-directional many-to-one association to nodeEntity
-	@XmlTransient
-	@ManyToOne(fetch=FetchType.LAZY)
-	@JoinColumn(name="facility_id", insertable=false, updatable=false)
-	public NodeInfo getNodeEntity() {
-		return this.nodeEntity;
-	}
-
-	public void setNodeEntity(NodeInfo nodeEntity) {
-		this.nodeEntity = nodeEntity;
-	}
-
-	/**
-	 * nodeEntityオブジェクト参照設定<BR>
-	 * 
-	 * nodeEntity設定時はSetterに代わりこちらを使用すること。
-	 * 
-	 * JPAの仕様(JSR 220)では、データ更新に伴うrelationshipの管理はユーザに委ねられており、
-	 * INSERTやDELETE時に、そのオブジェクトに対する参照をメンテナンスする処理を実装する。
-	 * 
-	 * JSR 220 3.2.3 Synchronization to the Database
-	 * 
-	 * Bidirectional relationships between managed entities will be persisted
-	 * based on references held by the owning side of the relationship.
-	 * It is the developer’s responsibility to keep the in-memory references
-	 * held on the owning side and those held on the inverse side consistent
-	 * with each other when they change.
-	 */
-	public abstract void relateToNodeEntity(NodeInfo nodeEntity);
-
-	/**
-	 * 削除前処理<BR>
-	 * 
-	 * JPAの仕様(JSR 220)では、データ更新に伴うrelationshipの管理はユーザに委ねられており、
-	 * INSERTやDELETE時に、そのオブジェクトに対する参照をメンテナンスする処理を実装する。
-	 * 
-	 * JSR 220 3.2.3 Synchronization to the Database
-	 * 
-	 * Bidirectional relationships between managed entities will be persisted
-	 * based on references held by the owning side of the relationship.
-	 * It is the developer’s responsibility to keep the in-memory references
-	 * held on the owning side and those held on the inverse side consistent
-	 * with each other when they change.
-	 */
-	public void unchain() {
-		// NodeEntity
-		if (this.nodeEntity != null) {
-			List<NodeFilesystemInfo> list = this.nodeEntity.getNodeFilesystemInfo();
-			if (list != null) {
-				Iterator<NodeFilesystemInfo> iter = list.iterator();
-				while(iter.hasNext()) {
-					NodeFilesystemInfo entity = iter.next();
-					if (entity.getId().equals(this.getId())){
-						iter.remove();
-						break;
-					}
-				}
-			}
-		}
+		return "NodeDeviceInfo ["
+				+ "id=" + id
+				+ ", deviceDisplayName=" + deviceDisplayName
+				+ ", deviceSize=" + deviceSize
+				+ ", deviceSizeUnit=" + deviceSizeUnit
+				+ ", deviceDescription=" + deviceDescription
+				+ "]";
 	}
 	
 	@Override
@@ -328,8 +255,6 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 		result = prime * result
 				+ ((deviceSizeUnit == null) ? 0 : deviceSizeUnit.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		result = prime * result
-				+ ((nodeEntity == null) ? 0 : nodeEntity.hashCode());
 		return result;
 	}
 
@@ -367,11 +292,6 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 				return false;
 		} else if (!id.equals(other.id))
 			return false;
-		if (nodeEntity == null) {
-			if (other.nodeEntity != null)
-				return false;
-		} else if (!nodeEntity.equals(other.nodeEntity))
-			return false;
 		return true;
 	}
 
@@ -389,4 +309,5 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 			throw new InternalError(e.toString());
 		}
 	}
+
 }

@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Hinemosの機能を定数として格納するクラス<BR>
  *
- * @version 6.1.0
+ * @version 6.2.0
  * @since 2.1.2
  */
 public class HinemosModuleConstant {
@@ -42,6 +42,8 @@ public class HinemosModuleConstant {
 	public static final String PLATFORM_REPSITORY_NODE = "PLT_REP_NOD";
 	/** リポジトリ */
 	public static final String PLATFORM_REPSITORY_SCOPE = "PLT_REP_SCP";
+	/** リポジトリ[自動登録] */
+	public static final String PLATFORM_REPSITORY_AUTO_REGISTER = "PLT_REP_AREG";
 
 	/** 監視設定 */
 	public static final String MONITOR = "MON";
@@ -136,11 +138,16 @@ public class HinemosModuleConstant {
 	public static final String JOB_SESSION_FILE = "JOB_SES_FIL";
 	/** ジョブ管理 */
 	public static final String JOB_KICK  = "JOB_KICK";
+	/** ジョブ管理:同時実行制御キュー */
+	public static final String JOB_QUEUE  = "JOB_QUEUE";
 	/** ジョブ管理 */
 	public static final String JOBMAP_IMAGE_FILE  = "JOBMAP_IMAGE_FILE";
 
 	/** 自動デバイスサーチ */
 	public static final String REPOSITORY_DEVICE_SEARCH = "REP_DS";
+
+	/** 対象構成情報 */
+	public static final String NODE_CONFIG_SETTING = "NODE_CONFIG_SETTING";
 
 	/**Hinemos自身の処理*/
 	public static final String SYSYTEM = "SYS";
@@ -160,6 +167,9 @@ public class HinemosModuleConstant {
 
 	/** 遠隔管理 */
 	public static final String INQUIRY = "INQUIRY"; 
+	
+	/** REST-API*/
+	public static final String REST_API = "REST_API";
 	
 	/** マネージャ操作ログタイトル */
 	/** リポジトリ */
@@ -289,6 +299,7 @@ public class HinemosModuleConstant {
 				typeId.equals(PLATFORM_REPOSITORY) ||
 				typeId.equals(PLATFORM_REPSITORY_NODE) ||
 				typeId.equals(PLATFORM_REPSITORY_SCOPE) ||
+				typeId.equals(PLATFORM_REPSITORY_AUTO_REGISTER) ||
 				typeId.equals(MONITOR) ||
 				typeId.equals(MONITOR_AGENT ) ||
 				typeId.equals(MONITOR_CUSTOM_N) ||
@@ -320,6 +331,7 @@ public class HinemosModuleConstant {
 				typeId.equals(MONITOR_INTEGRATION) ||
 				typeId.equals(MONITOR_BINARYFILE_BIN) ||
 				typeId.equals(MONITOR_PCAP_BIN) ||
+				typeId.equals(NODE_CONFIG_SETTING) ||
 				typeId.equals(HUB_LOGFORMAT) ||
 				typeId.equals(HUB_TRANSFER) ||
 				typeId.equals(PERFORMANCE) ||
@@ -331,6 +343,7 @@ public class HinemosModuleConstant {
 				typeId.equals(JOB_SESSION_DETAIL) ||
 				typeId.equals(JOB_SESSION_NODE) ||
 				typeId.equals(JOB_KICK) ||
+				typeId.equals(JOB_QUEUE) ||
 				typeId.equals(JOB_SCHEDULE_RUN_DETAIL) ||
 				typeId.equals(JOB_SESSION_FILE ) ||
 				typeId.equals(SYSYTEM ) ||
@@ -338,7 +351,8 @@ public class HinemosModuleConstant {
 				typeId.equals(SYSYTEM_SELFCHECK) ||
 				typeId.equals(INFRA) ||
 				typeId.equals(INFRA_FILE) ||
-				typeId.equals(REPORTING)){
+				typeId.equals(REPORTING) ||
+				typeId.equals(REST_API)){
 
 			return true;
 		} else if(!extensionTypeList.isEmpty()){
@@ -361,7 +375,8 @@ public class HinemosModuleConstant {
 			return "CALENDAR";
 		} else if (string.equals(PLATFORM_CALENDAR_PATTERN)) {
 			return "CALENDAR_PATTERN";
-		} else if (string.equals(PLATFORM_REPOSITORY)) {
+		} else if (string.equals(PLATFORM_REPOSITORY)
+				|| string.equals(PLATFORM_REPSITORY_AUTO_REGISTER)) {
 			return "REPOSITORY";
 		} else if (string.equals(PLATFORM_NOTIFY)) {
 			return "NOTIFY";
@@ -427,6 +442,8 @@ public class HinemosModuleConstant {
 			return "JOB_MANAGEMENT";
 		} else if (string.equals(JOB_KICK)) {
 			return "JOB_KICK";
+		} else if (string.equals(JOB_QUEUE)) {
+			return "JOB_QUEUE";
 		} else if (string.equals(SYSYTEM_MAINTENANCE)) {
 			return "MAINTENANCE_NAME";
 		} else if (string.equals(SYSYTEM_SELFCHECK)) {
@@ -447,6 +464,10 @@ public class HinemosModuleConstant {
 			return "BINARYFILE_MONITOR_BIN";
 		} else if (string.equals(MONITOR_PCAP_BIN)){
 			return "PCAP_MONITOR_BIN";
+		} else if (string.equals(NODE_CONFIG_SETTING)) {
+			return "NODE_CONFIG_SETTING";
+		}  else if (string.equals(REST_API)) {
+			return "REST_API";
 		} else if(!extensionTypeList.isEmpty()){
 			for(ExtensionType extensionType: extensionTypeList){
 				if(string.equals(extensionType.getTypeId())){

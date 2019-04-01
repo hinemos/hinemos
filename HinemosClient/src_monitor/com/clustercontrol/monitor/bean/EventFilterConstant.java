@@ -60,11 +60,14 @@ public class EventFilterConstant {
 	public static final String APPLICATION = "application";
 	/** メッセージ。 */
 	public static final String MESSAGE = "message";
-	/**
-	 * 確認。
-	 * @see com.clustercontrol.monitor.bean.ConfirmConstant
-	 */
+	/** 確認 */
 	public static final String CONFIRMED = "confirmed";
+	/** 確認（未確認）。 */
+	public static final String CONFIRMED_UNCONFIRMED = "confirmedUnconfirmed";
+	/** 確認（確認中）。 */
+	public static final String CONFIRMED_CONFIRMING = "confirmedConfirming";
+	/** 確認（確認済）。 */
+	public static final String CONFIRMED_CONFIRMED = "confirmedConfirmed";
 
 	/** 受信日時。 */
 	public static final String OUTPUT_DATE = "outputDate";
@@ -82,5 +85,14 @@ public class EventFilterConstant {
 	public static final String OWNER_ROLE_ID = "ownerRoleId";
 	/** 性能グラフ用フラグ */
 	public static final String COLLECT_GRAPH_FLG = "collectGraphFlg";
-
+	/** ユーザ項目フォーマット */
+	private static final String USER_ITEM_FORMAT = "userItem%02d";
+	/** イベント番号(自) */
+	public static final String EVENT_NO_FROM = "eventNoFrom";
+	/** イベント番号(至) */
+	public static final String EVENT_NO_TO = "eventNoTo";
+	
+	public static String getUserItemConst(int index) {
+		return String.format(USER_ITEM_FORMAT, index);
+	}
 }

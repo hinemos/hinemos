@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"LicenseList_funcName"}
+],
+"props":[
+	{
+	"propName":"LicenseInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

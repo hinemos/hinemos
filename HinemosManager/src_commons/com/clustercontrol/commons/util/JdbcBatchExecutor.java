@@ -62,18 +62,20 @@ public class JdbcBatchExecutor {
 		} catch (Exception e) {
 			if (e instanceof BatchUpdateException) {
 				BatchUpdateException bue = (BatchUpdateException)e;
+				log.warn("BatchUpdateException:" + bue, bue);
 				SQLException sqe = bue.getNextException();
 				if (sqe != null) {
-					log.warn("SQLException: " + sqe);
+					log.warn("SQLException: " + sqe, sqe);
 				}
 			} else {
 				log.warn(e);
 			}
 			if (conn != null) {
+				tm.getEntityManager().notifyUpdateError(e);
 				try {
 					conn.rollback();
 				} catch (SQLException e1) {
-					log.warn(e1);
+					log.warn(e1, e1);
 				}
 			}
 		} finally {
@@ -81,7 +83,7 @@ public class JdbcBatchExecutor {
 				try {
 					pstmt.close();
 				} catch (SQLException e) {
-					log.warn("SQLException: " + e);
+					log.warn("SQLException: " + e, e);
 				}
 			}
 			if (tm != null) {

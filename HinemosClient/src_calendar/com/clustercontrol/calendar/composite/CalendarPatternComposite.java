@@ -201,7 +201,6 @@ public class CalendarPatternComposite extends Composite {
 							break;
 						}
 						Ymd ymd = info.getYmd().get(i);
-						//TODO 表示を改善する
 						set.append(
 								ymd.getYear() + "/"
 								+ ymd.getMonth() + "/"

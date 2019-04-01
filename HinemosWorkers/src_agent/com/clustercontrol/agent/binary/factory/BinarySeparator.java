@@ -42,6 +42,9 @@ public class BinarySeparator {
 	/** 読込開始位置より後ろのレコード先頭位置 */
 	private long firstReadPosition = 0;
 
+	/** レコード分割の際スキップしたレコードのサイズ */
+	private int skippedSize = 0;
+
 	/**
 	 * バイナリデータ固定長レコード分割.<br>
 	 * <br>
@@ -64,6 +67,7 @@ public class BinarySeparator {
 
 		List<BinaryRecord> returnList = new ArrayList<BinaryRecord>();
 		BinaryRecord tmpBinRecord = new BinaryRecord();
+		this.skippedSize = 0;
 
 		// 分割前チェック.
 		if (binaryInfo.isHaveTs()) {
@@ -163,7 +167,7 @@ public class BinarySeparator {
 				tmpBinRecord.setAlldata(tmpList);
 
 				// レコード末尾なのでレコードスキップするか判定の上追加.
-				if (this.checkAddRecord(i, monitorId, fileRs)) {
+				if (this.checkAddRecord(i, monitorId, fileRs, tmpBinRecord.getSize() )) {
 					returnList.add(tmpBinRecord);
 				}
 
@@ -202,6 +206,7 @@ public class BinarySeparator {
 
 		List<BinaryRecord> returnList = new ArrayList<BinaryRecord>();
 		BinaryRecord tmpBinRecord = new BinaryRecord();
+		this.skippedSize = 0;
 
 		// 分割前チェック.
 		if (binaryInfo.isHaveTs()) {
@@ -336,7 +341,7 @@ public class BinarySeparator {
 				tmpBinRecord.setAlldata(tmpList);
 
 				// レコード末尾なのでレコードスキップするか判定の上追加.
-				if (this.checkAddRecord(i, monitorId, fileRs)) {
+				if (this.checkAddRecord(i, monitorId, fileRs, (tmpBinRecord.getSize()+ binaryInfo.getRecordHeadSize()))){
 					returnList.add(tmpBinRecord);
 				}
 
@@ -447,13 +452,22 @@ public class BinarySeparator {
 	/**
 	 * レコード追加判定.
 	 * 
+	 * @param index
+	 *            判定対象レコードの取得完了時のバイナリ配列内インデックス
+	 * @param monitorId
+	 *            監視ID
+	 * @param fileRs
+	 *            ファイルの読込みステータス
+	 * @param curRecSize
+	 *            判定対象レコードのデータサイズ（レコードヘッダ含む）※可変長の場合は注意
 	 * @return true:追加する、false:追加スキップ
 	 */
-	private boolean checkAddRecord(int index, String monitorId, FileReadingStatus fileRs) {
+	private boolean checkAddRecord(int index, String monitorId, FileReadingStatus fileRs,int curRecSize) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		// スキップ判定.
+		// skipSizeと比較
 		if (fileRs.isToSkipRecord()) {
-			if (index < fileRs.getSkipSize()) {
+			if ((index + 1) <= fileRs.getSkipSize()) {
 				// スキップサイズより前のインデックスなので飛ばす.
 				if( log.isTraceEnabled() ){
 					log.trace(methodName + DELIMITER
@@ -462,25 +476,34 @@ public class BinarySeparator {
 											+ " index=%d  fileRs.getSkipSize()=%d ",
 											index,fileRs.getSkipSize()));
 				}
+				// スキップ済のレコードサイズを記録
+				this.skippedSize = index + 1;
 				return false;
 			}
 			if (this.firstRecord) {
 				// Manager送信後に、次回監視用にファイルRS更新(updateFileRSで実施)する際の計算用にセット.
 				//（飛ばしたサイズを今回の判定を加味して再セット。
-				int newSkipSize =index + 1;
-				if( log.isTraceEnabled() ){
-					log.trace(methodName + DELIMITER
-							+ String.format(
-									"  isToSkipRecord last ."
-											+ " index=%d  preSkipSize()=%d newSkipSize=%d",
-											index,fileRs.getSkipSize(),newSkipSize));
-				}
-				fileRs.setSkipSize(newSkipSize);
-				// スキップサイズより大きいはじめてのレコードは半端サイズなので飛ばす.
+				// スキップサイズより大きいはじめてのレコードは半端サイズチェックを行い、該当( レコード開始位置が読み飛ばしの範囲 )なら飛ばす.
 				this.firstRecord = false;
-				this.firstReadPosition = index + 2; // 次レコードの先頭位置(ログ出力用).
-				return false;
+				//ファイルの読込み開始位置（fileRs.getPosition() ）＋ 読み進めた長さ － このレコードの長さ＝ このレコードの開始位置
+				long nowRecStartPos = fileRs.getPosition() + index + 1 - curRecSize;
+				if ( nowRecStartPos < ( fileRs.getSkipSize() + fileRs.getPosition()) ){
+					if( log.isTraceEnabled() ){
+						log.trace(methodName + DELIMITER
+								+ String.format(
+										"skipped records. first record is  fragment data "
+												+ " monitorId=%s, file=[%s], fileRs.getPosition()=%d, nowRecStartPos=%d, getSkipSize=%d",
+												monitorId, fileRs.getMonFileName(),  fileRs.getPosition() ,nowRecStartPos ,fileRs.getSkipSize()));
+					}
+					// 半端なサイズの場合、このデータを含むレコードまでをスキップ済とする(skipSizeより大きくなる)
+					this.skippedSize = index + 1;
+					this.firstReadPosition = index + 2; // 次レコードの先頭位置(ログ出力用).
+					return false;
+				}else{
+					this.firstReadPosition = fileRs.getPosition() + index + 1; // 次レコードの先頭位置(ログ出力用).
+				}
 			}
+			// １件目で半端サイズでない場合 と ２件目以降読込みの対象とする。
 			log.info(methodName + DELIMITER
 					+ String.format(
 							"skipped records."
@@ -512,6 +535,11 @@ public class BinarySeparator {
 		}
 
 		return readedSize;
+	}
+
+	/** レコード分割の際スキップしたレコードのサイズ*/
+	public int getSkippedSize(){
+		return this.skippedSize;
 	}
 
 	/**

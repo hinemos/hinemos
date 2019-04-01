@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"QueueList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Name",
+			"Concurrency",
+			"OwnerRoleId"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"JobQueueInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

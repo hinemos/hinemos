@@ -41,6 +41,7 @@ import com.clustercontrol.repository.model.NodeHostnameInfo;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.NodeMemoryInfo;
 import com.clustercontrol.repository.model.NodeNetworkInterfaceInfo;
+import com.clustercontrol.repository.model.NodeOsInfo;
 import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.repository.util.SearchDeviceProperties;
 import com.clustercontrol.util.HinemosTime;
@@ -241,6 +242,7 @@ public class SearchNodeBySNMP {
 
 		//プラットフォーム名は、Windows, Linux, Solaris以外はOtherとする
 		String platform = "OTHER";
+		property.setNodeOsInfo(new NodeOsInfo(property.getFacilityId()));
 		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())) != null
 				&& ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())).getValue() != null){
 			String description = ((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidDescr())).getValue());
@@ -267,10 +269,10 @@ public class SearchNodeBySNMP {
 				}
 
 				//OS名は上の判定ロジックを利用した値を設定
-				property.setOsName(OsName);
+				property.getNodeOsInfo().setOsName(OsName);
 
 				//OSバージョン
-				property.setOsVersion(description);
+				property.getNodeOsInfo().setOsVersion(description);
 			}
 		}
 

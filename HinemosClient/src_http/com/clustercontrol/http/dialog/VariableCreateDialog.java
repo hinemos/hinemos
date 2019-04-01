@@ -168,7 +168,7 @@ public class VariableCreateDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "machingwithresponse", m_buttonMatchingWithResponse);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_buttonMatchingWithResponse.setLayoutData(gridData);
 		this.m_buttonMatchingWithResponse.setText(Messages.getString("monitor.http.scenario.page.obtain.from.current.page"));

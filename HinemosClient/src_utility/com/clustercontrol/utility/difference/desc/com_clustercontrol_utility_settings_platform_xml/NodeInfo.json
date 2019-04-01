@@ -107,6 +107,12 @@
 	]},
 	
 	{
+	"propName":"startupDateTime",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_startupDateTime"}
+	]},
+	
+	{
 	"propName":"agentAwakePort",
 	"annotations":[
 		{"type":"Column", "columnName":"NodeInfo_agentAwakePort"}

@@ -13,6 +13,7 @@ import org.eclipse.ui.IPageLayout;
 
 import com.clustercontrol.ClusterControlPerspectiveBase;
 import com.clustercontrol.repository.view.AgentListView;
+import com.clustercontrol.repository.view.NodeConfigSettingListView;
 import com.clustercontrol.repository.view.NodeAttributeView;
 import com.clustercontrol.repository.view.NodeListView;
 import com.clustercontrol.repository.view.NodeScopeView;
@@ -48,6 +49,7 @@ public class RepositoryPerspective extends ClusterControlPerspectiveBase {
 
 		left.addView(NodeListView.ID);
 		left.addView(AgentListView.ID);
+		left.addView(NodeConfigSettingListView.ID);
 		right.addView(NodeAttributeView.ID);
 		bottom.addView(ScopeListView.ID);
 		bottom.addView(NodeScopeView.ID);

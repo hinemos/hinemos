@@ -535,7 +535,7 @@ public class WinEventMonitor {
 								}
 							}
 							else if("Keywords".equals(targetProperty)){
-								// TODO パースに失敗するのでいったん外す（例：0x8080000000000000）
+								// パースに失敗するのでいったん外す（例：0x8080000000000000）
 								//eventlog.setKeywords(Long.decode(new String(xmlr.getTextCharacters(), xmlr.getTextStart(), xmlr.getTextLength())));
 								//m_log.debug("set Keywords : " + eventlog.getKeywords());
 							}

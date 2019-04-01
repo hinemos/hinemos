@@ -115,7 +115,6 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 		} else if (rootFacility instanceof OutputNodeInfo) {
 			facilityIdList.add(rootFacility.getFacilityId());
 		}
-		// TODO 重複排除
 		return facilityIdList;
 	}
 
@@ -183,7 +182,6 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						result[4] = value.toString();
 					}
 
-					// FIXME Improve!
 					if (this.maxval < Double.valueOf(result[4])) {
 						this.maxval = Double.valueOf(result[4]) + 1;
 					} else if (this.minval > Double.valueOf(result[4])) {
@@ -248,7 +246,6 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						result[4] = value.toString();
 					}
 
-					// FIXME Improve!
 					if (this.maxval < Double.valueOf(result[4])) {
 						this.maxval = Double.valueOf(result[4]) + 1;
 					} else if (this.minval > Double.valueOf(result[4])) {
@@ -313,7 +310,6 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						result[4] = value.toString();
 					}
 
-					// FIXME Improve!
 					if (this.maxval < Double.valueOf(result[4])) {
 						this.maxval = Double.valueOf(result[4]) + 1;
 					} else if (this.minval > Double.valueOf(result[4])) {
@@ -378,7 +374,6 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						result[4] = value.toString();
 					}
 
-					// FIXME Improve!
 					if (this.maxval < Double.valueOf(result[4])) {
 						this.maxval = Double.valueOf(result[4]) + 1;
 					} else if (this.minval > Double.valueOf(result[4])) {

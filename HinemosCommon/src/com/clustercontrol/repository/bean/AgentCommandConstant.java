@@ -10,6 +10,7 @@ package com.clustercontrol.repository.bean;
 
 public class AgentCommandConstant {
 
+	public static int NONE = 0;
 	public static int RESTART = 1;
 	public static int UPDATE = 2;
 

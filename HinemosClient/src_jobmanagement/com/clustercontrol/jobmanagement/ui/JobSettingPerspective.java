@@ -8,11 +8,14 @@
 
 package com.clustercontrol.jobmanagement.ui;
 
+import org.eclipse.ui.IFolderLayout;
 import org.eclipse.ui.IPageLayout;
 
 import com.clustercontrol.ClusterControlPerspectiveBase;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.jobmanagement.view.JobPlanListView;
+import com.clustercontrol.jobmanagement.view.JobQueueReferrerView;
+import com.clustercontrol.jobmanagement.view.JobQueueSettingView;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
 
 /**
@@ -37,8 +40,12 @@ public class JobSettingPerspective extends ClusterControlPerspectiveBase {
 		//エディタ領域の上部30%を占めるViewを作成
 		layout.addView( JobListView.ID, IPageLayout.TOP, 0.33f, editorArea );
 		//残りの50%を占めるViewの作成
-		layout.addView( JobKickListView.ID, IPageLayout.TOP, 0.5f, editorArea );
+		IFolderLayout middle = layout.createFolder( "middle", IPageLayout.TOP, 0.5f, editorArea );
+		middle.addView(JobKickListView.ID);
+		middle.addView(JobQueueSettingView.ID);
 		//残りのViewの作成
-		layout.addView( JobPlanListView.ID, IPageLayout.TOP, IPageLayout.RATIO_MAX, editorArea );
+		IFolderLayout bottom = layout.createFolder( "bottom", IPageLayout.TOP, IPageLayout.RATIO_MAX, editorArea );
+		bottom.addView(JobPlanListView.ID);
+		bottom.addView(JobQueueReferrerView.ID);
 	}
 }

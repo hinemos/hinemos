@@ -102,7 +102,7 @@ public class MonitorCustomControllerBean {
 				
 				if (dto.getType() == Type.NUMBER){
 					RunCustom runner = new RunCustom(dto);
-					notifyInfoList = runner.monitor();
+					notifyInfoList.addAll(runner.monitor());
 					if (runner.getMonitorJobEndNodeList() != null 
 							&& runner.getMonitorJobEndNodeList().size() > 0) {
 						monitorJobEndNodeList.addAll(runner.getMonitorJobEndNodeList());

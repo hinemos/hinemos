@@ -15,15 +15,24 @@ package com.clustercontrol.monitor.bean;
  * @since 1.0.0
  */
 public class ConfirmConstant {
-	/** 確認（種別）。 */
+	
+	/** 確認済（種別）。 */
 	public static final int TYPE_CONFIRMED = 1;
 
 	/** 未確認（種別）。 */
 	public static final int TYPE_UNCONFIRMED = 0;
+	
+	/** 確認中（種別）。 */
+	public static final int TYPE_CONFIRMING = 2;
+	
 
-	/** 確認と未確認 */
-	public static final int TYPE_ALL = -1;
-
+	/** 重要状態のリスト **/
+	public static int[] CONFIRM_LIST = {
+		TYPE_UNCONFIRMED,
+		TYPE_CONFIRMING,
+		TYPE_CONFIRMED
+	};
+	
 	/**
 	 * 
 	 * @param type
@@ -34,6 +43,8 @@ public class ConfirmConstant {
 			return "TYPE_CONFIRMED";
 		} else if (type == TYPE_UNCONFIRMED) {
 			return "TYPE_UNCONFIRMED";
+		} else if (type == TYPE_CONFIRMING) {
+			return "TYPE_CONFIRMING";
 		}
 		return "";
 	}

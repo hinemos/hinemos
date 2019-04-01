@@ -75,7 +75,7 @@ public class SelectReportingJob {
 	
 	/**
 	 * JobSessionJobEntityの一覧を取得します。<BR>
-	 * @param sessionId TODO
+	 * @param sessionId
 	 * @param jobunitId
 	 * @param jobId
 	 * @param excJobId

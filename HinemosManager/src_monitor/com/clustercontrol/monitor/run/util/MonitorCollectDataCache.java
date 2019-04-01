@@ -877,7 +877,7 @@ public class MonitorCollectDataCache {
 				if (range < monitorInfo.getChangeAnalysysRange()) {
 					range = monitorInfo.getChangeAnalysysRange();
 				}
-			} else if (monitorTypeId != null) {
+			} else {
 				// リフレッシュではなく、かつ相関係数監視以外の監視の場合
 				// 引数（相関係数監視以外の監視の収集期間）を使用
 				range = paramRange;
@@ -896,7 +896,7 @@ public class MonitorCollectDataCache {
 						}
 					}
 				}
-			} else if (monitorTypeId != null) {
+			} else {
 				// リフレッシュではなく、かつ相関係数監視の場合
 				// 引数（相関係数監視の収集期間）を使用
 				if (paramRange > range) {

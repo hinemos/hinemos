@@ -77,7 +77,7 @@ public class ReportingSendMail extends SendMail {
 	private static Locale m_local = Locale.getDefault();
 	
 	// メール通知で添付有無を決めるマジックワード
-	private static final String NOT_ATTACHED = "[NOT_ATTACHED]";
+	private static final String NOT_ATTACHED = "\\[NOT_ATTACHED\\]";
 
 	/**
 	 * メールの送信を行います。
@@ -149,7 +149,9 @@ public class ReportingSendMail extends SendMail {
 
 			String changeAddress = null;
 			try {
-				Map<String, String> param = NotifyUtil.createParameter(outputInfo);
+				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+				ArrayList<String> inKeyList = StringBinder.getKeyList(address, maxReplaceWord);
+				Map<String, String> param = NotifyUtil.createParameter(outputInfo, inKeyList);
 				StringBinder binder = new StringBinder(param);
 				changeAddress = binder.bindParam(address);
 			} catch (Exception e) {
@@ -548,9 +550,12 @@ public class ReportingSendMail extends SendMail {
 				MailTemplateInfo templateData
 				= new MailTemplateControllerBean().getMailTemplateInfo(
 						mailInfo.getMailTemplateInfoEntity().getMailTemplateId());
-				Map<String, String> param = NotifyUtil.createParameter(source, mailInfo.getNotifyInfoEntity());
+				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+				String origin = templateData.getSubject();
+				ArrayList<String> inKeyList = StringBinder.getKeyList(origin, maxReplaceWord);
+				Map<String, String> param = NotifyUtil.createParameter(source, mailInfo.getNotifyInfoEntity(), inKeyList);
 				StringBinder binder = new StringBinder(param);
-				subject = binder.bindParam(templateData.getSubject());
+				subject = binder.bindParam(origin);
 			} else {
 				subject = Messages.getString("mail.subject", m_local) + "("
 						+ PriorityConstant.typeToMessageCode(source.getPriority())
@@ -587,10 +592,13 @@ public class ReportingSendMail extends SendMail {
 				MailTemplateInfo mailData
 				= new MailTemplateControllerBean().getMailTemplateInfo(
 						mailInfo.getMailTemplateInfoEntity().getMailTemplateId());
+				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+				String origin = mailData.getBody();
+				ArrayList<String> inKeyList = StringBinder.getKeyList(origin, maxReplaceWord);
 				Map<String, String> param = NotifyUtil.createParameter(source,
-						mailInfo.getNotifyInfoEntity());
+						mailInfo.getNotifyInfoEntity(), inKeyList);
 				StringBinder binder = new StringBinder(param);
-				buf.append(binder.bindParam(mailData.getBody() + "\n"));
+				buf.append(binder.bindParam(origin + "\n"));
 			} else {
 				buf.append(Messages.getString("generation.time", m_local)
 						+ " : "

@@ -64,6 +64,12 @@ public class DataRangeConstant {
 	/** integerの上限 2^32-1(=2147483647) **/
 	public static final int INTEGER_HIGH = Integer.MAX_VALUE;
 
+	/** longの下限 **/
+	public static final long LONG_LOW = Long.MIN_VALUE;
+
+	/** longの上限 **/
+	public static final long LONG_HIGH = Long.MAX_VALUE;
+
 	/** monitoreventの上限**/
 	public static final int MONITOR_EVENT_MAX = 1000;
 
@@ -88,4 +94,9 @@ public class DataRangeConstant {
 	/** SNMP TRAPのgeneric trap の上限 */
 	public static final int GENERIC_ID_HIGH = 6;
 
+	/** オーナーロールIDの最大長 */
+	public static final int OWNER_ROLE_ID_MAXLEN = 64;
+	
+	/** ユーザIDの最大長 */
+	public static final int USER_ID_MAXLEN = 64;
 }

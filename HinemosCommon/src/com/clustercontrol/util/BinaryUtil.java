@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.codec.DecoderException;
@@ -316,8 +317,8 @@ public class BinaryUtil {
 	 *            変換元文字列(区切り文字なしの16進数表記)
 	 * @return 変換不可の場合はnull返却
 	 */
-	public static List<Byte> stirngToList(String bytesString) {
-		return stirngToList(bytesString, 1, 0);
+	public static List<Byte> stringToList(String bytesString) {
+		return stringToList(bytesString, 1, 0);
 	}
 
 	/**
@@ -331,7 +332,7 @@ public class BinaryUtil {
 	 *            変換元の区切り文字の文字数
 	 * @return 変換不可の場合はnull返却
 	 */
-	public static List<Byte> stirngToList(String bytesString, int unitByte, int delimiterSize) {
+	public static List<Byte> stringToList(String bytesString, int unitByte, int delimiterSize) {
 		List<Byte> byteList = new ArrayList<Byte>();
 		if (bytesString == null || bytesString.length() <= 0) {
 			return null;
@@ -444,6 +445,32 @@ public class BinaryUtil {
 	}
 
 	/**
+	 * バイトリスト後方一致チェック.<br>
+	 * <br>
+	 * containerListの末尾がbackwardMatchに一致するかチェック.<br>
+	 * 
+	 * @param containerList
+	 *            末尾チェック対象バイナリ
+	 * @param backwardMatch
+	 *            一致対象バイナリ
+	 * @return true:一致する、false:一致しない、
+	 *         引数が存在しないリストもしくはcontainerListがbackwardMatchより短い場合もfalse
+	 */
+	public static boolean backwardMatch(List<Byte> containerList, List<Byte> backwardMatch) {
+		if (existList(containerList) == null || existList(backwardMatch) == null) {
+			return false;
+		}
+		// バイナリを反転させて前方一致チェックを行う.
+		List<Byte> reverseContainer = new ArrayList<Byte>(containerList);
+		Collections.reverse(reverseContainer);
+		List<Byte> reverseBackward = new ArrayList<Byte>(backwardMatch);
+		Collections.reverse(reverseBackward);
+		forwardMatch(reverseContainer, reverseBackward);
+
+		return true;
+	}
+
+	/**
 	 * バイトリスト前方一致チェック.<br>
 	 * <br>
 	 * containerListの先頭がforwardMatchに一致するかチェック.<br>
@@ -452,8 +479,9 @@ public class BinaryUtil {
 	 *            先頭チェック対象バイナリ
 	 * @param forwardMatch
 	 *            前方一致対象バイナリ
-	 * @return 引数が存在しないリスト、もしくはcontainerListがforwardMatchより短い場合もfalse
-	 */
+	 * @return true:一致する、false:一致しない、
+	 *         引数が存在しないリストもしくはcontainerListがforwardMatchより短い場合もfalse
+	 **/
 	public static boolean forwardMatch(List<Byte> containerList, List<Byte> forwardMatch) {
 		if (existList(containerList) == null || existList(forwardMatch) == null) {
 			return false;
@@ -470,12 +498,12 @@ public class BinaryUtil {
 	}
 
 	/**
-	 * List<Byte>版のindexOfメソッド<br>
+	 * List{@literal <Byte>}版のindexOfメソッド<br>
 	 * <br>
 	 * srcListの一部がtagListに一致するかチェック.<br>
 	 * ロジックの内容は 
 	 * java.lang.String#indexOf 
-	 * の実装内容を List<Byte>向けに微調整したもの
+	 * の実装内容を List{@literal <Byte>}向けに微調整したもの
 	 * 
 	 * @param srcList
 	 *            走査対象バイナリ
@@ -513,8 +541,8 @@ public class BinaryUtil {
 
 		for (int i = sourceOffset + fromIndex; i <= max; i++) {
 			/* Look for first character. */
-			if (srcList.get(i) != first) {
-				while (++i <= max && srcList.get(i) != first);
+			if (!srcList.get(i).equals(first)) {
+				while (++i <= max && !srcList.get(i).equals(first));
 			}
 
 			/* Found first character, now look at the rest of v2 */

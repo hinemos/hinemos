@@ -332,7 +332,7 @@ public class ExportDialog extends Dialog {
 					}
 				}
 			});
-		createButton(parent, IDialogConstants.CANCEL_ID, "close", false);
+		createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false);
 	}
 	/**
 	 * セパレータの作成

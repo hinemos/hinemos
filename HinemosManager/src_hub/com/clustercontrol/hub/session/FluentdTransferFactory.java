@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,7 +50,10 @@ import com.clustercontrol.hub.model.TransferInfo;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
+import com.clustercontrol.monitor.run.util.EventUtil;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
@@ -153,6 +157,20 @@ public class FluentdTransferFactory implements TransferFactory {
 		}
 		final Integer requestTimeout = timeout;
 		
+		// 転送時ロケール
+		String localeProp = HinemosPropertyCommon.hub_transfer_locale.getStringValue();
+		Locale lo;
+		if (localeProp.isEmpty()) {
+			lo = Locale.getDefault();
+		} else {
+			lo = new Locale(localeProp);
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format("createTransfer() : Language=%s [%s='%s']", lo.getLanguage(),
+					HinemosPropertyCommon.hub_transfer_locale.getKey(), localeProp));
+		}
+		final Locale locale = lo;
+		
 		// 転送用インスタンスを作成。
 		return new Transfer() {
 			private static final int BUFF_SIZE = 1024 * 1024;
@@ -169,7 +187,7 @@ public class FluentdTransferFactory implements TransferFactory {
 				TransferNumericData lastPosition = null;
 				for (TransferNumericData numeric: numerics) {
 					ObjectNode root = JsonNodeFactory.instance.objectNode();
-					root.put("item_name", numeric.key.getItemName());
+					root.put("item_name", HinemosMessage.replace(numeric.key.getItemName(), locale));
 					root.put("display_name", numeric.key.getDisplayName());
 					root.put("monitor_id", numeric.key.getMonitorId());
 					root.put("facility_id", numeric.key.getFacilityid());
@@ -212,7 +230,7 @@ public class FluentdTransferFactory implements TransferFactory {
 					root.put("facility_id", string.key.getFacilityId());
 					root.put("log_format_id", string.data.getLogformatId());
 					root.put("time", string.data.getTime());
-					root.put("source", string.data.getValue());
+					root.put("source", HinemosMessage.replace(string.data.getValue(), locale));
 					
 					for (CollectDataTag t: string.data.getTagList()) {
 						root.put(t.getKey(), t.getValue());
@@ -258,7 +276,7 @@ public class FluentdTransferFactory implements TransferFactory {
 						jobNode.put("job_id", job.getId().getJobId());
 						jobNode.put("jobunit_id", job.getId().getJobunitId());
 						if (job.getScopeText() != null)
-							jobNode.put("scope_text", job.getScopeText());
+							jobNode.put("scope_text", HinemosMessage.replace(job.getScopeText(), locale));
 						if (job.getStatus() != null)
 							jobNode.put("status", job.getStatus());
 						if (job.getStartDate() != null)
@@ -284,9 +302,8 @@ public class FluentdTransferFactory implements TransferFactory {
 								nodeNode.put("start_date", node.getStartDate());
 								nodeNode.put("end_date", node.getEndDate());
 								nodeNode.put("end_value", node.getEndValue());
-								nodeNode.put("message", node.getMessage());
+								nodeNode.put("message", HinemosMessage.replace(node.getMessage(), locale));
 								nodeNode.put("result", node.getResult());
-								nodeNode.put("start_date", node.getStartDate());
 								nodeNode.put("startup_time", node.getStartupTime());
 								nodeNode.put("instance_id", node.getInstanceId());
 							}
@@ -326,8 +343,8 @@ public class FluentdTransferFactory implements TransferFactory {
 					eventNode.put("facility_id", event.getId().getFacilityId());
 					eventNode.put("scope_text", event.getScopeText());
 					eventNode.put("application", event.getApplication());
-					eventNode.put("message", event.getMessage());
-					eventNode.put("message_org", event.getMessageOrg());
+					eventNode.put("message", HinemosMessage.replace(event.getMessage(), locale));
+					eventNode.put("message_org", HinemosMessage.replace(event.getMessageOrg(), locale));
 					eventNode.put("priority", event.getPriority());
 					eventNode.put("confirm_flg", event.getConfirmFlg());
 					eventNode.put("confirm_date", event.getCommentDate());
@@ -339,6 +356,11 @@ public class FluentdTransferFactory implements TransferFactory {
 					eventNode.put("comment_user", event.getCommentUser());
 					eventNode.put("comment", event.getComment());
 					eventNode.put("position", event.getPosition());
+					
+					final String userItemFormat = "user_item%02d";
+					for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+						eventNode.put(String.format(userItemFormat, i), EventUtil.getUserItemValue(event, i));
+					}
 					
 					String url = binder.bind(event, urlStr);
 					String data = eventNode.toString();

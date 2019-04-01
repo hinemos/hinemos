@@ -16,6 +16,9 @@ package com.clustercontrol.jobmanagement.bean;
  * @since 2.1.0
  */
 public class SystemParameterConstant {
+	/** エスケープした状態でのリプレイスを行わない場合のキー指定 */
+	public static final String NOT_REPLACE_TO_ESCAPE = ":original";
+	
 	//システム（ジョブ）
 	/** 呼び出し元のアプリケーション */
 	public static final String APPLICATION = "APPLICATION";
@@ -47,6 +50,13 @@ public class SystemParameterConstant {
 	public static final String TRIGGER_TYPE = "TRIGGER_TYPE";
 
 	//システム（ノード）
+	/** 全件取得 */
+	public static final String DATA_ALL = "ALL";
+	/** 先頭1件のみ取得 */
+	public static final String DATA_TOP = "TOP";
+	/** 置換キー区切り文字 */
+	public static final String KEY_SEPARATOR = ":";
+	
 	public static final String FACILITY_NAME = "FACILITY_NAME";
 	public static final String IP_ADDRESS_VERSION = "IP_ADDRESS_VERSION";
 	public static final String IP_ADDRESS = "IP_ADDRESS";
@@ -97,7 +107,39 @@ public class SystemParameterConstant {
 	public static final String CLOUD_RESOURCE_TYPE = "CLOUD_RESOURCE_TYPE";
 	public static final String CLOUD_RESOURCE_ID = "CLOUD_RESOURCE_ID";
 	public static final String CLOUD_RESOURCE_NAME = "CLOUD_RESOURCE_NAME";
-	public static final String CLOUD_LOCATION = "CLOUD_LOCATION";
+	public static final String CLOUD_LOCATION = "CLOUD_LOCATION"; public static final String DESCRIPTION = "DESCRIPTION";
+	public static final String AUTO_DEVICE_SEARCH = "AUTO_DEVICE_SEARCH";
+	public static final String PLATFORM_FAMILY = "PLATFORM_FAMILY";
+	public static final String SUB_PLATFORM_FAMILY = "SUB_PLATFORM_FAMILY";
+	public static final String HARDWARE_TYPE = "HARDWARE_TYPE";
+	public static final String HOSTNAME = "HOSTNAME";
+	public static final String OS_STARTUP = "OS_STARTUP";
+	public static final String CPU = "CPU";
+	public static final String MEMORY = "MEMORY";
+	public static final String NIC = "NIC";
+	public static final String DISK = "DISK";
+	public static final String FILE_SYSTEM = "FILE_SYSTEM";
+	public static final String DEVICE = "DEVICE";
+	public static final String NET_STAT = "NET_STAT";
+	public static final String PROCESS= "PROCESS";
+	public static final String PACKAGE= "PACKAGE";
+	public static final String PRODUCT= "PRODUCT";
+	public static final String LICENSE= "LICENSE";
+	public static final String CUSTOM= "CUSTOM";
+	public static final String SNMP_USER = "SNMP_USER";
+	public static final String SNMP_SECURITY_LEVEL = "SNMP_SECURITY_LEVEL";
+	public static final String SNMP_AUTH_PASSWORD = "SNMP_AUTH_PASSWORD";
+	public static final String SNMP_PRIV_PASSWORD = "SNMP_PRIV_PASSWORD";
+	public static final String SNMP_AUTH_PROTOCOL = "SNMP_AUTH_PROTOCOL";
+	public static final String SNMP_PRIV_PROTOCOL = "SNMP_PRIV_PROTOCOL";
+	public static final String ADMINISTRATOR = "ADMINISTRATOR";
+	public static final String CONTACT = "CONTACT";
+	public static final String CREATE_USER_ID = "CREATE_USER_ID";
+	public static final String CREATE_DATETIME = "CREATE_DATETIME";
+	public static final String MODIFY_USER_ID = "MODIFY_USER_ID";
+	public static final String MODIFY_DATETIME = "MODIFY_DATETIME";
+	public static final String NOTE = "NOTE";
+
 
 	/** ジョブ変数 ヘッダー */
 	public static final String PREFIX = "#[";
@@ -178,7 +220,39 @@ public class SystemParameterConstant {
 		CLOUD_RESOURCE_TYPE,
 		CLOUD_RESOURCE_ID,
 		CLOUD_RESOURCE_NAME,
-		CLOUD_LOCATION
+		CLOUD_LOCATION,
+		DESCRIPTION,
+		AUTO_DEVICE_SEARCH,
+		PLATFORM_FAMILY,
+		SUB_PLATFORM_FAMILY,
+		HARDWARE_TYPE,
+		HOSTNAME,
+		OS_STARTUP,
+		CPU,
+		MEMORY,
+		NIC,
+		DISK,
+		FILE_SYSTEM,
+		DEVICE,
+		NET_STAT,
+		PROCESS,
+		PACKAGE,
+		PRODUCT,
+		LICENSE,
+		CUSTOM,
+		SNMP_USER,
+		SNMP_SECURITY_LEVEL,
+		SNMP_AUTH_PASSWORD,
+		SNMP_PRIV_PASSWORD,
+		SNMP_AUTH_PROTOCOL,
+		SNMP_PRIV_PROTOCOL,
+		ADMINISTRATOR,
+		CONTACT,
+		CREATE_USER_ID,
+		CREATE_DATETIME,
+		MODIFY_USER_ID,
+		MODIFY_DATETIME,
+		NOTE
 	};
 
 	/**

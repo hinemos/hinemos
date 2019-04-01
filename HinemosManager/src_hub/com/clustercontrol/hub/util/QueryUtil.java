@@ -169,6 +169,22 @@ public class QueryUtil {
 	}
 
 	/**
+	 * 収集 - バイナリのカウンタの最大値を取得する。
+	 * @return
+	 */
+	public static Long getMaxCollectBinaryDataId(){
+		Long maxid = null;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			maxid = em.createNamedQuery("CollectBinaryData.findMaxDataId",Long.class).getSingleResult();
+		} catch (NoResultException e) {
+			m_log.debug("getMaxCollectBinaryDataId : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+		}
+		return maxid;
+	}
+	
+	/**
 	 * 
 	 * @param pk
 	 * @return

@@ -470,6 +470,8 @@ public class FullJob {
 	 * @throws InvalidRole
 	 */
 	public static JobInfo getJobFull(JobInfo jobInfo) throws HinemosUnknown, JobMasterNotFound, UserNotFound, InvalidRole {
+		// TODO: UserNotFound は投げないように見える。
+		// 発見したのは新機能追加作業中のため修正は避けておく。どこかのメンテナンスコミットで削除すべき。
 		m_log.debug("createJobData() : " + jobInfo.getJobunitId() + ", " + jobInfo.getId() + "," + jobInfo.isPropertyFull());
 		if (jobInfo.isPropertyFull()) {
 			return jobInfo;
@@ -579,7 +581,6 @@ public class FullJob {
 			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobTargetJobMap,
 			Map<String, Map<String, List<JobNextJobOrderMstEntity>>> nextJobOrderMap) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-			HinemosEntityManager em = jtm.getEntityManager();
 
 			ArrayList<JobNextJobOrderInfo> nextJobOrderList = new ArrayList<JobNextJobOrderInfo>();	
 			List<JobNextJobOrderMstEntity> orderMstList = null;
@@ -940,6 +941,8 @@ public class FullJob {
 			waitRule.setMultiplicityNotifyPriority(jobMstEntity.getMultiplicityNotifyPriority());
 			waitRule.setMultiplicityOperation(jobMstEntity.getMultiplicityOperation());
 			waitRule.setMultiplicityEndValue(jobMstEntity.getMultiplicityEndValue());
+			waitRule.setQueueFlg(jobMstEntity.getQueueFlg());
+			waitRule.setQueueId(jobMstEntity.getQueueId());
 		}
 
 		//待ち条件（ジョブ）を取得

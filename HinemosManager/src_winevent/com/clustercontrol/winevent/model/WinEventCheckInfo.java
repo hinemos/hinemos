@@ -151,8 +151,6 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 	 * 
 	 * となった。
 	 * JDK1.8の場合は、マネージャがDTOを受け取った直後にrefrectメソッドを呼び出す必要あり。
-	 * 
-	 * FIXME あまり良くない実装であるため、後で修正すること
 	 */
 	public void reflect() {
 		setLogName(logNameList);

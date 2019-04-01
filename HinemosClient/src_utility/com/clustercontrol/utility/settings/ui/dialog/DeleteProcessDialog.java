@@ -17,4 +17,4 @@ package com.clustercontrol.utility.settings.ui.dialog;
  * @version 6.1.0
  * @since 2.2.0
  */
-public interface DeleteProcessDialog extends ImportProcessDialog {}
+public interface DeleteProcessDialog extends UtilityProcessDialog {}

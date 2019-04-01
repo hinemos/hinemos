@@ -84,7 +84,6 @@ public class ObjectPrivilegeCallback implements JpaTransactionCallback {
 					}
 					
 					// オーナーロールスコープの削除の場合はチェック対象外
-					// TODO:ほかにスマートな方法があれば修正する
 					if (hinemosObjectPrivilege.objectType().equals(HinemosModuleConstant.PLATFORM_REPOSITORY)
 							&& bean.getObjectId().equals(bean.getOwnerRoleId())){
 						continue;

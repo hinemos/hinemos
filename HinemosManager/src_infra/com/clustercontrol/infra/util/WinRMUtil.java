@@ -384,6 +384,7 @@ public class WinRMUtil {
 		String url = HinemosPropertyCommon.infra_transfer_winrm_url.getStringValue();
 		String pass = HinemosPropertyCommon.infra_transfer_agent_password.getStringValue();
 		String account = UserIdConstant.AGENT + ":" + pass;
+		boolean sslTrustall = HinemosPropertyCommon.infra_winrm_ssl_trustall.getBooleanValue();
 		
 		if (!url.endsWith("/")) {
 			url += "/";
@@ -408,6 +409,9 @@ public class WinRMUtil {
 		buffer.append("$base64 = [System.Convert]::ToBase64String($bytes)" + winReturnCode);
 		buffer.append("$headers = @{ Authorization = \"Basic $base64\" }" + winReturnCode);
 		buffer.append("$progressPreference = 'silentlyContinue'" + winReturnCode);
+		if (sslTrustall && url.startsWith("https")){
+			dlScriptHttpsEdit(buffer);
+		}
 		buffer.append("Invoke-WebRequest $url -ContentType \"text/xml\" -Body $soap -Method Post -Headers $headers -OutFile $temp_file_path" + winReturnCode);
 		String str = buffer.toString();
 		log.debug(str);
@@ -418,5 +422,44 @@ public class WinRMUtil {
 			byte[] binaryContent) throws IOException {
 		Path path = Paths.get(filePath);
 		Files.write(path, binaryContent);
+	}
+	
+	/**
+	* HTTPS接続時の証明書検証回避プロパティを追加
+	* @param buffer
+	* @return
+	*/
+	private static void dlScriptHttpsEdit(StringBuffer buffer) {
+		buffer.append("if (-not ([System.Management.Automation.PSTypeName]'ServerCertificateValidationCallback').Type)" + winReturnCode);
+		buffer.append("{" + winReturnCode);
+		buffer.append("$certCallback = @\"" + winReturnCode);
+		buffer.append("    using System;" + winReturnCode);
+		buffer.append("    using System.Net;" + winReturnCode);
+		buffer.append("    using System.Net.Security;" + winReturnCode);
+		buffer.append("    using System.Security.Cryptography.X509Certificates;" + winReturnCode);
+		buffer.append("    public class ServerCertificateValidationCallback" + winReturnCode);
+		buffer.append("    {" + winReturnCode);
+		buffer.append("        public static void Ignore()" + winReturnCode);
+		buffer.append("        {" + winReturnCode);
+		buffer.append("            if(ServicePointManager.ServerCertificateValidationCallback ==null)" + winReturnCode);
+		buffer.append("            {" + winReturnCode);
+		buffer.append("                ServicePointManager.ServerCertificateValidationCallback += " + winReturnCode);
+		buffer.append("                    delegate" + winReturnCode);
+		buffer.append("                    (" + winReturnCode);
+		buffer.append("                        Object obj, " + winReturnCode);
+		buffer.append("                        X509Certificate certificate, " + winReturnCode);
+		buffer.append("                        X509Chain chain, " + winReturnCode);
+		buffer.append("                        SslPolicyErrors errors" + winReturnCode);
+		buffer.append("                    )" + winReturnCode);
+		buffer.append("                    {" + winReturnCode);
+		buffer.append("                        return true;" + winReturnCode);
+		buffer.append("                    };" + winReturnCode);
+		buffer.append("            }" + winReturnCode);
+		buffer.append("        }" + winReturnCode);
+		buffer.append("    }" + winReturnCode);
+		buffer.append("\"@" + winReturnCode);
+		buffer.append("    Add-Type $certCallback" + winReturnCode);
+		buffer.append(" }" + winReturnCode);
+		buffer.append("[ServerCertificateValidationCallback]::Ignore()" + winReturnCode);
 	}
 }

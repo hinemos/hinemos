@@ -85,6 +85,13 @@ public class RootReadingStatus {
 	/** 監視実行中 */
 	protected static final String runMonitor = "running";
 
+	/** 増分監視の際、初回読込時に既存レコードをスキップするフラグ */
+	protected static final String toSkipRecord = "toSkipRecord";
+
+	/** 増分監視の際、レコードをスキップするサイズ */
+	protected static final String skipSize = "skipSize";
+
+
 	// 読込情報に書き込む各種ステータス.
 	/** 読込状態_読込中 */
 	protected static final String RS_OPEN_STRING = "Open";

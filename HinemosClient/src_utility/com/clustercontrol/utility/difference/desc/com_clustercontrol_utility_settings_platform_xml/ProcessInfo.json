@@ -1,0 +1,42 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+	
+	]},
+
+	{
+	"propName":"processName",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"pid",
+	"annotations":[
+		{"type":"Column", "columnName":"ProcessInfo_pid"}
+	]},
+
+	{
+	"propName":"path",
+	"annotations":[
+		{"type":"Column", "columnName":"ProcessInfo_path"}
+	]},
+
+	{
+	"propName":"execUser",
+	"annotations":[
+		{"type":"Column", "columnName":"ProcessInfo_execUser"}
+	]},
+
+	{
+	"propName":"startupDateTime",
+	"annotations":[
+		{"type":"Column", "columnName":"ProcessInfo_startupDateTime"}
+	]}
+]
+}

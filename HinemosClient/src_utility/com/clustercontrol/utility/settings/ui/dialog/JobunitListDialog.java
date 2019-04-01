@@ -27,6 +27,7 @@ import org.eclipse.swt.widgets.TableItem;
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.util.CheckBoxSelectionAdapter;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.constant.YesNoConstant;
 import com.clustercontrol.utility.settings.ui.action.CommandAction;
@@ -113,7 +114,7 @@ public class JobunitListDialog extends CommonDialog {
 		tableTitle.setLayoutData(gridData);
 		
 		table = new Table(parent, SWT.BORDER | SWT.H_SCROLL
-				| SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.SINGLE);
+				| SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.MULTI);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		gridData = new GridData();
@@ -191,28 +192,10 @@ public class JobunitListDialog extends CommonDialog {
 		//初期サイズをセット
 		m_shell.setSize(new Point(SIZE_WIDTH, SIZE_HEIGHT));
 		
-		// テーブルのレコードを選択するリスナー
-		table.addSelectionListener(new SelectionAdapter(){
-				@SuppressWarnings("unchecked")
-				@Override
-			public void widgetSelected(SelectionEvent e) {
-				List<Object> al;
-				//選択されたTableColumnを取得します。
-				TableItem[] ti = table.getSelection();	
-				for (int i = 0; i<ti.length; i++){
-					al = (List<Object>)ti[i].getData();
-					if((Boolean)al.get(SELECTION)){
-						//YESならNO
-						al.set(SELECTION, YesNoConstant.BOOLEAN_NO);
-					}else{
-						//NOならYES
-						al.set(SELECTION, YesNoConstant.BOOLEAN_YES);
-					}
-				}
-				//チェックボックスが入るので、再描画。
-				m_viewer.refresh();
-        	}
-        });
+		// チェックボックスの選択を制御するリスナー 
+		SelectionAdapter adapter =
+				new CheckBoxSelectionAdapter(this.getParentShell(), this.m_viewer, SELECTION);
+		table.addSelectionListener(adapter);
 	}
 
 	/**

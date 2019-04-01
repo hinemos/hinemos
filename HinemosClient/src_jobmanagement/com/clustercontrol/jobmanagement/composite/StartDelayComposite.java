@@ -107,10 +107,10 @@ public class StartDelayComposite extends Composite {
 		this.setLayout(JobDialogUtil.getParentLayout());
 
 		// 開始遅延（チェック）
-		this.m_startDelayCondition = new Button(this, SWT.CHECK);
+		this.m_startDelayCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_startDelayCondition", this.m_startDelayCondition);
 		this.m_startDelayCondition.setText(Messages.getString("start.delay"));
-		this.m_startDelayCondition.setLayoutData(new RowData(200,
+		this.m_startDelayCondition.setLayoutData(new RowData(100,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_startDelayCondition.addSelectionListener(new SelectionListener() {
 			@Override

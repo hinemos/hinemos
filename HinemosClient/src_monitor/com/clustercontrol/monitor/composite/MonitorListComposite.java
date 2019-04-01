@@ -201,7 +201,6 @@ public class MonitorListComposite extends Composite {
 		if(conditionManager == null || conditionManager.equals("")) {
 			if (this.condition == null) {
 				this.statuslabel.setText("");
-				// TODO Fetch list concurrently with multiple threads
 				for(String managerName : EndpointManager.getActiveManagerSet()) {
 					getMonitorList(managerName, dispDataMap, errMsgs);
 				}

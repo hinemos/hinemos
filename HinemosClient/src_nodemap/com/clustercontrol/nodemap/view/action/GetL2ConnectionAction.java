@@ -73,7 +73,7 @@ public class GetL2ConnectionAction extends AbstractHandler implements IElementUp
 			long start = System.currentTimeMillis();
 			NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(view.getCanvasComposite().getManagerName());
 			List<Association> list = wrapper.getL2ConnectionMap(facilityId);
-			view.m_controller.autoAssociation(list);
+			view.getController().autoAssociation(list);
 			view.updateNotManagerAccess();
 			long end = System.currentTimeMillis();
 			m_log.debug("run() : " + (end - start) + "ms");

@@ -49,6 +49,7 @@ import com.clustercontrol.repository.util.RepositoryUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.StringBinder;
 
 /**
  * ジョブ変数ユーティリティクラス<BR>
@@ -321,11 +322,17 @@ public class ParameterUtil {
 	 * @throws HinemosUnknown
 	 * @throws FacilityNotFound
 	 */
-	private static String getNodeValue(String paramId, String facilityId, Map<String, String> nodeParams)
+	private static String getNodeValue(String paramId, String facilityId, Map<String, String> nodeParams, ArrayList<String> keyList)
 			throws HinemosUnknown, FacilityNotFound, InvalidRole {
 
+		if (paramId == null) {
+			m_log.error("getNodeValue() : paramId is null. facilityId=" + facilityId);
+			return null;
+		}
+		
 		m_log.debug("getNodeValue() start paramId=" + paramId + ",facilityId=" + facilityId);
 		String ret = null;
+
 
 		if (facilityId != null && !facilityId.isEmpty()) {
 			if (paramId.equals(SystemParameterConstant.FACILITY_ID)){
@@ -336,11 +343,12 @@ public class ParameterUtil {
 					if (nodeParams == null) {
 						// ノードプロパティを取得
 						NodeInfo nodeInfo = new RepositoryControllerBean().getNode(facilityId);
-						nodeParams = RepositoryUtil.createNodeParameter(nodeInfo);
+						nodeParams = RepositoryUtil.createNodeParameter(nodeInfo, keyList);
 					}
-					if (nodeParams.get(paramId) != null) {
-						ret = nodeParams.get(paramId);
-					}
+					
+					// 置換後の値にシングルクォート等が含まれている場合にエスケープ必要なので共通部品で変換.
+						StringBinder strbinder = new StringBinder(nodeParams);
+						ret = strbinder.bindParam(SystemParameterConstant.PREFIX + paramId + SystemParameterConstant.SUFFIX);
 				}
 			}
 		}
@@ -393,6 +401,8 @@ public class ParameterUtil {
 		// Local Variables
 		String commandOrig = source;	// 変換前文字列
 		String commandConv = source;	// 変換後文字列
+		int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+		ArrayList<String> inKeyList = StringBinder.getKeyList(source, maxReplaceWord);
 
 		// Main
 		if (commandOrig == null) {
@@ -451,7 +461,7 @@ public class ParameterUtil {
 						paramValue = getJobSessionValue(paramId, sessionId, jobSessionEntity);
 					} else {
 						// ノード情報
-						paramValue = getNodeValue(paramId, facilityId, nodeParams);
+						paramValue = getNodeValue(paramId, facilityId, nodeParams, inKeyList);
 					}
 				}
 			}

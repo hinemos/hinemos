@@ -501,8 +501,7 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 		}
 		else{
 			// 閉じるボタン
-			// TODO Remove the following hard-code. IDialogConstants.*_LABEL will causes IncompatibleClassChangeError on RAP
-			this.createButton(parent, IDialogConstants.CANCEL_ID, "Close", false);
+			this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false);
 		}
 	}
 	/**
@@ -581,6 +580,7 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		combo.setLayoutData(gridData);
 		combo.add(EventConfirmMessage.STRING_UNCONFIRMED);
+		combo.add(EventConfirmMessage.STRING_CONFIRMING);
 		combo.add(EventConfirmMessage.STRING_CONFIRMED);
 		combo.setText(EventConfirmMessage.STRING_UNCONFIRMED);
 

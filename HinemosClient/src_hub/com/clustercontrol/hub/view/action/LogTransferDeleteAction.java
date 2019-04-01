@@ -108,11 +108,11 @@ public class LogTransferDeleteAction extends AbstractHandler implements IElement
 						if (e instanceof InvalidRole_Exception) {
 							// 権限なし
 							errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
-						} if (e instanceof LogFormatUsed_Exception){//TODO
+						} else if (e instanceof LogFormatUsed_Exception){
 							errorMsgs.put(managerName, HinemosMessage.replace(e.getMessage()));
 						} else {
 							errorMsgs.put(managerName,
-									Messages.getString("message.hub.log.transfar.delete.failed")
+									Messages.getString("message.hub.log.transfer.delete.failed")
 									+ ", " + e.getMessage());
 						}
 					}

@@ -51,8 +51,6 @@ public class RecordController {
 		CollectorItemTreeItem treeItem = null;
 		for (int i = 0; i <= this.errorCount; i++) {
 			try {
-				//TODO:見直しする
-				//            	return bean.getItemCodeMap();
 				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
 				HashMapInfo hashMapInfo = wrapper.getItemCodeMap();
 				Map2 map2 = hashMapInfo.getMap2();

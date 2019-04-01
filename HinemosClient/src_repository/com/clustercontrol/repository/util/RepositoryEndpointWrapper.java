@@ -30,6 +30,9 @@ import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
 import com.clustercontrol.ws.repository.InvalidRole_Exception;
 import com.clustercontrol.ws.repository.InvalidSetting_Exception;
 import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
+import com.clustercontrol.ws.repository.NodeConfigSettingDuplicate_Exception;
+import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
+import com.clustercontrol.ws.repository.NodeConfigSettingNotFound_Exception;
 import com.clustercontrol.ws.repository.NodeInfo;
 import com.clustercontrol.ws.repository.NodeInfoDeviceSearch;
 import com.clustercontrol.ws.repository.RepositoryEndpoint;
@@ -99,6 +102,24 @@ public class RepositoryEndpointWrapper {
 
 		throw wse;
 	}
+	
+	public void addNodeConfigSetting(NodeConfigSettingInfo configInfo)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, NodeConfigSettingDuplicate_Exception, InvalidSetting_Exception {
+		WebServiceException wse = null;
+		for(EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = endpointSetting.getEndpoint();
+				endpoint.addNodeConfigSettingInfo(configInfo);
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("addNodeConfig(), "+ e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		
+		throw wse;
+	}
 
 	public void addScope(String parentId, ScopeInfo scopeInfo)
 			throws FacilityDuplicate_Exception, HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, InvalidSetting_Exception {
@@ -153,6 +174,24 @@ public class RepositoryEndpointWrapper {
 
 		throw wse;
 	}
+	
+	public void deleteNodeConfigSetting(List<String> settingIdList) 
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = (RepositoryEndpoint) endpointSetting.getEndpoint();
+				endpoint.deleteNodeConfigSettingInfo(settingIdList);
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("deleteNodeConfigSetting(), "+ e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		
+		throw wse;
+	}
 
 	public void deleteScope(List<String> facilityIdList)
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, UsedFacility_Exception {
@@ -169,6 +208,24 @@ public class RepositoryEndpointWrapper {
 			}
 		}
 
+		throw wse;
+	}
+
+	public void setStatusNodeConfigSetting(String settingId, boolean validFlag)
+			throws HinemosUnknown_Exception,
+			InvalidRole_Exception, InvalidUserPass_Exception, InvalidSetting_Exception, NodeConfigSettingNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = endpointSetting.getEndpoint();
+				endpoint.setStatusNodeConfigSetting(settingId, validFlag);
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("setStatusCollector(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
 		throw wse;
 	}
 
@@ -195,7 +252,7 @@ public class RepositoryEndpointWrapper {
 				return endpoint.getExecTargetFacilityIdList(facilityId,  ownerRoleId);
 			} catch (WebServiceException e) {
 				wse = e;
-				m_log.warn("getNode(), " + e.getMessage());
+				m_log.warn("getExecTargetFacilityIdList(), " + e.getMessage());
 				endpointUnit.changeEndpoint();
 			}
 		}
@@ -233,6 +290,75 @@ public class RepositoryEndpointWrapper {
 			}
 		}
 
+		throw wse;
+	}
+
+	public NodeInfo getNodeFull(String facilityId)
+			throws FacilityNotFound_Exception, HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getNodeFull(facilityId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getNodeFull(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+
+		throw wse;
+	}
+
+	public NodeInfo getNodeFullByTargetDatetime(String facilityId, Long targetDatetime, NodeInfo nodeFilterInfo)
+			throws FacilityNotFound_Exception, HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getNodeFullByTargetDatetime(facilityId, targetDatetime, nodeFilterInfo);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getNodeFullByTargetDatetime(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+
+		throw wse;
+	}
+	
+	public NodeConfigSettingInfo getNodeConfigInfoSetting(String configId) 
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, NodeConfigSettingNotFound_Exception{
+		WebServiceException wse = null;
+		for (EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = endpointSetting.getEndpoint();
+				return endpoint.getNodeConfigSettingInfo(configId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getNodeConfigInfoSetting(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+		
+	}
+	
+	public List<NodeConfigSettingInfo> getNodeConfigSettingListAll() 
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, NodeConfigSettingNotFound_Exception{
+		WebServiceException wse = null;
+		for (EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = endpointSetting.getEndpoint();
+				
+				return endpoint.getNodeConfigSettingList();
+				
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getNodeConfigInfoSetting(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
 		throw wse;
 	}
 
@@ -346,6 +472,24 @@ public class RepositoryEndpointWrapper {
 			}
 		}
 
+		throw wse;
+	}
+	
+	public void modifyNodeConfigSetting(NodeConfigSettingInfo configInfo) 
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidSetting_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = endpointSetting.getEndpoint();
+				endpoint.modifyNodeConfigSettingInfo(configInfo);
+				return;
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("modifyNodConfigSetting(), "+ e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+		
 		throw wse;
 	}
 
@@ -470,6 +614,7 @@ public class RepositoryEndpointWrapper {
 		throw wse;
 	}
 
+
 	public List<AgentStatusInfo> getAgentStatusList()
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
 		WebServiceException wse = null;
@@ -590,4 +735,22 @@ public class RepositoryEndpointWrapper {
 
 		throw wse;
 	}
+
+	public Long runCollectNodeConfig(String settingId)
+			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, NodeConfigSettingNotFound_Exception, FacilityNotFound_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<RepositoryEndpoint> endpointSetting : getRepositoryEndpoint(endpointUnit)) {
+			try {
+				RepositoryEndpoint endpoint = (RepositoryEndpoint) endpointSetting.getEndpoint();
+				return endpoint.runCollectNodeConfig(settingId);
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("runCollectNodeConfig(), " + e.getMessage());
+				endpointUnit.changeEndpoint();
+			}
+		}
+
+		throw wse;
+	}
+
 }

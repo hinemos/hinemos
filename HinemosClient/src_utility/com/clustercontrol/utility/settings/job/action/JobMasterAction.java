@@ -50,7 +50,7 @@ import com.clustercontrol.utility.settings.job.xml.JobMasters;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.platform.conv.CommonConv;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
@@ -765,7 +765,7 @@ public class JobMasterAction {
 			if (updateTime < mgrUpdTime) {
 				if (!sameProcess) {
 					String[] args = {jobUnit.getData().getJobunitId()};
-					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 							null, Messages.getString("message.import.confirm4", args));
 					processType = dialog.open();
 					sameProcess = dialog.getToggleState();

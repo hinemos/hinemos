@@ -34,6 +34,8 @@ import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.composite.CustomizableListComposite;
+import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
 import com.clustercontrol.monitor.action.GetStatusListTableDefine;
 import com.clustercontrol.monitor.dialog.StatusInfoDialog;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
@@ -57,7 +59,7 @@ import com.clustercontrol.ws.monitor.StatusFilterInfo;
  * @version 5.0.0
  * @since 1.0.0
  */
-public class StatusListComposite extends Composite {
+public class StatusListComposite extends CustomizableListComposite {
 	/** テーブルビューア */
 	private CommonTableViewer tableViewer = null;
 
@@ -77,7 +79,7 @@ public class StatusListComposite extends Composite {
 	private Label totalLabel = null;
 
 	private Shell m_shell = null;
-
+	
 	/**
 	 * インスタンスを返します。
 	 *
@@ -88,8 +90,8 @@ public class StatusListComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
 	 * @see #initialize()
 	 */
-	public StatusListComposite(Composite parent, int style) {
-		super(parent, style);
+	public StatusListComposite(Composite parent, int style, ListLayout listLayout) {
+		super(parent, style, listLayout);
 		initialize();
 		m_shell = this.getShell();
 	}
@@ -157,7 +159,10 @@ public class StatusListComposite extends Composite {
 		for (int i = 0; i < table.getColumnCount(); i++){
 			table.getColumn(i).setMoveable(true);
 		}
-
+		
+		this.updateColumnOrder(table);
+		this.updateColumnWidth(table);
+		
 		this.tableViewer.addDoubleClickListener(new IDoubleClickListener(){
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
@@ -451,6 +456,11 @@ public class StatusListComposite extends Composite {
 			return Objects.hash(this.facilityId, this.monitorId, this.monitorDetailId, this.pluginId);
 		}
 		
+	}
+
+	@Override
+	public Map<String, Integer> getColumnIndexMap() {
+		return GetStatusListTableDefine.COLNAME_INDEX_MAP;
 	}
 
 }

@@ -11,6 +11,7 @@ package com.clustercontrol.notify.session;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -21,6 +22,7 @@ import com.clustercontrol.commons.session.CheckFacility;
 import com.clustercontrol.commons.util.AsyncTaskPersistentConfig;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -29,6 +31,12 @@ import com.clustercontrol.fault.NotifyDuplicate;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.monitor.bean.EventDataInfo;
+import com.clustercontrol.monitor.bean.EventUserExtensionItemInfo;
+import com.clustercontrol.monitor.factory.SelectEventHinemosProperty;
+import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.monitor.run.util.EventUtil;
+import com.clustercontrol.notify.bean.EventNotifyInfo;
 import com.clustercontrol.notify.bean.NotifyCheckIdResultInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.factory.ModifyNotify;
@@ -41,6 +49,7 @@ import com.clustercontrol.notify.model.NotifyInfraInfo;
 import com.clustercontrol.notify.model.NotifyJobInfo;
 import com.clustercontrol.notify.model.NotifyLogEscalateInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
+import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.notify.util.NotifyCache;
 import com.clustercontrol.notify.util.NotifyCacheRefreshCallback;
 import com.clustercontrol.notify.util.NotifyCallback;
@@ -62,7 +71,7 @@ import com.clustercontrol.util.MessageConstant;
 public class NotifyControllerBean implements CheckFacility {
 	/** ログ出力のインスタンス。 */
 	private static Log m_log = LogFactory.getLog( NotifyControllerBean.class );
-	
+
 	private static SendMail m_reportingSendMail = null;
 
 	private static Object notifyLock = new Object();
@@ -90,7 +99,7 @@ public class NotifyControllerBean implements CheckFacility {
 
 			//入力チェック
 			NotifyValidator.validateNotifyInfo(info);
-			
+
 			//ユーザがオーナーロールIDに所属しているかチェック
 			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
 					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
@@ -692,7 +701,7 @@ public class NotifyControllerBean implements CheckFacility {
 				}
 				message += listID;
 			}
-			
+
 			if (message.trim().length() > 0) {
 				UsedFacility e = new UsedFacility(MessageConstant.NOTIFY.getMessage() + " : " + message);
 				m_log.info("isUseFacilityId() : " + e.getClass().getSimpleName() +
@@ -752,12 +761,12 @@ public class NotifyControllerBean implements CheckFacility {
 			}
 		}
 	}
-	
+
 	/**
 	 * ステータス通知
-	 * 
+	 *
 	 * トランザクションは引き継がれたものを使用
-	 * 
+	 *
 	 * @param output
 	 * @throws HinemosUnknown
 	 */
@@ -767,7 +776,7 @@ public class NotifyControllerBean implements CheckFacility {
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-			
+
 			new OutputStatus().updateStatus(output);
 
 			jtm.commit();
@@ -817,9 +826,9 @@ public class NotifyControllerBean implements CheckFacility {
 				jtm.close();
 		}
 	}
-	
+
 	private static Object lock = new Object();
-	
+
 	private static void initReportMail () throws HinemosUnknown {
 		synchronized (lock) {
 			if(m_reportingSendMail == null) {
@@ -851,19 +860,19 @@ public class NotifyControllerBean implements CheckFacility {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SendMail sendMail;
-			
-			// レポーティングオプション用添付ファイル対応 
-			if(outputBasicInfo.getPluginId().equals(HinemosModuleConstant.REPORTING) 
+
+			// レポーティングオプション用添付ファイル対応
+			if(outputBasicInfo.getPluginId().equals(HinemosModuleConstant.REPORTING)
 					&& outputBasicInfo.getSubKey() != null) {
 				initReportMail();
 				m_log.debug("m_reportingSendMail.notify");
 				sendMail = m_reportingSendMail;
-				
+
 			} else {
 				m_log.debug("sendMail.notify");
 				sendMail = new SendMail();
 			}
-			
+
 			String mailSubject = sendMail.getSubject(outputBasicInfo, null);
 			String mailBody = sendMail.getContent(outputBasicInfo, null);
 			sendMail.sendMail(address, mailSubject, mailBody);
@@ -971,14 +980,28 @@ public class NotifyControllerBean implements CheckFacility {
 			new RepositoryControllerBean().getFacilityEntityByPK(facilityId);
 
 			// 指定の通知設定が存在するか確認
-			ArrayList<String> confirmedNotifyIdList = new ArrayList<String>();
 			for(String notifyId : notifyIdList){
 				QueryUtil.getNotifyInfoPK(notifyId);
-				confirmedNotifyIdList.add(notifyId);
 			}
 
 			output.setApplication(application);
 			output.setFacilityId(facilityId);
+			// NotifyGroupIdを取得するためにダミーのmonitorInfoを作成
+			MonitorInfo monitorInfo = new MonitorInfo();
+			monitorInfo.setMonitorId(monitorId);
+			monitorInfo.setMonitorTypeId(pluginId);
+			// NotifyGroupIdを取得
+			String notifyGroupId = NotifyGroupIdGenerator.generate(monitorInfo);
+			// 通知IDのリストをチェック
+			List<String> checkNotifyIdList = NotifyRelationCache.getNotifyIdList(notifyGroupId);
+			if (checkNotifyIdList != null && checkNotifyIdList.size() > 0) {
+				// 実在する監視項目IDを元にNotifyGroupIdを取得できたならセット
+				output.setNotifyGroupId(notifyGroupId);
+			} else {
+				// 存在しない場合はエラーとする
+				throw new HinemosUnknown("Could Not find " + monitorId + ". Please check monitorId or pluginId.");
+			}
+			
 			try {
 				String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
 				output.setScopeText(facilityPath);
@@ -1028,7 +1051,7 @@ public class NotifyControllerBean implements CheckFacility {
 	 *
 	 * @param notifyInfoList 通知情報リスト
 	 * @param notifyGroupId
-	 * @throws HinemosUnknown 
+	 * @throws HinemosUnknown
 	 */
 	public static void notify(List<OutputBasicInfo> notifyInfoList) {
 
@@ -1054,7 +1077,7 @@ public class NotifyControllerBean implements CheckFacility {
 					if(notifyIdList == null || notifyIdList.size() <= 0){
 						continue;
 					}
-	
+
 					// 通知処理を行う
 					new NotifyControllerBean().notify(notifyInfo, notifyIdList);
 				}
@@ -1078,5 +1101,64 @@ public class NotifyControllerBean implements CheckFacility {
 
 		// 通知キューへの登録処理を実行
 		NotifyDispatcher.notifyAction(notifyInfo, notifyIdList, persist);
+	}
+	
+	/**
+	 * 外部から直接イベント通知処理を実行します。
+	 *
+	 * @param eventNotifyInfo イベント通知情報
+	 * 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
+	 */
+	public static EventDataInfo notifyUserExtentionEvent(EventNotifyInfo eventNotifyInfo) 
+			throws FacilityNotFound, HinemosUnknown, InvalidRole, InvalidSetting {
+		
+		if (eventNotifyInfo == null) {
+			throw new HinemosUnknown("eventNotifyInfo is null");
+		}
+		
+		JpaTransactionManager jtm = null;
+		EventDataInfo info = null;
+		
+		//Hinemosプロパティを取得
+		Map<Integer, EventUserExtensionItemInfo> userItemInfoMap = SelectEventHinemosProperty.getEventUserExtensionItemInfo();
+		
+		//validation
+		NotifyValidator.validateEventNotify(eventNotifyInfo, userItemInfoMap);
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			EventLogEntity event = new OutputEvent().insertEventLog(
+					eventNotifyInfo.toOutputBasicInfo(), 
+					eventNotifyInfo.getConfirmFlg(),
+					null,
+					userItemInfoMap,
+					eventNotifyInfo.getOwnerRoleId()
+					);
+			
+			jtm.commit();
+			
+			info = new EventDataInfo(); 
+			EventUtil.copyEventLogEntityToEventDataInfo(event, info);
+			
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("notifyUserExtentionEvent() : " + e.getClass().getSimpleName() +
+					", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return info;
 	}
 }

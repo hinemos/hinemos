@@ -243,7 +243,7 @@ public class ReferManagementModuleDialog extends CommonDialog {
 		m_validFlg = new Button(composite, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = DIALOG_WIDTH;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_validFlg.setText(Messages.getString("setting.valid.confirmed"));
 		m_validFlg.setLayoutData(gridData);

@@ -42,7 +42,7 @@ import com.clustercontrol.utility.settings.cloud.xml.CloudScopeType;
 import com.clustercontrol.utility.settings.cloud.xml.ICloudScope;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
@@ -242,7 +242,7 @@ public class CloudUserAction {
 				if ("CLOUDSCOPE_ALREADY_EXIST".equals(e.getFaultInfo().getErrorCode())){
 					//重複時、インポート処理方法を確認する
 					if (!ImportProcessMode.isSameprocess()) {
-						ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 								null, Messages.getString("message.import.confirm2", new String[]{cloudScopeXML.getCloudScopeId()}));
 						ImportProcessMode.setProcesstype(dialog.open());
 						ImportProcessMode.setSameprocess(dialog.getToggleState());

@@ -70,6 +70,7 @@ public class JobSessionImpl {
 			List<Integer> statuses = new ArrayList<Integer>();
 			statuses.add(StatusConstant.TYPE_RUNNING);
 			statuses.add(StatusConstant.TYPE_WAIT);
+			statuses.add(StatusConstant.TYPE_RUNNING_QUEUE);
 			
 			Collection<JobSessionJobEntity> collection = null;
 			collection = em.createNamedQuery("JobSessionJobEntity.findBySessionStatuses", JobSessionJobEntity.class)

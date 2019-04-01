@@ -95,6 +95,15 @@
 		</query>
 	</named-query>
 
+	<named-query name="JobMstEntity.findJobIdByQueueId">
+		<query>
+			<![CDATA[
+				SELECT a.id.jobId FROM JobMstEntity a
+				WHERE a.queueId = :queueId
+			]]>
+		</query>
+	</named-query>
+
 	<!-- JobInfoEntity -->
 	<named-query name="JobInfoEntity.findByIconId">
 		<query>
@@ -159,6 +168,7 @@
 				SELECT a FROM JobStartJobInfoEntity a
 				WHERE a.id.sessionId = :sessionId
 				AND a.id.targetJobId = :targetJobId
+				AND a.id.targetJobType NOT IN :excludingTypes
 				ORDER BY a.id.sessionId, a.id.jobunitId, a.id.jobId, a.id.targetJobunitId, a.id.targetJobId, a.id.targetJobType, a.id.targetJobEndValue
 			]]>
 		</query>
@@ -183,6 +193,14 @@
 				AND a.jobunitId = b.id.jobunitId
 				AND b.status NOT IN (300,301)
 				ORDER BY b.startDate ASC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionEntity.findByTriggerInfo">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionEntity a
+				WHERE a.triggerInfo = :triggerInfo
 			]]>
 		</query>
 	</named-query>
@@ -534,5 +552,59 @@
 			]]>
 		</query>
 	</named-query>
-</entity-mappings>
 
+	<!-- JobQueueEntity -->
+	<named-query name="JobQueueEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobQueueEntity a
+			]]>
+		</query>
+	</named-query>
+
+	<!-- JobQueueItemEntity -->
+	<named-query name="JobQueueItemEntity.findByQueueId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobQueueItemEntity a
+				WHERE a.id.queueId = :queueId
+				ORDER BY a.regDate, a.id.sessionId, a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobQueueItemEntity.findByQueueIdAndStatusId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobQueueItemEntity a
+				WHERE a.id.queueId = :queueId AND a.statusId = :statusId
+				ORDER BY a.regDate, a.id.sessionId, a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobQueueItemEntity.countByQueueId">
+		<query>
+			<![CDATA[
+				SELECT COUNT(a) FROM JobQueueItemEntity a
+				WHERE a.id.queueId = :queueId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobQueueItemEntity.countByQueueIdAndStatusId">
+		<query>
+			<![CDATA[
+				SELECT COUNT(a) FROM JobQueueItemEntity a
+				WHERE a.id.queueId = :queueId AND a.statusId = :statusId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobQueueItemEntity.countPerQueueId">
+		<query>
+			<![CDATA[
+				SELECT a.id.queueId, COUNT(a.id.queueId),
+				  SUM(CASE WHEN a.statusId = :statusId THEN 1 ELSE 0 END)
+				FROM JobQueueItemEntity a
+				GROUP BY a.id.queueId
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

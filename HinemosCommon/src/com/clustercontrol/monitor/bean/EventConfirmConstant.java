@@ -18,10 +18,10 @@ public class EventConfirmConstant {
 	/** 確認済（種別）。 */
 	public static final int TYPE_CONFIRMED = ConfirmConstant.TYPE_CONFIRMED;
 
+	/** 確認中（種別）。 */
+	public static final int TYPE_CONFIRMING = ConfirmConstant.TYPE_CONFIRMING;
+
 	/** 未確認（種別）。 */
 	public static final int TYPE_UNCONFIRMED = ConfirmConstant.TYPE_UNCONFIRMED;
-
-	/** 破棄（種別）。 */
-	public static final int TYPE_DESTRUCTION = 2;
 
 }

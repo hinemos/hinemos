@@ -20,6 +20,20 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="NodeEntity.findAllCount">
+		<query>
+			<![CDATA[
+				SELECT COUNT(a) FROM NodeInfo a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ScopeEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM ScopeInfo a
+			]]>
+		</query>
+	</named-query>
 	<!-- FacilityEntity -->
 	<named-query name="FacilityEntity.findByFacilityType">
 		<query>
@@ -65,6 +79,13 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="FacilityEntity.findAllCount">
+		<query>
+			<![CDATA[
+				SELECT COUNT(a) FROM FacilityInfo a
+			]]>
+		</query>
+	</named-query>
 	<named-query name="FacilityEntity.findRootByFacilityType">
 		<query>
 			<![CDATA[
@@ -84,12 +105,199 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="NodeCpuInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeCpuInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.deviceName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeGeneralDeviceInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeGeneralDeviceInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.deviceName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeDiskInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeDiskInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.deviceName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeFilesystemInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeFilesystemInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.deviceName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeVariableInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeVariableInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.nodeVariableName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeHostnameInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeHostnameInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.hostname
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeMemoryInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeMemoryInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.deviceName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeNetworkInterfaceInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeNetworkInterfaceInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.deviceName
+			]]>
+		</query>
+	</named-query>
+	<named-native-query name="NodeNetworkInterfaceInfo.findByMacAddress" result-set-mapping="nodeNetworkInterfaceInfo">
+		<query>
+			<![CDATA[
+				SELECT
+					b.facility_id,
+					b.device_index,
+					b.device_type,
+					b.device_name,
+					b.device_display_name,
+					b.device_size,
+					b.device_size_unit,
+					b.device_description,
+					b.device_nic_ip_address,
+					b.device_nic_mac_address,
+					b.reg_date,
+					b.reg_user,
+					b.update_date,
+					b.update_user
+				FROM (
+					SELECT
+						a.facility_id,
+						a.device_index,
+						a.device_type,
+						a.device_name,
+						a.device_display_name,
+						a.device_size,
+						a.device_size_unit,
+						a.device_description,
+						a.device_nic_ip_address,
+						a.device_nic_mac_address,
+						a.reg_date,
+						a.reg_user,
+						a.update_date,
+						a.update_user,
+						SUBSTRING(LOWER(a.device_nic_mac_address), 1, 2) AS mac_address1,
+						SUBSTRING(LOWER(a.device_nic_mac_address), 4, 2) AS mac_address2,
+						SUBSTRING(LOWER(a.device_nic_mac_address), 7, 2) AS mac_address3,
+						SUBSTRING(LOWER(a.device_nic_mac_address), 10, 2) AS mac_address4,
+						SUBSTRING(LOWER(a.device_nic_mac_address), 13, 2) AS mac_address5,
+						SUBSTRING(LOWER(a.device_nic_mac_address), 16, 2) AS mac_address6
+					FROM setting.cc_cfg_node_network_interface a) AS b
+				WHERE b.mac_address1 = ?1
+				AND b.mac_address2 = ?2
+				AND b.mac_address3 = ?3
+				AND b.mac_address4 = ?4
+				AND b.mac_address5 = ?5
+				AND b.mac_address6 = ?6
+			]]>
+		</query>
+	</named-native-query>
+	<sql-result-set-mapping name="nodeNetworkInterfaceInfo">
+		<entity-result entity-class="com.clustercontrol.repository.model.NodeNetworkInterfaceInfo"/>
+	</sql-result-set-mapping>
+	<named-query name="NodeNoteInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeNoteInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.noteId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeNetstatInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeNetstatInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.protocol, a.id.localIpAddress, a.id.localPort, a.id.foreignIpAddress, a.id.foreignPort, a.id.processName, a.id.pid
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeProcessInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeProcessInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.processName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodePackageInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodePackageInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.packageName, a.id.packageId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeProductInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeProductInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.productName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeLicenseInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeLicenseInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.productName
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeCustomInfo.findByfacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeCustomInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY  a.id.settingId, a.id.settingCustomId
+			]]>
+		</query>
+	</named-query>
 	<!-- FacilityRelationEntity -->
 	<named-query name="FacilityRelationEntity.findAll">
 		<query>
 			<![CDATA[
 				SELECT a FROM FacilityRelationEntity a
-				ORDER BY a.parentFacilityId, a.childFacilityId
 			]]>
 		</query>
 	</named-query>
@@ -126,6 +334,211 @@
 			<![CDATA[
 				SELECT a FROM CollectorSubPlatformMstEntity a
 				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+	<!-- NodeHistoryEntity -->
+	<named-query name="NodeHistoryEntity.findPackageLatest">
+		<query>
+			<![CDATA[
+				SELECT MAX(a.id.regDate) FROM NodeHistory a
+				WHERE a.packageFlag = true
+				AND a.id.facilityId = :facilityId
+				AND a.id.regDate <= :regDate
+			]]>
+		</query>
+	</named-query>
+	<!-- NodeProcessInfoEntity -->
+	<named-query name="NodeProcessInfoEntity.findLatests">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeProcessInfo a
+				WHERE a.id.facilityId = :facilityId
+				ORDER BY a.id.pid ASC
+			]]>
+		</query>
+	</named-query>
+
+	<named-query name="NodeCpuHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeCpuHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.deviceIndex = :deviceIndex
+				AND a.id.deviceType = :deviceType
+				AND a.id.deviceName = :deviceName
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeDiskHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeDiskHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.deviceIndex = :deviceIndex
+				AND a.id.deviceType = :deviceType
+				AND a.id.deviceName = :deviceName
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeFilesystemHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeFilesystemHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.deviceIndex = :deviceIndex
+				AND a.id.deviceType = :deviceType
+				AND a.id.deviceName = :deviceName
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeVariableHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeVariableHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.nodeVariableName = :nodeVariableName
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeHostnameHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeHostnameHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.hostname = :hostname
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeMemoryHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeMemoryHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.deviceIndex = :deviceIndex
+				AND a.id.deviceType = :deviceType
+				AND a.id.deviceName = :deviceName
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeNetworkInterfaceHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeNetworkInterfaceHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.deviceIndex = :deviceIndex
+				AND a.id.deviceType = :deviceType
+				AND a.id.deviceName = :deviceName
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeOsHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeOsHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeNetstatHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeNetstatHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.protocol = :protocol
+				AND a.id.localIpAddress = :localIpAddress
+				AND a.id.localPort = :localPort
+				AND a.id.foreignIpAddress = :foreignIpAddress
+				AND a.id.foreignPort = :foreignPort
+				AND a.id.processName = :processName
+				AND a.id.pid = :pid
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodePackageHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodePackageHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.packageId = :packageId
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeProductHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeProductHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.productName = :productName
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeLicenseHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeLicenseHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.productName = :productName
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeCustomHistoryDetailEntity.findByRegDateTo">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeCustomHistoryDetail a
+				WHERE a.id.facilityId = :facilityId
+				AND a.id.settingId = :settingId
+				AND a.id.settingCustomId = :settingCustomId
+				AND a.regDateTo = :regDateTo
+			]]>
+		</query>
+	</named-query>
+
+	<!-- NodeConfigSettingInfo -->
+	<named-query name="NodeConfigSettingInfo.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeConfigSettingInfo a
+			]]>
+		</query>
+	</named-query>
+	<!-- AutoRegisterNodeInfo -->
+	<named-query name="AutoRegisterNodeInfo.findValid">
+		<query>
+			<![CDATA[
+				SELECT DISTINCT a FROM AutoRegisterNodeInfo a
+				WHERE a.valid='true'
+				ORDER BY a.orderNo ASC, a.sourceNetwork ASC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeConfigSettingInfo.findByCalendarId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeConfigSettingInfo a
+				WHERE a.calendarId = :calendarId
+				ORDER BY a.settingId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeConfigSettingInfo.findByFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeConfigSettingInfo a
+				WHERE a.facilityId = :facilityId
+				ORDER BY a.settingId
 			]]>
 		</query>
 	</named-query>

@@ -10,6 +10,7 @@ package com.clustercontrol.http.factory;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -98,7 +99,9 @@ public class RunMonitorHttp extends RunMonitorNumericValueType {
 		String url = m_requestUrl;
 		// 変数を置換したURLの生成
 		if (nodeInfo != null && nodeInfo.containsKey(facilityId)) {
-			Map<String, String> nodeParameter = RepositoryUtil.createNodeParameter(nodeInfo.get(facilityId));
+			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+			ArrayList<String> inKeyList = StringBinder.getKeyList(m_requestUrl, maxReplaceWord);
+			Map<String, String> nodeParameter = RepositoryUtil.createNodeParameter(nodeInfo.get(facilityId), inKeyList);
 			StringBinder strbinder = new StringBinder(nodeParameter);
 			url = strbinder.bindParam(m_requestUrl);
 			if (m_log.isTraceEnabled()) m_log.trace("http request. (nodeInfo = " + nodeInfo + ", facilityId = " + facilityId + ", url = " + url + ")");

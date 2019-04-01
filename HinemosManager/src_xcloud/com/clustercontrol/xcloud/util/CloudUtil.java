@@ -57,6 +57,7 @@ import com.clustercontrol.repository.bean.FacilityTreeItem;
 import com.clustercontrol.repository.model.NodeDiskInfo;
 import com.clustercontrol.repository.model.NodeHostnameInfo;
 import com.clustercontrol.repository.model.NodeInfo;
+import com.clustercontrol.repository.model.NodeOsInfo;
 import com.clustercontrol.repository.model.NodeVariableInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -261,17 +262,23 @@ public class CloudUtil {
 		if (nodeInfo.getNodeName() == null) {
 			nodeInfo.setNodeName("");
 		}
-		if (nodeInfo.getOsName() == null) {
-			nodeInfo.setOsName("");
+		if (nodeInfo.getNodeOsInfo() == null) {
+			nodeInfo.setNodeOsInfo(new NodeOsInfo(nodeInfo.getFacilityId()));
 		}
-		if (nodeInfo.getOsRelease() == null) {
-			nodeInfo.setOsRelease("");
+		if (nodeInfo.getNodeOsInfo().getOsName() == null) {
+			nodeInfo.getNodeOsInfo().setOsName("");
 		}
-		if (nodeInfo.getOsVersion() == null) {
-			nodeInfo.setOsVersion("");
+		if (nodeInfo.getNodeOsInfo().getOsRelease() == null) {
+			nodeInfo.getNodeOsInfo().setOsRelease("");
 		}
-		if (nodeInfo.getCharacterSet() == null) {
-			nodeInfo.setCharacterSet("");
+		if (nodeInfo.getNodeOsInfo().getOsVersion() == null) {
+			nodeInfo.getNodeOsInfo().setOsVersion("");
+		}
+		if (nodeInfo.getNodeOsInfo().getCharacterSet() == null) {
+			nodeInfo.getNodeOsInfo().setCharacterSet("");
+		}
+		if (nodeInfo.getNodeOsInfo().getStartupDateTime() == null) {
+			nodeInfo.getNodeOsInfo().setStartupDateTime(0L);
 		}
 
 		// エージェント

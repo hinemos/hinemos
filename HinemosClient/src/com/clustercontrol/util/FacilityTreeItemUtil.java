@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.SingletonUtil;
 
 import com.clustercontrol.repository.bean.FacilityConstant;
@@ -19,6 +21,8 @@ import com.clustercontrol.ws.repository.FacilityInfo;
 import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 public class FacilityTreeItemUtil {
+	// ログ
+	private static Log m_log = LogFactory.getLog( FacilityTreeItemUtil.class );
 
 	/**
 	 * Session Singleton
@@ -175,5 +179,32 @@ public class FacilityTreeItemUtil {
 			}
 		}
 		return flag;
+	}
+
+	/**
+	 * スコープごとのノード表示件数を超えるノード数を削除します。
+	 * 
+	 * @param parent 対象スコープ
+	 */
+	public static void removeOverNode(FacilityTreeItem parent) {
+		// プレファレンスページよりスコープごとのノード表示数を取得
+		int scopeNodecount = 0;
+		try {
+			scopeNodecount = Integer.parseInt(System.getProperty("scope.node.count", "0"));
+		} catch (NumberFormatException e) {
+			m_log.info("System environment value \"scope.node.count\" is not correct.");
+		}
+		List<FacilityTreeItem> children = parent.getChildren();
+		// removeするとインデックスが変わってしまうため、i--で検索する。
+		for(int i=children.size()-1 ; i >= 0; i--){
+			if ((children.get(i)).getData().getFacilityType() == FacilityConstant.TYPE_NODE
+					&& scopeNodecount > 0 
+					&& scopeNodecount <= i) {
+				//マッチした場合にはその要素を消します。
+				children.remove(i);
+			} else {
+				removeOverNode(children.get(i));
+			}
+		}
 	}
 }

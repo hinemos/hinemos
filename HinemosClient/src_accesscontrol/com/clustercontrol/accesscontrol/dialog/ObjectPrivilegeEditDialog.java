@@ -337,8 +337,6 @@ public class ObjectPrivilegeEditDialog extends CommonDialog{
 		this.m_objectPrivEditComposite.setLayoutData(gridData);
 		this.m_objectPrivEditComposite.getTable().setEnabled(false);	// 初期値は false
 
-		//TODO 必要？ 画面中央に
-
 		Display objPrivEditDisplay = shell.getDisplay();
 		shell.setLocation((objPrivEditDisplay.getBounds().width - shell.getSize().x) / 2,
 				(objPrivEditDisplay.getBounds().height - shell.getSize().y) / 2);

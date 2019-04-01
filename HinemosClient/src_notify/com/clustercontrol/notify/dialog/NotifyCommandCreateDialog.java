@@ -799,8 +799,7 @@ public class NotifyCommandCreateDialog extends NotifyBasicCreateDialog {
 			super.createButtonsForButtonBar(parent);
 		} else {
 			// 閉じるボタン
-			// TODO Remove the following hard-code. IDialogConstants.*_LABEL will causes IncompatibleClassChangeError on RAP
-			this.createButton(parent, IDialogConstants.CANCEL_ID, "Close", false);
+			this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false);
 		}
 	}
 
@@ -895,7 +894,9 @@ public class NotifyCommandCreateDialog extends NotifyBasicCreateDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		notifyCmdCreateTooltipTextWithParamComposite.setLayoutData(gridData);
 
-		notifyCmdCreateTooltipTextWithParamComposite.setToolTipText(Messages.getString("notify.parameter.tooltip"));
+
+		String tooltipText = Messages.getString("notify.parameter.tooltip") + Messages.getString("replace.parameter.notify") + Messages.getString("replace.parameter.node");
+		notifyCmdCreateTooltipTextWithParamComposite.setToolTipText(tooltipText);
 		notifyCmdCreateTooltipTextWithParamComposite.setColor(new Color(parent.getDisplay(), new RGB(0, 0, 255)));
 		notifyCmdCreateTooltipTextWithParamComposite.addModifyListener(new ModifyListener(){
 			@Override

@@ -21,8 +21,8 @@ import java.util.Map;
  */
 public class Config {
 	// ツールの定義情報
-	public static final String hinemosVersion = "6.1";
-	public static final String toolVersion = "6.1.a";
+	public static final String hinemosVersion = "6.2";
+	public static final String toolVersion = "6.2.a";
 	public static final String generator = "java";
 	public static final String client= "localhost";
 

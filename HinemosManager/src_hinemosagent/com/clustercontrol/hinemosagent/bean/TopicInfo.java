@@ -136,6 +136,29 @@ public class TopicInfo implements Serializable {
 			flag = flag - (flag & TopicFlagConstant.WINEVENT_CHANGED);
 		}
 	}
+
+	private boolean isNodeConfigSettingChanged() {
+		return (flag & TopicFlagConstant.NODE_CONFIG_SETTING_CHANGED) != 0;
+	}
+	public void setNodeConfigSettingChanged(boolean changed) {
+		if (changed) {
+			flag = flag | TopicFlagConstant.NODE_CONFIG_SETTING_CHANGED;
+		} else {
+			flag = flag - (flag & TopicFlagConstant.NODE_CONFIG_SETTING_CHANGED);
+		}
+	}
+
+	private boolean isNodeConfigRunInstructed() {
+		return (flag & TopicFlagConstant.NODE_CONFIG_RUN_COLLECT) != 0;
+	}
+	public void setNodeConfigRunInstructed(boolean changed) {
+		if (changed) {
+			flag = flag | TopicFlagConstant.NODE_CONFIG_RUN_COLLECT;
+		} else {
+			flag = flag - (flag & TopicFlagConstant.NODE_CONFIG_RUN_COLLECT);
+		}
+	}
+
 	public RunInstructionInfo getRunInstructionInfo() {
 		return runInstructionInfo;
 	}
@@ -271,6 +294,20 @@ public class TopicInfo implements Serializable {
 		flag = true;
 		info.setFileCheckChanged(flag);
 		System.out.println((flag ^ info.isFileCheckChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
+
+		flag = false;
+		info.setNodeConfigSettingChanged(flag);
+		System.out.println((flag ^ info.isNodeConfigSettingChanged() ? "NG" : "OK")  + ", flag=" + info.getFlag());
+		flag = true;
+		info.setNodeConfigSettingChanged(flag);
+		System.out.println((flag ^ info.isNodeConfigSettingChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
+
+		flag = false;
+		info.setNodeConfigRunInstructed(flag);
+		System.out.println((flag ^ info.isNodeConfigRunInstructed() ? "NG" : "OK")  + ", flag=" + info.getFlag());
+		flag = true;
+		info.setNodeConfigRunInstructed(flag);
+		System.out.println((flag ^ info.isNodeConfigRunInstructed() ? "NG" : "OK") + ", flag=" + info.getFlag());
 
 	}
 }

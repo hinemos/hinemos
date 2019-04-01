@@ -9,6 +9,7 @@
 package com.clustercontrol.accesscontrol.util;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,11 +37,15 @@ import com.clustercontrol.jobmanagement.model.JobKickEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.jobmanagement.model.JobmapIconImageEntity;
+import com.clustercontrol.jobmanagement.queue.JobQueue;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
+import com.clustercontrol.jobmanagement.queue.internal.JobQueueEntity;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.mail.model.MailTemplateInfo;
 import com.clustercontrol.notify.model.NotifyInfo;
 import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
 
 /**
  * ロール管理の入力チェッククラス
@@ -114,6 +119,15 @@ public class RoleValidator {
 			= com.clustercontrol.jobmanagement.util.QueryUtil.getJobKickEntityFindByOwnerRoleId_NONE(roleId);
 			if (infoCollectionJobKick != null && infoCollectionJobKick.size() > 0) {
 				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_JOBMANAGEMENT);
+				throw new UsedOwnerRole(PluginConstant.TYPE_JOBMANAGEMENT);
+			}
+
+			// ジョブキュー
+			List<JobQueue> jobQueues = Singletons.get(JobQueueContainer.class).findByOwnerRoleId(roleId);
+			if (!jobQueues.isEmpty()) {
+				String ids = jobQueues.stream().map(q -> q.getId()).collect(Collectors.joining(","));
+				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_JOBMANAGEMENT
+						+ " JobQueue[" + ids + "]");
 				throw new UsedOwnerRole(PluginConstant.TYPE_JOBMANAGEMENT);
 			}
 
@@ -274,6 +288,22 @@ public class RoleValidator {
 				}
 			}
 
+			// ジョブ同時実行制御キュー
+			else if (objectType.equals(HinemosModuleConstant.JOB_QUEUE)) {
+
+				m_log.debug("validateModifyOwnerRole() : JobQueueEntity check.");
+				HinemosEntityManager em = jtm.getEntityManager();
+				JobQueueEntity info = em.find(JobQueueEntity.class, pk, ObjectPrivilegeMode.READ);
+				if (info == null) {
+					// 設定が見つからない場合は新規登録と判断し、何もしない
+				}
+
+				// 既存の設定のオーナーロールから変更されている場合
+				if(info != null && !info.getOwnerRoleId().equals(ownerRoleId)) {
+					throw ise;
+				}
+			}
+			
 			// カレンダ
 			else if (objectType.equals(HinemosModuleConstant.PLATFORM_CALENDAR)) {
 

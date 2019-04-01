@@ -230,7 +230,6 @@ public class RunJob implements DependDbNotifier {
 	 */
 	@Override
 	public void internalErrorNotify(int priority, String notifyId, MessageConstant msgCode, String detailMsg) {
-		// FIXME
 		//ジョブ失敗時の重要度を設定
 		String args;
 		if(m_jobInfo != null){

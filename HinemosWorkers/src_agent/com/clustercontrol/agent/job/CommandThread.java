@@ -187,7 +187,6 @@ public class CommandThread extends AgentThread {
 
 			cmdExec = new CommandExecutor(cmd, Charset.forName(m_inputEncoding), CommandExecutor._disableTimeout, m_limit_jobmsg);
 			// クラウド管理のテンプレート機能で使用する環境変数を追加
-			// TODO 将来的にはジョブの中でセットせずに、別の方法で実施する必要がある
 			cmdExec.addEnvironment("HINEMOS_AGENT_HOME", Agent.getAgentHome());
 			for(JobEnvVariableInfo env : info.getJobEnvVariableInfoList()) {
 				cmdExec.addEnvironment(env.getEnvVariableId(), env.getValue());

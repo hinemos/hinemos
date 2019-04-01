@@ -191,7 +191,7 @@ public class MonitorPacketCaptureDialog extends CommonMonitorBinaryDialog {
 		this.m_promiscuousMode = new Button(groupCapture, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = LONG_UNIT;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_promiscuousMode.setLayoutData(gridData);
 	}

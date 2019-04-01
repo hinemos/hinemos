@@ -21,6 +21,7 @@ import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.action.GetScopeListTableDefine;
 import com.clustercontrol.monitor.action.GetStatusListTableDefine;
+import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.ws.monitor.EventDataInfo;
@@ -95,13 +96,18 @@ public class ConvertListUtil {
 			list.add(GetEventListTableDefine.CONFIRM_USER, eventLogData.getConfirmUser());
 			list.add(GetEventListTableDefine.COMMENT, eventLogData.getComment());
 			list.add(GetEventListTableDefine.OWNER_ROLE, eventLogData.getOwnerRoleId());
+			for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+				list.add(GetEventListTableDefine.getUserItemIndex(i), EventUtil.getUserItemValue(eventLogData, i));
+			}
+			list.add(GetEventListTableDefine.EVENT_NO, eventLogData.getPosition());
+			
 			list.add(GetEventListTableDefine.DUMMY, null);
 
 			ret.add(list);
 		}
 		return ret;
 	}
-
+	
 	/**
 	 *
 	 * 監視[イベント]ビューに表示される内容を基にして、
@@ -118,7 +124,8 @@ public class ConvertListUtil {
 		Iterator<?> itr = list.iterator();
 		while(itr.hasNext()) {
 			ArrayList<?> event = (ArrayList<?>) itr.next();
-
+			
+			String managerName = (String) event.get(GetEventListTableDefine.MANAGER_NAME);
 			Integer priority = (Integer) event.get(GetEventListTableDefine.PRIORITY);
 			Timestamp outputDate = new Timestamp (((Date) event.get(GetEventListTableDefine.RECEIVE_TIME)).getTime());
 			Timestamp generationDate = new Timestamp (((Date) event.get(GetEventListTableDefine.OUTPUT_DATE)).getTime());
@@ -134,7 +141,11 @@ public class ConvertListUtil {
 			String comment = (String) event.get(GetEventListTableDefine.COMMENT);
 			String ownerRoleId = (String) event.get(GetEventListTableDefine.OWNER_ROLE);
 
+
+
 			EventDataInfo eventLogData = new EventDataInfo();
+
+			eventLogData.setManagerName(managerName);
 			eventLogData.setPriority(priority);
 			eventLogData.setOutputDate(outputDate.getTime());
 			eventLogData.setGenerationDate(generationDate.getTime());
@@ -149,6 +160,12 @@ public class ConvertListUtil {
 			eventLogData.setConfirmUser(confirmUser);
 			eventLogData.setComment(comment);
 			eventLogData.setOwnerRoleId(ownerRoleId);
+			for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+				String userItem = (String) event.get(GetEventListTableDefine.getUserItemIndex(i));
+				EventUtil.setUserItemValue(eventLogData, i, userItem);
+			}
+			Long position = (Long) event.get(GetEventListTableDefine.EVENT_NO);
+			eventLogData.setPosition(position);
 
 			eventLogDataList.add(eventLogData);
 		}

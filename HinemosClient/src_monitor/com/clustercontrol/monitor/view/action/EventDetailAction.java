@@ -21,8 +21,6 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
 
-import com.clustercontrol.bean.Property;
-import com.clustercontrol.monitor.action.CommentEvent;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.composite.EventListComposite;
 import com.clustercontrol.monitor.dialog.EventInfoDialog;
@@ -101,15 +99,10 @@ public class EventDetailAction extends AbstractHandler {
 		List<?> list = (List<?>)selection.getFirstElement();
 
 		if(list != null){
-			EventInfoDialog dialog =
-					new EventInfoDialog(
-							this.viewPart.getSite().getShell(),
-							list);
+			EventInfoDialog dialog = new EventInfoDialog(this.viewPart.getSite().getShell(), list, view.getEventDspSetting());
 			if (dialog.open() == IDialogConstants.OK_ID){
 				String managerName = (String) list.get(GetEventListTableDefine.MANAGER_NAME);
-				Property prop = dialog.getInputData();
-				CommentEvent comment = new CommentEvent();
-				comment.updateComment(managerName, prop);
+				dialog.okButtonPress(managerName);
 				view.update(false);
 			}
 		}

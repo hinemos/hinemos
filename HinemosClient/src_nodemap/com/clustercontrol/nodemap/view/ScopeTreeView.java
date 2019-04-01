@@ -18,6 +18,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
 import com.clustercontrol.nodemap.composite.ScopeComposite;
+import com.clustercontrol.nodemap.view.action.OpenNodeListAction;
 import com.clustercontrol.nodemap.view.action.OpenNodeMapAction;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
@@ -80,6 +81,7 @@ public class ScopeTreeView extends CommonViewPart {
 	public void setEnabledAction() {
 		ICommandService service = (ICommandService) PlatformUI.getWorkbench().getService( ICommandService.class );
 		service.refreshElements(OpenNodeMapAction.ID, null);
+		service.refreshElements(OpenNodeListAction.ID, null);
 		
 		// Update ToolBar after elements refreshed
 		// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.

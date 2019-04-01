@@ -101,7 +101,9 @@ public class SystemLogPlugin implements HinemosPlugin {
 
 	@Override
 	public void destroy() {
-
+		if (SystemLogPlugin.syslogThread != null) {
+			SystemLogPlugin.syslogThread.shutdown();
+		}
 	}
 	
 	private void createService() {
@@ -110,6 +112,8 @@ public class SystemLogPlugin implements HinemosPlugin {
 	}
 	
 	private static class SyslogThread extends Thread{
+		
+		private Runnable runner = null;
 		
 		public void run(){
 			log.info("start Syslog.");
@@ -132,25 +136,24 @@ public class SystemLogPlugin implements HinemosPlugin {
 				
 				final CountDownLatch sync = new CountDownLatch(1);
 				
-				Runtime.getRuntime().addShutdownHook(
-						new Thread() {
-							@Override
-							public void run() {
-								log.info("call shutdown-hook.");
-								
-								synchronized(shutdownLock) {
-									shutdown = true;
-									shutdownLock.notify();
-									
-									syslog.stop();
-								}
-								
-								try {
-									sync.await();
-								} catch (InterruptedException e) {
-								}
-							}
-						});
+				runner = new Runnable() {
+					
+					@Override
+					public void run() {
+						log.info("call shutdown-hook.");
+						
+						synchronized(shutdownLock) {
+							shutdown = true;
+							shutdownLock.notify();
+							syslog.stop();
+						}
+						
+						try {
+							sync.await();
+						} catch (InterruptedException e) {
+						}
+					}
+				};
 				
 				synchronized(shutdownLock) {
 					while (!shutdown) {
@@ -176,5 +179,10 @@ public class SystemLogPlugin implements HinemosPlugin {
 			}
 		}
 		
+		public void shutdown() {
+			if (runner != null) {
+				runner.run();
+			}
+		}
 	}
 }

@@ -205,7 +205,7 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 
 		// 対象ノード_監視ノード（ラジオ）
 		this.m_radioMonitorNode = new Button(compTargetNode, SWT.RADIO);
-		this.m_radioMonitorNode.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false, 12, 1));
+		this.m_radioMonitorNode.setLayoutData(new GridData(SWT.BEGINNING, GridData.CENTER, true, false, 12, 1));
 		this.m_radioMonitorNode.setText(Messages.getString("monitor.integration.monitor.scope"));
 		this.m_radioMonitorNode.setSelection(true);
 		this.m_radioMonitorNode.addSelectionListener(new SelectionListener() {
@@ -294,7 +294,7 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 		// 収集値種別_数値（ラジオ）
 		this.m_radioNumeric = new Button(compCollectionType, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "numeric", m_radioNumeric);
-		this.m_radioNumeric.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false, 6, 1));
+		this.m_radioNumeric.setLayoutData(new GridData(SWT.BEGINNING, GridData.CENTER, true, false, 6, 1));
 		this.m_radioNumeric.setText(Messages.getString("numeric"));
 		this.m_radioNumeric.setSelection(true);
 		this.m_radioNumeric.addSelectionListener(new SelectionListener() {
@@ -319,7 +319,7 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 		// 収集値種別_文字列（ラジオ）
 		this.m_radioString = new Button(compCollectionType, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "string", m_radioString);
-		this.m_radioString.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false, 6, 1));
+		this.m_radioString.setLayoutData(new GridData(SWT.BEGINNING, GridData.CENTER, true, false, 6, 1));
 		this.m_radioString.setText(Messages.getString("string"));
 
 		// 収集値表示名（ラベル）
@@ -388,13 +388,13 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 
 		// 文字列条件_AND（ラジオ）
 		this.m_radioAnd = new Button(compAndOr, SWT.RADIO);
-		this.m_radioAnd.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false, 6, 1));
+		this.m_radioAnd.setLayoutData(new GridData(SWT.BEGINNING, GridData.CENTER, true, false, 6, 1));
 		this.m_radioAnd.setText(Messages.getString("and"));
 		this.m_radioAnd.setSelection(true);
 		
 		// 文字列条件_AND（ラジオ）
 		this.m_radioOr = new Button(compAndOr, SWT.RADIO);
-		this.m_radioOr.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false, 6, 1));
+		this.m_radioOr.setLayoutData(new GridData(SWT.BEGINNING, GridData.CENTER, true, false, 6, 1));
 		this.m_radioOr.setText(Messages.getString("or"));
 
 		// サイズを最適化

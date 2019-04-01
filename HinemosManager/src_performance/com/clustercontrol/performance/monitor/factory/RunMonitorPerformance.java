@@ -442,7 +442,8 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 			if(m_perf.getDeviceDisplayName() != null && (PollingDataManager.ALL_DEVICE_NAME).equals(m_perf.getDeviceDisplayName())){
 				for (final NodeDeviceInfo deviceInfo : deviceList) {
 					m_deviceData = deviceInfo;
-					final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, deviceInfo.getDeviceName());
+					final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode,
+							deviceInfo.getDeviceName(), deviceInfo.getDeviceDisplayName());
 					if (result != null) {
 						resultList.add(result);
 					}
@@ -453,7 +454,8 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 				for(NodeDeviceInfo deviceInfo : deviceList){
 					if(m_perf.getDeviceDisplayName().equals(deviceInfo.getDeviceDisplayName())){
 						m_deviceData = deviceInfo;
-						final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, deviceInfo.getDeviceName());
+						final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode,
+								deviceInfo.getDeviceName(), deviceInfo.getDeviceDisplayName());
 						if (result != null) {
 							resultList.add(result);
 						}
@@ -464,7 +466,7 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 			// デバイスがない場合
 			else{
 				m_deviceData = null;
-				final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, "");
+				final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, "", "");
 				if (result != null) {
 					resultList.add(result);
 				}
@@ -476,20 +478,19 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 
 
 	/**
-	 * 
-	 * @param facilityName
-	 * @param platform
-	 * @param subPlatform
-	 * @param itemCode
-	 * @param deviceName
 	 * @return 計算したデータを含むMonitorRunResultInfo（但し、Queue内にデータが無く、通知する必要が無い場合はnullが返る）
 	 */
-	private MonitorRunResultInfo calcValue(String facilityName, String platform, String subPlatform, String itemCode, String deviceName) {
-		m_log.debug("calcEachValue() monitorId = " + m_monitorId + ", itemCode = " + itemCode + " , displayName = " + deviceName);
+	private MonitorRunResultInfo calcValue(String facilityName, String platform, String subPlatform, String itemCode,
+			String deviceName, String displayName) {
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("calcValue() : "
+					+ String.format("facilityName=%s, monitorId=%s, itemCode=%s, deviceName=%s, displayName=%s",
+							facilityName, m_monitorId, itemCode, deviceName, displayName));
+		}
 
 		final MonitorRunResultInfo result = new MonitorRunResultInfo();
 		result.setFacilityId(m_facilityId);
-		final CollectorItemInfo itemInfo = new CollectorItemInfo(m_monitorId, itemCode, deviceName);
+		final CollectorItemInfo itemInfo = new CollectorItemInfo(m_monitorId, itemCode, displayName);
 		m_itemName = CollectorItemCodeTable.getFullItemName(itemInfo.getItemCode(), itemInfo.getDisplayName());
 		DataTable curTable = null;
 		DataTable prvTable = null;
@@ -502,8 +503,8 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 		}
 		
 		if (curTable == null || curTable.keySet().size() == 0 || prvTable == null || prvTable.keySet().size() == 0) {
-			// DataTalbeを2回分取得できなかった場合にはnullを返す（何も通知しない）
-			m_log.info("calcValue() : polling have not done enough count." + facilityName + ", " + itemCode + ", " + deviceName);
+			// DataTableを2回分取得できなかった場合にはnullを返す（何も通知しない）
+			m_log.info("calcValue() : polling have not done enough count. " + facilityName + ", " + itemCode + ", " + deviceName);
 			return null;
 		}
 		boolean ret;
@@ -511,7 +512,7 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 			m_value = CalculationMethod.getPerformance(platform, subPlatform, itemInfo, deviceName, curTable, prvTable);
 			ret = true;
 		} catch (CollectedDataNotFoundWithNoPollingException e) {
-			// DataTalbeを2回分取得できなかった場合にはnullを返す（何も通知しない）
+			// DataTableを2回分取得できなかった場合にはnullを返す（何も通知しない）
 			m_log.info("calcValue() : previous polling have not done." + facilityName + ", " + itemCode + ", " + deviceName);
 			return null;
 		} catch (CollectedDataNotFoundException | IllegalStateException | Operator.InvalidValueException e) {

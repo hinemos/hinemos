@@ -214,8 +214,6 @@ public class CalendarDetailListComposite extends Composite {
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 
-					//FIXME
-					//CalendarDetailDialog dialog = new CalendarDetailDialog(shell,detailList.get(order - 1), m_calendarInfo.getOwnerRoleId());
 					CalendarDetailDialog dialog = new CalendarDetailDialog(shell, m_managerName, detailList.get(order - 1), m_ownerRoleId);
 					if (dialog.open() == IDialogConstants.OK_ID) {
 						detailList.remove(order - 1);

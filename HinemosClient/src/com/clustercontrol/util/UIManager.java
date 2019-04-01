@@ -98,7 +98,6 @@ public class UIManager {
 			if(null != item) {
 				statusLineItem = ((StatusLineContributionItem) item);
 			}else{
-				// TODO Use full width instead of CALC_TRUE_WIDTH or hard-code number
 				statusLineItem = new StatusLineContributionItem( STATUS_ITEM_ID_LOGIN, 200 );
 				uiManager.lineManager.add(statusLineItem);
 			}

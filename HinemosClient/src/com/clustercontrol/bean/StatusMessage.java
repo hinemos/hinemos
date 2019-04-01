@@ -26,6 +26,9 @@ public class StatusMessage {
 	/** スキップ(状態の種別) */
 	public static final String STRING_SKIP = Messages.getString("skip");
 
+	/** 実行中(キュー待機) (状態の種別) */
+	public static final String STRING_RUNNING_QUEUE = Messages.getString("running.queue");
+	
 	/** 実行中(状態の種別) */
 	public static final String STRING_RUNNING = Messages.getString("running");
 
@@ -37,6 +40,9 @@ public class StatusMessage {
 
 	/** コマンド停止(状態の種別) */
 	public static final String STRING_STOP = Messages.getString("stop.at.once");
+
+	/** 中断(キュー待機) (状態の種別) */
+	public static final String STRING_SUSPEND_QUEUE = Messages.getString("suspend.queue");
 
 	/** 終了(状態の種別) */
 	public static final String STRING_END = Messages.getString("end");
@@ -61,6 +67,9 @@ public class StatusMessage {
 
 	/** 終了(排他分岐) (状態の種別) */
 	public static final String STRING_END_EXCLUSIVE_BRANCH = Messages.getString("end.exclusive.branch");
+
+	/** 終了(キューサイズ超過) (状態の種別) */
+	public static final String STRING_END_QUEUE_LIMIT = Messages.getString("end.queue.limit");
 
 	/** 起動失敗(状態の種別) */
 	public static final String STRING_ERROR = Messages.getString("start.error");
@@ -104,6 +113,12 @@ public class StatusMessage {
 			return STRING_SKIP;
 		} else if (type == StatusConstant.TYPE_SUSPEND) {
 			return STRING_SUSPEND;
+		} else if (type == StatusConstant.TYPE_RUNNING_QUEUE) {
+			return STRING_RUNNING_QUEUE;
+		} else if (type == StatusConstant.TYPE_SUSPEND_QUEUE) {
+			return STRING_SUSPEND_QUEUE;
+		} else if (type == StatusConstant.TYPE_END_QUEUE_LIMIT) {
+			return STRING_END_QUEUE_LIMIT;
 		}
 		return "";
 	}
@@ -147,6 +162,12 @@ public class StatusMessage {
 			return StatusConstant.TYPE_SKIP;
 		} else if (string.equals(STRING_SUSPEND)) {
 			return StatusConstant.TYPE_SUSPEND;
+		} else if (string.equals(STRING_RUNNING_QUEUE)) {
+			return StatusConstant.TYPE_RUNNING_QUEUE;
+		} else if (string.equals(STRING_SUSPEND_QUEUE)) {
+			return StatusConstant.TYPE_SUSPEND_QUEUE;
+		} else if (string.equals(STRING_END_QUEUE_LIMIT)) {
+			return StatusConstant.TYPE_END_QUEUE_LIMIT;
 		}
 		return -1;
 	}

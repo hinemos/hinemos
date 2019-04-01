@@ -10,6 +10,7 @@ package com.clustercontrol.composite;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
@@ -168,4 +169,10 @@ public class ManagerListComposite extends Composite {
 		}
 	}
 
+	public void addComboSelectionListener(SelectionListener listener) {
+		if (this.m_enabledFlg) {
+			this.comboManagerName.addSelectionListener(listener);
+		}
+	}
+	
 }

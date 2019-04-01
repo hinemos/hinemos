@@ -45,10 +45,7 @@ public class WebServiceCorePlugin extends WebServicePlugin implements HinemosPlu
 	public Set<String> getDependency() {
 		Set<String> dependency = new HashSet<String>();
 		dependency.add(AsyncWorkerPlugin.class.getName());
-		// TODO Why need the followings?
-		//dependency.add(WebServiceJobMapPlugin.class.getName());
-		//dependency.add(WebServiceNodeMapPlugin.class.getName());
-		//dependency.add(WebServiceUtilityPlugin.class.getName());
+		dependency.add(JobInitializerPlugin.class.getName());
 		return dependency;
 	}
 

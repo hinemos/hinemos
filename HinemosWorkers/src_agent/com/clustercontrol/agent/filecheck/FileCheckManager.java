@@ -20,9 +20,8 @@ import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.ws.jobmanagement.JobFileCheck;
 
 /**
- * ログ転送スレッドを管理するクラス<BR>
- * 
- * 転送対象ログファイル情報を受け取り、ログ転送スレッドを制御します。
+ * ファイルチェックを管理するクラスです。<BR>
+ * 設定情報を受け取り、監視スレッドを制御します。
  * 
  */
 public class FileCheckManager {
@@ -38,9 +37,9 @@ public class FileCheckManager {
 	private static int m_runInterval = 10000; // 10sec
 
 	/**
-	 * ログファイル監視設定をスレッドに反映します。<BR>
+	 * 設定情報を反映します。
 	 * 
-	 * @param list 転送対象ログファイル情報一覧
+	 * @param jobFileCheckList ファイルチェック情報一覧。
 	 */
 	public static void setFileCheck(ArrayList<JobFileCheck> jobFileCheckList) {
 		HashMap <String, ArrayList<JobFileCheck>> newJobFileCheckMap =

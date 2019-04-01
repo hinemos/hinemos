@@ -170,6 +170,8 @@ public class FPingUtils {
 		public Pointer response;
 		//packet size
 		public int size;
+		//ping実行時間
+		public long pollingTime;
 	}
 	
 	/**
@@ -256,7 +258,7 @@ public class FPingUtils {
 		
 		while (true) {
 			//ICMPリクエスト実行結果チェック
-			setICMPResult(icmpReqs);
+			setICMPResult(icmpReqs, options);
 			
 			if (repeat >= (options.count -1) && icmpReqs.size() == 0) {
 				//countまでリピート済　かつ　ICMPリクエストすべて処理済の時
@@ -304,6 +306,7 @@ public class FPingUtils {
 					icmpReq.event = event;
 					icmpReq.response = (Pointer) pingRef[0];
 					icmpReq.imcpHandler = (Pointer) pingRef[1];
+					icmpReq.pollingTime = System.currentTimeMillis();
 					icmpReqs.add(icmpReq);
 					
 				}
@@ -333,8 +336,6 @@ public class FPingUtils {
 			for (ICMPRes res : entry.getValue()) {
 				if (res.status == Status.IP_SUCCESS) {
 					sb.append(String.format(" %d.00 ", res.rtt));
-				} else if (res.status == Status.UNKNOWN) {
-					
 				} else {
 					sb.append(" - ");
 				}
@@ -350,24 +351,43 @@ public class FPingUtils {
 	 * @param resultMap レスポンス結果格納用
 	 * @param icmpReqs ICMPリクエスト配列
 	 */
-	private void setICMPResult(List<ICMPReq> icmpReqs) {
+	private void setICMPResult(List<ICMPReq> icmpReqs, FPingOption options) {
 		for (Iterator<ICMPReq> ite = icmpReqs.iterator(); ite.hasNext();) {
 			ICMPReq icmpReq = ite.next();
 			
-			//ICMPリスエストの実行結果をチェック
+			final int timeoutAjust = 100;
+			
+			//ICMPリクエストの実行結果をチェック
 			int result = Kernel32.INSTANCE.WaitForSingleObject(icmpReq.event, 0);
+			ICMPRes respose = null;
 			
 			switch(result){
 			case 0x00000102://WAIT_TIMEOUT
 				//実行中の場合
 				//次回チェックするため、何もしない
+				long now = System.currentTimeMillis();
+				
+				if (now - icmpReq.pollingTime >=  (options.timeout + timeoutAjust)) {
+					logger.info("host:" + icmpReq.host + " is timeout");
+					//無限ループを防止するため、タイムアウト時間経過後は終了扱いとする
+					//0.0.0.0宛にpollingした場合に本ロジックに到達する
+					
+					//レスポンス結果編集（エラー）
+					respose = getErroRes(icmpReq, result);
+					
+					closeRequest(icmpReq);
+					//レスポンス結果のセットが終わったため、ICMPリクエスト配列から削除
+					ite.remove();
+					
+					//返却結果をセット
+					resultMap.get(icmpReq.host).add(respose);
+				}
 				
 				break;
 				
 			case 0x00000000://WAIT_OBJECT_0 Signal状態
 				//実行済の場合
 				
-				ICMPRes respose = null;
 				if (icmpReq.ip instanceof Inet4Address) {
 					//Pointerを実行結果のオブジェクトに変換
 					respose = this.getResponseV4(icmpReq.response, icmpReq);
@@ -375,10 +395,7 @@ public class FPingUtils {
 					respose = this.getResponseV6(icmpReq.response, icmpReq);
 				}
 				
-				//ICMPリクエストのHandlerをClose
-				this.closeICMP(icmpReq.imcpHandler);
-				//イベントのHandleをクローズ
-				Kernel32.INSTANCE.CloseHandle(icmpReq.event);
+				closeRequest(icmpReq);
 				//レスポンス結果のセットが終わったため、ICMPリクエスト配列から削除
 				ite.remove();
 				
@@ -391,24 +408,27 @@ public class FPingUtils {
 			case 0x00000080://WAIT_ABANDONED
 			default:
 				//エラーの場合
-				logger.warn("wait failid" + result);
+				logger.info("host: " + icmpReq.host + "wait failid" + result);
 				
 				//レスポンス結果編集（エラー）
 				respose = getErroRes(icmpReq, result);
+				closeRequest(icmpReq);
 				
-				//ICMPリクエストのHandlerをClose
-				this.closeICMP(icmpReq.imcpHandler);
-				//イベントのHandleをクローズ
-				Kernel32.INSTANCE.CloseHandle(icmpReq.event);
 				//レスポンス結果のセットが終わったため、ICMPリクエスト配列から削除
 				ite.remove();
-				
 				//返却結果をセット
 				resultMap.get(icmpReq.host).add(respose);
 				
 				break;
 			}
 		}
+	}
+	
+	private void closeRequest(ICMPReq icmpReq) {
+		//ICMPリクエストのHandlerをClose
+		this.closeICMP(icmpReq.imcpHandler);
+		//イベントのHandleをクローズ
+		Kernel32.INSTANCE.CloseHandle(icmpReq.event);
 	}
 	
 	/**

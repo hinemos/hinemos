@@ -9,21 +9,17 @@
 package com.clustercontrol.repository.model;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
+
+import com.clustercontrol.util.HinemosTime;
 
 
 /**
@@ -33,12 +29,16 @@ import javax.xml.bind.annotation.XmlType;
 @XmlType(namespace = "http://repository.ws.clustercontrol.com")
 @Entity
 @Table(name="cc_cfg_node_variable", schema="setting")
-@Cacheable(true)
+@Cacheable(false)
 public class NodeVariableInfo implements Serializable, Cloneable {
 	private static final long serialVersionUID = 1L;
 	private NodeVariableInfoPK id;
 	private String nodeVariableValue			= "";
-	private NodeInfo nodeEntity;
+	private Long regDate = HinemosTime.currentTimeMillis();
+	private String regUser = "";
+	private Long updateDate = HinemosTime.currentTimeMillis();
+	private String updateUser = "";
+	private Boolean searchTarget = Boolean.FALSE;
 
 	public NodeVariableInfo() {
 	}
@@ -88,96 +88,74 @@ public class NodeVariableInfo implements Serializable, Cloneable {
 		this.nodeVariableValue = nodeVariableValue;
 	}
 
-
-	//bi-directional many-to-one association to NodeEntity
-	@XmlTransient
-	@ManyToOne(fetch=FetchType.LAZY)
-	@JoinColumn(name="facility_id", insertable=false, updatable=false)
-	public NodeInfo getNodeEntity() {
-		return this.nodeEntity;
+	@Column(name="reg_date")
+	public Long getRegDate() {
+		return this.regDate;
+	}
+	public void setRegDate(Long regDate) {
+		this.regDate = regDate;
 	}
 
-	@Deprecated
-	public void setNodeEntity(NodeInfo nodeEntity) {
-		this.nodeEntity = nodeEntity;
+
+	@Column(name="reg_user")
+	public String getRegUser() {
+		return this.regUser;
+	}
+	public void setRegUser(String regUser) {
+		this.regUser = regUser;
 	}
 
-	/**
-	 * NodeEntityオブジェクト参照設定<BR>
-	 * 
-	 * NodeEntity設定時はSetterに代わりこちらを使用すること。
-	 * 
-	 * JPAの仕様(JSR 220)では、データ更新に伴うrelationshipの管理はユーザに委ねられており、
-	 * INSERTやDELETE時に、そのオブジェクトに対する参照をメンテナンスする処理を実装する。
-	 * 
-	 * JSR 220 3.2.3 Synchronization to the Database
-	 * 
-	 * Bidirectional relationships between managed entities will be persisted
-	 * based on references held by the owning side of the relationship.
-	 * It is the developer’s responsibility to keep the in-memory references
-	 * held on the owning side and those held on the inverse side consistent
-	 * with each other when they change.
-	 */
-	public void relateToNodeEntity(NodeInfo nodeEntity) {
-		this.setNodeEntity(nodeEntity);
-		if (nodeEntity != null) {
-			List<NodeVariableInfo> list = nodeEntity.getNodeVariableInfo();
-			if (list == null) {
-				list = new ArrayList<NodeVariableInfo>();
-			} else {
-				for(NodeVariableInfo entity : list){
-					if (entity.getFacilityId().equals(this.getFacilityId()) &&
-							entity.getNodeVariableName().equals(this.getNodeVariableName())) {
-						return;
-					}
-				}
-			}
-			list.add(this);
-			nodeEntity.setNodeVariableInfo(list);
-		}
+	@Column(name="update_date")
+	public Long getUpdateDate() {
+		return this.updateDate;
+	}
+	public void setUpdateDate(Long updateDate) {
+		this.updateDate = updateDate;
 	}
 
-	/**
-	 * 削除前処理<BR>
-	 * 
-	 * JPAの仕様(JSR 220)では、データ更新に伴うrelationshipの管理はユーザに委ねられており、
-	 * INSERTやDELETE時に、そのオブジェクトに対する参照をメンテナンスする処理を実装する。
-	 * 
-	 * JSR 220 3.2.3 Synchronization to the Database
-	 * 
-	 * Bidirectional relationships between managed entities will be persisted
-	 * based on references held by the owning side of the relationship.
-	 * It is the developer’s responsibility to keep the in-memory references
-	 * held on the owning side and those held on the inverse side consistent
-	 * with each other when they change.
-	 */
-	public void unchain() {
-		// NodeEntity
-		if (this.nodeEntity != null) {
-			List<NodeVariableInfo> list = this.nodeEntity.getNodeVariableInfo();
-			if (list != null) {
-				Iterator<NodeVariableInfo> iter = list.iterator();
-				while(iter.hasNext()) {
-					NodeVariableInfo entity = iter.next();
-					if (entity.getFacilityId().equals(this.getFacilityId()) &&
-							entity.getNodeVariableName().equals(this.getNodeVariableName())){
-						iter.remove();
-						break;
-					}
-				}
-			}
-		}
+	@Column(name="update_user")
+	public String getUpdateUser() {
+		return this.updateUser;
 	}
-	
+	public void setUpdateUser(String updateUser) {
+		this.updateUser = updateUser;
+	}
+
+	@Transient
+	public Boolean getSearchTarget() {
+		return this.searchTarget;
+	}
+	public void setSearchTarget(Boolean searchTarget) {
+		this.searchTarget = searchTarget;
+	}
+
 	@Override
 	public NodeVariableInfo clone() {
 		try {
 			NodeVariableInfo cloneInfo = (NodeVariableInfo)super.clone();
-			cloneInfo.id = (NodeVariableInfoPK)id.clone();
+			cloneInfo.id = this.id;
 			cloneInfo.nodeVariableValue = this.nodeVariableValue;
+			cloneInfo.regDate = this.regDate;
+			cloneInfo.regUser = this.regUser;
+			cloneInfo.updateDate = this.updateDate;
+			cloneInfo.updateUser = this.updateUser;
+			cloneInfo.searchTarget = this.searchTarget;
 			return cloneInfo;
 		} catch (CloneNotSupportedException e) {
-			throw new InternalError(e.toString());
+			throw new InternalError(e.getMessage());
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "NodeVariableInfo ["
+				+ "id=" + id 
+				+ ", nodeVariableValue=" + nodeVariableValue 
+				+ ", regDate=" + regDate
+				+ ", regUser=" + regUser 
+				+ ", updateDate=" + updateDate 
+				+ ", updateUser=" + updateUser
+				+ ", searchTarget=" + searchTarget 
+				+ "]";
 	}
 }

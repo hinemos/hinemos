@@ -49,6 +49,7 @@ import com.clustercontrol.jobmanagement.bean.JobKick;
 import com.clustercontrol.jobmanagement.bean.JobKickConstant;
 import com.clustercontrol.jobmanagement.bean.JobNextJobOrderInfo;
 import com.clustercontrol.jobmanagement.bean.JobObjectInfo;
+import com.clustercontrol.jobmanagement.bean.JobQueueConstant;
 import com.clustercontrol.jobmanagement.bean.JobRuntimeParam;
 import com.clustercontrol.jobmanagement.bean.JobRuntimeParamDetail;
 import com.clustercontrol.jobmanagement.bean.JobRuntimeParamTypeConstant;
@@ -64,11 +65,14 @@ import com.clustercontrol.jobmanagement.factory.SelectJobmap;
 import com.clustercontrol.jobmanagement.model.JobKickEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
+import com.clustercontrol.jobmanagement.queue.JobQueueNotFoundException;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
 
 /**
  * ジョブ管理の入力チェッククラス
@@ -1286,7 +1290,20 @@ public class JobValidator {
 				// 試行回数のチェック
 				CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), waitRule.getJobRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
 			}
-		}
+			// 同時実行制御キュー設定をチェック
+			if (waitRule.getQueueFlg() != null && waitRule.getQueueFlg().booleanValue()) {
+				String queueId = waitRule.getQueueId();
+				// 字句チェック
+				CommonValidator.validateId(MessageConstant.JOB_QUEUE.getMessage(), queueId, JobQueueConstant.ID_MAXLEN);
+				// データ存在チェック
+				try {
+					Singletons.get(JobQueueContainer.class).get(queueId);
+				} catch (JobQueueNotFoundException e) {
+					throw new InvalidSetting(
+							MessageConstant.MESSAGE_JOBQUEUE_NOT_FOUND.getMessage(new String[] { queueId }), e);
+				}
+			}
+		} // waitRule != null
 		//子JobTreeItemを取得
 		for(JobTreeItem child : item.getChildren()){
 			validateWaitRule(child);

@@ -12,8 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -35,8 +33,6 @@ import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.traputil.bean.SnmpTrapMasterInfo;
 import com.clustercontrol.utility.traputil.dialog.ImportDialog;
-import com.clustercontrol.utility.util.UtilityEndpointWrapper;
-import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
 import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 import com.clustercontrol.ws.monitor.InvalidSetting_Exception;
@@ -52,8 +48,6 @@ import com.clustercontrol.ws.monitor.TrapValueInfo;
  * @since 5.0.a
  */
 public class ImportCommand extends AbstractHandler implements IElementUpdater {
-	/*ロガー*/
-	protected Log log = LogFactory.getLog(getClass());
 	
 	/** アクションID */
 	public static final String ID = "com.clustercontrol.enterprise.utility.traputil.ui.views.commands.ImportCommand"; //$NON-NLS-1$
@@ -72,39 +66,12 @@ public class ImportCommand extends AbstractHandler implements IElementUpdater {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		// keyチェック
-		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-			String version = wrapper.getVersion();
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							Messages.getString("message.expiration.term.invalid"));
-				}
-			}
-		} catch (com.clustercontrol.ws.utility.HinemosUnknown_Exception |
-				com.clustercontrol.ws.utility.InvalidRole_Exception |
-				com.clustercontrol.ws.utility.InvalidUserPass_Exception e) {
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					e.getMessage());
-			return null;
-		} catch (Exception e) {
-			// キーファイルを確認できませんでした。処理を終了します。
-			// Key file not found. This process will be terminated.
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.expiration.term"));
-			return null;
-		}
 		
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed
 		if( null == this.window || !isEnabled() ){
 			return null;
 		}
-
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
 		MonitorListView view = this.viewPart.getAdapter(MonitorListView.class);

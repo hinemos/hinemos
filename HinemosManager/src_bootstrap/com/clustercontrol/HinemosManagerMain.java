@@ -146,10 +146,21 @@ public class HinemosManagerMain {
 			break;
 		}
 		
-		// 標準出力
-		StdOutErrLog.initialize();
+		
+		if (!HinemosManagerMain.isDevMode()) {
+			// 標準出力
+			StdOutErrLog.initialize();
+		}
+		
 	}
 
+	/**
+	 * 開発用のVM引数であるかチェックする
+	 */
+	public static boolean isDevMode() {
+		return Boolean.valueOf(System.getProperty("devMode", Boolean.FALSE.toString()));
+	}
+	
 	/**
 	 * Hinemos Managerのmainメソッド<br/>
 	 * @param args
@@ -200,28 +211,13 @@ public class HinemosManagerMain {
 
 			// Hinemos Mangerの停止処理を定義する
 			Runtime.getRuntime().addShutdownHook(
-					new Thread() {
-						@Override
-						public void run() {
-							log.info("shutdown hook called.");
-							synchronized (shutdownLock) {
-								// Hinemos Managerの停止開始を通知する
-								String[] msgArgsShutdown = {_hostname};
-								AplLogger.put(PriorityConstant.TYPE_INFO, HinemosModuleConstant.HINEMOS_MANAGER_MONITOR, MessageConstant.MESSAGE_SYS_002_MNG,  msgArgsShutdown);
-
-								// 参照可能なHinemosPluginを全て非活性化(deactivate)する
-								HinemosPluginService.getInstance().deactivate();
-
-								// 参照可能なHinemosPluginを全て破棄(destroy)する
-								HinemosPluginService.getInstance().destroy();
-
-								log.info("Hinemos Manager is stopped.");
-
-								shutdown = true;
-								shutdownLock.notify();
-							}
-						}
-					});
+				new Thread() {
+					@Override
+					public void run() {
+						HinemosManagerMain.terminate();
+					}
+				}
+			);
 
 			// 起動所要時間をログ出力する
 			long startupTime = System.currentTimeMillis();
@@ -247,13 +243,34 @@ public class HinemosManagerMain {
 				}
 			}
 
-			System.exit(0);
+			if (!HinemosManagerMain.isDevMode()) {
+				System.exit(0);
+			}
 
 		} catch (Throwable e) {
 			log.error("unknown error occured.", e);
 		}
 	}
 	
+	public static void terminate() {
+		log.info("shutdown hook called.");
+		synchronized (shutdownLock) {
+			// Hinemos Managerの停止開始を通知する
+			String[] msgArgsShutdown = {_hostname};
+			AplLogger.put(PriorityConstant.TYPE_INFO, HinemosModuleConstant.HINEMOS_MANAGER_MONITOR, MessageConstant.MESSAGE_SYS_002_MNG,  msgArgsShutdown);
+
+			// 参照可能なHinemosPluginを全て非活性化(deactivate)する
+			HinemosPluginService.getInstance().deactivate();
+
+			// 参照可能なHinemosPluginを全て破棄(destroy)する
+			HinemosPluginService.getInstance().destroy();
+			
+			log.info("Hinemos Manager is stopped.");
+
+			shutdown = true;
+			shutdownLock.notify();
+		}
+	}
 	public interface StartupTask {
 		void init();
 	}

@@ -15,3 +15,5 @@ com.clustercontrol.plugin.impl.WebServiceStartHTTPSPlugin
 com.clustercontrol.plugin.impl.InfraPlugin
 com.clustercontrol.plugin.impl.ProxyManagerPlugin
 com.clustercontrol.plugin.impl.HubPlugin
+com.clustercontrol.plugin.impl.RestApiPlugin
+com.clustercontrol.plugin.impl.EventCustomCommandPlugin

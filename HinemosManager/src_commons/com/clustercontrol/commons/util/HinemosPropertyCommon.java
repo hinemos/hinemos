@@ -19,7 +19,6 @@ import com.clustercontrol.maintenance.session.HinemosPropertyControllerBean;
 import com.clustercontrol.ping.bean.PingRunCountConstant;
 import com.clustercontrol.ping.bean.PingRunIntervalConstant;
 import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
-import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.systemlog.bean.SyslogMessage;
 
 import java.net.InetAddress;
@@ -29,19 +28,26 @@ import java.util.TimeZone;
 /**
  * HinemosPropertyのデフォルト値を格納するクラス<BR>
  *
- * @version 6.1.0
+ * @version 6.2.0
  * @since 6.1.0
  */
 public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 
 	agent_connection_dnsname(HinemosPropertyBean.string("")),
 	agent_connection_ipaddres(HinemosPropertyBean.string("")),
+	agent_v62beta_md5s(HinemosPropertyBean.string(
+			/* 20180912版 */ "0F5D8E6DEBB39751299529E9E35D2729," + 
+			/* 20180810版 */ "45d547cb8cde483145513383573af6d3")),
+	auto_register_node_incremental_loop(HinemosPropertyBean.numeric(100L)),
+	auto_register_node_seaquential_digits(HinemosPropertyBean.numeric(4L)),
+	auto_register_node_valid(HinemosPropertyBean.bool(false)),
 	collect_graph_timeout_reporting(HinemosPropertyBean.numeric(50000L)),
 	collect_graph_timeout(HinemosPropertyBean.numeric(50000L)),
 	collect_logcount_thread_pool_size(HinemosPropertyBean.numeric(1L)),
 	collect_logcount_timeout(HinemosPropertyBean.numeric(15000L)),
 	common_agent_discovery_pingport(HinemosPropertyBean.numeric(24005L)),
 	common_db_connectionpool_stats_threshold(HinemosPropertyBean.numeric(12L)),
+	common_db_error_notify_suppression_time(HinemosPropertyBean.numeric(60000L)),
 	common_invalid_char_replace(HinemosPropertyBean.bool(false)),
 	common_invalid_char_replace_to(HinemosPropertyBean.string("?")),
 	common_scheduler_startup_delay(HinemosPropertyBean.numeric(60L)),
@@ -66,6 +72,7 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	hub_transfer_delay_interval(HinemosPropertyBean.string("0 0 0 * * ? *")),
 	hub_transfer_max_try_count(HinemosPropertyBean.numeric(5L)),
 	hub_transfer_fetch_size(HinemosPropertyBean.numeric(10000L)),
+	hub_transfer_locale(HinemosPropertyBean.string("")),
 	infra_check_timeout(HinemosPropertyBean.numeric(Long.valueOf(50 * 1000))),
 	infra_checkcommand_returnvalue_default(HinemosPropertyBean.numeric(1L)),
 	infra_command_md5(HinemosPropertyBean.string("md5sum \"%s\" | awk '{print $1}'")),
@@ -111,6 +118,8 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	job_script_maxsize(HinemosPropertyBean.numeric(8192L)),
 	job_session_change_data_analysys_count(HinemosPropertyBean.numeric(30L)),
 	job_session_change_data_analysys_range(HinemosPropertyBean.numeric(43200L)),
+	jobqueue_size(HinemosPropertyBean.numeric(100L)),
+	jobqueue_executor_threadPool_size(HinemosPropertyBean.numeric(2L)),
 	jobmap_icon_id_default_approvaljob(HinemosPropertyBean.string("APPROVALJOB_DEFAULT")),
 	jobmap_icon_id_default_filejob(HinemosPropertyBean.string("FILEJOB_DEFAULT")),
 	jobmap_icon_id_default_job(HinemosPropertyBean.string("JOB_DEFAULT")),
@@ -198,6 +207,34 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	monitor_Customtrap_RecentData_Map_size(HinemosPropertyBean.numeric(256L)),
 	monitor_customtrap_stats_interval(HinemosPropertyBean.numeric(100L)),
 	monitor_customtrap_url(HinemosPropertyBean.string("http://0.0.0.0:8082/")),
+	monitor_event_customcmd_cmd$_enable(HinemosPropertyBean.bool(false)),
+	monitor_event_customcmd_cmd$_displayname(HinemosPropertyBean.string("")),
+	monitor_event_customcmd_cmd$_description(HinemosPropertyBean.string("")),
+	monitor_event_customcmd_cmd$_command(HinemosPropertyBean.string("")),
+	monitor_event_customcmd_cmd$_warnrc(HinemosPropertyBean.numeric(1L)),
+	monitor_event_customcmd_cmd$_errorrc(HinemosPropertyBean.numeric(2L)),
+	monitor_event_customcmd_cmd$_max_eventsize(HinemosPropertyBean.numeric(10L)),
+	monitor_event_customcmd_cmd$_thread(HinemosPropertyBean.numeric(5L)),
+	monitor_event_customcmd_cmd$_queue(HinemosPropertyBean.numeric(20L)),
+	monitor_event_customcmd_cmd$_date_format(HinemosPropertyBean.string("yyyyMMddHHmmssSSS")),
+	monitor_event_customcmd_cmd$_user(HinemosPropertyBean.string("")),
+	monitor_event_customcmd_cmd$_timeout(HinemosPropertyBean.numeric(60000L)),
+	monitor_event_customcmd_cmd$_buffer(HinemosPropertyBean.numeric(512L)),
+	monitor_event_customcmd_cmd$_mode(HinemosPropertyBean.string("auto")),
+	monitor_event_customcmd_cmd$_login(HinemosPropertyBean.bool(false)),
+	monitor_event_customcmd_cmd$_result_keeptime(HinemosPropertyBean.numeric(600000L)),
+	monitor_event_customcmd_cmd$_result_polling_delay(HinemosPropertyBean.numeric(5000L)),
+	monitor_event_customcmd_cmd$_result_polling_interval(HinemosPropertyBean.numeric(30000L)),
+	monitor_event_useritem_item$_display_enable(HinemosPropertyBean.bool(false)),
+	monitor_event_useritem_item$_export_enable(HinemosPropertyBean.bool(false)),
+	monitor_event_useritem_item$_displayname(HinemosPropertyBean.string("")),
+	monitor_event_useritem_item$_regist_initvalue(HinemosPropertyBean.string("")),
+	monitor_event_useritem_item$_modify_client_enable(HinemosPropertyBean.bool(false)),
+	monitor_event_useritem_item$_modify_required(HinemosPropertyBean.bool(false)),
+	monitor_event_useritem_item$_modify_validation(HinemosPropertyBean.string("")),
+	monitor_event_useritem_item$_modify_format(HinemosPropertyBean.string("")),
+	monitor_event_eventno_display_enable(HinemosPropertyBean.bool(false)),
+	monitor_event_eventno_export_enable(HinemosPropertyBean.bool(false)),
 	monitor_http_content_type(HinemosPropertyBean.string("text")),
 	monitor_http_post_charset(HinemosPropertyBean.string("UTF-8")),
 	monitor_http_scenario_disable_proxy_cache(HinemosPropertyBean.bool(true)),
@@ -264,10 +301,17 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	monitor_systemlog_worker_thread_max_size(HinemosPropertyBean.numeric(1000L)),
 	monitor_sytemslog_worker_thread_keepalive_timeout(HinemosPropertyBean.numeric(5000L)),
 	monitor_winservice_ssl_trustall(HinemosPropertyBean.bool(true)),
+	node_process_path_maxsize(HinemosPropertyBean.numeric(2097152L)),
+	node_product_path_maxsize(HinemosPropertyBean.numeric(2097152L)),
+	node_config_report_bom(HinemosPropertyBean.bool(true)),
+	node_config_report_format(HinemosPropertyBean.string("yyyy/MM/dd HH:mm:ss")),
+	node_config_report_separator(HinemosPropertyBean.string(",")),
+	node_config_search_timeout(HinemosPropertyBean.numeric(15000L)),
 	nodemap_ping_runcount(HinemosPropertyBean.numeric(Long.valueOf(PingRunCountConstant.TYPE_COUNT_01))),
 	nodemap_ping_runinterval(HinemosPropertyBean.numeric(Long.valueOf(PingRunIntervalConstant.TYPE_SEC_02))),
 	nodemap_ping_timeout(HinemosPropertyBean.numeric(Long.valueOf(PingRunIntervalConstant.TYPE_SEC_05))),
 	nodemap_search_connection_thread(HinemosPropertyBean.numeric(4L)),
+	nodemap_download_node_config_count(HinemosPropertyBean.numeric(100L)),
 	notify_command_create_mode(HinemosPropertyBean.string("auto")),
 	notify_command_thread_pool_count(HinemosPropertyBean.numeric(8L)),
 	notify_commandsuccess_exit(HinemosPropertyBean.numeric(0L)),
@@ -290,6 +334,11 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	performance_export_encode(HinemosPropertyBean.string("MS932")),
 	performance_export_fetchsize(HinemosPropertyBean.numeric(1000L)),
 	performance_export_line_separator(HinemosPropertyBean.string("CRLF")),
+	replace_param_max(HinemosPropertyBean.numeric(1000L)),
+	repository_agentupdate_expires(HinemosPropertyBean.numeric(60000L)),
+	repository_agentupdate_interval(HinemosPropertyBean.numeric(500L)),
+	repository_agentupdate_limit(HinemosPropertyBean.numeric(4L)),
+	repository_agentupdate_cache_cooldown(HinemosPropertyBean.numeric(5000L)),
 	repository_auto_device_find_log(HinemosPropertyBean.bool(false)),
 	repository_auto_device_user(HinemosPropertyBean.string(UserIdConstant.HINEMOS)),
 	repository_device_search_interval(HinemosPropertyBean.numeric(5L)),
@@ -305,11 +354,21 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	repository_device_search_prop_device_nic(HinemosPropertyBean.bool(true)),
 	repository_device_search_threadpool_size(HinemosPropertyBean.numeric(5L)),
 	repository_device_search_verbose(HinemosPropertyBean.bool(false)),
+	repository_node_config_collect_load_distribution_range(HinemosPropertyBean.numeric(-1L)), // (単位:分).
+	repository_node_config_collect_reference_time(HinemosPropertyBean.string("00:00")), // HH:mm 24時間表記.
+	repository_node_config_run_clean_interval(HinemosPropertyBean.numeric(360L)), // 6時間(単位:分).
+	repository_node_config_run_distribution_time(HinemosPropertyBean.numeric(600000L)), // 10分(単位:ミリ秒).
+	repository_node_config_run_sleep(HinemosPropertyBean.numeric(500L)), // 0.5秒(単位:ミリ秒).
+	repository_node_config_run_too_old(HinemosPropertyBean.numeric(600000L)), // 10分(単位:ミリ秒).
+	repository_node_replace_max_by_key(HinemosPropertyBean.numeric(1000L)),
+	repository_node_replace_separator(HinemosPropertyBean.string(",")),
+	repository_node_replace_line_separator(HinemosPropertyBean.string("CRLF")),
+	repository_node_replace_date_format(HinemosPropertyBean.string("yyyy/MM/dd HH:mm:ss")),
 	repository_node_search_delay(HinemosPropertyBean.numeric(10L)),
 	repository_node_search_max_node(HinemosPropertyBean.numeric(256L)),
 	repository_node_search_timeout(HinemosPropertyBean.numeric(Long.valueOf(50 * 1000))),
 	repository_nodename_fqdn(HinemosPropertyBean.bool(false)),
-	repository_restart_sleep(HinemosPropertyBean.numeric(RepositoryControllerBean.RESTART_AGENT_SLEEP_TIME)),
+	repository_restart_sleep(HinemosPropertyBean.numeric(500L)),
 	repository_snmp_oid_contact(HinemosPropertyBean.string(".1.3.6.1.2.1.1.4.0")),
 	repository_snmp_oid_cpu_index(HinemosPropertyBean.string(".1.3.6.1.2.1.25.3.3.1.2")),
 	repository_snmp_oid_descr(HinemosPropertyBean.string(".1.3.6.1.2.1.1.1.0")),
@@ -335,6 +394,7 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	repository_snmp_oid_nic_out_octet(HinemosPropertyBean.string(".1.3.6.1.2.1.2.2.1.16")),
 	repository_snmp_retry(HinemosPropertyBean.numeric(1L)),
 	repository_snmp_timeout(HinemosPropertyBean.numeric(5000L)),
+	rest_api_url(HinemosPropertyBean.string("http://0.0.0.0:0/")),
 	scheduler_dbms_misfireThreshold(HinemosPropertyBean.numeric(3600000L)),
 	scheduler_dbms_threadPool_size(HinemosPropertyBean.numeric(8L)),
 	scheduler_job_cron(HinemosPropertyBean.string("0 */1 * * * ? *")),
@@ -346,7 +406,11 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	selfcheck_alert_threshold(HinemosPropertyBean.numeric(3L)),
 	selfcheck_interval(HinemosPropertyBean.numeric(150L)),
 	selfcheck_monitoring_asynctask_queue(HinemosPropertyBean.bool(true)),
-	selfcheck_monitoring_asynctask_queue_list(HinemosPropertyBean.string("NotifyStatusTaskFactory:10000,NotifyEventTaskFactory:10000,NotifyMailTaskFactory:10000,NotifyCommandTaskFactory:10000,NotifyLogEscalationTaskFactory:10000,NotifyJobTaskFactory:10000,CreateJobSessionTaskFactory:100,NotifyInfraTaskFactory:10000")),
+	selfcheck_monitoring_asynctask_queue_list(HinemosPropertyBean.string(
+			"NotifyStatusTaskFactory:10000,NotifyEventTaskFactory:10000,NotifyMailTaskFactory:10000," +
+			"NotifyCommandTaskFactory:10000,NotifyLogEscalationTaskFactory:10000,NotifyJobTaskFactory:10000," +
+			"CreateJobSessionTaskFactory:100,NotifyInfraTaskFactory:10000,AgentRestartTaskFactory:10000," +
+			"AgentUpdateTaskFactory:10000")),
 	selfcheck_monitoring_db(HinemosPropertyBean.bool(true)),
 	selfcheck_monitoring_db_connection_count(HinemosPropertyBean.bool(true)),
 	selfcheck_monitoring_db_connection_count_threshold(HinemosPropertyBean.numeric(80L)),
@@ -358,6 +422,10 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	selfcheck_monitoring_filesystem_usage_list(HinemosPropertyBean.string("/:50")),
 	selfcheck_monitoring_job_runningsession(HinemosPropertyBean.bool(true)),
 	selfcheck_monitoring_job_runningsession_threshold(HinemosPropertyBean.numeric(1000L)),
+	selfcheck_monitoring_jobqueue_size(HinemosPropertyBean.bool(true)),
+	selfcheck_monitoring_jobqueue_size_threshold(HinemosPropertyBean.numeric(50L)),
+	selfcheck_monitoring_jobqueue_deadlock(HinemosPropertyBean.bool(true)),
+	selfcheck_monitoring_jobqueue_deadlock_threshold(HinemosPropertyBean.numeric(600L)),
 	selfcheck_monitoring_jvm_freeheap(HinemosPropertyBean.bool(true)),
 	selfcheck_monitoring_jvm_freeheap_threshold(HinemosPropertyBean.numeric(32L)),
 	selfcheck_monitoring_scheduler_delay(HinemosPropertyBean.bool(true)),
@@ -377,6 +445,8 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	selfcheck_monitoring_ws_agentbinary_queue_threshold(HinemosPropertyBean.numeric(960L)),
 	selfcheck_monitoring_ws_agenthub_queue(HinemosPropertyBean.bool(true)),
 	selfcheck_monitoring_ws_agenthub_queue_threshold(HinemosPropertyBean.numeric(960L)),
+	selfcheck_monitoring_ws_agentnodeconfig_queue(HinemosPropertyBean.bool(true)),
+	selfcheck_monitoring_ws_agentnodeconfig_queue_threshold(HinemosPropertyBean.numeric(960L)),
 	selfcheck_monitoring_ws_queue(HinemosPropertyBean.bool(true)),
 	selfcheck_monitoring_ws_queue_threshold(HinemosPropertyBean.numeric(240L)),
 	selfcheck_snmp_community(HinemosPropertyBean.string("public")),
@@ -409,7 +479,9 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 			AsyncWorkerPlugin.NOTIFY_LOG_ESCALATION_TASK_FACTORY +"," + 
 			AsyncWorkerPlugin.NOTIFY_JOB_TASK_FACTORY +"," + 
 			AsyncWorkerPlugin.CREATE_JOB_SESSION_TASK_FACTORY +"," + 
-			AsyncWorkerPlugin.NOTIFY_INFRA_TASK_FACTORY)),
+			AsyncWorkerPlugin.NOTIFY_INFRA_TASK_FACTORY + "," + 
+			AsyncWorkerPlugin.AGENT_RESTART_TASK_FACTORY + "," +
+			AsyncWorkerPlugin.AGENT_UPDATE_TASK_FACTORY)),
 	worker_async_task_persist_monitor_agent(HinemosPropertyBean.bool(false)),
 	worker_async_task_persist_monitor_custom(HinemosPropertyBean.bool(false)),
 	worker_async_task_persist_monitor_http(HinemosPropertyBean.bool(false)),
@@ -442,6 +514,7 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	xcloud_autoregist_node_instance(HinemosPropertyBean.bool(true)),
 	xcloud_autodelete_node_instance(HinemosPropertyBean.bool(false)),
 	xcloud_autodelete_instance(HinemosPropertyBean.bool(true)),
+	xcloud_autodelete_node_backupimage(HinemosPropertyBean.bool(true)),
 	xcloud_instance_snapshot_count_max(HinemosPropertyBean.numeric(5L)),
 	xcloud_ipaddress_cidr(HinemosPropertyBean.string("10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16")),
 	xcloud_ipaddress_notavailable(HinemosPropertyBean.string("169.254.0.0")),
@@ -518,7 +591,7 @@ public enum HinemosPropertyCommon implements HinemosPropertyAbstract {
 	inquiry_max_id_number(HinemosPropertyBean.numeric(0L)),
 	inquiry_displayname_$(HinemosPropertyBean.string()),
 	inquiry_command_$(HinemosPropertyBean.string()),
-	inquiry_file_$(HinemosPropertyBean.string());
+	inquiry_file_$(HinemosPropertyBean.string())
 	;
 
 	// Hinemosプロパティ情報

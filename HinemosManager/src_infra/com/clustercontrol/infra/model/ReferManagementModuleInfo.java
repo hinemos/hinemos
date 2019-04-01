@@ -21,13 +21,11 @@ import javax.persistence.Table;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.fault.InfraManagementNotFound;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.infra.bean.AccessInfo;
 import com.clustercontrol.infra.bean.ModuleNodeResult;
-import com.clustercontrol.infra.util.QueryUtil;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.util.MessageConstant;
 

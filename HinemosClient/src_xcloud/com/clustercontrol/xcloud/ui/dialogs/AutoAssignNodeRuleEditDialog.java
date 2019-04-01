@@ -105,7 +105,7 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 					Point p =new Point(e.x, e.y);
 					ViewerCell cell = tableViewer.getCell(p);
 					if (cell != null && cell.getColumnIndex() == 3) {
-						ScopeTreeDialog dialog = new ScopeTreeDialog(AutoAssignNodeRuleEditDialog.this.getShell(), managerName, "ADMINISTRATORS", true, false);
+						ScopeTreeDialog dialog = new ScopeTreeDialog(AutoAssignNodeRuleEditDialog.this.getShell(), managerName, null, true, false);
 						p = AutoAssignNodeRuleEditDialog.this.getShell().toDisplay(p);
 						dialog.create();
 						dialog.getShell().setLocation(p.x, p.y);

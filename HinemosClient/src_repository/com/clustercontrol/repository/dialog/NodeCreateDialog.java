@@ -63,6 +63,7 @@ import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.PropertySheet;
 import com.clustercontrol.ws.repository.DeviceSearchMessageInfo;
 import com.clustercontrol.ws.repository.FacilityDuplicate_Exception;
+import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
 import com.clustercontrol.ws.repository.InvalidRole_Exception;
 import com.clustercontrol.ws.repository.InvalidSetting_Exception;
 import com.clustercontrol.ws.repository.NodeInfo;
@@ -85,7 +86,21 @@ public class NodeCreateDialog extends CommonDialog {
 	private final int INDEX_VERSION_BOX_0 = 0;
 	private final int INDEX_VERSION_BOX_1 = 1;
 	private final int INDEX_VERSION_BOX_2 = 2;
+	
 
+	/** プロパティツリーのインデックス */
+	private final int TREE_INDEX_FACILITY_ID = 0;
+	private final int TREE_INDEX_FACILITY_NAME = 1;
+
+	private final int TREE_INDEX_SERVER_BASE = 5;
+	private final int TREE_INDEX_SB_HARDWARE = 0;
+	private final int TREE_INDEX_SB_H_PLATFORM = 0;
+	private final int TREE_INDEX_SB_NETWORK = 1;
+	private final int TREE_INDEX_SB_N_IP_VERSION = 0;
+	private final int TREE_INDEX_SB_N_IP_V4 = 1;
+	private final int TREE_INDEX_SB_N_IP_V6 = 2;
+	private final int TREE_INDEX_SB_N_NODE_NAME = 3;
+	
 	// ----- instance フィールド ----- //
 
 	/** 初期表示ノードのファシリティID */
@@ -235,12 +250,12 @@ public class NodeCreateDialog extends CommonDialog {
 		if (this.isModifyDialog) {
 			GetNodeProperty getNodeProperty = new GetNodeProperty(this.managerName, this.facilityId,
 					PropertyDefineConstant.MODE_MODIFY);
-			propertyOld = getNodeProperty.getProperty();
+			propertyOld = getNodeProperty.getProperty(false);
 			nodeInfoOld = getNodeProperty.getNodeInfo();
 		} else {
 			GetNodeProperty getNodeProperty = new GetNodeProperty(this.managerName, this.facilityId,
 					PropertyDefineConstant.MODE_ADD);
-			propertyOld = getNodeProperty.getProperty();
+			propertyOld = getNodeProperty.getProperty(false);
 			nodeInfoOld = getNodeProperty.getNodeInfo();
 		}
 		propertyChild = PropertyUtil.getProperty(propertyOld, NodeConstant.IP_ADDRESS_VERSION).get(0);
@@ -548,105 +563,26 @@ public class NodeCreateDialog extends CommonDialog {
 								PropertyDefineConstant.MODE_MODIFY, facilityId,
 								securityLevel, user, authPassword,
 								privPassword, authProtocol, privProtocol);
+						if (nodeSnmp == null) {
+							// エラーのため処理終了
+							return;
+						}
 
 						List<DeviceSearchMessageInfo> list = nodeSnmp.getDeviceSearchMessageInfo();
 						if (list != null && list.size() > 0) {
 							DeviceSearchDialog dialog = new DeviceSearchDialog(getShell(), list);
 							dialog.open();
 						}
-
+						
 						nodeInfo = nodeSnmp.getNodeInfo();
-
-						/*
-						 * ノード変更時のDevice Searchはサーバ基本情報とデバイスのみ修正する。
-						 */
-						// ノードプロパティの即時反映用ポートを24005にリセットしない
-						Property awakeProperty = PropertyUtil.getProperty(propertyOld, NodeConstant.AGENT_AWAKE_PORT).get(0);
-						if (awakeProperty != null && awakeProperty.getValue() instanceof Integer) {
-							Integer awake = (Integer)awakeProperty.getValue();
-							nodeInfo.setAgentAwakePort(awake);
-						}
-						 // サブプラットフォームを変更しない
-						Property subPlatform = PropertyUtil.getProperty(propertyOld, NodeConstant.SUB_PLATFORM_FAMILY_NAME).get(0);
-						if (subPlatform != null && subPlatform.getValue() instanceof String) {
-							String subPlatformName = (String)subPlatform.getValue();
-							nodeInfo.setSubPlatformFamily(subPlatformName);
-						}
 						
-						propertySNMP = NodePropertyUtil.node2property(m_managerComposite.getText(), nodeInfo, PropertyDefineConstant.MODE_MODIFY, Locale.getDefault());
+						//現在画面に表示されている文字を取得
+						nodeInfoOld=NodePropertyUtil.property2node(getInputData());
 						
-						// 古い値を消して(basicInformation)
-						for(Property propertyObj : PropertyUtil.getProperty(propertyOld, NodeConstant.BASIC_INFORMATION)){
-							Property p = propertyObj;
-							p.getParent().removeChildren(p);
-						}
-						// 新しい値を入れる(basicInformation)
-						for(Property propertyObj : PropertyUtil.getProperty(propertySNMP, NodeConstant.BASIC_INFORMATION)){
-							Property p = propertyObj;
-							propertyOld.addChildren(p);
-						}
-
-						/*
-						 * 上記の処理だけでは、順番がおかしくなってしまうため、
-						 * ジョブ、サービスを再登録して、後ろにまわす。
-						 */
-						{
-							Property p = null;
-							p = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.JOB).get(0);
-							propertyOld.removeChildren(p);
-							propertyOld.addChildren(p);
-							p = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.SERVICE).get(0);
-							propertyOld.removeChildren(p);
-							propertyOld.addChildren(p);
-						}
-
-						// 古い値を消して(device)
-						for(Property propertyObj : PropertyUtil.getProperty(propertyOld, NodeConstant.DEVICE)){
-							Property p = propertyObj;
-							p.getParent().removeChildren(p);
-						}
-						// 新しい値を入れる(device)
-						for(Property propertyObj : PropertyUtil.getProperty(propertySNMP, NodeConstant.DEVICE)){
-							Property p = propertyObj;
-							propertyOld.addChildren(p);
-						}
-
-						/*
-						 * 上記の処理だけでは、順番がおかしくなってしまうため、
-						 * ユーザ等を再登録して、後ろにまわす。
-						 */
-						{
-							Property p = null;
-							p = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.CLOUD_MANAGEMENT).get(0);
-							propertyOld.removeChildren(p);
-							propertyOld.addChildren(p);
-							p = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.NODE_VARIABLE).get(0);
-							propertyOld.removeChildren(p);
-							propertyOld.addChildren(p);
-							p = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.MAINTENANCE).get(0);
-							propertyOld.removeChildren(p);
-							propertyOld.addChildren(p);
-							p = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.CREATE_TIME).get(0);
-							propertyOld.removeChildren(p);
-							propertyOld.addChildren(p);
-							p = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.CREATOR_NAME).get(0);
-							propertyOld.removeChildren(p);
-							propertyOld.addChildren(p);
-							p = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.MODIFY_TIME).get(0);
-							propertyOld.removeChildren(p);
-							propertyOld.addChildren(p);
-							p = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.MODIFIER_NAME).get(0);
-							propertyOld.removeChildren(p);
-							propertyOld.addChildren(p);
-
-							// 備考は複数含まれることがある。
-							ArrayList<Property> oArray = PropertyUtil.getProperty(propertyOld, NodeConstant.NOTE);
-							for (Property o : oArray) {
-								propertyOld.removeChildren(o);
-								propertyOld.addChildren(o);
-							}
-						}
+						//ノード情報の更新
+						propertyOld=createProperty(nodeInfo);
 						propertySheet.setInput(propertyOld);
+						
 					} else {
 						NodeInfoDeviceSearch nodeSnmp  = getNodeInfoBySNMP(
 								NodeCreateDialog.this.m_managerComposite.getText(),
@@ -658,7 +594,7 @@ public class NodeCreateDialog extends CommonDialog {
 							propertySNMP = NodePropertyUtil.node2property(
 									m_managerComposite.getText(), nodeInfo,
 									PropertyDefineConstant.MODE_ADD,
-									Locale.getDefault());
+									Locale.getDefault(), false);
 							propertySheet.setInput(propertySNMP);
 						}
 					}
@@ -679,6 +615,80 @@ public class NodeCreateDialog extends CommonDialog {
 			}
 		});
 	}
+	
+	/**
+	 * Device Search時のノード情報の更新
+	 *
+	 * @param nodeInfo
+	 * 			Device Searchで更新されたノード情報
+	 * @return 
+	 * 			既存のノード情報をDevice Searchで取得した情報で更新したProperty
+	 */
+	private Property createProperty(NodeInfo nodeInfo){
+		
+		if (nodeInfo == null){
+			return null;
+		}
+		
+		/*ノード変更時のDevice Searchはサーバ基本情報とデバイスのみ修正する*/
+		/*Basic Information入れ替え
+		 * サブプラットフォームは変更しない
+		 * ノードプロパティの即時反映用ポートはリセットしない
+		 */
+		//hardware
+		nodeInfoOld.setPlatformFamily(nodeInfo.getPlatformFamily());
+		nodeInfoOld.setHardwareType(nodeInfo.getHardwareType());
+		nodeInfoOld.setIconImage(nodeInfo.getIconImage());
+		//network
+		nodeInfoOld.setIpAddressVersion(nodeInfo.getIpAddressVersion());
+		nodeInfoOld.setIpAddressV4(nodeInfo.getIpAddressV4());
+		nodeInfoOld.setIpAddressV6(nodeInfo.getIpAddressV6());
+		
+		//nodeConfigInfo
+		//hostname
+		nodeInfoOld.getNodeHostnameInfo().clear();
+		for(int i=0;i<nodeInfo.getNodeHostnameInfo().size();i++){
+			nodeInfoOld.getNodeHostnameInfo().add(nodeInfo.getNodeHostnameInfo().get(i));
+		}
+		//nodeName
+		nodeInfoOld.setNodeName(nodeInfo.getNodeName());
+		//osname
+		nodeInfoOld.setNodeOsInfo(nodeInfo.getNodeOsInfo());
+		//device
+		//cpu
+		nodeInfoOld.getNodeCpuInfo().clear();
+		for(int i=0;i<nodeInfo.getNodeCpuInfo().size();i++){
+			nodeInfoOld.getNodeCpuInfo().add(nodeInfo.getNodeCpuInfo().get(i));
+		}
+		//memory
+		nodeInfoOld.getNodeMemoryInfo().clear();
+		for(int i=0;i<nodeInfo.getNodeMemoryInfo().size();i++){
+			nodeInfoOld.getNodeMemoryInfo().add(nodeInfo.getNodeMemoryInfo().get(i));
+		}
+		//NIC
+		nodeInfoOld.getNodeNetworkInterfaceInfo().clear();
+		for(int i=0;i<nodeInfo.getNodeNetworkInterfaceInfo().size();i++){
+			nodeInfoOld.getNodeNetworkInterfaceInfo().add(nodeInfo.getNodeNetworkInterfaceInfo().get(i));
+		}
+		//disk
+		nodeInfoOld.getNodeDiskInfo().clear();
+		for(int i=0;i<nodeInfo.getNodeDiskInfo().size();i++){
+			nodeInfoOld.getNodeDiskInfo().add(nodeInfo.getNodeDiskInfo().get(i));
+		}
+		//filesystem
+		nodeInfoOld.getNodeFilesystemInfo().clear();
+		for(int i=0;i<nodeInfo.getNodeFilesystemInfo().size();i++){
+			nodeInfoOld.getNodeFilesystemInfo().add(nodeInfo.getNodeFilesystemInfo().get(i));
+		}
+		//general dev
+		nodeInfoOld.getNodeDeviceInfo().clear();
+		for(int i=0;i<nodeInfo.getNodeDeviceInfo().size();i++){
+			nodeInfoOld.getNodeDeviceInfo().add(nodeInfo.getNodeDeviceInfo().get(i));
+		}
+		
+		return NodePropertyUtil.node2property(m_managerComposite.getText(), nodeInfoOld, PropertyDefineConstant.MODE_MODIFY, Locale.getDefault(), false);
+	
+	}
 
 	/**
 	 * プロパティシートの展開
@@ -693,6 +703,9 @@ public class NodeCreateDialog extends CommonDialog {
 		//サーバ基本情報
 		Object element = this.propertySheet.getTree().getItem(5).getData();
 		this.propertySheet.expandToLevel(element, 2);
+		//構成情報
+		element = this.propertySheet.getTree().getItem(6).getData();
+		this.propertySheet.expandToLevel(element, 1);
 		//サービス
 		element =  this.propertySheet.getTree().getItem(7).getData();
 		this.propertySheet.expandToLevel(element, 1);
@@ -711,65 +724,48 @@ public class NodeCreateDialog extends CommonDialog {
 
 		/*必須項目を色別表示します。*/
 
-		// ファシリティIDのインデックス：0
-		setColor(tree.getItem(0));
+		// ファシリティID
+		setColor(tree.getItem(TREE_INDEX_FACILITY_ID));
 
-		// ファシリティ名のインデックス：1
-		setColor(tree.getItem(1));
+		// ファシリティ名
+		setColor(tree.getItem(TREE_INDEX_FACILITY_NAME));
 
-		// プラットフォームのインデックス：5-0-1
-		if(tree.getItem(5).getItemCount() > 0 && tree.getItem(5).getItem(0).getItemCount() > 0) {
-			setColor(tree.getItem(5).getItem(0).getItem(0));
-		}
-
-		// ネットワークのインデックス：5-1
-		if (tree.getItem(5).getItemCount() > 1 && tree.getItem(5).getItem(1).getItemCount() > 0) {
-			if("4".equals((tree.getItem(5).getItem(1).getItem(0).getText(1)))){
-				tree.getItem(5).getItem(1).getItem(0).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				setColor(tree.getItem(5).getItem(1).getItem(1));
-				tree.getItem(5).getItem(1).getItem(2).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-			}else if("6".equals((tree.getItem(5).getItem(1).getItem(0).getText(1)))){
-				tree.getItem(5).getItem(1).getItem(0).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(5).getItem(1).getItem(1).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				setColor(tree.getItem(5).getItem(1).getItem(2));
-			}else {
-				tree.getItem(5).getItem(1).getItem(0).setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-				tree.getItem(5).getItem(1).getItem(1).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(5).getItem(1).getItem(2).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		// ハードウェア-プラットフォーム
+		TreeItem severBase = tree.getItem(TREE_INDEX_SERVER_BASE);
+		if(severBase.getItemCount() > 0 ) {
+			TreeItem sbHardware = severBase.getItem(TREE_INDEX_SB_HARDWARE);
+			if(sbHardware.getItemCount() > 0){
+				TreeItem sbHwPlatform = sbHardware.getItem(TREE_INDEX_SB_H_PLATFORM);
+				setColor(sbHwPlatform);
 			}
 		}
-
-		// OSのインデックス:5
-		// -ノード名のインデックス:2
-		if (tree.getItem(5).getItemCount() > 2 && tree.getItem(5).getItem(2).getItemCount() > 0) {
-			setColor(tree.getItem(5).getItem(2).getItem(0));
-		}
-
-		// 仮想化のインデックス:9
-		// -ノード種別のインデックス:0
-		if (tree.getItem(9).getItemCount() > 6) {
-			if("controller".equals(tree.getItem(9).getItem(0).getText(1)) || "host".equals(tree.getItem(9).getItem(0).getText(1))){
-				tree.getItem(9).getItem(1).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(9).getItem(2).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(9).getItem(3).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				setColor(tree.getItem(9).getItem(4));
-				setColor(tree.getItem(9).getItem(5));
-				setColor(tree.getItem(9).getItem(6));
-			}else if("guest".equals(tree.getItem(9).getItem(0).getText(1))){
-				setColor(tree.getItem(9).getItem(1));
-				setColor(tree.getItem(9).getItem(2));
-				setColor(tree.getItem(9).getItem(3));
-				tree.getItem(9).getItem(4).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(9).getItem(5).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(9).getItem(6).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-			}else {
-				// 仮想化のツリーを開いており、ノード種別が空欄の場合
-				tree.getItem(9).getItem(1).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(9).getItem(3).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(9).getItem(2).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(9).getItem(4).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(9).getItem(5).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-				tree.getItem(9).getItem(6).setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		
+		// ネットワーク.
+		if (severBase.getItemCount() > 1 ) {
+			// IPアドレス
+			TreeItem sbNetwork = severBase.getItem(TREE_INDEX_SB_NETWORK);
+			if(sbNetwork.getItemCount() > 2){
+				TreeItem sbNwIpVersion = sbNetwork.getItem(TREE_INDEX_SB_N_IP_VERSION);
+				TreeItem sbNwIpAddressV4 = sbNetwork.getItem(TREE_INDEX_SB_N_IP_V4);
+				TreeItem sbNwIpAddressV6 = sbNetwork.getItem(TREE_INDEX_SB_N_IP_V6);
+				if("4".equals(sbNwIpVersion.getText(1))){
+					sbNwIpVersion.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+					setColor(sbNwIpAddressV4);
+					sbNwIpAddressV6.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+				}else if("6".equals(sbNwIpVersion.getText(1))){
+					sbNwIpVersion.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+					sbNwIpAddressV4.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+					setColor(sbNwIpAddressV6);
+				}else {
+					sbNwIpVersion.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+					sbNwIpAddressV4.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+					sbNwIpAddressV6.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+				}
+			}
+			// ノード名
+			if(sbNetwork.getItemCount() > 3){
+				TreeItem sbNwNodeName = sbNetwork.getItem(TREE_INDEX_SB_N_NODE_NAME);
+				setColor(sbNwNodeName);
 			}
 		}
 
@@ -784,9 +780,15 @@ public class NodeCreateDialog extends CommonDialog {
 	 */
 	private void setColor(TreeItem item) {
 		if (item == null) {
+			m_log.debug("setColor() : 'item' is null.");
 			return ;
 		}
 		Property element = (Property)item.getData();
+		if(element == null){
+			m_log.error("setColor() : 'element' is null.");
+			return;
+		}
+		
 		if ("".equals(element.getValueText())) {
 			item.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		} else {
@@ -1043,6 +1045,11 @@ public class NodeCreateDialog extends CommonDialog {
 		} catch (SnmpResponseError_Exception e) {
 			MessageDialog.openWarning(null, Messages.getString("message"),
 					Messages.getString("message.snmp.12"));
+		} catch (HinemosUnknown_Exception e) {
+			MessageDialog.openError(
+					null,
+					Messages.getString("failed"),
+					HinemosMessage.replace(e.getMessage()));
 		} catch (Exception e) {
 			m_log.warn("GetNodePropertyBySNMP(), " + HinemosMessage.replace(e.getMessage()), e);
 			MessageDialog.openError(

@@ -8,34 +8,28 @@
 
 package com.clustercontrol.monitor.run.util;
 
-import java.util.List;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionCallback;
+import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.monitor.bean.UpdateEventFilterInternal;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
+import com.clustercontrol.notify.monitor.util.QueryUtil;
 
 public class EventCacheModifyCallback implements JpaTransactionCallback {
 
+	private static Log m_log = LogFactory.getLog( EventCache.class );
+	
 	private boolean addFlag = false; // add=true, modify=false
 	private EventLogEntity entity = null;
 	private Long removeGenerationDate = null;
 	private boolean removeAllFlg = false;
-	private List<String> facilityIdList = null;
-	private List<Integer> priorityList = null;
-	private Long outputFromDate = null;
-	private Long outputToDate = null;
-	private Long generationFromDate = null;
-	private Long generationToDate = null;
-	private String monitorId = null;
-	private String monitorDetailId = null;
-	private String application = null;
-	private String message = null;
+	private UpdateEventFilterInternal filter = null;
 	private Integer confirmFlg = null;
 	private String confirmUser = null;
-	private String comment = null;
-	private String commentUser = null;
-	private Integer confirmType = null;
 	private Long confirmDate = null;
-	private Boolean collectGraphFlg = null;
 	private String ownerRoleId = null;
 	
 	public EventCacheModifyCallback (boolean addFlag, EventLogEntity e) {
@@ -48,42 +42,14 @@ public class EventCacheModifyCallback implements JpaTransactionCallback {
 		this.ownerRoleId = ownerRoleId; // nullの場合はownerRoleIdを条件に入れない
 	}
 	public EventCacheModifyCallback (
-			List<String> facilityIdList,
-			List<Integer> priorityList,
-			Long outputFromDate,
-			Long outputToDate,
-			Long generationFromDate,
-			Long generationToDate,
-			String monitorId,
-			String monitorDetailId,
-			String application,
-			String message,
+			UpdateEventFilterInternal filter,
 			Integer confirmFlg,
 			String confirmUser,
-			String comment,
-			String commentUser,
-			Integer confirmType,
-			Long confirmDate,
-			Boolean collectGraphFlg,
-			String ownerRoleId) {
-		this.facilityIdList = facilityIdList;
-		this.priorityList = priorityList;
-		this.outputFromDate = outputFromDate;
-		this.outputToDate = outputToDate;
-		this.generationFromDate = generationFromDate;
-		this.generationToDate = generationToDate;
-		this.monitorId = monitorId;
-		this.monitorDetailId = monitorDetailId;
-		this.application = application;
-		this.message = message;
+			Long confirmDate) {
+		this.filter = filter;
 		this.confirmFlg = confirmFlg;
 		this.confirmUser = confirmUser;
-		this.comment = comment;
-		this.commentUser = commentUser;
-		this.confirmType = confirmType;
 		this.confirmDate = confirmDate;
-		this.collectGraphFlg = collectGraphFlg;
-		this.ownerRoleId = ownerRoleId;
 	}
 	
 	@Override
@@ -98,17 +64,35 @@ public class EventCacheModifyCallback implements JpaTransactionCallback {
 	@Override
 	public void postCommit() {
 		if (this.removeGenerationDate != null) {
+			//一括削除された時
 			EventCache.removeEventCache(removeGenerationDate, removeAllFlg, ownerRoleId);
 		} else if (addFlag) {
-			EventCache.addEventCache(entity);
+			//追加された時
+			try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+				HinemosEntityManager em = jtm.getEntityManager();
+				try {
+					entity = QueryUtil.getEventLogPK(
+							entity.getId().getMonitorId(),
+							entity.getId().getMonitorDetailId(),
+							entity.getId().getPluginId(),
+							entity.getId().getOutputDate(),
+							entity.getId().getFacilityId());
+					
+					em.refresh(entity);
+					EventCache.addEventCache(entity);
+				} catch (Exception e) {
+					m_log.info("EventCache.addEventCache failure " + entity.toString(), e);
+				}
+
+			}
+			
 		} else {
 			if (entity != null) {
+				//１レコードの内容が更新された時
 				EventCache.modifyEventCache(entity);
 			} else {
-				EventCache.confirmEventCache(facilityIdList, priorityList, outputFromDate,
-						outputToDate, generationFromDate, generationToDate, monitorId,
-						monitorDetailId, application, message, confirmFlg, confirmUser,
-						comment, commentUser, confirmType, confirmDate, collectGraphFlg, ownerRoleId);
+				//確認がフィルタで一括変更された時
+				EventCache.confirmEventCache(filter, confirmFlg, confirmDate, confirmUser);
 			}
 		}
 	}
@@ -130,30 +114,21 @@ public class EventCacheModifyCallback implements JpaTransactionCallback {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (addFlag ? 1231 : 1237);
-		result = prime * result + ((application == null) ? 0 : application.hashCode());
-		result = prime * result + ((collectGraphFlg == null) ? 0 : collectGraphFlg.hashCode());
-		result = prime * result + ((comment == null) ? 0 : comment.hashCode());
-		result = prime * result + ((commentUser == null) ? 0 : commentUser.hashCode());
+		result = prime * result + ((entity == null) ? 0 : entity.hashCode());
+		result = prime * result + ((removeGenerationDate == null) ? 0 : removeGenerationDate.hashCode());
+		result = prime * result + (removeAllFlg ? 1231 : 1237);
+		result = prime * result + ((filter == null) ? 0 : filter.hashCode());
 		result = prime * result + ((confirmDate == null) ? 0 : confirmDate.hashCode());
 		result = prime * result + ((confirmFlg == null) ? 0 : confirmFlg.hashCode());
-		result = prime * result + ((confirmType == null) ? 0 : confirmType.hashCode());
 		result = prime * result + ((confirmUser == null) ? 0 : confirmUser.hashCode());
-		result = prime * result + ((entity == null) ? 0 : entity.hashCode());
-		result = prime * result + ((facilityIdList == null) ? 0 : facilityIdList.hashCode());
-		result = prime * result + ((generationFromDate == null) ? 0 : generationFromDate.hashCode());
-		result = prime * result + ((generationToDate == null) ? 0 : generationToDate.hashCode());
-		result = prime * result + ((message == null) ? 0 : message.hashCode());
-		result = prime * result + ((monitorDetailId == null) ? 0 : monitorDetailId.hashCode());
-		result = prime * result + ((monitorId == null) ? 0 : monitorId.hashCode());
-		result = prime * result + ((outputFromDate == null) ? 0 : outputFromDate.hashCode());
-		result = prime * result + ((outputToDate == null) ? 0 : outputToDate.hashCode());
 		result = prime * result + ((ownerRoleId == null) ? 0 : ownerRoleId.hashCode());
-		result = prime * result + ((priorityList == null) ? 0 : priorityList.hashCode());
 		return result;
+		
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(Object obj) { 
+		
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -163,101 +138,50 @@ public class EventCacheModifyCallback implements JpaTransactionCallback {
 		EventCacheModifyCallback other = (EventCacheModifyCallback) obj;
 		if (addFlag != other.addFlag)
 			return false;
-		if (application == null) {
-			if (other.application != null)
-				return false;
-		} else if (!application.equals(other.application))
-			return false;
-		if (collectGraphFlg == null) {
-			if (other.collectGraphFlg != null)
-				return false;
-		} else if (!collectGraphFlg.equals(other.collectGraphFlg))
-			return false;
-		if (comment == null) {
-			if (other.comment != null)
-				return false;
-		} else if (!comment.equals(other.comment))
-			return false;
-		if (commentUser == null) {
-			if (other.commentUser != null)
-				return false;
-		} else if (!commentUser.equals(other.commentUser))
-			return false;
-		if (confirmDate == null) {
-			if (other.confirmDate != null)
-				return false;
-		} else if (!confirmDate.equals(other.confirmDate))
-			return false;
-		if (confirmFlg == null) {
-			if (other.confirmFlg != null)
-				return false;
-		} else if (!confirmFlg.equals(other.confirmFlg))
-			return false;
-		if (confirmType == null) {
-			if (other.confirmType != null)
-				return false;
-		} else if (!confirmType.equals(other.confirmType))
-			return false;
-		if (confirmUser == null) {
-			if (other.confirmUser != null)
-				return false;
-		} else if (!confirmUser.equals(other.confirmUser))
-			return false;
 		if (entity == null) {
 			if (other.entity != null)
 				return false;
-		} else if (!entity.equals(other.entity))
+		} else if (!entity.equals(other.entity)) {
 			return false;
-		if (facilityIdList == null) {
-			if (other.facilityIdList != null)
+		}
+		if (removeGenerationDate == null) {
+			if (other.removeGenerationDate != null)
 				return false;
-		} else if (!facilityIdList.equals(other.facilityIdList))
+		} else if (!removeGenerationDate.equals(other.removeGenerationDate)) {
 			return false;
-		if (generationFromDate == null) {
-			if (other.generationFromDate != null)
+		}
+		if (removeAllFlg != other.removeAllFlg)
+			return false;
+		if (filter == null) {
+			if (other.filter != null)
 				return false;
-		} else if (!generationFromDate.equals(other.generationFromDate))
+		} else if (!filter.equals(other.filter)) {
 			return false;
-		if (generationToDate == null) {
-			if (other.generationToDate != null)
+		}
+		if (confirmDate == null) {
+			if (other.confirmDate != null)
 				return false;
-		} else if (!generationToDate.equals(other.generationToDate))
+		} else if (!confirmDate.equals(other.confirmDate)) {
 			return false;
-		if (message == null) {
-			if (other.message != null)
+		}
+		if (confirmFlg == null) {
+			if (other.confirmFlg != null)
 				return false;
-		} else if (!message.equals(other.message))
+		} else if (!confirmFlg.equals(other.confirmFlg)) {
 			return false;
-		if (monitorDetailId == null) {
-			if (other.monitorDetailId != null)
+		}
+		if (confirmUser == null) {
+			if (other.confirmUser != null)
 				return false;
-		} else if (!monitorDetailId.equals(other.monitorDetailId))
+		} else if (!confirmUser.equals(other.confirmUser)) {
 			return false;
-		if (monitorId == null) {
-			if (other.monitorId != null)
-				return false;
-		} else if (!monitorId.equals(other.monitorId))
-			return false;
-		if (outputFromDate == null) {
-			if (other.outputFromDate != null)
-				return false;
-		} else if (!outputFromDate.equals(other.outputFromDate))
-			return false;
-		if (outputToDate == null) {
-			if (other.outputToDate != null)
-				return false;
-		} else if (!outputToDate.equals(other.outputToDate))
-			return false;
+		}
 		if (ownerRoleId == null) {
 			if (other.ownerRoleId != null)
 				return false;
-		} else if (!ownerRoleId.equals(other.ownerRoleId))
+		} else if (!ownerRoleId.equals(other.ownerRoleId)) {
 			return false;
-		if (priorityList == null) {
-			if (other.priorityList != null)
-				return false;
-		} else if (!priorityList.equals(other.priorityList))
-			return false;
+		}
 		return true;
 	}
 	

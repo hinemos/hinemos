@@ -15,6 +15,7 @@ import com.clustercontrol.jobmanagement.bean.JobInfo;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobInfoEntityPK;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.repository.model.NodeConfigSettingInfo;
 
 
 public class NotifyGroupIdGenerator {
@@ -53,6 +54,10 @@ public class NotifyGroupIdGenerator {
 	private static String generateForInfra(String managementId) {
 		return InfraConstants.notifyGroupIdPrefix + managementId;
 	}
+	
+	private static String generateForNodeConfigSetting(String settingId) {
+		return HinemosModuleConstant.NODE_CONFIG_SETTING + "-" + settingId;
+	}
 
 	/**
 	 * 監視関連の通知グループIDを生成します。
@@ -84,5 +89,14 @@ public class NotifyGroupIdGenerator {
 	
 	public static String generate(InfraManagementInfo info) {
 		return generateForInfra(info.getManagementId());
+	}
+
+	/**
+	 * 対象構成情報の通知グループIDを生成します。
+	 * 
+	 * @return 通知グループID
+	 */
+	public static  String generate(NodeConfigSettingInfo info){
+		return generateForNodeConfigSetting(info.getSettingId());
 	}
 }

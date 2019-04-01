@@ -133,7 +133,7 @@
 			<property name="com.jaspersoft.studio.unit.height" value="px"/>
 			<pieChart>
 				<chart isShowLegend="true" evaluationTime="Report">
-					<reportElement key="" isPrintRepeatedValues="false" x="30" y="20" width="339" height="299" uuid="187ed0cb-b0f0-4058-b984-a866958a8057"/>
+					<reportElement key="" isPrintRepeatedValues="false" x="10" y="20" width="330" height="290" uuid="187ed0cb-b0f0-4058-b984-a866958a8057"/>
 					<chartTitle>
 						<font size="12"/>
 						<titleExpression><![CDATA[$P{chart.title.priority.pie}]]></titleExpression>
@@ -323,7 +323,7 @@
 				</jr:table>
 			</componentElement>
 			<textField>
-				<reportElement x="375" y="20" width="196" height="30" uuid="396f5107-177b-4c2b-92cb-05b3728ad157">
+				<reportElement x="350" y="20" width="240" height="30" uuid="396f5107-177b-4c2b-92cb-05b3728ad157">
 					<property name="local_mesure_unity" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.y" value="px"/>
 				</reportElement>

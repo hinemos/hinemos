@@ -43,7 +43,6 @@ public class FacilityConstant {
 	/** 最終更新日時 */
 	public static final String MODIFY_TIME = "ModifyTime";
 
-	// TODO convert enum
 	/** コンポジット（ファシリティの種別） */
 	public static final int TYPE_COMPOSITE = 2;
 

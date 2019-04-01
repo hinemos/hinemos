@@ -96,6 +96,11 @@ public class BuildFunctionTreeAction {
 		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_DISK);
 		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_FS);
 		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_DEVICE);
+		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_NETSTAT);
+		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_PROCESS);
+		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_PACKAGE);
+		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_PRODUCT);
+		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_LICENSE);
 		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_VARIABLE);
 		xmlFiles.add(XMLConstant.DEFAULT_XML_PLATFORM_REPOSITORY_NODE_NOTE);
 		List<String> objectTypes = new ArrayList<String>();
@@ -124,6 +129,18 @@ public class BuildFunctionTreeAction {
 				CommandConstant.ACTION_PLATFORM_REPOSITORY_SCOPE,
 				true,
 				objectTypes);
+		funcTreeChild.setData(info);
+		funcTreePlatform.addChildren(funcTreeChild);
+
+		//構成情報収集
+		funcTreeChild = new FuncTreeItem();
+		info = new FuncInfo(HinemosModuleConstant.PLATFORM_NODECONFIG,
+				HinemosModuleConstant.STRING_PLATFORM_NODECONFIG,
+				XMLConstant.DEFAULT_XML_PLATFORM_NODECONFIG,
+				CommandConstant.WEIGHT_PLATFORM_NODECONFIG,
+				CommandConstant.ACTION_PLATFORM_NODECONFIG,
+				true,
+				HinemosModuleConstant.PLATFORM_NODECONFIG);
 		funcTreeChild.setData(info);
 		funcTreePlatform.addChildren(funcTreeChild);
 
@@ -573,6 +590,18 @@ public class BuildFunctionTreeAction {
 		funcTreeChild.setData(info);
 		funcTreeJob.addChildren(funcTreeChild);
 
+		//同時実行制御キュー
+		funcTreeChild = new FuncTreeItem();
+		info = new FuncInfo(HinemosModuleConstant.JOB_QUEUE,
+				HinemosModuleConstant.STRING_JOB_QUEUE,
+				XMLConstant.DEFAULT_XML_JOB_QUEUE,
+				CommandConstant.WEIGHT_JOB_QUEUE,
+				CommandConstant.ACTION_JOB_QUEUE,
+				true,
+				HinemosModuleConstant.JOB);
+		funcTreeChild.setData(info);
+		funcTreeJob.addChildren(funcTreeChild);
+		
 		// 監視管理機能のツリーをベースの子供としてつなぐ
 		funcTreeSetting.addChildren(funcTreeJob);
 		

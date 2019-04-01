@@ -17,7 +17,7 @@ import com.clustercontrol.bean.Property;
 import com.clustercontrol.util.Messages;
 
 /**
- * 数値プロパティを定義するクラス<BR>
+ * 数値プロパティ(Integer)を定義するクラス<BR>
  * 
  * @version 1.0.0
  * @since 1.0.0

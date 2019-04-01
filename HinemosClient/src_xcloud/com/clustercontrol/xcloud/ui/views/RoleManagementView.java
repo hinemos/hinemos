@@ -61,6 +61,7 @@ import com.clustercontrol.ws.access.InvalidRole_Exception;
 import com.clustercontrol.ws.access.InvalidUserPass_Exception;
 import com.clustercontrol.ws.access.RoleInfo;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
+import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
 import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
@@ -424,7 +425,14 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 			try {
 			
 				for (IHinemosManager manager: managers) {
-					manager.update();
+					//マネージャ毎に状態更新を行っているが、
+					//マルチマネージャ接続時にクラウド/ＶＭが有効になってないマネージャの混在がありえる（endpoint通信で異常が出る）ので
+					//異常発生時は該当の警告ログのみを表示する。
+					try {
+						manager.update();
+					} catch (CloudModelException e) {
+						logger.warn("refresh() . Failed to update the status of the manager's cloud function. Manager="+manager.getManagerName() );
+					}
 					for (ICloudScope cloudscope: manager.getCloudScopes().getCloudScopes()) {
 						cloudscope.getLoginUsers().update();
 						for (ILoginUser user: cloudscope.getLoginUsers().getLoginUsers()) {

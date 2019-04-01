@@ -9,6 +9,7 @@
 package com.clustercontrol.monitor.view.action;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -17,6 +18,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -24,11 +26,14 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.monitor.composite.EventListComposite;
 import com.clustercontrol.monitor.dialog.EventReportDialog;
+import com.clustercontrol.monitor.util.ConvertListUtil;
 import com.clustercontrol.monitor.view.EventView;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.ws.monitor.EventDataInfo;
 import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
@@ -118,8 +123,22 @@ public class EventReportAction extends AbstractHandler {
 			managerName = manager.getData().getFacilityId();
 		}
 
+		//選択イベントをセット
+		ArrayList<EventDataInfo> selectEventList = null;
+		
+		EventListComposite composite =
+				(EventListComposite)view.getListComposite();
+
+		StructuredSelection selection =
+				(StructuredSelection)composite.getTableViewer().getSelection();
+
+		List<?> selectionList = (List<?>) selection.toList();
+		
+		selectEventList = ConvertListUtil.listToEventLogDataList(selectionList);
+		
+				
 		// ダイアログを生成
-		EventReportDialog dialog = new EventReportDialog( this.viewPart.getSite().getShell(), managerName, facilityId );
+		EventReportDialog dialog = new EventReportDialog( this.viewPart.getSite().getShell(), managerName, facilityId, selectEventList, view.getEventDspSetting());
 
 		// ダイアログにて出力が選択された場合、帳票出力
 		int btnId = dialog.open();

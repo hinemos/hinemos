@@ -428,6 +428,8 @@ public class ModifyJob {
 				jobMst.setJobRetryFlg(waitRule.getJobRetryFlg());
 				jobMst.setJobRetry(waitRule.getJobRetry());
 				jobMst.setJobRetryEndStatus(waitRule.getJobRetryEndStatus());
+				jobMst.setQueueFlg(waitRule.getQueueFlg());
+				jobMst.setQueueId(waitRule.getQueueId());
 				if(waitRule.getObject() != null){
 					for(JobObjectInfo objectInfo : waitRule.getObject()) {
 						if(objectInfo != null){

@@ -284,7 +284,6 @@ public class OutputStatus implements DependDbNotifier {
 	 */
 	@Override
 	public void internalErrorNotify(int priority, String notifyId, MessageConstant msgCode, String detailMsg) {
-		//FIXME
 		// 何もしない
 	}
 }

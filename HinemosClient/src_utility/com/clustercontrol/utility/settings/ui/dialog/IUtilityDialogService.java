@@ -16,7 +16,7 @@ package com.clustercontrol.utility.settings.ui.dialog;
  */
 public interface IUtilityDialogService {
 
-	public ImportProcessDialog createImportProcessDialog(String message);
+	public UtilityProcessDialog createImportProcessDialog(String message);
 	public DeleteProcessDialog createDeleteProcessDialog(String message);
 
 }

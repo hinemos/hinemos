@@ -260,7 +260,7 @@ public class AccessControllerBean {
 			UserValidator.validateUserInfo(info);
 
 			/** メイン処理 */
-			LoginUserModifier.modifyUserInfo(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), true);
+			LoginUserModifier.modifyUserInfo(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), true, false);
 			
 			jtm.addCallback(new UserRoleCacheRefreshCallback());
 			jtm.commit();
@@ -280,9 +280,11 @@ public class AccessControllerBean {
 				jtm.close();
 		}
 	}
-
+	
+	
 	/**
 	 * ユーザ情報を変更する。<BR>
+	 * パスワードは含めない。
 	 *
 	 *
 	 * @param info ユーザ情報
@@ -294,6 +296,24 @@ public class AccessControllerBean {
 	 * @see com.clustercontrol.accesscontrol.factory.LoginUserModifier#modifyUser(Property, String)
 	 */
 	public void modifyUserInfo(UserInfo info) throws HinemosUnknown, UserNotFound, UnEditableUser, InvalidSetting {
+		modifyUserInfo(info, false);
+	}
+
+	/**
+	 * ユーザ情報を変更する。<BR>
+	 * withHashedPasswordをtrueにするとgetUserInfoで取得したユーザ情報をパスワード込みで更新できる。
+	 *
+	 *
+	 * @param info ユーザ情報
+	 * @param withHashedPassword ハッシュ済みパスワードを含んでいるか。true:パスワードも更新/false:パスワードは更新しない
+	 * @throws HinemosUnknown
+	 * @throws UserNotFound
+	 * @throws UnEditableUser
+	 * @throws InvalidSetting
+	 *
+	 * @see com.clustercontrol.accesscontrol.factory.LoginUserModifier#modifyUser(Property, String)
+	 */
+	public void modifyUserInfo(UserInfo info, boolean withHashedPassword) throws HinemosUnknown, UserNotFound, UnEditableUser, InvalidSetting {
 		m_log.info("user=" + HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 		JpaTransactionManager jtm = null;
 
@@ -306,7 +326,7 @@ public class AccessControllerBean {
 			UserValidator.validateUserInfo(info);
 
 			/** メイン処理 */
-			LoginUserModifier.modifyUserInfo(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), false);
+			LoginUserModifier.modifyUserInfo(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), false, withHashedPassword);
 
 			jtm.commit();
 		} catch (UserNotFound | UnEditableUser | InvalidSetting | HinemosUnknown e) {
@@ -728,8 +748,7 @@ public class AccessControllerBean {
 					parentFacilityId,
 					scopeInfo,
 					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
-					FacilitySortOrderConstant.DEFAULT_SORT_ORDER_ROLE_SCOPE,
-					false);
+					FacilitySortOrderConstant.DEFAULT_SORT_ORDER_ROLE_SCOPE);
 			
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new UserRoleCacheRefreshCallback());
@@ -804,7 +823,7 @@ public class AccessControllerBean {
 			RepositoryValidator.validateScopeInfo(null, scopeInfo, false);
 
 			// ロールスコープ更新
-			FacilityModifier.modifyOwnerRoleScope(scopeInfo, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), false);
+			FacilityModifier.modifyOwnerRoleScope(scopeInfo, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 			
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new UserRoleCacheRefreshCallback());
@@ -864,7 +883,7 @@ public class AccessControllerBean {
 				// ロールスコープが他機能で使用されているか確認
 				new RepositoryControllerBean().checkIsUseFacility(roleId);
 				// ロールスコープ削除
-				FacilityModifier.deleteOwnerRoleScope(roleId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), true);
+				FacilityModifier.deleteOwnerRoleScope(roleId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 				// ロールがオーナーロールとして使用されているか確認
 				RoleValidator.validateDeleteRole(roleId);

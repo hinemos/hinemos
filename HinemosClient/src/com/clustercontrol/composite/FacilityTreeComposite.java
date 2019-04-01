@@ -109,7 +109,7 @@ public class FacilityTreeComposite extends Composite {
 	protected boolean topicRefresh = true;
 
 	/** オーナーロールID */
-	private String ownerRoleId = null; // FIXME This variable is not used. Remove?
+	private String ownerRoleId = null;
 	
 	/** チェックボックス付きツリーにするかどうか */
 	private boolean checkflg = false;
@@ -541,6 +541,9 @@ public class FacilityTreeComposite extends Composite {
 			}
 			if (scopeOnly) {
 				FacilityTreeItemUtil.removeNode(scope);
+			} else {
+				// スコープごとのノード表示数より多いスコープを消す
+				FacilityTreeItemUtil.removeOverNode(scope);
 			}
 
 			// SWTアクセスを許可するスレッドからの操作用

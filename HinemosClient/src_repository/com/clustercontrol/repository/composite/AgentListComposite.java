@@ -55,7 +55,7 @@ public class AgentListComposite extends Composite {
 
 	/** 合計ラベル */
 	private Label totalLabel = null;
-
+	
 	// ----- コンストラクタ ----- //
 
 	/**
@@ -182,11 +182,28 @@ public class AgentListComposite extends Composite {
 				aList.add(new Date(node.getStartupTime()));
 				aList.add(new Date(node.getLastLogin()));
 				aList.add(node.getMultiplicity());
-				if (node.isNewFlag()) {
-					aList.add(Messages.getString("done"));
-				} else {
-					aList.add(Messages.getString("not.yet"));
+
+				switch (node.getUpdateStatus()) {
+				case DONE:
+					aList.add(Messages.getString("repository.agent.update.done"));
+					break;
+				case NOT_YET:
+					aList.add(Messages.getString("repository.agent.update.notyet"));
+					break;
+				case RESTARTING:
+					aList.add(Messages.getString("repository.agent.update.restarting"));
+					break;
+				case UPDATING:
+					aList.add(Messages.getString("repository.agent.update.updating"));
+					break;
+				case UNKNOWN:
+					aList.add(Messages.getString("repository.agent.update.unknown"));
+					break;
+				case UNSUPPORTED:
+					aList.add(Messages.getString("repository.agent.update.unsupported"));
+					break;
 				}
+
 				aList.add(null);
 				listInput.add(aList);
 				cnt++;

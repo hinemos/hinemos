@@ -333,7 +333,6 @@ public class ModifyCalendar {
 			entity.setUpdateUser(userName);
 
 			// カレンダパターン詳細情報登録
-			//TODO: 実装を見直す
 			if (info.getYmd() != null) {
 				List<YMDPK> calPatternDetailInfoEntityPkList
 				= new ArrayList<YMDPK>();

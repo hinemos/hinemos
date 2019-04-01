@@ -13,6 +13,7 @@ import org.eclipse.ui.IPageLayout;
 
 import com.clustercontrol.ClusterControlPerspectiveBase;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
+import com.clustercontrol.jobmanagement.view.JobQueueSettingView;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobMapImageListView;
 import com.clustercontrol.jobmap.view.JobModuleView;
@@ -32,13 +33,14 @@ public class JobMapEditorPerspective extends ClusterControlPerspectiveBase {
 		String editorArea = layout.getEditorArea();
 		
 		IFolderLayout left = layout.createFolder("left", IPageLayout.LEFT, 0.25f, editorArea);
-		
+		left.addView(JobTreeView.ID);
+
 		layout.addView(JobModuleView.ID, IPageLayout.BOTTOM, 0.6f, "left");
 		
 		IFolderLayout right = layout.createFolder("right", IPageLayout.RIGHT, 0.80f, editorArea);
-		left.addView(JobTreeView.ID);
 		right.addView(JobMapEditorView.ID);
 		right.addView(JobKickListView.ID);
 		right.addView(JobMapImageListView.ID);
+		right.addView(JobQueueSettingView.ID);
 	}
 }

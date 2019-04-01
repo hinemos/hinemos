@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+	
+	]},
+
+	{
+	"propName":"productName",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"version",
+	"annotations":[
+		{"type":"Column", "columnName":"ProductInfo_version"}
+	]},
+
+	{
+	"propName":"path",
+	"annotations":[
+		{"type":"Column", "columnName":"ProductInfo_path"}
+	]}
+]
+}

@@ -509,7 +509,7 @@ public class CollectGraphUtil {
 	 */
 	public static int getSelectManagerCount() {
 		int count = getInstance().m_targetManagerFacilityCollectMap.size();
-		m_log.debug("マネージャ数:" + count);
+		m_log.debug("Number of manager:" + count);
 		return count;
 	}
 	
@@ -819,12 +819,12 @@ public class CollectGraphUtil {
 		Map<Integer, List<CollectData>> map = new HashMap<>();
 		List<Integer> collectIdList = null;
 		if (getInstance().m_managerMonitorCollectIdMap.get(managerName) == null) {
-			m_log.warn("指定したmanagerに対応するリストが無い managerName" + managerName);
+			m_log.warn("No list for corresponding manager managerName" + managerName);
 		} else {
 			collectIdList = getInstance().m_managerMonitorCollectIdMap.get(managerName).get(itemName + displayName + monitorId);
 		}
 		if (collectIdList == null || collectIdList.isEmpty()) {
-			m_log.info("collectIdListが空なのでDBに収集値をとりに行かない managerName:" + managerName);
+			m_log.info("Do not attempt to collect collected data from DB as CollectedList is empty managerName:" + managerName);
 			return map;
 		}
 
@@ -1187,7 +1187,7 @@ public class CollectGraphUtil {
 			
 			for (CollectorItemCodeMstData collectItem : collectorItemCodeMstDataList) {
 				if (collectItem.getItemName().equals(itemName)) {
-					m_log.debug("isGraphRangePercent 100%表示対象 itemName:" + itemName);
+					m_log.debug("isGraphRangePercent 100% display target itemName:" + itemName);
 					return collectItem.isGraphRange();
 				}
 			}
@@ -1196,7 +1196,7 @@ public class CollectGraphUtil {
 				| InvalidUserPass_Exception e) {
 			m_log.error("isGraphRangePercent : " + e.getMessage());
 		}
-		m_log.debug("isGraphRangePercent 100%表示対象外 itemName:" + itemName);
+		m_log.debug("isGraphRangePercent 100% out of display target itemName:" + itemName);
 		return false;
 	}
 	

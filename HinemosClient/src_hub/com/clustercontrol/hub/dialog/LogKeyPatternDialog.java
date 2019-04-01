@@ -161,7 +161,7 @@ public class LogKeyPatternDialog extends CommonDialog {
 		compositeMsgOrMeta.setLayout(new GridLayout(2, false));
 
 		this.btnMsg = new Button(compositeMsgOrMeta, SWT.RADIO);
-		this.btnMsg.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		this.btnMsg.setLayoutData(new GridData(SWT.BEGINNING, SWT.CENTER, true, false, 2, 1));
 		this.btnMsg.setText(Messages.getString("dialog.hub.log.format.key.pattern.message"));
 		this.btnMsg.setSelection(true);
 		this.btnMsg.addSelectionListener(new SelectionAdapter() {
@@ -188,7 +188,7 @@ public class LogKeyPatternDialog extends CommonDialog {
 		});
 
 		this.btnMeta = new Button(compositeMsgOrMeta, SWT.RADIO);
-		this.btnMeta.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		this.btnMeta.setLayoutData(new GridData(SWT.BEGINNING, SWT.CENTER, true, false, 2, 1));
 		this.btnMeta.setText(Messages.getString("dialog.hub.log.format.key.pattern.meta"));
 		this.btnMeta.addSelectionListener(new SelectionAdapter() {
 			@Override

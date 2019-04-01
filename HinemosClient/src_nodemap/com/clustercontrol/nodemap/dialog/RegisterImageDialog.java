@@ -201,8 +201,6 @@ public class RegisterImageDialog extends CommonDialog {
 
 		ValidateResult result = null;
 
-		// TODO
-
 		return result;
 	}
 

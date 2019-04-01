@@ -437,8 +437,9 @@ public class JpaTransactionManager implements AutoCloseable {
 	 */
 	@SuppressWarnings("unchecked")
 	public List<JpaTransactionCallback> getCallbacks() {
-		if (em.getProperties().containsKey(CALLBACKS)) {
-			return new ArrayList<JpaTransactionCallback>((List<JpaTransactionCallback>)em.getProperties().get(CALLBACKS));
+		Object callbacksProp = em.getProperties().get(CALLBACKS);
+		if (callbacksProp != null) {
+			return new ArrayList<JpaTransactionCallback>((List<JpaTransactionCallback>)callbacksProp);
 		} else {
 			return new ArrayList<JpaTransactionCallback>();
 		}
@@ -449,8 +450,9 @@ public class JpaTransactionManager implements AutoCloseable {
 	 */
 	@SuppressWarnings("unchecked")
 	private void clearTransactionCallbacks() {
-		if (em.getProperties().containsKey(CALLBACKS)) {
-			List<JpaTransactionCallback> callbacks = (List<JpaTransactionCallback>)em.getProperties().get(CALLBACKS);
+		Object callbacksProp = em.getProperties().get(CALLBACKS);
+		if (callbacksProp != null) {
+			List<JpaTransactionCallback> callbacks = (List<JpaTransactionCallback>)callbacksProp;
 			for (Iterator<JpaTransactionCallback> iter = callbacks.iterator(); iter.hasNext();) {
 				JpaTransactionCallback callback = iter.next();
 				if (callback.isTransaction()) {
@@ -489,8 +491,9 @@ public class JpaTransactionManager implements AutoCloseable {
 	 * @return callback処理中の場合はtrue, それ以外はfalse
 	 */
 	private boolean isCallbacked() {
-		if (em.getProperties().containsKey(IS_CALLBACKED)) {
-			return (Boolean)em.getProperties().get(IS_CALLBACKED);
+		Object isCallbacksProp = em.getProperties().get(IS_CALLBACKED);
+		if (isCallbacksProp != null) {
+			return (Boolean)isCallbacksProp;
 		} else {
 			return false;
 		}

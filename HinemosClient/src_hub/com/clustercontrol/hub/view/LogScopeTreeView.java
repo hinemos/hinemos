@@ -247,7 +247,5 @@ public class LogScopeTreeView  extends AutoUpdateView {
 
 	@Override
 	public void update(boolean refreshFlag) {
-		// TODO 自動生成されたメソッド・スタブ
-		
 	}
 }

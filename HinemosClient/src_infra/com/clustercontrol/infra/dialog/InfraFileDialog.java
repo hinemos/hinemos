@@ -275,7 +275,6 @@ public class InfraFileDialog extends CommonDialog {
 							new Object[]{Messages.getString("infra.filemanager.file.new")}));
 		}
 
-		// TODO implement with try-catch
 		if( ClusterControlPlugin.isRAP() ){
 			if( !uploadComponent.isReady() ){
 				return createValidateResult(Messages.getString("upload"), Messages.getString("upload.busy.message"));

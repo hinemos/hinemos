@@ -94,6 +94,7 @@ public class TransferInfo extends ObjectPrivilegeTargetInfo {
 	}
 	public void setTransferId(String transferId) {
 		this.transferId = transferId;
+		setObjectId(this.transferId);
 	}
 	
 	@Column(name="description")

@@ -76,6 +76,8 @@ public class OperationMaintenance {
 				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, HinemosModuleConstant.MONITOR_BINARYFILE_BIN);
 			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_PCAP_DATA.equals(type_id)) {
 				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, HinemosModuleConstant.MONITOR_PCAP_BIN);
+			} else if (MaintenanceTypeMstConstant.DELETE_NODE_CONFIG_HISTORY.equals(type_id)) {
+				result = controller.deleteNodeConfigSettingHistory(dataRetentionPeriod, true, ownerRoleId);
 			} else {
 				m_log.info("runMaintenance() : " + type_id);
 			}

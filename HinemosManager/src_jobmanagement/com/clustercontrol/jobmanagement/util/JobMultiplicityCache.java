@@ -545,4 +545,60 @@ public class JobMultiplicityCache {
 		return message.toString();
 	}
 
+	/**
+	 * 「先行ジョブが終了したタイミングのみ」呼ばれる。
+	 * TODO 呼び出し元を増やす場合はコメントも追加すること。
+	 * 
+	 * 処理概要は下記の通り。
+	 * ノード詳細からrunningを検索して、runningQueueを構築する。
+	 *
+	 */
+	public static synchronized void refreshRunningQueue() {
+		
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			m_log.info("RunningQueue refresh start");
+			long start = System.currentTimeMillis();
+			long time;
+			
+			try {
+				_lock.writeLock();
+				
+				HashMap<String, Queue<JobSessionNodeEntityPK>> runningCache = new HashMap<String, Queue<JobSessionNodeEntityPK>>();
+				
+				try {
+					jtm.begin();
+					// runningQueueの再構築
+					{
+						// オブジェクト権限チェックなし
+						List<JobSessionNodeEntity> nodeList = em.createNamedQuery("JobSessionNodeEntity.findByStatus", JobSessionNodeEntity.class, ObjectPrivilegeMode.NONE)
+								.setParameter("status", StatusConstant.TYPE_RUNNING).getResultList();
+						for (JobSessionNodeEntity node : nodeList) {
+							String facilityId = node.getId().getFacilityId();
+							Queue<JobSessionNodeEntityPK> runningQueue = runningCache.get(facilityId);
+							if (runningQueue == null) {
+								runningQueue = new LinkedList<JobSessionNodeEntityPK>();
+								runningCache.put(facilityId, runningQueue);
+							}
+							m_log.debug("refresh add runningQueue : " + node.getId());
+							runningQueue.offer(node.getId());
+						}
+					}
+					jtm.commit();
+				} catch (Exception e) {
+					m_log.warn("RunningQueue refresh : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+					jtm.rollback();
+				} finally {
+					jtm.close();
+				}
+				
+				storeRunningCache(runningCache);
+			} finally {
+				_lock.writeUnlock();
+			}
+			time = System.currentTimeMillis() - start;
+			m_log.info("RunningQueue refresh end " + time + "ms");
+		}
+		
+	}
 }

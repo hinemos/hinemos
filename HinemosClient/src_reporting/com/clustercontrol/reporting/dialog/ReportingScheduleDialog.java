@@ -485,7 +485,7 @@ public class ReportingScheduleDialog extends CommonDialog {
 		this.m_confirmValid = new Button(parent, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_confirmValid.setLayoutData(gridData);
 		this.m_confirmValid
@@ -639,6 +639,13 @@ public class ReportingScheduleDialog extends CommonDialog {
 	private ValidateResult createReportingInfo() {
 		ValidateResult result = null;
 
+		// レポーティング情報が既に存在する場合は、作成者と作成日を取得する
+		Long regDate = null;
+		String regUser = null;
+		if (m_reportingInfo != null) {
+			regDate = m_reportingInfo.getRegDate();
+			regUser = m_reportingInfo.getRegUser();
+		}
 		m_reportingInfo = new ReportingInfo();
 
 		// スケジュールID取得
@@ -732,6 +739,14 @@ public class ReportingScheduleDialog extends CommonDialog {
 			m_reportingInfo.setValidFlg(false);
 		}
 
+		// 既存の作成日を設定する。
+		if (regDate != null) {
+			m_reportingInfo.setRegDate(regDate);
+		}
+		// 既存の作成者を取得する
+		if (regUser != null) {
+			m_reportingInfo.setRegUser(regUser);
+		}
 		return result;
 	}
 

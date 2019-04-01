@@ -23,6 +23,7 @@ import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
@@ -49,6 +50,7 @@ import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.RepositoryUtil;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.StringBinder;
 
 /**
  * コマンド監視の特有設定に対する参照処理実装クラス
@@ -197,11 +199,13 @@ public class SelectCustom extends SelectMonitor {
 				}
 
 				variables = new ArrayList<CommandVariableDTO>();
+				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+				ArrayList<String> inKeyList = StringBinder.getKeyList(cmdInfo.getCommand(), maxReplaceWord);
 				for (String facilityId : facilityIds) {
 					if (m_log.isDebugEnabled())
 						m_log.debug("facility variables are assigned to CommandExecuteDTO. (monitroId = " + info.getMonitorId() + ", facilityId = " + facilityId + ")");
 					nodeInfo = repositoryCtrl.getNode(facilityId);
-					Map<String, String> variable = RepositoryUtil.createNodeParameter(nodeInfo);
+					Map<String, String> variable = RepositoryUtil.createNodeParameter(nodeInfo, inKeyList);
 					variables.add(new CommandVariableDTO(facilityId, variable));
 				}
 				
@@ -317,9 +321,11 @@ public class SelectCustom extends SelectMonitor {
 					}
 	
 					variables = new ArrayList<CommandVariableDTO>();
+					int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+					ArrayList<String> inKeyList = StringBinder.getKeyList(cmdInfo.getCommand(), maxReplaceWord);
 					for (String facilityId : facilityIds) {
 						nodeInfo = repositoryCtrl.getNode(facilityId);
-						Map<String, String> variable = RepositoryUtil.createNodeParameter(nodeInfo);
+						Map<String, String> variable = RepositoryUtil.createNodeParameter(nodeInfo, inKeyList);
 						variables.add(new CommandVariableDTO(facilityId, variable));
 					}
 					

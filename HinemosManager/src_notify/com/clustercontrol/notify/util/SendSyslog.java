@@ -248,8 +248,10 @@ public class SendSyslog implements Notifier {
 		}
 
 		try {
+			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+			ArrayList<String> inKeyList = StringBinder.getKeyList(message, maxReplaceWord);
 			Map<String, String> param = NotifyUtil.createParameter(outputInfo,
-					logEscalateInfo.getNotifyInfoEntity());
+					logEscalateInfo.getNotifyInfoEntity(), inKeyList);
 			StringBinder binder = new StringBinder(param);
 
 			return binder.replace(message);
@@ -494,7 +496,8 @@ public class SendSyslog implements Notifier {
 			
 			os = socket.getOutputStream();
 			writer = new PrintWriter(socket.getOutputStream(), true);
-			writer.println(msg);
+			msg = msg + "\n"; 
+			writer.print(msg);
 			writer.flush();
 		} finally {
 			if (writer != null) {

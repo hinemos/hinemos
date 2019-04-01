@@ -143,9 +143,13 @@ public class CollectDataUtil {
 			// 値が設定されていないため処理終了
 			String strParam = "";
 			if (sessionJob != null) {
-				strParam = String.format(" jobunitId=%s, jobId=%s", 
-						sessionJob.getId().getJobunitId(), sessionJob.getId().getJobId());
+				strParam = String.format("id=%s, startDate=%s, endDate=%s",
+						String.valueOf(sessionJob.getId()),
+						String.valueOf(sessionJob.getStartDate()),
+						String.valueOf(sessionJob.getEndDate()));
 			}
+			// FIXME: 開始遅延はstartDateがnullになるので、正常であるにも関わらず毎回WARNログが出てしまう。
+			// startDateのnullチェックは、ステータスの種類で弾いた後で実施すべき。
 			m_log.warn("put(sessionJob) : Information is insufficient. " + strParam);
 			return;
 		}

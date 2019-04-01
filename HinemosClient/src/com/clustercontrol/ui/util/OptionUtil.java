@@ -13,12 +13,14 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.activities.IActivity;
 import org.eclipse.ui.activities.IActivityManager;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
 
+import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.startup.ui.StartUpPerspective;
 
 /**
@@ -44,6 +46,13 @@ public class OptionUtil {
 	 * @see com.clustercontrol.util.KeyCheck#TYPE_XCLOUD
 	 */
 	public static final String TYPE_XCLOUD = "xcloud";
+	
+	/**
+	 * プリファレンスストア_有効オプションキー名
+	 * @see com.clustercontrol.util.KeyCheck#TYPE_ENTERPRISE
+	 */
+	private static final String PRE_KEY_LAST_ACT_KEY = "lastActivityKeys";
+	
 
 	public static void enableActivities(IWorkbenchWindow window, Set<String> options) {
 		if( null == window ) return;
@@ -62,13 +71,23 @@ public class OptionUtil {
 				m_log.warn("Unknown activity: " + id);
 			}
 		}
-
-		Set<String> enabledIds = getEnabledActivityIds(activityManager);
-		m_log.debug("Enabled activities: " + enabledIds);
+		
+		// プリファレンスストアから前回ログイン時の有効オプションキー情報を取得する。
+		IPreferenceStore store = ClusterControlPlugin.getDefault().getPreferenceStore();
+		String enabledIds = store.getString(PRE_KEY_LAST_ACT_KEY);
+		
+		m_log.debug("Enabled activities: [" + enabledIds + "]");
 		m_log.debug("Enable activities: " + ids);
+
 		// Compare with existed and enable only needed
-		if(!ids.equals(enabledIds)){
-			activitySupport.setEnabledActivityIds(ids);
+		activitySupport.setEnabledActivityIds(ids);
+
+		// 有効化オプションをStringに変換 
+		String idsStr = String.join(",", ids);
+		
+		if(!idsStr.equals(enabledIds)){
+			// プリファレンスストアに有効化オプションを登録する。
+			store.setValue(PRE_KEY_LAST_ACT_KEY, idsStr);
 
 			// 不整合を防ぐために、すべてのパースペクティブを一回閉じる
 			window.getActivePage().closeAllPerspectives(false, false);
@@ -78,13 +97,5 @@ public class OptionUtil {
 			if(null != perspectiveDesc)
 				window.getActivePage().setPerspective(perspectiveDesc);
 		}
-	}
-
-	private static Set<String> getEnabledActivityIds(IActivityManager activityManager) {
-		Set<String> ids = new HashSet<>();
-		for(Object raw: activityManager.getEnabledActivityIds()){
-			ids.add((String)raw);
-		}
-		return ids;
 	}
 }

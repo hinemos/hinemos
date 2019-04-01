@@ -295,6 +295,57 @@ public class QueryUtil {
 		}
 	}
 
+	public static int deleteEventLogOperationHistoryByGenerationDate(Long generationDate, int timeout) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query query = em.createNamedQuery("EventLogOperationHistoryEntity.deleteByGenerationDate")
+					.setParameter("generationDate", generationDate);
+			if (timeout > 0) {
+				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
+			}
+			return query.executeUpdate();
+		}
+	}
+
+	public static int deleteEventLogOperationHistoryByGenerationDateConfigFlg(Long generationDate, int timeout) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query query = em.createNamedQuery("EventLogOperationHistoryEntity.deleteByGenerationDateConfigFlg")
+					.setParameter("generationDate", generationDate);
+			if (timeout > 0) {
+				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
+			}
+			return query.executeUpdate();
+		}
+	}
+	
+	public static int deleteEventLogOperationHistoryByGenerationDateAndOwnerRoleId(Long generationDate, int timeout, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			
+			Query query = em.createNamedQuery("EventLogOperationHistoryEntity.deleteByGenerationDateAndOwnerRoleId")
+					.setParameter("generationDate", generationDate)
+					.setParameter("ownerRoleId", roleId);
+			if (timeout > 0) {
+				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
+			}
+			return query.executeUpdate();
+		}
+	}
+
+	public static int deleteEventLogOperationHistoryByGenerationDateConfigFlgAndOwnerRoleId(Long generationDate, int timeout, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query query = em.createNamedQuery("EventLogOperationHistoryEntity.deleteByGenerationDateConfigFlgAndOwnerRoleId")
+					.setParameter("generationDate", generationDate)
+					.setParameter("ownerRoleId", roleId);
+			if (timeout > 0) {
+				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
+			}
+			return query.executeUpdate();
+		}
+	}
+	
 	public static int createJobCompletedSessionsTable() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();

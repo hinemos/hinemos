@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"NetstatInfoList_funcName"}
+],
+"props":[
+	{
+	"propName":"NetstatInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

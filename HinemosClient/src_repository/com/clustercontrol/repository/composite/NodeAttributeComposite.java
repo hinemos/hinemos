@@ -89,7 +89,7 @@ public class NodeAttributeComposite extends Composite {
 		Property property = null;
 		GetNodeProperty getNodeProperty = new GetNodeProperty(managerName, facilityId,
 				PropertyDefineConstant.MODE_SHOW);
-		property = getNodeProperty.getProperty();
+		property = getNodeProperty.getProperty(false);
 
 		this.propertySheet.setInput(property);
 
@@ -102,6 +102,10 @@ public class NodeAttributeComposite extends Composite {
 		//サーバ基本情報
 		Object element = this.propertySheet.getTree().getItem(5).getData();
 		this.propertySheet.expandToLevel(element, 2);
+
+		//構成情報
+		element = this.propertySheet.getTree().getItem(6).getData();
+		this.propertySheet.expandToLevel(element, 1);
 
 		//サービス
 		element =  this.propertySheet.getTree().getItem(7).getData();

@@ -184,7 +184,7 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 		WidgetTestUtil.setTestId(this, "casesensitive", m_checkCaseSensitive);
 		gridData = new GridData();
 		gridData.horizontalSpan = 30;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_checkCaseSensitive.setLayoutData(gridData);
 		this.m_checkCaseSensitive.setText(Messages.getString("case.sensitive"));

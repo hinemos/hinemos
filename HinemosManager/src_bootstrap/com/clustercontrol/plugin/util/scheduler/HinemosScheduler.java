@@ -211,7 +211,6 @@ public final class HinemosScheduler {
 		public synchronized int compareTo(Delayed o) {
 			long diff;
 			
-			// TODO HinemosScheduler関連クラスのhashCode, equals, compareToは整理が必要
 			JobWrapper other = (JobWrapper)o;
 			diff = ((AbstractTrigger)this.getTrigger()).compareTo((AbstractTrigger)(other.getTrigger()));
 			if (0 < diff) {
@@ -412,7 +411,7 @@ public final class HinemosScheduler {
 						// として動く
 						fireTargetJob.getTrigger().updateAfterMisfire(currentTime);
 						m_log.info("mainLoop() : PrevFireTime=" + fireTargetJob.getTrigger().getPreviousFireTime() + ", NextFireTime=" + fireTargetJob.getTrigger().getNextFireTime());
-						// TODO 今のところ何もしない動きにしている(以前のスケジュールは実行せず、現在時刻基点で再スケジュール)
+						// 今のところ何もしない動きにしている(以前のスケジュールは実行せず、現在時刻基点で再スケジュール)
 					}
 					// Trigger情報更新
 					if(schedulerType == SchedulerPlugin.SchedulerType.DBMS){
@@ -518,6 +517,9 @@ public final class HinemosScheduler {
 		Thread schedulerMainThread = this.thread;
 		if (schedulerMainThread != null) {
 			schedulerMainThread.interrupt();
+		}
+		if (executor != null) {
+			executor.shutdown();
 		}
 		m_log.debug("shutdown() : shutdown scheduler and notify to scheduler main thread.");
 	}

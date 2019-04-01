@@ -160,6 +160,9 @@ public class BinaryHubController {
 			// 0件チェック(データ取得時).
 			if (dataResults == null || dataResults.isEmpty()) {
 				result.setSize(0);
+				if(queryInfo.isNeedCount() != null && queryInfo.isNeedCount()){
+					result.setCount(0);
+				} 
 				result.setTime(System.currentTimeMillis() - start);
 				logger.debug(String.format(
 						methodName + DELIMITER + "end query because the count is 0 on searching. result=%s, query=%s",
@@ -173,6 +176,9 @@ public class BinaryHubController {
 			// 0件チェック(データ絞込み時).
 			if (refineResults == null || refineResults.isEmpty()) {
 				result.setSize(0);
+				if(queryInfo.isNeedCount() != null && queryInfo.isNeedCount()){
+					result.setCount(0);
+				} 
 				result.setTime(System.currentTimeMillis() - start);
 				logger.debug(String.format(
 						methodName + DELIMITER + "end query because the count is 0 on refining. result=%s, query=%s",
@@ -1027,9 +1033,9 @@ public class BinaryHubController {
 				}
 				// 検索ワードがレコードバイナリに含まれるかどうか判定.
 				if (wordToken.negate) {
-					tmpMatch = !recordBinary.containsAll(searchBinary);
+					tmpMatch = !(BinaryUtil.byteListIndexOf(recordBinary,searchBinary) >= 0 );
 				} else {
-					tmpMatch = recordBinary.containsAll(searchBinary);
+					tmpMatch = (BinaryUtil.byteListIndexOf(recordBinary,searchBinary) >= 0 );
 				}
 				logger.debug(String.format(
 						methodName + DELIMITER
@@ -1080,13 +1086,13 @@ public class BinaryHubController {
 		if (hexTokenList != null && !hexTokenList.isEmpty()) {
 			for (Token hexToken : hexTokenList) {
 				// 16進数文字列をバイトリストに変換する.
-				searchBinary = BinaryUtil.stirngToList(hexToken.word);
+				searchBinary = BinaryUtil.stringToList(hexToken.word);
 
 				// 検索ワードがレコードバイナリに含まれるかどうか判定.
 				if (hexToken.negate) {
-					tmpMatch = !recordBinary.containsAll(searchBinary);
+					tmpMatch = !(BinaryUtil.byteListIndexOf(recordBinary,searchBinary) >= 0 );
 				} else {
-					tmpMatch = recordBinary.containsAll(searchBinary);
+					tmpMatch = (BinaryUtil.byteListIndexOf(recordBinary,searchBinary) >= 0 );
 				}
 
 				logger.debug(String.format(

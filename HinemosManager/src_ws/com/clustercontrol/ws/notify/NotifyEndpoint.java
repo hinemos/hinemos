@@ -30,6 +30,8 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.NotifyDuplicate;
 import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.monitor.bean.EventDataInfo;
+import com.clustercontrol.notify.bean.EventNotifyInfo;
 import com.clustercontrol.notify.bean.NotifyCheckIdResultInfo;
 import com.clustercontrol.notify.model.NotifyInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
@@ -350,7 +352,6 @@ public class NotifyEndpoint {
 
 	/**
 	 * 外部から直接通知処理を実行します。
-
 	 *
 	 * @param pluginId プラグインID
 	 * @param monitorId 監視項目ID
@@ -422,5 +423,47 @@ public class NotifyEndpoint {
 		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_NOTIFY + " Run, Method=notify, User="
 				+ HttpAuthenticator.getUserAccountString(wsctx)
 				+ msg.toString());
+	}
+	
+	/**
+	 * 外部から直接イベント通知処理を実行します。
+	 *
+	 * @param eventNotifyData イベント通知情報
+	 * @param notifyIdList 通知IDのリスト
+	 * @throws InvalidRole
+	 * @throws InvalidUserPass
+	 * @throws HinemosUnknown
+	 * @throws NotifyNotFound
+	 * @throws FacilityNotFound
+	 * 
+	 * @return 登録したイベント情報
+	 */
+	public EventDataInfo notifyUserExtentionEvent(
+			EventNotifyInfo eventNotifyInfo)  throws InvalidRole, InvalidUserPass, InvalidSetting, HinemosUnknown, FacilityNotFound {
+
+		EventDataInfo info = null;
+		String msg = (eventNotifyInfo != null) ? " " + eventNotifyInfo.toString() : " null";
+		m_log.debug("notifyUserExtentionEvent() " + msg);
+
+		// 認証済み操作ログ
+		try {
+			ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.NOTIFY, SystemPrivilegeMode.READ));
+			HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+			info = NotifyControllerBean.notifyUserExtentionEvent(eventNotifyInfo);
+					
+		} catch (Exception e) {
+			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_NOTIFY 
+					+ "Add Failed, Method=notifyUserExtentionEvent, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx)
+					+ msg.toString());
+			throw e;
+		}
+		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_NOTIFY 
+				+ "Add, Method=notifyUserExtentionEvent, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+		
+		return info;
 	}
 }

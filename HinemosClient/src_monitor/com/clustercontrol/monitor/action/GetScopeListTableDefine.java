@@ -9,7 +9,10 @@
 package com.clustercontrol.monitor.action;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import org.eclipse.swt.SWT;
 
@@ -59,6 +62,18 @@ public class GetScopeListTableDefine {
 	/** 初期表示時ソートオーダー。 */
 	public static final int SORT_ORDER = 1;
 
+	/** カラム名からINDEXを取得するためのMap */
+	public static final Map<String, Integer> COLNAME_INDEX_MAP;
+	static {
+		Map<String, Integer> map = new LinkedHashMap<>();
+		map.put("MANAGER_NAME", MANAGER_NAME);
+		map.put("PRIORITY", PRIORITY);
+		map.put("FACILITY_ID", FACILITY_ID);
+		map.put("SCOPE", SCOPE);
+		map.put("DUMMY", DUMMY);
+		COLNAME_INDEX_MAP = Collections.unmodifiableMap(map);
+	}
+	
 	/**
 	 * 監視[スコープ]ビューのテーブル定義情報を取得します。<BR><BR>
 	 * リストに、カラム毎にテーブルカラム情報をセットします。

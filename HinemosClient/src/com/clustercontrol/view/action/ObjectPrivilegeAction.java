@@ -33,6 +33,7 @@ import com.clustercontrol.calendar.view.CalendarPatternView;
 import com.clustercontrol.infra.view.InfraFileManagerView;
 import com.clustercontrol.infra.view.InfraManagementView;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
+import com.clustercontrol.jobmanagement.view.JobQueueSettingView;
 import com.clustercontrol.maintenance.view.MaintenanceListView;
 import com.clustercontrol.monitor.view.MonitorListView;
 import com.clustercontrol.notify.mail.view.MailTemplateListView;
@@ -138,6 +139,8 @@ public class ObjectPrivilegeAction extends AbstractHandler implements IElementUp
 					this.setBaseEnabled( 0 < ((InfraManagementView) part).getSelectedNum() );
 				}else if( part instanceof InfraFileManagerView ){
 					this.setBaseEnabled( 0 < ((InfraFileManagerView) part).getSelectedNum() );
+				}else if( part instanceof JobQueueSettingView ){ // 特定クラスとの密結合をどうにかすべき
+					this.setBaseEnabled( 0 < ((JobQueueSettingView) part).getSelectedJobQueueCount() );
 				}else{
 					this.setBaseEnabled( false );
 				}

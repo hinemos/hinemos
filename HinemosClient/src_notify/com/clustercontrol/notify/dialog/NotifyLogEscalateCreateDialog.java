@@ -258,7 +258,7 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 		WidgetTestUtil.setTestId(this, "generationnode", m_radioGenerationNodeValue);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_radioGenerationNodeValue.setLayoutData(gridData);
 		this.m_radioGenerationNodeValue.setText(Messages.getString("notify.node.generation") + " : ");
@@ -915,8 +915,7 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 		}
 		else{
 			// 閉じるボタン
-			// TODO Remove the following hard-code. IDialogConstants.*_LABEL will causes IncompatibleClassChangeError on RAP
-			this.createButton(parent, IDialogConstants.CANCEL_ID, "Close", false);
+			this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false);
 		}
 	}
 
@@ -1112,7 +1111,8 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 
-		text.setToolTipText(Messages.getString("notify.parameter.tooltip"));
+		String tooltipText = Messages.getString("notify.parameter.tooltip") + Messages.getString("replace.parameter.notify") + Messages.getString("replace.parameter.node");
+		text.setToolTipText(tooltipText);
 		text.setLayoutData(gridData);
 		text.setColor(new Color(parent.getDisplay(), new RGB(0, 0, 255)));
 		text.addModifyListener(new ModifyListener(){

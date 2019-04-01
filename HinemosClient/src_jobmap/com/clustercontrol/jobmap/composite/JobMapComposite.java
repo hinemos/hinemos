@@ -1309,7 +1309,6 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 	}
 	
 	public void initialMessageDisplay(){
-		//FIXME
 		//Canvasに表示が何もなければ、初期表示メッセージを出す。
 		//注：canvasに表示がないと、WEBクライアントでのビューの最小化操作でJSエラーがでる。
 		//    この処理は上記むけの回避実装

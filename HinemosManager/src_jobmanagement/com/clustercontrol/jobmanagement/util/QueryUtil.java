@@ -8,6 +8,8 @@
 
 package com.clustercontrol.jobmanagement.util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.persistence.TypedQuery;
@@ -23,6 +25,7 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobInfoEntityPK;
 import com.clustercontrol.jobmanagement.model.JobKickEntity;
@@ -36,6 +39,7 @@ import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntityPK;
+import com.clustercontrol.jobmanagement.model.JobStartJobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobmapIconImageEntity;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 
@@ -190,7 +194,7 @@ public class QueryUtil {
 
 		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntityPK sessionJobPk = new JobSessionJobEntityPK(sessionId, jobunitId, jobId);
-		JobSessionJobEntity sessionJob = null;
+		JobSessionJobEntity sessionJob;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			sessionJob = em.find(JobSessionJobEntity.class, sessionJobPk, mode);
@@ -304,6 +308,7 @@ public class QueryUtil {
 			.setParameter("parentJobunitId", parentJobunitId)
 			.setParameter("parentJobId", parentJobId)
 			.setParameter("status", status).getResultList();
+			if (jobSessionJobList == null) jobSessionJobList = new ArrayList<>();
 			return jobSessionJobList;
 		}
 	}
@@ -684,4 +689,31 @@ public class QueryUtil {
 			return jobNextJobOrderInfoEntities;
 		}
 	}
+
+	public static List<JobSessionEntity> getJobSessionByTriggerInfo(
+			String triggerInfo) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			return em.createNamedQuery("JobSessionEntity.findByTriggerInfo", JobSessionEntity.class)
+					.setParameter("triggerInfo", triggerInfo).getResultList();
+		}
+	}
+
+	/**
+	 * 指定されたジョブセッションにおいて、指定されたジョブの終了が条件(セッション横断ジョブは除く)となっている
+	 * {@link JobStartJobInfoEntity}のリストを返します。
+	 */
+	public static List<JobStartJobInfoEntity> getJobStartJobInfoByTargetJobId(String sessionId, String targetJobId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			return em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
+					.setParameter("sessionId", sessionId)
+					.setParameter("targetJobId", targetJobId)
+					.setParameter("excludingTypes", Arrays.asList(
+							JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS,
+							JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE))
+					.getResultList();
+		}
+	}
+
 }

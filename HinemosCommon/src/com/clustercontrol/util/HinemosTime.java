@@ -20,9 +20,6 @@ import org.apache.commons.logging.LogFactory;
 /**
  * HinemosManager内で独自に管理する現在時刻（Hinemos時刻）を保持するクラス<br/>
  * <br>
- * TODO Ver5.1時点ではスケジューラ毎に異なるHinemos時刻をもてないため、
- * どのスケジューラもstaticなメソッドと同じ時刻を返すが、将来的にはスケジューラごとに異なる時刻を返せるようにする
- * 
  */
 
 public class HinemosTime {

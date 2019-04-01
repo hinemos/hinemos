@@ -90,7 +90,7 @@ public class EntityUpdater {
 		if (entityEntity.getFacilityId() != null) {
 			try {
 				RepositoryControllerBean repositoryControllerBean = RepositoryControllerBeanWrapper.bean();
-				NodeInfo origin = repositoryControllerBean.getNode(entityEntity.getFacilityId());
+				NodeInfo origin = repositoryControllerBean.getNodeFull(entityEntity.getFacilityId());
 				StringBuilder changeLog = new StringBuilder();
 				String oldValue, newValue;
 

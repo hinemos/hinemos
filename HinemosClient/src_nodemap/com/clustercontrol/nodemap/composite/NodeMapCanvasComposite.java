@@ -538,7 +538,7 @@ public class NodeMapCanvasComposite extends Composite{
 							// 遷移対象のファシリティIDを取得
 
 							// 新規ビューで対象スコープのマップを表示する
-							RelationViewController.createNewView(((ScopeFigure)focusFigure).getManagerName(), targetScopeFacilityId);
+							RelationViewController.createNewView(((ScopeFigure)focusFigure).getManagerName(), targetScopeFacilityId, NodeMapView.class);
 						}
 					});
 
@@ -723,7 +723,7 @@ public class NodeMapCanvasComposite extends Composite{
 					if (dialog.open() == IDialogConstants.OK_ID) {
 						// ノード登録後にノード割り当てをする
 						// 最上位スコープ、登録ノード全て、未登録ノード、Hinemos内部スコープの場合は、割り当てない。
-						String scopeFacilityId = _view.m_controller.getCurrentScope();
+						String scopeFacilityId = _view.getController().getCurrentScope();
 						boolean isScopeBuildin = FacilityTreeAttributeConstant.isBuiltinScope(scopeFacilityId);
 						if (!focusFigure.isBuiltin() && !isScopeBuildin &&
 								MessageDialog.openQuestion(
@@ -1269,7 +1269,6 @@ public class NodeMapCanvasComposite extends Composite{
 		// マウスを離した時に呼ばれる
 		@Override
 		public void mouseReleased(MouseEvent me) {
-			// TODO 暫定 編集機能 **********************************************
 			if(status == Status.FIGURE_SELECTED_FOR_CREATE_CONNECTION){
 				// マウスの位置を取得
 				Point mousePoint = me.getLocation();
@@ -1328,7 +1327,6 @@ public class NodeMapCanvasComposite extends Composite{
 		// ドラッグ時に呼ばれる
 		@Override
 		public void mouseDragged(MouseEvent me) {
-			// TODO 編集機能 **********************************************
 			// アイコン移動可能モードの場合は、左クリックでアイコンを移動させる
 			if (status == Status.FIGURE_SELECTED_FOR_MOVE) {
 				if(delta == null){
@@ -1454,6 +1452,10 @@ public class NodeMapCanvasComposite extends Composite{
 
 	public void setController(MapViewController m_controller) {
 		this.m_controller = m_controller;
+	}
+
+	public MapViewController getController() {
+		return this.m_controller;
 	}
 
 	public void zoomIn() {

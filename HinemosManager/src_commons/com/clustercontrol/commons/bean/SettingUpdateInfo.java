@@ -249,7 +249,41 @@ public class SettingUpdateInfo implements Serializable {
 		SettingUpdateTimestamp cache = getCache();
 		return cache.customtrapMonitorUpdateTime;
 	}
+
 	
+	public void setNodeConfigSettingUpdateTime(long time) {
+		try {
+			_lock.writeLock();
+			
+			SettingUpdateTimestamp cache = getCache();
+			cache.nodeConfigSettingUpdateTime = time;
+			storeCache(cache);
+		} finally {
+			_lock.writeUnlock();
+		}
+	}
+
+	public long getNodeConfigSettingUpdateTime() {
+		SettingUpdateTimestamp cache = getCache();
+		return cache.nodeConfigSettingUpdateTime;
+	}
+
+	public void setNodeConfigRunCollectUpdateTime(long time) {
+		try {
+			_lock.writeLock();
+
+			SettingUpdateTimestamp cache = getCache();
+			cache.nodeConfigRunCollectUpdateTime = time;
+			storeCache(cache);
+		} finally {
+			_lock.writeUnlock();
+		}
+	}
+
+	public long getNodeConfigRunCollectUpdateTime() {
+		SettingUpdateTimestamp cache = getCache();
+		return cache.nodeConfigRunCollectUpdateTime;
+	}
 	
 	
 	public long getHinemosTimeOffset() {
@@ -303,6 +337,8 @@ public class SettingUpdateInfo implements Serializable {
 		private long winEventMonitorUpdateTime = HinemosTime.currentTimeMillis();
 		private long jobFileCheckUpdateTime = HinemosTime.currentTimeMillis();
 		private long customtrapMonitorUpdateTime = HinemosTime.currentTimeMillis();
+		private long nodeConfigSettingUpdateTime = HinemosTime.currentTimeMillis();
+		private long nodeConfigRunCollectUpdateTime = HinemosTime.currentTimeMillis();
 		private long hinemosTimeOffset = HinemosTime.getTimeOffsetMillis();
 		private int hinemosTimeZoneOffset = HinemosTime.getTimeZoneOffset();
 		
@@ -325,6 +361,8 @@ public class SettingUpdateInfo implements Serializable {
 			cache.snmptrapMonitorUpdateTime = now;
 			cache.winEventMonitorUpdateTime = now;
 			cache.jobFileCheckUpdateTime = now;
+			cache.nodeConfigSettingUpdateTime = now;
+			cache.nodeConfigRunCollectUpdateTime = now;
 			cache.hinemosTimeOffset = HinemosTime.getTimeOffsetMillis();
 			cache.hinemosTimeZoneOffset = HinemosTime.getTimeZoneOffset();
 			

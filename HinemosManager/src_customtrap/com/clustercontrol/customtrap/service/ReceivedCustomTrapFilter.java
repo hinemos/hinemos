@@ -306,16 +306,19 @@ public class ReceivedCustomTrapFilter {
 									}
 									notifyInfoList.addAll(notifier.createPredictionOutputBasicInfoList(
 											customtrapListBuffer, monitor, agentAddr, collectResultBuffer));
-									if (receivedCustomTrap.getKey() != null) {
-										sample.set(facilityIdElement, monitor.getItemName(), value,
-												average, standardDeviation,
-												CollectedDataErrorTypeConstant.NOT_ERROR, receivedCustomTrap.getKey());
-									} else {
-										sample.set(facilityIdElement, monitor.getItemName(), value,
-												average, standardDeviation,
-												CollectedDataErrorTypeConstant.NOT_ERROR);
+									
+									if (monitor.getCollectorFlg()) {
+										if (receivedCustomTrap.getKey() != null) {
+											sample.set(facilityIdElement, monitor.getItemName(), value,
+													average, standardDeviation,
+													CollectedDataErrorTypeConstant.NOT_ERROR, receivedCustomTrap.getKey());
+										} else {
+											sample.set(facilityIdElement, monitor.getItemName(), value,
+													average, standardDeviation,
+													CollectedDataErrorTypeConstant.NOT_ERROR);
+										}
+										collectedSamples.add(sample);
 									}
-									collectedSamples.add(sample);
 								}
 								break;
 							}

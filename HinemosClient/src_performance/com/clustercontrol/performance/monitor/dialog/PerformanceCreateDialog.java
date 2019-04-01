@@ -166,7 +166,7 @@ public class PerformanceCreateDialog extends CommonMonitorNumericDialog {
 		this.m_breakdownFlg.setText(Messages.getString("dialog.performance.monitor.collect.detail"));
 		gridData = new GridData();
 		gridData.horizontalSpan = BASIC_UNIT;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_breakdownFlg.setLayoutData(gridData);
 

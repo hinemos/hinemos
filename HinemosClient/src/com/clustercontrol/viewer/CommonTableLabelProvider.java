@@ -32,6 +32,7 @@ import com.clustercontrol.bean.PerformanceStatusImageConstant;
 import com.clustercontrol.bean.PriorityColorConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.ProcessMessage;
+import com.clustercontrol.bean.RadioButtonImageConstant;
 import com.clustercontrol.bean.RunInterval;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.bean.StatusMessage;
@@ -54,6 +55,7 @@ import com.clustercontrol.monitor.bean.ConfirmMessage;
 import com.clustercontrol.notify.util.NotifyTypeUtil;
 import com.clustercontrol.performance.bean.PerformanceStatusConstant;
 import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.bean.NodeConfigRunInterval;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimeStringConverter;
 import com.clustercontrol.util.TimezoneUtil;
@@ -128,7 +130,12 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			if(0 == runInterval){
 				return "-";
 			}else{
-				return RunInterval.valueOf(runInterval).toString();
+				RunInterval interval = RunInterval.valueOf(runInterval);
+				if(interval != null){
+					return interval.toString();
+				} else{
+					return NodeConfigRunInterval.valueOf(runInterval).toString();
+				}
 			}
 		case TableColumnInfo.JUDGMENT_OBJECT:
 			//データタイプが「判定対象」の処理
@@ -317,8 +324,12 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			//データタイプが「ジョブマップアイコンイメージ」の処理
 			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
 			return iconCache.loadByteGraphicImage(((byte[]) item));
+		} else if (tableColumn.getType() == TableColumnInfo.RADIO_BUTTON) {
+			//データタイプが「ラジオボタン」の処理
+			return RadioButtonImageConstant.typeToImage(((Boolean) item)
+					.booleanValue());
 		}
-
+		
 		return null;
 	}
 

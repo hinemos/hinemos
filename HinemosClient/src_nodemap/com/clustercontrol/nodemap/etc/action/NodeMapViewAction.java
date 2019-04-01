@@ -14,6 +14,7 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import com.clustercontrol.nodemap.util.RelationViewController;
+import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.repository.bean.FacilityConstant;
 
 /**
@@ -30,7 +31,7 @@ public class NodeMapViewAction extends AbstractHandler {
 		m_log.debug("NodeMapViewAction new view");
 
 		// 新規ビューを表示する
-		RelationViewController.createNewView("", FacilityConstant.STRING_COMPOSITE);
+		RelationViewController.createNewView("", FacilityConstant.STRING_COMPOSITE, NodeMapView.class);
 		
 		return null;
 	}

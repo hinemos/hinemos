@@ -10,6 +10,7 @@ package com.clustercontrol.plugin.impl;
 
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,6 +74,8 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 	public static final String NOTIFY_EVENT_TASK_FACTORY = "NotifyEventTaskFactory";
 	public static final String CREATE_JOB_SESSION_TASK_FACTORY = "CreateJobSessionTaskFactory";
 	public static final String NOTIFY_INFRA_TASK_FACTORY = "NotifyInfraTaskFactory";
+	public static final String AGENT_RESTART_TASK_FACTORY = "AgentRestartTaskFactory";
+	public static final String AGENT_UPDATE_TASK_FACTORY = "AgentUpdateTaskFactory";
 	
 	static {
 		String workerList = HinemosPropertyCommon.worker_list.getStringValue();
@@ -103,22 +106,26 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 			_counterLock.put(worker, new Object());
 
 			synchronized (_executorLock.get(worker)) {
-				String defaultClassPrefix;
-				defaultClassPrefix = "com.clustercontrol.notify.factory.";
 
-				log.info("defaultClassPrefix=" + defaultClassPrefix);
 				log.info("worker=" + worker);
 
 				String className = null;
 				if (worker.equals(CREATE_JOB_SESSION_TASK_FACTORY)) {
-					className = HinemosPropertyCommon.worker_$_factoryclass.getStringValue(worker, "com.clustercontrol.jobmanagement.factory." + worker);
+					className = HinemosPropertyCommon.worker_$_factoryclass.getStringValue(worker,
+							"com.clustercontrol.jobmanagement.factory." + worker);
+				} else if (worker.equals(AGENT_RESTART_TASK_FACTORY) || worker.equals(AGENT_UPDATE_TASK_FACTORY)) {
+					className = HinemosPropertyCommon.worker_$_factoryclass.getStringValue(worker,
+							"com.clustercontrol.hinemosagent.factory." + worker);
 				} else {
-					className = HinemosPropertyCommon.worker_$_factoryclass.getStringValue(worker, defaultClassPrefix + worker);
+					className = HinemosPropertyCommon.worker_$_factoryclass.getStringValue(worker,
+							"com.clustercontrol.notify.factory." + worker);
+				}
+				log.info("class=" + className);
+				if (className == null || "".equals(className)) {
+					log.warn("class not defined.");
+					continue;
 				}
 
-				if (className == null || "".equals(className)) {
-					log.warn("class not defined. (" + "worker." + worker + ".factoryclass" + ")");
-				}
 				try {
 					Class<?> clazz = Class.forName(className);
 
@@ -143,7 +150,9 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 				int threadSize;
 				if (worker.equals(NOTIFY_STATUS_TASK_FACTORY ) 
 						|| worker.equals(CREATE_JOB_SESSION_TASK_FACTORY)
-						|| worker.equals(NOTIFY_EVENT_TASK_FACTORY )) {
+						|| worker.equals(NOTIFY_EVENT_TASK_FACTORY)
+						|| worker.equals(AGENT_RESTART_TASK_FACTORY)
+						|| worker.equals(AGENT_UPDATE_TASK_FACTORY)) {
 					threadSize = HinemosPropertyCommon.worker_$_thread_size.getIntegerValue(worker, Long.valueOf(_threadSizeDefault));
 				} else {
 					threadSize = HinemosPropertyCommon.worker_$_thread_size.getIntegerValue(worker, Long.valueOf(8));
@@ -351,6 +360,22 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 		}
 	}
 
+	/**
+	 * Executor内部キューのinteratorを返します。
+	 * 状況モニターのための参照のみ可能、変更操作は禁止です。
+	 */
+	public static Iterator<Runnable> getTaskIterator(String worker) throws HinemosUnknown {
+		ThreadPoolExecutor executor = _executorMap.get(worker);
+
+		if (executor == null) {
+			throw new HinemosUnknown("getTaskQueue: worker thread is not initialized. (worker = " + worker + ")");
+		}
+
+		synchronized (_executorLock.get(worker)) {
+			return executor.getQueue().iterator();
+		}
+	}
+	
 	private static class AsyncThreadFactory implements ThreadFactory {
 
 		private final String _worker;

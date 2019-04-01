@@ -375,10 +375,10 @@ public class NodeInfoDeviceSearch implements Serializable
 				// サーバ基本情報->OS
 				if (HinemosPropertyCommon.repository_device_search_prop_basic_os.getBooleanValue()) {
 					this.newNodeInfo.setNodeName(this.nodeInfo.getNodeName());
-					this.newNodeInfo.setOsName(this.nodeInfo.getOsName());
-					this.newNodeInfo.setOsRelease(this.nodeInfo.getOsRelease());
-					this.newNodeInfo.setOsVersion(this.nodeInfo.getOsVersion());
-					this.newNodeInfo.setCharacterSet(this.nodeInfo.getCharacterSet());
+					this.newNodeInfo.getNodeOsInfo().setOsName(this.nodeInfo.getNodeOsInfo().getOsName());
+					this.newNodeInfo.getNodeOsInfo().setOsRelease(this.nodeInfo.getNodeOsInfo().getOsRelease());
+					this.newNodeInfo.getNodeOsInfo().setOsVersion(this.nodeInfo.getNodeOsInfo().getOsVersion());
+					this.newNodeInfo.getNodeOsInfo().setCharacterSet(this.nodeInfo.getNodeOsInfo().getCharacterSet());
 				}
 				// サーバ基本情報->Hinemosエージェント
 				if (HinemosPropertyCommon.repository_device_search_prop_basic_agent.getBooleanValue()) {
@@ -552,68 +552,68 @@ public class NodeInfoDeviceSearch implements Serializable
 							nodeInfo.getNodeName());
 				}
 			}
-			if( nodeInfo.getOsName() == null )
+			if( nodeInfo.getNodeOsInfo().getOsName() == null )
 			{
-				lEquals = lEquals && ( lastNode.getOsName() == null );
-				if (lastNode.getOsName() != null) {
+				lEquals = lEquals && ( lastNode.getNodeOsInfo().getOsName() == null );
+				if (lastNode.getNodeOsInfo().getOsName() != null) {
 					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.OS.getMessage() + "." + MessageConstant.OS_NAME.getMessage(),
 							MessageConstant.EXISTENT.getMessage(),
 							MessageConstant.NONEXISTENT.getMessage());
 				}
 			} else {
-				lEquals = lEquals && nodeInfo.getOsName().equals( lastNode.getOsName() );
-				if (nodeInfo.getOsName().equals( lastNode.getOsName() ) == false ) {
+				lEquals = lEquals && nodeInfo.getNodeOsInfo().getOsName().equals( lastNode.getNodeOsInfo().getOsName() );
+				if (nodeInfo.getNodeOsInfo().getOsName().equals( lastNode.getNodeOsInfo().getOsName() ) == false ) {
 					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.OS.getMessage() + "." + MessageConstant.OS_NAME.getMessage(),
-							lastNode.getOsName(),
-							nodeInfo.getOsName());
+							lastNode.getNodeOsInfo().getOsName(),
+							nodeInfo.getNodeOsInfo().getOsName());
 				}
 			}
-			if( nodeInfo.getOsRelease() == null )
+			if( nodeInfo.getNodeOsInfo().getOsRelease() == null )
 			{
-				lEquals = lEquals && ( lastNode.getOsRelease() == null );
-				if (lastNode.getOsRelease() != null) {
+				lEquals = lEquals && ( lastNode.getNodeOsInfo().getOsRelease() == null );
+				if (lastNode.getNodeOsInfo().getOsRelease() != null) {
 					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.OS.getMessage() + "." + MessageConstant.OS_RELEASE.getMessage(),
 							MessageConstant.EXISTENT.getMessage(),
 							MessageConstant.NONEXISTENT.getMessage());
 				}
 			} else {
-				lEquals = lEquals && nodeInfo.getOsRelease().equals( lastNode.getOsRelease() );
-				if (nodeInfo.getOsRelease().equals( lastNode.getOsRelease() ) == false ) {
+				lEquals = lEquals && nodeInfo.getNodeOsInfo().getOsRelease().equals( lastNode.getNodeOsInfo().getOsRelease() );
+				if (nodeInfo.getNodeOsInfo().getOsRelease().equals( lastNode.getNodeOsInfo().getOsRelease() ) == false ) {
 					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.OS.getMessage() + "." + MessageConstant.OS_RELEASE.getMessage(),
-							lastNode.getOsRelease(),
-							nodeInfo.getOsRelease());
+							lastNode.getNodeOsInfo().getOsRelease(),
+							nodeInfo.getNodeOsInfo().getOsRelease());
 				}
 			}
-			if( nodeInfo.getOsVersion() == null )
+			if( nodeInfo.getNodeOsInfo().getOsVersion() == null )
 			{
-				lEquals = lEquals && ( lastNode.getOsVersion() == null );
-				if (lastNode.getOsVersion() != null) {
+				lEquals = lEquals && ( lastNode.getNodeOsInfo().getOsVersion() == null );
+				if (lastNode.getNodeOsInfo().getOsVersion() != null) {
 					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.OS.getMessage() + "." + MessageConstant.OS_VERSION.getMessage(),
 							MessageConstant.EXISTENT.getMessage(),
 							MessageConstant.NONEXISTENT.getMessage());
 				}
 			} else {
-				lEquals = lEquals && nodeInfo.getOsVersion().equals( lastNode.getOsVersion() );
-				if (nodeInfo.getOsVersion().equals( lastNode.getOsVersion() ) == false ) {
+				lEquals = lEquals && nodeInfo.getNodeOsInfo().getOsVersion().equals( lastNode.getNodeOsInfo().getOsVersion() );
+				if (nodeInfo.getNodeOsInfo().getOsVersion().equals( lastNode.getNodeOsInfo().getOsVersion() ) == false ) {
 					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.OS.getMessage() + "." + MessageConstant.OS_VERSION.getMessage(),
-							lastNode.getOsVersion(),
-							nodeInfo.getOsVersion());
+							lastNode.getNodeOsInfo().getOsVersion(),
+							nodeInfo.getNodeOsInfo().getOsVersion());
 				}
 			}
-			if( nodeInfo.getCharacterSet() == null )
+			if( nodeInfo.getNodeOsInfo().getCharacterSet() == null )
 			{
-				lEquals = lEquals && ( lastNode.getCharacterSet() == null );
-				if (lastNode.getCharacterSet() != null) {
+				lEquals = lEquals && ( lastNode.getNodeOsInfo().getCharacterSet() == null );
+				if (lastNode.getNodeOsInfo().getCharacterSet() != null) {
 					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.OS.getMessage() + "." + MessageConstant.CHARACTER_SET.getMessage(),
 							MessageConstant.EXISTENT.getMessage(),
 							MessageConstant.NONEXISTENT.getMessage());
 				}
 			} else {
-				lEquals = lEquals && nodeInfo.getCharacterSet().equals( lastNode.getCharacterSet() );
-				if (nodeInfo.getCharacterSet().equals( lastNode.getCharacterSet() ) == false ) {
+				lEquals = lEquals && nodeInfo.getNodeOsInfo().getCharacterSet().equals( lastNode.getNodeOsInfo().getCharacterSet() );
+				if (nodeInfo.getNodeOsInfo().getCharacterSet().equals( lastNode.getNodeOsInfo().getCharacterSet() ) == false ) {
 					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.OS.getMessage() + "." + MessageConstant.CHARACTER_SET.getMessage(),
-							lastNode.getCharacterSet(),
-							nodeInfo.getCharacterSet());
+							lastNode.getNodeOsInfo().getCharacterSet(),
+							nodeInfo.getNodeOsInfo().getCharacterSet());
 				}
 			}
 		}

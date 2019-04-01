@@ -29,6 +29,7 @@ import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.maintenance.factory.MaintenanceEvent;
 import com.clustercontrol.maintenance.factory.MaintenanceJob;
+import com.clustercontrol.maintenance.factory.MaintenanceNodeConfigSettingHistory;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryDay;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryHour;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryMonth;
@@ -835,6 +836,49 @@ public class MaintenanceControllerBean {
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteCollectStringData() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+
+		return ret;
+	}
+
+	/**
+	 * 構成情報履歴を削除します。
+	 * 
+	 * @param dataRetentionPeriod 保存期間(日)
+	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
+	 * @param ownerRoleId オーナーロールID
+	 * @return 削除件数
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * 
+	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
+	 * 
+	 */
+	public int deleteNodeConfigSettingHistory(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+		m_log.debug("deleteNodeConfigSettingHistory() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
+		JpaTransactionManager jtm = null;
+		int ret = 0;
+		try{
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			
+			
+			ret = new MaintenanceNodeConfigSettingHistory().delete(dataRetentionPeriod, status, ownerRoleId);
+			
+			jtm.commit();
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch(Exception e){
+			m_log.warn("deleteNodeConfigSettingHistory() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
 				jtm.rollback();

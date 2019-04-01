@@ -102,27 +102,15 @@ public class RepositoryControllerBeanWrapper extends RepositoryControllerBean {
 		}
 	}
 
-	public void addScope(String parentFacilityId, ScopeInfo property, int displaySortOrder)
+	public void addScope(String parentFacilityId, ScopeInfo info, int displaySortOrder)
 			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.addScope(parentFacilityId, property, displaySortOrder);
+				super.addScope(parentFacilityId, info, displaySortOrder);
 				scope.complete();
 			}
 		} else {
-			super.addScope(parentFacilityId, property, displaySortOrder);
-		}
-	}
-
-	public void addScope(String parentFacilityId, ScopeInfo info, int displaySortOrder, boolean topicSendFlg)
-			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
-		if (autoCommit) {
-			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.addScope(parentFacilityId, info, displaySortOrder, topicSendFlg);
-				scope.complete();
-			}
-		} else {
-			super.addScope(parentFacilityId, info, displaySortOrder, topicSendFlg);
+			super.addScope(parentFacilityId, info, displaySortOrder);
 		}
 	}
 
@@ -181,18 +169,6 @@ public class RepositoryControllerBeanWrapper extends RepositoryControllerBean {
 			}
 		} else {
 			super.releaseNodeScope(parentFacilityId, facilityIds);
-		}
-	}
-
-	public void releaseNodeScope(String parentFacilityId, String[] facilityIds, boolean topicSendFlg)
-			throws InvalidSetting, InvalidRole, HinemosUnknown {
-		if (autoCommit) {
-			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.releaseNodeScope(parentFacilityId, facilityIds, topicSendFlg);
-				scope.complete();
-			}
-		} else {
-			super.releaseNodeScope(parentFacilityId, facilityIds, topicSendFlg);
 		}
 	}
 

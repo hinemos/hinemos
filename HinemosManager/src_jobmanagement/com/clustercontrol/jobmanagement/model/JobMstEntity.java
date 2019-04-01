@@ -183,6 +183,10 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	private Integer monitorWaitTime;
 	private Integer monitorWaitEndValue;
 
+	// ジョブ同時実行制御キュー
+	private Boolean queueFlg;
+	private String queueId;
+	
 	@Deprecated
 	public JobMstEntity() {
 	}
@@ -1369,6 +1373,23 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 
 	public void setMonitorWaitEndValue(Integer monitorWaitEndValue) {
 		this.monitorWaitEndValue = monitorWaitEndValue;
+	}
+
+	@Column(name="queue_flg")
+	public Boolean getQueueFlg() {
+		return queueFlg;
+	}
+
+	public void setQueueFlg(Boolean queueFlg) {
+		this.queueFlg = queueFlg;
+	}
+
+	@Column(name="queue_id")
+	public String getQueueId() {
+		return queueId;
+	}
+	public void setQueueId(String queueId) {
+		this.queueId = queueId;
 	}
 
 	//bi-directional many-to-one association to JobParamMstEntity

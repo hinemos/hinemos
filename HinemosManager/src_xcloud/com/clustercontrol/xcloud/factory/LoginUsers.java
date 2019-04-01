@@ -205,7 +205,6 @@ public class LoginUsers implements ILoginUsers {
 					Class<? extends CredentialBaseEntity> credentialType = option.getCloudSpec().getSupportedCredential();
 	
 					if (!credentialType.isAssignableFrom(entity.getClass())) {
-						// TODO
 						throw new InternalManagerError();
 					}
 					CredentialBaseEntity removed = user.getCredential();

@@ -23,11 +23,16 @@ import org.eclipse.ui.IPartListener2;
 import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPartReference;
+import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.internal.ViewPluginAction;
 import org.eclipse.ui.part.ViewPart;
 
+import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.bean.DefaultLayoutSettingManager.ViewLayout;
 import com.clustercontrol.util.FocusUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 
@@ -42,6 +47,10 @@ import com.clustercontrol.util.WidgetTestUtil;
 public abstract class CommonViewPart extends ViewPart {
 	private static Log m_log = LogFactory.getLog(CommonViewPart.class); 
 	
+	//ビューレイアウト情報
+	private ViewLayout defaultViewLayout = null;
+	
+	
 	@Override
 	public void init( IViewSite site ) throws PartInitException{
 		super.init( site );
@@ -55,6 +64,10 @@ public abstract class CommonViewPart extends ViewPart {
 		widget = ((MenuManager)getViewSite().getActionBars().getMenuManager()).getMenu();
 		if( null != widget ){
 			WidgetTestUtil.setTestId( this, null, widget );
+		}
+		
+		if (this.isDefaultLayoutView()) {
+			defaultViewLayout = ClusterControlPlugin.getDefault().getDefaultLayoutSettingManager().getViewLayout(this.getClass().getSimpleName());
 		}
 	}
 
@@ -141,7 +154,6 @@ public abstract class CommonViewPart extends ViewPart {
 	 * @see org.eclipse.core.runtime.IAdaptable#getAdapter(java.lang.Class)
 	 * @since 1.0.0
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public Object getAdapter(@SuppressWarnings("rawtypes") Class cls) {
 		if (cls.isInstance(this)) {
@@ -183,5 +195,65 @@ public abstract class CommonViewPart extends ViewPart {
 		ActionContributionItem ci = (ActionContributionItem)getViewSite().getActionBars().getToolBarManager().find(actionID);
 		ViewPluginAction action =  (ViewPluginAction)ci.getAction();
 		action.selectionChanged(selection);
+	}
+
+	/**
+	 * コマンドを実行します。
+	 * 
+	 * @param commandId 実行するコマンドのID。
+	 */
+	protected void executeCommand(String commandId) {
+		IWorkbenchPartSite site = getSite();
+		if (site == null) {
+			m_log.info("executeCommand: WorkbenchPartSite not found.");
+			return;
+		}
+		IHandlerService service = (IHandlerService) site.getService(IHandlerService.class);
+		if (service == null) {
+			m_log.info("executeCommand: HandlerService not found.");
+			return;
+		}
+		try {
+			service.executeCommand(commandId, null);
+		} catch (Exception e) {
+			m_log.warn("executeCommand: Exception. ", e);
+		}
+	}
+
+	/**
+	 * コマンドに紐付いた要素をリフレッシュします。
+	 * 
+	 * @param commandIds 対象のコマンドのID。
+	 */
+	protected void refreshCommands(String... commandIds) {
+		IWorkbenchPartSite site = getSite();
+		if (site == null) {
+			m_log.info("executeCommand: WorkbenchPartSite not found.");
+			return;
+		}
+		ICommandService service = (ICommandService) site.getService(ICommandService.class);
+		if (service == null) {
+			m_log.info("refreshCommands: CommandService not found.");
+			return;
+		}
+		for (String id : commandIds) {
+			service.refreshElements(id, null);
+		}
+
+		// Update ToolBar after elements refreshed
+		// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.
+		getViewSite().getActionBars().updateActionBars();
+		getViewSite().getActionBars().getToolBarManager().update(false);
+	}
+
+	/**
+	 * デフォルトレイアウトカスタマイズ対応ビューの場合、trueを返却
+	 */
+	public boolean isDefaultLayoutView() {
+		return false;
+	}
+	
+	protected ViewLayout getDefaultViewLayout() {
+		return this.defaultViewLayout;
 	}
 }

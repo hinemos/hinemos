@@ -22,7 +22,7 @@
 				</xs:annotation>
 			</xs:element>
 			<xs:element name="schemaRevision" type="xs:string"
-				minOccurs="0" maxOccurs="1" default="1">
+				minOccurs="0" maxOccurs="1" default="2">
 				<xs:annotation>
 					<xs:documentation>データ型のバージョン</xs:documentation>
 				</xs:annotation>
@@ -294,7 +294,7 @@
 					use="optional">
 					<xs:annotation>
 						<xs:documentation>
-							情報：イベント通知状態です。 {確認済み(1)、未確認(0)}のどちらかを指定します。}
+							情報：イベント通知状態です。 {確認済み(1)、未確認(0)、確認中(2)}のどちらかを指定します。}
 						</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
@@ -302,7 +302,7 @@
 					use="optional">
 					<xs:annotation>
 						<xs:documentation>
-							警告：イベント通知状態です。 {確認済み(1)、未確認(0)}のどちらかを指定します。}
+							警告：イベント通知状態です。 {確認済み(1)、未確認(0)、確認中(2)}のどちらかを指定します。}
 						</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
@@ -310,7 +310,7 @@
 					use="optional">
 					<xs:annotation>
 						<xs:documentation>
-							危険：イベント通知状態です。 {確認済み(1)、未確認(0)}のどちらかを指定します。}
+							危険：イベント通知状態です。 {確認済み(1)、未確認(0)、確認中(2)}のどちらかを指定します。}
 						</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
@@ -318,7 +318,7 @@
 					use="optional">
 					<xs:annotation>
 						<xs:documentation>
-							不明：イベント通知状態です。 {確認済み(1)、未確認(0)}のどちらかを指定します。}
+							不明：イベント通知状態です。 {確認済み(1)、未確認(0)、確認中(2)}のどちらかを指定します。}
 						</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>

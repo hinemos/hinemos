@@ -9,8 +9,10 @@
 package com.clustercontrol.ws.repository;
 
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -26,12 +28,15 @@ import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.FacilityDuplicate;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NodeConfigSettingDuplicate;
+import com.clustercontrol.fault.NodeConfigSettingNotFound;
 import com.clustercontrol.fault.SnmpResponseError;
 import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.repository.bean.AgentStatusInfo;
@@ -40,8 +45,10 @@ import com.clustercontrol.repository.bean.NodeInfoDeviceSearch;
 import com.clustercontrol.repository.bean.RepositoryTableInfo;
 import com.clustercontrol.repository.factory.NodeSearcher;
 import com.clustercontrol.repository.model.FacilityInfo;
+import com.clustercontrol.repository.model.NodeConfigSettingInfo;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
+import com.clustercontrol.repository.session.NodeConfigSettingControllerBean;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.RepositoryUtil;
 import com.clustercontrol.util.HinemosTime;
@@ -294,13 +301,23 @@ public class RepositoryEndpoint {
 	/**
 	 * ノードの詳細プロパティを取得します。<BR>
 	 *
-	 * faciliyIDで指定されるノードの詳細プロパティを取得します。<BR>
+	 * faciliyIDで指定されるノードのプロパティを取得します。<BR>
+	 * 以下の詳細情報を含む
+	 * ・OS情報
+	 * ・汎用デバイス情報
+	 * ・CPU情報
+	 * ・メモリ情報
+	 * ・NIC情報
+	 * ・ディスク情報
+	 * ・ファイルシステム情報
+	 * ・ホスト名情報
+	 * ・備考情報
+	 * ・ノード変数情報
 	 *
 	 * RepositoryRead権限が必要
 	 *
 	 * @param facilityId ファシリティID
-	 * @param locale クライアントのロケール
-	 * @return ノード情報プロパティ
+	 * @return ノード詳細プロパティ
 	 * @throws FacilityNotFound
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
@@ -321,6 +338,80 @@ public class RepositoryEndpoint {
 				+ msg.toString());
 
 		return new RepositoryControllerBean().getNode(facilityId);
+	}
+
+
+	/**
+	 * ノードの詳細プロパティを取得します。<BR>
+	 *
+	 * faciliyIDで指定されるノードのプロパティを取得します。<BR>
+	 *
+	 * RepositoryRead権限が必要
+	 *
+	 * @param facilityId ファシリティID
+	 * @return ノード詳細プロパティ
+	 * @throws FacilityNotFound
+	 * @throws HinemosUnknown
+	 * @throws InvalidRole
+	 * @throws InvalidUserPass
+	 */
+	public NodeInfo getNodeFull(String facilityId) throws FacilityNotFound, InvalidUserPass, InvalidRole, HinemosUnknown {
+		m_log.debug("getNodeFull : facilityId=" + facilityId);
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		StringBuffer msg = new StringBuffer();
+		msg.append(", FacilityID=");
+		msg.append(facilityId);
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Get, Method=getNodeFull, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+
+		return new RepositoryControllerBean().getNodeFull(facilityId);
+	}
+
+
+	/**
+	 * ノードの詳細プロパティを取得します。<BR>
+	 *
+	 * 対象日時時点のノードのプロパティを取得します。<BR>
+	 *
+	 * RepositoryRead権限が必要
+	 *
+	 * @param facilityId ファシリティID
+	 * @param targetDatetime 対象日時
+	 * @param nodeFilterInfo 構成情報検索条件
+	 * @return ノード詳細プロパティ
+	 * @throws FacilityNotFound
+	 * @throws HinemosUnknown
+	 * @throws InvalidRole
+	 * @throws InvalidUserPass
+	 */
+	public NodeInfo getNodeFullByTargetDatetime(String facilityId, Long targetDatetime, NodeInfo nodeFilterInfo) throws FacilityNotFound, InvalidUserPass, InvalidRole, HinemosUnknown {
+		m_log.debug("getNodeFullByTargetDatetime : facilityId=" + facilityId);
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		StringBuffer msg = new StringBuffer();
+		msg.append(", FacilityID=");
+		msg.append(facilityId);
+		msg.append(", TargetDatetime=");
+		if (targetDatetime == null) {
+			msg.append("null");
+		} else {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.US);
+			sdf.setTimeZone(HinemosTime.getTimeZone());
+			msg.append(sdf.format(new Date(targetDatetime)));
+		}
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Get, Method=getNodeFullByTargetDatetime, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+
+		return new RepositoryControllerBean().getNodeFull(facilityId, targetDatetime, nodeFilterInfo);
 	}
 
 
@@ -1093,7 +1184,7 @@ public class RepositoryEndpoint {
 		msg.append(validFlag);
 
 		try {
-			NodeInfo info = new RepositoryControllerBean().getNode(facilityId);
+			NodeInfo info = new RepositoryControllerBean().getNodeFull(facilityId);
 			info.setValid(validFlag);
 			new RepositoryControllerBean().modifyNode(info);
 		} catch (Exception e) {
@@ -1163,7 +1254,7 @@ public class RepositoryEndpoint {
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
 	 */
-	public ArrayList<AgentStatusInfo> getAgentStatusList() throws InvalidUserPass, InvalidRole, HinemosUnknown {
+	public List<AgentStatusInfo> getAgentStatusList() throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("getAgentStatusList : ");
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
 		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.READ));
@@ -1177,7 +1268,7 @@ public class RepositoryEndpoint {
 	}
 
 	/**
-	 * エージェントを再起動、アップデートします。<BR>
+	 * エージェントを再起動 or アップデートします。
 	 *
 	 * RepositoryExecute権限が必要
 	 *
@@ -1245,7 +1336,9 @@ public class RepositoryEndpoint {
 		}
 
 		if (nodeInfo != null && nodeInfo.containsKey(facilityId)) {
-			Map<String, String> nodeParameter = RepositoryUtil.createNodeParameter(nodeInfo.get(facilityId));
+			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+			ArrayList<String> inKeyList = StringBinder.getKeyList(replaceObject, maxReplaceWord);
+			Map<String, String> nodeParameter = RepositoryUtil.createNodeParameter(nodeInfo.get(facilityId), inKeyList);
 			StringBinder strbinder = new StringBinder(nodeParameter);
 			ret = strbinder.bindParam(replaceObject);
 
@@ -1323,5 +1416,267 @@ public class RepositoryEndpoint {
 		return bean.searchNode(ownerRoleId, ipAddressFrom, ipAddressTo, port,
 				community, version, facilityID, securityLevel, user, authPass,
 				privPass, authProtocol, privProtocol);
+	}
+
+
+	/**
+	 * 対象構成情報を新規に追加します。<BR>
+	 *
+	 * RepositoryAdd権限が必要
+	 *
+	 * @param info 追加する対象構成情報
+	 * @throws NodeConfigSettingDuplicate
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InvalidSetting
+	 */
+	public void addNodeConfigSettingInfo(NodeConfigSettingInfo info) 
+			throws NodeConfigSettingDuplicate, InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
+		m_log.debug("addNodeConfigSettingInfo : nodeConfigSettingInfo=" + info);
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.ADD));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		StringBuffer msg = new StringBuffer();
+		if(info != null){
+			msg.append(", SettingID=");
+			msg.append(info.getSettingId());
+		}
+
+		try {
+			long startTime = HinemosTime.currentTimeMillis();
+			new NodeConfigSettingControllerBean().addNodeConfigSettingInfo(info);
+			m_log.info(String.format("addNodeConfigSettingInfo: %dms", HinemosTime.currentTimeMillis() - startTime));
+		} catch (Exception e) {
+			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Add NodeConfigSettingInfo Failed, Method=addNodeConfigSettingInfo, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx)
+					+ msg.toString());
+			throw e;
+		}
+		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Add NodeConfigSettingInfo, Method=addNodeConfigSettingInfo, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+	}
+
+
+	/**
+	 * 対象構成情報を変更します。<BR>
+	 *
+	 * RepositoryWrite権限が必要
+	 *
+	 * @param info　変更する対象構成情報
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InvalidSetting
+	 */
+	public void modifyNodeConfigSettingInfo(NodeConfigSettingInfo info)
+			throws InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
+		m_log.debug("modifyNodeConfigSettingInfo : nodeConfigSettingInfo=" + info);
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.MODIFY));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		StringBuffer msg = new StringBuffer();
+		if(info != null){
+			msg.append(", SettingID=");
+			msg.append(info.getSettingId());
+		}
+
+		try {
+			new NodeConfigSettingControllerBean().modifyNodeConfigSettingInfo(info);
+		} catch (Exception e) {
+			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Change NodeConfigSettingInfo Failed, Method=modifyNodeConfigSettingInfo, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx)
+					+ msg.toString());
+			throw e;
+		}
+		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Change NodeConfigSettingInfo, Method=modifyNodeConfigSettingInfo, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+	}
+
+
+	/**
+	 * 対象構成情報を削除します。<BR>
+	 *
+	 * settingIDで指定されたノードをリポジトリから削除します。
+	 *
+	 * RepositoryWrite権限が必要
+	 *
+	 * @param settingIds SettingIdの配列
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public void deleteNodeConfigSettingInfo(String[] settingIds)
+			throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		m_log.debug("deleteNodeConfigSettingInfo : settingId=" + Arrays.toString(settingIds));
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.MODIFY));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+		StringBuffer msg = new StringBuffer();
+
+		// 認証済み操作ログ
+		msg.append(", SettingID=");
+		msg.append(Arrays.toString(settingIds));
+
+		try {
+			new NodeConfigSettingControllerBean().deleteNodeConfigSettingInfo(settingIds);
+		} catch (Exception e) {
+			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Delete NodeConfigSettingInfo Failed, Method=deleteNodeConfigSettingInfo, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx)
+					+ msg.toString());
+			throw e;
+		}
+		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Delete NodeConfigSettingInfo, Method=deleteNodeConfigSettingInfo, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+	}
+
+
+	/**
+	 * 対象構成情報の収集を有効化/無効化します。<BR>
+	 *
+	 * RepositoryWrite権限が必要
+	 *
+	 * @param settingId　変更する対象構成ID
+	 * @param validFlag　true:有効、false:無効
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InvalidSetting
+	 * @throws NodeConfigSettingNotFound
+	 */
+	public void setStatusNodeConfigSetting(String settingId, boolean validFlag)
+			throws InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting, NodeConfigSettingNotFound {
+		m_log.debug("setStatusNodeConfigSetting : settingId=" + settingId + ", validFlag" + validFlag);
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.MODIFY));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		StringBuffer msg = new StringBuffer();
+		msg.append(", SettingId=");
+		msg.append(settingId);
+		msg.append(", ValidFlag=");
+		msg.append(validFlag);
+
+		try {
+			new NodeConfigSettingControllerBean().setStatusNodeConfigSetting(settingId, validFlag);
+		} catch (Exception e) {
+			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Change  Valid Failed, Method=setStatusNodeConfigSetting, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx)
+					+ msg.toString());
+			throw e;
+		}
+		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Change Valid, Method=setStatusNodeConfigSetting, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+	}
+
+
+	/**
+	 * 対象構成情報を取得します。<BR>
+	 *
+	 * settingIDで指定される対象構成情報を取得します。<BR>
+	 *
+	 * RepositoryRead権限が必要
+	 *
+	 * @param settingId 対象構成情報ID
+	 * @return 対象構成情報
+	 * @throws NodeConfigSettingNotFound
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public NodeConfigSettingInfo getNodeConfigSettingInfo(String settingId)
+			throws NodeConfigSettingNotFound, InvalidUserPass, InvalidRole, HinemosUnknown {
+		m_log.debug("getNodeConfigSettingInfo : settingId=" + settingId);
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		StringBuffer msg = new StringBuffer();
+		msg.append(", SettingID=");
+		msg.append(settingId);
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Get, Method=getNodeConfigSettingInfo, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+		
+		return new NodeConfigSettingControllerBean().getNodeConfigSettingInfo(settingId);
+	}
+
+
+	/**
+	 * 対象構成情報一覧を取得します。<BR>
+	 *
+	 * 対象構成情報を取得します。<BR>
+	 *
+	 * RepositoryRead権限が必要
+	 *
+	 * @return 対象構成情報一覧
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public List<NodeConfigSettingInfo> getNodeConfigSettingList()
+			throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		m_log.debug("getNodeConfigSettingList");
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Get, Method=getNodeConfigSettingList, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx));
+		
+		return new NodeConfigSettingControllerBean().getNodeConfigSettingList();
+	}
+
+	/**
+	 * 引数で渡された設定に従い、構成情報収集を即時実行します。<BR>
+	 *
+	 * RepositoryExec権限が必要
+	 *
+	 * @param settingId 構成情報設定ID
+	 * @throws HinemosUnknown
+	 * @throws InvalidRole
+	 * @throws InvalidUserPass
+	 */
+	public Long runCollectNodeConfig(String settingId) throws  FacilityNotFound, InvalidUserPass, InvalidRole, NodeConfigSettingNotFound, HinemosUnknown {
+		m_log.debug("runCollectNodeConfig");
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.REPOSITORY, SystemPrivilegeMode.EXEC));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_REPOSITORY + " Get, Method=runCollectNodeConfig, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx));
+		StringBuffer msg = new StringBuffer();
+		if(settingId != null){
+			msg.append(", SettingID=");
+			msg.append(settingId);
+		}
+
+		Long loadDistributionTime = null;
+		try {
+			long startTime = HinemosTime.currentTimeMillis();
+			loadDistributionTime = new NodeConfigSettingControllerBean().runCollectNodeConfig(settingId);
+			m_log.info(String.format("runCollectNodeConfig: %dms", HinemosTime.currentTimeMillis() - startTime));
+		} catch (Exception e) {
+			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_REPOSITORY
+					+ " Run to Collect NodeConfigInfo Failed, Method=runCollectNodeConfig, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx) + msg.toString());
+			throw e;
+		}
+		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_REPOSITORY
+				+ " Run to Collect NodeConfigInfo , Method=runCollectNodeConfig, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx) + msg.toString());
+		return loadDistributionTime;
 	}
 }

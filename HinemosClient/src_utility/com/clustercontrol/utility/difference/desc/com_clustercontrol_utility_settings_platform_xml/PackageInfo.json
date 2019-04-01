@@ -1,0 +1,54 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+	
+	]},
+
+	{
+	"propName":"packageId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"packageName",
+	"annotations":[
+		{"type":"Column", "columnName":"PackageInfo_packageName"}
+	]},
+
+	{
+	"propName":"version",
+	"annotations":[
+		{"type":"Column", "columnName":"PackageInfo_version"}
+	]},
+
+	{
+	"propName":"release",
+	"annotations":[
+		{"type":"Column", "columnName":"PackageInfo_release"}
+	]},
+
+	{
+	"propName":"installDate",
+	"annotations":[
+		{"type":"Column", "columnName":"PackageInfo_installDate"}
+	]},
+
+	{
+	"propName":"vendor",
+	"annotations":[
+		{"type":"Column", "columnName":"PackageInfo_vendor"}
+	]},
+
+	{
+	"propName":"architecture",
+	"annotations":[
+		{"type":"Column", "columnName":"PackageInfo_architecture"}
+	]}
+]
+}

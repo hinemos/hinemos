@@ -23,6 +23,17 @@
 				property="eclipse_jar_available"/>
 		<antcall target="refresh" />
 	</target>
+	<target name="allfortest">
+		<ant antfile="build.xml" dir="../HinemosCommon" target="all" inheritall="false" />
+		<ant antfile="build.xml" dir="../HinemosManager" target="allfortest" inheritall="false" />
+		<ant antfile="build.xml" dir="../HinemosWorkers" target="all" inheritall="false" />
+		<!-- Prerequisite for building Client (Utility XML schema) -->
+		<ant antfile="build_client.xml" dir="../HinemosClient" target="generate-schema" inheritall="false" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
 	
 	<target name="all_without_interface">
 		<ant antfile="build.xml" dir="../HinemosCommon" target="all" inheritall="false" />

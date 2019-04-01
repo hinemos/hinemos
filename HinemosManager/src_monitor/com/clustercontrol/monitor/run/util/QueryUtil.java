@@ -9,6 +9,8 @@
 package com.clustercontrol.monitor.run.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.persistence.TypedQuery;
@@ -266,6 +268,18 @@ public class QueryUtil {
 			List<MonitorStringValueInfo> monitorStringValueInfoList
 			= em.createNamedQuery("MonitorStringValueInfo.findByMonitorId", MonitorStringValueInfo.class, mode)
 			.setParameter("monitorId", monitorId).getResultList();
+
+			// sort
+			if (monitorStringValueInfoList != null && monitorStringValueInfoList.size() > 0) {
+				Collections.sort(monitorStringValueInfoList, new Comparator<MonitorStringValueInfo>() {
+					@Override
+					public int compare(MonitorStringValueInfo o1, MonitorStringValueInfo o2) {
+						return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
+					}
+				});
+				
+			}
+
 			return monitorStringValueInfoList;
 		}
 	}

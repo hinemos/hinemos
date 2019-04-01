@@ -284,7 +284,7 @@ public class DatasourceJMXLineGraph extends DatasourceBase{
 					}
 				}
 			}
-		} catch (Exception e) {
+		} catch (RuntimeException | MonitorNotFound | HinemosDbTimeout e) {
 			m_log.error(e, e);
 		}
 

@@ -15,6 +15,7 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.clustercontrol.repository.view.NodeAttributeView;
+import com.clustercontrol.repository.view.NodeConfigSettingListView;
 import com.clustercontrol.repository.view.NodeListView;
 import com.clustercontrol.repository.view.NodeScopeView;
 import com.clustercontrol.repository.view.ScopeListView;
@@ -53,6 +54,8 @@ public class RefreshAction extends AbstractHandler {
 			((NodeListView) this.viewPart).update();
 		} else if (this.viewPart instanceof NodeAttributeView) {
 			((NodeAttributeView) this.viewPart).update();
+		} else if (this.viewPart instanceof NodeConfigSettingListView) {
+			((NodeConfigSettingListView) this.viewPart).update();
 		} else if (this.viewPart instanceof NodeScopeView) {
 			((NodeScopeView) this.viewPart).update();
 		} else if (this.viewPart instanceof ScopeListView) {

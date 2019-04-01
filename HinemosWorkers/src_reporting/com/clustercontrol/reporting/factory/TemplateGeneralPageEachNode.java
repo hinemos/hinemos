@@ -135,7 +135,7 @@ public class TemplateGeneralPageEachNode extends TemplateBase {
 			return getReportMonth(pageOffset);
 		}
 		else if (outputPeriodType.equals(ReportingConstant.OUTPUT_TYPE_WEEK)) {
-			// TODO 日曜日スタートか、月曜日スタートで週間情報を出力したい
+			// 日曜日スタートか、月曜日スタートで週間情報を出力したい
 		}
 		else if (outputPeriodType.equals(ReportingConstant.OUTPUT_TYPE_DAY)) {
 			return getReportDaily(pageOffset);

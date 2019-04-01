@@ -27,13 +27,14 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.analytics.util.OperatorChangeUtil;
 import com.clustercontrol.analytics.util.OperatorCommonUtil;
 import com.clustercontrol.bean.EndStatusConstant;
+import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.ReturnValue;
 import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
-import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
@@ -51,7 +52,6 @@ import com.clustercontrol.jobmanagement.bean.ConditionTypeConstant;
 import com.clustercontrol.jobmanagement.bean.DecisionObjectConstant;
 import com.clustercontrol.jobmanagement.bean.DelayNotifyConstant;
 import com.clustercontrol.jobmanagement.bean.EndStatusCheckConstant;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
 import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.bean.ProcessingMethodConstant;
@@ -62,12 +62,19 @@ import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobStartJobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobStartParamInfoEntity;
+import com.clustercontrol.jobmanagement.queue.JobQueue;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
+import com.clustercontrol.jobmanagement.queue.JobQueueLimitExceededException;
+import com.clustercontrol.jobmanagement.queue.JobQueueNotFoundException;
 import com.clustercontrol.jobmanagement.util.JobSessionChangeDataCache;
 import com.clustercontrol.jobmanagement.util.JobSessionJobUtil;
 import com.clustercontrol.jobmanagement.util.ParameterUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
+import com.clustercontrol.jobmanagement.util.RefreshRunningQueueAfterCommitCallback;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
+import com.clustercontrol.util.apllog.AplLogger;
 
 public class JobSessionJobImpl {
 	/** ログ出力のインスタンス */
@@ -255,106 +262,255 @@ public class JobSessionJobImpl {
 	/**
 	 * ジョブ開始処理メイン1を行います。
 	 *
+	 * "start"という名前ですが、実際は単純に開始していないジョブを開始するだけでなく、
+	 * 実行中ジョブの終了遅延チェックなどの検査的な処理も行います。
+	 * 
 	 * @param sessionId
 	 * @param jobId
 	 * @throws JobInfoNotFound
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
-	 * @throws FacilityNotFound 
+	 * @throws FacilityNotFound
 	 */
-	public void startJob(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, HinemosUnknown, InvalidRole, FacilityNotFound {
+	public void startJob(String sessionId, String jobunitId, String jobId)
+			throws JobInfoNotFound, HinemosUnknown, InvalidRole, FacilityNotFound {
 		m_log.debug("startJob() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
-		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 
-		//実行状態チェック
-		if(sessionJob.getStatus() == StatusConstant.TYPE_WAIT){
-			//待機中の場合
-			//開始条件とカレンダをチェックする
-			if(checkWaitCondition(sessionId, jobunitId, jobId) &&
-					checkCalendar(sessionId, jobunitId, jobId) &&
-					sessionJob.getStatus() == StatusConstant.TYPE_WAIT){
-				//実行状態に遷移した場合は、1分後に終了遅延のチェックをする必要がある。
+		// 実行状態によって処理分岐する
+		switch (sessionJob.getStatus()) {
+		case StatusConstant.TYPE_WAIT:
+			startJobInWait(sessionJob);
+			break;
+		case StatusConstant.TYPE_RUNNING_QUEUE:
+			startJobInRunningQueue(sessionJob);
+			break;
+		case StatusConstant.TYPE_RUNNING:
+			startJobInRunning(sessionJob);
+			break;
+		case StatusConstant.TYPE_SKIP:
+			startJobInSkip(sessionJob);
+			break;
+		default:
+			// NOP
+			break;
+		}
+	}
+
+	// 待機中の場合
+	private void startJobInWait(JobSessionJobEntity sessionJob)
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
+		String sessionId = sessionJob.getId().getSessionId();
+		String jobunitId = sessionJob.getId().getJobunitId();
+		String jobId = sessionJob.getId().getJobId();
+
+		// 開始条件とカレンダをチェックする
+		if (checkWaitCondition(sessionId, jobunitId, jobId) && checkCalendar(sessionId, jobunitId, jobId)) {
+			String queueId = sessionJob.getJobInfoEntity().getQueueIdIfEnabled();
+			// ジョブキューが設定されている場合は、「実行中(キュー待機)」へ遷移
+			if (queueId != null) {
+				try {
+					sessionJob.setStatus(StatusConstant.TYPE_RUNNING_QUEUE);
+					JobQueue queue = Singletons.get(JobQueueContainer.class).get(queueId);
+					queue.add(sessionId, jobunitId, jobId);
+				} catch (JobQueueNotFoundException e) {
+					// キューが削除されている場合、設定されていないものとして、即時に実行中へ遷移させる。
+					m_log.info("startJobInWait: Skip the absent JobQueue. ["
+							+ queueId + "," + sessionId + "," + jobId + "]");
+					changeToRunning(sessionJob);
+				} catch (JobQueueLimitExceededException e) {
+					// キューサイズ超過
+					endByJobQueueLimit(sessionJob, queueId);
+				}
+			}
+			// ジョブキューが設定されていない場合は、「実行中」へ遷移
+			else {
+				changeToRunning(sessionJob);
+			}
+		} else {
+			// 実行できなかった場合は開始遅延チェック
+			if (!checkStartDelayRecursive(sessionId, jobunitId, jobId)) {
+				// 開始遅延の操作が行われなかった場合のみ、
+				// 待機中ジョブがジョブ変数、又はセッション横断待ち条件を持つ場合、
+				// 定期チェックで待ち合わせ解除を確認する
+				if (sessionJob.getWaitCheckFlg() != null && sessionJob.getWaitCheckFlg()) {
+					addWaitCheckJob(sessionId, new String[] { jobunitId, jobId });
+				}
+			}
+		}
+	}
+
+	// 実行中(キュー待機)の場合
+	private void startJobInRunningQueue(JobSessionJobEntity sessionJob) throws JobInfoNotFound, InvalidRole {
+		String sessionId = sessionJob.getId().getSessionId();
+		String jobunitId = sessionJob.getId().getJobunitId();
+		String jobId = sessionJob.getId().getJobId();
+
+		// 開始遅延チェックを行い、ステータス遷移した場合はキューから除去する。
+		if (checkStartDelayRecursive(sessionId, jobunitId, jobId)
+				&& sessionJob.getStatus() != StatusConstant.TYPE_RUNNING_QUEUE) {
+			String queueId = sessionJob.getJobInfoEntity().getQueueId(); // 状況的にqueueIdは!null
+			try {
+				JobQueue queue = Singletons.get(JobQueueContainer.class).get(queueId);
+				queue.remove(sessionId, jobunitId, jobId);
+			} catch (JobQueueNotFoundException e) {
+				// キューが存在しないなら、結果として"キューからの除去"という目的は果たせているので、ログだけ出して無視する。
+				m_log.info("startJobInRunningQueue: " + e);
+			}
+			// キュー待機していたということは、既に待ち条件を満たした状態にある。
+			// 開始遅延によりスキップへ遷移した場合は次の定期チェックで終了するように、チェック対象に加える。
+			if (sessionJob.getStatus() == StatusConstant.TYPE_SKIP) {
+				m_log.info("startJobInRunningQueue: Reserve next running check. sessionId=" + sessionId);
 				addForceCheck(sessionId);
-				//実行状態を実行中にする
-				sessionJob.setStatus(StatusConstant.TYPE_RUNNING);
-				//開始・再実行日時を設定
-				sessionJob.setStartDate(HinemosTime.currentTimeMillis());
-				//実行回数をインクリメント
-				sessionJob.setRunCount(sessionJob.getRunCount() + 1);
-				//通知処理
-				new Notice().notify(sessionId, jobunitId, jobId, EndStatusConstant.TYPE_BEGINNING);
-				if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_JOB
-						|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB
-						|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB){
-					//ノードへの実行指示
-					new JobSessionNodeImpl().startNode(sessionId, jobunitId, jobId);
-				}else{
-					//配下のジョブ開始処理（再帰呼び出し）
-					startJob(sessionId, jobunitId, jobId);
-				}
-			} else {
-				//実行できなかった場合は開始遅延チェック
-				Boolean delayCheck = checkStartDelayRecursive(sessionId, jobunitId, jobId);
-				//待機中ジョブがジョブ変数、又はセッション横断待ち条件を持つ場合、
-				//定期チェックで待ち合わせ解除を確認する
-				if(!delayCheck){
-					//開始遅延の操作が行われなかった場合のみ定期チェックに登録する
-					if (sessionJob.getWaitCheckFlg() != null && sessionJob.getWaitCheckFlg()) {
-						addWaitCheckJob(sessionId, new String[] {sessionJob.getId().getJobunitId(), sessionJob.getId().getJobId()});
-					}
-				}
 			}
-		} else if(sessionJob.getStatus() == StatusConstant.TYPE_RUNNING){
-			//実行中の場合
-			if(!checkEndDelay(sessionId, jobunitId, jobId)) {
-				//遅延操作されない場合は、下位のジョブツリーを見に行く。
-				Collection<JobSessionJobEntity> collection =
-						QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
-				for (JobSessionJobEntity execJob : collection){
-					String childJobId = execJob.getId().getJobId();
-					//ジョブ開始処理
-					startJob(sessionId, jobunitId, childJobId);
-				}
+		} else {
+			// 開始遅延の操作が行われなかった場合のみ、
+			// 待機中ジョブがジョブ変数、又はセッション横断待ち条件を持つ場合、
+			// 定期チェックで待ち合わせ解除を確認する
+			if (sessionJob.getWaitCheckFlg() != null && sessionJob.getWaitCheckFlg()) {
+				addWaitCheckJob(sessionId, new String[] { jobunitId, jobId });
 			}
-			if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_JOB
-					|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB
-					|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB){
-				//ノードへの実行指示(終了していたらendJobを実行)
-				// ここはジョブを中断にして、ノード詳細で終了した後に、ジョブの中断解除をしたら、
-				// RUNNINGのままで止まってしまう。
-				// それを回避するために下記の実装を加える。
-				if (new JobSessionNodeImpl().startNode(sessionId, jobunitId, jobId)) {
-					endJob(sessionId, jobunitId, jobId, "", true);
-				}
+		}
+	}
+
+	// 実行中の場合
+	private void startJobInRunning(JobSessionJobEntity sessionJob)
+			throws HinemosUnknown, JobInfoNotFound, InvalidRole, FacilityNotFound {
+		String sessionId = sessionJob.getId().getSessionId();
+		String jobunitId = sessionJob.getId().getJobunitId();
+		String jobId = sessionJob.getId().getJobId();
+
+		// 終了遅延チェック
+		if (!checkEndDelay(sessionId, jobunitId, jobId)) {
+			// 遅延操作されない場合は、下位のジョブツリーを見に行く。
+			Collection<JobSessionJobEntity> children = QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
+			for (JobSessionJobEntity child : children) {
+				startJob(sessionId, jobunitId, child.getId().getJobId());
 			}
-		} else if(sessionJob.getStatus() == StatusConstant.TYPE_SKIP){
-			//スキップの場合
-			//開始条件をチェックする
-			Integer endStatus = 0;
-			Integer endValue = 0;
-			Integer status = 0;
-			JobInfoEntity job = sessionJob.getJobInfoEntity();
-			if (job.getStartDelay().booleanValue() &&
-					job.getStartDelayOperation().booleanValue() &&
-					job.getStartDelayOperationType() == OperationConstant.TYPE_STOP_SKIP) {
-				// 開始遅延によるスキップの場合
-				endStatus = job.getStartDelayOperationEndStatus();
-				endValue = job.getStartDelayOperationEndValue();
-				status = StatusConstant.TYPE_END_START_DELAY;
-			} else {
-				// 制御によるスキップor停止[スキップ]の場合
-				endStatus = job.getSkipEndStatus();
-				endValue = job.getSkipEndValue();
-				status = StatusConstant.TYPE_END_SKIP;
+		}
+
+		// ノードへの実行指示(終了していたらendJobを実行)
+		// ここはジョブを中断にして、ノード詳細で終了した後に、ジョブの中断解除をしたら、
+		// RUNNINGのままで止まってしまう。
+		// それを回避するために下記の実装を加える。
+		if (sessionJob.hasSessionNode()) {
+			if (new JobSessionNodeImpl().startNode(sessionId, jobunitId, jobId)) {
+				endJob(sessionId, jobunitId, jobId, "", true);
 			}
-			if(checkWaitCondition(sessionId, jobunitId, jobId)){
-				//実行状態、終了状態、終了値、終了日時を設定
-				setEndStatus(sessionId, jobunitId, jobId, status, endStatus, endValue, null);
-				//ジョブ終了時関連処理
-				endJob(sessionId, jobunitId, jobId, null, false);
+		}
+	}
+
+	// スキップの場合
+	private void startJobInSkip(JobSessionJobEntity sessionJob)
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
+		String sessionId = sessionJob.getId().getSessionId();
+		String jobunitId = sessionJob.getId().getJobunitId();
+		String jobId = sessionJob.getId().getJobId();
+
+		// 開始条件をチェックする
+		Integer endStatus = 0;
+		Integer endValue = 0;
+		Integer status = 0;
+		JobInfoEntity job = sessionJob.getJobInfoEntity();
+		if (job.getStartDelay().booleanValue() && job.getStartDelayOperation().booleanValue()
+				&& job.getStartDelayOperationType() == OperationConstant.TYPE_STOP_SKIP) {
+			// 開始遅延によるスキップの場合
+			endStatus = job.getStartDelayOperationEndStatus();
+			endValue = job.getStartDelayOperationEndValue();
+			status = StatusConstant.TYPE_END_START_DELAY;
+		} else {
+			// 制御によるスキップor停止[スキップ]の場合
+			endStatus = job.getSkipEndStatus();
+			endValue = job.getSkipEndValue();
+			status = StatusConstant.TYPE_END_SKIP;
+		}
+		if (checkWaitCondition(sessionId, jobunitId, jobId)) {
+			// 実行状態、終了状態、終了値、終了日時を設定
+			setEndStatus(sessionId, jobunitId, jobId, status, endStatus, endValue, null);
+			// ジョブ終了時関連処理
+			endJob(sessionId, jobunitId, jobId, null, false);
+		} else {
+			// 待機中ジョブがジョブ変数、又はセッション横断待ち条件を持つ場合、
+			// 定期チェックで待ち合わせ解除を確認する
+			if (sessionJob.getWaitCheckFlg() != null && sessionJob.getWaitCheckFlg()) {
+				addWaitCheckJob(sessionId, new String[] { jobunitId, jobId });
 			}
+		}
+	}
+
+	/**
+	 * キュー待機状態のジョブを実行開始します。
+	 * <p>
+	 * 本メソッドは、ジョブキュー {@link JobQueue} が使用します。
+	 * ジョブキュー以外が本メソッドを呼び出した場合、ジョブキューが管理しているジョブ実行状況と
+	 * ジョブセッションの実行状態に矛盾が生じます。
+	 * 
+	 * @param sessionId
+	 * @param jobunitId
+	 * @param jobId
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws FacilityNotFound
+	 */
+	public void startQueuedJob(String sessionId, String jobunitId, String jobId)
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
+		m_log.debug("startQueuedJob() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
+
+		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+
+		// 実行状態チェック
+		if (sessionJob.getStatus() != StatusConstant.TYPE_RUNNING_QUEUE) return;
+
+		changeToRunning(sessionJob);
+	}
+	
+	// 実行状態へ遷移
+	private void changeToRunning(JobSessionJobEntity sessionJob)
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
+		String sessionId = sessionJob.getId().getSessionId();
+		String jobunitId = sessionJob.getId().getJobunitId();
+		String jobId = sessionJob.getId().getJobId();
+
+		// 実行状態に遷移した場合は、1分後に終了遅延のチェックをする必要がある。
+		addForceCheck(sessionId);
+		// 実行状態を実行中にする
+		sessionJob.setStatus(StatusConstant.TYPE_RUNNING);
+		// 開始・再実行日時を設定
+		sessionJob.setStartDate(HinemosTime.currentTimeMillis());
+		// 実行回数をインクリメント
+		sessionJob.setRunCount(sessionJob.getRunCount() + 1);
+		// 通知処理
+		new Notice().notify(sessionId, jobunitId, jobId, EndStatusConstant.TYPE_BEGINNING);
+		if (sessionJob.hasSessionNode()) {
+			// ノードへの実行指示
+			new JobSessionNodeImpl().startNode(sessionId, jobunitId, jobId);
+		} else {
+			// 配下のジョブ開始処理 (状態がTYPE_RUNNINGへ変更されている)
+			startJob(sessionId, jobunitId, jobId);
+		}
+	}
+
+	// ジョブキュー超過のため異常終了させる。
+	private void endByJobQueueLimit(JobSessionJobEntity sessionJob, String queueId)
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
+		String sessionId = sessionJob.getId().getSessionId();
+		String jobunitId = sessionJob.getId().getJobunitId();
+		String jobId = sessionJob.getId().getJobId();
+
+		// ジョブ異常終了
+		setEndStatus(sessionId, jobunitId, jobId, StatusConstant.TYPE_END_QUEUE_LIMIT, EndStatusConstant.TYPE_ABNORMAL,
+				sessionJob.getJobInfoEntity().getAbnormalEndValue(), null);
+		endJob(sessionId, jobunitId, jobId, null, false);
+
+		// INTERNALイベント通知
+		try {
+			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.JOB_QUEUE,
+					MessageConstant.MESSAGE_JOBQUEUE_EXCEEDED, new String[] { queueId, sessionId, jobId });
+		} catch (Exception e) {
+			// 通知に失敗したとしても終了処理を中止しないように、例外はここで抑える。
+			m_log.warn("endByJobQueueLimit: Failed to notify InternalEvent.", e);
 		}
 	}
 
@@ -550,7 +706,7 @@ public class JobSessionJobImpl {
 
 			if (jobStartParamInfoEntity.getId().getStartDecisionCondition() == DecisionObjectConstant.EQUAL_NUMERIC) {
 				try {
-					if (checkDecisionValue(decisionValue01, decisionValue02) == 0) {
+					if (compareAsLong(decisionValue01, decisionValue02) == 0) {
 						jobResult.add(true);
 						//OR条件の場合、これ以上ループを回す必要はない
 						if(job.getConditionType() == ConditionTypeConstant.TYPE_OR){
@@ -564,7 +720,7 @@ public class JobSessionJobImpl {
 				}
 			} else if (jobStartParamInfoEntity.getId().getStartDecisionCondition() == DecisionObjectConstant.NOT_EQUAL_NUMERIC) {
 				try {
-					if (checkDecisionValue(decisionValue01, decisionValue02) != 0) {
+					if (compareAsLong(decisionValue01, decisionValue02) != 0) {
 						jobResult.add(true);
 						//OR条件の場合、これ以上ループを回す必要はない
 						if(job.getConditionType() == ConditionTypeConstant.TYPE_OR){
@@ -578,7 +734,7 @@ public class JobSessionJobImpl {
 				}
 			} else if (jobStartParamInfoEntity.getId().getStartDecisionCondition() ==  DecisionObjectConstant.GREATER_THAN) {
 				try {
-					if (checkDecisionValue(decisionValue01, decisionValue02) > 0) {
+					if (compareAsLong(decisionValue01, decisionValue02) > 0) {
 						jobResult.add(true);
 						//OR条件の場合、これ以上ループを回す必要はない
 						if(job.getConditionType() == ConditionTypeConstant.TYPE_OR){
@@ -592,7 +748,7 @@ public class JobSessionJobImpl {
 				}
 			} else if (jobStartParamInfoEntity.getId().getStartDecisionCondition() ==  DecisionObjectConstant.GREATER_THAN_OR_EQUAL_TO) {
 				try {
-					if (checkDecisionValue(decisionValue01, decisionValue02) >= 0) {
+					if (compareAsLong(decisionValue01, decisionValue02) >= 0) {
 						jobResult.add(true);
 						//OR条件の場合、これ以上ループを回す必要はない
 						if(job.getConditionType() == ConditionTypeConstant.TYPE_OR){
@@ -606,7 +762,7 @@ public class JobSessionJobImpl {
 				}
 			} else if (jobStartParamInfoEntity.getId().getStartDecisionCondition() ==  DecisionObjectConstant.LESS_THAN) {
 				try {
-					if (checkDecisionValue(decisionValue01, decisionValue02) < 0) {
+					if (compareAsLong(decisionValue01, decisionValue02) < 0) {
 						jobResult.add(true);
 						//OR条件の場合、これ以上ループを回す必要はない
 						if(job.getConditionType() == ConditionTypeConstant.TYPE_OR){
@@ -620,7 +776,7 @@ public class JobSessionJobImpl {
 				}
 			} else if (jobStartParamInfoEntity.getId().getStartDecisionCondition() ==  DecisionObjectConstant.LESS_THAN_OR_EQUAL_TO) {
 				try {
-					if (checkDecisionValue(decisionValue01, decisionValue02) <= 0) {
+					if (compareAsLong(decisionValue01, decisionValue02) <= 0) {
 						jobResult.add(true);
 						//OR条件の場合、これ以上ループを回す必要はない
 						if(job.getConditionType() == ConditionTypeConstant.TYPE_OR){
@@ -851,15 +1007,16 @@ public class JobSessionJobImpl {
 	 * @throws InvalidRole
 	 * @return true: 遅延あり、false: 遅延なし
 	 */
-	private Boolean checkStartDelayRecursive(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
+	private boolean checkStartDelayRecursive(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
 		m_log.debug("checkStartDelayMain() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
 		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-		Boolean delayCheck = false;
+		boolean delayCheck = false;
 
 		//実行状態チェック
-		if(sessionJob.getStatus() == StatusConstant.TYPE_WAIT){
+		if (sessionJob.getStatus() == StatusConstant.TYPE_WAIT
+				|| sessionJob.getStatus() == StatusConstant.TYPE_RUNNING_QUEUE) {
 			//開始遅延チェック
 			delayCheck = checkStartDelaySub(sessionId, jobunitId, jobId);
 		}
@@ -892,7 +1049,7 @@ public class JobSessionJobImpl {
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
 	 */
-	private Boolean checkStartDelaySub(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
+	private boolean checkStartDelaySub(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
 		m_log.debug("checkStartDelay() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
 		//セッションIDとジョブIDから、セッションジョブを取得
@@ -1003,6 +1160,11 @@ public class JobSessionJobImpl {
 
 		//開始遅延チェック結果が遅延の場合
 		if(delayCheck){
+			m_log.info("checkStartDelaySub: Detected a start delay."
+						+ " job=[" + sessionId + ", " + jobunitId + ", " + jobId + "]"
+						+ ", notify=" + job.getStartDelayNotify()
+						+ ", operation=" + job.getStartDelayOperation()
+						+ "(" + job.getStartDelayOperationType() + ")");
 
 			//通知
 			if(job.getStartDelayNotify().booleanValue()){
@@ -1025,20 +1187,13 @@ public class JobSessionJobImpl {
 				}
 			}
 
-			//操作
-			if(job.getStartDelayOperation().booleanValue()){
+			// 操作
+			if (job.getStartDelayOperation().booleanValue()) {
 				int type = job.getStartDelayOperationType();
-
-				if(type == OperationConstant.TYPE_STOP_SKIP){
-					//実行状態が待機の場合、実行状態をスキップにする
-					if(sessionJob.getStatus() == StatusConstant.TYPE_WAIT){
-						sessionJob.setStatus(StatusConstant.TYPE_SKIP);
-					}
-				}else if(type == OperationConstant.TYPE_STOP_WAIT){
-					//実行状態が待機の場合、実行状態を保留中にする
-					if(sessionJob.getStatus() == StatusConstant.TYPE_WAIT){
-						sessionJob.setStatus(StatusConstant.TYPE_RESERVING);
-					}
+				if (type == OperationConstant.TYPE_STOP_SKIP) {
+					sessionJob.setStatus(StatusConstant.TYPE_SKIP);
+				} else if (type == OperationConstant.TYPE_STOP_WAIT) {
+					sessionJob.setStatus(StatusConstant.TYPE_RESERVING);
 				}
 			}
 		}
@@ -1352,8 +1507,6 @@ public class JobSessionJobImpl {
 	protected Integer checkEndStatus(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-			HinemosEntityManager em = jtm.getEntityManager();
-
 			m_log.debug("checkEndStatus() : sessionId=" + sessionId + ", jobId=" + jobId);
 
 			//セッションIDとジョブIDから、セッションジョブを取得
@@ -1363,10 +1516,8 @@ public class JobSessionJobImpl {
 
 			ArrayList<Integer> statusList = new ArrayList<Integer>();
 
-			if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_JOB
-					|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB
-					|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB){
-				//ジョブの場合
+			if(sessionJob.hasSessionNode()){
+				// ---- ノードが配下にあるジョブ
 
 				//セッションジョブからセッションノードを取得
 				Collection<JobSessionNodeEntity> collection = sessionJob.getJobSessionNodeEntities();
@@ -1393,7 +1544,7 @@ public class JobSessionJobImpl {
 					statusList.add(EndStatusConstant.TYPE_ABNORMAL);
 				}
 			}else{
-				//ジョブ以外の場合
+				// ---- ジョブが配下にあるジョブ
 
 				Integer endStatusCheck = sessionJob.getEndStausCheckFlg();
 				if(endStatusCheck == null ||
@@ -1407,11 +1558,8 @@ public class JobSessionJobImpl {
 
 						//待ち条件に指定されているかチェック
 						Collection<JobStartJobInfoEntity> targetJobList = null;
-						targetJobList = em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
-								.setParameter("sessionId", sessionId)
-								.setParameter("targetJobId", childSessionJob.getId().getJobId())
-								.getResultList();
-
+						targetJobList = QueryUtil.getJobStartJobInfoByTargetJobId(
+								sessionId, childSessionJob.getId().getJobId());
 						if(targetJobList.size() > 0){
 							continue;
 						}
@@ -1537,10 +1685,10 @@ public class JobSessionJobImpl {
 		//終了状態を設定
 		Integer preEndStatus = sessionJob.getEndStatus();
 		sessionJob.setEndStatus(endStatus);
+		//終了値を設定
 		if (endValue != null) {
 			sessionJob.setEndValue(endValue);
 		} else {
-			//終了値を設定
 			if(Integer.valueOf(EndStatusConstant.TYPE_NORMAL).equals(endStatus)){
 				sessionJob.setEndValue(jobInfo.getNormalEndValue());
 			}else if(Integer.valueOf(EndStatusConstant.TYPE_WARNING).equals(endStatus)){
@@ -1578,7 +1726,6 @@ public class JobSessionJobImpl {
 	protected void endJob(String sessionId, String jobunitId, String jobId, String result, boolean normalEndFlag)
 			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-			HinemosEntityManager em = jtm.getEntityManager();
 			m_log.info("endJob() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 			//セッションIDとジョブIDから、セッションジョブを取得
 			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
@@ -1595,21 +1742,20 @@ public class JobSessionJobImpl {
 			Boolean jobRetryFlg = sessionJob.getJobInfoEntity().getJobRetryFlg();
 			if (jobRetryFlg != null && jobRetryFlg && JobSessionJobUtil.checkRetryContinueCondition(sessionJob)
 						&& sessionJob.getStatus() == StatusConstant.TYPE_END) {
-				//ジョブの状態等をリセットする
+				// 自身と配下を待機状態に戻して(すぐに実行中に遷移させるわけだが、既存コードを尊重してそのままとする)、
+				// 各種日時フラグをリセットする
 				JobSessionJobUtil.resetJobStatusRecursive(sessionJob, false /* resetRunCount=false */);
-				//自身を再実行する
-				startJob(sessionJob.getId().getSessionId(), sessionJob.getId().getJobunitId(), sessionJob.getId().getJobId());
-				m_log.info("Retry job : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", runCount=" + sessionJob.getRunCount());
-				return;  //繰り返し実行する場合はここで終了し後続ジョブを実行しない
+				// 自身を再実行する
+				m_log.info("Retry job : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId
+						+ ", runCount=" + sessionJob.getRunCount());
+				changeToRunning(sessionJob);
+				return;  // ここで終了し、後続ジョブを実行しない
 			}
 
 			////////// 待ち条件の処理 //////////
 			// 終了ジョブ(endJobメソッドの引数)を待ち条件に指定しているジョブの処理
 			Collection<JobStartJobInfoEntity> collection;
-			collection = em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
-					.setParameter("sessionId", sessionId)
-					.setParameter("targetJobId", jobId)
-					.getResultList();
+			collection = QueryUtil.getJobStartJobInfoByTargetJobId(sessionId, jobId);
 			ArrayList<JobSessionJobEntity> targetJobList = new ArrayList<JobSessionJobEntity>();
 			for (JobStartJobInfoEntity startJob : collection) {
 				//セッションIDとジョブIDから、セッションジョブを取得
@@ -1633,6 +1779,8 @@ public class JobSessionJobImpl {
 					String startJobId = targetSessionJob.getId().getJobId();
 					int status = targetSessionJob.getStatus();
 					if(status == StatusConstant.TYPE_WAIT || status == StatusConstant.TYPE_SKIP) {
+						// 先行ジョブの終了が確定しているので、runningQueueに反映させるため更新
+						jtm.addCallback(new RefreshRunningQueueAfterCommitCallback());
 						//実行状態が待機の場合
 						//ジョブ開始処理を行う
 						startJob(startSessionId, startJobUnitId, startJobId);
@@ -1649,6 +1797,21 @@ public class JobSessionJobImpl {
 				doExclusiveBranch(startJobSessionJob, targetJobList, endStatus, endValue);
 			}
 
+			////////// ジョブキューが設定されたジョブの場合は、キューから自身を取り除く。 //////////
+			// キュー制限超過で終了した場合は、キューに入っていないことは確実なのでスキップ
+			if (sessionJob.getStatus() != StatusConstant.TYPE_END_QUEUE_LIMIT) {
+				String queueId = sessionJob.getJobInfoEntity().getQueueIdIfEnabled();
+				if (queueId != null) {
+					try {
+						JobQueue queue = Singletons.get(JobQueueContainer.class).get(queueId);
+						queue.remove(sessionId, jobunitId, jobId);
+					} catch (JobQueueNotFoundException e) {
+						// キューが存在しないとしても、結果として"キューからの除去"という目的は果たせているので、ログだけ出して無視する。
+						m_log.info("endJob: " + e);
+					}
+				}
+			}
+			
 			////////// 親ジョブに対してendJob()を実行する。 //////////
 			//親ジョブのジョブIDを取得
 			String parentJobunitId = null;
@@ -1663,10 +1826,8 @@ public class JobSessionJobImpl {
 				if (HinemosPropertyCommon.job_end_criteria.getBooleanValue()) {
 					//待ち条件に指定されているかチェック
 					Collection<JobStartJobInfoEntity> targetJobWaitList = null;
-					targetJobWaitList = em.createNamedQuery("JobStartJobInfoEntity.findByTargetJobId", JobStartJobInfoEntity.class)
-							.setParameter("sessionId", sessionId)
-							.setParameter("targetJobId", sessionJob1.getId().getJobId())
-							.getResultList();
+					targetJobWaitList = QueryUtil.getJobStartJobInfoByTargetJobId(
+							sessionId, sessionJob1.getId().getJobId());
 					if(targetJobWaitList.size() > 0){
 						continue;
 					}
@@ -1688,7 +1849,7 @@ public class JobSessionJobImpl {
 			}
 		}
 	}
-
+	
 	/**
 	 * 待機中の後続ジョブの中から優先度に従って排他分岐で実行すべきジョブを調べて返します。
 	 *
@@ -1797,7 +1958,7 @@ public class JobSessionJobImpl {
 	 * @param value2 判定値2
 	 * @return 比較結果
 	 */
-	private int checkDecisionValue(String value1, String value2) {
+	private int compareAsLong(String value1, String value2) {
 		Double dValue01 = Double.parseDouble(value1);
 		Double dValue02 = Double.parseDouble(value2);
 		

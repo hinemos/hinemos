@@ -80,7 +80,6 @@ public abstract class JobMapView extends AutoUpdateView implements JobMapViewIF 
 	}
 
 	/**
-	 * TODO
 	 * zoomした後に勝手に再描画する方法が見つからず・・・。
 	 * そのため、マネージャにアクセスしない再描画メソッドを作成した。
 	 */

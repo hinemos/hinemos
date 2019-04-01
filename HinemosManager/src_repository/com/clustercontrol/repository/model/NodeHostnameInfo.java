@@ -9,21 +9,17 @@
 package com.clustercontrol.repository.model;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 import javax.persistence.Cacheable;
+import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.util.HinemosTime;
 
 /**
  * The persistent class for the cc_cfg_node_hostname database table.
@@ -32,12 +28,13 @@ import javax.xml.bind.annotation.XmlType;
 @XmlType(namespace = "http://repository.ws.clustercontrol.com")
 @Entity
 @Table(name="cc_cfg_node_hostname", schema="setting")
-@Cacheable(true)
+@Cacheable(false)
 public class NodeHostnameInfo implements Serializable, Cloneable {
 	private static final long serialVersionUID = 1L;
 	private NodeHostnameInfoPK id;
-	private String hostname;
-	private NodeInfo nodeEntity;
+	private Long regDate = HinemosTime.currentTimeMillis();
+	private String regUser = "";
+	private Boolean searchTarget = Boolean.FALSE;
 
 	public NodeHostnameInfo() {
 	}
@@ -77,94 +74,53 @@ public class NodeHostnameInfo implements Serializable, Cloneable {
 		getId().setHostname(hostname);
 	}
 
-
-	//bi-directional many-to-one association to nodeEntity
-	@XmlTransient
-	@ManyToOne(fetch=FetchType.LAZY)
-	@JoinColumn(name="facility_id", insertable=false, updatable=false)
-	public NodeInfo getNodeEntity() {
-		return this.nodeEntity;
+	@Column(name="reg_date")
+	public Long getRegDate() {
+		return this.regDate;
+	}
+	public void setRegDate(Long regDate) {
+		this.regDate = regDate;
 	}
 
-	@Deprecated
-	public void setNodeEntity(NodeInfo nodeEntity) {
-		this.nodeEntity = nodeEntity;
+
+	@Column(name="reg_user")
+	public String getRegUser() {
+		return this.regUser;
+	}
+	public void setRegUser(String regUser) {
+		this.regUser = regUser;
 	}
 
-	/**
-	 * nodeEntityオブジェクト参照設定<BR>
-	 * 
-	 * nodeEntity設定時はSetterに代わりこちらを使用すること。
-	 * 
-	 * JPAの仕様(JSR 220)では、データ更新に伴うrelationshipの管理はユーザに委ねられており、
-	 * INSERTやDELETE時に、そのオブジェクトに対する参照をメンテナンスする処理を実装する。
-	 * 
-	 * JSR 220 3.2.3 Synchronization to the Database
-	 * 
-	 * Bidirectional relationships between managed entities will be persisted
-	 * based on references held by the owning side of the relationship.
-	 * It is the developer’s responsibility to keep the in-memory references
-	 * held on the owning side and those held on the inverse side consistent
-	 * with each other when they change.
-	 */
-	public void relateToNodeEntity(NodeInfo nodeEntity) {
-		this.setNodeEntity(nodeEntity);
-		if (nodeEntity != null) {
-			List<NodeHostnameInfo> list = nodeEntity.getNodeHostnameInfo();
-			if (list == null) {
-				list = new ArrayList<NodeHostnameInfo>();
-			} else {
-				for(NodeHostnameInfo entity : list){
-					if (entity.getId().equals(this.getId())) {
-						return;
-					}
-				}
-			}
-			list.add(this);
-			nodeEntity.setNodeHostnameInfo(list);
-		}
+	@Transient
+	public Boolean getSearchTarget() {
+		return this.searchTarget;
+	}
+	public void setSearchTarget(Boolean searchTarget) {
+		this.searchTarget = searchTarget;
 	}
 
-	/**
-	 * 削除前処理<BR>
-	 * 
-	 * JPAの仕様(JSR 220)では、データ更新に伴うrelationshipの管理はユーザに委ねられており、
-	 * INSERTやDELETE時に、そのオブジェクトに対する参照をメンテナンスする処理を実装する。
-	 * 
-	 * JSR 220 3.2.3 Synchronization to the Database
-	 * 
-	 * Bidirectional relationships between managed entities will be persisted
-	 * based on references held by the owning side of the relationship.
-	 * It is the developer’s responsibility to keep the in-memory references
-	 * held on the owning side and those held on the inverse side consistent
-	 * with each other when they change.
-	 */
-	public void unchain() {
-
-		// nodeEntity
-		if (this.nodeEntity != null) {
-			List<NodeHostnameInfo> list = this.nodeEntity.getNodeHostnameInfo();
-			if (list != null) {
-				Iterator<NodeHostnameInfo> iter = list.iterator();
-				while(iter.hasNext()) {
-					NodeHostnameInfo entity = iter.next();
-					if (entity.getId().equals(this.getId())){
-						iter.remove();
-						break;
-					}
-				}
-			}
-		}
-	}
-	
 	@Override
 	public NodeHostnameInfo clone() {
 		try {
 			NodeHostnameInfo cloneInfo = (NodeHostnameInfo)super.clone();
-			cloneInfo.hostname = this.hostname;
+			cloneInfo.id = this.id;
+			cloneInfo.regDate = this.regDate;
+			cloneInfo.regUser = this.regUser;
+			cloneInfo.searchTarget = this.searchTarget;
 			return cloneInfo;
 		} catch (CloneNotSupportedException e) {
 			throw new InternalError(e.getMessage());
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "NodeHostnameInfo ["
+				+ "id=" + id 
+				+ ", regDate=" + regDate 
+				+ ", regUser=" + regUser 
+				+ ", searchTarget=" + searchTarget
+				+ "]";
+	}
+
 }

@@ -8,13 +8,19 @@
 
 package com.clustercontrol.repository.factory;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,6 +28,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
+import javax.activation.DataHandler;
+import javax.activation.FileDataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,6 +40,7 @@ import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
@@ -40,25 +50,42 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.commons.util.ObjectValidator;
 import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.plugin.impl.OsScopeInitializerPlugin;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.bean.FacilityTreeItem;
+import com.clustercontrol.repository.bean.NodeConfigFilterInfo;
+import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.repository.bean.NodeConstant;
 import com.clustercontrol.repository.model.FacilityInfo;
+import com.clustercontrol.repository.model.NodeCpuInfo;
+import com.clustercontrol.repository.model.NodeCustomInfo;
+import com.clustercontrol.repository.model.NodeDiskInfo;
+import com.clustercontrol.repository.model.NodeFilesystemInfo;
 import com.clustercontrol.repository.model.NodeHostnameInfo;
 import com.clustercontrol.repository.model.NodeInfo;
+import com.clustercontrol.repository.model.NodeLicenseInfo;
+import com.clustercontrol.repository.model.NodeMemoryInfo;
+import com.clustercontrol.repository.model.NodeProductInfo;
+import com.clustercontrol.repository.model.NodeNetstatInfo;
+import com.clustercontrol.repository.model.NodeNetworkInterfaceInfo;
+import com.clustercontrol.repository.model.NodeOsInfo;
+import com.clustercontrol.repository.model.NodePackageInfo;
+import com.clustercontrol.repository.model.NodeProcessInfo;
+import com.clustercontrol.repository.model.NodeVariableInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityUtil;
-import com.clustercontrol.repository.util.FacilityValidator;
 import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Messages;
 import com.clustercontrol.xcloud.common.CloudConstants;
 
 public class FacilitySelector {
@@ -231,8 +258,9 @@ public class FacilitySelector {
 
 		nodeList = new ArrayList<NodeInfo>();
 		List<NodeInfo> nodes = QueryUtil.getAllNode();
+		m_log.debug("getNodeList() : QueryUtil success");
 		for (NodeInfo facility : nodes) {
-			nodeList.add(FacilityValidator.nodeToArrayList(facility));
+			nodeList.add(copyToNodeInfo(facility));
 		}
 
 		m_log.debug("successful in getting a list of all nodes.");
@@ -295,9 +323,10 @@ public class FacilitySelector {
 
 		ipAddressV6 = property.getIpAddressV6();
 
-		osName = property.getOsName();
-
-		osRelease = property.getOsRelease();
+		if (property.getNodeOsInfo() != null) {
+			osName = property.getNodeOsInfo().getOsName();
+			osRelease = property.getNodeOsInfo().getOsRelease();
+		}
 
 		administrator = property.getAdministrator();
 
@@ -373,20 +402,20 @@ public class FacilitySelector {
 					continue;
 				}
 				if (!osName.startsWith(notInclude)) {
-					if (osNameFlg && node.getOsName().indexOf(osName) == -1) {
+					if (osNameFlg && node.getNodeOsInfo().getOsName().indexOf(osName) == -1) {
 						continue;
 					}
 				} else {
-					if (osNameFlg && node.getOsName().indexOf(osName.substring(notInclude.length())) != -1) {
+					if (osNameFlg && node.getNodeOsInfo().getOsName().indexOf(osName.substring(notInclude.length())) != -1) {
 						continue;
 					}
 				}
 				if (!osRelease.startsWith(notInclude)) {
-					if (osReleaseFlg && node.getOsRelease().indexOf(osRelease) == -1) {
+					if (osReleaseFlg && node.getNodeOsInfo().getOsRelease().indexOf(osRelease) == -1) {
 						continue;
 					}
 				} else {
-					if (osReleaseFlg && node.getOsRelease().indexOf(osRelease.substring(notInclude.length())) != -1) {
+					if (osReleaseFlg && node.getNodeOsInfo().getOsRelease().indexOf(osRelease.substring(notInclude.length())) != -1) {
 						continue;
 					}
 				}
@@ -409,12 +438,64 @@ public class FacilitySelector {
 					}
 				}
 
-				nodeList.add(FacilityValidator.nodeToArrayList(node));
+				nodeList.add(copyToNodeInfo(node));
 			}
 		}
 
 		m_log.debug("successful in getting a list of nodes by using filter.");
 		return nodeList;
+	}
+
+	/**
+	 * 構成情報履歴検索処理
+	 * 
+	 * @param property 検索条件
+	 * @param allNodeFacilityIdList ノード全件のファシリティID一覧
+	 * @return ノードのファシリティID一覧
+	 * @throws HinemosDbTimeout
+	 */
+	public static List<String> getFilterNodeIdListByNodeConfig(NodeInfo property, List<String> allNodeFacilityIdList)
+		throws HinemosDbTimeout {
+		HashSet<String> rtnSet = new HashSet<>();
+		boolean isFirst = true;
+
+		if (property.getNodeConfigFilterList() == null
+				|| property.getNodeConfigFilterList().size() == 0) {
+			// 検索条件未存在
+			return new ArrayList<>();
+		}
+		
+		for (NodeConfigFilterInfo filterInfo : property.getNodeConfigFilterList()) {
+			if (filterInfo.getItemList() == null
+					|| filterInfo.getItemList().size() == 0) {
+				if (property.getNodeConfigFilterIsAnd()) {
+					// データ未存在のため0件で処理終了
+					return new ArrayList<>();
+				} else {
+					continue;
+				}
+			}
+			List<String> list = QueryUtil.getNodeFacilityIdByNodeConfig(
+					filterInfo, property.getNodeConfigTargetDatetime(), allNodeFacilityIdList);
+			if (list == null || list.size() == 0) {
+				if (property.getNodeConfigFilterIsAnd()) {
+					// AND比較では結果がない場合は0件
+					return new ArrayList<>();
+				} else {
+					continue;
+				}
+			}
+			if (isFirst || !property.getNodeConfigFilterIsAnd()) {
+				rtnSet.addAll(list);
+				if (isFirst) {
+					isFirst = false;
+				}
+			} else {
+				// AND比較
+				rtnSet.retainAll(list);
+			}
+		}
+		return new ArrayList<>(rtnSet);
 	}
 
 	/**
@@ -447,7 +528,7 @@ public class FacilitySelector {
 						// NONEのためここは通らない。
 						m_log.warn("NodeEntity is invalid role. : facilityId = " + facility.getFacilityId());
 					}
-					nodes.add(FacilityValidator.nodeToArrayList(node));
+					nodes.add(copyToNodeInfo(node));
 				}
 			}
 		}
@@ -803,13 +884,13 @@ public class FacilitySelector {
 						else if(attribute.compareTo(NodeConstant.NODE_NAME) == 0){
 							valueTarget = node.getNodeName();
 						} else if(attribute.compareTo(NodeConstant.OS_NAME) == 0){
-							valueTarget = node.getOsName();
+							valueTarget = node.getNodeOsInfo().getOsName();
 						} else if(attribute.compareTo(NodeConstant.OS_RELEASE) == 0){
-							valueTarget = node.getOsRelease();
+							valueTarget = node.getNodeOsInfo().getOsRelease();
 						} else if(attribute.compareTo(NodeConstant.OS_VERSION) == 0){
-							valueTarget = node.getOsVersion();
+							valueTarget = node.getNodeOsInfo().getOsVersion();
 						} else if(attribute.compareTo(NodeConstant.CHARACTER_SET) == 0){
-							valueTarget = node.getCharacterSet();
+							valueTarget = node.getNodeOsInfo().getCharacterSet();
 						}
 
 						// Hinemosエージェント関連
@@ -960,7 +1041,7 @@ public class FacilitySelector {
 				// コンポジットアイテムが選択された場合
 				for (ScopeInfo rootScope : getRootScopeList()) {
 					try {
-						facilityList.add(FacilityValidator.facilityToArrayList(rootScope));
+						facilityList.add(copyToFacilityInfo(rootScope));
 					} catch (Exception e) {
 						m_log.warn("facilityToArrayList : "
 								+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -1099,6 +1180,62 @@ public class FacilitySelector {
 		}
 
 		return path;
+	}
+
+	/**
+	 * ノードが属するスコープのファシリティIDの一覧を取得する。<BR>
+	 * 
+	 * @param facilityIds ノードのファシリティIDリスト
+	 * @return スコープのファシリティIDリスト
+	 * @throws FacilityNotFound
+	 * @throws InvalidRole
+	 */
+	public static ArrayList<String> getNodeScopeIdList(String facilityId) throws FacilityNotFound, InvalidRole {
+
+		/** ローカル変数 */
+		HashSet<String> scopeIdSet = new HashSet<>();
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			FacilityInfo facilityInfo = QueryUtil.getFacilityPK(facilityId);
+			if (facilityInfo != null) {
+				List<FacilityInfo> parentFacilityInfoList = FacilityTreeCache.getParentFacilityInfo(facilityId);
+				if (parentFacilityInfoList != null) {
+					for (FacilityInfo parent : parentFacilityInfoList) {
+						getParentFacilityIdRecursive(parent, scopeIdSet);
+					}
+				}
+			}
+		}
+		// 自身も設定する
+		scopeIdSet.add(facilityId);
+		return new ArrayList<>(scopeIdSet);
+	}
+
+	/**
+	 * ノードが所属するスコープのファシリティIDの一覧を取得する。<BR>
+	 * 
+	 * @param info 親スコープを取得するファシリティ情報
+	 * @param scopeIdSet スコープIDを反映するHashSet
+	 */
+	private static void getParentFacilityIdRecursive(FacilityInfo info, HashSet<String> scopeIdSet) {
+
+		if (info == null) {
+			return;
+		}
+		if (FacilityUtil.isNode_FacilityInfo(info)) {
+			// ノードの場合は、空文字を返す。
+			return;
+		}
+
+		scopeIdSet.add(info.getFacilityId());
+
+		// さらに親を取得する。
+		List<FacilityInfo> parentFacilityInfoList = FacilityTreeCache.getParentFacilityInfo(info.getFacilityId());
+		if (parentFacilityInfoList != null) {
+			for (FacilityInfo facilityInfo : parentFacilityInfoList) {
+				getParentFacilityIdRecursive(facilityInfo, scopeIdSet);
+			}
+		}
 	}
 
 	/**
@@ -1434,6 +1571,7 @@ public class FacilitySelector {
 		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.UNREGISTERED_SCOPE);
 		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.OWNER_SCOPE);
 		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.OS_PARENT_SCOPE);
+		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.NODE_CONFIGURATION_SCOPE);
 		
 		// クラウドのルートスコープは、初期は存在しないが、作成されるとビルトインになる。
 		buildInScopeFacilityIdSet.add(CloudConstants.privateRootId);
@@ -1529,6 +1667,7 @@ public class FacilitySelector {
 					(HinemosTime.currentTimeMillis() - start) + "ms. key size=" + nodenameFacilityIdMap.size());
 		}
 	}
+
 	
 	/**
 	 * 指定のIPアドレスで登録されているノードのファシリティIDのセットを返す。
@@ -1717,5 +1856,658 @@ public class FacilitySelector {
 				_scopeNodeFacilityIdCacheLock.writeUnlock();
 			}
 		}
+	}
+
+
+	/**
+	 * 構成情報ヘッダーファイルを返します。
+	 *
+	 * @param conditionStr 検索対象
+	 * @param filename ファイル名
+	 * @param username ユーザ名
+	 * @param locale ロケール
+	 * @return 帳票出力用構成情報一覧
+	 * @throws HinemosUnknown
+	 * @throws IOException
+	 */
+	public DataHandler getNodeConfigInfoFileHeader(	String conditionStr, String filename, String username, Locale locale)
+			throws HinemosUnknown, IOException {
+
+		String exportDirectory = HinemosPropertyDefault.node_config_export_dir.getStringValue();
+		String filepath = exportDirectory + "/" + filename;
+		File file = new File(filepath);
+		boolean UTF8_BOM = HinemosPropertyCommon.node_config_report_bom.getBooleanValue();
+		if (UTF8_BOM) {
+			FileOutputStream fos = new FileOutputStream(file);
+			fos.write( 0xef );
+			fos.write( 0xbb );
+			fos.write( 0xbf );
+			fos.close();
+		}
+		FileWriter filewriter = new FileWriter(file, true);
+
+		try {
+
+			String SEPARATOR = HinemosPropertyCommon.node_config_report_separator.getStringValue();
+			String DATE_FORMAT = HinemosPropertyCommon.node_config_report_format.getStringValue();
+
+			SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+			sdf.setTimeZone(HinemosTime.getTimeZone());
+			filewriter.write(Messages.getString(MessageConstant.REPORT_TITLE_NODE_CONFIG.name(), locale) + "\n");
+			filewriter.write(Messages.getString(MessageConstant.REPORT_OUTPUT_DATE.name(), locale) + SEPARATOR +
+					sdf.format(HinemosTime.getDateInstance()) + "\n");
+			filewriter.write(Messages.getString(MessageConstant.SEARCH_TARGET.name(), locale) + SEPARATOR +
+					conditionStr + "\n");
+			filewriter.write(Messages.getString(MessageConstant.REPORT_OUTPUT_USER.name(), locale) + SEPARATOR + username + "\n");
+
+			// 検索条件
+			filewriter.write("" + "\n");
+				
+			// 出力処理
+			filewriter.write(
+					Messages.getString(MessageConstant.MANAGER_NAME.name(), locale) + SEPARATOR + 				// マネージャ名
+					Messages.getString(MessageConstant.FACILITY_ID.name(), locale) + SEPARATOR + 				// ファシリティID
+					Messages.getString(MessageConstant.TYPE.name(), locale) + SEPARATOR + 						// 種別
+					Messages.getString(MessageConstant.NAME.name(), locale) + SEPARATOR + 						// 名前
+					Messages.getString(MessageConstant.SUB_NAME.name(), locale) + SEPARATOR +					// 名前（サブ）
+					Messages.getString(MessageConstant.DEVICE_INDEX.name(), locale) + SEPARATOR +				// インデックス
+					Messages.getString(MessageConstant.DEVICE_DISPLAY_NAME.name(), locale) + SEPARATOR +		// 表示名
+					Messages.getString(MessageConstant.DEVICE_SIZE.name(), locale) + SEPARATOR +			// サイズ
+					Messages.getString(MessageConstant.DEVICE_SIZE_UNIT.name(), locale) + SEPARATOR +		// サイズ単位
+					Messages.getString(MessageConstant.DESCRIPTION.name(), locale) + SEPARATOR +			// 説明
+					Messages.getString(MessageConstant.VERSION.name(), locale) + SEPARATOR +				// バージョン
+					Messages.getString(MessageConstant.RELEASE.name(), locale) + SEPARATOR +				// リリース
+					Messages.getString(MessageConstant.STARTUP_DATE_TIME.name(), locale) + SEPARATOR +		// 起動日時
+					Messages.getString(MessageConstant.INSTALL_DATE.name(), locale) + SEPARATOR +			// インストール日時
+					Messages.getString(MessageConstant.VALUE.name(), locale) + SEPARATOR +					// 値
+					Messages.getString(MessageConstant.CPU_CORE_COUNT.name(), locale) + SEPARATOR +		// コア数
+					Messages.getString(MessageConstant.CPU_THREAD_COUNT.name(), locale) + SEPARATOR +		// スレッド数
+					Messages.getString(MessageConstant.CPU_CLOCK_COUNT.name(), locale) + SEPARATOR +		// クロック数
+					Messages.getString(MessageConstant.NIC_IP_ADDRESS.name(), locale) + SEPARATOR +		// IPアドレス
+					Messages.getString(MessageConstant.NIC_MAC_ADDRESS.name(), locale) + SEPARATOR +		// MACアドレス
+					Messages.getString(MessageConstant.DISK_RPM.name(), locale) + SEPARATOR +				// ディスク回転数
+					Messages.getString(MessageConstant.FILE_SYSTEM_TYPE.name(), locale) + SEPARATOR +		// ファイルシステム種別
+					Messages.getString(MessageConstant.CHARACTER_SET.name(), locale) + SEPARATOR +			// 文字セット
+					Messages.getString(MessageConstant.NODE_NETSTAT_PROTOCOL.name(), locale) + SEPARATOR +	// プロトコル
+					Messages.getString(MessageConstant.NODE_NETSTAT_LOCAL_IP_ADDRESS.name(), locale) + SEPARATOR +	// ローカルIPアドレス
+					Messages.getString(MessageConstant.NODE_NETSTAT_LOCAL_PORT.name(), locale) + SEPARATOR +	// ローカルポート
+					Messages.getString(MessageConstant.NODE_NETSTAT_FOREIGN_IP_ADDRESS.name(), locale) + SEPARATOR +	// 外部IPアドレス
+					Messages.getString(MessageConstant.NODE_NETSTAT_FOREIGN_PORT.name(), locale) + SEPARATOR +	// 外部ポート
+					Messages.getString(MessageConstant.NODE_NETSTAT_PROCESS_NAME.name(), locale) + SEPARATOR +	// プロセス名
+					Messages.getString(MessageConstant.NODE_NETSTAT_PID.name(), locale) + SEPARATOR +	// PID
+					Messages.getString(MessageConstant.NODE_NETSTAT_STATUS.name(), locale) + SEPARATOR +	// ステータス
+					Messages.getString(MessageConstant.NODE_PROCESS_PATH.name(), locale) + SEPARATOR +	// フルパス
+					Messages.getString(MessageConstant.NODE_PROCESS_EXEC_USER.name(), locale) + SEPARATOR +	// 実行ユーザ
+					Messages.getString(MessageConstant.NODE_PACKAGE_VENDOR.name(), locale) + SEPARATOR +	// ベンダー
+					Messages.getString(MessageConstant.NODE_PACKAGE_ARCHITECTURE.name(), locale) + SEPARATOR +		// アーキテクチャ
+					Messages.getString(MessageConstant.COMMAND.name(), locale) + SEPARATOR +		// コマンド
+					Messages.getString(MessageConstant.NODE_LICENSE_VENDOR_CONTACT.name(), locale) + SEPARATOR +	// ベンダー連絡先
+					Messages.getString(MessageConstant.NODE_LICENSE_SERIAL_NUMBER.name(), locale) + SEPARATOR +	// シリアルナンバー
+					Messages.getString(MessageConstant.NODE_LICENSE_COUNT.name(), locale) + SEPARATOR +	// 数量
+					Messages.getString(MessageConstant.NODE_LICENSE_EXPIRATION_DATE.name(), locale) + SEPARATOR +	// 有効期限
+					Messages.getString(MessageConstant.REG_DATE.name(), locale) + SEPARATOR +		// 作成日時
+					Messages.getString(MessageConstant.REG_USER.name(), locale) + SEPARATOR +		// 作成ユーザ
+					Messages.getString(MessageConstant.UPDATE_DATE.name(), locale) + SEPARATOR +		// 更新日時
+					Messages.getString(MessageConstant.UPDATE_USER.name(), locale) +		// 更新ユーザ
+					"\n");
+
+		} finally {
+			filewriter.close();
+		}
+
+		// リストをファイルに書き出し。
+		FileDataSource source = new FileDataSource(file);
+		DataHandler handler = new DataHandler(source);
+
+		return handler;
+	}
+
+	/**
+	 * 引数で指定された条件に一致する構成情報ファイルを返します。
+	 *
+	 * @param facilityIdlist ファシリティID一覧
+	 * @param targetDatetime 対象日時
+	 * @param filename ファイル名
+	 * @param locale ロケール
+	 * @param managerName マネージャ名
+	 * @param nodeConfigSettingItemList 構成情報ダウンロード対象一覧
+	 * @return 帳票出力用構成情報一覧
+	 * @throws HinemosUnknown
+	 * @throws IOException
+	 */
+	public DataHandler getNodeConfigInfoFile(
+			List<String> facilityIdList, Long targetDatetime, String filename, Locale locale, 
+			String managerName, List<NodeConfigSettingItem> nodeConfigSettingItemList)
+			throws HinemosUnknown, IOException {
+
+		String exportDirectory = HinemosPropertyDefault.node_config_export_dir.getStringValue();
+		String filepath = exportDirectory + "/" + filename;
+		File file = new File(filepath);
+		FileWriter filewriter = new FileWriter(file, true);
+
+		try {
+			// 対象ファシリティのファシリティIDを取得
+			Collections.sort(facilityIdList);
+			for (int i = 0; i < facilityIdList.size(); i++) {
+				String facilityId = facilityIdList.get(i);
+
+				// 対象構成情報はより全件取得する。
+				NodeInfo nodeInfo = null;
+				try {
+					if (targetDatetime == null 	|| targetDatetime == 0L) {
+						nodeInfo = NodeProperty.getPropertyFull(facilityId, nodeConfigSettingItemList);
+					} else {
+						nodeInfo = NodeProperty.getPropertyFull(facilityId, targetDatetime, nodeConfigSettingItemList);
+					}
+				} catch (FacilityNotFound e) {
+					// 対象のノード情報が未存在
+					m_log.warn("getNodeConfigInfoFile() : node info is not found. facilityId=" + facilityId);
+					continue;
+				}
+				if (nodeInfo == null) {
+					m_log.warn("getNodeConfigInfoFile() : node info is null. facilityId=" + facilityId);
+					continue;
+				}
+
+				// 帳票出力用に変換
+				nodeConfigToFile(nodeInfo, filewriter, locale, managerName, nodeConfigSettingItemList);
+			}
+
+		} finally {
+			filewriter.close();
+		}
+
+		// リストをファイルに書き出し。
+		FileDataSource source = new FileDataSource(file);
+		DataHandler handler = new DataHandler(source);
+
+		return handler;
+	}
+
+	/**
+	 * 構成情報ファイルのうち、指定されたファイル名と前方一致するファイルを削除します。
+	 * 
+	 * @param filename ファイル名
+	 */
+	public void deleteNodeConfigInfoFile(String filename) {
+		String exportDirectory = HinemosPropertyDefault.node_config_export_dir.getStringValue();
+
+		File dir = new File(exportDirectory);
+		File[] list = dir.listFiles();
+		if (list == null) {
+			m_log.warn("deleteNodeConfigInfoFile() : Fail to delete. directory=" + exportDirectory + ", filename=" + filename);
+			return;
+		}
+		for (File file : list) {
+			if (file.isDirectory() || !file.getName().startsWith(filename)) {
+				continue;
+			}
+			if (!file.delete()) {
+				m_log.warn("deleteNodeConfigInfoFile() : Fail to delete. filename=" + file.getAbsolutePath());
+			}
+		}
+	}
+
+	/**
+	 * DBより取得した構成情報をFileWriterに出力します。
+	 *
+	 * @param managerName マネージャ名
+	 * @param nodeInfo 構成情報
+	 * @param filewriter FileWriter
+	 * @param locale ロケール
+	 * @param managerName マネージャ名
+	 * @param nodeConfigSettingItemList 構成情報ダウンロード対象一覧
+	 * @throws IOException
+	 */
+	private void nodeConfigToFile(NodeInfo nodeInfo, FileWriter filewriter, Locale locale, String managerName, 
+			List<NodeConfigSettingItem> nodeConfigSettingItemList) throws IOException {
+
+		if (nodeInfo == null) {
+			return;
+		}
+		// OS情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.OS) && nodeInfo.getNodeOsInfo() != null) {
+			NodeOsInfo nodeDetailInfo = nodeInfo.getNodeOsInfo();
+			NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.OS);
+			info.name = nodeDetailInfo.getOsName();
+			info.version = nodeDetailInfo.getOsVersion();
+			info.release = nodeDetailInfo.getOsRelease();
+			info.startupDateTime = nodeDetailInfo.getStartupDateTime();
+			info.characterSet = nodeDetailInfo.getCharacterSet();
+			info.regDate = nodeDetailInfo.getRegDate();
+			info.regUser = nodeDetailInfo.getRegUser();
+			info.updateDate = nodeDetailInfo.getUpdateDate();
+			info.updateUser = nodeDetailInfo.getUpdateUser();
+			writeFileWriter(filewriter, info);
+		}
+		// CPU情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_CPU) && nodeInfo.getNodeCpuInfo() != null) {
+			for (NodeCpuInfo nodeDetailInfo : nodeInfo.getNodeCpuInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_CPU);
+				info.name = nodeDetailInfo.getDeviceName();
+				info.index = nodeDetailInfo.getDeviceIndex();
+				info.displayName = nodeDetailInfo.getDeviceDisplayName();
+				info.size = nodeDetailInfo.getDeviceSize();
+				info.sizeUnit = nodeDetailInfo.getDeviceSizeUnit();
+				info.description = nodeDetailInfo.getDeviceDescription();
+				info.coreCount = nodeDetailInfo.getCoreCount();
+				info.threadCount = nodeDetailInfo.getThreadCount();
+				info.clockCount = nodeDetailInfo.getClockCount();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// メモリ情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_MEMORY) && nodeInfo.getNodeMemoryInfo() != null) {
+			for (NodeMemoryInfo nodeDetailInfo : nodeInfo.getNodeMemoryInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_MEMORY);
+				info.name = nodeDetailInfo.getDeviceName();
+				info.index = nodeDetailInfo.getDeviceIndex();
+				info.displayName = nodeDetailInfo.getDeviceDisplayName();
+				info.size = nodeDetailInfo.getDeviceSize();
+				info.sizeUnit = nodeDetailInfo.getDeviceSizeUnit();
+				info.description = nodeDetailInfo.getDeviceDescription();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// NIC情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_NIC) && nodeInfo.getNodeNetworkInterfaceInfo() != null) {
+			for (NodeNetworkInterfaceInfo nodeDetailInfo : nodeInfo.getNodeNetworkInterfaceInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_NIC);
+				info.name = nodeDetailInfo.getDeviceName();
+				info.index = nodeDetailInfo.getDeviceIndex();
+				info.displayName = nodeDetailInfo.getDeviceDisplayName();
+				info.size = nodeDetailInfo.getDeviceSize();
+				info.sizeUnit = nodeDetailInfo.getDeviceSizeUnit();
+				info.description = nodeDetailInfo.getDeviceDescription();
+				info.ipAddress = nodeDetailInfo.getNicIpAddress();
+				info.macAddress = nodeDetailInfo.getNicMacAddress();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// ディスク情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_DISK) && nodeInfo.getNodeDiskInfo() != null) {
+			for (NodeDiskInfo nodeDetailInfo : nodeInfo.getNodeDiskInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_DISK);
+				info.name = nodeDetailInfo.getDeviceName();
+				info.index = nodeDetailInfo.getDeviceIndex();
+				info.displayName = nodeDetailInfo.getDeviceDisplayName();
+				info.size = nodeDetailInfo.getDeviceSize();
+				info.sizeUnit = nodeDetailInfo.getDeviceSizeUnit();
+				info.description = nodeDetailInfo.getDeviceDescription();
+				info.diskRpm = nodeDetailInfo.getDiskRpm();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// ファイルシステム情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_FILESYSTEM) && nodeInfo.getNodeFilesystemInfo() != null) {
+			for (NodeFilesystemInfo nodeDetailInfo : nodeInfo.getNodeFilesystemInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_FILESYSTEM);
+				info.name = nodeDetailInfo.getDeviceName();
+				info.index = nodeDetailInfo.getDeviceIndex();
+				info.displayName = nodeDetailInfo.getDeviceDisplayName();
+				info.size = nodeDetailInfo.getDeviceSize();
+				info.sizeUnit = nodeDetailInfo.getDeviceSizeUnit();
+				info.description = nodeDetailInfo.getDeviceDescription();
+				info.fileSystemType = nodeDetailInfo.getFilesystemType();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// ホスト名情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HOSTNAME) && nodeInfo.getNodeHostnameInfo() != null) {
+			for (NodeHostnameInfo nodeDetailInfo : nodeInfo.getNodeHostnameInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HOSTNAME);
+				info.name = nodeDetailInfo.getHostname();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// ネットワーク接続情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.NETSTAT) && nodeInfo.getNodeNetstatInfo() != null) {
+			for (NodeNetstatInfo nodeDetailInfo : nodeInfo.getNodeNetstatInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.NETSTAT);
+				info.protocol = nodeDetailInfo.getProtocol();
+				info.localIpAddress = nodeDetailInfo.getLocalIpAddress();
+				info.localPort = nodeDetailInfo.getLocalPort();
+				info.foreignIpAddress = nodeDetailInfo.getForeignIpAddress();
+				info.foreignPort = nodeDetailInfo.getForeignPort();
+				info.processName = nodeDetailInfo.getProcessName();
+				info.pid = nodeDetailInfo.getPid();
+				info.status = nodeDetailInfo.getStatus();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// プロセス情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.PROCESS) && nodeInfo.getNodeProcessInfo() != null) {
+			for (NodeProcessInfo nodeDetailInfo : nodeInfo.getNodeProcessInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.PROCESS);
+				info.name = nodeDetailInfo.getProcessName();
+				info.startupDateTime = nodeDetailInfo.getStartupDateTime();
+				info.pid = nodeDetailInfo.getPid();
+				info.path = nodeDetailInfo.getPath();
+				info.execUser = nodeDetailInfo.getExecUser();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// パッケージ情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.PACKAGE) && nodeInfo.getNodePackageInfo() != null) {
+			for (NodePackageInfo nodeDetailInfo : nodeInfo.getNodePackageInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.PACKAGE);
+				info.name = nodeDetailInfo.getPackageName();
+				info.displayName = nodeDetailInfo.getPackageId();
+				info.version = nodeDetailInfo.getVersion();
+				info.release = nodeDetailInfo.getRelease();
+				info.installDate = nodeDetailInfo.getInstallDate();
+				info.vendor = nodeDetailInfo.getVendor();
+				info.architecture = nodeDetailInfo.getArchitecture();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// ノード変数情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.NODE_VARIABLE) && nodeInfo.getNodeVariableInfo() != null) {
+			for (NodeVariableInfo nodeDetailInfo : nodeInfo.getNodeVariableInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.NODE_VARIABLE);
+				info.name = nodeDetailInfo.getNodeVariableName();
+				info.value = nodeDetailInfo.getNodeVariableValue();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// 個別導入製品情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.PRODUCT) && nodeInfo.getNodeProductInfo() != null) {
+			for (NodeProductInfo nodeDetailInfo : nodeInfo.getNodeProductInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.PRODUCT);
+				info.name = nodeDetailInfo.getProductName();
+				info.version = nodeDetailInfo.getVersion();
+				info.path = nodeDetailInfo.getPath();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// ライセンス情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.LICENSE) && nodeInfo.getNodeLicenseInfo() != null) {
+			for (NodeLicenseInfo nodeDetailInfo : nodeInfo.getNodeLicenseInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.LICENSE);
+				info.name = nodeDetailInfo.getProductName();
+				info.vendor = nodeDetailInfo.getVendor();
+				info.vendorContact = nodeDetailInfo.getVendorContact();
+				info.serialNumber = nodeDetailInfo.getSerialNumber();
+				info.count = nodeDetailInfo.getCount();
+				info.expirationDate = nodeDetailInfo.getExpirationDate();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+		// ユーザ任意情報
+		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.CUSTOM) && nodeInfo.getNodeCustomInfo() != null) {
+			for (NodeCustomInfo nodeDetailInfo : nodeInfo.getNodeCustomInfo()) {
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.CUSTOM);
+				info.name = nodeDetailInfo.getSettingId();
+				info.subName = nodeDetailInfo.getSettingCustomId();
+				info.displayName = nodeDetailInfo.getDisplayName();
+				info.value = nodeDetailInfo.getValue();
+				info.command = nodeDetailInfo.getCommand();
+				info.regDate = nodeDetailInfo.getRegDate();
+				info.regUser = nodeDetailInfo.getRegUser();
+				info.updateDate = nodeDetailInfo.getUpdateDate();
+				info.updateUser = nodeDetailInfo.getUpdateUser();
+				writeFileWriter(filewriter, info);
+			}
+		}
+	}
+
+	/**
+	 * 構成情報ファイル書き込み処理
+	 * 
+	 * @param filewriter FileWriter
+	 * @param info 構成情報のファイル情報
+	 * @throws IOException
+	 */
+	private void writeFileWriter(FileWriter filewriter, NodeConfigFileInfo info) throws IOException{
+
+		String nodeConfigSeparator = HinemosPropertyCommon.node_config_report_separator.getStringValue();
+
+		if (info == null) {
+			return;
+		}
+		filewriter.write(
+				getDoubleQuote(info.managerName) + nodeConfigSeparator +
+				getDoubleQuote(info.facilityId) + nodeConfigSeparator +
+				getDoubleQuote(info.type.typeName()) + nodeConfigSeparator +
+				getDoubleQuote(info.name) + nodeConfigSeparator +
+				getDoubleQuote(info.subName) + nodeConfigSeparator +
+				getDoubleQuote(info.index) + nodeConfigSeparator +
+				getDoubleQuote(info.displayName) + nodeConfigSeparator +
+				getDoubleQuote(info.size) + nodeConfigSeparator +
+				getDoubleQuote(info.sizeUnit) + nodeConfigSeparator +
+				getDoubleQuote(info.description) + nodeConfigSeparator +
+				getDoubleQuote(info.version) + nodeConfigSeparator +
+				getDoubleQuote(info.release) + nodeConfigSeparator +
+				getDoubleQuote(l2s(info.startupDateTime)) + nodeConfigSeparator +
+				getDoubleQuote(l2s(info.installDate)) + nodeConfigSeparator +
+				getDoubleQuote(info.value) + nodeConfigSeparator +
+				getDoubleQuote(info.coreCount) + nodeConfigSeparator +
+				getDoubleQuote(info.threadCount) + nodeConfigSeparator +
+				getDoubleQuote(info.clockCount) + nodeConfigSeparator +
+				getDoubleQuote(info.ipAddress) + nodeConfigSeparator +
+				getDoubleQuote(info.macAddress) + nodeConfigSeparator +
+				getDoubleQuote(info.diskRpm) + nodeConfigSeparator +
+				getDoubleQuote(info.fileSystemType) + nodeConfigSeparator +
+				getDoubleQuote(info.characterSet) + nodeConfigSeparator +
+				getDoubleQuote(info.protocol) + nodeConfigSeparator +
+				getDoubleQuote(info.localIpAddress) + nodeConfigSeparator +
+				getDoubleQuote(info.localPort) + nodeConfigSeparator +
+				getDoubleQuote(info.foreignIpAddress) + nodeConfigSeparator +
+				getDoubleQuote(info.foreignPort) + nodeConfigSeparator +
+				getDoubleQuote(info.processName) + nodeConfigSeparator +
+				getDoubleQuote(info.pid) + nodeConfigSeparator +
+				getDoubleQuote(info.status) + nodeConfigSeparator +
+				getDoubleQuote(info.path) + nodeConfigSeparator +
+				getDoubleQuote(info.execUser) + nodeConfigSeparator +
+				getDoubleQuote(info.vendor) + nodeConfigSeparator +
+				getDoubleQuote(info.architecture) + nodeConfigSeparator +
+				getDoubleQuote(info.command) + nodeConfigSeparator +
+				getDoubleQuote(info.vendorContact) + nodeConfigSeparator +
+				getDoubleQuote(info.serialNumber) + nodeConfigSeparator +
+				getDoubleQuote(info.count) + nodeConfigSeparator +
+				getDoubleQuote(l2s(info.expirationDate)) + nodeConfigSeparator +
+				getDoubleQuote(l2s(info.regDate)) + nodeConfigSeparator +
+				getDoubleQuote(info.regUser) + nodeConfigSeparator +
+				getDoubleQuote(l2s(info.updateDate)) + nodeConfigSeparator +
+				getDoubleQuote(info.updateUser) +
+				"\n");
+	}
+
+	/**
+	 * 構成情報のファイル情報
+	 */
+	private static class NodeConfigFileInfo {
+		String managerName = "";			// マネージャ名
+		String facilityId = "";				// ファシリティID
+		NodeConfigSettingItem type = null;	// 種別
+		String name = "";					// 名前
+		String subName = "";				// 名前（サブ）
+		Integer index = null;				// インデックス
+		String displayName = "";			// 表示名
+		Integer size = null;				// サイズ
+		String sizeUnit = "";				// サイズ単位
+		String description = "";			// 説明
+		String version = "";				// バージョン
+		String release = "";				// リリース
+		Long startupDateTime = null;		// 起動日時
+		Long installDate = null;			// インストール日時
+		String value = "";					// 値
+		Integer coreCount = null;			// コア数
+		Integer threadCount = null;			// スレッド数
+		Integer clockCount = null;			// クロック数
+		String ipAddress = "";				// IPアドレス
+		String macAddress = "";				// MACアドレス
+		Integer diskRpm = null;				// ディスク回転数
+		String fileSystemType = "";			// ファイルシステム種別
+		String characterSet = "";			// 文字セット
+		String protocol = "";				// プロトコル
+		String localIpAddress = "";			// ローカルIPアドレス
+		String localPort = "";				// ローカルポート
+		String foreignIpAddress = "";		// 外部IPアドレス
+		String foreignPort = "";			// 外部ポート
+		String processName = "";			// プロセス名
+		Integer pid = null;					// PID
+		String status = "";					// ステータス
+		String path = "";					// フルパス
+		String execUser = "";				// 実行ユーザ
+		String vendor = "";					// ベンダー
+		String architecture = "";			// アーキテクチャ
+		String command = "";				// コマンド
+		String vendorContact = "";			// ベンダー連絡先
+		String serialNumber = "";			// シリアルナンバー
+		Integer count = null;				// 数量
+		Long expirationDate = null;			// 有効期限
+		Long regDate = null;				// 作成日時
+		String regUser = "";				// 作成ユーザ
+		Long updateDate = null;				// 更新日時
+		String updateUser = "";				// 更新ユーザ
+
+		NodeConfigFileInfo (String managerName, String facilityId, NodeConfigSettingItem type){
+			this.managerName = managerName;
+			this.facilityId = facilityId;
+			this.type = type;
+		}
+	}
+
+	/**
+	 * Long型のエポックミリ秒を日付型に整形する。
+	 * @param t
+	 * @return
+	 */
+	private String l2s(Long l) {
+		if (l == null) {
+			return "";
+		}
+		// 日付フォーマットおよびタイムゾーンの設定
+		String DATE_FORMAT = HinemosPropertyCommon.node_config_report_format.getStringValue();
+		SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+		sdf.setTimeZone(HinemosTime.getTimeZone());
+		return sdf.format(new Date(l));
+	}
+
+	/**
+	 * メッセージやオリジナルメッセージに改行が含まれている場合や、
+	 * 「"」が含まれている場合はMS Excelで読もうとするとおかしくなる。
+	 * 改行等が含まれる可能性のある箇所は下記を利用すること。
+	 */
+	private String getDoubleQuote(String in) {
+		if (in == null) {
+			return "\"\"";
+		}
+		return "\"" + in.replace("\"", "\"\"") + "\"";
+	}
+
+	/**
+	 * メッセージやオリジナルメッセージに改行が含まれている場合や、
+	 * 「"」が含まれている場合はMS Excelで読もうとするとおかしくなる。
+	 * 改行等が含まれる可能性のある箇所は下記を利用すること。
+	 */
+	private String getDoubleQuote(Integer in) {
+		if (in == null) {
+			return "\"\"";
+		}
+		return "\"" + in.toString().replace("\"", "\"\"") + "\"";
+	}
+
+	/**
+	 * ノードインスタンスからノード情報を生成する。<BR>
+	 * ただし、ノード情報は一部の情報のみ。
+	 * 
+	 * @param node ノードインスタンス
+	 * @return ノード情報
+	 */
+	private static NodeInfo copyToNodeInfo(NodeInfo node) {
+		NodeInfo nodeInfo = new NodeInfo();
+		nodeInfo.setFacilityId(node.getFacilityId());
+		nodeInfo.setFacilityName(node.getFacilityName());
+		nodeInfo.setIpAddressVersion(node.getIpAddressVersion());
+		nodeInfo.setIpAddressV4(node.getIpAddressV4());
+		nodeInfo.setIpAddressV6(node.getIpAddressV6());
+		nodeInfo.setPlatformFamily(node.getPlatformFamily());
+		nodeInfo.setDescription(node.getDescription());
+		nodeInfo.setOwnerRoleId(node.getOwnerRoleId());
+		long createDateTime = node.getCreateDatetime().longValue();
+		nodeInfo.setCreateDatetime(createDateTime);
+		long modifyDateTime = node.getModifyDatetime().longValue();
+		nodeInfo.setModifyDatetime(modifyDateTime);
+		return nodeInfo;
+	}
+
+	/**
+	 * ファシリティインスタンスからファシリティ情報を生成する。<BR>
+	 * ただし、ファシリティ情報は以下の形式で格納されている。<BR>
+	 * <PRE>
+	 * {
+	 *    {facilityId1, facilityName1, description1, displaySortOrder1},
+	 *    {facilityId2, facilityName2, description2, displaySortOrder2},
+	 *    ...
+	 * }
+	 * </PRE>
+	 * 
+	 * @param scope ファシリティインスタンス
+	 * @return ファシリティ情報
+	 */
+	private static FacilityInfo copyToFacilityInfo(FacilityInfo facility) {
+		FacilityInfo facilityInfo = new FacilityInfo();
+		if (facility instanceof NodeInfo) {
+			facilityInfo.setFacilityType(FacilityConstant.TYPE_NODE);
+		} else {
+			facilityInfo.setFacilityType(FacilityConstant.TYPE_SCOPE);
+		}
+		facilityInfo.setFacilityId(facility.getFacilityId());
+		facilityInfo.setFacilityName(facility.getFacilityName());
+		facilityInfo.setDescription(facility.getDescription());
+		facilityInfo.setDisplaySortOrder(facility.getDisplaySortOrder());
+		facilityInfo.setIconImage(facility.getIconImage());
+		facilityInfo.setOwnerRoleId(facility.getOwnerRoleId());
+		long createDateTime = facility.getCreateDatetime().longValue();
+		facilityInfo.setCreateDatetime(createDateTime);
+		long modifyDateTime = facility.getModifyDatetime().longValue();
+		facilityInfo.setModifyDatetime(modifyDateTime);
+		return facilityInfo;
 	}
 }

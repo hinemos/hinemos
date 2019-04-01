@@ -12,7 +12,7 @@
 
 Hinemosは大規模、複雑化するITシステムの「監視」や「ジョブ」といった「運用業務の自動化」を実現し、オープンソースソフトウェアが持つコストメリットを最大限に活用できる統合運用管理ソフトウェアです。
 
-[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v6.1.2#packages)
+[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v6.2.0#packages)
 
 ## インストール
 
@@ -20,32 +20,49 @@ Hinemosはコマンドひとつでインストールできます。
 
 - マネージャのインストール
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.2/hinemos-6.1-manager-6.1.2-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.0/hinemos-6.2-manager-6.2.0-1.el7.x86_64.rpm```
 
 - Webクライアントのインストール
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.2/hinemos-6.1-web-6.1.2-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.0/hinemos-6.2-web-6.2.0-1.el7.x86_64.rpm```
 
-詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/releases/download/v6.1.2/ja_Install_Linux_6.1_rev3.pdf)をご覧下さい。
+詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/releases/download/v6.2.0/ja_Install_Linux_6.2_rev1.pdf)をご覧下さい。
 
-## ver.6.1新機能
+## ver.6.2新機能
 
-- サイレント障害の監視
-	- 単一の性能値だけでなく、傾向や複数の値の相関での監視を実現
+- ノードの構成情報を履歴管理・変更通知
+	- 管理対象のパッケージやプログラムなどの情報を定期的に取得し履歴管理
+	- 構成情報の変更を通知
+	- 蓄積した情報に対する検索、CSV出力 (サブスクリプションで提供)
 
-- バイナリデータ収集
-	- パケットキャプチャーやバイナリログなど、バイナリデータの収集・蓄積を実現
+## ver.6.2機能改善
 
-- 自動化機能の強化
-	- 業務や運用をより簡易に自動化する機能を強化
+- エージェントアップデートの改善
+	- 転送効率改善およびアップデートステータスの詳細化
+
+- 同時実行制御キュー
+	- 同時実行制御キューにより、ジョブやジョブネットをまたがった同時実行数を制御
+	
+- イベント情報の拡張
+	- イベント情報に含める項目にユーザーの独自情報を追加可能
+
+- イベント情報を使ったユーザ操作
+	- イベント情報を使った操作（コマンド）を事前に定義しユーザ判断によって実行が可能
+
+- 監視履歴画面の拡張
+	- 監視履歴の各ビューに対して既定レイアウトのカスタマイズが可能
+
+- バージョンアップツールの改善(サブスクリプションで提供)
+	- Hinemos ver.4.1以降のHinemosの定義をHinemos ver.6.2の定義へ直接変換
+
 
 詳細は[リリースノート](https://github.com/hinemos/hinemos/releases)をご覧下さい。
 
 ## ドキュメント
 
-- インストールマニュアル ([ja_Install_Linux_6.1_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.2/ja_Install_Linux_6.1_rev3.pdf) )
-- ユーザマニュアル ( [ja_User_6.1_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.2/ja_User_6.1_rev3.pdf) )
-- 管理者ガイド ( [ja_Admin_Linux_6.1_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.2/ja_Admin_Linux_6.1_rev3.pdf) )
+- インストールマニュアル ([ja_Install_Linux_6.2_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.0/ja_Install_Linux_6.2_rev1.pdf) )
+- ユーザマニュアル ( [ja_User_6.2_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.0/ja_User_6.2_rev1.pdf) )
+- 管理者ガイド ( [ja_Admin_Linux_6.2_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.0/ja_Admin_Linux_6.2_rev1.pdf) )
 
 ## ライセンス
 

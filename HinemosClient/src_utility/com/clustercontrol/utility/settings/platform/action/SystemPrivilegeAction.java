@@ -47,7 +47,7 @@ import com.clustercontrol.utility.settings.platform.conv.SystemPrivilegeConv;
 import com.clustercontrol.utility.settings.platform.xml.SystemPrivilege;
 import com.clustercontrol.utility.settings.platform.xml.SystemPrivilegeInfo;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
@@ -353,7 +353,8 @@ public class SystemPrivilegeAction {
 						}else{
 							// 重複時、インポート処理方法を確認する
 							if(!ImportProcessMode.isSameprocess()){
-								ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(null, Messages.getString("message.import.confirm2", new String[]{roleId + " " + sysFunc}));
+								UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
+										null, Messages.getString("message.import.confirm2", new String[]{roleId + " " + sysFunc}));
 								ImportProcessMode.setProcesstype(dialog.open());
 								ImportProcessMode.setSameprocess(dialog.getToggleState());
 							}

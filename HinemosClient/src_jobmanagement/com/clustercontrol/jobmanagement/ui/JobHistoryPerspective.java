@@ -16,6 +16,8 @@ import com.clustercontrol.jobmanagement.view.ForwardFileView;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
 import com.clustercontrol.jobmanagement.view.JobNodeDetailView;
+import com.clustercontrol.jobmanagement.view.JobQueueActivityView;
+import com.clustercontrol.jobmanagement.view.JobQueueContentsView;
 
 /**
  * ジョブ管理のパースペクティブを生成するクラスです。
@@ -38,9 +40,13 @@ public class JobHistoryPerspective extends ClusterControlPerspectiveBase {
 		String editorArea = layout.getEditorArea();
 
 		//エディタ領域の上部30%を占めるViewを作成
-		layout.addView( JobHistoryView.ID, IPageLayout.TOP, 0.33f, editorArea );
+		IFolderLayout top = layout.createFolder( "top", IPageLayout.TOP, 0.33f, editorArea );
+		top.addView(JobHistoryView.ID);
+		top.addView(JobQueueActivityView.ID);
 		//残りの50%を占めるViewの作成
-		layout.addView( JobDetailView.ID, IPageLayout.TOP, 0.5f, editorArea );
+		IFolderLayout middle = layout.createFolder( "middle", IPageLayout.TOP, 0.5f, editorArea );
+		middle.addView(JobDetailView.ID);
+		middle.addView(JobQueueContentsView.ID);
 		//残りのViewの作成
 		IFolderLayout bottom = layout.createFolder( "buttom", IPageLayout.TOP, IPageLayout.RATIO_MAX, editorArea );
 		bottom.addView(JobNodeDetailView.ID);

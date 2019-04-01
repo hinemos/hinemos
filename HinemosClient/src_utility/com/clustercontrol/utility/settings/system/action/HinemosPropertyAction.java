@@ -28,7 +28,7 @@ import com.clustercontrol.utility.settings.maintenance.xml.HinemosPropertyInfo;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.system.conv.HinemosPropertyConv;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
@@ -110,7 +110,7 @@ public class HinemosPropertyAction extends BaseAction<com.clustercontrol.ws.main
 			//重複時、インポート処理方法を確認する
 			if(!ImportProcessMode.isSameprocess()){
 				String[] args = {getKeyInfoE(element)};
-				ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+				UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 						null, Messages.getString("message.import.confirm2", args));
 			    ImportProcessMode.setProcesstype(dialog.open());
 			    ImportProcessMode.setSameprocess(dialog.getToggleState());

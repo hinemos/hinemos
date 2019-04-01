@@ -25,6 +25,7 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.RoleNotFound;
+import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.util.MessageConstant;
 
 /**
@@ -51,7 +52,7 @@ public class CommonValidator {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
 		}
-
+		
 		// string check
 		validateString(name, id, false, 1, maxSize);
 
@@ -138,6 +139,17 @@ public class CommonValidator {
 		}
 	}
 
+	/**
+	 * 数値の上限下限チェック
+	 * {@link #validateInt(String, Integer, int, int)}のnull許容版。
+	 * 
+	 * @throws InvalidSetting
+	 */
+	public static void validateNullableInt(String name, Integer i, int minSize, int maxSize) throws InvalidSetting {
+		if (i == null) return;
+		validateInt(name, i, minSize, maxSize);
+	}
+	
 	/**
 	 * 数値の上限下限チェック
 	 * @throws InvalidSetting
@@ -453,6 +465,50 @@ public class CommonValidator {
 		}
 	}
 
+	/**
+	 * nullであるかをバリデーションします。
+	 * 
+	 * @param value
+	 * @param message
+	 * @return
+	 * @throws InvalidSetting
+	 */
+	public static void validateNull(String name, Object value) throws InvalidSetting {
+		if (value == null) {
+			String message = MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(name);
+			InvalidSetting e = new InvalidSetting(message);
+			m_log.info("validateNull() : " + e.getClass().getSimpleName()
+					+ ", " + e.getMessage());
+			throw e;
+		}
+	}
+	
+	/**
+	 * 確認状態が正しいか判定する
+	 * 
+	 */
+	public static void validateConfirm(String name, Integer confirm) throws InvalidSetting {
+		if (confirm == null) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(name));
+			m_log.info("validateConfirm() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		
+		for (int i = 0; i < ConfirmConstant.CONFIRM_LIST.length; i++) {
+			if (confirm == ConfirmConstant.CONFIRM_LIST[i]) {
+				//有効な値セットされている場合
+				return;
+			}
+		}
+		
+		InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_ILLEGAL_VALUE.getMessage(name, String.valueOf(confirm)));
+		m_log.info("validateConfirm() : "
+				+ e.getClass().getSimpleName() + ", " + e.getMessage());
+		throw e;
+		
+	}
+	
 	/**
 	 * for debug
 	 * @param args

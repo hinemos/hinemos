@@ -40,8 +40,10 @@ import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilityTreeItem;
 import com.clustercontrol.repository.factory.FacilitySelector;
+import com.clustercontrol.repository.factory.NodeProperty;
 import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.repository.model.FacilityRelationEntity;
+import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
@@ -592,22 +594,40 @@ public class FacilityTreeCache {
 
 			HashMap<String, FacilityInfo> facilityInfoMap = new HashMap<String, FacilityInfo>();
 
-			// ファシリティ情報を全件取得する
-			List<FacilityInfo> facilityEntities = QueryUtil.getAllFacility_NONE();
-			for (FacilityInfo facilityEntity : facilityEntities) {
+			// ノード情報を全件取得する
+			List<NodeInfo> nodeEntities = NodeProperty.getAllList();
+			for (NodeInfo nodeEntity : nodeEntities) {
 				// ファシリティの格納
 				FacilityInfo facilityInfo = new FacilityInfo();
-				facilityInfo.setFacilityId(facilityEntity.getFacilityId());
-				facilityInfo.setFacilityName(facilityEntity.getFacilityName());
-				facilityInfo.setFacilityType(facilityEntity.getFacilityType());
-				facilityInfo.setDisplaySortOrder(facilityEntity.getDisplaySortOrder());
-				facilityInfo.setIconImage(facilityEntity.getIconImage());
-				facilityInfo.setBuiltInFlg(facilityEntity instanceof ScopeInfo ? FacilitySelector.isBuildinScope((ScopeInfo)facilityEntity): false);
-				facilityInfo.setValid(FacilityUtil.isValid(facilityEntity));
-				facilityInfo.setOwnerRoleId(facilityEntity.getOwnerRoleId());
-				facilityInfo.setDescription(facilityEntity.getDescription());
+				facilityInfo.setFacilityId(nodeEntity.getFacilityId());
+				facilityInfo.setFacilityName(nodeEntity.getFacilityName());
+				facilityInfo.setFacilityType(nodeEntity.getFacilityType());
+				facilityInfo.setDisplaySortOrder(nodeEntity.getDisplaySortOrder());
+				facilityInfo.setIconImage(nodeEntity.getIconImage());
+				facilityInfo.setBuiltInFlg(false);
+				facilityInfo.setValid(FacilityUtil.isValid(nodeEntity));
+				facilityInfo.setOwnerRoleId(nodeEntity.getOwnerRoleId());
+				facilityInfo.setDescription(nodeEntity.getDescription());
 
-				facilityInfoMap.put(facilityEntity.getFacilityId(), facilityInfo);
+				facilityInfoMap.put(nodeEntity.getFacilityId(), facilityInfo);
+			}
+
+			// スコープ情報を全件取得する
+			List<ScopeInfo> scopeEntities = QueryUtil.getAllScope_NONE();
+			for (ScopeInfo scopeEntity : scopeEntities) {
+				// ファシリティの格納
+				FacilityInfo facilityInfo = new FacilityInfo();
+				facilityInfo.setFacilityId(scopeEntity.getFacilityId());
+				facilityInfo.setFacilityName(scopeEntity.getFacilityName());
+				facilityInfo.setFacilityType(scopeEntity.getFacilityType());
+				facilityInfo.setDisplaySortOrder(scopeEntity.getDisplaySortOrder());
+				facilityInfo.setIconImage(scopeEntity.getIconImage());
+				facilityInfo.setBuiltInFlg(FacilitySelector.isBuildinScope(scopeEntity));
+				facilityInfo.setValid(FacilityUtil.isValid(scopeEntity));
+				facilityInfo.setOwnerRoleId(scopeEntity.getOwnerRoleId());
+				facilityInfo.setDescription(scopeEntity.getDescription());
+
+				facilityInfoMap.put(scopeEntity.getFacilityId(), facilityInfo);
 			}
 
 			return facilityInfoMap;
@@ -712,9 +732,9 @@ public class FacilityTreeCache {
 		// ファシリティの格納
 		FacilityInfo facilityInfo = facilityInfoMap.get(facilityId);
 		if (facilityInfo == null) {
-			// ここは通らないはず。
-			m_log.error("createFacilityTreeItemRecursive : facilityInfo is null. " + facilityId);
-			throw new NullPointerException();
+			// 他スレッドでDB登録のcommitだけ先に動いてキャッシュ更新が追いつかないとここに入るが、正常なのでskipさせる.
+			m_log.info("createFacilityTreeItemRecursive : facilityInfo is null. " + facilityId);
+			return ;
 		}
 		FacilityTreeItem treeItem = new FacilityTreeItem(parentTreeItem, facilityInfo);
 		treeItem.setAuthorizedRoleIdSet(getAuthorizedRoleIdSet(facilityInfo,

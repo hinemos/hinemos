@@ -15,7 +15,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -304,7 +303,6 @@ public class ReadingStatusRoot {
 		}
 	}
 
-	private static final String prefix = "prefix";
 	private static final String prefixBinary = "prefixBinary";
 	private static final String position = "position";
 	private static final String carryover = "carryover";
@@ -321,13 +319,6 @@ public class ReadingStatusRoot {
 		// 読み込んでいるファイルのパス
 		public final File filePath;
 
-		// FIXME
-		// prefixは prefixBinaryにて代替となった為、判定上は不使用である
-		// ただし、r21858以前への切り戻し向けにprefixプロパティは残す（ないと切り戻し後、監視が動作しない）
-		// ver6.2 以降では この変数は不要なはずなので除去すること
-		// 読み込んでいるファイルの先頭文字列
-		public String prefix = "";
-
 		// 読み込んでいるファイルの先頭バイナリ 
 		public List<Byte> prefixBinary = new ArrayList<Byte>();
 		
@@ -343,6 +334,7 @@ public class ReadingStatusRoot {
 		// 前のファイルサイズ
 		public long prevSize = 0;
 		
+		@SuppressWarnings("unused")
 		private final ReadingStatusDir parent;
 		
 		private boolean initialized;
@@ -371,7 +363,6 @@ public class ReadingStatusRoot {
 					Properties props = new Properties();
 					props.load(fi);
 					
-					prefix = props.getProperty(ReadingStatusRoot.prefix);
 					prefixBinString = props.getProperty(ReadingStatusRoot.prefixBinary);
 					position = Long.parseLong(props.getProperty(ReadingStatusRoot.position));
 					carryover = props.getProperty(ReadingStatusRoot.carryover);
@@ -384,74 +375,13 @@ public class ReadingStatusRoot {
 							log.debug( "initialize() : " + filePath + ".prefixBinString is empty");
 						}
 					} else {
-						prefixBinary = BinaryUtil.stirngToList(prefixBinString, 1, 1);
+						prefixBinary = BinaryUtil.stringToList(prefixBinString, 1, 1);
 						if(log.isDebugEnabled()){
 							log.debug("initialize() : " + filePath + ".prefixBinary size = " + prefixBinary.size());
 						}
 					}
-
-					//FIXME
-					// チェンジセット21858時点からのバージョンアップ直後のみ、動作する想定のロジック
-					// 上記の場合はRSファイルを作り直し（本処理の直後のみ無条件にローテーション無しと判定されるので注意）
-					// 6.2 以降では この判定と処理は不要なはずなので除去すること
-					if(prefix != null && prefixBinString == null){
-						log.info("initialize() : " + filePath + ". PrefixBinString is noting . Reading status file is rebuilding ");
-						prefixBinary = getCurrentPrefix();
-						prefixBinString = BinaryUtil.listToString(prefixBinary, 1);
-						store();
-					}
 					
 					initialized = true;
-				} catch (NumberFormatException | IOException e) {
-					log.warn(e.getMessage(), e);
-				}
-			// FIXME
-			// パッチ適用時は既に存在する一時ファイルを利用するため下記処理を残しておく
-			// 次期バージョンでは下記の else if {...} は削除すること 
-			} else if(this.rsFilePath.exists()) {
-				try (FileInputStream fi = new FileInputStream(this.rsFilePath)) {
-					// ファイルを読み込む
-					Properties props = new Properties();
-					props.load(fi);
-					
-					// FIXME
-					// prefixは prefixBinaryにて代替となった為、判定上は不使用である
-					// ただし、r21858以前への切り戻し向けにprefixプロパティは残す（ないと切り戻し後、監視が動作しない）
-					// ver6.2 以降では この変数は不要なはずなので除去すること
-					prefix = props.getProperty(ReadingStatusRoot.prefix);
-					prefixBinString = props.getProperty(ReadingStatusRoot.prefixBinary);
-					position = Long.parseLong(props.getProperty(ReadingStatusRoot.position));
-					carryover = props.getProperty(ReadingStatusRoot.carryover);
-					prevSize = Long.parseLong(props.getProperty(ReadingStatusRoot.prevSize));
-
-					// prefixBinStringを元にprefixBinary 初期化.
-					if (prefixBinString == null || prefixBinString.isEmpty()) {
-						prefixBinary = new ArrayList<Byte>();
-						if(log.isDebugEnabled()){
-							log.debug( "initialize() : " + filePath + ".prefixBinString is empty");
-						}
-					} else {
-						prefixBinary = BinaryUtil.stirngToList(prefixBinString, 1, 1);
-						if(log.isDebugEnabled()){
-							log.debug("initialize() : " + filePath + ".prefixBinary size = " + prefixBinary.size());
-						}
-					}
-
-					//FIXME
-					// チェンジセット21858時点からのバージョンアップ直後のみ、動作する想定のロジック
-					// 上記の場合はRSファイルを作り直し（本処理の直後のみ無条件にローテーション無しと判定されるので注意）
-					// 6.2 以降では この判定と処理は不要なはずなので除去すること
-					if(prefix != null && prefixBinString == null){
-						log.info("initialize() : " + filePath + ". PrefixBinString is noting . Reading status file is rebuilding ");
-						prefixBinary = getCurrentPrefix();
-						prefixBinString = BinaryUtil.listToString(prefixBinary, 1);
-						store();
-					}
-					
-					initialized = true;
-					
-					// パッチ適用により一時ファイル名が変わるのでstore()しておく
-					store();
 				} catch (NumberFormatException | IOException e) {
 					log.warn(e.getMessage(), e);
 				}
@@ -461,23 +391,8 @@ public class ReadingStatusRoot {
 						log.debug( "initialize() : reading status file is nothing :"+rsFilePath + " tail="+tail );
 					}
 					if (tail) {
-						// FIXME
-						// prefixは prefixBinaryにて代替となった為、判定上は不使用である
-						// ただし、r21858以前への切り戻し向けにprefixプロパティは残す（ないと切り戻し後、監視が動作しない）
-						// ver6.2 以降では この変数は不要なはずなので更新実装を除去すること
-						// prevSize と positionの更新は残すこと
-						try (BufferedReader newFile = new BufferedReader(new InputStreamReader(new FileInputStream(filePath), this.parent.wrapper.monitorInfo.getLogfileCheckInfo().getFileEncoding()))) {
-							char[] newFirstPartOfFile = new char[LogfileMonitorConfig.firstPartDataCheckSize];
-							
-							int num = newFile.read(newFirstPartOfFile);
-							prevSize = this.filePath.length();
-							position = prevSize;
-							
-							if (num > 0)
-								prefix = new String(newFirstPartOfFile, 0, num);
-							
-						}
-						
+						prevSize = this.filePath.length();
+						position = prevSize;
 						prefixBinary = getCurrentPrefix();
 						prefixBinString = BinaryUtil.listToString(prefixBinary, 1);
 					}
@@ -541,11 +456,11 @@ public class ReadingStatusRoot {
 				props.load(fi);
 				
 				// 指定のプロパティが見つからない場合無効と判断する
-				if(props.getProperty(ReadingStatusRoot.prefix) == null ||
-						props.getProperty(ReadingStatusRoot.prefixBinary) == null ||
-						props.getProperty(ReadingStatusRoot.position) == null ||
-						props.getProperty(ReadingStatusRoot.carryover) == null ||
-						props.getProperty(ReadingStatusRoot.prevSize) == null) {
+				if(
+					props.getProperty(ReadingStatusRoot.prefixBinary) == null ||
+					props.getProperty(ReadingStatusRoot.position) == null ||
+					props.getProperty(ReadingStatusRoot.carryover) == null ||
+					props.getProperty(ReadingStatusRoot.prevSize) == null) {
 					isValid = false;
 				}
 				
@@ -604,12 +519,6 @@ public class ReadingStatusRoot {
 			File tmpFilePath = new File(rsFileTempPath);
 			try (FileOutputStream fi = new FileOutputStream(tmpFilePath)) {
 				Properties props = new Properties();
-
-				// FIXME
-				// prefixは prefixBinaryにて代替となった為、判定上は不使用である
-				// ただし、r21858以前への切り戻し向けにprefixプロパティは残す（ないと切り戻し後、監視が動作しない）
-				// ver6.2 以降では この変数は不要なはずなので更新実装を除去すること
-				props.put(ReadingStatusRoot.prefix, prefix);
 				
 				props.put(ReadingStatusRoot.prefixBinary, String.valueOf(prefixBinString));
 				props.put(ReadingStatusRoot.position, String.valueOf(position));
@@ -645,7 +554,6 @@ public class ReadingStatusRoot {
 		 * ファイル状態情報を初期化する。
 		 */
 		public void reset() {
-			prefix = "";
 			prefixBinary = new ArrayList<Byte>();
 			prefixBinString= "" ;
 			position = 0;
@@ -658,7 +566,6 @@ public class ReadingStatusRoot {
 		 * ファイル状態情報をローテーションする。
 		 */
 		public void rotate() {
-			prefix = "";
 			prefixBinary = new ArrayList<Byte>();
 			prefixBinString= "" ;
 			position = 0;
@@ -679,16 +586,17 @@ public class ReadingStatusRoot {
 		 * agentpropertiesで設定しているチェックサイズ分カット.
 		 * 
 		 * @return 取得できなかった場合は空のListを返却
+		 * @throws IOException 
 		 * 
 		 */
-		public List<Byte> getCurrentPrefix() {
+		public List<Byte> getCurrentPrefix() throws IOException {
 			File monFile = filePath;
 			if(log.isDebugEnabled()){
 				log.debug( "getCurrentPrefix() :start. :" + monFile );
 			}
 			// 指定バイト数だけ読込むため配列長をAgentPropertiesで指定.
 			byte[] monFileByteArray = new byte[LogfileMonitorConfig.firstPartDataCheckSize];
-			List<Byte> firstPartOfFile = new ArrayList<Byte>();
+			List<Byte> firstPartOfFile;
 			try (FileInputStream fi = new FileInputStream(monFile)) {
 				// 監視対象ファイルの先頭から作成したバイト配列長分だけ読込む.
 				int readed = fi.read(monFileByteArray);
@@ -704,6 +612,7 @@ public class ReadingStatusRoot {
 				fi.close();
 			} catch (IOException e) {
 				log.warn("getCurrentPrefix() :"+ e.getMessage(), e);
+				throw e;
 			}
 			if(log.isDebugEnabled()){
 				log.debug("getCurrentPrefix() :"  + monFile + " , firstPartOfFile size = " + firstPartOfFile.size());

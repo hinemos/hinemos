@@ -70,7 +70,7 @@ public class BinaryRecordUtil {
 			record = mapRecDtoToSample(facilityId, input, recordDto);
 
 			// バイナリ値の設定.
-			tmpByteList = new ArrayList<Byte>();
+			tmpByteList = null;
 			record.setValue(new ArrayList<Byte>());
 			// 本体レコードデータの付与(ファイル全体監視はファイルヘッダの設定なし).
 			if (!recordDto.getBase64Str().isEmpty()) {
@@ -144,7 +144,7 @@ public class BinaryRecordUtil {
 			record = mapRecDtoToSample(facilityId, input, recordDto);
 			record.setValue(new ArrayList<Byte>());
 			// バイナリ値の設定.
-			tmpByteList = new ArrayList<Byte>();
+			tmpByteList = null;
 			// ファイルヘッダの付与(空文字もありえる).
 			if (!fileHeader.isEmpty()) {
 				record.getValue().addAll(fileHeader);

@@ -286,4 +286,14 @@ public class CommonTableViewer extends TableViewer {
 	public void setInput(ArrayList<?> infoList){
 		super.setInput(infoList);
 	}
+
+	/**
+	 * テーブルの全カラムを移動可能にします。
+	 */
+	public void setAllColumnsMovable() {
+		for (TableColumn c : getTable().getColumns()) {
+			c.setMoveable(true);
+		}
+	}
+	
 }

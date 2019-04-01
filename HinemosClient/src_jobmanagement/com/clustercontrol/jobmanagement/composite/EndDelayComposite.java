@@ -116,10 +116,10 @@ public class EndDelayComposite extends Composite {
 		this.setLayout(JobDialogUtil.getParentLayout());
 
 		// 終了遅延（チェック）
-		this.m_endDelayCondition = new Button(this, SWT.CHECK);
+		this.m_endDelayCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_endDelayCondition", this.m_endDelayCondition);
 		this.m_endDelayCondition.setText(Messages.getString("end.delay"));
-		this.m_endDelayCondition.setLayoutData(new RowData(200,
+		this.m_endDelayCondition.setLayoutData(new RowData(100,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_endDelayCondition.addSelectionListener(new SelectionListener() {
 			@Override

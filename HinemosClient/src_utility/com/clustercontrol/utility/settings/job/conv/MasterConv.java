@@ -19,7 +19,6 @@ import java.util.Objects;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
 import com.clustercontrol.util.Messages;
@@ -56,7 +55,7 @@ public class MasterConv {
 	private static Log log = LogFactory.getLog(MasterConv.class);
 
 	// 対応スキーマバージョン
-	private static final String schemaType = "I";
+	private static final String schemaType = "J";
 	private static final String schemaVersion = "1";
 	private static final String schemaRevision = "1";
 
@@ -343,7 +342,7 @@ public class MasterConv {
 		ret.setMessageRetryEndValue(jobMasterXML.getMessageRetryEndValue());
 
 		ret.setCommandRetryFlg(jobMasterXML.getCommandRetryFlg());
-		ret.setCommandRetryEndStatus(jobMasterXML.hasCommandRetryEndStatus() ? jobMasterXML.getCommandRetryEndStatus() : EndStatusConstant.INITIAL_VALUE_NORMAL);
+		ret.setCommandRetryEndStatus(jobMasterXML.hasCommandRetryEndStatus() ? jobMasterXML.getCommandRetryEndStatus() : null);
 
 		//未設定時はデフォルトの10を設定する。
 		ret.setCommandRetry(jobMasterXML.hasCommandRetry() ? jobMasterXML.getCommandRetry() : 10);
@@ -448,7 +447,7 @@ public class MasterConv {
 		// ジョブが正常終了するまでコマンドを繰り返すかのフラグ
 		ret.setCommandRetryFlg(jobMasterXML.getCommandRetryFlg());
 		// ジョブの繰り返し実行時の終了状態//未設定時はデフォルトの正常状態を設定する。
-		ret.setCommandRetryEndStatus(jobMasterXML.hasCommandRetryEndStatus() ? jobMasterXML.getCommandRetryEndStatus() : EndStatusConstant.INITIAL_VALUE_NORMAL);
+		ret.setCommandRetryEndStatus(jobMasterXML.hasCommandRetryEndStatus() ? jobMasterXML.getCommandRetryEndStatus() : null);
 		// ジョブが指定された終了状態になるまでコマンドを繰り返す時の試行回数//未設定時はデフォルトの10を設定する。
 		ret.setCommandRetry(jobMasterXML.hasCommandRetry() ? jobMasterXML.getCommandRetry() : 10);
 
@@ -596,9 +595,12 @@ public class MasterConv {
 
 		//繰り返し実行
 		ret.setJobRetryFlg(jobMasterXML.getJobRetryFlg());
-		ret.setJobRetryEndStatus(jobMasterXML.hasJobRetryEndStatus() ? jobMasterXML.getJobRetryEndStatus() : EndStatusConstant.INITIAL_VALUE_NORMAL);
+		ret.setJobRetryEndStatus(jobMasterXML.hasJobRetryEndStatus() ? jobMasterXML.getJobRetryEndStatus() : null);
 		ret.setJobRetry(jobMasterXML.hasJobRetry() ? jobMasterXML.getJobRetry() : 10);
-
+		
+		//同時実行制御キュー
+		ret.setQueueFlg(jobMasterXML.getQueueFlg());
+		ret.setQueueId(jobMasterXML.getQueueId());
 		return ret;
 	}
 
@@ -796,7 +798,11 @@ public class MasterConv {
 			jobXML.setCommandRetryFlg(commandInfo.isCommandRetryFlg());
 
 			// Hard-code : CommandRetry could be NULL
-			jobXML.setCommandRetryEndStatus(commandInfo.getCommandRetryEndStatus() != null ? commandInfo.getCommandRetryEndStatus() : EndStatusConstant.INITIAL_VALUE_NORMAL);
+			if (commandInfo.getCommandRetryEndStatus() == null) {
+				jobXML.deleteCommandRetryEndStatus();
+			} else {
+				jobXML.setCommandRetryEndStatus(commandInfo.getCommandRetryEndStatus());
+			}
 			jobXML.setCommandRetry(commandInfo.getCommandRetry() != null ? commandInfo.getCommandRetry() : 10);
 		}
 
@@ -875,7 +881,11 @@ public class MasterConv {
 			// because of no use. It is already deprecated from 5.0
 			jobXML.setCommandRetryFlg(fileInfo.isCommandRetryFlg());
 			// Hard-code : CommandRetry could be NULL
-			jobXML.setCommandRetryEndStatus(fileInfo.getCommandRetryEndStatus() != null ? fileInfo.getCommandRetryEndStatus() : EndStatusConstant.INITIAL_VALUE_NORMAL);
+			if (fileInfo.getCommandRetryEndStatus() == null) {
+				jobXML.deleteCommandRetryEndStatus();
+			} else {
+				jobXML.setCommandRetryEndStatus(fileInfo.getCommandRetryEndStatus());
+			}
 			jobXML.setCommandRetry(fileInfo.getCommandRetry() != null ? fileInfo.getCommandRetry() : 10);
 		}
 
@@ -972,8 +982,14 @@ public class MasterConv {
 					jobXML.setExclusiveJobValue(values.toArray(new ExclusiveJobValue[0]));
 				}
 				jobXML.setJobRetryFlg(ruleInfo.isJobRetryFlg());
-				jobXML.setJobRetryEndStatus(ruleInfo.getJobRetryEndStatus() != null ? ruleInfo.getJobRetryEndStatus() : EndStatusConstant.INITIAL_VALUE_NORMAL);
+				if (ruleInfo.getJobRetryEndStatus() == null) {
+					jobXML.deleteJobRetryEndStatus();
+				} else {
+					jobXML.setJobRetryEndStatus(ruleInfo.getJobRetryEndStatus());
+				}
 				jobXML.setJobRetry(ruleInfo.getJobRetry() != null ? ruleInfo.getJobRetry() : 10);
+				jobXML.setQueueFlg(ruleInfo.isQueueFlg());
+				jobXML.setQueueId(ruleInfo.getQueueId());
 			}
 		}
 

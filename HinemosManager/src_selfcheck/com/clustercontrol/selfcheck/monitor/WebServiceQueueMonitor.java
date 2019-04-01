@@ -66,6 +66,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 		checkForAgentQueue("ForAgent");
 		checkForAgentHubQueue("ForAgentHub");
 		checkForAgentBinaryQueue("ForAgentBinary");
+		checkForAgentNodeConfigQueue("ForAgentNodeConfig");
 	}
 	
 	private void checkForClientQueue(String subKey) {
@@ -175,7 +176,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 						threshold +
 				")");
 	}
-	
+
 	private void checkForAgentBinaryQueue(String subKey) {
 		if (!HinemosPropertyCommon.selfcheck_monitoring_ws_agentbinary_queue.getBooleanValue()) {
 			m_log.debug("skip checkForAgentBinaryQueue");
@@ -206,6 +207,39 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 		String[] msgAttr1 = { port, Integer.toString(queueSize), Integer.toString(threshold) };
 		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_008_SYS_SFC, msgAttr1,
 				"too many request from AgentBinary to Hinemos Manager (tcp:" + port + "). (queued request " + queueSize
+						+ " > threshold " + threshold + ")");
+	}
+
+	private void checkForAgentNodeConfigQueue(String subKey) {
+		if (!HinemosPropertyCommon.selfcheck_monitoring_ws_agentnodeconfig_queue.getBooleanValue()) {
+			m_log.debug("skip checkForAgentNodeConfigQueue");
+			return;
+		}
+
+		/** ローカル変数 */
+		int queueSize = 0;
+		boolean warn = true;
+
+		threshold = HinemosPropertyCommon.selfcheck_monitoring_ws_agentnodeconfig_queue_threshold.getIntegerValue();
+
+		/** メイン処理 */
+		queueSize = WebServiceAgentPlugin.getAgentNodeConfigQueueSize();
+		if (queueSize <= threshold) {
+			m_log.debug("web service queue (ForAgentNodeConfig) is normal. (queueSize = " + queueSize + ")");
+			warn = false;
+		}
+
+		if (warn) {
+			m_log.info("web service queue (ForAgentNodeConfig) is too large. (queueSize = " + queueSize + ")");
+		}
+		if (!isNotify(subKey, warn)) {
+			return;
+		}
+
+		String port = Integer.toString(getAgentPort());
+		String[] msgAttr1 = { port, Integer.toString(queueSize), Integer.toString(threshold) };
+		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_008_SYS_SFC, msgAttr1,
+				"too many request from AgentNodeConfig to Hinemos Manager (tcp:" + port + "). (queued request " + queueSize
 						+ " > threshold " + threshold + ")");
 	}
 	

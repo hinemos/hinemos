@@ -50,7 +50,7 @@ import com.clustercontrol.utility.settings.platform.xml.RepositoryScopeNode;
 import com.clustercontrol.utility.settings.platform.xml.ScopeInfo;
 import com.clustercontrol.utility.settings.platform.xml.ScopeNodeInfo;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
@@ -306,7 +306,7 @@ public class RepositoryScopeAction {
 			//重複時、インポート処理方法を確認する
 			if(!ImportProcessMode.isSameprocess()){
 				String[] args = {childScope_ca.getFacilityId()};
-				ImportProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
+				UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 						null, Messages.getString("message.import.confirm2", args));
 			    ImportProcessMode.setProcesstype(dialog.open());
 			    ImportProcessMode.setSameprocess(dialog.getToggleState());

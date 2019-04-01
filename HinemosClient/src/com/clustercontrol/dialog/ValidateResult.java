@@ -8,10 +8,11 @@
 
 package com.clustercontrol.dialog;
 
+import com.clustercontrol.util.Messages;
+
 /**
  * 入力チェックの結果のダイアログクラス<BR>
  * 
- * @version 1.0.0
  * @since 1.0.0
  */
 public class ValidateResult {
@@ -28,6 +29,20 @@ public class ValidateResult {
 
 	public ValidateResult() {
 		this.initialize();
+	}
+	
+	/**
+	 * invalidに設定したオブジェクトを返します。
+	 * 
+	 * @param idMessageKey IDプロパティへ設定する文字列のメッセージキー。
+	 * @param contentMessageKey messageプロパティへ設定する文字列のメッセージキー。
+	 * @return パラメータをもとにinvalidとして生成したオブジェクト。
+	 */
+	public static ValidateResult of(String idMessageKey, String contentMessageKey) {
+		ValidateResult instance = new ValidateResult();
+		instance.setID(Messages.getString(idMessageKey));
+		instance.setMessage(Messages.getString(contentMessageKey));
+		return instance;
 	}
 
 	// ----- instance メソッド ----- //

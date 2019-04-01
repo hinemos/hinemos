@@ -27,7 +27,6 @@ import com.clustercontrol.utility.ui.composite.UtilityFileUpload;
  * @version 5.0.a
  * @since 5.0.a
  */
-// TODO Encapsulate this class with FileDialog.
 public class UtilityUploadComponent{
 	private Composite parent;
 	private String label;

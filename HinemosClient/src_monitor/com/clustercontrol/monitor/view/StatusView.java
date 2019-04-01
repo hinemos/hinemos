@@ -31,6 +31,7 @@ import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
 import com.clustercontrol.monitor.composite.StatusListComposite;
 import com.clustercontrol.monitor.composite.action.StatusListSelectionChangedListener;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
@@ -98,7 +99,11 @@ public class StatusView extends ScopeListBaseView {
 		layout.marginHeight = 0;
 		layout.marginWidth = 0;
 
-		this.tableComposite = new StatusListComposite(parent, SWT.NONE);
+		ListLayout tableCompositeLayout = null;
+		if (this.getDefaultViewLayout() != null) {
+			tableCompositeLayout = this.getDefaultViewLayout().getViewItem(StatusListComposite.class.getSimpleName(), ListLayout.class);
+		}
+		this.tableComposite = new StatusListComposite(parent, SWT.NONE, tableCompositeLayout);
 		WidgetTestUtil.setTestId(this, null, tableComposite);
 		GridData gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
@@ -311,5 +316,10 @@ public class StatusView extends ScopeListBaseView {
 			getViewSite().getActionBars().updateActionBars();
 			getViewSite().getActionBars().getToolBarManager().update(false);
 		}
+	}
+	
+	@Override
+	public boolean isDefaultLayoutView() {
+		return true;
 	}
 }

@@ -8,7 +8,9 @@
 
 package com.clustercontrol.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,6 +41,46 @@ public class StringBinder {
 	* -----
 	*/
 	private static Pattern pattern = Pattern.compile("#\\[((?!#\\[.*]).)*?\\]", Pattern.DOTALL);
+
+	/**
+	 * 置換対象の文字列内の置換キーをリストで返却
+	 * @param str 置換対象の文字列
+	 * @param maxReplaceWord 文字列内に含まれる置換対象のキーワードの最大数
+	 * 			(無限ループ防止用、基本はHinemosプロパティから取得)
+	 */
+	public static ArrayList<String> getKeyList(String str, int maxReplaceWord){
+		ArrayList<String> keyList = new ArrayList<String>();
+		if (str == null || str.isEmpty()) {
+			return keyList;
+		}
+		
+		log.debug("getKeyList() : original string=[" + str + "], maxReplaceWord=[" + maxReplaceWord + "]");
+		Matcher matcher = pattern.matcher(str);
+		Pattern onlyKeyPattern = Pattern.compile("#\\[(.*)]", Pattern.DOTALL);
+		StringBuilder keyListStr = new StringBuilder();
+		boolean notTopStr = false;
+		for (int i = 0; i < maxReplaceWord; i++) {
+			if (matcher.find()) {
+				String keyWhole = matcher.group(0);
+				Matcher onlyKeymatcher = onlyKeyPattern.matcher(keyWhole);
+				if (onlyKeymatcher.find()) {
+					String onlyKey = onlyKeymatcher.group(1);
+					keyList.add(onlyKey);
+					if(notTopStr){
+						keyListStr.append(", ");
+					}
+					keyListStr.append(onlyKey);
+					notTopStr = true;
+				}
+			} else {
+				break;
+			}
+		}
+		log.debug("getKeyList() : keyList=[" + keyListStr.toString() + "]");
+		
+		keyList = new ArrayList<String>(new HashSet<>(keyList));
+		return keyList;
+	}
 
 	/**
 	 * 置換のマッピングを引数としたコンストラクタ
@@ -72,8 +114,6 @@ public class StringBinder {
 	 * 変数#[KEY]をVALUEに置き換えた文字列を返す。
 	 * 
 	 * @param str 変数が含まれる文字列
-	 * @param replace 特殊文字(ascii 0x00-0x20,0x7f)を空白に置換するか\x01のような表記にするか
-	 *         4.0と同じ動作にする場合はfalse。
 	 * @return 変数が置換された文字列
 	 */
 	public String bindParam(String str) {
@@ -182,7 +222,8 @@ public class StringBinder {
 	}
 
 	public static void main(String[] args) {
-
+		
+		
 		String str = "foo #[PARAM] bar #[ESCAPE] #[NOTFOUND] foo bar";
 
 		Map<String, String> param = new HashMap<String, String>();
@@ -249,6 +290,20 @@ public class StringBinder {
 		StringBinder binder3 = new StringBinder(param);
 		System.out.println(binder3.replace(str));
 		System.out.println(binder3.bindParam(str));
+		
+		System.out.println("old test------------------------------------------");
+		System.out.println("test getKeyList()------------------------------------------");
+		String originalString = "";
+		System.out.println(String.format("originalString=[%s]", originalString));
+		ArrayList<String> resultList = getKeyList(originalString, 1000);
+		if(resultList == null || resultList.isEmpty()){
+			System.out.println("result is empty.");
+			return;
+		}
+		int i = 0;
+		for(String result : resultList){
+			System.out.println(String.format("result[%d]=[%s]", i, result));
+		}
 
 	}
 

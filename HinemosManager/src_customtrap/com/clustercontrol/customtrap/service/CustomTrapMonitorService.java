@@ -89,7 +89,7 @@ public class CustomTrapMonitorService {
 		try {
 			serverProcess();
 		} catch (Exception e) {
-			logger.warn("CustomTrapMonitorService start Error" + e.getMessage());
+			logger.warn("CustomTrapMonitorService start Error ", e);
 		}
 	}
 

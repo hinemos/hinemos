@@ -147,8 +147,6 @@ public class CalendarDetailInfoComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				// シェルを取得
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-				//FIXME
-				//CalendarDetailDialog dialog = new CalendarDetailDialog(shell, m_ownerRoleId);
 				CalendarDetailDialog dialog = new CalendarDetailDialog(shell, calInfoListComposite.getManagerName(), calInfoListComposite.getOwnerRoleId());
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					calInfoListComposite.getDetailList().add(dialog.getInputData());
@@ -167,8 +165,6 @@ public class CalendarDetailInfoComposite extends Composite {
 				if (order != null) {
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-					//FIXME
-					//CalendarDetailDialog dialog = new CalendarDetailDialog(shell,m_infoListComposite.getDetailList().get(order - 1), m_ownerRoleId);
 					CalendarDetailDialog dialog = new CalendarDetailDialog(shell, calInfoListComposite.getManagerName(), calInfoListComposite.getDetailList().get(order - 1), calInfoListComposite.getOwnerRoleId());
 					if (dialog.open() == IDialogConstants.OK_ID) {
 						calInfoListComposite.getDetailList().remove(calInfoListComposite.getDetailList().get(order - 1));

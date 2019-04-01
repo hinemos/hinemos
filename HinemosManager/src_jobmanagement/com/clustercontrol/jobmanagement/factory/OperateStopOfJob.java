@@ -33,6 +33,9 @@ import com.clustercontrol.jobmanagement.model.JobEnvVariableInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.queue.JobQueue;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
+import com.clustercontrol.jobmanagement.queue.JobQueueNotFoundException;
 import com.clustercontrol.jobmanagement.util.FromRunningAfterCommitCallback;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
@@ -41,6 +44,7 @@ import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.jobmanagement.util.RunHistoryUtil;
 import com.clustercontrol.jobmanagement.util.SendTopic;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
 
 /**
  * ジョブ操作の停止[コマンド]を行うクラスです。
@@ -80,7 +84,21 @@ public class OperateStopOfJob {
 		//実行状態が実行中の場合、実行状態を停止処理中にする
 		sessionJob.setStatus(StatusConstant.TYPE_STOPPING);
 
+		// ジョブキューに入っているジョブの場合は、キューから除去する。
+		// endJob と本処理で同じことを2回繰り返す可能性があるが、
+		// 冗長であること以外に副作用があるわけではない。
 		JobInfoEntity job = sessionJob.getJobInfoEntity();
+		String queueId = job.getQueueIdIfEnabled();
+		if (queueId != null) {
+			try {
+				JobQueue queue = Singletons.get(JobQueueContainer.class).get(queueId);
+				queue.remove(sessionId, jobunitId, jobId);
+			} catch (JobQueueNotFoundException e) {
+				// キューが存在しないとしても、結果として"キューからの除去"という目的は果たせているので、ログだけ出して無視する。
+				m_log.info("stopJob: " + e);
+			}
+		}
+
 		if(job.getJobType() == JobConstant.TYPE_JOB
 				|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
 				|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
@@ -110,6 +128,12 @@ public class OperateStopOfJob {
 				}
 			}
 		} else {
+			// 直下にある"実行中(キュー待機)"のジョブを"待機"へ戻す
+			for (JobSessionJobEntity childSessionJob : QueryUtil.getJobSessionJobByParentStatus(
+					sessionId, jobunitId, jobId, StatusConstant.TYPE_RUNNING_QUEUE)) {
+				revertToWaiting(childSessionJob);
+			}
+			
 			//セッションIDとジョブIDから、直下のジョブを取得（実行状態が実行中）
 			Collection<JobSessionJobEntity> collection;
 			collection = QueryUtil.getJobSessionJobByParentStatus(sessionId, jobunitId, jobId, StatusConstant.TYPE_RUNNING);
@@ -150,6 +174,31 @@ public class OperateStopOfJob {
 					}
 				}
 			}
+		}
+	}
+
+	/**
+	 * "実行中(キュー待機)"状態のジョブを"待機"状態へ戻します。
+	 * 
+	 * @param sessionJob 操作対象。
+	 */
+	private void revertToWaiting(JobSessionJobEntity sessionJob) {
+		if (sessionJob.getStatus() != StatusConstant.TYPE_RUNNING_QUEUE) return;
+
+		String queueId = sessionJob.getJobInfoEntity().getQueueIdIfEnabled();
+		if (queueId == null) return;
+
+		String sessionId = sessionJob.getId().getSessionId();
+		String jobunitId = sessionJob.getId().getJobunitId();
+		String jobId = sessionJob.getId().getJobId();
+		try {
+			Singletons.get(JobQueueContainer.class).get(queueId).remove(sessionId, jobunitId, jobId);
+			sessionJob.setStatus(StatusConstant.TYPE_WAIT);
+		} catch (JobQueueNotFoundException e) {
+			// キュー待機中のジョブが存在している以上、キューがないのは論理エラー。
+			// ただし、処理を停止するまでもないので、ログだけ出してそのままにしておく。
+			m_log.warn("revertToWaiting: Queue not found. id = "
+					+ queueId + ", " + sessionId + ", " + jobunitId + ", " + jobId);
 		}
 	}
 

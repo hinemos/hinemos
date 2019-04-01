@@ -13,7 +13,6 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -235,14 +234,22 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 							for (String facilityId: validFacilityIdList) {
 								StringSample sample = new StringSample(new Date(HinemosTime.currentTimeMillis()), monitor.getMonitorId());
 								//抽出したタグ
-								StringSampleTag tagDate = new StringSampleTag(CollectStringTag.TIMESTAMP_IN_LOG, Long.toString(syslog.date));
-								StringSampleTag tagFacility = new StringSampleTag(CollectStringTag.facility, syslog.facility.name());
-								StringSampleTag tagSeverity = new StringSampleTag(CollectStringTag.severity, syslog.severity.name());
-								StringSampleTag tagHostname = new StringSampleTag(CollectStringTag.hostname, syslog.hostname);
-								StringSampleTag tagMessage = new StringSampleTag(CollectStringTag.message, syslog.message);
-								
+								List<StringSampleTag> tagsList = new ArrayList<StringSampleTag>();
+								tagsList.add(new StringSampleTag(CollectStringTag.TIMESTAMP_IN_LOG, Long.toString(syslog.date)));
+								if(syslog.facility != null){
+									tagsList.add(new StringSampleTag(CollectStringTag.facility, syslog.facility.name()));
+								}
+								if(syslog.severity != null){
+									tagsList.add(new StringSampleTag(CollectStringTag.severity, syslog.severity.name()));
+								}
+								if(syslog.hostname != null){
+									tagsList.add(new StringSampleTag(CollectStringTag.hostname, syslog.hostname));
+								}
+								if(syslog.message != null){
+									tagsList.add(new StringSampleTag(CollectStringTag.message, syslog.message));
+								}
 								//ログメッセージ
-								sample.set(facilityId, "syslog", syslog.rawSyslog, Arrays.asList(tagDate, tagFacility, tagSeverity, tagHostname, tagMessage));
+								sample.set(facilityId, "syslog", syslog.rawSyslog, tagsList);
 								
 								collectedSamples.add(sample);
 							}

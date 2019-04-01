@@ -29,6 +29,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
@@ -39,15 +40,21 @@ import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.Property;
-import com.clustercontrol.monitor.action.CommentEvent;
+import com.clustercontrol.composite.CustomizableListComposite;
+import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
+import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
 import com.clustercontrol.monitor.dialog.EventInfoDialog;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo.UserItemDisplayInfo;
 import com.clustercontrol.monitor.util.ConvertListUtil;
+import com.clustercontrol.monitor.util.EventDisplaySettingGetUtil;
 import com.clustercontrol.monitor.util.EventFilterPropertyUtil;
 import com.clustercontrol.monitor.util.EventSearchRunUtil;
 import com.clustercontrol.monitor.view.EventView;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
+import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
 import com.clustercontrol.util.TimezoneUtil;
@@ -66,7 +73,8 @@ import com.clustercontrol.ws.monitor.ViewListInfo;
  * @version 5.0.0
  * @since 1.0.0
  */
-public class EventListComposite extends Composite {
+public class EventListComposite extends CustomizableListComposite {
+	
 	/** テーブルビューア */
 	private CommonTableViewer tableViewer = null;
 
@@ -87,8 +95,7 @@ public class EventListComposite extends Composite {
 
 	private Shell m_shell = null;
 	
-	/** 最新受信日付 */
-	// private static Long m_latestOutputDate = 0l;
+	private MultiManagerEventDisplaySettingInfo eventDspSetting = null; 
 
 	/**
 	 * インスタンスを返します。
@@ -100,8 +107,8 @@ public class EventListComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
 	 * @see #initialize()
 	 */
-	public EventListComposite(Composite parent, int style) {
-		super(parent, style);
+	public EventListComposite(Composite parent, int style, ListLayout listLayout) {
+		super(parent, style, listLayout);
 		initialize();
 		m_shell = this.getShell();
 	}
@@ -169,6 +176,19 @@ public class EventListComposite extends Composite {
 		for (int i = 0; i < table.getColumnCount(); i++){
 			table.getColumn(i).setMoveable(true);
 		}
+		
+		//デフォルトレイアウトのよる列順の変更
+		updateColumnOrder(table);
+		
+		//イベント表示設定情報の取得
+		eventDspSetting = getEventDisplaySettingGetUtil(EndpointManager.getActiveManagerNameList());
+		
+		//ユーザ拡張項目、イベント番号の表示／非表示、列名の切替
+		updateCustomizableColumn(table, null);
+		
+		//デフォルトレイアウトによる列幅の変更
+		updateColumnWidth(table);
+		
 		// ダブルクリックした場合、イベントログの詳細情報ダイアログを表示する
 
 		this.tableViewer.addDoubleClickListener(
@@ -179,12 +199,12 @@ public class EventListComposite extends Composite {
 						// 選択アイテムを取得する
 						List<?> list = (List<?>) ((StructuredSelection)event.getSelection()).getFirstElement();
 
-						EventInfoDialog dialog = new EventInfoDialog(m_shell, list);
+						EventInfoDialog dialog = new EventInfoDialog(m_shell, list, getEventDspSetting());
 						if (dialog.open() == IDialogConstants.OK_ID) {
-							Property eventdetail = dialog.getInputData();
-							CommentEvent comment = new CommentEvent();
+							//ダイアログがOKボタンで閉じられた場合の動作
+							
 							String managerName = (String) list.get(GetEventListTableDefine.MANAGER_NAME);
-							comment.updateComment(managerName, eventdetail);
+							dialog.okButtonPress(managerName);
 							IWorkbench workbench = ClusterControlPlugin.getDefault().getWorkbench();
 							IWorkbenchPage page = workbench.getActiveWorkbenchWindow().getActivePage();
 
@@ -246,11 +266,18 @@ public class EventListComposite extends Composite {
 	 * @see #updateStatus(ViewListInfo)
 	 */
 	public void setDisp(String facilityId, Property condition, List<String> managerList) {
+		
+		//イベント表示設定情報の取得
+		eventDspSetting = getEventDisplaySettingGetUtil(EndpointManager.getActiveManagerNameList());
+		
+		updateCustomizableColumn(this.tableViewer.getTable(), managerList);
+		updateColumnWidth(this.tableViewer.getTable(), GetEventListTableDefine.getEventListTableDefine());
 		/** 表示用リスト */
 
 		if(facilityId == null) {
 			facilityId = ReservedFacilityIdConstant.ROOT_SCOPE;
 		}
+		
 		Map<String, ViewListInfo> map = null;
 		if(condition == null) {
 			map = getEventList(facilityId, managerList);
@@ -398,6 +425,12 @@ public class EventListComposite extends Composite {
 		tableViewer.setInput(eventList);
 	}
 
+	private MultiManagerEventDisplaySettingInfo getEventDisplaySettingGetUtil(List<String> managerList) {
+		EventDisplaySettingGetUtil bean = new EventDisplaySettingGetUtil();
+		
+		return bean.getEventDisplaySettingInfo(managerList);
+	}
+	
 	private Map<String, ViewListInfo> getEventList(String facilityId, List<String> managerList) {
 		int messages = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(
 				MonitorPreferencePage.P_EVENT_MAX);
@@ -412,7 +445,12 @@ public class EventListComposite extends Composite {
 				MonitorPreferencePage.P_EVENT_MAX);
 
 		PropertyUtil.deletePropertyDefine(condition);
-		EventFilterInfo filter = EventFilterPropertyUtil.property2dto(condition);
+		String managerName = null;
+		if (managerList != null && managerList.size() == 1) {
+			managerName = managerList.get(0);
+		}
+		
+		EventFilterInfo filter = EventFilterPropertyUtil.property2dto(condition, this.getEventDspSetting(), managerName);
 		EventSearchRunUtil bean = new EventSearchRunUtil();
 		Map<String, ViewListInfo> map = bean.searchInfo(managerList, facilityId, filter, messages);
 		return map;
@@ -453,5 +491,70 @@ public class EventListComposite extends Composite {
 		this.infoLabel.setText(String.valueOf(info));
 		this.unknownLabel.setText(String.valueOf(unknown));
 		this.totalLabel.setText(Messages.getString("records", new Object[]{ total }));
+	}
+	
+
+	/**
+	 * ユーザ拡張イベント項目、イベント番号の表示更新
+	 * 
+	 * @param table
+	 * @param managerList
+	 */
+	private void updateCustomizableColumn(Table table, List<String> managerList) {
+		
+		String managerName = null;
+		if (managerList != null && managerList.size() == 1) {
+			managerName = managerList.get(0);
+		}
+		
+		TableColumn column = null;
+		column = table.getColumn(GetEventListTableDefine.EVENT_NO);
+		if (!eventDspSetting.isEventNoDisplay(managerName)) {
+			column.setWidth(0);
+			column.setMoveable(false);
+			column.setResizable(false);
+		} else {
+			if (column.getWidth() == 0) {
+				//非表示　→　表示に切り替わった場合
+				column.setWidth(GetEventListTableDefine.EVENT_NO_WIDTH);
+				column.setMoveable(true);
+				column.setResizable(true);
+			}
+		}
+		
+		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+			column = table.getColumn(GetEventListTableDefine.getUserItemIndex(i));
+			UserItemDisplayInfo itemDspInfo = eventDspSetting.getUserItemDisplayInfo(managerName, i);
+			if (!itemDspInfo.getDisplayEnable()) {
+				column.setWidth(0);
+				column.setMoveable(false);
+				column.setResizable(false);
+			} else {
+				if (column.getWidth() == 0) {
+					//非表示　→　表示に切り替わった場合
+					column.setWidth(GetEventListTableDefine.USERITEM_WIDTH);
+					column.setMoveable(true);
+					column.setResizable(true);	
+				}
+			}
+			
+			column.setText(itemDspInfo.getDisplayName());
+			if (itemDspInfo.getHasMultiDisplayName()) {
+				column.setToolTipText(itemDspInfo.getToolTipName());
+			}
+		}
+		
+	}
+
+	@Override
+	public Map<String, Integer> getColumnIndexMap() {
+		return GetEventListTableDefine.COLNAME_INDEX_MAP;
+	}
+	
+	public MultiManagerEventDisplaySettingInfo getEventDspSetting() {
+		if (this.eventDspSetting == null) {
+			return new MultiManagerEventDisplaySettingInfo();
+		}
+		return this.eventDspSetting;
 	}
 }

@@ -9,6 +9,7 @@
 package com.clustercontrol.notify.util;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -87,10 +88,13 @@ public class ExecCommand implements Notifier {
 	private String getCommandString(OutputBasicInfo outputInfo, NotifyCommandInfo commandInfo, int priority){
 		// 文字列を置換する
 		try {
+			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+			String command = getCommand(commandInfo, priority);
+			ArrayList<String> inKeyList = StringBinder.getKeyList(command, maxReplaceWord);
 			Map<String, String> param = NotifyUtil.createParameter(outputInfo,
-					commandInfo.getNotifyInfoEntity());
+					commandInfo.getNotifyInfoEntity(), inKeyList);
 			StringBinder binder = new StringBinder(param);
-			return binder.replace(getCommand(commandInfo, priority));
+			return binder.replace(command);
 		} catch (Exception e) {
 			m_log.warn("notify() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);

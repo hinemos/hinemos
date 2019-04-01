@@ -13,12 +13,14 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
 import com.clustercontrol.util.FocusUtil;
@@ -37,8 +39,6 @@ import com.clustercontrol.util.WidgetTestUtil;
  */
 public abstract class CommonDialog extends Dialog {
 
-	
-	
 	private Composite m_areaComposite;
 	private ScrolledComposite m_scrolledComposite;
 
@@ -275,5 +275,23 @@ public abstract class CommonDialog extends Dialog {
 	 */
 	protected ScrolledComposite getScrolledComposite() {
 		return m_scrolledComposite;
+	}
+
+	/**
+	 * 表示位置を調整します。
+	 * 
+	 * @param width 横幅。
+	 */
+	protected void adjustPosition(int width) {
+		// サイズを最適化
+		// グリッドレイアウトを用いた場合、こうしないと横幅が画面いっぱいになります。
+		Shell shell = getShell();
+		shell.pack();
+		shell.setSize(new Point(width, shell.getSize().y));
+
+		// 画面中央に配置
+		Display display = shell.getDisplay();
+		shell.setLocation((display.getBounds().width - shell.getSize().x) / 2,
+				(display.getBounds().height - shell.getSize().y) / 2);
 	}
 }

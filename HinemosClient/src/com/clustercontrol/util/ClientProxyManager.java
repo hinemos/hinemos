@@ -32,7 +32,6 @@ public class ClientProxyManager {
 		}
 		@Override
 		public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
-			// TODO Auto-generated method stub
 		}
 	}
 	

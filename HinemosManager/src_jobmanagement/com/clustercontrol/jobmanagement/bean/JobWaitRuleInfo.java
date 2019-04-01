@@ -21,7 +21,6 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.StatusConstant;
-import com.clustercontrol.jobmanagement.bean.JobNextJobOrderInfo;
 
 /**
  * ジョブの待ち条件に関する情報を保持するクラス<BR>
@@ -186,6 +185,10 @@ public class JobWaitRuleInfo implements Serializable {
 	private Integer multiplicity_notify_priority = PriorityConstant.TYPE_WARNING;
 	private Integer multiplicity_operation = StatusConstant.TYPE_WAIT;
 	private Integer multiplicity_end_value = -1;
+	
+	/** 同時実行制御キュー */
+	private Boolean queueFlg = false;
+	private String queueId = null;
 	
 	/**
 	 * ジョブのスキップをするかしないかを返す。<BR>
@@ -1047,6 +1050,22 @@ public class JobWaitRuleInfo implements Serializable {
 		this.multiplicity_end_value = multiplicity_end_value;
 	}
 
+	public Boolean getQueueFlg() {
+		return queueFlg;
+	}
+
+	public void setQueueFlg(Boolean queueFlg) {
+		this.queueFlg = queueFlg;
+	}
+	
+	public String getQueueId() {
+		return queueId;
+	}
+
+	public void setQueueId(String queueId) {
+		this.queueId = queueId;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -1200,6 +1219,8 @@ public class JobWaitRuleInfo implements Serializable {
 				+ ((start_delay_time_value == null) ? 0
 						: start_delay_time_value.hashCode());
 		result = prime * result + ((suspend == null) ? 0 : suspend.hashCode());
+		result = prime * result + ((queueFlg == null) ? 0 : queueFlg.hashCode());
+		result = prime * result + ((queueId == null) ? 0 : queueId.hashCode());
 		return result;
 	}
 
@@ -1268,7 +1289,10 @@ public class JobWaitRuleInfo implements Serializable {
 				equalsSub(o1.isMultiplicityNotify(), o2.isMultiplicityNotify()) &&
 				equalsSub(o1.getMultiplicityNotifyPriority(), o2.getMultiplicityNotifyPriority()) &&
 				equalsSub(o1.getMultiplicityOperation(), o2.getMultiplicityOperation()) &&
-				equalsSub(o1.getMultiplicityEndValue(), o2.getMultiplicityEndValue());
+				equalsSub(o1.getMultiplicityEndValue(), o2.getMultiplicityEndValue()) &&
+
+				equalsSub(o1.getQueueFlg(), o2.getQueueFlg()) &&
+				equalsSub(o1.getQueueId(), o2.getQueueId());
 		m_log.debug("waitRule ret = " + ret);
 		return ret;
 	}
@@ -1327,414 +1351,5 @@ public class JobWaitRuleInfo implements Serializable {
 			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * 単体テスト用
-	 * @param args
-	 */
-	public static void main (String args[]) {
-		testEquals();
-	}
-	public static void testEquals(){
-		System.out.println("=== JobWaitRuleInfo の単体テスト ===");
-
-		System.out.println("*** all agreement ***");
-		JobWaitRuleInfo info1 = createSampleInfo();
-		JobWaitRuleInfo info2 = createSampleInfo();
-		judge(true, info1.equals(info2));
-
-		String[] str = {
-				"保留",
-				"スキップ",
-				"スキップ時終了状態",
-				"スキップ時終了値",
-				"繰り返し実行",
-				"繰り返し実行回数",
-				"繰り返し実行完了状態",
-				"判定対象の条件関係",
-				"ジョブの判定対象情報",
-				"条件を満たさなければ終了する",
-				"条件を満たさない時の終了状態",
-				"条件を満たさない時の終了値",
-				"カレンダ",
-				"カレンダID",
-				"カレンダによる未実行時の終了状態",
-				"カレンダによる未実行時の終了値",
-				"開始遅延",
-				"開始遅延セッション開始後の時間",
-				"開始遅延セッション開始後の時間の値",
-				"開始遅延時刻",
-				"開始遅延時刻の値",
-				"開始遅延判定対象の条件関係",
-				"開始遅延通知",
-				"開始遅延通知の重要度",
-				"開始遅延操作",
-				"開始遅延操作種別",
-				"開始遅延操作終了状態",
-				"開始遅延操作終了値",
-				"終了遅延",
-				"終了遅延セッション開始後の時間",
-				"終了遅延セッション開始後の時間の値",
-				"終了遅延ジョブの開始後の時間",
-				"終了遅延ジョブの開始後の時間の値",
-				"終了遅延時刻",
-				"終了遅延時刻の値",
-				"終了遅延判定対象の条件関係",
-				"終了遅延通知",
-				"終了遅延通知重要度",
-				"終了遅延操作",
-				"終了遅延操作種別",
-				"終了遅延操作終了状態",
-				"終了遅延操作終了値",
-				"終了遅延実行履歴からの変化量",
-				"終了遅延実行履歴からの変化量値",
-				"多重度の通知",
-				"多重度の重要度",
-				"多重度の状態種別",
-				"多重度の終了値",
-				"後続ジョブは１つだけ実行する",
-				"実行されなかった後続ジョブの終了状態",
-				"実行されなかった後続ジョブの終了値",
-				"実行する後続ジョブの優先順位",
-		};
-
-		for (int i = 0; i < 52 ; i++) {
-			System.out.println("*** Only " + str[i] + " is different ***");
-			info2 = createSampleInfo2(i);
-			judge(false, info1.equals(info2));
-		}
-	}
-
-	/**
-	 * ジョブの待ち条件に関する情報のサンプルデータを作成する
-	 * 単体テスト用
-	 * @return
-	 */
-	public static JobWaitRuleInfo createSampleInfo() {
-		JobWaitRuleInfo info1 = new JobWaitRuleInfo();
-		info1.setSuspend(false);
-
-		info1.setSkip(false);
-		info1.setSkipEndStatus(0);
-		info1.setSkipEndValue(0);
-
-		info1.setJobRetryFlg(false);
-		info1.setJobRetryEndStatus(0);
-		info1.setJobRetry(0);
-
-		info1.setCondition(0);
-		ArrayList<JobObjectInfo> objList = new ArrayList<JobObjectInfo>();
-		{
-			JobObjectInfo objInfo = new JobObjectInfo();
-			objInfo.setType(0);
-			objInfo.setJobId("jobId");
-			objInfo.setJobName("jobName");
-			objInfo.setValue(0);
-			objInfo.setTime(0L);
-			objInfo.setDescription("description");
-			objList.add(objInfo);
-		}
-		info1.setObject(objList);
-		info1.setEndCondition(false);
-		info1.setEndStatus(0);
-		info1.setEndValue(0);
-		info1.setCalendar(false);
-		info1.setCalendarId("calendarId");
-		info1.setCalendarEndStatus(0);
-		info1.setCalendarEndValue(0);
-
-		info1.setStart_delay(false);
-		info1.setStart_delay_session(false);
-		info1.setStart_delay_session_value(0);
-
-		info1.setStart_delay_time(false);
-		info1.setStart_delay_time_value(0L);
-
-		info1.setStart_delay_condition_type(0);
-
-		info1.setStart_delay_notify(false);
-		info1.setStart_delay_notify_priority(0);
-
-		info1.setStart_delay_operation(false);
-		info1.setStart_delay_operation_type(0);
-		info1.setStart_delay_operation_end_status(0);
-		info1.setStart_delay_operation_end_value(0);
-
-		info1.setEnd_delay(false);
-
-		info1.setEnd_delay_session(false);
-		info1.setEnd_delay_session_value(0);
-
-		info1.setEnd_delay_job(false);
-		info1.setEnd_delay_job_value(0);
-
-		info1.setEnd_delay_time(false);
-		info1.setEnd_delay_time_value(0L);
-
-		info1.setEnd_delay_condition_type(0);
-
-		info1.setEnd_delay_notify(false);
-		info1.setEnd_delay_notify_priority(0);
-
-		info1.setEnd_delay_operation(false);
-		info1.setEnd_delay_operation_type(0);
-		info1.setEnd_delay_operation_end_status(0);
-		info1.setEnd_delay_operation_end_value(0);
-
-		info1.setEnd_delay_change_mount(false);
-		info1.setEnd_delay_change_mount_value(1D);
-
-		info1.setMultiplicityNotify(false);
-		info1.setMultiplicityNotifyPriority(0);
-		info1.setMultiplicityOperation(0);
-		info1.setMultiplicityEndValue(0);
-
-		info1.setExclusiveBranch(false);
-		info1.setExclusiveBranchEndStatus(0);
-		info1.setExclusiveBranchEndValue(0);
-		ArrayList<JobNextJobOrderInfo> nextJobOrderInfos = new ArrayList<>();
-		{
-			JobNextJobOrderInfo nextJobOrderInfo1 = new JobNextJobOrderInfo();
-			nextJobOrderInfo1.setJobId("job_id");
-			nextJobOrderInfo1.setJobunitId("jobunit_id");
-			nextJobOrderInfo1.setNextJobId("next_job_id1");
-			nextJobOrderInfos.add(nextJobOrderInfo1);
-
-			JobNextJobOrderInfo nextJobOrderInfo2 = new JobNextJobOrderInfo();
-			nextJobOrderInfo2.setJobId("job_id");
-			nextJobOrderInfo2.setJobunitId("jobunit_id");
-			nextJobOrderInfo2.setNextJobId("next_job_id2");
-			nextJobOrderInfos.add(nextJobOrderInfo2);
-		}
-		info1.setExclusiveBranchNextJobOrderList(nextJobOrderInfos);
-
-		return info1;
-	}
-	/**
-	 * createSampleInfo()にて作成されたデータのパラメータを１つ変更する
-	 * @param i
-	 * @return
-	 */
-	public static JobWaitRuleInfo createSampleInfo2(int i){
-		JobWaitRuleInfo info2 = createSampleInfo();
-		switch (i) {
-		case 0 :
-			info2.setSuspend(true);
-			break;
-		case 1 :
-			info2.setSkip(true);
-			break;
-		case 2 :
-			info2.setSkipEndStatus(1);
-			break;
-		case 3 :
-			info2.setSkipEndValue(1);
-			break;
-		case 4 :
-			info2.setCondition(1);
-			break;
-		case 5 :
-			ArrayList<JobObjectInfo> objList = new ArrayList<JobObjectInfo>();
-			{
-				JobObjectInfo objInfo = new JobObjectInfo();
-				objInfo.setType(1);
-				objInfo.setJobId("jobId");
-				objInfo.setJobName("jobName");
-				objInfo.setValue(0);
-				objInfo.setTime(0L);
-				objInfo.setDescription("description");
-				objList.add(objInfo);
-			}
-			info2.setObject(objList);
-			break;
-		case 6 :
-			info2.setEndCondition(true);
-			break;
-		case 7 :
-			info2.setEndStatus(1);
-			break;
-		case 8 :
-			info2.setEndValue(1);
-			break;
-		case 9 :
-			info2.setCalendar(true);
-			break;
-		case 10 :
-			info2.setCalendarId("calendar_Id");
-			break;
-		case 11 :
-			info2.setCalendarEndStatus(1);
-			break;
-		case 12 :
-			info2.setCalendarEndValue(1);
-			break;
-		case 13 :
-			info2.setStart_delay(true);
-			break;
-		case 14 :
-			info2.setStart_delay_session(true);
-			break;
-		case 15 :
-			info2.setStart_delay_session_value(1);
-			break;
-		case 16 :
-			info2.setStart_delay_time(true);
-			break;
-		case 17 :
-			info2.setStart_delay_time_value(1L);
-			break;
-		case 18 :
-			info2.setStart_delay_condition_type(1);
-			break;
-		case 19 :
-			info2.setStart_delay_notify(true);
-			break;
-		case 20 :
-			info2.setStart_delay_notify_priority(1);
-			break;
-		case 21 :
-			info2.setStart_delay_operation(true);
-			break;
-		case 22 :
-			info2.setStart_delay_operation_type(1);
-			break;
-		case 23 :
-			info2.setStart_delay_operation_end_status(1);
-			break;
-		case 24 :
-			info2.setStart_delay_operation_end_value(1);
-			break;
-		case 25 :
-			info2.setEnd_delay(true);
-			break;
-		case 26 :
-			info2.setEnd_delay_session(true);
-			break;
-		case 27 :
-			info2.setEnd_delay_session_value(1);
-			break;
-		case 28 :
-			info2.setEnd_delay_job(true);
-			break;
-		case 29 :
-			info2.setEnd_delay_job_value(1);
-			break;
-		case 30 :
-			info2.setEnd_delay_time(true);
-			break;
-		case 31 :
-			info2.setEnd_delay_time_value(1L);
-			break;
-		case 32 :
-			info2.setEnd_delay_condition_type(1);
-			break;
-		case 33 :
-			info2.setEnd_delay_notify(true);
-			break;
-		case 34 :
-			info2.setEnd_delay_notify_priority(1);
-			break;
-		case 35 :
-			info2.setEnd_delay_operation(true);
-			break;
-		case 36 :
-			info2.setEnd_delay_operation_type(1);
-			break;
-		case 37 :
-			info2.setEnd_delay_operation_end_status(1);
-			break;
-		case 38 :
-			info2.setEnd_delay_operation_end_value(1);
-			break;
-		case 39 :
-			info2.setEnd_delay_change_mount(true);
-			break;
-		case 40 :
-			info2.setEnd_delay_change_mount_value(2D);
-			break;
-		case 41 :
-			info2.setMultiplicityNotify(true);
-			break;
-		case 42 :
-			info2.setMultiplicityNotifyPriority(1);
-			break;
-		case 43 :
-			info2.setMultiplicityOperation(1);
-			break;
-		case 44 :
-			info2.setMultiplicityEndValue(1);
-			break;
-		case 45 :
-			info2.setExclusiveBranch(true);
-			break;
-		case 46 :
-			info2.setExclusiveBranchEndStatus(1);
-			break;
-		case 47 :
-			info2.setExclusiveBranchEndValue(1);
-			break;
-		case 48 :
-			ArrayList<JobNextJobOrderInfo> nextJobOrderInfos = new ArrayList<>();
-			{
-			JobNextJobOrderInfo nextJobOrderInfo2 = new JobNextJobOrderInfo();
-			nextJobOrderInfo2.setJobId("job_id");
-			nextJobOrderInfo2.setJobunitId("jobunit_id");
-			nextJobOrderInfo2.setNextJobId("next_job_id2");
-			nextJobOrderInfos.add(nextJobOrderInfo2);
-
-			JobNextJobOrderInfo nextJobOrderInfo1 = new JobNextJobOrderInfo();
-			nextJobOrderInfo1.setJobId("job_id");
-			nextJobOrderInfo1.setJobunitId("jobunit_id");
-			nextJobOrderInfo1.setNextJobId("next_job_id1");
-			nextJobOrderInfos.add(nextJobOrderInfo1);
-			}
-			info2.setExclusiveBranchNextJobOrderList(nextJobOrderInfos);
-			break;
-		case 49 :
-			info2.setJobRetryFlg(true);
-			break;
-		case 50 :
-			info2.setJobRetryEndStatus(1);
-			break;
-		case 51 :
-			info2.setJobRetry(1);
-			break;
-		default:
-			break;
-		}
-		return info2;
-	}
-
-	public static ArrayList<JobWaitRuleInfo> createSampleList() {
-
-		ArrayList<JobWaitRuleInfo> retList = new ArrayList<JobWaitRuleInfo>();
-		/**
-		 * JobWaitRuleInfo内のパラメータは51種類のため、
-		 * その回数繰り返す
-		 * カウントアップするごとに、パラメータの値を変える。
-		 * 常に、いずれか１つのパラメータがcreateSampleInfo()にて作成されたデータと違う
-		 */
-		for (int i = 0; i < 52 ; i++) {
-			JobWaitRuleInfo info2 = createSampleInfo2(i);
-			retList.add(info2);
-		}
-		return retList;
-	}
-
-	/**
-	 * 単体テストの結果が正しいものか判断する
-	 * @param judge
-	 * @param result
-	 */
-	private static void judge(boolean judge, boolean result){
-
-		System.out.println("expect : " + judge);
-		System.out.print("result : " + result);
-		String ret = "NG";
-		if (judge == result) {
-			ret = "OK";
-		}
-		System.out.println("    is ...  " + ret);
 	}
 }

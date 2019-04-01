@@ -8,6 +8,7 @@
 
 package com.clustercontrol.nodemap.util;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,9 +29,11 @@ import org.eclipse.ui.handlers.RegistryToggleState;
 import com.clustercontrol.monitor.view.action.ScopeShowActionEvent;
 import com.clustercontrol.monitor.view.action.ScopeShowActionStatus;
 import com.clustercontrol.nodemap.view.EventViewM;
+import com.clustercontrol.nodemap.view.NodeListView;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.StatusViewM;
 import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.view.CommonViewPart;
 
 /**
  * 複数ノードマップビュー描画のためのID管理クラス。
@@ -52,16 +55,16 @@ public class SecondaryIdMap {
 
 	/*
 	 * 描画対象スコープのファシリティIDとそれを描画しているビューのSecondaryIdをマップで保持
-	 * Key   : ManagerId:FacilityId
-	 * Value : SecondaryId
+	 * Key : SecondaryId
+	 * Value   : Viewクラス , ManagerId, FacilityId
 	 * 注）ConcurrentHashMapでは、valueにもnullは許容されないため、
 	 * SecondaryId が null のものは、m_secondaryIdMapでは、文字列"null"として登録する
 	 */
-	private final ConcurrentHashMap<String, String> _secondaryIdMap = new ConcurrentHashMap<String, String>();
+	private final ConcurrentHashMap<String, ViewInfo> _secondaryIdMap = new ConcurrentHashMap<>();
 
 	volatile private boolean initFlag = false;
 	
-	private static final String NODEMAP_PERSPECTIVE_PREFIX = "com.clustercontrol.nodemap.NodeMapPerspective";
+	private static final String NODEMAP_PERSPECTIVE_PREFIX = "com.clustercontrol.enterprise.nodemap.NodeMapPerspective";
 	
 	private SecondaryIdMap() {};
 	
@@ -139,7 +142,6 @@ public class SecondaryIdMap {
 						command.getState(RegistryToggleState.STATE_ID).setValue(false);
 						service.refreshElements(ScopeShowActionStatus.ID, null);
 						statusView.hide();
-//						statusView.update(false);
 					} else {
 						m_log.warn("perspectiveActivated(), statusView is null");
 					}
@@ -160,7 +162,6 @@ public class SecondaryIdMap {
 						command.getState(RegistryToggleState.STATE_ID).setValue(false);
 						service.refreshElements(ScopeShowActionEvent.ID, null);
 						eventView.hide();
-//						eventView.update(false);
 					} else {
 						m_log.warn("perspectiveActivated(), eventView is null");
 					}
@@ -181,15 +182,20 @@ public class SecondaryIdMap {
 				if (changeId.equals(IWorkbenchPage.CHANGE_RESET)) {
 					m_log.debug("reset perspective");
 					for (IViewReference view : page.getViewReferences()) {
-						if (view.getId().startsWith(NodeMapView.ID)) {
+						if (view.getId().startsWith(NodeMapView.ID)
+								|| view.getId().startsWith(NodeListView.ID)) {
 							page.hideView(view);
 						}
 					}
 				} else if (changeId.equals(IWorkbenchPage.CHANGE_RESET_COMPLETE)) {
 					m_log.debug("reset perspective done");
-					for (String key : getInstance()._secondaryIdMap.keySet()) {
+					for (Map.Entry<String, ViewInfo> entry : getInstance()._secondaryIdMap.entrySet()) {
 						try {
-							PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(NodeMapView.ID, key, IWorkbenchPage.VIEW_ACTIVATE);
+							if (entry.getValue().getClass().equals(NodeMapView.class)) {
+								PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(NodeMapView.ID, entry.getKey(), IWorkbenchPage.VIEW_ACTIVATE);
+							} else if (entry.getValue().getClass().equals(NodeListView.class)) {
+								PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(NodeListView.ID, entry.getKey(), IWorkbenchPage.VIEW_ACTIVATE);
+							}
 						} catch (PartInitException e) {
 							m_log.info(e.getMessage());
 						}
@@ -199,7 +205,7 @@ public class SecondaryIdMap {
 		});
 	}
 
-	public static String createSecondaryId(String managerName, String facilityId) throws Exception {
+	public static String createSecondaryId(String managerName, String facilityId, Class<? extends CommonViewPart> viewClass) throws Exception {
 		init();
 
 		String resultStr = "";
@@ -214,6 +220,9 @@ public class SecondaryIdMap {
 					//アクティブページを手に入れる
 					IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 					IViewReference viewReference = page.findViewReference(NodeMapView.ID, candidateSecondaryId);
+					if (viewReference == null) {
+						viewReference = page.findViewReference(NodeListView.ID, candidateSecondaryId);
+					}
 					IViewReference[] viewRefers = page.getViewReferences();
 					for (IViewReference view : viewRefers) {
 						m_log.debug("primary="+ view.getId()+",second="+view.getSecondaryId());
@@ -235,7 +244,7 @@ public class SecondaryIdMap {
 						break;
 					}
 					if (id == SECONDARY_ID_MAX - 1) {
-						throw new Exception("too many nodeMapView");
+						throw new Exception("too many view");
 					}
 				}
 			} catch (Exception e) {
@@ -243,10 +252,10 @@ public class SecondaryIdMap {
 			}
 		}
 
-		return putSecondaryId(resultStr, managerName, facilityId);
+		return putSecondaryId(resultStr, managerName, facilityId, viewClass);
 	}
 
-	public static String putSecondaryId(String secondaryId, String managerName, String facilityId) {
+	public static String putSecondaryId(String secondaryId, String managerName, String facilityId, Class<? extends CommonViewPart> viewClass) {
 		init();
 
 		if(secondaryId == null){
@@ -259,13 +268,13 @@ public class SecondaryIdMap {
 		}
 
 		logSecondaryId();
-		m_log.info("putSecondaryId() : secondaryId=" + secondaryId + ", managerName=" + managerName + ", facilityId=" + facilityId);
-		getInstance()._secondaryIdMap.put(secondaryId, managerName+":"+facilityId);
+		m_log.info("putSecondaryId() : secondaryId=" + secondaryId + ", viewClass=" + viewClass.getSimpleName() + ", managerName=" + managerName + ", facilityId=" + facilityId);
+		getInstance()._secondaryIdMap.put(secondaryId, new ViewInfo(viewClass, managerName, facilityId));
 		logSecondaryId();
 
-		Set<String>keys = getInstance()._secondaryIdMap.keySet();
+		Set<String> keys = getInstance()._secondaryIdMap.keySet();
 		for (String key : keys) {
-			m_log.debug("key:"+key+",value:"+getInstance()._secondaryIdMap.get(key));
+			m_log.debug("key:" + key + ",value:" + getInstance()._secondaryIdMap.get(key));
 		}
 
 		return secondaryId;
@@ -275,11 +284,13 @@ public class SecondaryIdMap {
 		init();
 
 		String secondaryId = null;
-		String targetValue = managerName + ":" + facilityId;
-		for(String key : getInstance()._secondaryIdMap.keySet()){
-			m_log.debug("getSecondaryId() : key:"+key+",get(key):"+getInstance()._secondaryIdMap.get(key)+",facilityId:"+facilityId);
-			if (getInstance()._secondaryIdMap.get(key).equals(targetValue)) {
-				secondaryId = key;
+		for(Map.Entry<String, ViewInfo> entity : getInstance()._secondaryIdMap.entrySet()){
+			m_log.debug(String.format("getSecondaryId() : key=%s, managerName=%s, facilityid=%s",
+					entity.getKey(), managerName, facilityId));
+			if (entity.getValue().getManagerName().equals(managerName)
+					&& entity.getValue().getFacilityId().equals(facilityId)
+					&& entity.getValue().getClass().equals(NodeMapView.class)) {
+				secondaryId = entity.getKey();
 				break;
 			}
 		}
@@ -295,18 +306,17 @@ public class SecondaryIdMap {
 			// SecondaryIdがnullのビューのファシリティIDは、「null」で登録される
 			return FacilityConstant.STRING_COMPOSITE;
 		}
-		String managerFacilityId = getInstance()._secondaryIdMap.get(secondaryId);
+		ViewInfo viewInfo = getInstance()._secondaryIdMap.get(secondaryId);
 
 		/*
 		 * パースペクティブから開いた場合のみ、下記のロジックに入る。
 		 */
-		if (managerFacilityId == null) {
+		if (viewInfo == null || viewInfo.getFacilityId() == null) {
 			return FacilityConstant.STRING_COMPOSITE;
 		}
 		
-		String facilityId = managerFacilityId.substring(managerFacilityId.lastIndexOf(":") + 1);
-		
-		return facilityId;
+		m_log.debug("getManagerName() facilityId=" + viewInfo.getFacilityId());
+		return viewInfo.getFacilityId();
 	}
 	
 	public static String getManagerName(String secondaryId) {
@@ -319,10 +329,12 @@ public class SecondaryIdMap {
 			return FacilityConstant.STRING_COMPOSITE;
 		}
 		
-		String managerFacilityId = getInstance()._secondaryIdMap.get(secondaryId);
-		String managerName = managerFacilityId.substring(0, managerFacilityId.lastIndexOf(":"));
-		
-		return managerName;
+		ViewInfo viewInfo = getInstance()._secondaryIdMap.get(secondaryId);
+		if (viewInfo == null || viewInfo.getManagerName() == null) {
+			return FacilityConstant.STRING_COMPOSITE;
+		}
+		m_log.debug("getManagerName() managerName=" + viewInfo.getManagerName());
+		return viewInfo.getManagerName();
 	}
 	
 	/*
@@ -336,20 +348,19 @@ public class SecondaryIdMap {
 	 * secondaryIdをマップから削除するメソッド。
 	 * NodeMapView.dispose()から呼ばれるためpublicにする。
 	 */
-	public static String removeSecondaryId(String secondaryId){
+	public static void removeSecondaryId(String secondaryId){
 		init();
 
 		if (secondaryId == null) {
 			m_log.debug("removeSecondaryId secondaryId is null");
-			return null;
+			return;
 		}
 		logSecondaryId();
 		m_log.info("removeSecondaryId() : secondaryId="+secondaryId);
-		String managerFacilityId = getInstance()._secondaryIdMap.remove(secondaryId);
+		getInstance()._secondaryIdMap.remove(secondaryId);
 		logSecondaryId();
 		
-		String facilityId = managerFacilityId.substring(managerFacilityId.lastIndexOf(":") + 1);
-		return facilityId;
+		return;
 	}
 	
 	/*
@@ -358,9 +369,76 @@ public class SecondaryIdMap {
 	 */
 	private static void logSecondaryId() {
 		m_log.debug("logSecondaryId() : start");
-		for (String key : getInstance()._secondaryIdMap.keySet()) {
-			m_log.debug("logSecondaryId() : id:"+key+",value:"+getInstance()._secondaryIdMap.get(key));
+		for (Map.Entry<String, ViewInfo> entity : getInstance()._secondaryIdMap.entrySet()) {
+			m_log.debug(String.format("logSecondaryId() id=%s, managerId=%s, facilityId=%s, viewClass=%s",
+					entity.getKey(), entity.getValue().getManagerName(), entity.getValue().getFacilityId(), entity.getValue().getViewClass().getSimpleName()));
 		}
 		m_log.debug("logSecondaryId() : end");
+	}
+
+	public static class ViewInfo {
+		// Viewクラス
+		private Class<? extends CommonViewPart> viewClass;
+		// managerName
+		private String managerName;
+		// facilityId
+		private String facilityId;
+
+		public ViewInfo (Class<? extends CommonViewPart> viewClass,
+				String managerName,
+				String facilityId){
+			this.viewClass = viewClass;
+			this.managerName = managerName;
+			this.facilityId = facilityId;
+		}
+
+		public String getManagerName() {
+			return this.managerName;
+		}
+
+		public String getFacilityId() {
+			return this.facilityId;
+		}
+
+		public Class<? extends CommonViewPart> getViewClass() {
+			return this.viewClass;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((facilityId == null) ? 0 : facilityId.hashCode());
+			result = prime * result + ((managerName == null) ? 0 : managerName.hashCode());
+			result = prime * result + ((viewClass == null) ? 0 : viewClass.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ViewInfo other = (ViewInfo) obj;
+			if (facilityId == null) {
+				if (other.facilityId != null)
+					return false;
+			} else if (!facilityId.equals(other.facilityId))
+				return false;
+			if (managerName == null) {
+				if (other.managerName != null)
+					return false;
+			} else if (!managerName.equals(other.managerName))
+				return false;
+			if (viewClass == null) {
+				if (other.viewClass != null)
+					return false;
+			} else if (!viewClass.equals(other.viewClass))
+				return false;
+			return true;
+		}
 	}
 }

@@ -160,7 +160,7 @@ public class Messages {
 	public static String getString(String key, Object[] args) {
 		return getString(key, args, null);
 	}
-
+	
 	/**
 	 * Returns the formatted message for the given key in the resource bundle.
 	 * 
@@ -174,5 +174,16 @@ public class Messages {
 	public static String getString(String key, Object[] args, Locale locale) {
 		MessageFormat messageFormat = new MessageFormat(getString(key, key, locale));
 		return messageFormat.format(args);
+	}
+
+	/**
+	 * {@link #getString(String, Object[])}と等価です。
+	 * 
+	 * @param key メッセージリソース名。
+	 * @param args メッセージ追加引数。
+	 * @return メッセージ文字列。
+	 */
+	public static String get(String key, Object... args) {
+		return getString(key, args, null);
 	}
 }

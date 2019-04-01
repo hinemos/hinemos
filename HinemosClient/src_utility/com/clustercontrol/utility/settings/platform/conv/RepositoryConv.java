@@ -8,6 +8,8 @@
 
 package com.clustercontrol.utility.settings.platform.conv;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -16,6 +18,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.repository.bean.NodeRegisterFlagConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.platform.xml.CPUInfo;
@@ -23,20 +26,31 @@ import com.clustercontrol.utility.settings.platform.xml.DeviceInfo;
 import com.clustercontrol.utility.settings.platform.xml.DiskInfo;
 import com.clustercontrol.utility.settings.platform.xml.FSInfo;
 import com.clustercontrol.utility.settings.platform.xml.HostnameInfo;
+import com.clustercontrol.utility.settings.platform.xml.LicenseInfo;
 import com.clustercontrol.utility.settings.platform.xml.MemoryInfo;
+import com.clustercontrol.utility.settings.platform.xml.NetstatInfo;
 import com.clustercontrol.utility.settings.platform.xml.NetworkInterfaceInfo;
 import com.clustercontrol.utility.settings.platform.xml.NodeInfo;
 import com.clustercontrol.utility.settings.platform.xml.NodeVariableInfo;
 import com.clustercontrol.utility.settings.platform.xml.NoteInfo;
+import com.clustercontrol.utility.settings.platform.xml.PackageInfo;
+import com.clustercontrol.utility.settings.platform.xml.ProcessInfo;
+import com.clustercontrol.utility.settings.platform.xml.ProductInfo;
 import com.clustercontrol.ws.repository.NodeCpuInfo;
 import com.clustercontrol.ws.repository.NodeDeviceInfo;
 import com.clustercontrol.ws.repository.NodeDiskInfo;
 import com.clustercontrol.ws.repository.NodeFilesystemInfo;
 import com.clustercontrol.ws.repository.NodeGeneralDeviceInfo;
 import com.clustercontrol.ws.repository.NodeHostnameInfo;
+import com.clustercontrol.ws.repository.NodeLicenseInfo;
 import com.clustercontrol.ws.repository.NodeMemoryInfo;
+import com.clustercontrol.ws.repository.NodeNetstatInfo;
 import com.clustercontrol.ws.repository.NodeNetworkInterfaceInfo;
 import com.clustercontrol.ws.repository.NodeNoteInfo;
+import com.clustercontrol.ws.repository.NodeOsInfo;
+import com.clustercontrol.ws.repository.NodePackageInfo;
+import com.clustercontrol.ws.repository.NodeProcessInfo;
+import com.clustercontrol.ws.repository.NodeProductInfo;
 
 /**
  * リポジトリ情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -52,14 +66,13 @@ public class RepositoryConv {
 	static final private String scopeSchemaVersion="1";
 	static final private String scopeSchemaRevision="2" ;
 	
-	static final private String nodeSchemaType="H";
+	static final private String nodeSchemaType="I";
 	static final private String nodeSchemaVersion="1";
 	static final private String nodeSchemaRevision="1" ;
 	static private String schemaType="";
 	static private String schemaVersion="";
 	static private String schemaRevision="" ;
 	
-
 	/* ロガー */
 	private  static Log log = LogFactory.getLog(RepositoryConv.class);
 
@@ -127,6 +140,7 @@ public class RepositoryConv {
 	/**
 	 * XMLから生成したオブジェクト（ノード情報、ホスト名情報、CPU情報、メモリ情報、
 	 * ネットワークインタフェース情報、ディスク情報、ファイルシステム情報、
+	 * ネットワーク接続情報、ライセンス情報、個別導入製品情報、
 	 * 汎用デバイス情報、ノード変数情報、備考情報）から、
 	 * ノードのプロパティオブジェクトを生成する<br>
 	 * 
@@ -146,6 +160,12 @@ public class RepositoryConv {
 	 *            ファイルシステム情報オブジェクト
 	 * @param deviceList
 	 *            汎用デバイス情報オブジェクト
+	* @param netstatList
+	 *            ネットワーク接続情報オブジェクト
+	 * @param licenseList
+	 *            ライセンス情報オブジェクト
+	 * @param productList
+	 *            個別導入製品情報オブジェクト
 	 * @param variableList
 	 *            ノード変数情報オブジェクト
 	 * @param noteList
@@ -155,6 +175,7 @@ public class RepositoryConv {
 	public static com.clustercontrol.ws.repository.NodeInfo convNodeXml2Dto(
 		NodeInfo xmlNodeInfo, HostnameInfo[] hostnameList, CPUInfo[] cpuList, MemoryInfo[] memoryList,
 		NetworkInterfaceInfo[] networkInterfaceList, DiskInfo[] diskList, FSInfo[] fsList, DeviceInfo[] deviceList,
+		NetstatInfo[] netstatList, LicenseInfo[] licenseList, ProductInfo[] productList, 
 		NodeVariableInfo[] variableList, NoteInfo[] noteList) {
 	
 		com.clustercontrol.ws.repository.NodeInfo dto = new com.clustercontrol.ws.repository.NodeInfo();
@@ -306,25 +327,42 @@ public class RepositoryConv {
 				dto.setFacilityId("");
 				return dto;
 		}
-		
+
+		if (dto.getNodeOsInfo() == null) {
+			dto.setNodeOsInfo(new NodeOsInfo());
+			dto.getNodeOsInfo().setFacilityId(dto.getFacilityId());
+		}
 		if(xmlNodeInfo.getOsName() != null
 				&& !"".equals(xmlNodeInfo.getOsName())){
-			dto.setOsName(xmlNodeInfo.getOsName());
+			dto.getNodeOsInfo().setOsName(xmlNodeInfo.getOsName());
 		}
 		
 		if(xmlNodeInfo.getOsRelease() != null
 				&& !"".equals(xmlNodeInfo.getOsRelease())){
-			dto.setOsRelease(xmlNodeInfo.getOsRelease());
+			dto.getNodeOsInfo().setOsRelease(xmlNodeInfo.getOsRelease());
 		}
 		
 		if(xmlNodeInfo.getOsVersion() != null
 				&& !"".equals(xmlNodeInfo.getOsVersion())){
-			dto.setOsVersion(xmlNodeInfo.getOsVersion());
+			dto.getNodeOsInfo().setOsVersion(xmlNodeInfo.getOsVersion());
 		}
 		
 		if(xmlNodeInfo.getCharacterSet() != null
 				&& !"".equals(xmlNodeInfo.getCharacterSet())){
-			dto.setCharacterSet(xmlNodeInfo.getCharacterSet());
+			dto.getNodeOsInfo().setCharacterSet(xmlNodeInfo.getCharacterSet());
+		}
+		
+		if(xmlNodeInfo.getStartupDateTime() != null
+				&& !"".equals(xmlNodeInfo.getStartupDateTime())){
+			try {
+				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				dto.getNodeOsInfo().setStartupDateTime(dateFormat.parse(xmlNodeInfo.getStartupDateTime()).getTime());
+			} catch (NullPointerException | ParseException e) {
+				log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
+						+ "(StartupDateTime) : " + xmlNodeInfo.getFacilityId());
+				dto.setFacilityId("");
+				return dto;
+			}
 		}
 		
 		if(xmlNodeInfo.getAdministrator() != null
@@ -508,6 +546,21 @@ public class RepositoryConv {
 		if(xmlNodeInfo.getCloudResourceName() != null && !"".equals(xmlNodeInfo.getCloudResourceName())){
 			dto.setCloudResourceName(xmlNodeInfo.getCloudResourceName());
 		}
+		
+		// パッケージ情報とプロセス情報は更新しないフラグを設定する
+		dto.setNodePackageRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+		dto.setNodeProcessRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+		dto.setNodeCpuRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeDiskRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeFilesystemRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeHostnameRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeLicenseRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeMemoryRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeNetstatRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeNetworkInterfaceRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeOsRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeProductRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		dto.setNodeVariableRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 		
 		// ホスト名情報の格納
 		List<NodeHostnameInfo> nodeHostnameList = dto.getNodeHostnameInfo();
@@ -978,6 +1031,105 @@ public class RepositoryConv {
 			}
 		}
 		
+		// ネットワーク接続情報の格納
+		List<NodeNetstatInfo> nodeNetstatList = dto.getNodeNetstatInfo();
+		for (int i = 0; i < netstatList.length; i++) {
+			NodeNetstatInfo nodeNetstatInfo = new NodeNetstatInfo();
+			if (netstatList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
+
+				if(netstatList[i].getProtocol() != null
+						&& !"".equals(netstatList[i].getProtocol())) {
+					nodeNetstatInfo.setProtocol(netstatList[i].getProtocol());
+				} else {
+					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
+							+ "(Protocol) : " + xmlNodeInfo.getFacilityId());
+				}
+				if(netstatList[i].getLocalIpAddress() != null
+						&& !"".equals(netstatList[i].getLocalIpAddress())){
+					nodeNetstatInfo.setLocalIpAddress(netstatList[i].getLocalIpAddress());
+				}else{
+					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
+							+ "(LocalIpAddress) : " + xmlNodeInfo.getFacilityId());
+				}
+				if(netstatList[i].getLocalPort() != null
+						&& !"".equals(netstatList[i].getLocalPort())){
+					nodeNetstatInfo.setLocalPort(netstatList[i].getLocalPort());
+				} else {
+					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
+							+ "(LocalPort) : " + xmlNodeInfo.getFacilityId());
+				}
+				if(netstatList[i].getForeignIpAddress() != null) {
+					nodeNetstatInfo.setForeignIpAddress(netstatList[i].getForeignIpAddress());
+				}
+				if(netstatList[i].getProcessName() != null) {
+					nodeNetstatInfo.setProcessName(netstatList[i].getProcessName());
+				}
+				if(netstatList[i].getPid() > 0) {
+					nodeNetstatInfo.setPid(netstatList[i].getPid());
+				}
+				nodeNetstatList.add(nodeNetstatInfo);
+			}
+		}
+		
+		// 個別導入製品情報の格納
+		List<NodeProductInfo> nodeProductList = dto.getNodeProductInfo();
+		for (int i = 0; i < productList.length; i++) {
+			NodeProductInfo nodeProductInfo = new NodeProductInfo();
+			if (productList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
+
+				if(productList[i].getProductName() != null
+						&& !"".equals(productList[i].getProductName())) {
+					nodeProductInfo.setProductName(productList[i].getProductName());
+				} else {
+					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
+							+ "(ProductName) : " + xmlNodeInfo.getFacilityId());
+				}
+				if(productList[i].getVersion() != null) {
+					nodeProductInfo.setVersion(productList[i].getVersion());
+				}
+				if(productList[i].getPath() != null) {
+					nodeProductInfo.setPath(productList[i].getPath());
+				}
+				nodeProductList.add(nodeProductInfo);
+			}
+		}
+		
+		// ライセンス情報の格納
+		List<NodeLicenseInfo> nodeLicenseList = dto.getNodeLicenseInfo();
+		for (int i = 0; i < licenseList.length; i++) {
+			NodeLicenseInfo nodeLicenseInfo = new NodeLicenseInfo();
+			if (licenseList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
+
+				if(licenseList[i].getProductName() != null
+						&& !"".equals(licenseList[i].getProductName())) {
+					nodeLicenseInfo.setProductName(licenseList[i].getProductName());
+				} else {
+					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
+							+ "(ProductName) : " + xmlNodeInfo.getFacilityId());
+				}
+				if(licenseList[i].getVendor() != null) {
+					nodeLicenseInfo.setVendor(licenseList[i].getVendor());
+				}
+				if(licenseList[i].getVendorContact() != null) {
+					nodeLicenseInfo.setVendorContact(licenseList[i].getVendorContact());
+				}
+				if(licenseList[i].getSerialNumber() != null) {
+					nodeLicenseInfo.setSerialNumber(licenseList[i].getSerialNumber());
+				}
+				nodeLicenseInfo.setCount(licenseList[i].getCount());
+				if(licenseList[i].getExpirationDate() != null) {
+					try {
+						SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+						nodeLicenseInfo.setExpirationDate(dateFormat.parse(licenseList[i].getExpirationDate()).getTime());
+					} catch (NullPointerException | ParseException e) {
+						log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
+								+ "(ExpirationDate) : " + xmlNodeInfo.getFacilityId());
+					}
+				}
+				nodeLicenseList.add(nodeLicenseInfo);
+			}
+		}
+		
 		// ノード変数情報の格納
 		List<com.clustercontrol.ws.repository.NodeVariableInfo> nodeVariableList = dto.getNodeVariableInfo();
 		for (int i = 0; i < variableList.length; i++) {
@@ -1090,7 +1242,10 @@ public class RepositoryConv {
 				facilityId.equals("REGISTERED") ||
 				facilityId.equals("UNREGISTERED") ||
 				facilityId.equals("OS") ||
-				facilityId.equals("OWNER")) {
+				facilityId.equals("OWNER") ||
+				facilityId.equals("_PRIVATE_CLOUD") ||
+				facilityId.equals("_PUBLIC_CLOUD") ||
+				facilityId.equals("NODE_CONFIGURATION")) {
 			return true;
 		} else {
 			return false;
@@ -1159,14 +1314,30 @@ public class RepositoryConv {
 		nodeInfo.setIpAddressV4(dto.getIpAddressV4());
 		nodeInfo.setIpAddressV6(dto.getIpAddressV6());
 		nodeInfo.setNodeName(dto.getNodeName());
-		nodeInfo.setOsName(dto.getOsName());
-		nodeInfo.setOsRelease(dto.getOsRelease());
-		nodeInfo.setOsVersion(dto.getOsVersion());
-
 		nodeInfo.setHardwareType(dto.getHardwareType());
-		nodeInfo.setCharacterSet(dto.getCharacterSet());
 		nodeInfo.setAdministrator(dto.getAdministrator());
 		nodeInfo.setContact(dto.getContact());
+
+		String osName = null;
+		String osRelease = null;
+		String osVersion = null;
+		String characterSet = null;
+		Long startupDateTime = 0L;
+		if (dto.getNodeOsInfo() != null) {
+			osName = dto.getNodeOsInfo().getOsName();
+			osRelease = dto.getNodeOsInfo().getOsRelease();
+			osVersion = dto.getNodeOsInfo().getOsVersion();
+			characterSet = dto.getNodeOsInfo().getCharacterSet();
+			startupDateTime = dto.getNodeOsInfo().getStartupDateTime();
+		}
+		nodeInfo.setOsName(osName);
+		nodeInfo.setOsRelease(osRelease);
+		nodeInfo.setOsVersion(osVersion);
+		nodeInfo.setCharacterSet(characterSet);
+		if (startupDateTime > 0) {
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+			nodeInfo.setStartupDateTime(dateFormat.format(startupDateTime));
+		}
 		
 		//Hinemosエージェント関連情報セット
 		if (dto.getAgentAwakePort() != null && checkInteger(dto.getAgentAwakePort()) != null) {
@@ -1651,6 +1822,102 @@ public class RepositoryConv {
 		}
 
 		return noteList;
+	}
+
+	public static List<NetstatInfo> convNetstatDto2Xml(
+			com.clustercontrol.ws.repository.NodeInfo dto) {
+		List<NetstatInfo> netstatList = new ArrayList<NetstatInfo>();
+		
+		// ノード内ネットワーク接続情報の取得
+		for (NodeNetstatInfo nodeNetstatInfo : dto.getNodeNetstatInfo()) {
+			NetstatInfo xmlNetstatInfo = new NetstatInfo();
+			xmlNetstatInfo.setFacilityId(dto.getFacilityId());
+			xmlNetstatInfo.setProtocol(nodeNetstatInfo.getProtocol());
+			xmlNetstatInfo.setLocalIpAddress(nodeNetstatInfo.getLocalIpAddress());
+			xmlNetstatInfo.setLocalPort(nodeNetstatInfo.getLocalIpAddress());
+			xmlNetstatInfo.setForeignIpAddress(nodeNetstatInfo.getForeignIpAddress());
+			xmlNetstatInfo.setForeignPort(nodeNetstatInfo.getForeignPort());
+			xmlNetstatInfo.setProcessName(nodeNetstatInfo.getProcessName());
+			if (nodeNetstatInfo.getPid() != null) {
+				xmlNetstatInfo.setPid(nodeNetstatInfo.getPid());
+			}
+			xmlNetstatInfo.setStatus(nodeNetstatInfo.getStatus());
+			netstatList.add(xmlNetstatInfo);
+		}
+
+		return netstatList;
+	}
+
+	public static List<PackageInfo> convPackageDto2Xml(
+			com.clustercontrol.ws.repository.NodeInfo dto) {
+		List<PackageInfo> packageList = new ArrayList<>();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		// ノード内パッケージ情報の取得
+		for (NodePackageInfo nodePackageInfo : dto.getNodePackageInfo()) {
+			PackageInfo xmlPakageInfo = new PackageInfo();
+			xmlPakageInfo.setFacilityId(dto.getFacilityId());
+			xmlPakageInfo.setPackageId(nodePackageInfo.getPackageId());
+			xmlPakageInfo.setPackageName(nodePackageInfo.getPackageName());
+			xmlPakageInfo.setVersion(nodePackageInfo.getVersion());
+			xmlPakageInfo.setRelease(nodePackageInfo.getRelease());
+			xmlPakageInfo.setInstallDate(dateFormat.format(nodePackageInfo.getInstallDate()));
+			xmlPakageInfo.setVendor(nodePackageInfo.getVendor());
+			xmlPakageInfo.setArchitecture(nodePackageInfo.getArchitecture());
+			packageList.add(xmlPakageInfo);
+		}
+		return packageList;
+	}
+
+	public static List<ProductInfo> convProductDto2Xml(
+			com.clustercontrol.ws.repository.NodeInfo dto) {
+		List<ProductInfo> productList = new ArrayList<>();
+		// ノード内個別導入製品情報の取得
+		for (NodeProductInfo nodeProductInfo : dto.getNodeProductInfo()) {
+			ProductInfo xmlProductInfo = new ProductInfo();
+			xmlProductInfo.setFacilityId(dto.getFacilityId());
+			xmlProductInfo.setProductName(nodeProductInfo.getProductName());
+			xmlProductInfo.setVersion(nodeProductInfo.getVersion());
+			xmlProductInfo.setPath(nodeProductInfo.getPath());
+			productList.add(xmlProductInfo);
+		}
+		return productList;
+	}
+
+	public static List<LicenseInfo> convLicenseDto2Xml(
+			com.clustercontrol.ws.repository.NodeInfo dto) {
+		List<LicenseInfo> lisenceList = new ArrayList<>();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		// ノード内ライセンス情報の取得
+		for (NodeLicenseInfo nodeProductInfo : dto.getNodeLicenseInfo()) {
+			LicenseInfo xmlProductInfo = new LicenseInfo();
+			xmlProductInfo.setFacilityId(dto.getFacilityId());
+			xmlProductInfo.setProductName(nodeProductInfo.getProductName());
+			xmlProductInfo.setVendor(nodeProductInfo.getVendor());
+			xmlProductInfo.setVendorContact(nodeProductInfo.getVendorContact());
+			xmlProductInfo.setSerialNumber(nodeProductInfo.getSerialNumber());
+			xmlProductInfo.setCount(nodeProductInfo.getCount());
+			xmlProductInfo.setExpirationDate(dateFormat.format(nodeProductInfo.getExpirationDate()));
+			lisenceList.add(xmlProductInfo);
+		}
+		return lisenceList;
+	}
+
+	public static List<ProcessInfo> convProcessDto2Xml(
+			com.clustercontrol.ws.repository.NodeInfo dto) {
+		List<ProcessInfo> processList = new ArrayList<>();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		// ノード内プロセス情報の取得
+		for (NodeProcessInfo nodeProcessInfo : dto.getNodeProcessInfo()) {
+			ProcessInfo xmlProcessInfo = new ProcessInfo();
+			xmlProcessInfo.setFacilityId(dto.getFacilityId());
+			xmlProcessInfo.setProcessName(nodeProcessInfo.getProcessName());
+			xmlProcessInfo.setPid(nodeProcessInfo.getPid());
+			xmlProcessInfo.setExecUser(nodeProcessInfo.getExecUser());
+			xmlProcessInfo.setPath(nodeProcessInfo.getPath());
+			xmlProcessInfo.setStartupDateTime(dateFormat.format(nodeProcessInfo.getStartupDateTime()));
+			processList.add(xmlProcessInfo);
+		}
+		return processList;
 	}
 
 	/**

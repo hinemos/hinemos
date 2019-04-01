@@ -18,10 +18,10 @@ public class AgentStatusInfo  implements Serializable{
 	private static final long serialVersionUID = -5818466250922407514L;
 	private String facilityId = "";
 	private String facilityName = "";
-	private boolean newFlag = false;
 	private Long startupTime = 0l;
 	private Long lastLogin = 0l;
 	private String multiplicity = "";
+	private AgentUpdateStatus updateStatus;
 
 	public String getFacilityId() {
 		return facilityId;
@@ -37,14 +37,6 @@ public class AgentStatusInfo  implements Serializable{
 
 	public void setFacilityName(String facilityName) {
 		this.facilityName = facilityName;
-	}
-
-	public boolean isNewFlag() {
-		return newFlag;
-	}
-
-	public void setNewFlag(boolean newFlag) {
-		this.newFlag = newFlag;
 	}
 
 	public Long getStartupTime() {
@@ -69,5 +61,13 @@ public class AgentStatusInfo  implements Serializable{
 
 	public void setMultiplicity(String multiplicity) {
 		this.multiplicity = multiplicity;
+	}
+
+	public AgentUpdateStatus getUpdateStatus() {
+		return updateStatus;
+	}
+
+	public void setUpdateStatus(AgentUpdateStatus status) {
+		this.updateStatus = status;
 	}
 }

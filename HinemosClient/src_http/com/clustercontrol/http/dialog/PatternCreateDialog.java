@@ -237,7 +237,7 @@ public class PatternCreateDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "process", m_radioProcess);
 		gridData = new GridData();
 		gridData.horizontalSpan = 10;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_radioProcess.setLayoutData(gridData);
 		this.m_radioProcess.setText(Messages.getString("monitor.http.scenario.page.matched.case.is.abnormal"));
@@ -266,7 +266,7 @@ public class PatternCreateDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "valid", m_buttonValid);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_buttonValid.setLayoutData(gridData);
 		this.m_buttonValid.setText(Messages.getString("setting.valid.confirmed"));

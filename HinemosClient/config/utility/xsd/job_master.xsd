@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Id: job_master.xsd 219 2016-12-27 16:00:00Z kimura $ -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 	<xs:annotation>
 		<xs:documentation>ジョブ定義</xs:documentation>
@@ -13,7 +12,7 @@
 			<xs:documentation>XMLスキーマ情報</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
-			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="I">
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="J">
 				<xs:annotation>
 					<xs:documentation>データ型のタイプ</xs:documentation>
 				</xs:annotation>
@@ -837,6 +836,19 @@
 					<xs:documentation>後続ジョブの優先度</xs:documentation>
 			  </xs:annotation>
 			</xs:element>
+
+			<xs:element name="queueFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>同時実行制御キューのフラグ{true:キュー有効,false:キュー無効}</xs:documentation>
+			  </xs:annotation>
+			</xs:element>
+
+			<xs:element name="queueId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>同時実行制御キューのID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
 		</xs:sequence>
 	</xs:complexType>
 

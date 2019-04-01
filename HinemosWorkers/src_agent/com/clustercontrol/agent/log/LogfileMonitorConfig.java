@@ -195,7 +195,9 @@ public class LogfileMonitorConfig {
 		
 		// 長さが上限値を超える場合は切り捨てる
 		if (line.length() > logfilMessageLength) {
-			m_log.info("log line is too long");
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("log line is too long");
+			}
 			line = line.substring(0, logfilMessageLength);
 		}
 		return line;

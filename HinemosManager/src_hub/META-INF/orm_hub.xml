@@ -111,6 +111,14 @@
 			]]>
 		</query>
 	</named-query>
+	<!-- CollectBinaryData -->
+	<named-query name="CollectBinaryData.findMaxDataId">
+		<query>
+			<![CDATA[
+				SELECT MAX(a.id.dataId) FROM CollectBinaryData a
+			]]>
+		</query>
+	</named-query>
 	<!-- CollectData -->
 	<named-query name="CollectData.transfer">
 		<query>

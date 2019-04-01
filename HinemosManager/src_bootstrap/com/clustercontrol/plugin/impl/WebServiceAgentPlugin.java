@@ -25,6 +25,7 @@ import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.ws.agent.AgentEndpoint;
 import com.clustercontrol.ws.agentbinary.AgentBinaryEndpoint;
 import com.clustercontrol.ws.agenthub.AgentHubEndpoint;
+import com.clustercontrol.ws.agentnodeconfig.AgentNodeConfigEndpoint;
 
 public class WebServiceAgentPlugin extends WebServicePlugin implements HinemosPlugin {
 
@@ -35,6 +36,7 @@ public class WebServiceAgentPlugin extends WebServicePlugin implements HinemosPl
 	//　収集値をマネージャへ送信するためのスレッドプール
 	private static final ThreadPoolExecutor _threadPoolForAgentHub;
 	private static final ThreadPoolExecutor _threadPoolForAgentBinary;
+	private static final ThreadPoolExecutor _threadPoolForAgentNodeConfig;
 
 	static {
 		int _threadPoolSizeForAgent = HinemosPropertyCommon.ws_agent_threadpool_size.getIntegerValue();
@@ -69,6 +71,16 @@ public class WebServiceAgentPlugin extends WebServicePlugin implements HinemosPl
 						return new Thread(r, "WebServiceWorkerForAgentBinary-" + _count++);
 					}
 				}, new ThreadPoolExecutor.AbortPolicy());
+
+		_threadPoolForAgentNodeConfig = new MonitoredThreadPoolExecutor(_threadPoolSizeForAgent, _threadPoolSizeForAgent,
+				0L, TimeUnit.MICROSECONDS, new LinkedBlockingQueue<Runnable>(_queueSizeForAgent), new ThreadFactory() {
+					private volatile int _count = 0;
+
+					@Override
+					public Thread newThread(Runnable r) {
+						return new Thread(r, "WebServiceWorkerForAgentNodeConfig-" + _count++);
+					}
+				}, new ThreadPoolExecutor.AbortPolicy());
 	}
 
 	public static int getAgentQueueSize() {
@@ -82,13 +94,14 @@ public class WebServiceAgentPlugin extends WebServicePlugin implements HinemosPl
 	public static int getAgentBinaryQueueSize() {
 		return _threadPoolForAgentBinary.getQueue().size();
 	}
+	
+	public static int getAgentNodeConfigQueueSize() {
+		return _threadPoolForAgentNodeConfig.getQueue().size();
+	}
 
 	@Override
 	public Set<String> getDependency() {
 		Set<String> dependency = new HashSet<String>();
-		// TODO Why need to depend on the followings?
-		//dependency.add(WebServiceJobMapPlugin.class.getName());
-		//dependency.add(WebServiceNodeMapPlugin.class.getName());
 		dependency.add(WebServiceCorePlugin.class.getName());
 		return dependency;
 	}
@@ -111,6 +124,7 @@ public class WebServiceAgentPlugin extends WebServicePlugin implements HinemosPl
 		publish(addressPrefix, "/HinemosWS/AgentEndpoint", new AgentEndpoint(), _threadPoolForAgent);
 		publish(addressPrefix, "/HinemosWS/AgentHubEndpoint", new AgentHubEndpoint(), _threadPoolForAgentHub);
 		publish(addressPrefix, "/HinemosWS/AgentBinaryEndpoint", new AgentBinaryEndpoint(), _threadPoolForAgentBinary);
+		publish(addressPrefix, "/HinemosWS/AgentNodeConfigEndpoint", new AgentNodeConfigEndpoint(), _threadPoolForAgentNodeConfig);
 	}
 
 	@Override
@@ -155,6 +169,20 @@ public class WebServiceAgentPlugin extends WebServicePlugin implements HinemosPl
 			}
 		} catch (InterruptedException e) {
 			_threadPoolForAgentBinary.shutdownNow();
+		}
+
+		// 許容時間まで待ちリクエストを処理する
+		_threadPoolForAgentNodeConfig.shutdown();
+		try {
+			long _shutdownTimeoutForAgent = HinemosPropertyCommon.ws_agent_shutdown_timeout.getNumericValue();
+			if (!_threadPoolForAgentNodeConfig.awaitTermination(_shutdownTimeoutForAgent, TimeUnit.MILLISECONDS)) {
+				List<Runnable> remained = _threadPoolForAgentNodeConfig.shutdownNow();
+				if (remained != null) {
+					log.info("shutdown(AgentNodeConfig) timeout. runnable remained. (size = " + remained.size() + ")");
+				}
+			}
+		} catch (InterruptedException e) {
+			_threadPoolForAgentNodeConfig.shutdownNow();
 		}
 		
 		super.deactivate();

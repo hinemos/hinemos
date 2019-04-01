@@ -34,6 +34,7 @@ import com.clustercontrol.selfcheck.monitor.DBLongTranMonitor;
 import com.clustercontrol.selfcheck.monitor.DatabaseMonitor;
 import com.clustercontrol.selfcheck.monitor.FileSystemMonitor;
 import com.clustercontrol.selfcheck.monitor.JVMHeapMonitor;
+import com.clustercontrol.selfcheck.monitor.JobQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.JobRunSessionMonitor;
 import com.clustercontrol.selfcheck.monitor.RAMSwapOutMonitor;
 import com.clustercontrol.selfcheck.monitor.SchedulerMonitor;
@@ -218,6 +219,9 @@ public class SelfCheckTaskSubmitter implements Runnable {
 		for (SelfCheckMonitor monitor : platformMonitors) {
 			_executorService.submit(new SelfCheckTask(monitor));
 		}
+		
+		// job queue
+		_executorService.submit(new SelfCheckTask(new JobQueueMonitor()));
 		
 		// set timestamp of last monitoring
 		refreshMonitorDate();

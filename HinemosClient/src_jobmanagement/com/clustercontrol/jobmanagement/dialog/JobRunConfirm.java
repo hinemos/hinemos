@@ -162,7 +162,7 @@ public class JobRunConfirm extends CommonDialog {
 		btnJobWaitTime = new Button(selectionComposite, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "btnJobWaitTime", btnJobWaitTime);
 		btnJobWaitTime.setText(Messages.getString("message.job.119"));
-		btnJobWaitTime.setLayoutData(new GridData(500, SizeConstant.SIZE_BUTTON_HEIGHT));
+		btnJobWaitTime.setLayoutData(new GridData(250, SizeConstant.SIZE_BUTTON_HEIGHT));
 		((GridData)btnJobWaitTime.getLayoutData()).horizontalSpan = 2;
 		btnJobWaitTime.setSelection(false);
 
@@ -170,7 +170,7 @@ public class JobRunConfirm extends CommonDialog {
 		btnJobWaitMinute = new Button(selectionComposite, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "btnJobWaitMinute", btnJobWaitMinute);
 		btnJobWaitMinute.setText(Messages.getString("message.job.120"));
-		btnJobWaitMinute.setLayoutData(new GridData(500, SizeConstant.SIZE_BUTTON_HEIGHT));
+		btnJobWaitMinute.setLayoutData(new GridData(400, SizeConstant.SIZE_BUTTON_HEIGHT));
 		((GridData)btnJobWaitMinute.getLayoutData()).horizontalSpan = 2;
 		btnJobWaitMinute.setSelection(false);
 

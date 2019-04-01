@@ -10,6 +10,7 @@ package com.clustercontrol.monitor.composite;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,6 +25,8 @@ import org.eclipse.swt.widgets.Table;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.composite.CustomizableListComposite;
+import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
 import com.clustercontrol.monitor.action.GetScopeListTableDefine;
 import com.clustercontrol.monitor.util.ConvertListUtil;
 import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
@@ -49,7 +52,7 @@ import com.clustercontrol.util.WidgetTestUtil;
  * @version 1.0.0
  * @since 1.0.0
  */
-public class ScopeListComposite extends Composite {
+public class ScopeListComposite extends CustomizableListComposite {
 
 	// ログ
 	private static Log m_log = LogFactory.getLog( ScopeListComposite.class );
@@ -71,7 +74,7 @@ public class ScopeListComposite extends Composite {
 
 	/** 合計ラベル */
 	private Label totalLabel = null;
-
+	
 	/**
 	 * インスタンスを返します。
 	 *
@@ -82,8 +85,8 @@ public class ScopeListComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
 	 * @see #initialize()
 	 */
-	public ScopeListComposite(Composite parent, int style) {
-		super(parent, style);
+	public ScopeListComposite(Composite parent, int style, ListLayout listLayout) {
+		super(parent, style, listLayout);
 		initialize();
 	}
 
@@ -170,6 +173,10 @@ public class ScopeListComposite extends Composite {
 		for (int i = 0; i < table.getColumnCount(); i++){
 			table.getColumn(i).setMoveable(true);
 		}
+		
+		this.updateColumnOrder(table);
+		this.updateColumnWidth(table);
+		
 		// ダブルクリックした場合、表示を配下に移動する
 		ScopeSpecifiedShowAction listener = new ScopeSpecifiedShowAction();
 		this.tableViewer.addDoubleClickListener(listener);
@@ -342,4 +349,8 @@ public class ScopeListComposite extends Composite {
 		this.totalLabel.setText(Messages.getString("records", args));
 	}
 
+	@Override
+	public Map<String, Integer> getColumnIndexMap() {
+		return GetScopeListTableDefine.COLNAME_INDEX_MAP;
+	}
 }

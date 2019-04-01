@@ -136,7 +136,7 @@ public class NodeMapListComposite extends Composite{
 						 * イベントビューとステータスビューの表示を変更する。
 						 */
 						RelationViewController.updateScopeTreeView(parentId, facilityId);
-						RelationViewController.updateStatusEventView(facilityId, parentId);
+						RelationViewController.updateStatusEventView(parentId, facilityId);
 					}
 				});
 

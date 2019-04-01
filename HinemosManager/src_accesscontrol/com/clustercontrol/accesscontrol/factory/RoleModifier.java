@@ -549,6 +549,19 @@ public class RoleModifier {
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
 							referObjectType = HinemosModuleConstant.PLATFORM_NOTIFY;
+						} else if (HinemosModuleConstant.JOB_QUEUE.equals(objectType)) {
+							/*
+							 * ジョブキュー
+							 */
+							// ジョブ設定
+							referList = em.createNamedQuery("JobMstEntity.findByQueueIdOwnerRoleId", JobMstEntity.class)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.JOB;
+								break;
+							}
 						}
 					}
 					ObjectPrivilegeInfo deleteInfo = null;

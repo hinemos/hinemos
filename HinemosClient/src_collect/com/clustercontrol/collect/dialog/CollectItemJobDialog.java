@@ -15,7 +15,6 @@ import java.util.Map;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -28,6 +27,7 @@ import com.clustercontrol.viewer.CommonTableViewer;
 import com.clustercontrol.collect.action.GetCollectItemJobTableDefine;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.util.CheckBoxSelectionAdapter;
 import com.clustercontrol.util.Messages;
 
 /**
@@ -96,28 +96,11 @@ public class CollectItemJobDialog extends CommonDialog {
 		this.m_tableViewer.createTableColumn(GetCollectItemJobTableDefine.get(),
 				GetCollectItemJobTableDefine.SORT_COLUMN_INDEX,
 				GetCollectItemJobTableDefine.SORT_ORDER);
-		/**テーブルのレコードを選択するリスナー*/
-		table.addSelectionListener(new SelectionAdapter(){
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-
-				//選択されたTableColumnを取得します。
-				TableItem[] ti = table.getSelection();
-				for (int i = 0; i<ti.length; i++){
-					@SuppressWarnings("unchecked")
-					ArrayList<Object> al = (ArrayList<Object>)ti[i].getData();
-					if((Boolean)al.get(0)){
-						//YESならNO
-						al.set(GetCollectItemJobTableDefine.SELECTION, false);
-					}else{
-						//NOならYES
-						al.set(GetCollectItemJobTableDefine.SELECTION, true);
-					}
-				}
-				//チェックボックスが入るので、再描画。
-				m_tableViewer.refresh();
-			}
-		});
+		
+		/** チェックボックスの選択を制御するリスナー */
+		SelectionAdapter adapter =
+				new CheckBoxSelectionAdapter(this.getParentShell(), this.m_tableViewer, GetCollectItemJobTableDefine.SELECTION);
+		table.addSelectionListener(adapter);
 
 		// 情報反映
 		reflectInfo();

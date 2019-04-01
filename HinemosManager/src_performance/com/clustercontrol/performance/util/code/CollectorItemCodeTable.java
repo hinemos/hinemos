@@ -427,7 +427,6 @@ public class CollectorItemCodeTable {
 		Collections.sort(list,new Comparator<CollectorItemInfo>() {
 			@Override
 			public int compare(CollectorItemInfo o1, CollectorItemInfo o2) {
-				// TODO Auto-generated method stub
 				return o1.getItemCode().compareTo(o2.getItemCode());
 			}
 		});

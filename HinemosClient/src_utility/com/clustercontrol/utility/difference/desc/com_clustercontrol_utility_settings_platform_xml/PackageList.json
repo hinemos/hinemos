@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"PackageList_funcName"}
+],
+"props":[
+	{
+	"propName":"PackageInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -476,7 +476,7 @@ public class JobTreeComposite extends Composite {
 	
 	// 目的のジョブが見つかったらtrueを、見つからなかったらfalseを返す
 	private boolean setFocus (JobTreeItem item, String jobId) {
-		if (jobId.equals(item.getData().getName())) {
+		if (jobId.equals(item.getData().getId())) {
 			m_viewer.setSelection(new StructuredSelection(item), true);
 			return true;
 		}

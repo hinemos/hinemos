@@ -249,11 +249,15 @@ public class PublicKeyThread extends AgentThread {
 		}
 
 		//ファイル名取得
-		String fileName = AgentProperties.getProperty(execUser.toLowerCase() + AUTHORIZED_KEY_PATH);
-
-		m_log.debug("faileName" + fileName);
-		if(fileName == null || fileName.length() == 0)
+		String propKey = execUser.toLowerCase() + AUTHORIZED_KEY_PATH;
+		String fileName = AgentProperties.getProperty(propKey);
+		
+		if (fileName == null || fileName.length() == 0) {
+			m_log.info(String.format("AgentProperty Authorizedkey %s = %s ", propKey, fileName));
 			return false;
+		}
+		m_log.debug("Authorizedkey filepath: " + fileName);
+			
 
 		//File取得
 		File fi = new File(fileName);

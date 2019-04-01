@@ -17,4 +17,6 @@ public class TopicFlagConstant {
 	public static long WINEVENT_CHANGED = 1 << 5;
 	public static long FILECHECK_CHANGED = 1 << 6;
 	public static long BINARY_CHANGED = 1 << 7;
+	public static long NODE_CONFIG_SETTING_CHANGED = 1 << 8;
+	public static long NODE_CONFIG_RUN_COLLECT = 1 << 9;
 }

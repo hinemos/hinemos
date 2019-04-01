@@ -100,7 +100,6 @@ public class SelectMaintenanceInfo {
 	private MaintenanceInfo getMaintenanceInfoBean(MaintenanceInfo entity)
 			throws InvalidRole, HinemosUnknown {
 		//通知情報の取得
-		// FIXME: NotifyRelationCacheの適用
 		entity.setNotifyId(new NotifyControllerBean().getNotifyRelation(entity.getNotifyGroupId()));
 		return entity;
 	}

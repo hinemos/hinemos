@@ -336,7 +336,7 @@ public class RepositoryUtil {
 		if (fa == null) {
 			NodeInfo nodeInfo = null;
 			try {
-				nodeInfo  = RepositoryControllerBeanWrapper.bean().getNode(nodeId);
+				nodeInfo  = RepositoryControllerBeanWrapper.bean().getNodeFull(nodeId);
 				String scopeId = FacilityIdUtil.getCloudScopeScopeId(cloudScope.getPlatformId(), cloudScope.getCloudScopeId());
 				associateIfNot(scopeId, nodeId);
 				String allNodescopeId = FacilityIdUtil.getAllNodeScopeId(cloudScope.getPlatformId(), cloudScope.getCloudScopeId());

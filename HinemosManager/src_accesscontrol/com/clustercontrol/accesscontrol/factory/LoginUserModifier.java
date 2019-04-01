@@ -47,12 +47,13 @@ public class LoginUserModifier {
 	 * @param userInfo 新規登録・変更するユーザ情報
 	 * @param modifyUserId 作業ユーザID
 	 * @param isNew true:新規登録／false:更新
+	 * @param withHashedPassword ハッシュ済みパスワードを含んでいるか。true:パスワードも更新/false:パスワードは更新しない
 	 * @throws UserDuplicate
 	 * @throws UserNotFound
 	 * @throws UnEditableUser
 	 * @throws HinemosUnknown
 	 */
-	public static void modifyUserInfo(UserInfo userInfo, String modifyUserId, boolean isNew) 
+	public static void modifyUserInfo(UserInfo userInfo, String modifyUserId, boolean isNew, boolean withHashedPassword) 
 			throws UserDuplicate, UserNotFound, UnEditableUser, HinemosUnknown {
 
 		if(userInfo == null || modifyUserId == null || modifyUserId.compareTo("") == 0){
@@ -108,6 +109,14 @@ public class LoginUserModifier {
 				userInfoEntity.setMailAddress(userInfo.getMailAddress());
 				userInfoEntity.setModifyUserId(modifyUserId);
 				userInfoEntity.setModifyDate(HinemosTime.currentTimeMillis());
+				
+				if (withHashedPassword) {
+					if (userInfo.getPassword().isEmpty()) {
+						m_log.warn("modifyUserInfo () : hashedPassword is empty");
+					} else {
+						userInfoEntity.setPassword(userInfo.getPassword());
+					}
+				}
 
 				// デバッグログ
 				if (userInfoEntity.getRoleList() != null) {

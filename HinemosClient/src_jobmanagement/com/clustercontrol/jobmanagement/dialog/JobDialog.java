@@ -860,6 +860,10 @@ public class JobDialog extends CommonDialog {
 					}
 					JobInfo parentInfo = parentItem.getData();
 					this.m_ownerRoleId.setText(parentInfo.getOwnerRoleId());
+				} else {
+					// ツリーではなく単体のジョブ情報を渡された場合(ジョブ履歴、同時実行制御ジョブ一覧)は、
+					// ジョブ情報が持っているオーナーロールIDを設定する。
+					m_ownerRoleId.setText(info.getOwnerRoleId() == null ? "": info.getOwnerRoleId());
 				}
 			}
 
@@ -894,6 +898,7 @@ public class JobDialog extends CommonDialog {
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
 				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
+				m_controlComposite.getJobQueueDropdown().refreshList(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
 				//開始遅延
@@ -914,6 +919,7 @@ public class JobDialog extends CommonDialog {
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
 				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
+				m_controlComposite.getJobQueueDropdown().refreshList(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
 				//実行内容
@@ -944,6 +950,7 @@ public class JobDialog extends CommonDialog {
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
 				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
+				m_controlComposite.getJobQueueDropdown().refreshList(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
 				//ファイル転送
@@ -991,6 +998,7 @@ public class JobDialog extends CommonDialog {
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
 				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
+				m_controlComposite.getJobQueueDropdown().refreshList(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
 				//承認
@@ -1021,6 +1029,7 @@ public class JobDialog extends CommonDialog {
 				m_controlComposite.setWaitRuleInfo(jobWaitRuleInfo);
 				m_controlComposite.setJobTreeItem(m_jobTreeItem);
 				m_controlComposite.getCalendarId().createCalIdCombo(this.m_managerName, this.m_ownerRoleId.getText());
+				m_controlComposite.getJobQueueDropdown().refreshList(this.m_managerName, this.m_ownerRoleId.getText());
 				m_controlComposite.reflectWaitRuleInfo();
 
 				//監視

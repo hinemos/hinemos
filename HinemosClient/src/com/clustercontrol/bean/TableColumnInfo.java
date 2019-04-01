@@ -118,6 +118,9 @@ public class TableColumnInfo implements Serializable {
 	/** 監視間隔(データタイプの種別) */
 	public static final int RUN_INTERVAL = 32;
 
+	/** チェックボックス(データタイプの種別) */
+	public static final int RADIO_BUTTON = 33;
+	
 	/** カラム名 */
 	private String m_name = null;
 

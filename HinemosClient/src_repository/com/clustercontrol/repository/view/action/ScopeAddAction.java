@@ -110,7 +110,6 @@ public class ScopeAddAction extends AbstractHandler implements IElementUpdater {
 		if( null != window ){
 			IWorkbenchPage page = window.getActivePage();
 			if( null != page ){
-				//IWorkbenchPart part = page.findView(ScopeListView.ID); // TODO Check why this caused error on RAP. RAP bug?
 				IViewReference viewRef = page.findViewReference( ScopeListView.ID );
 				
 				if (viewRef == null)

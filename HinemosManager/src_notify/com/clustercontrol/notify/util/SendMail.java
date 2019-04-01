@@ -130,7 +130,9 @@ public class SendMail implements Notifier {
 
 			String changeAddress = null;
 			try {
-				Map<String, String> param = NotifyUtil.createParameter(outputInfo);
+				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+				ArrayList<String> inKeyList = StringBinder.getKeyList(address, maxReplaceWord);
+				Map<String, String> param = NotifyUtil.createParameter(outputInfo, inKeyList);
 				StringBinder binder = new StringBinder(param);
 				changeAddress = binder.bindParam(address);
 			} catch (Exception e) {
@@ -493,9 +495,12 @@ public class SendMail implements Notifier {
 				MailTemplateInfo templateData
 				= new MailTemplateControllerBean().getMailTemplateInfo(
 						mailInfo.getMailTemplateInfoEntity().getMailTemplateId());
-				Map<String, String> param = NotifyUtil.createParameter(source, mailInfo.getNotifyInfoEntity());
+				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+				String origin = templateData.getSubject();
+				ArrayList<String> inKeyList = StringBinder.getKeyList(origin, maxReplaceWord);
+				Map<String, String> param = NotifyUtil.createParameter(source, mailInfo.getNotifyInfoEntity(), inKeyList);
 				StringBinder binder = new StringBinder(param);
-				subject = binder.replace(templateData.getSubject());
+				subject = binder.replace(origin);
 			} else {
 				Locale locale = NotifyUtil.getNotifyLocale();
 				subject = Messages.getString("MAIL_SUBJECT", locale) + "("
@@ -534,10 +539,13 @@ public class SendMail implements Notifier {
 				MailTemplateInfo mailData
 				= new MailTemplateControllerBean().getMailTemplateInfo(
 						mailInfo.getMailTemplateInfoEntity().getMailTemplateId());
+				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+				String origin = mailData.getBody();
+				ArrayList<String> inKeyList = StringBinder.getKeyList(origin, maxReplaceWord);
 				Map<String, String> param = NotifyUtil.createParameter(source,
-						mailInfo.getNotifyInfoEntity());
+						mailInfo.getNotifyInfoEntity(), inKeyList);
 				StringBinder binder = new StringBinder(param);
-				buf.append(binder.replace(mailData.getBody() + "\n"));
+				buf.append(binder.replace(origin + "\n"));
 			} else {
 				
 				Locale locale = NotifyUtil.getNotifyLocale();

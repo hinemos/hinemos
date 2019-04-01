@@ -23,8 +23,10 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import com.clustercontrol.jobmanagement.bean.DelayNotifyConstant;
+import com.clustercontrol.jobmanagement.bean.JobConstant;
 
 
 /**
@@ -223,7 +225,6 @@ public class JobSessionJobEntity  implements Serializable {
 		this.jobInfoEntity = jobInfoEntity;
 	}
 
-
 	//bi-directional many-to-one association to JobSessionEntity
 	@ManyToOne(fetch=FetchType.LAZY)
 	@JoinColumn(name="session_id", insertable=false, updatable=false)
@@ -312,4 +313,18 @@ public class JobSessionJobEntity  implements Serializable {
 		}
 	}
 
+	/**
+	 * セッションノードが配下にあるタイプのセッションジョブの場合は true を返します。
+	 * <p>
+	 * {@link JobSessionNodeEntity}の有無を調べるのではなく、ジョブタイプから判定します。
+	 */
+	@Transient
+	public boolean hasSessionNode() {
+		Integer typeInt = getJobInfoEntity().getJobType();
+		if (typeInt == null) return false;
+		int type = typeInt.intValue();
+		return type == JobConstant.TYPE_JOB
+				|| type == JobConstant.TYPE_APPROVALJOB
+				|| type == JobConstant.TYPE_MONITORJOB;
+	}
 }

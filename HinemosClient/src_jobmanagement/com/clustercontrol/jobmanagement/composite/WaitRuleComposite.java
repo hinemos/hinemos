@@ -297,7 +297,7 @@ public class WaitRuleComposite extends Composite {
 		JobDialogUtil.getSeparator(this);
 
 		// 条件を満たさなければ終了（チェック）
-		this.m_endCondition = new Button(this, SWT.CHECK);
+		this.m_endCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_endCondition", this.m_endCondition);
 		this.m_endCondition.setText(Messages.getString("end.if.condition.unmatched"));
 		this.m_endCondition.setLayoutData(new RowData(220, SizeConstant.SIZE_BUTTON_HEIGHT + 5));

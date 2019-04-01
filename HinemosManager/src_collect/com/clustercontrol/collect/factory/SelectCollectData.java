@@ -253,7 +253,6 @@ public class SelectCollectData {
 	 */
 	private List<Integer> getValidCollectIdList(List<Integer> idList)
 			throws ObjectPrivilege_InvalidRole, MonitorNotFound, JobMasterNotFound, HinemosUnknown, InvalidRole {
-		// FIXME メソッドの引数としてオーナーロールを貰ってくるべきか要確認
 		// ログインユーザでオブジェクト権限チェックしつつ収集データを取得
 		String userId = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 		List<FacilityInfo> facilityUserList = FacilityTreeCache.getNodeFacilityInfoListByUserId(userId); //ログインユーザが見ることができるファシリティID一覧
@@ -313,7 +312,6 @@ public class SelectCollectData {
 	private boolean isValidCollectId(Integer id) throws ObjectPrivilege_InvalidRole, 
 		MonitorNotFound, JobMasterNotFound, HinemosUnknown, InvalidRole{
 
-		// FIXME メソッドの引数としてオーナーロールを貰ってくるべきか要確認
 		// ログインユーザでオブジェクト権限チェックしつつ収集データを取得
 		String userId = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 		List<FacilityInfo> facilityUserList = FacilityTreeCache.getNodeFacilityInfoListByUserId(userId); //ログインユーザが見ることができるファシリティID一覧

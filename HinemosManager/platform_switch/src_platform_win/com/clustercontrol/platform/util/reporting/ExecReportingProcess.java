@@ -104,12 +104,19 @@ public class ExecReportingProcess {
 			fileList = new ArrayList<>();
 			fileList.add(outFileName);
 
+			String etcDir = System.getProperty("hinemos.manager.etc.dir", "/opt/hinemos/etc");
+			
+			if (Boolean.valueOf(System.getProperty("devMode", Boolean.FALSE.toString()))) {
+				//自動テスト時はpersistence.xmlを共用できないため、別のetcを参照する
+				etcDir = System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + "etc_reporting";
+			}
+			
 			// コマンドライン文字列作成
 			String javaOpts = "-server" +
 					" -Dprogram.name=hinemos_reporting" +
 					" \"-Dhinemos.manager.home.dir=" + System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + "\"" +
 					" \"-Dhinemos.manager.data.dir=" + System.getProperty("hinemos.manager.data.dir") + "\"" +
-					" \"-Dhinemos.manager.etc.dir=" + System.getProperty("hinemos.manager.etc.dir", "/opt/hinemos/etc") + "\"" +
+					" \"-Dhinemos.manager.etc.dir=" + etcDir + "\"" +
 					" \"-Djava.library.path=" + System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + File.separator + "bin" + "\"" + 
 					" \"-Dhinemos.manager.log.dir=" + System.getProperty("hinemos.manager.log.dir", "/opt/hinemos/var/log") + "\"" +
 					" " + HinemosPropertyDefault.reporting_heap_size.getStringValue() +
@@ -142,7 +149,7 @@ public class ExecReportingProcess {
 			Path libDir = Paths.get(System.getProperty("hinemos.manager.home.dir", "/opt/hinemos"), "lib", "reporting");
 			StringJoiner pathJoiner = new StringJoiner(File.pathSeparator);
 			// First, add etc folder
-			pathJoiner.add(Paths.get(System.getProperty("hinemos.manager.home.dir", "/opt/hinemos"), "etc").toString());
+			pathJoiner.add(Paths.get(etcDir).toString());
 			// Second, add lib folder
 			pathJoiner.add(Paths.get(System.getProperty("hinemos.manager.home.dir", "/opt/hinemos"), "lib").toString());
 
@@ -189,7 +196,16 @@ public class ExecReportingProcess {
 			String outputStdoutLog = "> \"" + System.getProperty("hinemos.manager.log.dir", System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + "/var/log") 
 					+ File.separator + "reporting_stdout.log\"" + " 2>&1";
 			
-			String command = "java " + javaOpts + addOpts + classPath +
+			// Javaコマンドについて、複数Java導入環境ではWindows側の設定によって対象javaが揺らぐので
+			// マネージャー起動環境に準拠するように調整。
+			// システムプロパティ java.home（実行中のjavaのインストール先。環境変数JAVA_HOMEは別なので注意）内のjava.exeを用いる。
+			String javaCmdPath = System.getProperty("java.home") + "\\bin\\java.exe";
+			if( ! (new File(javaCmdPath)).exists() ){
+				m_log.error("There is a problem with the execution environment of java. [java.home]\\bin\\java.exe not found. find path ="+ javaCmdPath);
+				return fileList;
+			}
+
+			String command = javaCmdPath + " " + javaOpts + addOpts + classPath +
 					" com.clustercontrol.reporting.ReportMain" +
 					" \"" + outFilePath + "\"" +
 					" " + reportId +

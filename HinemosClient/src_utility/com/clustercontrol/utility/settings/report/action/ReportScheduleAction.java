@@ -41,7 +41,7 @@ import com.clustercontrol.utility.settings.report.xml.Reporting;
 import com.clustercontrol.utility.settings.report.xml.ReportingInfo;
 import com.clustercontrol.utility.settings.report.xml.ReportingType;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
@@ -225,7 +225,7 @@ public class ReportScheduleAction {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {info.getReportScheduleId()};
-					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 					ImportProcessMode.setProcesstype(dialog.open());
 					ImportProcessMode.setSameprocess(dialog.getToggleState());

@@ -31,6 +31,7 @@ import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.xml.ws.WebServiceException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -49,6 +50,7 @@ import com.clustercontrol.repository.bean.AgentCommandConstant;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.ws.agent.AgentInfo;
+import com.clustercontrol.ws.agent.AgentJavaInfo;
 import com.clustercontrol.ws.agent.HinemosUnknown_Exception;
 import com.clustercontrol.ws.agent.InvalidRole_Exception;
 import com.clustercontrol.ws.agent.InvalidUserPass_Exception;
@@ -68,6 +70,9 @@ public class Agent {
 
 	private static SendQueue m_sendQueue;
 
+	private static final Object shutdownLock = new Object();
+	private static boolean shutdown = false;
+
 	/** log4j設定 */
 	public String m_log4jFileName = null;
 	/** log4j設定ファイル再読み込み間隔 */
@@ -75,13 +80,18 @@ public class Agent {
 
 	/** AgentInfoの更新判定時間 [msec] */
 	private static long m_agentInfoUpdateTime = 10000;
+	private static Object m_agentInfoUpdateTimeLock = new Object();
+
 	/** AgentInfoの前回更新時間 */
 	private static long lastAgentInfoUpdateTime = 0;
 	
 	/** シャットダウン待ち時間 [sec] */
 	private static int m_shutdownWaitTime = 120;
+	private static Object m_shutdownWaitTimeLock = new Object();
 	
 	private static AgentInfo agentInfo = new AgentInfo();
+
+	private static AgentJavaInfo javaInfo = null;
 
 	public static final Integer DEFAULT_CONNECT_TIMEOUT = 10000;
 	public static final Integer DEFAULT_REQUEST_TIMEOUT = 60000;
@@ -94,7 +104,11 @@ public class Agent {
 	private static final String REPLACE_VALUE_MANAGER_IP = "${ManagerIP}";
 	
 	private static int awakePort = 24005;
-
+	
+	private static Agent agent;
+	
+	private static boolean terminated = false;
+	
 	/*
 	 * AgentHome
 	 * /opt/hinemos_agentやC:\Program Files(x86)\Hinemos\Agent4.0.0
@@ -145,7 +159,7 @@ public class Agent {
 			File file = new File(args[0]);
 			agentHome = file.getParentFile().getParent() + "/";
 			m_log.info("agentHome=" + agentHome);
-
+			
 			// 起動時刻
 			long startDate = HinemosTime.currentTimeMillis();
 			m_log.info("start date = " + new Date(startDate) + "(" + startDate
@@ -183,7 +197,7 @@ public class Agent {
 			m_sendQueue = new SendQueue();
 
 			// Agentインスタンス作成
-			Agent agent = new Agent(args[0]);
+			agent = new Agent(args[0]);
 
 			//-----------------
 			//-- トピック接続
@@ -240,49 +254,68 @@ public class Agent {
 		} catch (NumberFormatException e) {
 			m_log.error("awake.delay", e);
 		}
-
-		while (true) {
-			/*
-			 * UDPパケットを受信したらflagがtrueになる。
-			 * その後に、flagがfalseになったら、getTopicを実行(releaseLatch)する。
-			 * 
-			 * UDPパケットを大量に受け取ってもgetTopicが大量発行されないように、
-			 * このような実装とする。
-			 */
-			try {
-				if (sock != null && port != awakePort) {
-					sock.close();
-					sock = null;
-				}
-				if (sock == null || !sock.isBound()) {
-					port = awakePort;
-					sock = new DatagramSocket(port);
-					sock.setSoTimeout(awakeDelay);
-				}
-				DatagramPacket recvPacket = new DatagramPacket(buf, BUFSIZE);
-				sock.receive(recvPacket);
-				cAddr = recvPacket.getAddress();
-				cPort = recvPacket.getPort();
-				flag = true;
-				m_log.info("waitAwakeAgent (" + cAddr.getHostAddress() +
-						" onPort=" + cPort + ") buf.length=" + buf.length);
-			} catch (SocketTimeoutException e) {
-				if (flag) {
-					m_log.info("waitAwakeAgent packet end");
-					m_receiveTopic.releaseLatch();
-					flag = false;
-				}
-			} catch (Exception e) {
-				String msg = "waitAwakeAgent port=" + awakePort + ", " + e.getClass().getSimpleName() + ", " + e.getMessage();
-				if (e instanceof BindException) {
-					m_log.warn(msg);
-				} else {
-					m_log.warn(msg, e);
-				}
+		
+		String awakeListenStr = AgentProperties.getProperty("awake.listen", "true");
+		boolean awakeListen = Boolean.parseBoolean(awakeListenStr);
+		if (awakeListen) {
+			while (true) {
+				/*
+				 * UDPパケットを受信したらflagがtrueになる。
+				 * その後に、flagがfalseになったら、getTopicを実行(releaseLatch)する。
+				 * 
+				 * UDPパケットを大量に受け取ってもgetTopicが大量発行されないように、
+				 * このような実装とする。
+				 */
 				try {
-					Thread.sleep(60*1000);
-				} catch (InterruptedException e1) {
-					m_log.warn(e1,e1);
+					if (sock != null && port != awakePort) {
+						sock.close();
+						sock = null;
+					}
+					if (sock == null || !sock.isBound()) {
+						port = awakePort;
+						sock = new DatagramSocket(port);
+						sock.setSoTimeout(awakeDelay);
+					}
+					DatagramPacket recvPacket = new DatagramPacket(buf, BUFSIZE);
+					sock.receive(recvPacket);
+					cAddr = recvPacket.getAddress();
+					cPort = recvPacket.getPort();
+					flag = true;
+					m_log.info("waitAwakeAgent (" + cAddr.getHostAddress() +
+							" onPort=" + cPort + ") buf.length=" + buf.length);
+				} catch (SocketTimeoutException e) {
+					if (flag) {
+						m_log.info("waitAwakeAgent packet end");
+						m_receiveTopic.releaseLatch();
+						flag = false;
+					}
+				} catch (Exception e) {
+					String msg = "waitAwakeAgent port=" + awakePort + ", " + e.getClass().getSimpleName() + ", " + e.getMessage();
+					if (e instanceof BindException) {
+						m_log.warn(msg);
+					} else {
+						m_log.warn(msg, e);
+					}
+					try {
+						Thread.sleep(60*1000);
+					} catch (InterruptedException e1) {
+						m_log.warn(e1,e1);
+					}
+				}
+			}
+		} else {
+			m_log.info("awake.listen = " + awakeListen);
+			
+			synchronized (shutdownLock) {
+				while (!shutdown) {
+					try {
+						shutdownLock.wait();
+					} catch (InterruptedException e) {
+						m_log.warn("shutdown lock interrupted.", e);
+						try {
+							Thread.sleep(10*60*1000);
+						} catch (InterruptedException sleepE) { };
+					}
 				}
 			}
 		}
@@ -578,52 +611,47 @@ public class Agent {
 		}
 
 		// AgentInfoの更新判定時間の更新
-		String time = AgentProperties.getProperty("agent.info.update.time");
-		if (time != null) {
-			try {
-				m_agentInfoUpdateTime = Long.parseLong(time);
-				m_log.info("agent.info.update.time = " + m_agentInfoUpdateTime + " ms");
-			} catch (NumberFormatException e) {
-				m_log.error("agent.info.update.time",e);
+		synchronized (m_agentInfoUpdateTimeLock) {
+			String time = AgentProperties.getProperty("agent.info.update.time");
+			if (time != null) {
+				try {
+					m_agentInfoUpdateTime = Long.parseLong(time);
+					m_log.info("agent.info.update.time = " + m_agentInfoUpdateTime + " ms");
+				} catch (NumberFormatException e) {
+					m_log.error("agent.info.update.time",e);
+				}
 			}
 		}
-		
+
 		// シャットダウン待ち時間の更新
-		String shutdownWaitTime = AgentProperties.getProperty("agent.shutdown.wait.time");
-		if (shutdownWaitTime != null) {
-			try {
-				m_shutdownWaitTime = Integer.parseInt(shutdownWaitTime);
-				m_log.info("agent.shutdown.wait.time = " + m_shutdownWaitTime + " sec");
-			} catch (NumberFormatException e) {
-				m_log.error("agent.shutdown.wait.time", e);
+		synchronized (m_shutdownWaitTimeLock) {
+			String shutdownWaitTime = AgentProperties.getProperty("agent.shutdown.wait.time");
+			if (shutdownWaitTime != null) {
+				try {
+					m_shutdownWaitTime = Integer.parseInt(shutdownWaitTime);
+					m_log.info("agent.shutdown.wait.time = " + m_shutdownWaitTime + " sec");
+				} catch (NumberFormatException e) {
+					m_log.error("agent.shutdown.wait.time", e);
+				}
 			}
 		}
-		
+
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-				// ログファイル監視の実行中は停止を待つ
-				LogfileMonitorManager.terminate();
-				for(int i = 0 ; i < m_shutdownWaitTime / 2; i++) {
-					try {
-						if(LogfileMonitorManager.isRunning()) {
-							m_log.info("Logfile monitor is running.");
-							Thread.sleep(2 * 1000);
-						} else {
-							m_log.info("Logfile monitor is stopping.");
-							break;
-						}
-					} catch (InterruptedException e) {
-						m_log.warn(e.getMessage(), e);
-					}
-				}
-				
 				terminate();
-				m_log.info("Hinemos agent stopped");
 			}
 		});
 	}
 
+	/**
+	 * エージェントを終了します。
+	 * 自動テストからのエージェント停止に使用
+	 */
+	public static void teminateAgent() {
+		agent.terminate();
+	}
+	
 	/**
 	 * エージェント処理実行実行します。<BR>
 	 * 
@@ -631,7 +659,6 @@ public class Agent {
 	 * トピックへの接続を行います。
 	 */
 	public void exec() {
-
 		// 定期的にリロードする処理を開始する
 		m_log.info("log4j.properties=" + m_log4jFileName);
 		PropertyConfigurator.configureAndWatch(m_log4jFileName, m_reconfigLog4jInterval);
@@ -656,7 +683,30 @@ public class Agent {
 	 * 終了処理を行います。<BR>
 	 */
 	public void terminate() {
+		synchronized(Agent.class) {
+			if (terminated) {
+				return;
+			}
+			terminated = true;
+		}
 		m_log.info("terminate() start");
+		
+		// ログファイル監視の実行中は停止を待つ
+		LogfileMonitorManager.terminate();
+		for(int i = 0 ; i < m_shutdownWaitTime / 2; i++) {
+			try {
+				if(LogfileMonitorManager.isRunning()) {
+					m_log.info("Logfile monitor is running.");
+					Thread.sleep(2 * 1000);
+				} else {
+					m_log.info("Logfile monitor is stopping.");
+					break;
+				}
+			} catch (InterruptedException e) {
+				m_log.warn(e.getMessage(), e);
+			}
+		}
+		
 		RunHistoryUtil.logHistory();
 
 		try {
@@ -672,9 +722,17 @@ public class Agent {
 			m_log.info("InvalidUserPassException " + e.getMessage());
 		} catch (HinemosUnknown_Exception e) {
 			m_log.info("HinemosUnknown " + e.getMessage());
+		} catch (WebServiceException e) {
+			m_log.info("WebServiceException " + e.getMessage());
 		}
-
+		
 		m_log.info("terminate() end");
+		m_log.info("Hinemos agent stopped");
+		
+		synchronized (shutdownLock) {
+			shutdown = true;
+			shutdownLock.notify();
+		}
 	}
 
 	/**
@@ -810,6 +868,47 @@ public class Agent {
 		return agentInfo;
 	}
 
+	/**
+	 * Java環境情報をクリアします。
+	 */
+	public static void clearJavaInfo() {
+		synchronized (Agent.class) {
+			javaInfo = null;
+		}
+	}
+	
+	/**
+	 * システムから、Java環境情報を取得します。
+	 * @return Java環境情報。
+	 */
+	public static AgentJavaInfo getJavaInfo() {
+		synchronized (Agent.class) {
+			if (javaInfo == null) {
+				javaInfo = new AgentJavaInfo();
+				javaInfo.setOsVersion(System.getProperty("os.version"));
+				javaInfo.setOsArch(System.getProperty("os.arch"));
+				javaInfo.setSunArchDataModel(System.getProperty("sun.arch.data.model"));
+				javaInfo.setJavaVendor(System.getProperty("java.vendor"));
+				javaInfo.setJavaVersion(System.getProperty("java.version"));
+				javaInfo.setJavaSpecificationVersion(System.getProperty("java.specification.version"));
+				javaInfo.setJavaClassVersion(System.getProperty("java.class.version"));
+				javaInfo.setJavaVmInfo(System.getProperty("java.vm.info"));
+				javaInfo.setJavaVmVersion(System.getProperty("java.vm.version"));
+				javaInfo.setJavaVmName(System.getProperty("java.vm.name"));
+				javaInfo.setOsName(System.getProperty("os.name"));
+				// ログへ記録しておく
+				m_log.info("getJavaInfo: osName=" + javaInfo.getOsName() + ", osVersion=" + javaInfo.getOsVersion()
+						+ ", osArch=" + javaInfo.getOsArch() + ", sunArchDataModel=" + javaInfo.getSunArchDataModel()
+						+ ", javaVendor=" + javaInfo.getJavaVendor() + ", javaVersion=" + javaInfo.getJavaVersion()
+						+ ", javaSpecificationVersion=" + javaInfo.getJavaSpecificationVersion() + ", javaClassVersion="
+						+ javaInfo.getJavaClassVersion() + ", javaVmInfo=" + javaInfo.getJavaVmInfo()
+						+ ", javaVmVersion=" + javaInfo.getJavaVmVersion() + ", javaVmName="
+						+ javaInfo.getJavaVmName());
+			}
+		}
+		return javaInfo;
+	}
+	
 	public static String getAgentStr() {
 		StringBuffer str = new StringBuffer();
 		str.append("agentInfo=");

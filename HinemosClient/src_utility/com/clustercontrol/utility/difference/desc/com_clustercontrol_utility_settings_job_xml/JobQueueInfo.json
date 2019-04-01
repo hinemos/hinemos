@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"queueId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"name",
+	"annotations":[
+		{"type":"Column", "columnName":"QueueInfo_name"}
+	]},
+	
+	{
+	"propName":"concurrency",
+	"annotations":[
+		{"type":"Column", "columnName":"QueueInfo_concurrency"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"QueueInfo_ownerRoleId"}
+	]}
+]
+}

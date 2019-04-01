@@ -278,4 +278,16 @@
 			]]>
 		</query>
 	</named-query>
+	
+	<!-- JobQueue -->
+	<named-query name="JobMstEntity.findByQueueIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobMstEntity a
+				WHERE a.queueId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
 </entity-mappings>

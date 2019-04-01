@@ -16,6 +16,7 @@ import org.eclipse.ui.IPageLayout;
 import com.clustercontrol.ClusterControlPerspectiveBase;
 import com.clustercontrol.nodemap.util.SecondaryIdMap;
 import com.clustercontrol.nodemap.view.EventViewM;
+import com.clustercontrol.nodemap.view.NodeListView;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.ScopeTreeView;
 import com.clustercontrol.nodemap.view.StatusViewM;
@@ -46,7 +47,7 @@ public class NodeMapPerspective extends ClusterControlPerspectiveBase {
 		// ビューを登録
 		topLeft.addView(ScopeTreeView.ID);
 		top.addPlaceholder(NodeMapView.ID + ":*");
-		//top.addView(NodeMapView.ID + ":secondary.id.0"); 
+		top.addPlaceholder(NodeListView.ID + ":*");
 		bottom.addView(StatusViewM.ID);
 		bottom.addView(EventViewM.ID);
 

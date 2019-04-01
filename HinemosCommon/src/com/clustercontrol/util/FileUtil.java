@@ -9,12 +9,19 @@
 package com.clustercontrol.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import com.clustercontrol.fault.InvalidSetting;
 
 public class FileUtil {
 
@@ -245,5 +252,170 @@ public class FileUtil {
 		fileName = sbuf.toString();
 
 		return fileName;
+	}
+
+	/**
+	 * ファイルに文字列挿入.<br>
+	 * <br>
+	 * 引数指定のファイルの指定位置に文字列を挿入して書き出す.
+	 * 
+	 * @param fc
+	 *            ファイル書込み用チャネル、StandardOpenOption.READとWRITEの両方で開かれていること.<br>
+	 *            closeも呼び出し元で行うこと<br>
+	 *            書込み完了時には引数で渡された時のpositionをセットしておく.
+	 * @param insertPosition
+	 *            ファイル内の挿入位置.
+	 * @param insertWords
+	 *            挿入する文字列.
+	 * @param charSet
+	 *            ファイルのエンコード方式.
+	 * 
+	 * @throws InvalidSetting
+	 *             引数不正
+	 * @throws IOException
+	 *             ファイル読込・書き出しエラー.
+	 */
+	public static void insertWords(FileChannel fc, long insertPosition, String insertWords, String charSet)
+			throws InvalidSetting, IOException {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+		String message = null;
+
+		// 引数チェック.
+		if (fc == null || insertWords == null || insertWords.isEmpty() || charSet == null || charSet.isEmpty()) {
+			message = "the necessary argument('fc' or 'insertWords' or 'charSet') is empty.";
+			log.warn(methodName + DELIMITER + message);
+			throw new InvalidSetting(message);
+		}
+		if (insertPosition < 0 || insertPosition > fc.size()) {
+			message = String.format(
+					"the insertPosition need to be within the limit of fc.size(). insertPosition=[%d], fc.size()=[%d]",
+					insertPosition, fc.size());
+			log.warn(methodName + DELIMITER + message);
+			throw new InvalidSetting(message);
+		}
+
+		long initPos = fc.position();
+		try {
+
+			// 挿入する文字列のバイナリを算出.
+			byte[] insertArray = insertWords.getBytes(charSet);
+			ArrayList<Byte> insertBinary = new ArrayList<Byte>(BinaryUtil.arrayToList(insertArray));
+			int insertByte = insertBinary.size();
+
+			// ファイル末尾から挿入Byteずつ読込んで後ろにずらしてコピー.
+			fc.position(fc.size() - insertByte);
+			boolean topOnFile = false;
+			int topWordByte = 0;
+			long beforeReadStart = 0;
+			while (true) {
+				// 挿入分後ろに文字列コピー.
+				beforeReadStart = fc.position();
+				ByteBuffer tmpBuf;
+				if (topOnFile) {
+					tmpBuf = ByteBuffer.allocate(topWordByte); // 先頭の半端な文字列を読込む.
+				} else {
+					tmpBuf = ByteBuffer.allocate(insertByte); // 挿入ワードと同じサイズの文字列を読込む.
+				}
+				fc.read(tmpBuf); // 読込(position＋insertByte).
+
+				if (log.isTraceEnabled() && topOnFile) {
+					log.trace(methodName + DELIMITER + String.format("readed to copy. position=%d", fc.position()));
+					List<Byte> tmpBinary = BinaryUtil.arrayToList(tmpBuf.array());
+					String readedWord = BinaryUtil.listToEncodeString(tmpBinary, charSet);
+					log.trace(methodName + DELIMITER + String.format("readed to copy. word=%s", readedWord));
+				}
+
+				tmpBuf = ByteBuffer.wrap(tmpBuf.array()); // 追記のため新しいBufferを用意.
+				if (topOnFile) {
+					fc.position(insertPosition + insertByte);
+				}
+				fc.write(tmpBuf); // 読込んだ文字をそのまま後続の文字列に上書き(position＋insertByte).
+				if (log.isTraceEnabled() && topOnFile) {
+					log.trace(methodName + DELIMITER + String.format("writed to copy. position=%d", fc.position()));
+				}
+
+				// キーワード挿入.
+				long writedAt = fc.position();
+				if (writedAt <= (insertPosition + (insertByte * 2))) {
+					fc.position(insertPosition);
+					ByteBuffer writeWords = ByteBuffer.wrap(insertArray);
+					fc.write(writeWords);
+					log.trace(methodName + DELIMITER + String.format("inserted. position=%d", fc.position()));
+					return;
+				}
+
+				// コピーした分、位置を前にずらす.
+				long nextRead = writedAt - (insertByte * 3);
+				if (nextRead < insertPosition) {
+					// 先頭の半端な文字列.
+					topOnFile = true;
+					topWordByte = BinaryUtil.longParseInt(beforeReadStart - insertPosition);
+					fc.position(insertPosition);
+				} else {
+					fc.position(nextRead);
+				}
+
+			}
+		} catch (FileNotFoundException e) {
+			log.error(e.getMessage(), e);
+			throw e;
+		} catch (IOException e) {
+			log.error(e.getMessage(), e);
+			throw e;
+		} finally {
+			fc.position(initPos);
+		}
+	}
+
+	/**
+	 * 改行位置を探索. <br>
+	 * 
+	 * @param fc
+	 *            探索対象、StandardOpenOption.READで開いておくこと<br>
+	 *            closeは呼び出し元でやってください<br>
+	 *            positionを探索開始位置でセットしておくこと<br>
+	 *            終了時のpositionは引数で渡された時の状態で返却.
+	 * @param charSet
+	 *            探索対象ファイルのエンコード
+	 * @return 改行position(fc.read()/write()前にposition設定すれば次の行から読込).
+	 * @throws IOException
+	 * @throws InvalidSetting
+	 */
+	public static long searchLineEnd(FileChannel fc, String charSet) throws IOException, InvalidSetting {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+		String message = null;
+
+		// 引数チェック.
+		if (fc == null || charSet == null || charSet.isEmpty()) {
+			message = "the necessary argument('fc' or 'insertWords' or 'charSet') is empty.";
+			log.warn(methodName + DELIMITER + message);
+			throw new InvalidSetting(message);
+		}
+
+		long initPos = fc.position();
+		try {
+			// 改行コードのバイナリ変換.
+			String lineEnd = "\n";
+			byte[] lineEndArray = lineEnd.getBytes(charSet);
+			ArrayList<Byte> lineEndBinary = new ArrayList<Byte>(BinaryUtil.arrayToList(lineEndArray));
+
+			// 改行コードを探す.
+			while (true) {
+				ByteBuffer tmpBuf = ByteBuffer.allocate(lineEndBinary.size());
+				int reading = fc.read(tmpBuf);
+				if (reading < 0) {
+					return fc.size();
+				}
+				ArrayList<Byte> readBinary = new ArrayList<Byte>(BinaryUtil.arrayToList(tmpBuf.array()));
+				if (BinaryUtil.equals(lineEndBinary, readBinary)) {
+					return fc.position();
+				}
+			}
+		} catch (IOException e) {
+			log.error(e.getMessage(), e);
+			throw e;
+		} finally {
+			fc.position(initPos);
+		}
 	}
 }

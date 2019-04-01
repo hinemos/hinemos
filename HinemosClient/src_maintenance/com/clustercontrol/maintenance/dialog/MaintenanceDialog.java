@@ -396,7 +396,7 @@ public class MaintenanceDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "confirmvalid", confirmValid);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.confirmValid.setLayoutData(gridData);
 		this.confirmValid.setText(Messages.getString("setting.valid.confirmed"));

@@ -142,9 +142,7 @@ public class ServiceStateView extends AbstractCloudViewPart implements CloudStri
 				ILocation location = (ILocation)element;
 				String platformId = location.getCloudScope().getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return HinemosMessage.replace(provider.getText(element, location.getName()));
-				return HinemosMessage.replace(location.getName());
+				return HinemosMessage.replace(provider.getText(element, location.getName()));
 			}
 			return HinemosMessage.replace(element.toString());
 		}

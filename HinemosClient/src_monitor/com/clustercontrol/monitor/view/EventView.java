@@ -25,14 +25,17 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
 import com.clustercontrol.bean.Property;
-import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.monitor.composite.EventListComposite;
 import com.clustercontrol.monitor.composite.action.EventListSelectionChangedListener;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.view.action.EventCollectGraphOffAction;
 import com.clustercontrol.monitor.view.action.EventCollectGraphOnAction;
 import com.clustercontrol.monitor.view.action.EventConfirmAction;
+import com.clustercontrol.monitor.view.action.EventConfirmingAction;
+import com.clustercontrol.monitor.view.action.EventCustomCommandAction;
 import com.clustercontrol.monitor.view.action.EventDetailAction;
 import com.clustercontrol.monitor.view.action.EventModifyMonitorSettingAction;
 import com.clustercontrol.monitor.view.action.EventOpenJobHistoryAction;
@@ -66,12 +69,12 @@ public class EventView extends ScopeListBaseView {
 	/** 検索条件 */
 	private Property condition = null;
 
-	/** 確認/未確認の種別 */
-	private int confirmType = ConfirmConstant.TYPE_UNCONFIRMED;
+	/** 選択されているイベントの確認種別（各アクションの活性／非活性の判断に使用する） */
+	private List<Integer> confirmTypeList = null;
 
 	/** プラグインID */
 	private String pluginId;
-
+	
 	protected String getViewName() {
 		return this.getClass().getName();
 	}
@@ -102,7 +105,13 @@ public class EventView extends ScopeListBaseView {
 		layout.marginHeight = 0;
 		layout.marginWidth = 0;
 
-		this.tableComposite = new EventListComposite(parent, SWT.NONE);
+		ListLayout tableCompositeLayout = null;
+		if (this.getDefaultViewLayout() != null) {
+			tableCompositeLayout = this.getDefaultViewLayout().getViewItem(EventListComposite.class.getSimpleName(), ListLayout.class);
+		}
+		
+		this.tableComposite = new EventListComposite(parent, SWT.NONE, tableCompositeLayout);
+		
 		WidgetTestUtil.setTestId(this, null, tableComposite);
 		GridData gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
@@ -276,11 +285,11 @@ public class EventView extends ScopeListBaseView {
 	}
 
 	public void initButton(){
-		setEnabledAction(ConfirmConstant.TYPE_ALL, null, null);
+		setEnabledAction(null, null, null);
 	}
 
-	public int getConfirmType() {
-		return this.confirmType;
+	public List<Integer> getConfirmTypeList() {
+		return this.confirmTypeList;
 	}
 
 	public String getPluginId() {
@@ -290,26 +299,28 @@ public class EventView extends ScopeListBaseView {
 	/**
 	 * ビューのアクションの有効/無効を設定します。
 	 *
-	 * @param confirmType 確認/未確認の種別
+	 * @param confirmType 選択されている確認状態
 	 * @param pluginId プラグインID
 	 * @param selection ボタン（アクション）を有効にするための情報
 	 *
 	 * @see com.clustercontrol.bean.FacilityConstant
 	 */
-	public void setEnabledAction(int confirmType, String pluginId, ISelection selection) {
-		this.confirmType = confirmType;
+	public void setEnabledAction(List<Integer> confirmTypeList, String pluginId, ISelection selection) {
+		this.confirmTypeList = confirmTypeList;
 		this.pluginId = pluginId;
 
 		//ビューアクションの使用可/不可を設定
 		ICommandService service = (ICommandService) PlatformUI.getWorkbench().getService( ICommandService.class );
 		if( null != service ){
 			service.refreshElements(EventConfirmAction.ID, null);
+			service.refreshElements(EventConfirmingAction.ID, null);
 			service.refreshElements(EventUnconfirmAction.ID, null);
 			service.refreshElements(EventDetailAction.ID, null);
 			service.refreshElements(EventModifyMonitorSettingAction.ID, null);
 			service.refreshElements(EventOpenJobHistoryAction.ID, null);
 			service.refreshElements(EventCollectGraphOnAction.ID, null);
 			service.refreshElements(EventCollectGraphOffAction.ID, null);
+			service.refreshElements(EventCustomCommandAction.ID, null);
 
 			// Update ToolBar after elements refreshed
 			// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.
@@ -317,5 +328,17 @@ public class EventView extends ScopeListBaseView {
 			getViewSite().getActionBars().getToolBarManager().update(false);
 
 		}
+	}
+	
+	@Override
+	public boolean isDefaultLayoutView() {
+		return true;
+	}
+	
+	public MultiManagerEventDisplaySettingInfo getEventDspSetting() {
+		if (this.tableComposite == null) {
+			return new MultiManagerEventDisplaySettingInfo();
+		}
+		return this.tableComposite.getEventDspSetting();
 	}
 }

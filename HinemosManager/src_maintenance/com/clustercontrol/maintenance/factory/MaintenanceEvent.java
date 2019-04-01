@@ -46,10 +46,12 @@ public class MaintenanceEvent extends MaintenanceObject{
 				//SQL文の実行
 				if(status){
 					// for HA (縮退判定時間を延ばすため)、シングルには影響なし(0) : タイムアウト値設定
+					QueryUtil.deleteEventLogOperationHistoryByGenerationDate(boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue());
 					ret = QueryUtil.deleteEventLogByGenerationDate(boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue());
 				} else {
 					// for HA (縮退判定時間を延ばすため)、シングルには影響なし(0) : タイムアウト値設定
 					//status=falseの場合は確認済みイベントのみを削除する
+					QueryUtil.deleteEventLogOperationHistoryByGenerationDateConfigFlg(boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue());
 					ret = QueryUtil.deleteEventLogByGenerationDateConfigFlg(boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue());
 				}
 			}
@@ -59,10 +61,12 @@ public class MaintenanceEvent extends MaintenanceObject{
 				//SQL文の実行
 				if(status){
 					// for HA (縮退判定時間を延ばすため)、シングルには影響なし(0) : タイムアウト値設定
+					QueryUtil.deleteEventLogOperationHistoryByGenerationDateAndOwnerRoleId(boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue(), ownerRoleId);
 					ret = QueryUtil.deleteEventLogByGenerationDateAndOwnerRoleId(boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue(), ownerRoleId);
 				} else {
 					// for HA (縮退判定時間を延ばすため)、シングルには影響なし(0) : タイムアウト値設定
 					//status=falseの場合は確認済みイベントのみを削除する
+					QueryUtil.deleteEventLogOperationHistoryByGenerationDateConfigFlgAndOwnerRoleId(boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue(), ownerRoleId);
 					ret = QueryUtil.deleteEventLogByGenerationDateConfigFlgAndOwnerRoleId(boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue(), ownerRoleId);
 				}
 			}

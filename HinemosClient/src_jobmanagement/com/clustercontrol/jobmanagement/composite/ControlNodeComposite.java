@@ -218,7 +218,7 @@ public class ControlNodeComposite extends Composite {
 		JobDialogUtil.getSeparator(this);
 
 		// エージェントに接続できない（チェック）
-		this.m_messageRetryEndCondition = new Button(this, SWT.CHECK);
+		this.m_messageRetryEndCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_messageRetryEndCondition", this.m_messageRetryEndCondition);
 		this.m_messageRetryEndCondition.setText(Messages.getString("command.error.ended"));
 		this.m_messageRetryEndCondition.setLayoutData(new RowData(300,
@@ -290,10 +290,10 @@ public class ControlNodeComposite extends Composite {
 		JobDialogUtil.getSeparator(this);
 
 		// 繰り返し実行（チェック）
-		this.m_commandRetryCondition = new Button(this, SWT.CHECK);
+		this.m_commandRetryCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_commandRetryCondition", this.m_commandRetryCondition);
 		this.m_commandRetryCondition.setText(Messages.getString("command.retry"));
-		this.m_commandRetryCondition.setLayoutData(new RowData(300,
+		this.m_commandRetryCondition.setLayoutData(new RowData(200,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_commandRetryCondition.addSelectionListener(new SelectionListener() {
 			@Override

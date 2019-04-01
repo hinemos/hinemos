@@ -46,6 +46,9 @@ public class GetNodeProperty {
 	// mode
 	private int mode;
 
+	// 対象日時
+	private Long targetDatetime = 0L;
+
 	public GetNodeProperty(String managerName, String facilityId, int mode) {
 		this.managerName = managerName;
 		this.facilityId = facilityId;
@@ -57,14 +60,45 @@ public class GetNodeProperty {
 				NodePropertyUtil.setDefaultNode(this.nodeInfo);
 			} else {
 				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-				this.nodeInfo = wrapper.getNode(this.facilityId);
+				this.nodeInfo = wrapper.getNodeFull(this.facilityId);
 			}
 		} catch (InvalidRole_Exception e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 		} catch (FacilityNotFound_Exception e) {
-			// FIXME
+			// 指定のファシリティがマネージャに存在しない。
+			// 何も表示しない。
+			e.printStackTrace();
+			m_log.warn("getProperty(), " + e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("getProperty(), " + e.getMessage(), e);
+			MessageDialog.openError(
+					null,
+					Messages.getString("failed"),
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+		}
+	}
+
+	public GetNodeProperty(String managerName, String facilityId, int mode, Long targetDatetime, NodeInfo nodeFilterInfo) {
+		this.managerName = managerName;
+		this.facilityId = facilityId;
+		this.mode = mode;
+		this.targetDatetime = targetDatetime;
+		try {
+			if (managerName == null || managerName.length() == 0
+					|| this.facilityId == null || this.facilityId.length() == 0) {
+				this.nodeInfo = new NodeInfo();
+				NodePropertyUtil.setDefaultNode(this.nodeInfo);
+			} else {
+				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+				this.nodeInfo = wrapper.getNodeFullByTargetDatetime(this.facilityId, this.targetDatetime, nodeFilterInfo);
+			}
+		} catch (InvalidRole_Exception e) {
+			// アクセス権なしの場合、エラーダイアログを表示する
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					Messages.getString("message.accesscontrol.16"));
+		} catch (FacilityNotFound_Exception e) {
 			// 指定のファシリティがマネージャに存在しない。
 			// 何も表示しない。
 			e.printStackTrace();
@@ -80,11 +114,12 @@ public class GetNodeProperty {
 
 	/**
 	 * ノード属性情報を取得します。
-	 *
+	 * 
+	 * @param isNodeMap true:ノードマップ（構成情報検索）表示
 	 * @return ノード属性情報
 	 */
-	public Property getProperty() {
-		return NodePropertyUtil.node2property(this.managerName, this.nodeInfo, this.mode, Locale.getDefault());
+	public Property getProperty(boolean isNodeMap) {
+		return NodePropertyUtil.node2property(this.managerName, this.nodeInfo, this.mode, Locale.getDefault(), isNodeMap);
 	}
 
 	/**

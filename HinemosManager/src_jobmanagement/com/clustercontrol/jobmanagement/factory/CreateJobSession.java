@@ -316,6 +316,9 @@ public class CreateJobSession {
 				jobInfoEntity.setJobRetryFlg(job.getJobRetryFlg());
 				jobInfoEntity.setJobRetry(job.getJobRetry());
 				jobInfoEntity.setJobRetryEndStatus(job.getJobRetryEndStatus());
+				
+				jobInfoEntity.setQueueFlg(job.getQueueFlg());
+				jobInfoEntity.setQueueId(job.getQueueId());
 			}
 
 			//実行コマンドを設定

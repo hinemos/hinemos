@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.ws.agent.AgentEndpointService;
 import com.clustercontrol.ws.agentbinary.AgentBinaryEndpointService;
 import com.clustercontrol.ws.agenthub.AgentHubEndpointService;
+import com.clustercontrol.ws.agentnodeconfig.AgentNodeConfigEndpointService;
 
 /**
  * Hinemosマネージャとの通信をするクラス。
@@ -40,6 +41,7 @@ public class EndpointManager {
 	private final static String AGENT = AgentEndpointService.class.getSimpleName();
 	private final static String AGENTHUB = AgentHubEndpointService.class.getSimpleName();
 	private final static String AGENTBINARY = AgentBinaryEndpointService.class.getSimpleName();
+	private final static String AGENTNODECONFIG = AgentNodeConfigEndpointService.class.getSimpleName();
 
 	private static class EndpointList {
 		/*
@@ -184,6 +186,19 @@ public class EndpointManager {
 					m_log.warn("getEndpoint() : AgentBinaryEndpointService, " + e.getMessage(), e);
 				}
 			}
+			tmpKey = AGENTNODECONFIG;
+			if (tmpKey.equals(key)) {
+				String urlStr = urlPrefix + tmpKey + wsdlSuffix;
+				AgentNodeConfigEndpointService tmpEndpointService = null;
+				try {
+					tmpEndpointService = new AgentNodeConfigEndpointService(
+							new URL(urlStr), new QName("http://agentnodeconfig.ws.clustercontrol.com", tmpKey));
+					endpoint = tmpEndpointService.getAgentNodeConfigEndpointPort();
+					setBindingProvider(endpoint, username, password, urlStr);
+				} catch (MalformedURLException e) {
+					m_log.warn("getEndpoint() : AgentNodeConfigEndpointService, " + e.getMessage(), e);
+				}
+			}
 			return endpoint;
 		}
 	}
@@ -210,6 +225,7 @@ public class EndpointManager {
 			map.put(AGENT, new EndpointSetting(AGENT, wsdlPrefix));
 			map.put(AGENTHUB, new EndpointSetting(AGENTHUB, wsdlPrefix));
 			map.put(AGENTBINARY, new EndpointSetting(AGENTBINARY, wsdlPrefix));
+			map.put(AGENTNODECONFIG, new EndpointSetting(AGENTNODECONFIG, wsdlPrefix));
 
 			endpointList.add(map);
 		}
@@ -252,6 +268,14 @@ public class EndpointManager {
 	 */
 	public static ArrayList<EndpointSetting> getAgenBinaryEndpoint() {
 		return endpointList.getList(AGENTBINARY);
+	}
+
+	/**
+	 *  使用可能な順番でAgentEndpointを返す。
+	 * @return
+	 */
+	public static ArrayList<EndpointSetting> getAgenNodeConfigEndpoint() {
+		return endpointList.getList(AGENTNODECONFIG);
 	}
 
 	/**

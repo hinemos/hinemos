@@ -263,7 +263,7 @@ public class NotifyJobCreateDialog extends NotifyBasicCreateDialog {
 		WidgetTestUtil.setTestId(this, "generationnodevalue", m_radioGenerationNodeValue);
 		gridData = new GridData();
 		gridData.horizontalSpan = 16;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_radioGenerationNodeValue.setLayoutData(gridData);
 		this.m_radioGenerationNodeValue.setText(Messages.getString("notify.node.generation") + " : ");
@@ -833,8 +833,7 @@ public class NotifyJobCreateDialog extends NotifyBasicCreateDialog {
 		}
 		else{
 			// 閉じるボタン
-			// TODO Remove the following hard-code. IDialogConstants.*_LABEL will causes IncompatibleClassChangeError on RAP
-			this.createButton(parent, IDialogConstants.CANCEL_ID, "Close", false);
+			this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false);
 		}
 	}
 

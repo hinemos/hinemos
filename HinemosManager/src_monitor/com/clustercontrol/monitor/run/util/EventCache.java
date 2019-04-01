@@ -30,6 +30,10 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
+import com.clustercontrol.monitor.bean.EventFilterInternal;
+import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
+import com.clustercontrol.monitor.bean.GetEventFilterInternal;
+import com.clustercontrol.monitor.bean.UpdateEventFilterInternal;
 import com.clustercontrol.monitor.bean.ViewListInfo;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.notify.monitor.util.QueryUtil;
@@ -77,9 +81,7 @@ public class EventCache {
 			});
 			
 			em.clear();
-			for (EventLogEntity e : QueryUtil.getEventLogByFilter(null, null, null, null,
-					null, null, null, null, null, null, null, null, null, null, null, null,
-					false, getEventCacheLimit())) {
+			for (EventLogEntity e : QueryUtil.getEventLogByFilter(null, false, getEventCacheLimit())) {
 				addEventCache(e);
 			}
 			if (eventCache.size() == getEventCacheLimit()) {
@@ -101,6 +103,7 @@ public class EventCache {
 		return ret;
 	}
 	public static void addEventCache(EventLogEntity e) {
+		
 		eventCache.add(cloneWithoutOrg(e));
 		m_log.trace("add=" + e.getId());
 		
@@ -164,34 +167,23 @@ public class EventCache {
 		m_log.debug("removeEventCache end");
 	}
 	
+	/**
+	 * 確認状態の一括変更の結果を、キャッシュに反映する
+	 * 
+	 * @param filter
+	 * @param confirmFlg
+	 * @param confirmDate
+	 * @param confirmUser
+	 */
 	public static void confirmEventCache(
-			List<String> facilityIdList,
-			List<Integer> priorityList,
-			Long outputFromDate,
-			Long outputToDate,
-			Long generationFromDate,
-			Long generationToDate,
-			String monitorId,
-			String monitorDetailId,
-			String application,
-			String message,
-			Integer confirmFlg,
-			String confirmUser,
-			String comment,
-			String commentUser,
-			Integer cofirmType,
-			Long confirmDate,
-			Boolean collectGraphFlg,
-			String ownerRoleId) {
+			UpdateEventFilterInternal filter, Integer confirmFlg, Long confirmDate, String confirmUser) {
 		for (EventLogEntity entity : eventCache) {
 			
-			// 承認フラグと承認ユーザは指定しない
-			if (!filterCheck(entity, facilityIdList, priorityList, outputFromDate, outputToDate,
-					generationFromDate, generationToDate, monitorId, monitorDetailId, application,
-					message, null, null, comment, commentUser, collectGraphFlg, ownerRoleId)) {
+			if (!filterCheck(entity, filter)) {
+				//更新条件に一致したキャッシュであることをチェックする
 				continue;
 			}
-
+			
 			// 更新権限がない場合は処理をしない
 			try {
 				ObjectPrivilegeUtil.getObjectPrivilegeObject("MON", entity.getId().getMonitorId(), ObjectPrivilegeMode.MODIFY);
@@ -199,36 +191,20 @@ public class EventCache {
 				continue;
 			}
 			entity.setConfirmFlg(confirmFlg);
-			entity.setConfirmDate(confirmDate);
+			if (confirmFlg == ConfirmConstant.TYPE_CONFIRMED || 
+					confirmFlg == ConfirmConstant.TYPE_CONFIRMING){
+				entity.setConfirmDate(confirmDate);
+			}
 			entity.setConfirmUser(confirmUser);
 		}
 	}
 	
 	public static List<EventLogEntity> getEventListByCache(
-			List<String> facilityIdList,
-			List<Integer> priorityList,
-			Long outputFromDate,
-			Long outputToDate,
-			Long generationFromDate,
-			Long generationToDate,
-			String monitorId,
-			String monitorDetailId,
-			String application,
-			String message,
-			Integer confirmFlg,
-			String confirmUser,
-			String comment,
-			String commentUser,
-			Boolean collectGraphFlg,
-			String ownerRoleId,
-			Boolean orderByFlg,
-			Integer limit) {
+			GetEventFilterInternal filter, Boolean orderByFlg,Integer limit) {
 		ArrayList<EventLogEntity> ret = new ArrayList<>();
 		for (EventLogEntity entity : eventCache) {
 			
-			if (!filterCheck(entity, facilityIdList, priorityList, outputFromDate, outputToDate,
-					generationFromDate, generationToDate, monitorId, monitorDetailId, application,
-					message, confirmFlg, confirmUser, comment, commentUser, collectGraphFlg, ownerRoleId)) {
+			if (!filterCheck(entity, filter)) {
 				continue;
 			}
 			
@@ -246,45 +222,49 @@ public class EventCache {
 	 */
 	private static boolean filterCheck (
 			EventLogEntity entity,
-			List<String> facilityIdList,
-			List<Integer> priorityList,
-			Long outputFromDate,
-			Long outputToDate,
-			Long generationFromDate,
-			Long generationToDate,
-			String monitorId,
-			String monitorDetailId,
-			String application,
-			String message,
-			Integer confirmFlg,
-			String confirmUser,
-			String comment,
-			String commentUser,
-			Boolean collectGraphFlg,
-			String ownerRoleId) {
+			EventFilterInternal<?> filter
+			) {
 		
+		if (!filterCheckCommon(entity, filter)) {
+			//Get/UPDATE共通のフィルタ内容をチェックする
+			return false;
+		}
+		
+		if ((filter instanceof GetEventFilterInternal)) {
+			//Get固有のフィルタをチェックする
+			if (!filterCheckGet(entity, (GetEventFilterInternal) filter)) { 
+				return false;
+			}
+		}
+		
+		return checkAuthority(entity);
+	}
+	
+	private static boolean filterCheckCommon(EventLogEntity entity, EventFilterInternal<?> filter){
 		// ファシリティID
-		if (facilityIdList != null && !facilityIdList.contains(entity.getId().getFacilityId())) {
+		if (filter.getFacilityIdList() != null 
+				&& !filter.getFacilityIdList().contains(entity.getId().getFacilityId())) {
 			return false;
 		}
 		// 重要度
-		if (priorityList != null && !priorityList.contains(entity.getPriority())) {
+		if (filter.getPriorityList() != null 
+				&& !filter.getPriorityList().contains(entity.getPriority())) {
 			return false;
 		}
 		// 受信日時（自）
-		if (outputFromDate != null && entity.getId().getOutputDate() < outputFromDate) {
+		if (isGreater(filter.getOutputFromDate(), entity.getId().getOutputDate())) {
 			return false;
 		}
 		// 受信日時（至）
-		if (outputToDate != null && outputToDate < entity.getId().getOutputDate()) {
+		if (isLess(filter.getOutputToDate() ,entity.getId().getOutputDate())) {
 			return false;
 		}
 		// 出力日時（自）
-		if (generationFromDate != null && entity.getGenerationDate() < generationFromDate) {
+		if (isGreater(filter.getGenerationFromDate(), entity.getGenerationDate())) {
 			return false;
 		}
 		// 出力日時（至）
-		if (generationToDate != null && generationToDate < entity.getGenerationDate()) {
+		if (isLess(filter.getGenerationToDate() , entity.getGenerationDate())) {
 			return false;
 		}
 		
@@ -292,45 +272,80 @@ public class EventCache {
 		// TODO LIKEと同じ処理を実装すること
 		
 		// 監視項目ID
-		if (monitorId != null && !matchLike(monitorId, entity.getId().getMonitorId())) {
+		if (!matchLike(filter.getMonitorId(), entity.getId().getMonitorId())) {
 			return false;
 		}
 		// 監視詳細
-		if (monitorDetailId != null && !matchLike(monitorDetailId, entity.getId().getMonitorDetailId())) {
+		if (!matchLike(filter.getMonitorDetailId(), entity.getId().getMonitorDetailId())) {
 			return false;
 		}
 		// アプリケーション
-		if (application != null && !matchLike(application, entity.getApplication())) {
+		if (!matchLike(filter.getApplication(), entity.getApplication())) {
 			return false;
 		}
 		// メッセージ
-		if (message != null && !matchLike(message, entity.getMessage())) {
+		if (!matchLike(filter.getMessage(), entity.getMessage())) {
 			return false;
 		}
-		// 確認有無(confirmFlg=nullはすべて)
-		if (confirmFlg != null && !entity.getConfirmFlg().equals(confirmFlg)) {
+		
+		// コメント
+		if (!matchLike(filter.getComment(), entity.getComment())) {
+			return false;
+		}
+		// コメントユーザ
+		if (!matchLike(filter.getCommentUser(), entity.getCommentUser())) {
+			return false;
+		}
+		
+		// 性能グラフ用フラグ(nullはすべて)
+		if (!matchBoolean(filter.getCollectGraphFlg(), entity.getCollectGraphFlg())) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private static boolean filterCheckGet(EventLogEntity entity, GetEventFilterInternal filter){
+		
+		// イベント番号（自）
+		if (isGreater(filter.getPositionFrom(), entity.getPosition())) {
+			return false;
+		}
+		// イベント番号（至）
+		if (isLess(filter.getPositionTo() , entity.getPosition())) {
+			return false;
+		}
+		// 確認リスト
+		if (!matchList(filter.getConfirmFlgList(), entity.getConfirmFlg())) {
 			return false;
 		}
 		// 確認ユーザ
-		if (confirmUser != null && !matchLike(confirmUser, entity.getConfirmUser())) {
+		if (!matchLike(filter.getConfirmUser(), entity.getConfirmUser())) {
 			return false;
 		}
-		//コメント
-		if (comment != null && !matchLike(comment, entity.getComment())) {
+		// オーナーロールID
+		if (!matchLike(filter.getOwnerRoleId(), entity.getOwnerRoleId())) {
 			return false;
 		}
-		//コメントユーザ
-		if (commentUser != null && !matchLike(commentUser, entity.getCommentUser())) {
-			return false;
+		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+			//ユーザ項目
+			String filterValue = EventUtil.getUserItemValue(filter, i);
+			String entityValue = EventUtil.getUserItemValue(entity, i);
+			if (entityValue == null) {
+				entityValue = "";
+			}
+			
+			if (!matchLike(filterValue, entityValue)) {
+				return false;
+			}
 		}
-		//オーナーロールID
-		if (ownerRoleId != null && !matchLike(ownerRoleId, entity.getOwnerRoleId())) {
-			return false;
-		}
-		// 性能グラフ用フラグ(nullはすべて)
-		if (collectGraphFlg != null && !entity.getCollectGraphFlg().equals(collectGraphFlg)) {
-			return false;
-		}
+		
+		return true;
+	}
+	
+	//権限のチェック
+	private static boolean checkAuthority(EventLogEntity entity) {
+
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			
@@ -375,9 +390,52 @@ public class EventCache {
 		} else {
 			ret.setFromOutputDate(null);
 		}
-		ret.setToOutputDate(eventCache.first().getId().getOutputDate());
+		if (eventCache.size() > 0) {
+			ret.setToOutputDate(eventCache.first().getId().getOutputDate());
+		} else {
+			ret.setToOutputDate(null);
+		}
+		
 	}
 
+	private static boolean isLess(Long filter, Long check) {
+		if (filter == null) {
+			return false;
+		}
+		if (filter < check) {
+			return true;
+		}
+		return false;
+	}
+	
+	private static boolean isGreater(Long filter, Long check) {
+		if (filter == null) {
+			return false;
+		}
+		if (filter > check) {
+			return true;
+		}
+		return false;
+	}
+	
+
+	
+	private static <T> boolean matchList(List<T> filter, T check) {
+		if (filter == null) {
+			return true;
+		}
+		return filter.contains(check);
+	}
+	
+	private static boolean matchBoolean(Boolean filter, Boolean check) {
+		if (filter == null) {
+			return true;
+		}
+		
+		return filter.equals(check);
+		
+	}
+	
 	/**
 	 * フィルターで指定された文言が一致するかどうかを返します。<br>
 	 * (SQLのlikeと同じ。[%」と「_」と「:NOT」に対応。)
@@ -387,6 +445,11 @@ public class EventCache {
 	 * @return
 	 */
 	private static boolean matchLike(String filter, String check) {
+		if (filter == null){
+			//フィルタで指定がない場合、true
+			return true;
+		}
+		
 		String filter2 = filter;
 		boolean notInc = false;
 		if (filter2.startsWith(SEARCH_PARAM_NOT_INCLUDE)) {

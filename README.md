@@ -12,7 +12,7 @@
 
 Hinemos is an open source integrated system management software providing both monitoring and job management (workload scheduling) features, to implement system operation automation.
 
-[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v6.1.2#packages)
+[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v6.2.0#packages)
 
 ## Installation
 
@@ -20,32 +20,47 @@ You can install hinemos with the following commands.
 
 - Manager Installation
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.2/hinemos-6.1-manager-6.1.2-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.0/hinemos-6.2-manager-6.2.0-1.el7.x86_64.rpm```
 
 - Web Client Installation
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.1.2/hinemos-6.1-web-6.1.2-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.0/hinemos-6.2-web-6.2.0-1.el7.x86_64.rpm```
 
 See the install document for details.
 
-## What's new in ver.6.1
+## ver.6.2 New Features
 
-* Monitoring of Silent Failure 
-  - Features to monitor trends and correlations is newly added, for monitoring silent failures of systems.
+- Manage history and notify changes of the Node Configuration
+    - Retrieve information of target's package, program, device etc. regularly and manage its history
+    - Detect and notify configuration changes
+    - Search through collected data and output data in CSV format (provided with the subscription)
 
-* Binary Data Collection
-  - Binary data such as packed capture and binary logs are now collectable.
+## ver.6.2 Improvement
 
-* Enhanced Workload Automation Feature
-  - Workload automation feature are enhanced, which enables to automate system management automation more easily.
+- Improvement of Agent Update Feature
+    - Improvement of the transfer efficiency
+    - Able to view more detailed update status
+
+- Concurrent Control Queue
+    - Able to control the number of jobs executed across Jobs and JobNets at the same time using Concurrent Control Queue
+
+- Increased the number of items which can be included in an event information
+    - Able to add original information to the items included in an event information
+
+- User operation using the event information
+    - Operation (command) using event information is defined in advance and can be executed by user judgment
+
+- Improvement of Monitor History[Event] view
+    - Able to specify default layout for each Monitor History View
+
+- Improvement of version upgrade tool (provided with the subscription)
+    - Able to directly convert definitions of Hinemos ver.4.1 (and later) to Hinemos ver.6.2
 
 See the [release notes](https://github.com/hinemos/hinemos/releases) for details.
 
 ## Documentation
 
-- Installation Manual ([en_Install_Linux_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.1/en_Install_Linux_6.1_rev1.pdf) )
-- User Manual ( [en_User_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.1/en_User_6.1_rev1.pdf) )
-- Administrator's Guide ( [en_Admin_Linux_6.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.1.1/en_Admin_Linux_6.1_rev1.pdf) )
+English manuals will be available soon.
 
 ## License
 

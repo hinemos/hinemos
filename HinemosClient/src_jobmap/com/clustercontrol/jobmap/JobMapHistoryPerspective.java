@@ -14,6 +14,8 @@ import org.eclipse.ui.IPageLayout;
 import com.clustercontrol.ClusterControlPerspectiveBase;
 import com.clustercontrol.jobmanagement.view.ForwardFileView;
 import com.clustercontrol.jobmanagement.view.JobNodeDetailView;
+import com.clustercontrol.jobmanagement.view.JobQueueActivityView;
+import com.clustercontrol.jobmanagement.view.JobQueueContentsView;
 import com.clustercontrol.jobmap.view.JobHistoryViewM;
 import com.clustercontrol.jobmap.view.JobMapHistoryView;
 
@@ -29,13 +31,15 @@ public class JobMapHistoryPerspective extends ClusterControlPerspectiveBase {
 
 		// エディタ領域を分割
 		String editorArea = layout.getEditorArea();
-		IFolderLayout top = layout.createFolder("top", IPageLayout.TOP,
-				0.30f, editorArea);
-		IFolderLayout bottom = layout.createFolder("bottom",
-				IPageLayout.BOTTOM, 0.70f, editorArea);
+
+		IFolderLayout top = layout.createFolder("top", IPageLayout.TOP, 0.30f, editorArea);
 		top.addView(JobHistoryViewM.ID);
+		top.addView(JobQueueActivityView.ID);
+
+		IFolderLayout bottom = layout.createFolder("bottom", IPageLayout.BOTTOM, 0.70f, editorArea);
 		bottom.addView(JobMapHistoryView.ID);
 		bottom.addView(JobNodeDetailView.ID);
 		bottom.addView(ForwardFileView.ID);
+		bottom.addView(JobQueueContentsView.ID);
 	}
 }

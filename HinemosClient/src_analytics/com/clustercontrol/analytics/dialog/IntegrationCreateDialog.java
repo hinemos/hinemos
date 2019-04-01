@@ -328,7 +328,7 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 		// 収集の順序を考慮しない(チェックボックス)
 		this.m_checkNotOrder = new Button(groupIntegrationCondition, SWT.CHECK);
 		this.m_checkNotOrder.setText(Messages.getString("integration.monitor.notorder"));
-		this.m_checkNotOrder.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false, 30, 1));
+		this.m_checkNotOrder.setLayoutData(new GridData(SWT.BEGINNING, GridData.CENTER, true, false, 30, 1));
 
 		// メッセージのグループを設定
 		Group groupMessage = new Group(groupCheckRule, SWT.NONE);

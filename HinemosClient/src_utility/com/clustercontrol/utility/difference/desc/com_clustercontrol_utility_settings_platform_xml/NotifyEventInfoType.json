@@ -10,7 +10,8 @@
 		{"type":"Translate",
 			"values":[
 				{"value":"0", "name":"name_unconfirmed"},
-				{"value":"1", "name":"name_confirmed"}
+				{"value":"1", "name":"name_confirmed"},
+				{"value":"2", "name":"name_confirming"}
 			]
 		}
 	]},

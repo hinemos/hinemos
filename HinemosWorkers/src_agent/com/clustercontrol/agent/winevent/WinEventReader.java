@@ -242,13 +242,16 @@ public class WinEventReader {
 
 	private static final String SECOND_CHALLENENGE = "monitor.winevent.second.challenge.render";
 	private static boolean secondChallenge = false;
+	private static Object secondChallengeLock = new Object();
 	
 	public WinEventReader() {
-		String secondChallengeStr = AgentProperties.getProperty(SECOND_CHALLENENGE, "false");
-		try {
-			secondChallenge = Boolean.parseBoolean(secondChallengeStr);
-		} catch (Exception e) {
-			m_log.info("monitor.winevent.second.challenge.render uses " + secondChallenge + ". (" + secondChallengeStr + " is not collect)");
+		synchronized (secondChallengeLock) {
+			String secondChallengeStr = AgentProperties.getProperty(SECOND_CHALLENENGE, "false");
+			try {
+				secondChallenge = Boolean.parseBoolean(secondChallengeStr);
+			} catch (Exception e) {
+				m_log.info("monitor.winevent.second.challenge.render uses " + secondChallenge + ". (" + secondChallengeStr + " is not collect)");
+			}
 		}
 	}
 	

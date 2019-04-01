@@ -8,7 +8,6 @@
 
 package com.clustercontrol.jobmanagement.factory;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -24,9 +23,14 @@ import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.queue.JobQueue;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
+import com.clustercontrol.jobmanagement.queue.JobQueueItemNotFoundException;
+import com.clustercontrol.jobmanagement.queue.JobQueueNotFoundException;
 import com.clustercontrol.jobmanagement.util.JobSessionChangeDataCache;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.Singletons;
 
 /**
  * ジョブ操作の中断に関する処理を行うクラスです。
@@ -49,67 +53,71 @@ public class OperateSuspendOfJob {
 	 * ジョブを停止[中断]します。
 	 *
 	 * @param sessionId セッションID
-	 * @param jobunitId 所属ジョブユニットのジョブID
+	 * @param jobunitId ジョブユニットID
 	 * @param jobId ジョブID
 	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown 
 	 */
-	public void suspendJob(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
-
+	public void suspendJob(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole, HinemosUnknown {
 		m_log.debug("suspendJob() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
-		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+		int status = sessionJob.getStatus();
 
-		if(sessionJob != null){
-			//実行状態が実行中の場合、実行状態を中断にする
-			if(sessionJob.getStatus() == StatusConstant.TYPE_RUNNING){
-				sessionJob.setStatus(StatusConstant.TYPE_SUSPEND);
-				
-				if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB){
-					//セッションジョブに関連するセッションノードを取得
-					List<JobSessionNodeEntity> nodeList = sessionJob.getJobSessionNodeEntities();
-					JobSessionNodeEntity sessionNode =null;
-					
-					// 承認ジョブの場合はノードリストは1件のみ
-					if(nodeList != null && nodeList.size() == 1){
-						//セッションノードを取得
-						sessionNode =nodeList.get(0);
-					}else{
-						m_log.error("approveJob() not found job info:" + sessionJob.getId().getJobId());
-						throw new JobInfoNotFound();
-					}
-					sessionNode.setApprovalStatus(JobApprovalStatusConstant.TYPE_SUSPEND);
-				}
-				
-				//終了・中断日時を設定
-				sessionJob.setEndDate(HinemosTime.currentTimeMillis());
-				// ジョブ履歴用キャッシュ更新
-				JobSessionChangeDataCache.add(sessionJob);
-				// 収集データ更新
-				CollectDataUtil.put(sessionJob);
-
-				//セッションIDとジョブIDから、直下のジョブを取得（実行状態が実行中）
-				Collection<JobSessionJobEntity> collection
-					= QueryUtil.getJobSessionJobByParentStatus(
-							sessionId, jobunitId, jobId, StatusConstant.TYPE_RUNNING);
-				if (collection == null) {
-					JobInfoNotFound je = new JobInfoNotFound("JobSessionJobEntity.findByParentStatus"
-							+ ", [sessionId, parentJobId, status] = "
-							+ "[" + sessionId + ", " + jobId+ ", " + StatusConstant.TYPE_RUNNING + "]");
-					m_log.info("suspendJob() : "
-							+ je.getClass().getSimpleName() + ", " + je.getMessage());
-					je.setSessionId(sessionId);
-					je.setParentJobId(jobId);
-					je.setStatus(StatusConstant.TYPE_RUNNING);
-					throw je;
-				}
-
-				for (JobSessionJobEntity child : collection) {
-
-					//ジョブ中断処理を行う
-					suspendJob(child.getId().getSessionId(), child.getId().getJobunitId(), child.getId().getJobId());
-				}
+		// 実行中 -> 中断
+		// 実行中(キュー待機) -> 中断(キュー待機)
+		// 上記以外 -> return
+		if (status == StatusConstant.TYPE_RUNNING) {
+			sessionJob.setStatus(StatusConstant.TYPE_SUSPEND);
+		} else if (status == StatusConstant.TYPE_RUNNING_QUEUE) {
+			sessionJob.setStatus(StatusConstant.TYPE_SUSPEND_QUEUE);
+			// ジョブキュー上でも中断状態にする
+			String queueId = sessionJob.getJobInfoEntity().getQueueId(); // 状況的にqueueIdは!null
+			try {
+				JobQueue queue = Singletons.get(JobQueueContainer.class).get(queueId);
+				queue.suspend(sessionId, jobunitId, jobId);
+			} catch (JobQueueNotFoundException | JobQueueItemNotFoundException e) {
+				// TYPE_*_QUEUEのジョブセッションが存在するにも関わらず
+				// ジョブキュー、またはその中のジョブが存在しないことはありえない。
+				throw new HinemosUnknown(e);
 			}
+		} else {
+			return;
+		}
+
+		// 承認ジョブの操作
+		if (sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB) {
+			// セッションジョブに関連するセッションノードを取得
+			List<JobSessionNodeEntity> nodeList = sessionJob.getJobSessionNodeEntities();
+			JobSessionNodeEntity sessionNode = null;
+
+			// 承認ジョブの場合はノードリストは1件のみ
+			if (nodeList != null && nodeList.size() == 1) {
+				// セッションノードを取得
+				sessionNode = nodeList.get(0);
+			} else {
+				m_log.error("approveJob() not found job info:" + sessionJob.getId().getJobId());
+				throw new JobInfoNotFound();
+			}
+			sessionNode.setApprovalStatus(JobApprovalStatusConstant.TYPE_SUSPEND);
+		}
+
+		// 終了・中断日時を設定
+		sessionJob.setEndDate(HinemosTime.currentTimeMillis());
+		// ジョブ履歴用キャッシュ更新
+		JobSessionChangeDataCache.add(sessionJob);
+		// 収集データ更新
+		CollectDataUtil.put(sessionJob);
+
+		// 配下のジョブ（実行中 or キュー待機）に対しても、中断を伝播する。
+		List<JobSessionJobEntity> children = QueryUtil.getJobSessionJobByParentStatus(sessionId, jobunitId, jobId,
+				StatusConstant.TYPE_RUNNING);
+		children.addAll(QueryUtil.getJobSessionJobByParentStatus(sessionId, jobunitId, jobId,
+				StatusConstant.TYPE_RUNNING_QUEUE));
+
+		for (JobSessionJobEntity child : children) {
+			suspendJob(child.getId().getSessionId(), child.getId().getJobunitId(), child.getId().getJobId());
 		}
 	}
 
@@ -117,21 +125,15 @@ public class OperateSuspendOfJob {
 	 * ジョブを開始[中断解除]します。
 	 *
 	 * @param sessionId セッションID
-	 * @param jobunitId 所属ジョブユニットのジョブID
+	 * @param jobunitId ジョブユニットID
 	 * @param jobId ジョブID
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * @throws FacilityNotFound 
-	 *
-	 * @see com.clustercontrol.jobmanagement.factory.OperationJob#checkJobEnd(JobSessionJobLocal)
-	 * @see com.clustercontrol.jobmanagement.factory.OperationJob#checkEndStatus(String, String, String)
-	 * @see com.clustercontrol.jobmanagement.factory.OperationJob#setEndStatus(String, String, String, Integer, Integer, String)
-	 * @see com.clustercontrol.jobmanagement.factory.OperationJob#endJob(String, String, String)
-	 * @see com.clustercontrol.jobmanagement.factory.OperateSuspendOfJob#releaseSuspend(String, String)
-	 * @see com.clustercontrol.jobmanagement.factory.Notice#notify(String, String, Integer)
 	 */
-	public void releaseSuspendJob(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
+	public void releaseSuspendJob(String sessionId, String jobunitId, String jobId)
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
 		m_log.debug("releaseSuspendJob() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
 		//ジョブ中断解除処理
@@ -140,36 +142,22 @@ public class OperateSuspendOfJob {
 		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 
-		//セッションIDとジョブIDから、直下のジョブを取得（実行状態が中断）
-		Collection<JobSessionJobEntity> collection
-		= QueryUtil.getJobSessionJobByParentStatus(sessionId, jobunitId, jobId, StatusConstant.TYPE_SUSPEND);
-		if (collection == null) {
-			JobInfoNotFound je = new JobInfoNotFound("JobSessionJobEntity.findByParentStatus"
-					+ ", [sessionId, parentJobId, status] = "
-					+ "[" + sessionId + ", " + jobId + ", " + StatusConstant.TYPE_SUSPEND + "]");
-			m_log.info("releaseSuspendJob() : "
-					+ je.getClass().getSimpleName() + ", " + je.getMessage());
-			je.setSessionId(sessionId);
-			je.setParentJobId(jobId);
-			je.setStatus(StatusConstant.TYPE_SUSPEND);
-			throw je;
-		}
-		for (JobSessionJobEntity child : collection) {
-			//ジョブ中断解除処理を行う
+		// 配下のジョブに対しても、中断解除を伝播する。
+		List<JobSessionJobEntity> children = QueryUtil.getJobSessionJobByParentStatus(sessionId, jobunitId, jobId,
+				StatusConstant.TYPE_SUSPEND);
+		children.addAll(QueryUtil.getJobSessionJobByParentStatus(sessionId, jobunitId, jobId,
+				StatusConstant.TYPE_SUSPEND_QUEUE));
+
+		for (JobSessionJobEntity child : children) {
 			releaseSuspendJob(sessionId, child.getId().getJobunitId(), child.getId().getJobId());
 		}
 
-		if(sessionJob != null){
-			//ノードへの実行指示(終了していたらendJobを実行)
-			// ここはジョブを中断にして、ノード詳細で終了した後に、ジョブの中断解除をしたら、
-			// RUNNINGのままで止まってしまう。
-			// それを回避するために下記の実装を加える。
-			if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_JOB
-					|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB
-					|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB) {
-				if (new JobSessionNodeImpl().startNode(sessionId, jobunitId, jobId)) {
-					new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, null, false);
-				}
+		// ノードへの実行指示(終了していたらendJobを実行)
+		// ジョブを中断して、ノード詳細が終了した後に、ジョブの中断解除をした場合に
+		// ジョブが RUNNINGのままで止まってしまうため、この処理が必要。
+		if (sessionJob.hasSessionNode()) {
+			if (new JobSessionNodeImpl().startNode(sessionId, jobunitId, jobId)) {
+				new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, null, false);
 			}
 		}
 	}
@@ -182,43 +170,59 @@ public class OperateSuspendOfJob {
 	 * @param jobId ジョブID
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
+	 * @throws HinemosUnknown 
 	 */
-	private void releaseSuspend(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
+	private void releaseSuspend(String sessionId, String jobunitId, String jobId)
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown {
 		m_log.debug("releaseSuspend() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
-		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+		int status = sessionJob.getStatus();
 
-		//実行状態が中断の場合
-		if(sessionJob.getStatus() == StatusConstant.TYPE_SUSPEND){
-			//実行状態を実行中にする
+		// 中断 -> 実行中
+		// 中断(キュー待機) -> 実行中(キュー待機)
+		// 上記以外 -> return
+		if (status == StatusConstant.TYPE_SUSPEND) {
 			sessionJob.setStatus(StatusConstant.TYPE_RUNNING);
-			
-			if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB){
-				//セッションジョブに関連するセッションノードを取得
-				List<JobSessionNodeEntity> nodeList = sessionJob.getJobSessionNodeEntities();
-				JobSessionNodeEntity sessionNode =null;
-				
-				// 承認ジョブの場合はノードリストは1件のみ
-				if(nodeList != null && nodeList.size() == 1){
-					//セッションノードを取得
-					sessionNode =nodeList.get(0);
-				}else{
-					m_log.error("approveJob() not found job info:" + sessionJob.getId().getJobId());
-					throw new JobInfoNotFound();
-				}
-				if(sessionNode.getApprovalResult() == null){
-					sessionNode.setApprovalStatus(JobApprovalStatusConstant.TYPE_PENDING);
-				}
+		} else if (status == StatusConstant.TYPE_SUSPEND_QUEUE) {
+			sessionJob.setStatus(StatusConstant.TYPE_RUNNING_QUEUE);
+			// ジョブキュー上でも中断解除する
+			String queueId = sessionJob.getJobInfoEntity().getQueueId(); // 状況的にqueueIdは!null
+			try {
+				JobQueue queue = Singletons.get(JobQueueContainer.class).get(queueId);
+				queue.resume(sessionId, jobunitId, jobId);
+			} catch (JobQueueNotFoundException | JobQueueItemNotFoundException e) {
+				// TYPE_*_QUEUEのジョブセッションが存在するにも関わらず
+				// ジョブキュー、またはその中のジョブが存在しないことはありえない。
+				throw new HinemosUnknown(e);
 			}
+		} else {
+			return;
+		}
 
-			//リレーションを取得し、親ジョブのジョブIDを取得
-			String parentJobUnitId = sessionJob.getParentJobunitId();
-			String parentJobId = sessionJob.getParentJobId();
+		if (sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB) {
+			// セッションジョブに関連するセッションノードを取得
+			List<JobSessionNodeEntity> nodeList = sessionJob.getJobSessionNodeEntities();
+			JobSessionNodeEntity sessionNode = null;
 
-			if(!CreateJobSession.TOP_JOB_ID.equals(parentJobId)){
-				releaseSuspend(sessionId, parentJobUnitId, parentJobId);
+			// 承認ジョブの場合はノードリストは1件のみ
+			if (nodeList != null && nodeList.size() == 1) {
+				// セッションノードを取得
+				sessionNode = nodeList.get(0);
+			} else {
+				m_log.error("approveJob() not found job info:" + sessionJob.getId().getJobId());
+				throw new JobInfoNotFound();
 			}
+			if (sessionNode.getApprovalResult() == null) {
+				sessionNode.setApprovalStatus(JobApprovalStatusConstant.TYPE_PENDING);
+			}
+		}
+
+		// 親ジョブも中断解除する
+		String parentJobUnitId = sessionJob.getParentJobunitId();
+		String parentJobId = sessionJob.getParentJobId();
+		if (!CreateJobSession.TOP_JOB_ID.equals(parentJobId)) {
+			releaseSuspend(sessionId, parentJobUnitId, parentJobId);
 		}
 	}
 }

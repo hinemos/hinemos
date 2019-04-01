@@ -15,7 +15,7 @@ package com.clustercontrol.utility.settings.ui.dialog;
  * @since 6.1.0
  */
 public class ImportProcessClientDialog implements IUtilityDialog{
-	private ImportProcessDialog dialog;
+	private UtilityProcessDialog dialog;
 
 	public ImportProcessClientDialog(String message){
 		dialog = UtilityDialogInjector.createDeleteProcessDialog(null, message);

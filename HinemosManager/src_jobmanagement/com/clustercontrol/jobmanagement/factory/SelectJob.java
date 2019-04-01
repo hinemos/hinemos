@@ -524,6 +524,30 @@ public class SelectJob {
 	}
 
 	/**
+	 * 単一のジョブ詳細情報を返します。
+	 * <p>
+	 * 参照オブジェクト権限が必要です。
+	 * 
+	 * @param sessionId
+	 * @param jobunitId
+	 * @param jobId
+	 * @return
+	 * @throws InvalidRole 
+	 * @throws JobInfoNotFound 
+	 */
+	public JobTreeItem getDetail(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			m_log.debug("getDetail: sessionJob = " + sessionJob);
+
+			JobTreeItem tree = new JobTreeItem();
+			tree.setData(createJobInfo(sessionJob));
+			tree.setDetail(createJobDetail(sessionJob));
+			return tree;
+		}
+	}
+	
+	/**
 	 * ジョブ詳細ツリーを作成します。<BR>
 	 * 再帰呼び出しを行います。
 	 * <P>
@@ -724,6 +748,8 @@ public class SelectJob {
 			waitRule.setMultiplicityNotifyPriority(jobInfo.getMultiplicityNotifyPriority());
 			waitRule.setMultiplicityOperation(jobInfo.getMultiplicityOperation());
 			waitRule.setMultiplicityEndValue(jobInfo.getMultiplicityEndValue());
+			waitRule.setQueueFlg(jobInfo.getQueueFlg());
+			waitRule.setQueueId(jobInfo.getQueueId());
 		}
 
 
@@ -1780,6 +1806,8 @@ public class SelectJob {
 			waitRule.setMultiplicityNotifyPriority(job.getMultiplicityNotifyPriority());
 			waitRule.setMultiplicityOperation(job.getMultiplicityOperation());
 			waitRule.setMultiplicityEndValue(job.getMultiplicityEndValue());
+			waitRule.setQueueFlg(job.getQueueFlg());
+			waitRule.setQueueId(job.getQueueId());
 		}
 
 
@@ -2199,7 +2227,6 @@ public class SelectJob {
 				}
 			}
 
-			// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
 			// オブジェクト権限チェック
 			sbJpql = getJpql(sbJpql);
 
@@ -2255,7 +2282,6 @@ public class SelectJob {
 				}
 			}
 	
-			// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
 			// オブジェクト権限チェック
 			typedQuery = setObjectPrivilegeParameter(typedQuery);
 	
@@ -2748,7 +2774,6 @@ public class SelectJob {
 				}
 			}
 			
-			// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
 			// オブジェクト権限チェック
 			sbJpql = getJpql(sbJpql);
 			
@@ -2870,7 +2895,6 @@ public class SelectJob {
 				}
 			}
 			
-			// TODO:次期バージョンでは、アノテーションによる制御を行う方が望ましい
 			// オブジェクト権限チェック
 			typedQuery = setObjectPrivilegeParameter(typedQuery);
 			

@@ -383,11 +383,9 @@ public class KeyCheck {
 		m_log.info("setLatestDate(" + type + ")=" + latestDate);
 		latestDateMap.put(type, latestDate);
 	}
-
 	/**
 	 * Hinemos時刻と起動時にチェックしたキーファイルの時間の比較結果を返却する
 	 */
-	@Deprecated
 	public static String getResult(String type) {
 		return getNowYM() + "_true";
 	}
@@ -395,7 +393,6 @@ public class KeyCheck {
 	/**
 	 * Hinemos時刻と起動時にチェックしたキーファイルの時間の比較結果を返却する
 	 */
-	@Deprecated
 	public static String getResultEnterprise() {
 		return getResult(TYPE_ENTERPRISE);
 	}
@@ -403,7 +400,6 @@ public class KeyCheck {
 	/**
 	 * Hinemos時刻と起動時にチェックしたキーファイルの時間の比較結果を返却する
 	 */
-	@Deprecated
 	public static String getResultXcloud() {
 		return getResult(TYPE_XCLOUD);
 	}
@@ -411,7 +407,6 @@ public class KeyCheck {
 	/**
 	 * Hinemos時刻より現在年月を取得する
 	 */
-	@Deprecated
 	private static String getNowYM() {
 		Calendar cal = Calendar.getInstance(TimeZone.getDefault());
 		String nowYM = "";

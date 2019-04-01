@@ -44,7 +44,6 @@ public class HinemosSchedulerTest {
 				try {
 					Thread.sleep(10000);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -70,7 +69,6 @@ public class HinemosSchedulerTest {
 					SchedulerTest(no);
 					Thread.sleep(20000);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -159,7 +157,6 @@ public class HinemosSchedulerTest {
 					}
 						
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -818,7 +815,6 @@ public class HinemosSchedulerTest {
 			try {
 				Thread.sleep(num);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -828,7 +824,6 @@ public class HinemosSchedulerTest {
 			try {
 				Thread.sleep(num);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

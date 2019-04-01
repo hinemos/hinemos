@@ -549,12 +549,11 @@ public class JobKickScheduleComposite extends Composite {
 			this.m_btnScheduleType_Day.setSelection(false);
 			this.m_btnScheduleType_Week.setSelection(false);
 			this.m_btnScheduleType_Hour.setSelection(true);
-
-			/**
-			 * FIXME
-			 * 「everyXminutes分毎」が設定された後に一度「cmbFromXminutes_Hour」をリセットするため、
-			 * 「everyXminutes分毎」を設定後に、「fromXminutes分から」を設定する必要があります
-			 */
+			
+			// XXX
+			// 「everyXminutes分毎」が設定された後に一度「cmbFromXminutes_Hour」をリセットするため、
+			// 「everyXminutes分毎」を設定後に、「fromXminutes分から」を設定する必要があります
+			 
 			//「everyXminutes分毎」を設定
 			if(everyXminutes != null){
 				this.m_cmbEveryXminutes_Hour.select(0);

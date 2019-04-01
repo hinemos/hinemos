@@ -105,7 +105,6 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 			for (DataKey dataKey : datakeys) {
 				List<String[]> dataLines = m_databaseMap.get(dataKey.getFacilityId()).get(dataKey.getDisplayName());
 				if (dataLines != null && !dataLines.isEmpty()) {
-					// TODO 必要性について確認
 					String addNumbering = "";
 					if (legendNames.containsKey(dataLines.get(0)[4])) {
 						int i = legendNames.get(dataLines.get(0)[4]);

@@ -210,7 +210,9 @@ public class HinemosPropertyControllerBean {
 	 * 
 	 */
 	public HinemosPropertyInfo getHinemosPropertyInfo(String key) throws HinemosPropertyNotFound, InvalidRole, HinemosUnknown {
-		m_log.debug("getHinemosPropertyInfo()");
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("getHinemosPropertyInfo()");
+		}
 
 		JpaTransactionManager jtm = null;
 		SelectHinemosPropertyInfo select = new SelectHinemosPropertyInfo();

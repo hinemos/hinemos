@@ -18,6 +18,7 @@ public class CommandConstant {
 	public static final String ACTION_PLATFORM_ACCESS_OBJECT_PRIVILEGE = "com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction";
 	public static final String ACTION_PLATFORM_REPOSITORY_NODE = "com.clustercontrol.utility.settings.platform.action.RepositoryNodeAction";
 	public static final String ACTION_PLATFORM_REPOSITORY_SCOPE = "com.clustercontrol.utility.settings.platform.action.RepositoryScopeAction";
+	public static final String ACTION_PLATFORM_NODECONFIG = "com.clustercontrol.utility.settings.platform.action.NodeConfigSettingAction";
 	public static final String ACTION_PLATFORM_CALENDAR = "com.clustercontrol.utility.settings.platform.action.CalendarAction";
 	public static final String ACTION_PLATFORM_MAINTENANCE = "com.clustercontrol.utility.settings.system.action.MaintenanceAction";
 	public static final String ACTION_PLATFORM_NOTIFY = "com.clustercontrol.utility.settings.platform.action.NotifyAction";
@@ -51,6 +52,7 @@ public class CommandConstant {
 	public static final String ACTION_INFRA_FILE = "com.clustercontrol.utility.settings.infra.action.InfraFileAction";
 	public static final String ACTION_JOB_MST = "com.clustercontrol.utility.settings.job.action.JobMasterAction";
 	public static final String ACTION_JOB_KICK = "com.clustercontrol.utility.settings.job.action.JobKickAction";
+	public static final String ACTION_JOB_QUEUE = "com.clustercontrol.utility.settings.job.action.JobQueueAction";
 	public static final String ACTION_NODE_MAP_SETTING = "com.clustercontrol.utility.settings.nodemap.action.NodeMapAction";
 	public static final String ACTION_NODE_MAP_IMAGE = "com.clustercontrol.utility.settings.nodemap.action.NodeMapImageAction";
 	public static final String ACTION_REPORT_SCHEDULE = "com.clustercontrol.utility.settings.report.action.ReportScheduleAction";
@@ -69,6 +71,7 @@ public class CommandConstant {
 	public static final int WEIGHT_PLATFORM_ACCESS_OBJECT_PRIVILEGE = 12;
 	public static final int WEIGHT_PLATFORM_REPOSITORY_NODE = 100;
 	public static final int WEIGHT_PLATFORM_REPOSITORY_SCOPE = 101;
+	public static final int WEIGHT_PLATFORM_NODECONFIG = 110;
 	public static final int WEIGHT_PLATFORM_CALENDAR =  200;
 	public static final int WEIGHT_PLATFORM_MAINTENANCE = 500;
 	public static final int WEIGHT_PLATFORM_HINEMOS_PROPERTY = 501;
@@ -103,6 +106,7 @@ public class CommandConstant {
 	public static final int WEIGHT_JOBMAP_IMAGE = 900;
 	public static final int WEIGHT_JOB_MST = 901;
 	public static final int WEIGHT_JOB_KICK = 950;
+	public static final int WEIGHT_JOB_QUEUE = 960;
 	public static final int WEIGHT_NODE_MAP_SETTING = 1001;
 	public static final int WEIGHT_NODE_MAP_IMAGE = 1000;
 	public static final int WEIGHT_REPORT_SETTING = 1101;

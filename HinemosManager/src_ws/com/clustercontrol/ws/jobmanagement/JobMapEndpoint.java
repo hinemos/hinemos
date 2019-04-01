@@ -30,7 +30,6 @@ import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.jobmanagement.bean.JobmapIconImage;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
-import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -60,13 +59,6 @@ public class JobMapEndpoint {
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
 		return str + ", " + str;
-	}
-
-	public String getVersion() throws InvalidUserPass, InvalidRole, HinemosUnknown {
-		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
-		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
-
-		return KeyCheck.getResultEnterprise();
 	}
 
 	/**

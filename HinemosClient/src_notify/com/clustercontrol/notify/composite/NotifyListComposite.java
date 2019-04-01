@@ -20,7 +20,6 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -34,6 +33,7 @@ import com.clustercontrol.notify.action.GetNotify;
 import com.clustercontrol.notify.action.GetNotifyTableDefineCheckBox;
 import com.clustercontrol.notify.action.GetNotifyTableDefineNoCheckBox;
 import com.clustercontrol.notify.composite.action.NotifyDoubleClickListener;
+import com.clustercontrol.util.CheckBoxSelectionAdapter;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.viewer.CommonTableViewer;
 import com.clustercontrol.ws.notify.InvalidRole_Exception;
@@ -140,31 +140,10 @@ public class NotifyListComposite extends Composite {
 			this.tableViewer.addDoubleClickListener(new NotifyDoubleClickListener(this));
 		}
 		if(this.isSelect){
-
-			/**テーブルのレコードを選択するリスナー*/
-			table.addSelectionListener(new SelectionAdapter(){
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-
-					//選択されたTableColumnを取得します。
-					TableItem[] ti = table.getSelection();
-					for (int i = 0; i<ti.length; i++){
-						@SuppressWarnings("unchecked")
-						ArrayList<Object> al = (ArrayList<Object>)ti[i].getData();
-						WidgetTestUtil.setTestId(this, "tableitem" + i, ti[i]);
-						if((Boolean)al.get(0)){
-							//YESならNO
-							al.set(GetNotifyTableDefineCheckBox.SELECTION, false);
-						}else{
-							//NOならYES
-							al.set(GetNotifyTableDefineCheckBox.SELECTION, true);
-
-						}
-					}
-					//チェックボックスが入るので、再描画。
-					tableViewer.refresh();
-				}
-			});
+			/** チェックボックスの選択を制御するリスナー */
+			SelectionAdapter adapter =
+					new CheckBoxSelectionAdapter(this, this.tableViewer, GetNotifyTableDefineCheckBox.SELECTION);
+			table.addSelectionListener(adapter);
 		} else {
 			// 合計ラベルの作成
 			this.totalLabel = new Label(this, SWT.RIGHT);
@@ -176,7 +155,7 @@ public class NotifyListComposite extends Composite {
 		}
 
 	}
-
+	
 	/**
 	 * このコンポジットが利用するテーブルビューアーを返します。
 	 *

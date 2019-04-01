@@ -116,6 +116,7 @@ public class JobTreeItemUtil {
 		jobWaitRuleInfo.setSkip(false);
 		jobWaitRuleInfo.setSkipEndStatus(EndStatusConstant.TYPE_ABNORMAL);
 		jobWaitRuleInfo.setSkipEndValue(EndStatusConstant.INITIAL_VALUE_NORMAL);
+		jobWaitRuleInfo.setQueueFlg(false);
 		jobWaitRuleInfo.setJobRetryFlg(false);
 		jobWaitRuleInfo.setJobRetryEndStatus(EndStatusConstant.INITIAL_VALUE_NORMAL);
 		jobWaitRuleInfo.setJobRetry(10);
@@ -158,7 +159,7 @@ public class JobTreeItemUtil {
 		jobWaitRuleInfo.setMultiplicityNotify(true);
 		jobWaitRuleInfo.setMultiplicityNotifyPriority(PriorityConstant.TYPE_WARNING);
 		jobWaitRuleInfo.setMultiplicityOperation(StatusConstant.TYPE_WAIT);
-
+		
 		return jobWaitRuleInfo;
 	}
 
@@ -367,6 +368,10 @@ public class JobTreeItemUtil {
 				}
 				//後続ジョブ優先度設定
 				jobWaitRuleInfo.getExclusiveBranchNextJobOrderList().addAll(orgInfo.getWaitRule().getExclusiveBranchNextJobOrderList());
+				// ジョブキュー
+				jobWaitRuleInfo.setQueueFlg(orgInfo.getWaitRule().isQueueFlg());
+				jobWaitRuleInfo.setQueueId(orgInfo.getWaitRule().getQueueId());
+				
 				jobInfo.setWaitRule(jobWaitRuleInfo);
 			}
 			//参照ジョブ

@@ -237,7 +237,7 @@ public class FileReplaceSettingComposite extends Composite {
 		@SuppressWarnings("unchecked")
 		List<List<Object>> list = (List<List<Object>>) m_viewer.getInput();
 		m_inputData = new ArrayList<>();
-		// FIXME ここは不要なはず。暫定的な実装を用意しておく。
+		// ここは不要なはず。暫定的な実装を用意しておく。
 		if (list == null) {
 			list = new ArrayList<>();
 		}

@@ -142,5 +142,17 @@ public class HinemosPropertyInfo {
 	public void setValueType(Integer valueType) {
 		this.valueType = valueType;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("key = " + key);
+		sb.append(", description = "  + description);
+		sb.append(", valueType = "  + valueType);
+		sb.append(", valueBoolean = "  + valueBoolean);
+		sb.append(", valueString = "  + valueString);
+		sb.append(", valueNumeric = "  + valueNumeric);
+		return sb.toString();
+	}
 
 }

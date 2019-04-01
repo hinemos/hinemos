@@ -296,7 +296,9 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		// 配置パスの置換
 		String bindDestPath;
 		try {
-			HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap);
+			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+			ArrayList<String> inKeyList = StringBinder.getKeyList(getDestPath(), maxReplaceWord);
+			HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap, inKeyList);
 			StringBinder binder = new StringBinder(map);
 			bindDestPath = binder.bindParam(getDestPath());
 		} catch (Exception e) {
@@ -401,7 +403,9 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		// 配置パスの置換
 		String bindDestPath;
 		try {
-			HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap);
+			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+			ArrayList<String> inKeyList = StringBinder.getKeyList(getDestPath(), maxReplaceWord);
+			HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap, inKeyList);
 			StringBinder binder = new StringBinder(map);
 			bindDestPath = binder.bindParam(getDestPath());
 		} catch (Exception e) {
@@ -496,10 +500,12 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 			}
 		} else {
 			ArrayList<FileInfo> list2 = new ArrayList<>();
+			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
 			for (FileTransferVariableInfo info : list) {
 				FileInfo info2 = new FileInfo(info.getName(), info.getValue());
 				String str = info2.getValue();
-				HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap);
+				ArrayList<String> inKeyList = StringBinder.getKeyList(str, maxReplaceWord);
+				HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap, inKeyList);
 				StringBinder strbinder = new StringBinder(map);
 				Logger.getLogger(FileTransferModuleInfo.class).debug("replaceNodeVariable() before : " + str);
 				str = strbinder.bindParam(str);

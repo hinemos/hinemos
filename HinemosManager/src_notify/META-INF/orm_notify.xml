@@ -220,4 +220,18 @@
 			]]>
 		</query>
 	</named-query>
+	<!-- EventLogOperationHistoryEntity -->
+	<named-query name="EventLogOperationHistoryEntity.findByEventLogPK">
+		<query>
+			<![CDATA[
+				SELECT a FROM EventLogOperationHistoryEntity a 
+				WHERE a.monitorId = :monitorId
+				AND a.monitorDetailId = :monitorDetailId
+				AND a.pluginId = :pluginId
+				AND a.outputDate = :outputDate
+				AND a.facilityId = :facilityId
+				ORDER BY a.operationDate desc, a.historyType desc, a.id.logSeqNo desc
+			]]>
+		</query>
+	</named-query>
 </entity-mappings>

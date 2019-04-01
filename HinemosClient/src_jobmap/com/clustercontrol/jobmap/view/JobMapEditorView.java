@@ -25,6 +25,8 @@ import com.clustercontrol.jobmap.view.action.EditModeAction;
 import com.clustercontrol.jobmap.view.action.JobObjectPrivilegeAction;
 import com.clustercontrol.jobmap.view.action.ModifyJobAction;
 import com.clustercontrol.jobmap.view.action.RunJobAction;
+import com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand;
+import com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand;
 import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
@@ -73,6 +75,8 @@ public class JobMapEditorView extends JobMapView {
 			service.refreshElements(JobObjectPrivilegeAction.ID, null);
 			service.refreshElements(RunJobAction.ID, null);
 			service.refreshElements(EditModeAction.ID, null);
+			service.refreshElements(ImportJobCommand.ID, null);
+			service.refreshElements(ExportJobCommand.ID, null);
 
 			// Update ToolBar after elements refreshed
 			// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.

@@ -62,7 +62,7 @@ import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.StringBinder;
 
 /**
- * HTTP監視 数値監視を実行するクラス<BR>
+ * HTTPシナリオ監視を実行するクラス<BR>
  *
  * @version 5.0.0
  * @since 5.0.0
@@ -100,14 +100,7 @@ public class RunMonitorHttpScenario extends RunMonitor {
 	protected RunMonitor createMonitorInstance() {
 		return new RunMonitorHttpScenario();
 	}
-
-	/**
-	 * [リソース監視用]監視を実行します。（並列処理）
-	 *
-	 * リソース監視では1つのファシリティIDに対して、複数の収集項目ID及び、デバイスに対するリソースを監視・収集します。
-	 * この動作に対応するため、独自のrunMonitorInfoを実装します。
-	 *
-	 */
+	
 	@Override
 	protected List<OutputBasicInfo> runMonitorInfo() throws FacilityNotFound, MonitorNotFound, EntityExistsException, InvalidRole, HinemosUnknown {
 		m_log.debug("runMonitorInfo()");
@@ -408,8 +401,7 @@ public class RunMonitorHttpScenario extends RunMonitor {
 		MonitorRunResultInfo errorResultInfo = null;
 		List<PageResponse> responses = new ArrayList<PageResponse>();
 		try (GetHttpResponse m_request = builder.build()) {
-			Map<String, String> variables = RepositoryUtil.createNodeParameter(nodeInfo.get(facilityId));
-
+			
 			List<Page> pages = new ArrayList<>(m_httpScenarioCheckInfo.getPages());
 			Collections.sort(pages, new Comparator<Page>() {
 				@Override
@@ -417,20 +409,54 @@ public class RunMonitorHttpScenario extends RunMonitor {
 					return o1.getId().getPageOrderNo().compareTo(o2.getId().getPageOrderNo());
 				}
 			});
-
+			
+			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+			
+			//置換文字列を抽出
+			ArrayList<String> keyList = new ArrayList<>();
+			for (Page page: pages) {
+				//URL
+				ArrayList<String> inUrlKeyList = StringBinder.getKeyList(page.getUrl(), maxReplaceWord);
+				for (String key : inUrlKeyList) {
+					if (!keyList.contains(key)) {
+						keyList.add(key);
+					}
+				}
+				String post = page.getPost();
+				//post 
+				if (post != null && !post.isEmpty()){
+					ArrayList<String> inPostKeyList = StringBinder.getKeyList(post, maxReplaceWord);
+					for (String key : inPostKeyList) {
+						if (!keyList.contains(key)) {
+							keyList.add(key);
+						}
+					}
+				}
+			}
+			
+			//ノードの置換文字列マップを作成
+			//variablesはPage単位のループで「次ページより利用可能な変数」が追記/置換される
+			Map<String, String> variables = RepositoryUtil.createNodeParameter(nodeInfo.get(facilityId), keyList);
+			
 			loopEnd:
 			for (Page page: pages) {
 				ResultType resultType = ResultType.SUCCESS;
 				MonitorRunResultInfo resultInfo = null;
-				StringBinder strbinder = new StringBinder(variables);
 				String url = page.getUrl();
+				
+				StringBinder strbinder = new StringBinder(variables);
 				url = strbinder.bindParam(url);
 
 				String post = page.getPost();
-				if (post != null && !post.isEmpty())
+				if (post != null && !post.isEmpty()){
+					m_log.trace("http request. post(before)=[" + post + "]");
 					post = strbinder.bindParam(post);
+					m_log.trace("http request. post(after)=[" + post + "]");
+				}
 
-				if (m_log.isTraceEnabled()) m_log.trace("http request. (nodeInfo = " + nodeInfo + ", facilityId = " + facilityId + ", url = " + url + ")");
+				if (m_log.isTraceEnabled()){ 
+					m_log.trace("http request. (nodeInfo = " + nodeInfo + ", facilityId = " + facilityId + ", url = " + url + ")");
+				}
 
 				PageResponse response = null;
 				List<String> rurls = new ArrayList<>();

@@ -42,12 +42,12 @@ public class JobOperationJudgment {
 		operation.add(StatusConstant.TYPE_STOP);
 		operation.addAll(StatusConstant.getEndList());
 		operation.add(StatusConstant.TYPE_ERROR);
-		m_statusPatternMap.put(
-				OperationConstant.TYPE_START_AT_ONCE, operation);
+		m_statusPatternMap.put(OperationConstant.TYPE_START_AT_ONCE, operation);
 
 		//開始[中断解除]
 		operation = new ArrayList<Integer>();
 		operation.add(StatusConstant.TYPE_SUSPEND);
+		operation.add(StatusConstant.TYPE_SUSPEND_QUEUE);
 		m_statusPatternMap.put(OperationConstant.TYPE_START_SUSPEND, operation);
 
 		//開始[保留解除]
@@ -60,6 +60,12 @@ public class JobOperationJudgment {
 		operation.add(StatusConstant.TYPE_SKIP);
 		m_statusPatternMap.put(OperationConstant.TYPE_START_SKIP, operation);
 
+		//開始[強制実行]
+		operation = new ArrayList<Integer>();
+		operation.add(StatusConstant.TYPE_RUNNING_QUEUE);
+		operation.add(StatusConstant.TYPE_SUSPEND_QUEUE);
+		m_statusPatternMap.put(OperationConstant.TYPE_START_FORCE_RUN, operation);
+		
 		//停止[コマンド]
 		operation = new ArrayList<Integer>();
 		operation.add(StatusConstant.TYPE_RUNNING);
@@ -68,6 +74,7 @@ public class JobOperationJudgment {
 		//停止[中断]
 		operation = new ArrayList<Integer>();
 		operation.add(StatusConstant.TYPE_RUNNING);
+		operation.add(StatusConstant.TYPE_RUNNING_QUEUE);
 		m_statusPatternMap.put(OperationConstant.TYPE_STOP_SUSPEND, operation);
 
 		//停止[保留]
@@ -90,6 +97,8 @@ public class JobOperationJudgment {
 		//停止[強制]
 		operation = new ArrayList<Integer>();
 		operation.add(StatusConstant.TYPE_WAIT);
+		operation.add(StatusConstant.TYPE_RUNNING_QUEUE);
+		operation.add(StatusConstant.TYPE_SUSPEND_QUEUE);
 		operation.add(StatusConstant.TYPE_STOPPING);
 		m_statusPatternMap.put(OperationConstant.TYPE_STOP_FORCE, operation);
 
@@ -119,6 +128,12 @@ public class JobOperationJudgment {
 		operation.add(TYPE_JOB);
 		operation.add(TYPE_JOBNET);
 		m_jobPatternMap.put(OperationConstant.TYPE_START_SKIP, operation);
+
+		//開始[強制実行]
+		operation = new ArrayList<Integer>();
+		operation.add(TYPE_JOB);
+		operation.add(TYPE_JOBNET);
+		m_jobPatternMap.put(OperationConstant.TYPE_START_FORCE_RUN, operation);
 
 		//停止[コマンド]
 		operation = new ArrayList<Integer>();

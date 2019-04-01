@@ -34,6 +34,8 @@ public class FacilityTreeAttributeConstant {
 	public static final String OWNER_SCOPE="OWNER";
 	
 	public static final String OS_PARENT_SCOPE="OS";
+	
+	public static final String NODE_CONFIGURATION_SCOPE="NODE_CONFIGURATION";
 
 	public static final String VM_SCOPE="VM";
 	public static final String VM_SCOPE_TEXT="Vm_Node";
@@ -52,6 +54,7 @@ public class FacilityTreeAttributeConstant {
 		buildinScopeFacilityIdSet.add(VM_SCOPE);
 		buildinScopeFacilityIdSet.add(UNALLOCATED_SCOPE);
 		buildinScopeFacilityIdSet.add(OS_PARENT_SCOPE);
+		buildinScopeFacilityIdSet.add(NODE_CONFIGURATION_SCOPE);
 	}
 	
 	public static Set<String> getBuiltinScopeFacilityIdSet() {

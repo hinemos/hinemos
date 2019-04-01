@@ -9,6 +9,7 @@
 package com.clustercontrol.util;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 import com.clustercontrol.bean.Property;
@@ -83,6 +84,71 @@ public class PropertyUtil {
 				getPropertyValue(children1, id, list);
 			}
 		}
+	}
+
+	/**
+	 * 指定されたIDで、String型の値を持つプロパティを再帰検索し、最初に見つかった値を返します。
+	 * 
+	 * @param prop 検索対象のプロパティ。
+	 * @param id 検索対象のID。
+	 * @return 見つかった場合はString値、見つからなかった場合はnull。
+	 */
+	public static String findStringValue(Property prop, String id) {
+		for (Object value : getPropertyValue(prop, id)) {
+			if (value instanceof String) {
+				return (String) value;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 指定されたIDで、Integer型の値を持つプロパティを再帰検索し、最初に見つかった値を返します。
+	 * 
+	 * @param prop 検索対象のプロパティ。
+	 * @param id 検索対象のID。
+	 * @return 見つかった場合はInteger値、見つからなかった場合はnull。
+	 */
+	public static Integer findIntegerValue(Property prop, String id) {
+		for (Object value : getPropertyValue(prop, id)) {
+			if (value instanceof Integer) {
+				return (Integer) value;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 指定されたIDで、Date型の値を持つプロパティを再帰検索し、最初に見つかった値をlong変換して返します。
+	 * 
+	 * @param prop 検索対象のプロパティ。
+	 * @param id 検索対象のID。
+	 * @return 見つかった場合はlong値、見つからなかった場合はnull。
+	 */
+	public static Long findTimeValue(Property prop, String id) {
+		for (Object value : getPropertyValue(prop, id)) {
+			if (value instanceof Date) {
+				Date d = (Date) value;
+				return d.getTime();
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 指定されたIDで、Date型の値を持つプロパティを再帰検索し、最初に見つかった値をlong変換し、
+	 * さらに下3桁(ミリ秒の部分)を"999"に設定した値を返します。
+	 * <p>
+	 * 日時範囲の終端値を取得したい場合に、本メソッドを使用します。
+	 * 
+	 * @param prop 検索対象のプロパティ。
+	 * @param id 検索対象のID。
+	 * @return 見つかった場合はlong値、見つからなかった場合はnull。
+	 */
+	public static Long findEndTimeValue(Property prop, String id) {
+		Long v = findTimeValue(prop, id);
+		if (v == null) return null;
+		return v / 1000 * 1000 + 999;
 	}
 
 	/**
@@ -276,7 +342,7 @@ public class PropertyUtil {
 		}
 
 		/*
-		 * TODO ここの修正は怪しい。後で調査すること！！！
+		 * XXX ここの修正は怪しい。後で調査すること！！！
 		 */
 		clone.setDefine(original.getDefine());
 		clone.setValue(original.getValue());

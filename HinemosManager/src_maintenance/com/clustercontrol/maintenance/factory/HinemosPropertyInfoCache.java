@@ -50,6 +50,10 @@ public class HinemosPropertyInfoCache {
 			HashMap<String, HinemosPropertyInfo> cache = getCache();
 			if (cache == null) {	// not null when clustered
 				refresh();
+				if (log.isTraceEnabled()) {
+					cache = getCache();
+					log.trace("get cache " + AbstractCacheManager.KEY_COMMON_PROPERTY + " : " + cache);
+				}
 			}
 		} finally {
 			_lock.writeUnlock();
@@ -60,13 +64,11 @@ public class HinemosPropertyInfoCache {
 	private static HashMap<String, HinemosPropertyInfo> getCache() {
 		ICacheManager cm = CacheManagerFactory.instance().create();
 		Serializable cache = cm.get(AbstractCacheManager.KEY_COMMON_PROPERTY);
-		if (log.isDebugEnabled()) log.debug("get cache " + AbstractCacheManager.KEY_COMMON_PROPERTY + " : " + cache);
 		return cache == null ? null : (HashMap<String, HinemosPropertyInfo>)cache;
 	}
 	
 	private static void storeCache(HashMap<String, HinemosPropertyInfo> newCache) {
 		ICacheManager cm = CacheManagerFactory.instance().create();
-		if (log.isDebugEnabled()) log.debug("store cache " + AbstractCacheManager.KEY_COMMON_PROPERTY + " : " + newCache);
 		cm.store(AbstractCacheManager.KEY_COMMON_PROPERTY, newCache);
 	}
 
@@ -83,6 +85,14 @@ public class HinemosPropertyInfoCache {
 		// 並列してキャッシュ更新処理が実行されている場合、更新処理完了を待機しない（更新前・後のどちらが取得されるか保証されない）
 		// (部分書き換えでなく全置換えのキャッシュ更新特性、ロックに伴う処理コストの観点から参照ロックは意図的に取得しない)
 		HashMap<String, HinemosPropertyInfo> cache = getCache();
+		if (log.isDebugEnabled()) {
+			if (cache == null) {
+				log.debug("getProperty key=" + key + " cache is null ");
+			} else {
+				log.debug("getProperty key=" + key + " HinemosPropertyInfo[ "  + cache.get(key) + " ]");
+			}
+			
+		}
 		return cache == null ? null : cache.get(key);
 	}
 

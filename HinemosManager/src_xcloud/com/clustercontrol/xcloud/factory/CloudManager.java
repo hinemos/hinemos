@@ -267,7 +267,6 @@ public class CloudManager {
 			if (base == null)
 				throw new InternalManagerError();
 
-			// TODO Might cause duplicate problem. Should prevent loading same classes that parent already loaded
 			OptionClassLoader loader = new OptionClassLoader(urls, base);
 
 			ClassLoader defaultLoader = Thread.currentThread().getContextClassLoader();

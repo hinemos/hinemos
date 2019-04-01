@@ -19,10 +19,12 @@ public class AsyncTaskQueueCounts {
 	private int notifyJobTaskFactory;
 	private int createJobSessionTaskFactory;
 	private int notifyInfraTaskFactory;
+	private int agentRestartTaskFactory;
+	private int agentUpdateTaskFactory;
 
 	@ConstructorProperties({"notifyStatusTaskFactory", "notifyEventTaskFactory", "notifyMailTaskFactory", 
 		"notifyCommandTaskFactory", "notifyLogEscalationTaskFactory", "notifyJobTaskFactory", "createJobSessionTaskFactory", 
-		"notifyInfraTaskFactory"})
+		"notifyInfraTaskFactory", "agentRestartTaskFactory", "agentUpdateTaskFactory"})
 	public AsyncTaskQueueCounts(
 			int notifyStatusTaskFactory,
 			int notifyEventTaskFactory,
@@ -31,7 +33,9 @@ public class AsyncTaskQueueCounts {
 			int notifyLogEscalationTaskFactory,
 			int notifyJobTaskFactory,
 			int createJobSessionTaskFactory,
-			int notifyInfraTaskFactory
+			int notifyInfraTaskFactory,
+			int agentRestartTaskFactory,
+			int agentUpdateTaskFactory
 			) {
 		this.notifyStatusTaskFactory = notifyStatusTaskFactory;
 		this.notifyEventTaskFactory = notifyEventTaskFactory;
@@ -41,6 +45,8 @@ public class AsyncTaskQueueCounts {
 		this.notifyJobTaskFactory = notifyJobTaskFactory;
 		this.createJobSessionTaskFactory = createJobSessionTaskFactory;
 		this.notifyInfraTaskFactory = notifyInfraTaskFactory;
+		this.agentRestartTaskFactory = agentRestartTaskFactory;
+		this.agentUpdateTaskFactory = agentUpdateTaskFactory;
 	}
 
 	/**
@@ -99,4 +105,17 @@ public class AsyncTaskQueueCounts {
 		return notifyInfraTaskFactory;
 	}
 
+	/**
+	 * @return the agentRestartTaskFactory
+	 */
+	public int getAgentRestartTaskFactory() {
+		return agentRestartTaskFactory;
+	}
+
+	/**
+	 * @return the agentUpdateTaskFactory
+	 */
+	public int getAgentUpdateTaskFactory() {
+		return agentUpdateTaskFactory;
+	}
 }

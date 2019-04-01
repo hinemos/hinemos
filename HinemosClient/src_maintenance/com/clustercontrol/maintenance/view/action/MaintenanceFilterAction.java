@@ -23,19 +23,16 @@ public class MaintenanceFilterAction implements IViewActionDelegate {
 
 	@Override
 	public void run(IAction action) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void selectionChanged(IAction action, ISelection selection) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void init(IViewPart view) {
-		// TODO Auto-generated method stub
 
 	}
 

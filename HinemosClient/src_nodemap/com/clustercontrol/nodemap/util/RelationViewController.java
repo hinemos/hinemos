@@ -24,10 +24,12 @@ import com.clustercontrol.composite.FacilityTreeComposite;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.nodemap.composite.ScopeComposite;
 import com.clustercontrol.nodemap.view.EventViewM;
+import com.clustercontrol.nodemap.view.NodeListView;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.ScopeTreeView;
 import com.clustercontrol.nodemap.view.StatusViewM;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.ws.nodemap.NodeMapException;
 import com.clustercontrol.ws.repository.FacilityTreeItem;
 
@@ -49,7 +51,7 @@ public class RelationViewController {
 	 * @param selectItem	nullの場合、イベントビューの「スコープ：」という箇所の表示が微妙におかしくなる。
 	 * 						(スコープツリービューが存在しない場合は、selectItemがnullになる。)
 	 */
-	public static void updateStatusEventView(String facilityId, String parentId) {
+	public static void updateStatusEventView(String parentId, String facilityId) {
 		if (facilityId == null) {
 			m_log.warn("updateStatusEventView(), RelationViewController updateStatusEventView facility Id is null");
 			return;
@@ -267,7 +269,6 @@ public class RelationViewController {
 		 * ROOT_SCOPEの場合はtop。
 		 */
 		if (ReservedFacilityIdConstant.ROOT_SCOPE.equals(facilityId)) {
-			
 			return parent;
 		}
 		for (FacilityTreeItem item : parent.getChildren()) {
@@ -301,28 +302,34 @@ public class RelationViewController {
 	 * @param targetScopeFacilityId 新規作成ビューの表示対象スコープのファシリティID
 	 * @throws NodeMapException
 	 */
-	public static void createNewView(String managerName, String targetScopeFacilityId) {
+	public static void createNewView(String managerName, String targetScopeFacilityId, Class<? extends CommonViewPart> viewClass) {
+
+		m_log.debug("createNewView() viewClass=" + viewClass.getSimpleName()
+		+ ", managerName=" + managerName + ", targetScopeFacilityId=" + targetScopeFacilityId);
 
 		long start = System.currentTimeMillis();
 
-		// 新規に表示対象のビューが既に開かれていないか確認
-		String existSecondaryId = SecondaryIdMap.getSecondaryId(managerName, targetScopeFacilityId);
-		m_log.debug("existSecondaryId:" + existSecondaryId);
+		String existSecondaryId = null;
 
+		if (viewClass.equals(NodeMapView.class)) {
+			// 新規に表示対象のビューが既に開かれていないか確認
+			existSecondaryId = SecondaryIdMap.getSecondaryId(managerName, targetScopeFacilityId);
+			m_log.debug("existSecondaryId:" + existSecondaryId);
+		}
 		if(existSecondaryId != null){
 			// 既に存在するビューにフォーカスをあわせる
 			openExistView(existSecondaryId, managerName, targetScopeFacilityId);
 		} else {
-			// 既存のビューがないためビューを新規に生成
+			// ビューを新規に生成
 			try {
 				// 描画対象スコープのFacilityIDからビューのSecondaryIdを特定できるよう、
 				// FacilityIDをキーにSecondaryIdを登録する
-				String newSecondaryId = SecondaryIdMap.createSecondaryId(managerName, targetScopeFacilityId);
+				String newSecondaryId = SecondaryIdMap.createSecondaryId(managerName, targetScopeFacilityId, viewClass);
 				m_log.debug("createNewView showView " +
 						"secondaryId=" + newSecondaryId +
 						" facilityId=" + targetScopeFacilityId);
-				showNewView(managerName, newSecondaryId);
-
+				showNewView(managerName, newSecondaryId, viewClass);
+	
 			} catch (Exception e) {
 				MessageDialog.openInformation(
 						null,
@@ -334,15 +341,22 @@ public class RelationViewController {
 		m_log.debug("OpenNodeMap :" + (end - start) +"ms");
 	}
 
-	public static void showNewView(String managerName, String newSecondaryId) {
+	public static void showNewView(String managerName, String newSecondaryId, Class<? extends CommonViewPart> viewClass) {
 		//アクティブページを手に入れる
 		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 		try {
-			NodeMapView view = (NodeMapView)page.showView(NodeMapView.ID,
-					newSecondaryId, IWorkbenchPage.VIEW_ACTIVATE);
-			view.m_canvasComposite.setManagerName(managerName);
-			view.setFocus();
-			view.setMode(NodeMapView.Mode.FIXED_MODE);
+			if (viewClass.equals(NodeMapView.class)) {
+				NodeMapView view = (NodeMapView)page.showView(NodeMapView.ID,
+						newSecondaryId, IWorkbenchPage.VIEW_ACTIVATE);
+				view.m_canvasComposite.setManagerName(managerName);
+				view.setFocus();
+				view.setMode(NodeMapView.Mode.FIXED_MODE);
+			} else if (viewClass.equals(NodeListView.class)) {
+				NodeListView view = (NodeListView)page.showView(NodeListView.ID,
+						newSecondaryId, IWorkbenchPage.VIEW_ACTIVATE);
+				view.getListComposite().setManagerName(managerName);
+				view.setFocus();
+			}
 			m_log.debug("showNewView " + newSecondaryId);
 		} catch (PartInitException e) {
 			m_log.warn("showNewView(), " + e.getMessage(), e);

@@ -22,15 +22,18 @@ import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.queue.JobQueue;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
+import com.clustercontrol.jobmanagement.queue.JobQueueNotFoundException;
 import com.clustercontrol.jobmanagement.util.FromRunningAfterCommitCallback;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.jobmanagement.util.JobSessionChangeDataCache;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
 
 /**
  *  ジョブ操作の停止[強制]を行うクラスです。
@@ -75,8 +78,6 @@ public class OperateForceStopOfJob {
 		try {
 			new JobSessionNodeImpl().endNodeFinish(sessionId, jobunitId, jobId, facilityId, null, null);
 		} catch (EntityExistsException e) {
-			// TODO
-			// throwするExceptionをHinemosUnknownでラップしているが、後で修正すること。
 			m_log.warn("maintenanceNode " + e, e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (FacilityNotFound e) {
@@ -164,20 +165,14 @@ public class OperateForceStopOfJob {
 		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 
-		// 強制終了の対象となるのは待機と停止処理中のみ。（参考：JobOperationJudgement.java）
-		if(sessionJob.getStatus() != StatusConstant.TYPE_WAIT && sessionJob.getStatus() != StatusConstant.TYPE_STOPPING){
+		// 強制終了の対象となるのは待機と停止処理中とキュー待機のみ。
+		Integer status = sessionJob.getStatus();
+		if (status != StatusConstant.TYPE_WAIT && status != StatusConstant.TYPE_STOPPING
+				&& status != StatusConstant.TYPE_RUNNING_QUEUE && status != StatusConstant.TYPE_SUSPEND_QUEUE) {
 			return;
 		}
 
-		if (sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_JOB
-				&& sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_APPROVALJOB
-				&& sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_MONITORJOB) {
-			// 配下のジョブを停止する。
-			List<JobSessionJobEntity> childJob = QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
-			for (JobSessionJobEntity job : childJob) {
-				forceStopJob2(sessionId, jobunitId, job.getId().getJobId(), endStatus, endValue);
-			}
-		} else {
+		if (sessionJob.hasSessionNode()) {
 			// 配下のノードを停止する。
 			List<JobSessionNodeEntity> nodeJobList = sessionJob.getJobSessionNodeEntities();
 			for (JobSessionNodeEntity node : nodeJobList) {
@@ -185,7 +180,14 @@ public class OperateForceStopOfJob {
 					forceStopNode2(sessionId, jobunitId, jobId, node.getId().getFacilityId(), endValue);
 				}
 			}
+		} else {
+			// 配下のジョブを停止する。
+			List<JobSessionJobEntity> childJob = QueryUtil.getChildJobSessionJob(sessionId, jobunitId, jobId);
+			for (JobSessionJobEntity job : childJob) {
+				forceStopJob2(sessionId, jobunitId, job.getId().getJobId(), endStatus, endValue);
+			}
 		}
+
 		//自身の状態を変更する。
 		sessionJob.setStatus(StatusConstant.TYPE_END);
 		sessionJob.setEndStatus(endStatus);
@@ -195,5 +197,23 @@ public class OperateForceStopOfJob {
 		JobSessionChangeDataCache.add(sessionJob);
 		// 収集データ更新
 		CollectDataUtil.put(sessionJob);
+
+		// ジョブキューに入っているジョブの場合は、キューから除去する。
+		// 通常、終了するジョブについては endJob でキューからの除去を行うが、
+		// forceStopJobでは配下のジョブに対しては endJob を呼ばないので、本処理を実施する必要がある。
+		// 配下ではない(引数で指定した)ジョブに対しては、endJob と本処理で同じことを2回繰り返す可能性があるが、
+		// 冗長であること以外に副作用があるわけではない。
+		if (status == StatusConstant.TYPE_RUNNING_QUEUE || status == StatusConstant.TYPE_SUSPEND_QUEUE) {
+			String queueId = sessionJob.getJobInfoEntity().getQueueIdIfEnabled();
+			if (queueId != null) {
+				try {
+					JobQueue queue = Singletons.get(JobQueueContainer.class).get(queueId);
+					queue.remove(sessionId, jobunitId, jobId);
+				} catch (JobQueueNotFoundException e) {
+					// キューが存在しないとしても、結果として"キューからの除去"という目的は果たせているので、ログだけ出して無視する。
+					m_log.info("forceStopJob2: " + e);
+				}
+			}
+		}
 	}
 }

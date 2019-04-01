@@ -44,7 +44,7 @@ import com.clustercontrol.utility.settings.platform.xml.MailTemplate;
 import com.clustercontrol.utility.settings.platform.xml.MailTemplateInfo;
 import com.clustercontrol.utility.settings.platform.xml.MailTemplateType;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.ImportProcessDialog;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
@@ -244,7 +244,7 @@ public class MailTemplateAction {
 				//重複時、インポート処理方法を確認する
 				if(!ImportProcessMode.isSameprocess()){
 					String[] args = {mailTemplateInfo.getMailTemplateId()};
-					ImportProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
+					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
 							null, Messages.getString("message.import.confirm2", args));
 				    ImportProcessMode.setProcesstype(dialog.open());
 				    ImportProcessMode.setSameprocess(dialog.getToggleState());

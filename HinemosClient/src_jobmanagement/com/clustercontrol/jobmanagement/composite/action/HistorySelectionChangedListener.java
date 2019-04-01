@@ -26,6 +26,7 @@ import com.clustercontrol.jobmanagement.composite.HistoryComposite;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
 import com.clustercontrol.jobmanagement.view.JobMapViewIF;
+import com.clustercontrol.util.ViewUtil;
 
 /**
  * ジョブ[履歴]ビューのテーブルビューア用のSelectionChangedListenerです。
@@ -106,6 +107,10 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 					return;
 				}
 				view.update(managerName, sessionId, jobunitId);
+				// 同時実行制御ビューに隠れている可能性があるのでアクティブ化が必要
+				ViewUtil.activate(JobDetailView.class);
+				// アクティブなビューを戻しておかないと、その後の処理に影響がある
+				ViewUtil.activate(JobHistoryView.class);
 			}
 		} else {
 			//ジョブマップ[履歴]ビューを更新する

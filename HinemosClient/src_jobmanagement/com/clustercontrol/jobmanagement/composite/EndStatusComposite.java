@@ -112,7 +112,7 @@ public class EndStatusComposite extends Composite {
 		this.m_normalValue.setLayoutData(new GridData(100,
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_normalValue.addVerifyListener(
-				new NumberVerifyListener(DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH));
+				new NumberVerifyListener(DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH));
 		this.m_normalValue.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -126,7 +126,7 @@ public class EndStatusComposite extends Composite {
 		this.m_normalStartRange.setLayoutData(new GridData(100,
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_normalStartRange.addVerifyListener(
-				new NumberVerifyListener(DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH));
+				new NumberVerifyListener(DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH));
 		this.m_normalStartRange.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -145,7 +145,7 @@ public class EndStatusComposite extends Composite {
 		this.m_normalEndRange.setLayoutData(new GridData(100,
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_normalEndRange.addVerifyListener(
-				new NumberVerifyListener(DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH));
+				new NumberVerifyListener(DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH));
 		this.m_normalEndRange.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -166,7 +166,7 @@ public class EndStatusComposite extends Composite {
 		this.m_warningValue.setLayoutData(new GridData(100,
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_warningValue.addVerifyListener(
-				new NumberVerifyListener(DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH));
+				new NumberVerifyListener(DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH));
 		this.m_warningValue.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -180,7 +180,7 @@ public class EndStatusComposite extends Composite {
 		this.m_warningStartRange.setLayoutData(new GridData(100,
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_warningStartRange.addVerifyListener(
-				new NumberVerifyListener(DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH));
+				new NumberVerifyListener(DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH));
 		this.m_warningStartRange.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -200,7 +200,7 @@ public class EndStatusComposite extends Composite {
 		this.m_warningEndRange.setLayoutData(new GridData(100,
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_warningEndRange.addVerifyListener(
-				new NumberVerifyListener(DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH));
+				new NumberVerifyListener(DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH));
 		this.m_warningEndRange.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -221,7 +221,7 @@ public class EndStatusComposite extends Composite {
 		this.m_abnormalValue.setLayoutData(new GridData(100,
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_abnormalValue.addVerifyListener(
-				new NumberVerifyListener(DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH));
+				new NumberVerifyListener(DataRangeConstant.INTEGER_LOW, DataRangeConstant.INTEGER_HIGH));
 		this.m_abnormalValue.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {

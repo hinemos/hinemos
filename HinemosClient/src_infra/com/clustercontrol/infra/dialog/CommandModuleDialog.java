@@ -230,7 +230,7 @@ public class CommandModuleDialog extends CommonDialog {
 		m_methodSSH = new Button(commandModuleComposite, SWT.RADIO);
 		gridData = new GridData();
 		gridData.horizontalSpan = 6;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalIndent = 15;
 		m_methodSSH.setText(AccessMethodMessage.STRING_SSH);
@@ -239,7 +239,7 @@ public class CommandModuleDialog extends CommonDialog {
 		m_methodWinRM = new Button(commandModuleComposite, SWT.RADIO);
 		gridData = new GridData();
 		gridData.horizontalSpan = 10;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalIndent = 15;
 		m_methodWinRM.setText(AccessMethodMessage.STRING_WINRM);
@@ -259,7 +259,7 @@ public class CommandModuleDialog extends CommonDialog {
 		m_precheckFlg = new Button(commandModuleComposite, SWT.CHECK |SWT.TOP);
 		gridData = new GridData();
 		gridData.horizontalSpan = DIALOG_WIDTH;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_precheckFlg.setText(Messages.getString("infra.module.check.command.run.before"));
 		m_precheckFlg.setLayoutData(gridData);
@@ -279,7 +279,7 @@ public class CommandModuleDialog extends CommonDialog {
 		m_proceedIfFailFlg = new Button(commandModuleComposite, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = DIALOG_WIDTH;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_proceedIfFailFlg.setText(Messages.getString("infra.module.inexec.after.exec.error"));
 		m_proceedIfFailFlg.setLayoutData(gridData);
@@ -320,7 +320,8 @@ public class CommandModuleDialog extends CommonDialog {
 		gridData.grabExcessVerticalSpace = true;
 		gridData.horizontalIndent = 25;
 		m_commandExec.setLayoutData(gridData);
-		m_commandExec.setToolTipText(Messages.getString("infra.command.tooltip"));
+		String tooltipText = Messages.getString("infra.command.tooltip") + Messages.getString("replace.parameter.node");
+		m_commandExec.setToolTipText(tooltipText);
 		m_commandExec.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -371,7 +372,7 @@ public class CommandModuleDialog extends CommonDialog {
 		gridData.grabExcessVerticalSpace = true;
 		gridData.horizontalIndent = 25;
 		m_commandCheck.setLayoutData(gridData);
-		m_commandCheck.setToolTipText(Messages.getString("infra.command.tooltip"));
+		m_commandCheck.setToolTipText(tooltipText);
 		m_commandCheck.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent e) {
@@ -403,7 +404,7 @@ public class CommandModuleDialog extends CommonDialog {
 		m_validFlg = new Button(commandModuleComposite, SWT.CHECK);
 		gridData = new GridData();
 		gridData.horizontalSpan = DIALOG_WIDTH;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		m_validFlg.setText(Messages.getString("setting.valid.confirmed"));
 		m_validFlg.setLayoutData(gridData);

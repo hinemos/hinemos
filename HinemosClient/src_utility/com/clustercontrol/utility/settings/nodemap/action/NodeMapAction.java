@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 
 import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
 import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.bean.FacilityIdConstant;
 import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -143,7 +144,7 @@ public class NodeMapAction {
 		// ROOT付与
 		com.clustercontrol.ws.repository.FacilityInfo ｆacilityInfo=new com.clustercontrol.ws.repository.FacilityInfo();
 		ｆacilityInfo.setFacilityType(FacilityConstant.TYPE_SCOPE);
-		ｆacilityInfo.setFacilityId("_ROOT_");
+		ｆacilityInfo.setFacilityId(FacilityIdConstant.ROOT);
 		
 		scopeList.add(0, ｆacilityInfo);
 		

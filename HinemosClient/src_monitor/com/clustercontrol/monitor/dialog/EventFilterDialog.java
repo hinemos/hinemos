@@ -30,6 +30,7 @@ import com.clustercontrol.bean.Property;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.action.GetEventFilterProperty;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
 import com.clustercontrol.viewer.PropertySheet;
@@ -46,6 +47,9 @@ public class EventFilterDialog extends CommonDialog {
 	/** プロパティシート。 */
 	private PropertySheet propertySheet = null;
 
+	/** マネージャ名 */
+	private String managerName = null;
+	
 	// 後でpackするためsizeXはダミーの値。
 	private static final int sizeX = 500;
 	private static final int sizeY = 700;
@@ -54,12 +58,20 @@ public class EventFilterDialog extends CommonDialog {
 	private static Map<UISession, Property> filterPropertyCache = new ConcurrentHashMap<>();
 
 	/**
+	 * イベント表示設定情報
+	 */
+	private MultiManagerEventDisplaySettingInfo eventDspSetting = null;
+	
+	
+	/**
 	 * インスタンスを返します。
 	 *
 	 * @param parent 親のシェルオブジェクト
 	 */
-	public EventFilterDialog(Shell parent) {
+	public EventFilterDialog(Shell parent, String managerName, MultiManagerEventDisplaySettingInfo eventDspSetting) {
 		super(parent);
+		this.managerName = managerName;
+		this.eventDspSetting = eventDspSetting;
 	}
 
 	/**
@@ -120,6 +132,19 @@ public class EventFilterDialog extends CommonDialog {
 
 		this.createPropertySheet(table);
 
+		label = new Label(parent, SWT.LEFT);
+		WidgetTestUtil.setTestId(this, "namedescription", label);
+		gridData = new GridData();
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		gridData.horizontalSpan = 1;
+		label.setLayoutData(gridData);
+		
+		if (this.eventDspSetting.hasHasMultiDisplayName(managerName)) {
+			//マネジャー毎にユーザ項目の表示名が異なる場合の説明メッセージを表示
+			label.setText(Messages.getString("dialog.monitor.filter.events.multiuseritemname"));
+		}
+		
 		// ラインを引く
 		Label line = new Label(parent, SWT.SEPARATOR | SWT.HORIZONTAL);
 		WidgetTestUtil.setTestId(this, "line", line);
@@ -128,7 +153,7 @@ public class EventFilterDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalSpan = 1;
 		line.setLayoutData(gridData);
-
+		
 		// 画面中央に
 		Display display = shell.getDisplay();
 		shell.setLocation((display.getBounds().width - shell.getSize().x) / 2,
@@ -234,7 +259,7 @@ public class EventFilterDialog extends CommonDialog {
 	 * Initialize a filter property
 	 */
 	private Property initFilterProperty() {
-		Property property = new GetEventFilterProperty().getProperty();
+		Property property = new GetEventFilterProperty().getProperty(this.eventDspSetting, this.managerName);
 		filterPropertyCache.put(RWT.getUISession(), property);
 		return property;
 	}

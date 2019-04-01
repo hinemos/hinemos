@@ -281,8 +281,6 @@ public class JobFigure extends Figure implements ISelection {
 
 		// 背景を作成する
 		if (isIconImageJob()) {
-			// FIXME レイヤー構造が若干複雑。整理したい。
-
 			// 最上位レイヤー
 			m_baseLayer = new Layer();
 			m_baseLayer.setLayoutManager(new FlowLayout(false));
@@ -305,6 +303,14 @@ public class JobFigure extends Figure implements ISelection {
 				ImageFigure referImageFigure = new ImageFigure(ClusterControlPlugin.getDefault().getImageRegistry().get(ClusterControlPlugin.IMG_REFER)
 						, PositionConstants.SOUTH_WEST);
 				layerStack.add(referImageFigure);
+			}
+			// 同時実行制御キュー
+			else {
+				ImageFigure queueImage = getQueueIcon();
+				if (queueImage != null) {
+					queueImage.setAlignment(PositionConstants.SOUTH_WEST);
+					layerStack.add(queueImage);
+				}
 			}
 			// ジョブネット
 			if (m_jobTreeItem.getData().getType() == JobConstant.TYPE_JOBNET) {
@@ -416,16 +422,24 @@ public class JobFigure extends Figure implements ISelection {
 			});
 
 			m_background.add(layerTitle);
-			
 
 			// 待ちアイコンを配置
-			ImageFigure imageFigure = getWaitingIcon();
-			if (imageFigure != null) {
+			ImageFigure waitingIcon = getWaitingIcon();
+			if (waitingIcon != null) {
 				m_log.debug("wait icon");
-				m_layerXY.add(imageFigure);
-				m_layerXY.setConstraint(imageFigure, zeroRectangle);
+				m_layerXY.add(waitingIcon);
+				m_layerXY.setConstraint(waitingIcon, zeroRectangle);
 			}
 
+			// ジョブキューアイコンを配置
+			ImageFigure queueIcon = getQueueIcon();
+			if (queueIcon != null) {
+				// 待ち条件アイコンの有無で表示位置調整
+				Point leftTop = (waitingIcon == null) ? new Point(0, 0) : new Point(16, 0);
+				m_layerXY.add(queueIcon);
+				m_layerXY.setConstraint(queueIcon, new Rectangle(leftTop, new Dimension(-1, -1)));
+			}
+			
 			// 色を設定
 			setBgColor();
 
@@ -556,6 +570,34 @@ public class JobFigure extends Figure implements ISelection {
 		return waitImageFigure;
 	}
 
+	private ImageFigure getQueueIcon() {
+		JobWaitRuleInfo waitRule = m_jobTreeItem.getData().getWaitRule();
+		if (waitRule == null) return null;
+
+		Boolean queueFlg = waitRule.isQueueFlg();
+		if (queueFlg == null || !queueFlg.booleanValue()) return null;
+
+		// アイコンイメージ
+		ImageFigure figure = new ImageFigure(
+				ClusterControlPlugin.getDefault().getImageRegistry().get(ClusterControlPlugin.IMG_QUEUE));
+
+		// ツールチップ
+		ArrayList<String> messages = new ArrayList<String>();
+		messages.add(Messages.get("jobqueue.id") + ":" + waitRule.getQueueId());
+
+		Panel tooltip = new Panel();
+		tooltip.setLayoutManager(new FlowLayout(false));
+		for (String message : messages){
+			Panel subPanel = new Panel();
+			subPanel.setLayoutManager(new FlowLayout(true));
+			subPanel.add(new Label(message));
+			tooltip.add(subPanel);
+		}
+		figure.setToolTip(tooltip);
+
+		return figure;
+	}
+	
 	public Dimension getBackgroundSize() {
 		if (isIconImageJob()) {
 			return m_baseLayer.getSize();
@@ -682,6 +724,12 @@ public class JobFigure extends Figure implements ISelection {
 				break;
 			case StatusConstant.TYPE_WAIT:
 				backColor = JobMapColor.lightgray;
+				break;
+			case StatusConstant.TYPE_RUNNING_QUEUE: // 実行中(キュー待機)
+				backColor = JobMapColor.blue;
+				break;
+			case StatusConstant.TYPE_SUSPEND_QUEUE: // 中断(キュー待機)
+				backColor = JobMapColor.yellow;
 				break;
 			default:
 				break;

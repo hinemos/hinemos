@@ -97,8 +97,6 @@ public class JobUtil {
 			modifyReferJob(clone);
 		}
 
-		//FIXME ジョブユニットIDを変更する
-
 		return clone;
 	}
 
@@ -273,6 +271,12 @@ public class JobUtil {
 					waitRule.getExclusiveBranchNextJobOrderList().clear();
 					waitRule.getExclusiveBranchNextJobOrderList().addAll(list);
 				}
+			}
+			
+			// ジョブキューの設定はクリアする
+			if (waitRule != null) {
+				waitRule.setQueueFlg(false);
+				waitRule.setQueueId(null);
 			}
 		}
 

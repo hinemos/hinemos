@@ -8,6 +8,7 @@
 
 package com.clustercontrol.infra.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -126,7 +127,9 @@ public class CommandModuleInfo extends InfraModuleInfo<CommandModuleInfo> {
 		// コマンド文字列の置換
 		String bindCommand;
 		try {
-			HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap);
+			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
+			ArrayList<String> inKeyList = StringBinder.getKeyList(command, maxReplaceWord);
+			HashMap<String, String> map = InfraParameterUtil.createBindMap(node, paramMap, inKeyList);
 			StringBinder binder = new StringBinder(map);
 			bindCommand = binder.bindParam(command);
 		} catch (Exception e) {

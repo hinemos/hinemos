@@ -36,6 +36,7 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
+import com.clustercontrol.bean.DefaultLayoutSettingManager;
 import com.clustercontrol.monitor.plugin.IMonitorPlugin;
 import com.clustercontrol.monitor.plugin.LoadMonitorPlugin;
 import com.clustercontrol.util.EndpointManager;
@@ -106,6 +107,12 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	/** チェックなしアイコンの取得キー */
 	public static final String IMG_UNCHECKED = "unchecked";
 
+	/** ラジオONアイコンの取得キー */
+	public static final String IMG_RADIO_ON = "radio_on";
+
+	/** ラジオOFFアイコンの取得キー */
+	public static final String IMG_RADIO_OFF = "radio_off";
+	
 	/** 実行状態(白)アイコンの取得キー */
 	public static final String IMG_STATUS_WHITE = "status_white";
 
@@ -160,13 +167,17 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	public static final String IMG_EXPAND = "expand";
 	/** 参照アイコンの取得キー */
 	public static final String IMG_REFER = "refer";
-
+	/** ジョブマップ:キューアイコンの取得キー */
+	public static final String IMG_QUEUE = "queue";
 
 	/** Initial window size and position */
 	public static final Rectangle WINDOW_INIT_SIZE = new Rectangle( -1, -1, 1024, 768 );
 
 	/** スコープの区切り文字（セパレータ） */
 	private final static String DEFAULT_SEPARATOR = ">";
+
+	/** デフォルトレイアウトファイル　ファイル名 */
+	private final static String DEFAULT_LAYOUTFILE_NAME = "default_layout.xml";
 
 
 	/** The shared instance */
@@ -187,6 +198,7 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 
 	private ILogListener listener;
 
+	private DefaultLayoutSettingManager defaultLayoutManager;
 	// ----- コンストラクタ ----- //
 
 	/**
@@ -202,12 +214,21 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		
 		// 定期的にリロードする処理を開始する
 		String _configFileDir = System.getProperty("hinemos.web.conf.dir");
-		if (null!=_configFileDir && "".equals(_configFileDir)) {
-			String _configFilePath = _configFileDir + File.separator + "log4j.properties";
+		
+		String configFileLayoutDir = null;
+		
+		if (null != _configFileDir && !"".equals(_configFileDir)) {
+			String _configFilePath = new File(_configFileDir, "log4j.properties").getAbsolutePath();
 			m_log.info("configFilePath = " + _configFilePath);
 			PropertyConfigurator.configureAndWatch(_configFilePath, _intervalMsec);
+			configFileLayoutDir = _configFileDir;
+		} else {
+			//isRapはこのタイミングでは使用できないため、hinemos.web.conf.dirがない場合、リッチクライアントと判断する
+			configFileLayoutDir = System.getProperty("hinemos.rich.conf.dir");
 		}
-
+		
+		defaultLayoutManager = new DefaultLayoutSettingManager(new File(configFileLayoutDir, DEFAULT_LAYOUTFILE_NAME));
+		
 		setDefault(this);
 		try {
 			resourceBundle = ResourceBundle
@@ -332,6 +353,13 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	}
 
 	/**
+	 * Returns DefaultLayoutSettingManager
+	 */
+	public DefaultLayoutSettingManager getDefaultLayoutSettingManager() {
+		return defaultLayoutManager;
+	}
+	
+	/**
 	 * プラグインクラスが保持するImageRegistryにイメージを登録します。
 	 * 
 	 * @param registry
@@ -355,6 +383,8 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		this.registerImage(registry, IMG_MONITORJOB, "monitor_job.gif");
 		this.registerImage(registry, IMG_CHECKED, "checked.gif");
 		this.registerImage(registry, IMG_UNCHECKED, "unchecked.gif");
+		this.registerImage(registry, IMG_RADIO_ON, "radio_on.gif");
+		this.registerImage(registry, IMG_RADIO_OFF, "radio_off.gif");
 		this.registerImage(registry, IMG_STATUS_BLUE, "status_blue.gif");
 		this.registerImage(registry, IMG_STATUS_GREEN, "status_green.gif");
 		this.registerImage(registry, IMG_STATUS_RED, "status_red.gif");
@@ -380,6 +410,7 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		this.registerImage(registry, IMG_COLLAPSE, "collapse.gif");
 		this.registerImage(registry, IMG_EXPAND, "expand.gif");
 		this.registerImage(registry, IMG_REFER, "refer_mark.gif");
+		this.registerImage(registry, IMG_QUEUE, "queue.png");
 
 		// For xCloud
 		registerImage(registry, "user", "user.png");
@@ -480,7 +511,6 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	}
 
 	/******************************** xCloud ********************************/
-	// TODO Improve or better integrate the following
 	private static String pluginPath;
 	private Map<EndpointUnit, IHinemosManager> hinemosManagers = new HashMap<>();
 	public static String getPluginPath() {

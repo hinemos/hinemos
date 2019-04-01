@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -161,44 +160,24 @@ public class TemplateSetListComposite extends Composite {
 		Map<String, String> errorMsgs = new ConcurrentHashMap<String, String>();
 		for(String managerName : EndpointManager.getActiveManagerSet()) {
 			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			boolean key = false;
 			try {
-				String version = wrapper.getVersion();
-				m_log.debug("version : " + version);
-				key = true;
-				if (version.length() > 7) {
-					boolean result = Boolean.valueOf(version.substring(7, version.length()));
-					if (!result) {
-						MessageDialog.openWarning(
-								null,
-								Messages.getString("warning"),
-								Messages.getString("message.expiration.term.invalid"));
-					}
-				}
+				list = wrapper.getTemplateSetInfoList(null);
+			} catch (InvalidRole_Exception e) {
+				// 権限なし
+				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
-				String errMsg = HinemosMessage.replace(e.getMessage());
-				m_log.warn("getVersionError, " + errMsg);
-				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
+				// 上記以外の例外
+				String errMessage = HinemosMessage.replace(e.getMessage());
+				m_log.warn("update(), " + errMessage, e);
+				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
 			}
-			if (key) {
-				try {
-					list = wrapper.getTemplateSetInfoList(null);
-				} catch (InvalidRole_Exception e) {
-					// 権限なし
-					errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
-				} catch (Exception e) {
-					// 上記以外の例外
-					String errMessage = HinemosMessage.replace(e.getMessage());
-					m_log.warn("update(), " + errMessage, e);
-					errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
-				}
-				if(list == null){
-					list = new ArrayList<TemplateSetInfo>();
-				}
+			if(list == null){
+				list = new ArrayList<TemplateSetInfo>();
+			}
 
 				dispDataMap.put(managerName, list);
 			}
-		}
+		
 
 		//メッセージ表示
 		if( 0 < errorMsgs.size() ){

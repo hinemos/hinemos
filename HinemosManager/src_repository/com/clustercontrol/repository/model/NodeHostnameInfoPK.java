@@ -18,7 +18,7 @@ import javax.persistence.*;
  * 
  */
 @Embeddable
-public class NodeHostnameInfoPK implements Serializable {
+public class NodeHostnameInfoPK implements Serializable, Cloneable {
 	//default serial version id, required for serializable classes.
 	private static final long serialVersionUID = 1L;
 	private String facilityId;
@@ -83,5 +83,17 @@ public class NodeHostnameInfoPK implements Serializable {
 				this.hostname
 		};
 		return Arrays.toString(names) + " = " + Arrays.toString(values);
+	}
+	
+	@Override
+	public NodeHostnameInfoPK clone() {
+		try {
+			NodeHostnameInfoPK cloneInfo = (NodeHostnameInfoPK)super.clone();
+			cloneInfo.facilityId = this.facilityId;
+			cloneInfo.hostname = this.hostname;
+			return cloneInfo;
+		} catch (CloneNotSupportedException e) {
+			throw new InternalError(e.toString());
+		}
 	}
 }

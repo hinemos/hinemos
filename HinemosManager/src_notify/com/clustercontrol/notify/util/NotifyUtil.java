@@ -36,6 +36,7 @@ import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.EventNotifyInfo;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.model.NotifyCommandInfo;
@@ -49,6 +50,7 @@ import com.clustercontrol.notify.model.NotifyMailInfo;
 import com.clustercontrol.notify.model.NotifyStatusInfo;
 import com.clustercontrol.notify.monitor.util.OwnerDispatcher;
 import com.clustercontrol.repository.model.FacilityInfo;
+import com.clustercontrol.repository.model.NodeConfigSettingInfo;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.FacilityTreeCache;
@@ -107,8 +109,8 @@ public class NotifyUtil {
 	 * @param outputInfo 通知情報
 	 * @return 通知情報のハッシュ
 	 */
-	public static Map<String, String> createParameter(OutputBasicInfo outputInfo) {
-		return createParameter(outputInfo, null);
+	public static Map<String, String> createParameter(OutputBasicInfo outputInfo, ArrayList<String> inKeyList) {
+		return createParameter(outputInfo, null, inKeyList);
 	}
 
 	/**
@@ -117,7 +119,7 @@ public class NotifyUtil {
 	 * @param notifyInfo 通知設定情報
 	 * @return 通知情報のハッシュ
 	 */
-	public static Map<String, String> createParameter(OutputBasicInfo outputInfo, NotifyInfo notifyInfo) {
+	public static Map<String, String> createParameter(OutputBasicInfo outputInfo, NotifyInfo notifyInfo, ArrayList<String> inKeyList) {
 		Map<String, String> param = null;
 		SimpleDateFormat sdf = null;
 		param = new HashMap<String, String>();
@@ -209,7 +211,7 @@ public class NotifyUtil {
 					param.put(_KEY_FACILITY_NAME, HinemosMessage.replace(facility.getFacilityName(), locale));
 					if (FacilityUtil.isNode(facility)) {
 						NodeInfo nodeInfo = repositoryCtrl.getNode(outputInfo.getFacilityId());
-						Map<String, String> variable = RepositoryUtil.createNodeParameter(nodeInfo);
+						Map<String, String> variable = RepositoryUtil.createNodeParameter(nodeInfo, inKeyList);
 						param.putAll(variable);
 					}
 				} catch (FacilityNotFound e) {
@@ -482,6 +484,18 @@ public class NotifyUtil {
 					return RoleIdConstant.INTERNAL;
 				}
 			}
+			// 通知元が構成情報設定の場合
+			else if(pluginId.matches(HinemosModuleConstant.NODE_CONFIG_SETTING)){
+				// オブジェクト権限チェックのため、cc_node_config_setting_infoのowner_role_idを設定する
+				NodeConfigSettingInfo nodeConfigSettingEntity
+				= em.find(NodeConfigSettingInfo.class, monitorId, ObjectPrivilegeMode.NONE);
+				
+				if (nodeConfigSettingEntity != null && nodeConfigSettingEntity.getOwnerRoleId() != null) {
+					return nodeConfigSettingEntity.getOwnerRoleId();
+				} else {
+					return RoleIdConstant.INTERNAL;
+				}
+			}
 			// 通知元が上記以外のプラグインIDの場合
 			// ここでオプション等の任意イベント（設定に紐付かないタイプのもの）についてオーナロールを決定することが可能。
 			// プラグインIDをキーにして、ObjectSharingServiceにIEventOwnerDeterminerの実装クラスを登録し、
@@ -507,5 +521,516 @@ public class NotifyUtil {
 			}
 		}
 		return locale;
+	}
+	
+	public static void setUserItemValue(EventNotifyInfo event, int index, String value) {
+		switch (index) {
+		case 1:
+			event.setUserItem01(value);
+			break;
+		
+		case 2:
+			event.setUserItem02(value);
+			break;
+		
+		case 3:
+			event.setUserItem03(value);
+			break;
+		
+		case 4:
+			event.setUserItem04(value);
+			break;
+		
+		case 5:
+			event.setUserItem05(value);
+			break;
+		
+		case 6:
+			event.setUserItem06(value);
+			break;
+		
+		case 7:
+			event.setUserItem07(value);
+			break;
+		
+		case 8:
+			event.setUserItem08(value);
+			break;
+		
+		case 9:
+			event.setUserItem09(value);
+			break;
+		
+		case 10:
+			event.setUserItem10(value);
+			break;
+		
+		case 11:
+			event.setUserItem11(value);
+			break;
+		
+		case 12:
+			event.setUserItem12(value);
+			break;
+		
+		case 13:
+			event.setUserItem13(value);
+			break;
+		
+		case 14:
+			event.setUserItem14(value);
+			break;
+		
+		case 15:
+			event.setUserItem15(value);
+			break;
+		
+		case 16:
+			event.setUserItem16(value);
+			break;
+		
+		case 17:
+			event.setUserItem17(value);
+			break;
+		
+		case 18:
+			event.setUserItem18(value);
+			break;
+		
+		case 19:
+			event.setUserItem19(value);
+			break;
+		
+		case 20:
+			event.setUserItem20(value);
+			break;
+		
+		case 21:
+			event.setUserItem21(value);
+			break;
+		
+		case 22:
+			event.setUserItem22(value);
+			break;
+		
+		case 23:
+			event.setUserItem23(value);
+			break;
+		
+		case 24:
+			event.setUserItem24(value);
+			break;
+		
+		case 25:
+			event.setUserItem25(value);
+			break;
+		
+		case 26:
+			event.setUserItem26(value);
+			break;
+		
+		case 27:
+			event.setUserItem27(value);
+			break;
+		
+		case 28:
+			event.setUserItem28(value);
+			break;
+		
+		case 29:
+			event.setUserItem29(value);
+			break;
+		
+		case 30:
+			event.setUserItem30(value);
+			break;
+		
+		case 31:
+			event.setUserItem31(value);
+			break;
+		
+		case 32:
+			event.setUserItem32(value);
+			break;
+		
+		case 33:
+			event.setUserItem33(value);
+			break;
+		
+		case 34:
+			event.setUserItem34(value);
+			break;
+		
+		case 35:
+			event.setUserItem35(value);
+			break;
+		
+		case 36:
+			event.setUserItem36(value);
+			break;
+		
+		case 37:
+			event.setUserItem37(value);
+			break;
+		
+		case 38:
+			event.setUserItem38(value);
+			break;
+		
+		case 39:
+			event.setUserItem39(value);
+			break;
+		
+		case 40:
+			event.setUserItem40(value);
+			break;
+			
+		default:
+			break;
+		}
+	}
+	
+	public static String getUserItemValue(EventNotifyInfo event, int index) {
+		switch (index) {
+		case 1:
+			return event.getUserItem01();
+		case 2:
+			return event.getUserItem02();
+		case 3:
+			return event.getUserItem03();
+		case 4:
+			return event.getUserItem04();
+		case 5:
+			return event.getUserItem05();
+		case 6:
+			return event.getUserItem06();
+		case 7:
+			return event.getUserItem07();
+		case 8:
+			return event.getUserItem08();
+		case 9:
+			return event.getUserItem09();
+		case 10:
+			return event.getUserItem10();
+		case 11:
+			return event.getUserItem11();
+		case 12:
+			return event.getUserItem12();
+		case 13:
+			return event.getUserItem13();
+		case 14:
+			return event.getUserItem14();
+		case 15:
+			return event.getUserItem15();
+		case 16:
+			return event.getUserItem16();
+		case 17:
+			return event.getUserItem17();
+		case 18:
+			return event.getUserItem18();
+		case 19:
+			return event.getUserItem19();
+		case 20:
+			return event.getUserItem20();
+		case 21:
+			return event.getUserItem21();
+		case 22:
+			return event.getUserItem22();
+		case 23:
+			return event.getUserItem23();
+		case 24:
+			return event.getUserItem24();
+		case 25:
+			return event.getUserItem25();
+		case 26:
+			return event.getUserItem26();
+		case 27:
+			return event.getUserItem27();
+		case 28:
+			return event.getUserItem28();
+		case 29:
+			return event.getUserItem29();
+		case 30:
+			return event.getUserItem30();
+		case 31:
+			return event.getUserItem31();
+		case 32:
+			return event.getUserItem32();
+		case 33:
+			return event.getUserItem33();
+		case 34:
+			return event.getUserItem34();
+		case 35:
+			return event.getUserItem35();
+		case 36:
+			return event.getUserItem36();
+		case 37:
+			return event.getUserItem37();
+		case 38:
+			return event.getUserItem38();
+		case 39:
+			return event.getUserItem39();
+		case 40:
+			return event.getUserItem40();
+		default:
+			break;
+		}
+		return null;
+	}
+	
+	
+	public static void setUserItemValue(OutputBasicInfo event, int index, String value) {
+		switch (index) {
+		case 1:
+			event.setUserItem01(value);
+			break;
+		
+		case 2:
+			event.setUserItem02(value);
+			break;
+		
+		case 3:
+			event.setUserItem03(value);
+			break;
+		
+		case 4:
+			event.setUserItem04(value);
+			break;
+		
+		case 5:
+			event.setUserItem05(value);
+			break;
+		
+		case 6:
+			event.setUserItem06(value);
+			break;
+		
+		case 7:
+			event.setUserItem07(value);
+			break;
+		
+		case 8:
+			event.setUserItem08(value);
+			break;
+		
+		case 9:
+			event.setUserItem09(value);
+			break;
+		
+		case 10:
+			event.setUserItem10(value);
+			break;
+		
+		case 11:
+			event.setUserItem11(value);
+			break;
+		
+		case 12:
+			event.setUserItem12(value);
+			break;
+		
+		case 13:
+			event.setUserItem13(value);
+			break;
+		
+		case 14:
+			event.setUserItem14(value);
+			break;
+		
+		case 15:
+			event.setUserItem15(value);
+			break;
+		
+		case 16:
+			event.setUserItem16(value);
+			break;
+		
+		case 17:
+			event.setUserItem17(value);
+			break;
+		
+		case 18:
+			event.setUserItem18(value);
+			break;
+		
+		case 19:
+			event.setUserItem19(value);
+			break;
+		
+		case 20:
+			event.setUserItem20(value);
+			break;
+		
+		case 21:
+			event.setUserItem21(value);
+			break;
+		
+		case 22:
+			event.setUserItem22(value);
+			break;
+		
+		case 23:
+			event.setUserItem23(value);
+			break;
+		
+		case 24:
+			event.setUserItem24(value);
+			break;
+		
+		case 25:
+			event.setUserItem25(value);
+			break;
+		
+		case 26:
+			event.setUserItem26(value);
+			break;
+		
+		case 27:
+			event.setUserItem27(value);
+			break;
+		
+		case 28:
+			event.setUserItem28(value);
+			break;
+		
+		case 29:
+			event.setUserItem29(value);
+			break;
+		
+		case 30:
+			event.setUserItem30(value);
+			break;
+		
+		case 31:
+			event.setUserItem31(value);
+			break;
+		
+		case 32:
+			event.setUserItem32(value);
+			break;
+		
+		case 33:
+			event.setUserItem33(value);
+			break;
+		
+		case 34:
+			event.setUserItem34(value);
+			break;
+		
+		case 35:
+			event.setUserItem35(value);
+			break;
+		
+		case 36:
+			event.setUserItem36(value);
+			break;
+		
+		case 37:
+			event.setUserItem37(value);
+			break;
+		
+		case 38:
+			event.setUserItem38(value);
+			break;
+		
+		case 39:
+			event.setUserItem39(value);
+			break;
+		
+		case 40:
+			event.setUserItem40(value);
+			break;
+			
+		default:
+			break;
+		}
+	}
+	
+	public static String getUserItemValue(OutputBasicInfo out, int index) {
+		switch (index) {
+		case 1:
+			return out.getUserItem01();
+		case 2:
+			return out.getUserItem02();
+		case 3:
+			return out.getUserItem03();
+		case 4:
+			return out.getUserItem04();
+		case 5:
+			return out.getUserItem05();
+		case 6:
+			return out.getUserItem06();
+		case 7:
+			return out.getUserItem07();
+		case 8:
+			return out.getUserItem08();
+		case 9:
+			return out.getUserItem09();
+		case 10:
+			return out.getUserItem10();
+		case 11:
+			return out.getUserItem11();
+		case 12:
+			return out.getUserItem12();
+		case 13:
+			return out.getUserItem13();
+		case 14:
+			return out.getUserItem14();
+		case 15:
+			return out.getUserItem15();
+		case 16:
+			return out.getUserItem16();
+		case 17:
+			return out.getUserItem17();
+		case 18:
+			return out.getUserItem18();
+		case 19:
+			return out.getUserItem19();
+		case 20:
+			return out.getUserItem20();
+		case 21:
+			return out.getUserItem21();
+		case 22:
+			return out.getUserItem22();
+		case 23:
+			return out.getUserItem23();
+		case 24:
+			return out.getUserItem24();
+		case 25:
+			return out.getUserItem25();
+		case 26:
+			return out.getUserItem26();
+		case 27:
+			return out.getUserItem27();
+		case 28:
+			return out.getUserItem28();
+		case 29:
+			return out.getUserItem29();
+		case 30:
+			return out.getUserItem30();
+		case 31:
+			return out.getUserItem31();
+		case 32:
+			return out.getUserItem32();
+		case 33:
+			return out.getUserItem33();
+		case 34:
+			return out.getUserItem34();
+		case 35:
+			return out.getUserItem35();
+		case 36:
+			return out.getUserItem36();
+		case 37:
+			return out.getUserItem37();
+		case 38:
+			return out.getUserItem38();
+		case 39:
+			return out.getUserItem39();
+		case 40:
+			return out.getUserItem40();
+		default:
+			break;
+		}
+		return null;
 	}
 }

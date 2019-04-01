@@ -38,4 +38,6 @@ public class MaintenanceTypeMstConstant {
 
 	public static final String DELETE_COLLECT_BINFILE_DATA = "DELETE_COLLECT_BINFILE_DATA";
 	public static final String DELETE_COLLECT_PCAP_DATA = "DELETE_COLLECT_PCAP_DATA";
+
+	public static final String DELETE_NODE_CONFIG_HISTORY = "DELETE_NODE_CONFIG_HISTORY";
 }

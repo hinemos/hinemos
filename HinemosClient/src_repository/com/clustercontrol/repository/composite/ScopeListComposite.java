@@ -9,6 +9,9 @@
 package com.clustercontrol.repository.composite;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -21,11 +24,16 @@ import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.repository.action.GetScopeListTableDefine;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.composite.action.ScopeDoubleClickListener;
+import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.viewer.CommonTableViewer;
 import com.clustercontrol.ws.repository.FacilityInfo;
 import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
+import com.clustercontrol.ws.repository.InvalidRole_Exception;
+import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
 
 /**
  * スコープ登録一覧コンポジットクラスです。
@@ -114,31 +122,66 @@ public class ScopeListComposite extends Composite {
 		ArrayList<Object> listInput = new ArrayList<Object>();
 		if (item instanceof FacilityTreeItem) {
 			m_facilityTreeItem = item;
-
 			int type = item.getData().getFacilityType();
 			FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
-			if (type != FacilityConstant.TYPE_NODE
-					&& item.getChildren() != null) {
+
+			if (type == FacilityConstant.TYPE_NODE || item.getChildren() == null) {
+				// 何もしない
+			} else if (type == FacilityConstant.TYPE_COMPOSITE) {
 				for (FacilityTreeItem child : item.getChildren()) {
 					FacilityInfo scope = child.getData();
 					ArrayList<Object> a = new ArrayList<Object>();
-					if(manager == null) {
-						a.add(scope.getFacilityId());
-						a.add("");
-						a.add("");
-						a.add("");
-						a.add("");
-						a.add("");
-					} else {
-						a.add(manager.getData().getFacilityId());
-						a.add(scope.getFacilityId());
-						a.add(scope.getFacilityName());
-						a.add(scope.getDescription());
-						a.add(scope.getOwnerRoleId());
-						a.add("");
-					}
+					a.add(scope.getFacilityId());
+					a.add("");
+					a.add("");
+					a.add("");
+					a.add("");
+					a.add("");
 					a.add(null);
 					listInput.add(a);
+				}
+			} else {
+				List<FacilityInfo> facilityList = null;
+				try {
+					String facilityId = "";
+					if (type != FacilityConstant.TYPE_MANAGER) {
+						facilityId = item.getData().getFacilityId();
+					}
+					facilityList = RepositoryEndpointWrapper.getWrapper(manager.getData().getFacilityId())
+							.getFacilityList(facilityId);
+					if (facilityList != null) {
+						Collections.sort(facilityList, new Comparator<FacilityInfo>() {
+							@Override
+							public int compare(FacilityInfo info1, FacilityInfo info2) {
+								int order1 =  info1.getDisplaySortOrder();
+								int order2 =  info2.getDisplaySortOrder();
+								if(order1 == order2 ){
+									String object1 = info1.getFacilityId();
+									String object2 = info2.getFacilityId();
+									return object1.compareTo(object2);
+								}
+								else {
+									return (order1 - order2);
+								}
+							}
+						});
+					}
+				} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+					// 取得エラーの場合は何もしない
+					return;
+				}
+				if (facilityList != null) {
+					for (FacilityInfo facilityInfo: facilityList) {
+						ArrayList<Object> a = new ArrayList<Object>();
+						a.add(manager.getData().getFacilityId());
+						a.add(facilityInfo.getFacilityId());
+						a.add(HinemosMessage.replace(facilityInfo.getFacilityName()));
+						a.add(facilityInfo.getDescription());
+						a.add(facilityInfo.getOwnerRoleId());
+						a.add("");
+						a.add(null);
+						listInput.add(a);
+					}
 				}
 			}
 		}

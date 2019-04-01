@@ -276,7 +276,6 @@ public class MonitorTypeDialog extends CommonDialog {
 							break;
 						}
 					}
-					// TODO extension point(monitorPlugin)に直接activitiesを適用できるようにしたい
 					// 当該オプションがない場合、スキップ
 					if(!activeOptions.contains(option)){
 						continue;

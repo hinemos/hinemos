@@ -14,12 +14,11 @@ import com.clustercontrol.util.Messages;
 
 /**
  * インポート処理方法の確認ダイアログ
- * FIXME TODO Rename me to ImportProcessDialog
  * 
  * @version 6.1.0
  * @since 6.1.0
  */
-public class ClientImportProcessDialog implements ImportProcessDialog {
+public class ClientImportProcessDialog implements UtilityProcessDialog {
 	private MessageDialogWithToggle dialog;
 
 	public ClientImportProcessDialog(String message){

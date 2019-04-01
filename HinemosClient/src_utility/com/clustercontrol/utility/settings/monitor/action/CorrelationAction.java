@@ -60,7 +60,6 @@ public class CorrelationAction extends AbstractMonitorAction<CorrelationMonitors
 
 	@Override
 	protected List<MonitorInfo> getFilterdMonitorList() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
-		//TODO 
 		MonitorFilterInfo monitorFilterInfo = new MonitorFilterInfo();
 		monitorFilterInfo.setMonitorTypeId(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_CORRELATION);
 		

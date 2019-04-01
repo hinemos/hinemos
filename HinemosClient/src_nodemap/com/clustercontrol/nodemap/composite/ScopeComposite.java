@@ -35,6 +35,7 @@ import org.eclipse.ui.PlatformUI;
 import com.clustercontrol.composite.FacilityTreeComposite;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.nodemap.util.RelationViewController;
+import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.ScopeTreeView;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.composite.ScopeTreeSearchBarComposite;
@@ -172,7 +173,7 @@ public class ScopeComposite extends FacilityTreeComposite {
 										facilityId = ReservedFacilityIdConstant.ROOT_SCOPE;
 									}
 									String managerName = ScopePropertyUtil.getManager(item).getData().getFacilityId();
-									RelationViewController.createNewView(managerName, facilityId);
+									RelationViewController.createNewView(managerName, facilityId, NodeMapView.class);
 								}
 							}
 						}

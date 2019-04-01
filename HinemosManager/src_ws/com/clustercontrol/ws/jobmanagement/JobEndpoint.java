@@ -36,6 +36,7 @@ import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.fault.JobInvalid;
 import com.clustercontrol.fault.JobKickDuplicate;
 import com.clustercontrol.fault.JobMasterNotFound;
+import com.clustercontrol.fault.JobQueueNotFound;
 import com.clustercontrol.fault.JobSessionDuplicate;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.OtherUserGetLock;
@@ -60,6 +61,13 @@ import com.clustercontrol.jobmanagement.bean.JobTriggerInfo;
 import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
 import com.clustercontrol.jobmanagement.bean.JobmapIconImage;
 import com.clustercontrol.jobmanagement.bean.OperationConstant;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueActivityViewFilter;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueActivityViewInfo;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueContentsViewInfo;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueReferrerViewInfo;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueSetting;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueSettingViewFilter;
+import com.clustercontrol.jobmanagement.queue.bean.JobQueueSettingViewInfo;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -440,7 +448,7 @@ public class JobEndpoint {
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
-	 * @see com.clustercontrol.jobmanagement.session.JobRunManagementBean#operationJob(Property)
+	 * @see com.clustercontrol.jobmanagement.session.JobRunManagementBean#operationJob(JobOperationInfo)
 	 */
 	public void operationJob(JobOperationInfo property) throws HinemosUnknown, JobInfoNotFound, InvalidUserPass, InvalidRole {
 		m_log.debug("operationJob : nodeOperationInfo=" + property);
@@ -491,7 +499,7 @@ public class JobEndpoint {
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
-	 * @see com.clustercontrol.jobmanagement.factory.SelectJob#getHistoryList(Property, int)
+	 * @see com.clustercontrol.jobmanagement.factory.SelectJob#getHistoryList(JobHistoryFilter, int)
 	 */
 	public JobHistoryList getJobHistoryList(JobHistoryFilter property, int histories) throws JobInfoNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.debug("getHistoryList : jobHistoryFilter=" + property + ", histories=" + histories);
@@ -1297,6 +1305,9 @@ public class JobEndpoint {
 		case OperationConstant.TYPE_START_WAIT://7
 			return "Start[Cancel Pause]";
 
+		case OperationConstant.TYPE_START_FORCE_RUN:
+			return "Start[Force Run]";
+
 		case OperationConstant.TYPE_STOP_AT_ONCE://0
 			return "Stop[Command]";
 
@@ -1736,5 +1747,280 @@ public class JobEndpoint {
 				+ HttpAuthenticator.getUserAccountString(wsctx));
 		
 		return maxsize;
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)の設定を一覧表示するビューのための情報を返します。
+	 * <p>
+	 * ジョブ機能の「参照」システム権限が必要です。
+	 * 
+	 * @param filter フィルタ条件。nullの場合はフィルタなし。
+	 * @throws InvalidUserPass ユーザ認証エラー。
+	 * @throws InvalidRole アクセス権限エラー。
+	 * @throws InvalidSetting フィルタ条件設定に不備があります。
+	 * @throws HinemosUnknown その他のエラー。
+	 */
+	public JobQueueSettingViewInfo getJobQueueSettingViewInfo(JobQueueSettingViewFilter filter)
+			throws InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		JobQueueSettingViewInfo result = new JobControllerBean().getJobQueueSettingViewInfo(filter);
+
+		if (m_opelog.isDebugEnabled()) {
+			String filterStr = "";
+			if (filter != null) {
+				filterStr = ", " + filter.toString();
+			}
+			m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getJobQueueSettingViewInfo, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx) + filterStr);
+		}
+
+		return result;
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)を参照しているジョブを一覧表示するビューのための情報を返します。
+	 * <p>
+	 * 通常、ジョブユニットの情報以外では{@link JobInfo}のオーナーロールIDはnullに設定されますが、
+	 * このメソッドが返す情報に含まれる{@link JobInfo}には、「当該ジョブの上位ジョブユニットのオーナーロールID」が設定されます。
+	 * <p>
+	 * ジョブ機能の「参照」システム権限が必要です。
+	 * 
+	 * @param queueId 情報を取得するキューのID。
+	 * @throws InvalidUserPass ユーザ認証エラー。
+	 * @throws InvalidRole アクセス権限エラー。
+	 * @throws JobQueueNotFound 指定されたジョブキューが見つかりません。
+	 * @throws HinemosUnknown その他のエラー。
+	 */
+	public JobQueueReferrerViewInfo getJobQueueReferrerViewInfo(String queueId)
+			throws InvalidUserPass, InvalidRole, JobQueueNotFound, HinemosUnknown {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		JobQueueReferrerViewInfo result = new JobControllerBean().getJobQueueReferrerViewInfo(queueId);
+
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getJobQueueReferrerViewInfo, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx) + ", queueId=" + queueId);
+
+		return result;
+	}
+	
+	/**
+	 * ジョブキュー(同時実行制御キュー)の活動状況を一覧表示するビューのための情報を返します。
+	 * <p>
+	 * ジョブ機能の「参照」システム権限が必要です。
+	 * 
+	 * @param filter フィルタ条件。nullの場合はフィルタなし。同時実行数(concurrency)のフィルタ条件は無効。
+	 * @throws InvalidUserPass ユーザ認証エラー。
+	 * @throws InvalidRole アクセス権限エラー。
+	 * @throws HinemosUnknown その他のエラー。
+	 * @throws InvalidSetting フィルタ条件設定に不備があります。
+	 */
+	public JobQueueActivityViewInfo getJobQueueActivityViewInfo(JobQueueActivityViewFilter filter)
+			throws InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		JobQueueActivityViewInfo result = new JobControllerBean().getJobQueueActivityViewInfo(filter);
+
+		if (m_opelog.isDebugEnabled()) {
+			String filterStr = "";
+			if (filter != null) {
+				filterStr = ", " + filter.toString();
+			}
+			m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getJobQueueActivityViewInfo, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx) + filterStr);
+		}
+
+		return result;
+	}
+	
+	/**
+	 * ジョブキュー(同時実行制御キュー)の内部状況を表示するビューのための情報を返します。
+	 * <p>
+	 * ジョブ機能の「参照」システム権限が必要です。
+	 * 
+	 * @param queueId 情報を取得するキューのID。
+	 * @throws InvalidUserPass ユーザ認証エラー。
+	 * @throws InvalidRole アクセス権限エラー。
+	 * @throws JobQueueNotFound 指定されたジョブキューが見つかりません。
+	 * @throws HinemosUnknown その他のエラー。
+	 */
+	public JobQueueContentsViewInfo getJobQueueContentsViewInfo(String queueId)
+			throws InvalidUserPass, InvalidRole, JobQueueNotFound, HinemosUnknown {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		JobQueueContentsViewInfo result = new JobControllerBean().getJobQueueContentsViewInfo(queueId);
+
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getJobQueueContentsViewInfo, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx) + ", queueId=" + queueId);
+
+		return result;
+	}
+
+	/**
+	 * 指定されたロールから参照可能なジョブキュー(同時実行制御キュー)の設定情報のリストを返します。
+	 * <p>
+	 * ジョブ機能の「参照」システム権限が必要です。
+	 * 
+	 * @param roleId ロールID。
+	 * @return キューの設定情報のリスト。
+	 * @throws InvalidUserPass ユーザ認証エラー。
+	 * @throws InvalidRole アクセス権限エラー。
+	 * @throws HinemosUnknown その他のエラー。
+	 */
+	public List<JobQueueSetting> getJobQueueList(String roleId)
+			throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		List<JobQueueSetting> result = new JobControllerBean().getJobQueueList(roleId);
+
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getJobQueueList, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx));
+
+		return result;
+	}
+	
+	/**
+	 * 指定されたジョブキュー(同時実行制御キュー)の設定情報を返します。
+	 * <p>
+	 * ジョブ機能の「参照」システム権限が必要です。
+	 * 
+	 * @param queueId 設定情報を取得したいキューのID。
+	 * @return キューの設定情報。
+	 * @throws InvalidUserPass ユーザ認証エラー。
+	 * @throws InvalidRole アクセス権限エラー。
+	 * @throws JobQueueNotFound 指定されたジョブキューが見つかりません。
+	 * @throws HinemosUnknown その他のエラー。
+	 */
+	public JobQueueSetting getJobQueue(String queueId)
+			throws InvalidUserPass, InvalidRole, JobQueueNotFound, HinemosUnknown {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		JobQueueSetting result = new JobControllerBean().getJobQueue(queueId);
+
+		m_opelog.debug(HinemosModuleConstant.LOG_PREFIX_JOB + " Get, Method=getJobQueue, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx));
+
+		return result;
+	}
+	
+	/**
+	 * ジョブキュー(同時実行制御キュー)の設定を追加します。
+	 * <p>
+	 * ジョブ機能の「作成」システム権限が必要です。
+	 * 
+	 * @param setting キューの設定情報。
+	 * @throws InvalidUserPass ユーザ認証エラー。
+	 * @throws InvalidRole アクセス権限エラー。
+	 * @throws InvalidSetting 設定情報に誤りがあります。 
+	 * @throws HinemosUnknown その他のエラー。
+	 */
+	public void addJobQueue(JobQueueSetting setting)
+			throws InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
+		if (setting == null) {
+			throw new HinemosUnknown("Argument is null.");
+		}
+
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.ADD));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		boolean success = false;
+		try {
+			new JobControllerBean().addJobQueue(setting);
+			success = true;
+		} finally {
+			String msg = "Method=addJobQueue, User=" + HttpAuthenticator.getUserAccountString(wsctx) + ", QueueId="
+					+ setting.getQueueId();
+			if (success) {
+				m_opelog.info(HinemosModuleConstant.LOG_PREFIX_JOB + " Add JobQueue, " + msg);
+			} else {
+				m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_JOB + " Add JobQueue Failed, " + msg);
+			}
+		}
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)の設定を変更します。
+	 * ただし、変更できるのは、「キュー名」と「同時実行可能数」のみです。
+	 * <p>
+	 * ジョブ機能の「変更」システム権限が必要です。
+	 * 
+	 * @param setting キューの設定情報。
+	 * @throws InvalidUserPass ユーザ認証エラー。
+	 * @throws InvalidRole アクセス権限エラー。
+	 * @throws JobQueueNotFound 更新対象のキューが存在しません。 
+	 * @throws InvalidSetting 設定情報に誤りがあります。 
+	 * @throws HinemosUnknown その他のエラー。
+	 */
+	public void modifyJobQueue(JobQueueSetting setting)
+			throws InvalidUserPass, InvalidRole, JobQueueNotFound, InvalidSetting, HinemosUnknown {
+		if (setting == null) {
+			throw new HinemosUnknown("Argument is null.");
+		}
+
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.MODIFY));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+		
+		boolean success = false;
+		try {
+			new JobControllerBean().modifyJobQueue(setting);
+			success = true;
+		} finally {
+			String msg = "Method=modifyJobQueue, User=" + HttpAuthenticator.getUserAccountString(wsctx) + ", QueueId="
+					+ setting.getQueueId();
+			if (success) {
+				m_opelog.info(HinemosModuleConstant.LOG_PREFIX_JOB + " Change JobQueue, " + msg);
+			} else {
+				m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_JOB + " Change JobQueue Failed, " + msg);
+			}
+		}
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー)の設定を削除します。
+	 * <p>
+	 * ジョブ機能の「変更」システム権限が必要です。
+	 * 
+	 * @param queueId 削除するキューのID。
+	 * @throws InvalidUserPass ユーザ認証エラー。
+	 * @throws InvalidRole アクセス権限エラー。
+	 * @throws InvalidSetting 設定情報に誤りがあります。 
+	 * @throws HinemosUnknown その他のエラー。
+	 */
+	public void deleteJobQueue(String queueId) throws InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
+		if (queueId == null || queueId.isEmpty()) {
+			throw new HinemosUnknown("QueueId is empty.");
+		}
+
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.MODIFY));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+		
+		boolean success = false;
+		try {
+			new JobControllerBean().deleteJobQueue(queueId);
+			success = true;
+		} finally {
+			String msg = "Method=deleteJobQueue, User=" + HttpAuthenticator.getUserAccountString(wsctx) + ", QueueId="
+					+ queueId;
+			if (success) {
+				m_opelog.info(HinemosModuleConstant.LOG_PREFIX_JOB + " Delete JobQueue, " + msg);
+			} else {
+				m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_JOB + " Delete JobQueue Failed, " + msg);
+			}
+		}
 	}
 }

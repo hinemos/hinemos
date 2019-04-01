@@ -24,6 +24,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 
 import com.clustercontrol.bean.DataRangeConstant;
@@ -83,6 +85,10 @@ public class ControlComposite extends Composite {
 	private int m_jobType = JobConstant.TYPE_JOB;
 	/** 排他分岐ダイアログで後続ジョブを表示するために使用する */
 	private JobTreeItem m_jobTreeItem;
+	/** ジョブキュー チェックボタン */
+	private Button m_jobQueueCondition = null;
+	/** ジョブキュー 選択リスト */
+	private JobQueueDropdown m_jobQueue = null;
 
 	/**
 	 * コンストラクタ
@@ -108,11 +114,11 @@ public class ControlComposite extends Composite {
 
 		this.setLayout(JobDialogUtil.getParentLayout());
 
-		// カレンダ（ラジオ）
-		this.m_calendarCondition = new Button(this, SWT.CHECK);
+		// カレンダ（チェック）
+		this.m_calendarCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_calendarCondition", this.m_calendarCondition);
 		this.m_calendarCondition.setText(Messages.getString("calendar"));
-		this.m_calendarCondition.setLayoutData(new RowData(220,
+		this.m_calendarCondition.setLayoutData(new RowData(100,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_calendarCondition.addSelectionListener(new SelectionListener() {
 			@Override
@@ -191,11 +197,11 @@ public class ControlComposite extends Composite {
 		// separator
 		JobDialogUtil.getSeparator(this);
 
-		// 保留（ラジオ）
-		this.m_waitCondition = new Button(this, SWT.CHECK);
+		// 保留（チェック）
+		this.m_waitCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_waitCondition", this.m_waitCondition);
 		this.m_waitCondition.setText(Messages.getString("reserve"));
-		this.m_waitCondition.setLayoutData(new RowData(200,
+		this.m_waitCondition.setLayoutData(new RowData(70,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_waitCondition.addSelectionListener(new SelectionListener() {
 			@Override
@@ -219,11 +225,11 @@ public class ControlComposite extends Composite {
 		// separator
 		JobDialogUtil.getSeparator(this);
 
-		// スキップ（ラジオ）
-		this.m_skipCondition = new Button(this, SWT.CHECK);
+		// スキップ（チェック）
+		this.m_skipCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_skipCondition", this.m_skipCondition);
 		this.m_skipCondition.setText(Messages.getString("skip"));
-		this.m_skipCondition.setLayoutData(new RowData(200,
+		this.m_skipCondition.setLayoutData(new RowData(100,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_skipCondition.addSelectionListener(new SelectionListener() {
 			@Override
@@ -291,8 +297,51 @@ public class ControlComposite extends Composite {
 		// separator
 		JobDialogUtil.getSeparator(this);
 
-		// 繰り返し実行（ラジオ）
-		this.m_jobRetryCondition = new Button(this, SWT.CHECK);
+		// ジョブキュー(チェック)
+		this.m_jobQueueCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
+		WidgetTestUtil.setTestId(this, "m_jobQueueCondition", this.m_jobQueueCondition);
+		this.m_jobQueueCondition.setText(Messages.getString("job.concurrency_control"));
+		this.m_jobQueueCondition.setLayoutData(new RowData(110, SizeConstant.SIZE_BUTTON_HEIGHT));
+		this.m_jobQueueCondition.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Button check = (Button) e.getSource();
+				WidgetTestUtil.setTestId(this, null, check);
+				if (check.getSelection()) {
+					m_jobQueue.setEnabled(true);
+				} else {
+					m_jobQueue.setEnabled(false);
+				}
+				update();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+		m_jobQueueCondition.setEnabled(false);
+
+		// ジョブキュー（Composite）
+		Composite jobQueueGroup = new Composite(this, SWT.BORDER);
+		jobQueueGroup.setLayout(new GridLayout(2, false));
+
+		// ジョブキュー：ジョブキューID（ラベル）
+		Label jobQueueIdTitle = new Label(jobQueueGroup, SWT.LEFT);
+		jobQueueIdTitle.setText(Messages.getString("jobqueue.id") + " : ");
+		jobQueueIdTitle.setLayoutData(new GridData(80, SizeConstant.SIZE_LABEL_HEIGHT));
+
+		// ジョブキュー：ジョブキュー（コンボ）
+		this.m_jobQueue = new JobQueueDropdown(jobQueueGroup, SWT.NONE);
+		WidgetTestUtil.setTestId(this, "m_jobQueue", this.m_jobQueue);
+		m_jobQueue.setLayoutData(new GridData());
+		((GridData) this.m_jobQueue.getLayoutData()).widthHint = 600;
+		this.m_jobQueue.setEnabled(false);
+
+		// separator
+		JobDialogUtil.getSeparator(this);
+		
+		// 繰り返し実行（チェック）
+		this.m_jobRetryCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_jobRetryCondition", this.m_jobRetryCondition);
 		this.m_jobRetryCondition.setText(Messages.getString("job.retry"));
 		this.m_jobRetryCondition.setLayoutData(new RowData(200,
@@ -393,19 +442,19 @@ public class ControlComposite extends Composite {
 	@Override
 	public void update(){
 		// 必須項目を明示
-		if (m_calendarCondition.getSelection() && "".equals(this.m_calendarEndValue.getText())){
+		if (m_calendarCondition.getSelection() && "".equals(this.m_calendarEndValue.getText())) {
 			this.m_calendarEndValue.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
+		} else {
 			this.m_calendarEndValue.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
-		if (m_skipCondition.getSelection() && "".equals(this.m_skipEndValue.getText())){
+		if (m_skipCondition.getSelection() && "".equals(this.m_skipEndValue.getText())) {
 			this.m_skipEndValue.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
+		} else {
 			this.m_skipEndValue.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
-		if (m_jobRetryCondition.getSelection() && "".equals(this.m_jobRetryCount.getText())){
+		if (m_jobRetryCondition.getSelection() && "".equals(this.m_jobRetryCount.getText())) {
 			this.m_jobRetryCount.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
+		} else {
 			this.m_jobRetryCount.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
 	}
@@ -446,6 +495,12 @@ public class ControlComposite extends Composite {
 		m_jobRetryCount.setText(String.valueOf(m_waitRule.getJobRetry()));
 		//繰り返し実行の終了状態
 		setSelectEndStatus(m_jobRetryEndStatus, m_waitRule.getJobRetryEndStatus());
+		// ジョブキュー
+		m_jobQueueCondition.setSelection(BooleanUtils.isTrue(m_waitRule.isQueueFlg()));
+		// ジョブキューID
+		if (StringUtils.isNotEmpty(m_waitRule.getQueueId())) {
+			m_jobQueue.setQueueId(m_waitRule.getQueueId());
+		}
 
 		//カレンダ
 		if (m_calendarCondition.getSelection()) {
@@ -482,6 +537,13 @@ public class ControlComposite extends Composite {
 		} else {
 			m_jobRetryCount.setEditable(false);
 			m_jobRetryEndStatus.setEnabled(false);
+		}
+
+		// ジョブキュー
+		if (m_jobQueueCondition.getSelection()) {
+			m_jobQueue.setEnabled(true);
+		} else {
+			m_jobQueue.setEnabled(false);
 		}
 	}
 
@@ -583,6 +645,24 @@ public class ControlComposite extends Composite {
 				return result;
 			}
 		}
+
+		// ジョブキュー
+		m_waitRule.setQueueFlg(m_jobQueueCondition.getSelection());
+		
+		// ジョブキューID
+		if (StringUtils.isEmpty(m_jobQueue.getQueueId())) {
+			m_waitRule.setQueueId(null);
+			if (m_waitRule.isQueueFlg().booleanValue()) {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.jobqueue.missing"));
+				return result;
+			}
+		} else {
+			m_waitRule.setQueueId(m_jobQueue.getQueueId());
+		}
+		
 		return null;
 	}
 
@@ -629,6 +709,10 @@ public class ControlComposite extends Composite {
 	public void setJobTreeItem(JobTreeItem jobTreeItem) {
 		m_jobTreeItem = jobTreeItem;
 	}
+	
+	public JobQueueDropdown getJobQueueDropdown() {
+		return m_jobQueue;
+	}
 
 	/**
 	 * 読み込み専用時にグレーアウトします。
@@ -646,6 +730,8 @@ public class ControlComposite extends Composite {
 		m_jobRetryCondition.setEnabled(isRetryJob() && enabled);
 		m_jobRetryEndStatus.setEnabled(isRetryJob() && m_jobRetryCondition.getSelection() && enabled);
 		m_jobRetryCount.setEditable(isRetryJob() && m_jobRetryCondition.getSelection() && enabled);
+		m_jobQueueCondition.setEnabled(isJobQueueAvailable() && enabled);
+		m_jobQueue.setEnabled(isJobQueueAvailable() && m_jobQueueCondition.getSelection() && enabled);
 		m_readOnly = !enabled;
 	}
 	
@@ -654,5 +740,18 @@ public class ControlComposite extends Composite {
 		return m_jobType != JobConstant.TYPE_FILEJOB && m_jobType != JobConstant.TYPE_APPROVALJOB;
 	}
 
+	// ジョブキューが有効な種類のジョブであるか。
+	private boolean isJobQueueAvailable() {
+		switch (m_jobType) {
+		case JobConstant.TYPE_JOBNET:
+		case JobConstant.TYPE_JOB:
+		case JobConstant.TYPE_FILEJOB:
+		case JobConstant.TYPE_MONITORJOB:
+		case JobConstant.TYPE_APPROVALJOB:
+			return true;
+		default:
+			return false;
+		}
+	}
 
 }

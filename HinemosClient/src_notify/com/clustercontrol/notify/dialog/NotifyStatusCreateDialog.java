@@ -381,7 +381,7 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 		WidgetTestUtil.setTestId(this, "delete", m_radioStatusDelete);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_radioStatusDelete.setLayoutData(gridData);
 		this.m_radioStatusDelete.setText(Messages.getString("notify.status.invalid.period.delete"));
@@ -716,8 +716,7 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 		}
 		else{
 			// 閉じるボタン
-			// TODO Remove the following hard-code. IDialogConstants.*_LABEL will causes IncompatibleClassChangeError on RAP
-			this.createButton(parent, IDialogConstants.CANCEL_ID, "Cancel", false);
+			this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("cancel"), false);
 		}
 	}
 

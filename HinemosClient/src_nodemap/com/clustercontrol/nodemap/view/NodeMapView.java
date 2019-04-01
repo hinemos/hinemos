@@ -41,7 +41,6 @@ import com.clustercontrol.nodemap.composite.NodeMapCanvasComposite;
 import com.clustercontrol.nodemap.composite.NodeMapListComposite;
 import com.clustercontrol.nodemap.editpart.MapViewController;
 import com.clustercontrol.nodemap.preference.NodeMapPreferencePage;
-import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
 import com.clustercontrol.nodemap.util.SecondaryIdMap;
 import com.clustercontrol.nodemap.view.action.GetL2ConnectionAction;
 import com.clustercontrol.nodemap.view.action.GetL3ConnectionAction;
@@ -71,7 +70,7 @@ public class NodeMapView extends AutoUpdateView {
 	// ログ
 	private static Log m_log = LogFactory.getLog( NodeMapView.class );
 
-	public static final String ID = "com.clustercontrol.nodemap.view.NodeMapView";
+	public static final String ID = NodeMapView.class.getName();
 
 	private CCombo m_ccombo;
 	private Composite stackComposite;
@@ -79,7 +78,7 @@ public class NodeMapView extends AutoUpdateView {
 	
 	public NodeMapListComposite m_listComposite;
 
-	public MapViewController m_controller; //FIXME 一時的にpublicにしたので、privateに戻したい
+	private MapViewController m_controller;
 
 	public String secondaryId;
 	
@@ -270,7 +269,7 @@ public class NodeMapView extends AutoUpdateView {
 		});
 		
 		applySetting();
-		update(false); // FIXME 不要かも。上記のupdateViewの内部でupdateが呼ばれている。
+		update(false);
 	}
 
 	private void initSubComposite() {
@@ -389,7 +388,7 @@ public class NodeMapView extends AutoUpdateView {
 
 		// 描画対象スコープのFacilityIDからビューのSecondaryIdを特定できるよう、
 		// FacilityIDをキーにSecondaryIdを登録する
-		SecondaryIdMap.putSecondaryId(secondaryId, m_canvasComposite.getManagerName(), facilityId);
+		SecondaryIdMap.putSecondaryId(secondaryId, m_canvasComposite.getManagerName(), facilityId, NodeMapView.class);
 
 		m_log.debug("put " + secondaryId + ", " + facilityId);
 
@@ -403,7 +402,7 @@ public class NodeMapView extends AutoUpdateView {
 			// アップデート失敗の場合は、ひとつ前のスコープ表示に戻す
 			if (oldFacilityId != null) {
 				m_log.info("updateView(), rollback " + facilityId + "->" + oldFacilityId);
-				SecondaryIdMap.putSecondaryId(secondaryId, m_canvasComposite.getManagerName(), oldFacilityId);
+				SecondaryIdMap.putSecondaryId(secondaryId, m_canvasComposite.getManagerName(), oldFacilityId, NodeMapView.class);
 				m_controller = new MapViewController(this, secondaryId, oldFacilityId);
 				m_canvasComposite.setController(m_controller);
 				reload();
@@ -475,7 +474,6 @@ public class NodeMapView extends AutoUpdateView {
 	}
 
 	/*
-	 * TODO
 	 * ジョブマップ同様ズーム後の再描画をおこなうメソッド
 	 */
 	public void updateNotManagerAccess() {
@@ -505,16 +503,6 @@ public class NodeMapView extends AutoUpdateView {
 	 */
 	public boolean reload() {
 		long start = System.currentTimeMillis();
-		String version = "";
-		try {
-			NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(m_canvasComposite.getManagerName());
-			version = wrapper.getVersion();
-		} catch (Exception e) {
-			String errMsg = com.clustercontrol.nodemap.messages.Messages.getString("message.nodemapkeyfile.notfound.error");
-			m_canvasComposite.clearCanvas();
-			m_canvasComposite.setErrorMessage(errMsg);
-			return false;
-		}
 		try {
 			m_controller.updateMap(statusFlg, eventFlg);
 		} catch (InvalidRole_Exception e) {
@@ -543,22 +531,8 @@ public class NodeMapView extends AutoUpdateView {
 			m_canvasComposite.update();
 		}
 		
-		
 		long end = System.currentTimeMillis();
 		m_log.debug("reload() :" + (end - start) + "ms");
-		
-		
-		// debug用
-		// countFigure();
-		if (version.length() > 7) {
-			boolean resultVersion = Boolean.valueOf(version.substring(7, version.length()));
-			if (!resultVersion) {
-				MessageDialog.openWarning(
-						m_listComposite.getShell(),
-						Messages.getString("warning"),
-						com.clustercontrol.nodemap.messages.Messages.getString("expiration.term.invalid"));
-			}
-		}
 		return true;
 	}
 
@@ -576,9 +550,9 @@ public class NodeMapView extends AutoUpdateView {
 	 */
 	@Override
 	public void dispose(){
-		m_log.info("call dispose(), secondaryId="+m_controller.getSecondaryId()+",facilityId="+SecondaryIdMap.getFacilityId(m_controller.getSecondaryId()));
+		m_log.info("call dispose(), secondaryId="+secondaryId+",facilityId="+SecondaryIdMap.getFacilityId(secondaryId));
 
-		SecondaryIdMap.removeSecondaryId(m_controller.getSecondaryId());
+		SecondaryIdMap.removeSecondaryId(secondaryId);
 
 		super.dispose();
 	}
@@ -634,5 +608,14 @@ public class NodeMapView extends AutoUpdateView {
 	@Override
 	protected String getViewName() {
 		return this.getClass().getName();
+	}
+
+	/**
+	 * Controller取得
+	 * 
+	 * @return Controller
+	 */
+	public MapViewController getController() {
+		return this.m_controller;
 	}
 }

@@ -41,12 +41,14 @@ import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
 import com.clustercontrol.jobmanagement.view.JobNodeDetailView;
+import com.clustercontrol.jobmanagement.view.JobQueueContentsView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 
 /**
- * ジョブ[履歴]・ジョブ[ジョブ詳細]・ジョブ[ノード詳細]ビューの「開始」のクライアント側アクションクラス<BR>
+ * ジョブ[履歴]・ジョブ[ジョブ詳細]・ジョブ[ノード詳細]・ジョブ[同時実行制御状況]ビューの
+ * 「開始」のクライアント側アクションクラス<BR>
  *
  * @version 5.0.0
  * @since 1.0.0
@@ -167,10 +169,11 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 	}
 
 	/**
-	 * ジョブ[履歴]・ジョブ[ジョブ詳細]・ジョブ[ノード詳細]ビューの「開始」が押された場合に、ジョブの開始操作を行います。
+	 * ジョブ[履歴]・ジョブ[ジョブ詳細]・ジョブ[ノード詳細]・ジョブ[同時実行制御状況]ビューの
+	 * 「開始」が押された場合に、ジョブの開始操作を行います。
 	 * <p>
 	 * <ol>
-	 * <li>ジョブ[履歴]・ジョブ[ジョブ詳細]ビューの場合、ビューからセッションID・ジョブIDを取得します。</li>
+	 * <li>ジョブ[履歴]・ジョブ[ジョブ詳細]・ジョブ[同時実行制御状況]ビューの場合、ビューからセッションID・ジョブIDを取得します。</li>
 	 * <li>ジョブ[ノード詳細]ビューの場合、ビューから、セッションID・ジョブID・ファシリティIDを取得します。</li>
 	 * <li>ジョブ開始操作用プロパティを取得します。</li>
 	 * <li>ジョブ[開始]ダイアログを表示します。</li>
@@ -274,6 +277,24 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 					jobId = null;
 				}
 			}
+		} else if (viewPart instanceof JobQueueContentsView) {
+			JobQueueContentsView view = null;
+			try {
+				view = (JobQueueContentsView) viewPart
+						.getAdapter(JobQueueContentsView.class);
+			} catch (Exception e) { 
+				m_log.info("execute " + e.getMessage()); 
+				return null; 
+			}
+
+			if (view == null) {
+				m_log.info("execute: JobQueueContentsView is null");
+			} else {
+				managerName = view.getManagerName();
+				sessionId = view.getSelectedSessionId();
+				jobunitId = view.getSelectedJobunitId();
+				jobId = view.getSelectedJobId();
+			}
 		}
 
 		if (sessionId != null && sessionId.length() > 0 && jobunitId != null
@@ -321,6 +342,11 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 				} else if(part instanceof JobNodeDetailView) {
 					JobNodeDetailView view = (JobNodeDetailView)part;
 					if(view.getSelectedNum() > 0) {
+						editEnable = true;
+					}
+				} else if (part instanceof JobQueueContentsView) {
+					JobQueueContentsView view = (JobQueueContentsView) part;
+					if (view.getSelectedCount() > 0) {
 						editEnable = true;
 					}
 				}

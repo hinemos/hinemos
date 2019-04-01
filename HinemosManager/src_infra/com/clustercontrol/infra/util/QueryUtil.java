@@ -29,7 +29,6 @@ import com.clustercontrol.infra.model.InfraManagementParamInfo;
 import com.clustercontrol.infra.model.InfraManagementParamInfoPK;
 import com.clustercontrol.infra.model.InfraModuleInfo;
 import com.clustercontrol.infra.model.InfraModuleInfoPK;
-import com.clustercontrol.infra.model.ReferManagementModuleInfo;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */

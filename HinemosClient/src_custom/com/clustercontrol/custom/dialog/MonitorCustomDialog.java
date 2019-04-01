@@ -291,7 +291,8 @@ public class MonitorCustomDialog extends CommonMonitorNumericDialog {
 		this.textCommand = new TextWithParameterComposite(groupCheckRule, SWT.BORDER | SWT.LEFT | SWT.SINGLE);
 		WidgetTestUtil.setTestId(this, "commnad", textCommand);
 		this.textCommand.setText("");
-		this.textCommand.setToolTipText(Messages.getString("monitor.custom.commandline.tips"));
+		String tooltipText = Messages.getString("monitor.custom.commandline.tips") + Messages.getString("replace.parameter.node");
+		this.textCommand.setToolTipText(tooltipText);
 		this.textCommand.setColor(new Color(parent.getDisplay(), new RGB(0, 0, 255)));
 		gridData = new GridData(GridData.FILL_HORIZONTAL | GridData.GRAB_HORIZONTAL);
 		gridData.horizontalSpan = 11;

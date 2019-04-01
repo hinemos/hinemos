@@ -146,7 +146,8 @@ public class SqlStringCreateDialog extends CommonMonitorStringDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		this.textUrl.setLayoutData(gridData);
 		this.textUrl.setText("jdbc:");
-		this.textUrl.setToolTipText(Messages.getString("connection.url.tooltip"));
+		String tooltipText = Messages.getString("connection.url.tooltip") + Messages.getString("replace.parameter.node");
+		this.textUrl.setToolTipText(tooltipText);
 		this.textUrl.setColor(new Color(parent.getDisplay(), new RGB(0, 0, 255)));
 		this.textUrl.addModifyListener(new ModifyListener(){
 			@Override

@@ -84,7 +84,6 @@ public class JobDialogCellEditor extends DialogCellEditor {
 		//ジョブツリーダイアログを表示する
 		JobTreeDialog dialog = null;
 		if (m_jobTreeItem == null) {
-			//TODO: 修正
 			dialog = new JobTreeDialog(cellEditorWindow.getShell(), null, null, m_treeOnly);
 		} else if (m_mode != null) {
 			dialog = new JobTreeDialog(cellEditorWindow.getShell(), null, m_jobTreeItem, m_mode);

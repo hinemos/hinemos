@@ -267,6 +267,32 @@ public class AccessEndpoint {
 				+ HttpAuthenticator.getUserAccountString(wsctx)
 				+ msg.toString());
 	}
+	
+	public void modifyUserInfoWithHashedPassword(UserInfo info) throws Exception {
+		m_log.debug("modifyUserInfoWithHashedPassword");
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.ACCESSCONTROL, SystemPrivilegeMode.MODIFY));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		// 認証済み操作ログ
+		StringBuffer msg = new StringBuffer();
+		if(info != null){
+			msg.append(", UserID=");
+			msg.append(info.getUserId());
+		}
+
+		try {
+			new AccessControllerBean().modifyUserInfo(info, true);
+		} catch (Exception e) {
+			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_ACCESS + " Change User Failed, Method=modifyUserInfoWithHashedPassword, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx)
+					+ msg.toString());
+			throw e;
+		}
+		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_ACCESS + " Change User, Method=modifyUserInfoWithHashedPassword, User="
+				+ HttpAuthenticator.getUserAccountString(wsctx)
+				+ msg.toString());
+	}
 
 	/**
 	 * ユーザ情報を削除する。<BR>
@@ -907,7 +933,8 @@ public class AccessEndpoint {
 			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.CALENDAR, SystemPrivilegeMode.READ));
 		} else if (HinemosModuleConstant.JOB.equals(filter.getObjectType())
 				|| HinemosModuleConstant.JOB_KICK.equals(filter.getObjectType())
-				|| HinemosModuleConstant.JOBMAP_IMAGE_FILE.equals(filter.getObjectType())) {
+				|| HinemosModuleConstant.JOBMAP_IMAGE_FILE.equals(filter.getObjectType())
+				|| HinemosModuleConstant.JOB_QUEUE.equals(filter.getObjectType())) {
 			// ジョブ、ジョブファイルチェック、ジョブスケジュール
 			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
 		} else if (HinemosModuleConstant.MONITOR.equals(filter.getObjectType())
@@ -978,7 +1005,8 @@ public class AccessEndpoint {
 			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.CALENDAR, SystemPrivilegeMode.READ));
 		} else if (HinemosModuleConstant.JOB.equals(objectType)
 				|| HinemosModuleConstant.JOB_KICK.equals(objectType)
-				|| HinemosModuleConstant.JOBMAP_IMAGE_FILE.equals(objectType)) {
+				|| HinemosModuleConstant.JOBMAP_IMAGE_FILE.equals(objectType)
+				|| HinemosModuleConstant.JOB_QUEUE.equals(objectType)) {
 			// ジョブ、ジョブファイルチェック、ジョブスケジュール
 			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
 		} else if (HinemosModuleConstant.MONITOR.equals(objectType)
@@ -1043,7 +1071,8 @@ public class AccessEndpoint {
 			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.CALENDAR, SystemPrivilegeMode.MODIFY));
 		} else if (HinemosModuleConstant.JOB.equals(objectType)
 				|| HinemosModuleConstant.JOB_KICK.equals(objectType)
-				|| HinemosModuleConstant.JOBMAP_IMAGE_FILE.equals(objectType)) {
+				|| HinemosModuleConstant.JOBMAP_IMAGE_FILE.equals(objectType)
+				|| HinemosModuleConstant.JOB_QUEUE.equals(objectType)) {
 			// ジョブ、ジョブ実行契機
 			systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.MODIFY));
 		} else if (HinemosModuleConstant.MONITOR.equals(objectType)

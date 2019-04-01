@@ -16,12 +16,12 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.hub.util.DataId.GeneratorFor;
 
 /**
- * テーブル単位でDataIDを発行するクラス<br>
- * <br>
- * テーブル追加の場合はDataIdクラスにEnumとMap初期化処理を追加すること.
- *
+ * 
+ * 収集(バイナリ)をDBに格納する際に使用する ID を生成
+ * 
  * @version 6.1.0
  * @since 6.1.0
+ *
  */
 public class DataIdGenerator {
 
@@ -33,7 +33,9 @@ public class DataIdGenerator {
 		}
 
 		try {
-			Long maxId = QueryUtil.getMaxCollectStringDataId();
+			//本クラスは汎用的に使用できそうな実装に見えるが
+			//以下のロジックをテーブル毎に実装する必要があるため、実際はcc_collect_data_binaryの採番にのみ使用可
+			Long maxId = QueryUtil.getMaxCollectBinaryDataId();
 
 			if (maxId == null) {
 				m_log.info("init() : Not found id, so start from 0.");

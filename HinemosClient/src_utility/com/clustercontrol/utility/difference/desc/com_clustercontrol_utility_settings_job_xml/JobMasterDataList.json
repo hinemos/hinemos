@@ -134,7 +134,9 @@
 			"ExclusiveBranch",
 			"ExclusiveBranchEndStatus",
 			"ExclusiveBranchEndValue",
-			"ExclusiveJobNextJobOrderInfo.nextJobId"
+			"ExclusiveJobNextJobOrderInfo.nextJobId",
+			"QueueFlg",
+			"QueueId"
 		]
 	}
 ],

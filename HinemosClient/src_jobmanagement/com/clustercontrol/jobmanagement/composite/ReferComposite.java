@@ -131,7 +131,7 @@ public class ReferComposite extends Composite {
 		this.m_selectFromJobTreeRadio.setText(Messages.getString("job.select.jobtree"));
 		GridData gridDataRadio = new GridData();
 		gridDataRadio.horizontalSpan = 3;
-		gridDataRadio.horizontalAlignment = GridData.FILL;
+		gridDataRadio.horizontalAlignment = SWT.BEGINNING;
 		gridDataRadio.grabExcessHorizontalSpace = true;
 		this.m_selectFromJobTreeRadio.setLayoutData(gridDataRadio);
 		// ラジオボタンのイベント
@@ -207,7 +207,7 @@ public class ReferComposite extends Composite {
 		this.m_selectFromRegisteredModuleRadio.setText(Messages.getString("job.select.module"));
 		gridDataRadio = new GridData();
 		gridDataRadio.horizontalSpan = 3;
-		gridDataRadio.horizontalAlignment = GridData.FILL;
+		gridDataRadio.horizontalAlignment = SWT.BEGINNING;
 		gridDataRadio.grabExcessHorizontalSpace = true;
 		this.m_selectFromRegisteredModuleRadio.setLayoutData(gridDataRadio);
 		// ラジオボタンのイベント

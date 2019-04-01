@@ -9,11 +9,10 @@
 package com.clustercontrol.ws.agent;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 import javax.activation.DataHandler;
@@ -44,16 +43,23 @@ import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.JobSessionDuplicate;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.hinemosagent.bean.AgentInfo;
+import com.clustercontrol.hinemosagent.bean.AgentJavaInfo;
+import com.clustercontrol.hinemosagent.bean.AgentLibMd5s;
 import com.clustercontrol.hinemosagent.bean.AgentOutputBasicInfo;
 import com.clustercontrol.hinemosagent.bean.HinemosTopicInfo;
 import com.clustercontrol.hinemosagent.bean.TopicInfo;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
+import com.clustercontrol.hinemosagent.util.AgentLibraryManager;
+import com.clustercontrol.hinemosagent.util.AgentProfile;
+import com.clustercontrol.hinemosagent.util.AgentProfiles;
+import com.clustercontrol.hinemosagent.util.AgentUpdateList;
 import com.clustercontrol.jobmanagement.bean.JobFileCheck;
 import com.clustercontrol.jobmanagement.bean.JobTriggerInfo;
 import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
 import com.clustercontrol.jobmanagement.bean.RunResultInfo;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
+import com.clustercontrol.jobmanagement.util.JobFileCheckDuplicationGuard;
 import com.clustercontrol.logfile.session.MonitorLogfileControllerBean;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -61,7 +67,10 @@ import com.clustercontrol.repository.factory.FacilitySelector;
 import com.clustercontrol.repository.factory.NodeProperty;
 import com.clustercontrol.repository.factory.SearchNodeBySNMP;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
+import com.clustercontrol.util.WebServiceUtil;
 import com.clustercontrol.util.apllog.AplLogger;
 import com.clustercontrol.winevent.session.MonitorWinEventControllerBean;
 import com.clustercontrol.ws.util.HashMapInfo;
@@ -118,8 +127,16 @@ public class AgentEndpoint {
 
 		// TopicInfo のリストを設定
 		ArrayList<String> facilityIdList = getFacilityId(agentInfo);
+		AgentProfiles agentProfiles = Singletons.get(AgentProfiles.class);
 		for (String facilityId : facilityIdList) {
-			AgentConnectUtil.checkAgentLibMd5(facilityId);
+			// 未登録エージェントの場合は、プロファイル(ライブラリやJavaの情報)を送信するように指示する。
+			// ※直下のコードですぐに処理される。
+			if (!agentProfiles.hasProfile(facilityId)) {
+				TopicInfo topicInfo = new TopicInfo();
+				topicInfo.setNewFacilityFlag(true);
+				AgentConnectUtil.setTopic(facilityId, topicInfo);
+				break;
+			}
 		}
 
 		ArrayList<TopicInfo> topicInfoList = new ArrayList<TopicInfo>();
@@ -165,7 +182,6 @@ public class AgentEndpoint {
 	 * HinemosAgentAccess権限が必要
 	 *
 	 * @param agentInfo
-	 * @return
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
 	 * @throws HinemosUnknown
@@ -176,9 +192,13 @@ public class AgentEndpoint {
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
 		ArrayList<String> facilityIdList = getFacilityId(agentInfo);
+		AgentProfiles agentProfiles = Singletons.get(AgentProfiles.class);
+		AgentUpdateList agentUpdateList = Singletons.get(AgentUpdateList.class);
 		for (String facilityId : facilityIdList) {
 			m_log.info("deleteAgent " + facilityId + " is shutdown");
 			AgentConnectUtil.deleteAgent(facilityId, agentInfo);
+			agentProfiles.removeProfile(facilityId);
+			agentUpdateList.release(facilityId);
 		}
 	}
 
@@ -383,40 +403,51 @@ public class AgentEndpoint {
 	 */
 	public String jobFileCheckResult (JobFileCheck jobFileCheck, AgentInfo agentInfo) throws HinemosUnknown, InvalidUserPass, InvalidRole, JobMasterNotFound, FacilityNotFound, JobInfoNotFound, JobSessionDuplicate
 	{
-		String id = jobFileCheck.getId();
-		String jobunitId = jobFileCheck.getJobunitId();
-		String jobId = jobFileCheck.getJobId();
-		String filename = jobFileCheck.getFileName();
-		String directory = jobFileCheck.getDirectory();
-		Integer eventType = jobFileCheck.getEventType();
-		Integer modifyType = jobFileCheck.getModifyType();
-		m_log.info("jobFileCheckResult : id=" + id + ", jobunitId=" + jobunitId + ", jobId=" + jobId
-				+ ", filename=" + filename + ", directory=" + directory + ", eventType=" + eventType + ", modifyType=" + modifyType);
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
 		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HINEMOS_AGENT, SystemPrivilegeMode.MODIFY));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
-
-		JobTriggerInfo trigger = new JobTriggerInfo();
-		trigger.setJobkickId(jobFileCheck.getId());
-		trigger.setTrigger_type(JobTriggerTypeConstant.TYPE_FILECHECK);
-		trigger.setTrigger_info(jobFileCheck.getName() + "(" + id + ") file=" + filename);
-		trigger.setFilename(filename);
-		trigger.setDirectory(directory);
-		OutputBasicInfo output = null;
+		
 		String sessionId = null;
-		for (String facilityId : getFacilityId(agentInfo)) {
-			ArrayList<String> facilityList =
-					FacilitySelector.getFacilityIdList(jobFileCheck.getFacilityId(), jobFileCheck.getOwnerRoleId(), 0, false, false);
-			if (facilityList.contains(facilityId)) {
-				output = new OutputBasicInfo();
-				output.setFacilityId(facilityId);
-				try {
-					sessionId = new JobControllerBean().runJob(jobunitId, jobId, output, trigger);
-				} catch (Exception e) {
-					m_log.warn("jobFileCheckResult() : " + e.getMessage());
-					String[] args = { jobId, trigger.getTrigger_info() };
-					AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.JOB, MessageConstant.MESSAGE_SYS_017_JOB, args);
-					throw new HinemosUnknown(e.getMessage(), e);
+		// 重複ガード
+		try (JobFileCheckDuplicationGuard dg = new JobFileCheckDuplicationGuard(jobFileCheck)) {
+			String id = jobFileCheck.getId();
+			String jobunitId = jobFileCheck.getJobunitId();
+			String jobId = jobFileCheck.getJobId();
+			String filename = jobFileCheck.getFileName();
+			String directory = jobFileCheck.getDirectory();
+			Integer eventType = jobFileCheck.getEventType();
+			Integer modifyType = jobFileCheck.getModifyType();
+			m_log.info("jobFileCheckResult : id=" + id + ", jobunitId=" + jobunitId + ", jobId=" + jobId
+					+ ", filename=" + filename + ", directory=" + directory + ", eventType=" + eventType + ", modifyType=" + modifyType
+					+ ", uniqueId=" + dg.getUniqueId());
+	
+			String existingSessionId = dg.getSessionId();
+			if (existingSessionId != null) {
+				m_log.info("jobFileCheckResult : Detected duplication. jobSessionId=" + existingSessionId);
+				return existingSessionId;
+			}
+	
+			JobTriggerInfo trigger = new JobTriggerInfo();
+			trigger.setJobkickId(jobFileCheck.getId());
+			trigger.setTrigger_type(JobTriggerTypeConstant.TYPE_FILECHECK);
+			trigger.setTrigger_info(dg.getTriggerInfo());
+			trigger.setFilename(filename);
+			trigger.setDirectory(directory);
+			OutputBasicInfo output = null;
+			for (String facilityId : getFacilityId(agentInfo)) {
+				ArrayList<String> facilityList =
+						FacilitySelector.getFacilityIdList(jobFileCheck.getFacilityId(), jobFileCheck.getOwnerRoleId(), 0, false, false);
+				if (facilityList.contains(facilityId)) {
+					output = new OutputBasicInfo();
+					output.setFacilityId(facilityId);
+					try {
+						sessionId = new JobControllerBean().runJob(jobunitId, jobId, output, trigger);
+					} catch (Exception e) {
+						m_log.warn("jobFileCheckResult() : " + e.getMessage());
+						String[] args = { jobId, trigger.getTrigger_info() };
+						AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.JOB, MessageConstant.MESSAGE_SYS_017_JOB, args);
+						throw new HinemosUnknown(e.getMessage(), e);
+					}
 				}
 			}
 		}
@@ -494,14 +525,13 @@ public class AgentEndpoint {
 	}
 
 	/**
-	 * [Update] 新モジュールを取得
-	 *
-	 * HinemosAgentAccess権限が必要
+	 * [Update] (ver.6.2先行版専用)アップデートファイルをダウンロード
 	 *
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
 	 */
+	// TODO: ver.6.2先行版以前のエージェントに接続する必要がなくなったら本メソッドは削除可能
 	@XmlMimeType("application/octet-stream")
 	public DataHandler downloadModule(String libPath) throws InvalidUserPass, InvalidRole, HinemosUnknown
 	{
@@ -509,77 +539,237 @@ public class AgentEndpoint {
 		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HINEMOS_AGENT, SystemPrivilegeMode.MODIFY));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
-		String homeDir = System.getProperty("hinemos.manager.home.dir");
-		File file = new File(new File(homeDir + "/lib/agent"), libPath);
-		if(!file.exists()) {
-			m_log.info("file not found : " + file.getAbsolutePath());
+		File file = Singletons.get(AgentLibraryManager.class).getFile(libPath);
+		if (file == null) {
+			m_log.info("downloadModule: File not found. path=" + libPath);
 			return null;
 		}
+
 		FileDataSource source = new FileDataSource(file);
 		DataHandler dataHandler = new DataHandler(source);
 		return dataHandler;
 	}
 
 	/**
-	 * [Update] モジュール一覧を取得
+	 * [Update] (ver.6.2正式版以降用)アップデートファイルをダウンロード
 	 *
-	 * HinemosAgentAccess権限が必要
+	 * @throws HinemosUnknown
+	 * @throws InvalidRole
+	 * @throws InvalidUserPass
+	 */
+	@XmlMimeType("application/octet-stream")
+	public DataHandler downloadAgentLib(String libPath, AgentInfo agentInfo) throws InvalidUserPass, InvalidRole, HinemosUnknown
+	{
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HINEMOS_AGENT, SystemPrivilegeMode.MODIFY));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		List<String> facilityIds = getFacilityId(agentInfo);
+
+		m_log.debug("downloadAgentLib: libPath=" + libPath + " facilityIds=" + String.join(",", facilityIds));
+		
+		// 更新中エージェントからの要求でない場合は拒否する
+		AgentUpdateList uplist = Singletons.get(AgentUpdateList.class);
+		if (!uplist.isUpdating(facilityIds)) {
+			throw new HinemosUnknown("Not marked as updating.");
+		}
+		
+		// ファイルオブジェクトを取得する
+		File file = Singletons.get(AgentLibraryManager.class).getFile(libPath);
+		if (file == null) {
+			m_log.info("downloadAgentLib: File not found. path=" + libPath + " facilityIds="
+					+ String.join(",", facilityIds));
+			return null;
+		}
+		
+		// ダウンロード完了を検知可能にして、DataHandlerを返す。
+		FileDataSource source = new FileDataSourceForAgentLibDownload(file, facilityIds);
+		DataHandler dataHandler = new DataHandler(source);
+		return dataHandler;
+	}
+	
+	// ダウンロード完了を検知(InputStreamのcloseを捕捉)するためのクラス
+	private static class FileDataSourceForAgentLibDownload extends FileDataSource {
+		private List<String> facilityIds;
+		
+		public FileDataSourceForAgentLibDownload(File file, List<String> facilityIds) {
+			super(file);
+			this.facilityIds = facilityIds;
+
+			// 更新中エージェントリストへダウンロード開始を記録
+			AgentUpdateList agentUpdateList = Singletons.get(AgentUpdateList.class);
+			facilityIds.forEach(facilityId -> agentUpdateList.recordDownloadStart(facilityId));
+		}
+
+		@Override
+		public InputStream getInputStream() throws IOException {
+			InputStream is = super.getInputStream();
+			return new InputStream() {
+				// 基本的に全処理をFileDataSourceのInputStreamへ委譲する
+				@Override public int read(byte[] b) throws IOException { return is.read(b); }
+				@Override public int read(byte[] b, int off, int len) throws IOException { return is.read(b, off, len); }
+				@Override public long skip(long n) throws IOException { return is.skip(n); }
+				@Override public int available() throws IOException { return is.available(); }
+				@Override public synchronized void mark(int readlimit) { is.mark(readlimit); }
+				@Override public synchronized void reset() throws IOException { is.reset(); }
+				@Override public boolean markSupported() { return is.markSupported(); }
+				@Override public int read() throws IOException { return is.read(); }
+
+				@Override public void close() throws IOException {
+					// これがやりたいだけ
+					AgentUpdateList agentUpdateList = Singletons.get(AgentUpdateList.class);
+					facilityIds.forEach(facilityId -> agentUpdateList.recordDownloadEnd(facilityId));
+					// 例外が出る可能性があるので、closeは最後に呼ぶ
+					is.close();
+				}
+			};
+		}
+	}
+
+	/**
+	 * エージェント側でアップデートに失敗した場合に呼びます。
+	 * 
+	 * @param agentInfo エージェントの情報。
+	 * @param cause 失敗の理由。
+	 * @throws HinemosUnknown
+	 * @throws FacilityNotFound
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 */
+	public void cancelUpdate(String cause, AgentInfo agentInfo)
+			throws HinemosUnknown, FacilityNotFound, InvalidUserPass, InvalidRole {
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("cancelUpdate: " + agentInfo.toString() + ", cause:" + cause);
+		}
+
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HINEMOS_AGENT, SystemPrivilegeMode.MODIFY));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		ArrayList<String> facilityIds = getFacilityId(agentInfo);
+		if (facilityIds.size() == 0) {
+			throw new HinemosUnknown("Facility ID not specified.");
+		}
+
+		// 通知
+		OutputBasicInfo info = new OutputBasicInfo();
+		info.setPluginId(HinemosModuleConstant.PLATFORM_REPOSITORY);
+		info.setPriority(PriorityConstant.TYPE_WARNING);
+		info.setApplication(MessageConstant.AGENT.getMessage());
+		info.setMessage(MessageConstant.MESSAGE_AGENT_UPDATE_FAILURE.getMessage());
+		info.setMessageOrg(MessageConstant.MESSAGE_AGENT_UPDATE_FAILURE.getMessage() + "(" + cause + ")");
+		info.setGenerationDate(HinemosTime.getDateInstance().getTime());
+		info.setMonitorId("SYS"); // これ以外を指定すると監視設定を参照しようとしてしまう
+		info.setFacilityId(""); // 後でセット
+		info.setScopeText(""); // 後でセット
+		info.setRunInstructionInfo(null);
+		try {
+			AgentConnectUtil.sendMessageLocal(info, facilityIds);
+		} finally {
+			// 更新中リストから当該ノードを除去する。
+			Singletons.get(AgentUpdateList.class).release(facilityIds);
+		}
+	}
+	
+	/**
+	 * [Update] マネージャが保持している、エージェントのライブラリファイルの一覧を取得します。
+	 * <p>
+	 * ver.6.2正式版以降に対しては HinemosJava を含む一覧、
+	 * ver.6.2先行版に対しては HinemosJava を含まない一覧、
+	 * それ以外(通常、ver.6.1以前)に対しては空の一覧を返します。<br/>
 	 *
-	 * @return
+	 * @param agentInfo エージェントの情報。
+	 * @return ライブラリファイルの一覧。
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
 	 */
 	public ArrayList<String> getAgentLibMap(AgentInfo agentInfo) throws HinemosUnknown, InvalidRole, InvalidUserPass {
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("getAgentLibMap: " + agentInfo.toString());
+		}
+
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
 		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HINEMOS_AGENT, SystemPrivilegeMode.MODIFY));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
-		// TODO HashMapが利用できないのでArrayList<String>で実装。
-		// あとで調査すること。
-		ArrayList<String> facilityIdList = agentInfo == null ? null : getFacilityId(agentInfo);
-		Map<String, String> map = new RepositoryControllerBean().getAgentLibMap(facilityIdList);
-		ArrayList<String> ret = new ArrayList<String>();
-		for (Map.Entry<String, String> entry : map.entrySet()) {
-			ret.add(entry.getKey());
-			ret.add(entry.getValue());
+		// ファシリティIDを解決
+		List<String> facilityIds = getFacilityId(agentInfo);
+
+		// 更新中エージェントからの要求でない場合は拒否する
+		AgentUpdateList uplist = Singletons.get(AgentUpdateList.class);
+		if (!uplist.isUpdating(facilityIds)) {
+			throw new HinemosUnknown("Not marked as updating.");
 		}
-		return ret;
+
+		// ライブラリファイル一覧を取得
+		AgentLibraryManager libMgr = Singletons.get(AgentLibraryManager.class);
+		AgentLibMd5s libMd5s = libMgr.getAgentLibMd5s(facilityIds);
+
+		// 更新中エージェントリストへ時刻を記録
+		AgentUpdateList agentUpdateList = Singletons.get(AgentUpdateList.class);
+		facilityIds.forEach(facilityId -> agentUpdateList.recordLibMapAccessTime(facilityId));
+		
+		// メソッドの I/F を変更しないように、ArrayList へキャストする。
+		// 現在の convertToList は ArrayList を使用する実装であるため、これでも問題は起こらない。
+		// convertToList の実装を修正したにもかかわらず、ここの修正を行わなかった場合、ここで ClassCastException が発生する。
+		return (ArrayList<String>) WebServiceUtil.convertToList(libMd5s.asMap());
 	}
 
 	/**
-	 * [Update] ファイル名とMD5の組をマネージャに登録しておく。
+	 * [Update] (ver.6.2先行版以前用)エージェント側のライブラリファイルの情報をマネージャへ登録します。
 	 *
-	 * HinemosAgentAccess権限が必要
-	 *
-	 * TODO
-	 * ArrayList<String>ではなく、HashMap<String, String>にしたい。
-	 * 要調査。
-	 *
-	 * @param filenameMd5
-	 * @param agentInto
+	 * @param filenameMd5 ライブラリファイルの一覧。
+	 * @param agentInfo エージェントの情報。
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
 	 */
-	public void setAgentLibMd5(ArrayList<String> filenameMd5, AgentInfo agentInfo) throws InvalidUserPass, InvalidRole, HinemosUnknown {
+	// TODO: ver.6.2先行版以前のエージェントに接続する必要がなくなったら本メソッドは削除可能
+	public void setAgentLibMd5(ArrayList<String> filenameMd5, AgentInfo agentInfo)
+			throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
 		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HINEMOS_AGENT, SystemPrivilegeMode.MODIFY));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
-		HashMap<String, String> map = new HashMap<String, String>();
-		Iterator<String> itr = filenameMd5.iterator();
-		while(itr.hasNext()) {
-			map.put(itr.next().replace("/", File.separator).replace("\\", File.separator), itr.next());
+		List<String> facilityIds = getFacilityId(agentInfo);
+		AgentLibMd5s libMd5s = new AgentLibMd5s(WebServiceUtil.convertToMap(filenameMd5));
+
+		if (m_log.isDebugEnabled()) {
+			m_log.debug(String.format("setAgentLibMd5: agentInfo=%s, facilityIds=[%s]", agentInfo.toString(),
+					String.join(",", facilityIds)));
 		}
 
-		ArrayList<String> facilityIdList = getFacilityId(agentInfo);
-		for (String facilityId : facilityIdList) {
-			m_log.debug("setAgentLibMd5() : facilityId=" + facilityId);
-			AgentConnectUtil.setAngetLibMd5(facilityId, map);
-		}
+		Singletons.get(AgentProfiles.class).registerProfile(facilityIds, new AgentProfile(libMd5s, null));
 	}
-	
+
+	/**
+	 * [Update] (ver.6.2正式版以降用)エージェント側のライブラリファイルとJavaの情報をマネージャへ登録します。
+	 *
+	 * @param filenameMd5 ライブラリファイルの一覧。
+	 * @param javaInfo エージェントのJava環境情報。
+	 * @param agentInfo エージェントの情報。
+	 * @throws HinemosUnknown
+	 * @throws InvalidRole
+	 * @throws InvalidUserPass
+	 */
+	public void setAgentProfile(List<String> filenameMd5, AgentJavaInfo javaInfo, AgentInfo agentInfo)
+			throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.HINEMOS_AGENT, SystemPrivilegeMode.MODIFY));
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		List<String> facilityIds = getFacilityId(agentInfo);
+		AgentLibMd5s libMd5s = new AgentLibMd5s(WebServiceUtil.convertToMap(filenameMd5));
+
+		if (m_log.isDebugEnabled()) {
+			m_log.debug(String.format("setAgentProfile: agentInfo=%s, facilityIds=[%s]", agentInfo.toString(),
+					String.join(",", facilityIds)));
+		}
+
+		Singletons.get(AgentProfiles.class).registerProfile(facilityIds, new AgentProfile(libMd5s, javaInfo));
+	}
+
 	/**
 	 * [Job] スクリプト情報を取得する
 	 *
@@ -673,4 +863,5 @@ public class AgentEndpoint {
 		}
 		return dtos;
 	}
+
 }

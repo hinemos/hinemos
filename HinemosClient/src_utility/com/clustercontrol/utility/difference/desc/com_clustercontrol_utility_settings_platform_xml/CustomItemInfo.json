@@ -1,0 +1,53 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"settingCustomId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"displayName",
+	"annotations":[
+		{"type":"Column", "columnName":"CustomItemInfoType_displayName"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"CustomItemInfoType_description"}
+	]},
+
+	{
+	"propName":"command",
+	"annotations":[
+		{"type":"Column", "columnName":"CustomItemInfoType_command"}
+	]},
+
+	{
+	"propName":"specifyUser",
+	"annotations":[
+		{"type":"Column", "columnName":"CustomItemInfoType_specifyUser"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_agent_user"},
+			{"value":"true", "name":"name_specify_user"}
+		]}
+	]},
+
+	{
+	"propName":"effectiveUser",
+	"annotations":[
+		{"type":"Column", "columnName":"CustomItemInfoType_effectiveUser"}
+	]},
+
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"CustomItemInfoType_validFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]}
+]
+}

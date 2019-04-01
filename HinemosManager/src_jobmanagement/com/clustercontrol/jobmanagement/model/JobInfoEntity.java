@@ -21,6 +21,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.PrimaryKeyJoinColumn;
 import javax.persistence.PrimaryKeyJoinColumns;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import com.clustercontrol.jobmanagement.bean.ConditionTypeConstant;
 import com.clustercontrol.util.HinemosTime;
@@ -170,6 +171,10 @@ public class JobInfoEntity implements Serializable {
 	private Integer monitorWaitTime;
 	private Integer monitorWaitEndValue;
 
+	// ジョブ同時実行制御キュー
+	private String queueId;
+	private Boolean queueFlg;
+	
 	private JobSessionJobEntity jobSessionJobEntity;
 	private List<JobParamInfoEntity> jobParamInfoEntities;
 	private List<JobStartJobInfoEntity> jobStartJobInfoEntities;
@@ -1329,6 +1334,39 @@ public class JobInfoEntity implements Serializable {
 		this.monitorWaitEndValue = monitorWaitEndValue;
 	}
 
+	@Column(name="queue_flg")
+	public Boolean getQueueFlg() {
+		return queueFlg;
+	}
+
+	public void setQueueFlg(Boolean queueFlg) {
+		this.queueFlg = queueFlg;
+	}
+
+	@Column(name="queue_id")
+	public String getQueueId() {
+		return queueId;
+	}
+	public void setQueueId(String queueId) {
+		this.queueId = queueId;
+	}
+
+	/**
+	 * 同時実行制御キューの有効フラグがtrueになっており、かつキューIDが設定されている場合のみ、キューIDを返します。
+	 * それ以外はnullを返します。
+	 */
+	@Transient
+	public String getQueueIdIfEnabled() {
+		if (queueFlg == null || !queueFlg.booleanValue()) {
+			return null;
+		}
+		if (queueId == null || queueId.trim().isEmpty()) {
+			return null;
+		}
+		
+		return queueId;
+	}
+	
 	//bi-directional one-to-one association to JobSessionJobEntity
 	@OneToOne(fetch=FetchType.LAZY)
 	@PrimaryKeyJoinColumns({

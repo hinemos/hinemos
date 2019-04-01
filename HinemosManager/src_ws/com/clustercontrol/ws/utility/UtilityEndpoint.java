@@ -17,7 +17,6 @@ import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
-import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -44,12 +43,5 @@ public class UtilityEndpoint {
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
 		return str + ", " + str;
-	}
-
-	public String getVersion() throws InvalidUserPass, InvalidRole, HinemosUnknown {
-		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
-		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
-
-		return KeyCheck.getResultEnterprise();
 	}
 }

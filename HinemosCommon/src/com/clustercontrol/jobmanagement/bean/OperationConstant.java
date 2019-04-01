@@ -25,6 +25,8 @@ public class OperationConstant {
 	public static final int TYPE_START_SKIP = 5;
 	/** 開始[保留解除] */
 	public static final int TYPE_START_WAIT = 7;
+	/** 開始[強制実行] */
+	public static final int TYPE_START_FORCE_RUN = 12;
 
 	/** 停止[コマンド] */
 	public static final int TYPE_STOP_AT_ONCE = 0;
@@ -55,6 +57,8 @@ public class OperationConstant {
 			return "JOB_START_RELEASE_SKIP";
 		} else if (type == TYPE_START_WAIT) {
 			return "JOB_START_RELEASE_RESERVE";
+		} else if (type == TYPE_START_FORCE_RUN) {
+			return "JOB_START_FORCE_RUN";
 		} else if (type == TYPE_STOP_AT_ONCE) {
 			return "JOB_STOP_AT_ONCE";
 		} else if (type == TYPE_STOP_SUSPEND) {

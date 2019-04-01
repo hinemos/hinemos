@@ -25,9 +25,15 @@ public class XMLConstant {
 	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_NODE_FS = "platformNodeFilesystem.xml";
 	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_NODE_DEVICE = "platformNodeDevice.xml";
 	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_NODE_VARIABLE = "platformNodeVariable.xml";
+	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_NODE_NETSTAT = "platformNodeNetstat.xml";
+	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_NODE_PROCESS = "platformNodeProcess.xml";
+	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_NODE_PACKAGE = "platformNodePackage.xml";
+	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_NODE_PRODUCT = "platformNodeProduct.xml";
+	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_NODE_LICENSE = "platformNodeLicense.xml";
 	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_NODE_NOTE = "platformNodeNote.xml";
 	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_SCOPE = "platformScope.xml";
 	public static final String DEFAULT_XML_PLATFORM_REPOSITORY_SCOPE_NODE = "platformScopeNode.xml";
+	public static final String DEFAULT_XML_PLATFORM_NODECONFIG = "platformNodeConfig.xml";
 	public static final String DEFAULT_XML_PLATFORM_CALENDAR = "platformCalendar.xml";
 	public static final String DEFAULT_XML_PLATFORM_CALENDAR_PATTERN = "platformCalendarPattern.xml";
 	public static final String DEFAULT_XML_PLATFORM_NOTIFY = "platformNotify.xml";
@@ -59,6 +65,7 @@ public class XMLConstant {
 	public static final String DEFAULT_XML_JOB_SCHEDULE = "jobSchedule.xml";
 	public static final String DEFAULT_XML_JOB_FILECHECK = "jobFileCheck.xml";
 	public static final String DEFAULT_XML_JOB_MANUAL = "jobManual.xml";
+	public static final String DEFAULT_XML_JOB_QUEUE = "jobQueue.xml";
 	public static final String DEFAULT_XML_SYSYTEM_MAINTENANCE = "platformMaintenance.xml";
 	public static final String DEFAULT_XML_MASTER_COLLECT = "collectorMaster.xml";
 	public static final String DEFAULT_XML_MASTER_PLATFORM = "collectorPlatformMaster.xml";

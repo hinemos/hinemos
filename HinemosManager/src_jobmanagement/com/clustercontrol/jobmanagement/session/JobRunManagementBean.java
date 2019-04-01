@@ -54,6 +54,7 @@ import com.clustercontrol.jobmanagement.factory.JobOperationJudgment;
 import com.clustercontrol.jobmanagement.factory.JobSessionImpl;
 import com.clustercontrol.jobmanagement.factory.JobSessionJobImpl;
 import com.clustercontrol.jobmanagement.factory.JobSessionNodeImpl;
+import com.clustercontrol.jobmanagement.factory.OperateForceRunOfJob;
 import com.clustercontrol.jobmanagement.factory.OperateForceStopOfJob;
 import com.clustercontrol.jobmanagement.factory.OperateMaintenanceOfJob;
 import com.clustercontrol.jobmanagement.factory.OperateSkipOfJob;
@@ -67,6 +68,7 @@ import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntityPK;
+import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
@@ -86,6 +88,7 @@ import com.clustercontrol.sql.factory.RunMonitorSql;
 import com.clustercontrol.sql.factory.RunMonitorSqlString;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
 import com.clustercontrol.util.apllog.AplLogger;
 import com.clustercontrol.winservice.factory.RunMonitorWinService;
 
@@ -308,6 +311,12 @@ public class JobRunManagementBean {
 				}
 			}
 		}
+		
+		// ジョブキューのアクティブ化
+		// - 論理的にはジョブキューの設定変更時やジョブ終了時にだけ実施すればよい処理ではあるが、
+		//   なんらかの問題により待機しているジョブが残存してしまうのを防ぐため、
+		//   ここで定期的に実施する。
+		Singletons.get(JobQueueContainer.class).activateJobs();
 	}
 
 	/**
@@ -605,9 +614,7 @@ public class JobRunManagementBean {
 				//実行状態を取得
 				status = sessionJob.getStatus();
 
-				if(sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_JOB
-						|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_APPROVALJOB
-						|| sessionJob.getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB){
+				if(sessionJob.hasSessionNode()){
 					jobType = JobOperationJudgment.TYPE_JOB;
 				} else{
 					jobType = JobOperationJudgment.TYPE_JOBNET;
@@ -661,6 +668,16 @@ public class JobRunManagementBean {
 					AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.JOB, MessageConstant.MESSAGE_SYS_010_JOB, args);
 					throw e;
 				}
+			} else if(control == OperationConstant.TYPE_START_FORCE_RUN){
+				//開始[強制実行]
+				try {
+					new OperateForceRunOfJob().forceRunJob(sessionId, jobunitId, jobId);
+				} catch (Throwable e) {
+					String[] args = { sessionId, jobId };
+					AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.JOB,
+							MessageConstant.MESSAGE_SYS_JOB_OPERATION_FAILED_FORCE_RUN, args);
+					throw e;
+				}
 			} else if(control == OperationConstant.TYPE_STOP_AT_ONCE){
 				try {
 					//停止[コマンド]
@@ -674,7 +691,7 @@ public class JobRunManagementBean {
 				try {
 					//停止[中断]
 					new OperateSuspendOfJob().suspendJob(sessionId, jobunitId, jobId);
-				} catch (InvalidRole | JobInfoNotFound e) {
+				} catch (InvalidRole | JobInfoNotFound | HinemosUnknown e) {
 					String[] args = {sessionId, jobId};
 					AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.JOB, MessageConstant.MESSAGE_SYS_012_JOB, args);
 					throw e;

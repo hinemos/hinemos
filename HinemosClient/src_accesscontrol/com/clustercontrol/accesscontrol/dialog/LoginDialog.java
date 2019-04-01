@@ -43,6 +43,7 @@ import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.EndpointUnit;
+import com.clustercontrol.util.LoginConstant;
 import com.clustercontrol.util.LoginManager;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
@@ -507,7 +508,7 @@ public class LoginDialog extends Dialog {
 			}else{
 				// 3. Load record(s) from history
 				IPreferenceStore store = ClusterControlPlugin.getDefault().getPreferenceStore();
-				int historyNum = store.getInt(LoginManager.KEY_LOGIN_STATUS_NUM);
+				int historyNum = store.getInt(LoginConstant.KEY_LOGIN_STATUS_NUM);
 				if (historyNum > maxConnectManager) {
 					// 最大マネージャ接続数だけ読み込む
 					historyNum = maxConnectManager;
@@ -515,10 +516,10 @@ public class LoginDialog extends Dialog {
 				if( 0 < historyNum ){
 					// 1. Try to reload from history
 					for( int i=0; i<historyNum; i++ ){
-						String userId = store.getString(LoginManager.KEY_LOGIN_STATUS_UID + "_" + i);
+						String userId = store.getString(LoginConstant.KEY_LOGIN_STATUS_UID + "_" + i);
 						String password = "";
-						String url = store.getString(LoginManager.KEY_LOGIN_STATUS_URL + "_" + i);
-						String managerName = store.getString(LoginManager.KEY_LOGIN_STATUS_MANAGERNAME + "_" + i);
+						String url = store.getString(LoginConstant.KEY_LOGIN_STATUS_URL + "_" + i);
+						String managerName = store.getString(LoginConstant.KEY_LOGIN_STATUS_MANAGERNAME + "_" + i);
 
 						// Use ENV setting at first when existed
 						if( 0 == i ){

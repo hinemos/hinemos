@@ -296,7 +296,7 @@ public class BinaryFiltering {
 
 			case HEX:
 				// 16進数文字列をバイトリストに変換する.
-				patternBinary = BinaryUtil.stirngToList(binarySearch.getOnlyHexString());
+				patternBinary = BinaryUtil.stringToList(binarySearch.getOnlyHexString());
 				if (patternBinary == null) {
 					log.warn("grep string(hex) [" + matchInfo.getGrepString() + "] failed to change binary");
 				}

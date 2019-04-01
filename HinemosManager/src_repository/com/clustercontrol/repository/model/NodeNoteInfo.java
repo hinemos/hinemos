@@ -182,4 +182,13 @@ public class NodeNoteInfo implements Serializable, Cloneable {
 			throw new InternalError(e.toString());
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "NodeNoteInfo ["
+				+ "id=" + id 
+				+ ", note=" + note 
+				+ "]";
+	}
+
 }

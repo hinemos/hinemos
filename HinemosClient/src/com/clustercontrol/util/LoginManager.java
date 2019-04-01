@@ -53,12 +53,6 @@ import com.clustercontrol.fault.InvalidTimezone;
 public class LoginManager {
 	private static Log m_log = LogFactory.getLog( LoginManager.class );
 
-	// TODO 6.2で全部LoginConstantを参照
-	public static final String KEY_LOGIN_STATUS_NUM = LoginConstant.KEY_LOGIN_STATUS_NUM;
-	public static final String KEY_LOGIN_STATUS_UID = LoginConstant.KEY_LOGIN_STATUS_UID;
-	public static final String KEY_LOGIN_STATUS_URL = LoginConstant.KEY_LOGIN_STATUS_URL;
-	public static final String KEY_LOGIN_STATUS_MANAGERNAME = LoginConstant.KEY_LOGIN_STATUS_MANAGERNAME;
-
 	public static final String KEY_URL = LoginConstant.KEY_URL;
 	public static final String KEY_URL_NUM = LoginConstant.KEY_URL_NUM;
 
@@ -298,19 +292,19 @@ public class LoginManager {
 		IPreferenceStore store = ClusterControlPlugin.getDefault().getPreferenceStore();
 
 		// Clear old records
-		store.setValue(KEY_LOGIN_STATUS_NUM, 0);
+		store.setValue(LoginConstant.KEY_LOGIN_STATUS_NUM, 0);
 
 		// Add history
 		int stateNum = 0;
 		for( EndpointUnit endpointUnit : EndpointManager.getAllManagerList() ){
 			m_log.debug("saveLoginState() : " + stateNum + ", " + endpointUnit.getManagerName());
-			store.setValue(LoginManager.KEY_LOGIN_STATUS_UID + "_" + stateNum, endpointUnit.getUserId());
-			store.setValue(LoginManager.KEY_LOGIN_STATUS_URL + "_" + stateNum, endpointUnit.getUrlListStr());
-			store.setValue(LoginManager.KEY_LOGIN_STATUS_MANAGERNAME + "_" + stateNum, endpointUnit.getManagerName());
+			store.setValue(LoginConstant.KEY_LOGIN_STATUS_UID + "_" + stateNum, endpointUnit.getUserId());
+			store.setValue(LoginConstant.KEY_LOGIN_STATUS_URL + "_" + stateNum, endpointUnit.getUrlListStr());
+			store.setValue(LoginConstant.KEY_LOGIN_STATUS_MANAGERNAME + "_" + stateNum, endpointUnit.getManagerName());
 			stateNum++;
 		}
 		m_log.info("Save login state " + stateNum);
-		store.setValue(KEY_LOGIN_STATUS_NUM, stateNum);
+		store.setValue(LoginConstant.KEY_LOGIN_STATUS_NUM, stateNum);
 		
 		
 		// ジョブツリーの更新
@@ -374,8 +368,10 @@ public class LoginManager {
 			return;
 		}
 
-		// ログインに成功した場合のみ、オプション用UI contributionsの有・無効化を行う
-		OptionUtil.enableActivities(window, EndpointManager.getAllOptions());
+		if (returnCode == IDialogConstants.OK_ID && LoginManager.isLogin()) {
+			// ログインに成功した場合のみ、オプション用UI contributionsの有・無効化を行う
+			OptionUtil.enableActivities(window, EndpointManager.getAllOptions());
+		}
 	}
 
 	public static void login(IWorkbenchWindow window) {

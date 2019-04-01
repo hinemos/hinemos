@@ -67,7 +67,7 @@ public class LogSearchView extends CommonViewPart implements ObjectPrivilegeTarg
 	 * @return
 	 * @throws PartInitException
 	 * 
-	 * FIXME
+	 * XXX
 	 * マネージャ名は、次の文字列の入力を受け付けてしまう。
 	 * 半角文字列の -^\@[;:],./\=~|`{+*}<>?_!"#$%&'()
 	 * 全角文字列の ー＾￥＠「；：」、。・￥＝～｜‘｛＋＊｝＜＞？＿！”＃＄％＆’（）
@@ -114,8 +114,8 @@ public class LogSearchView extends CommonViewPart implements ObjectPrivilegeTarg
 			logSearchComposite.updateMonitorCombo();
 		}
 		
-		//ポップアップメニュー作成
-		//TODO createContextMenu();
+		// ポップアップメニュー作成
+		// createContextMenu();
 
 		//ビューを更新
 		this.update();

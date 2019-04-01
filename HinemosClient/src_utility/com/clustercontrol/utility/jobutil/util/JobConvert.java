@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.LoginManager;
@@ -273,6 +274,16 @@ public class JobConvert {
 		List<JobInfo> jobList = new ArrayList<>();
 
 		JobInfo job = JobTreeItemUtil.clone(topJob, topJob).getData();
+		//詳細情報が必要なのでsetJobFull実行
+		String managerName = null;
+		JobTreeItem mgrTree = JobTreeItemUtil.getManager(topJob);
+		if(mgrTree == null) {
+			managerName = topJob.getChildren().get(0).getData().getId();
+		} else {
+			managerName = mgrTree.getData().getId();
+		}
+		JobPropertyUtil.setJobFull(managerName, job);
+		
 		// jobNet が先頭だったら、unit の情報を上書き、jobNet を TOP にする
 		if (topJob.getData().getType() != JobConstant.TYPE_JOBUNIT) {
 			job.setParentId("TOP");
@@ -289,13 +300,15 @@ public class JobConvert {
 		
 		jobList.add(job);
 		
-		changeSetChildExportJob(jobList, job, topJob, scope, notify);
+		changeSetChildExportJob(jobList, managerName ,job, topJob, scope, notify);
 		return jobList;
 	}
 
-	private static void changeSetChildExportJob(List<JobInfo> jobList, JobInfo topJob, JobTreeItem parentJob, boolean scope, boolean notify){
+	private static void changeSetChildExportJob(List<JobInfo> jobList, String managerName, JobInfo topJob, JobTreeItem parentJob, boolean scope, boolean notify){
 		for (JobTreeItem child : parentJob.getChildren()) {
 			JobInfo job = JobTreeItemUtil.clone(child, parentJob).getData();
+			//詳細情報が必要なのでsetJobFull実行
+			JobPropertyUtil.setJobFull(managerName, job);
 			
 			job.setParentId(parentJob.getData().getId());
 			job.setJobunitId(topJob.getId());
@@ -330,7 +343,7 @@ public class JobConvert {
 			jobList.add(job);
 
 			// Add children items to list recursively
-			changeSetChildExportJob(jobList, topJob, child, scope, notify);
+			changeSetChildExportJob(jobList, managerName, topJob, child, scope, notify);
 		}
 	}
 	

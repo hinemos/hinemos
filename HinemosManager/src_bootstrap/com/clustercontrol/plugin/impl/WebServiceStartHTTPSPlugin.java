@@ -21,9 +21,6 @@ HinemosPlugin {
 		Set<String> dependency = new HashSet<String>();
 		dependency.add(WebServiceAgentPlugin.class.getName());
 		dependency.add(WebServiceCorePlugin.class.getName());
-		// TODO Why need the followings?
-		//dependency.add(WebServiceJobMapPlugin.class.getName());
-		//dependency.add(WebServiceNodeMapPlugin.class.getName());
 		return dependency;
 	}
 

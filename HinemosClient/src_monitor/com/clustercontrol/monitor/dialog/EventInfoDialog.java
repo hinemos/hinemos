@@ -30,6 +30,8 @@ import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
+import com.clustercontrol.monitor.action.ModifyEvent;
+import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.util.EventDataPropertyUtil;
 import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
@@ -59,18 +61,28 @@ public class EventInfoDialog extends CommonDialog {
 	/**
 	 * プロパティ
 	 */
-	private Property eventCommentProperty = null;
+	private Property eventProperty = null;
 
-
+	/**
+	 * ダイアログ表示時点のイベント
+	 */
+	private EventDataInfo initEventInfo = null;
+	
+	/**
+	 * イベント表示設定情報
+	 */
+	private MultiManagerEventDisplaySettingInfo eventDspSetting = null;
+	
 	/**
 	 * インスタンスを返します。
 	 *
 	 * @param parent 親のシェルオブジェクト
 	 */
-	public EventInfoDialog(Shell parent, List<?> list) {
+	public EventInfoDialog(Shell parent, List<?> list, MultiManagerEventDisplaySettingInfo eventDspSetting) {
 		super(parent);
 		setShellStyle(getShellStyle() | SWT.RESIZE | SWT.MAX);
 		m_list = list;
+		this.eventDspSetting = eventDspSetting;
 	}
 
 	/**
@@ -132,7 +144,7 @@ public class EventInfoDialog extends CommonDialog {
 		this.propertySheet.setSize(170, 280);
 
 		// プロパティ取得及び設定
-		eventCommentProperty = null;
+		eventProperty = null;
 		if (m_list != null) {
 			String managerName = (String)m_list.get(GetEventListTableDefine.MANAGER_NAME);
 			String monitorId = (String) m_list.get(GetEventListTableDefine.MONITOR_ID);
@@ -143,9 +155,9 @@ public class EventInfoDialog extends CommonDialog {
 
 			try {
 				MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
-				EventDataInfo info = wrapper.getEventInfo(monitorId, monitorDetailId, pluginId, facilityId, receiveTime.getTime());
-				eventCommentProperty = EventDataPropertyUtil.dto2property(info, Locale.getDefault());
-				this.propertySheet.setInput(eventCommentProperty);
+				initEventInfo = wrapper.getEventInfo(monitorId, monitorDetailId, pluginId, facilityId, receiveTime.getTime());
+				eventProperty = EventDataPropertyUtil.dto2property(initEventInfo, Locale.getDefault(), this.eventDspSetting, managerName);
+				this.propertySheet.setInput(eventProperty);
 			} catch (InvalidRole_Exception e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -182,8 +194,8 @@ public class EventInfoDialog extends CommonDialog {
 	 * @see com.clustercontrol.viewer.PropertySheet#getInput()
 	 */
 	public Property getInputData() {
-		if(eventCommentProperty != null){
-			Property copy = PropertyUtil.copy(eventCommentProperty);
+		if(eventProperty != null){
+			Property copy = PropertyUtil.copy(eventProperty);
 			return copy;
 		}
 		else{
@@ -212,5 +224,10 @@ public class EventInfoDialog extends CommonDialog {
 		// 閉じる(cancel)ボタン
 		this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("cancel"), false);
 
+	}
+	
+	public void okButtonPress(String managerName) {
+		ModifyEvent modifyEvent = new ModifyEvent();
+		modifyEvent.updateModify(managerName, this.initEventInfo, this.getInputData(), this.eventDspSetting);
 	}
 }

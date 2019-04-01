@@ -203,7 +203,6 @@ public class RunMonitorProcess extends RunMonitorNumericValueType {
 				return procList;
 				
 		}
-		// FIXME nagatsumas 仮実装
 		return null;
 	}
 	

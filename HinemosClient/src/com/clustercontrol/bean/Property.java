@@ -45,13 +45,16 @@ public class Property extends PropertyTreeItem implements Serializable {
 	private Object m_selectValues[][];
 
 	/** プロパティの上限値 **/
-	private int m_UpperBound ;
+	private long m_UpperBound ;
 
 	/** プロパティの下限値 **/
-	private int m_LowerBound ;
+	private long m_LowerBound ;
 
 	/** プロパティの文字数上限値 **/
 	private int m_stringUpperBound;
+
+	/** プロパティの強調表示 */
+	private Boolean m_stringHighlight;
 
 	/**
 	 * @param id
@@ -76,12 +79,12 @@ public class Property extends PropertyTreeItem implements Serializable {
 	 * @param lower
 	 * @since 2.2.0
 	 */
-	public Property(String id, String name, String editor, int upper, int lower) {
+	public Property(String id, String name, String editor, long upper, long lower) {
 		m_ID = id;
 		m_Name = name;
 		m_Editor = editor;
-		m_UpperBound = Integer.valueOf(upper);
-		m_LowerBound = Integer.valueOf(lower);
+		m_UpperBound = Long.valueOf(upper);
+		m_LowerBound = Long.valueOf(lower);
 		m_Define = null;
 		m_Copy = PropertyDefineConstant.COPY_NG;
 		m_Modify = PropertyDefineConstant.MODIFY_NG;
@@ -270,7 +273,7 @@ public class Property extends PropertyTreeItem implements Serializable {
 	 * @return
 	 * @since 2.2.0
 	 */
-	public int getUpperBound() {
+	public long getUpperBound() {
 		return m_UpperBound;
 	}
 
@@ -280,7 +283,7 @@ public class Property extends PropertyTreeItem implements Serializable {
 	 * @param value
 	 * @since 2.2.0
 	 */
-	public void setUpperBound(int value) {
+	public void setUpperBound(long value) {
 		m_UpperBound = value;
 	}
 
@@ -290,7 +293,7 @@ public class Property extends PropertyTreeItem implements Serializable {
 	 * @return
 	 * @since 2.2.0
 	 */
-	public int getLowerBound() {
+	public long getLowerBound() {
 		return m_LowerBound;
 	}
 
@@ -300,7 +303,7 @@ public class Property extends PropertyTreeItem implements Serializable {
 	 * @param value
 	 * @since 2.2.0
 	 */
-	public void setLowerBound(int value) {
+	public void setLowerBound(long value) {
 		m_LowerBound = value;
 	}
 
@@ -322,6 +325,26 @@ public class Property extends PropertyTreeItem implements Serializable {
 	 */
 	public void setStringUpperValue(int value) {
 		m_stringUpperBound = value;
+	}
+
+	/**
+	 * プロパティの強調表示を取得します。<BR>
+	 * 
+	 * @return
+	 * @since 6.2.0
+	 */
+	public Boolean getStringHighlight() {
+		return m_stringHighlight;
+	}
+
+	/**
+	 * プロパティの強調表示を設定します。<BR>
+	 * 
+	 * @param value
+	 * @since 6.2.0
+	 */
+	public void setStringHighlight(Boolean value) {
+		m_stringHighlight = value;
 	}
 
 

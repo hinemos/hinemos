@@ -748,17 +748,22 @@ public class BinaryMonitor {
 
 				// レコード分割.
 				CutProcessType cutType = this.getCutProcessType(binaryInfo);
+				int skippedSize = 0;
 				switch (cutType) {
 
 				case FIXED:
 					//スキップサイズの指定があれば範囲内は無視するように考慮しつつレコードを分割
 					sendData = separator.separateFixed(this.m_wrapper.getId(), readedBinary, binaryInfo, readingStatus);
+					//分割時に無視したレコード長を取得
+					skippedSize = separator.getSkippedSize();
 					break;
 
 				case VARIABLE:
 					//スキップサイズの指定があれば範囲内は無視するように考慮しつつレコードを分割
 					sendData = separator.separateVariable(this.m_wrapper.getId(), readedBinary, binaryInfo,
 							readingStatus);
+					//分割時に無視したレコード長を取得
+					skippedSize = separator.getSkippedSize();
 					break;
 
 				case INTERVAL:
@@ -766,15 +771,15 @@ public class BinaryMonitor {
 					if( readingStatus.isToSkipRecord() ){
 						// ただし、スキップサイズの指定があれば範囲内は無視するように考慮(読込み開始位置なども考慮)
 						// 時間区切りにヘッダーはないので考慮しない
-						long frSet = readingStatus.getSkipSize() - readingStatus.getPosition() ;
-						long toSet = readedBinary.size() - readingStatus.getPosition() ;
-						List<Byte> resizeBinary = new ArrayList<Byte>();
-						for (int pos = 0; pos < readedBinary.size(); pos++) {
-							if( frSet <= pos &&  pos<= toSet ){
-								resizeBinary.add(readedBinary.get(pos));
-							}
+						if(readedBinary.size() > this.readingStatus.getSkipSize()){
+							// 読み取ったレコードがスキップサイズを超えた場合、範囲外のデータをレコードとする
+							readedBinary = readedBinary.subList((int)this.readingStatus.getSkipSize(), readedBinary.size());
+							skippedSize = (int)this.readingStatus.getSkipSize();
+						} else {
+							// スキップサイズ範囲内の場合は全てスキップ
+							skippedSize = readedBinary.size();
+							break;
 						}
-						readedBinary =resizeBinary;
 					}
 					if(readedBinary.size() == 0){//
 						break;
@@ -816,6 +821,11 @@ public class BinaryMonitor {
 					m_log.info(methodName + DELIMITER
 							+ String.format("readed data is empty. monitorId=%s, file=[%s], fileInfo=%s",
 									m_wrapper.getId(), readingStatus.getMonFileName(), fileInfo.toString()));
+
+					// 読込サイズが0の場合でもスキップしたデータがある場合は、ファイルRSを更新する
+					if(skippedSize > 0) {
+						this.updateFileRS(onlyRotatedFile, fileInfo, 0, skippedSize);
+					}
 					return false;
 				}
 
@@ -896,7 +906,7 @@ public class BinaryMonitor {
 				if (m_wrapper.runInstructionInfo != null) {
 					if (topMonitorResult == null) {
 						// マッチした監視結果が存在しない場合は終了(監視自体は実施してるのでファイルRSは更新しとく)
-						this.updateFileRS(onlyRotatedFile, fileInfo, readedSize);
+						this.updateFileRS(onlyRotatedFile, fileInfo, readedSize, skippedSize);
 						m_log.info(methodName + DELIMITER
 								+ String.format("match data for monitor job isn't exist. Id=%s, file=[%s]",
 										m_wrapper.getId(), readingStatus.getMonFileName()));
@@ -913,7 +923,7 @@ public class BinaryMonitor {
 				if (!m_wrapper.monitorInfo.isCollectorFlg()) {
 					if (matchData.isEmpty()) {
 						// マッチした監視結果が存在しない場合は終了(監視自体は実施してるのでファイルRSは更新しとく)
-						this.updateFileRS(onlyRotatedFile, fileInfo, readedSize);
+						this.updateFileRS(onlyRotatedFile, fileInfo, readedSize, skippedSize);
 						m_log.info(methodName + DELIMITER
 								+ String.format(
 										"match data for only monitoring isn't exist. Id=%s, collectFlg=%b, file=[%s]",
@@ -932,7 +942,7 @@ public class BinaryMonitor {
 				this.sendManager(fileInfo, sendData);
 
 				// ファイルRSの更新.
-				this.updateFileRS(onlyRotatedFile, fileInfo, readedSize);
+				this.updateFileRS(onlyRotatedFile, fileInfo, readedSize, skippedSize);
 
 			} else if (currentFileTimeStamp == readingStatus.getMonFileLastModTimeStamp()) {
 				// 更新されてない場合.
@@ -956,6 +966,10 @@ public class BinaryMonitor {
 										+ " monitorID=%s, file=[%s], timeStamp(current)=%s, timeStamp(lastMonitor)=%s",
 								this.m_wrapper.getId(), this.readingStatus.getMonFileName(), currentTs, lastMonitorTs));
 				this.fileChannel.position(0);
+				// スキップフラグのリセット
+				this.readingStatus.setToSkipRecord(false);
+				this.readingStatus.setSkipSize(0);
+
 				this.readingStatus.storePosition(this.currentFilesize, 0);
 			}
 		} catch (IOException e) {
@@ -1419,7 +1433,7 @@ public class BinaryMonitor {
 	 * 
 	 * @throws IOException
 	 */
-	private void updateFileRS(boolean onlyRotated, BinaryFile fileResult, long readedSize )throws IOException {
+	private void updateFileRS(boolean onlyRotated, BinaryFile fileResult, long readedSize, int skippedSize)throws IOException {
 		// ローテーションファイルのみを読込んだ場合は飛ばす.
 		if (onlyRotated) {
 			return;
@@ -1430,18 +1444,38 @@ public class BinaryMonitor {
 		// 次回監視用に読込開始位置をずらす.（現在のポジションは不完全なレコードも含んでいる場合があるので補正する）
 		// ヘッダーサイズ と レコードスキップサイズ の取り扱いには注意
 		if( m_log.isDebugEnabled() ){
-			m_log.debug("updateFileRS () " + DELIMITER + "  org setPosition="+this.fileChannel.position()  + " startPosition=" +  this.readingStatus.getPosition() + " readedSize= " + readedSize  + "  file="+ readingStatus.getStoreFileRSFile().getName() );
+			m_log.debug("updateFileRS () " + DELIMITER +
+					"  org setPosition="+this.fileChannel.position()  +
+					" startPosition=" +  this.readingStatus.getPosition() +
+					" readSize=" + this.readedSize  +
+					" skippedSize=" + skippedSize +
+					"  file="+ readingStatus.getStoreFileRSFile().getName() );
 		}
 		long setPosition = 0;
-		if (this.readingStatus.getSkipSize() > 0) {
+		if (skippedSize > 0) {
 			// 監視設定更新などによる読み飛ばしがあった場合
-			// 次回の読込み開始位置＝ 無視したサイズ（ヘッダサイズ＋レコードスキップサイズ）＋ レコード読込みサイズ とする  
-			if( m_log.isDebugEnabled() ){
-				m_log.debug("updateFileRS () " + DELIMITER + " setPosition is included record skip size . SkipSize="+ this.readingStatus.getSkipSize());
+			// 次回の読込み開始位置＝ 今回の読込開始位置 + 無視したサイズ(実際にスキップしたサイズ)＋ レコード読込みサイズ とする
+			setPosition = this.readingStatus.getPosition() + skippedSize + this.readedSize;
+
+			if (skippedSize >= this.readingStatus.getSkipSize()) {
+				// 読み飛ばしが完了した場合
+				if( m_log.isDebugEnabled() ){
+					m_log.debug("updateFileRS () " + DELIMITER + " setPosition is included record skip size . SkipSize="+ this.readingStatus.getSkipSize());
+				}
+				// スキップフラグのリセット
+				this.readingStatus.setToSkipRecord(false);
+				this.readingStatus.setSkipSize(0);
+			} else {
+				// 読み飛ばしが完了していない場合(読み飛ばしの部分がが大きい場合)
+				if( m_log.isDebugEnabled() ){
+					m_log.debug("updateFileRS () " + DELIMITER + " readsize is all skipped. SkipSize="+ this.readingStatus.getSkipSize());
+				}
+				// skipSizeの再設定
+				// 読み飛ばしきれなかったレコードを次回読込の際スキップする
+				this.readingStatus.setSkipSize(this.readingStatus.getSkipSize() - skippedSize);
 			}
-			setPosition = fileResult.getFileHeaderSize() + this.readingStatus.getSkipSize() + this.readedSize ;
-		}else{
-			//通常は 次回の読込み開始位置＝ 今回の読込み開始位置 ＋ レコード読込みサイズ とする  
+		} else {
+			//通常は 次回の読込み開始位置＝ 今回の読込み開始位置 ＋ レコード読込みサイズ とする　
 			// ただし、ヘッダーの読み飛ばしを行っている場合はその分を加味する
 			setPosition = this.readingStatus.getPosition()+ this.readedSize;
 			if (this.readingStatus.getPosition() < fileResult.getFileHeaderSize()) {

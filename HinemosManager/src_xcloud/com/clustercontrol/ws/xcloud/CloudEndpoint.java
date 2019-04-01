@@ -1029,7 +1029,9 @@ public interface CloudEndpoint {
 	 */
 	@WebMethod
 	List<AvailableRole> getAvailableRoles() throws CloudManagerException, InvalidUserPass, InvalidRole;
-
+	
 	@WebMethod
 	String getVersion() throws CloudManagerException, InvalidUserPass, InvalidRole;
+
+
 }

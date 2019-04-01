@@ -19,7 +19,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -231,10 +230,6 @@ public class SyslogTcpReceiver {
 		
 		public boolean isOverflow() {
 			return overflow;
-		}
-		
-		public int getBufferSize() {
-			return maxBufferSize == -1 ? Integer.MAX_VALUE: maxBufferSize;
 		}
 		
 		public static Buffer build(int maxReadSize) {

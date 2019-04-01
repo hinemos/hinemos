@@ -73,8 +73,6 @@ public class ModifyReporting {
 		entity.setValidFlg(info.getValidFlg());
 		entity.setOutputType(info.getOutputType());
 		entity.setOwnerRoleId(info.getOwnerRoleId());
-		entity.setRegUser(info.getRegUser());
-		entity.setRegDate(info.getRegDate());
 		entity.setUpdateUser(name);
 		entity.setUpdateDate(new Date().getTime());
 

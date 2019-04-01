@@ -85,7 +85,6 @@ public class RepositoryPreferencePage extends FieldEditorPreferencePage implemen
 			Label lblNotAvailable = new Label( parent, SWT.LEFT );
 			lblNotAvailable.setText( Messages.getString( "preferencepage.notavailable.message" ) );
 			lblNotAvailable.setForeground( Display.getCurrent().getSystemColor( SWT.COLOR_RED ) );
-			WidgetTestUtil.setTestId( this, "notavailable", nodeGroup );
 		}
 	}
 

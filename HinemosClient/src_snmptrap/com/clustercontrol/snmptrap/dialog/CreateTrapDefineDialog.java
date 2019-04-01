@@ -569,7 +569,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "notifyusevariable", btnNotifyUseVariable);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH_TITLE * 2;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.btnNotifyUseVariable.setLayoutData(gridData);
 		this.btnNotifyUseVariable.addSelectionListener(new SelectionAdapter() {
@@ -653,7 +653,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "valid", btnValid);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.btnValid.setLayoutData(gridData);
 		this.btnValid.addSelectionListener(new SelectionAdapter() {

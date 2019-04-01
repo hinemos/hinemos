@@ -77,7 +77,6 @@ public class FacilityTreeCache {
 		}
 
 		// マネージャが指定されている場合は絞り込み
-		// TODO Improve the following logic
 		FacilityTreeItem targetTree = new FacilityTreeItem();
 		targetTree.setData(item.getData());
 		targetTree.getChildren().add(new FacilityTreeItem());

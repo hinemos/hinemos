@@ -109,7 +109,7 @@ public class PlatformServiceRunMonitor extends RunMonitorTruthValueType {
 	protected List<OutputBasicInfo> runMonitorInfo() throws FacilityNotFound, MonitorNotFound, EntityExistsException, InvalidRole, HinemosUnknown {
 		logger.debug("runMonitorInfo()");
 
-		// FIXME
+		// XXX
 		// 現状の実装だとdeadlockの可能性がある。
 		// collectメソッド内のnotifyをret.addに変更すること！
 		List<OutputBasicInfo> ret = new ArrayList<>();

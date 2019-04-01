@@ -28,6 +28,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
 import com.clustercontrol.jobmanagement.factory.FullJob;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
+import com.clustercontrol.jobmanagement.util.JobSessionNodeRetryController;
 import com.clustercontrol.notify.model.MonitorStatusEntity;
 import com.clustercontrol.notify.model.NotifyHistoryEntity;
 import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
@@ -227,7 +228,7 @@ public class Manager implements ManagerMXBean {
 
 	@Override
 	public String getJobQueueStr() {
-		return JobMultiplicityCache.getJobQueueStr();
+		return JobMultiplicityCache.getJobQueueStr() + "\n" + JobSessionNodeRetryController.getReport();
 	}
 
 	@Override
@@ -306,6 +307,11 @@ public class Manager implements ManagerMXBean {
 	}
 
 	@Override
+	public int getWebServiceForAgentNodeConfigQueueCount() {
+		return WebServiceAgentPlugin.getAgentNodeConfigQueueSize();
+	}
+
+	@Override
 	public TablePhysicalSizes getTablePhysicalSize() {
 		// 各テーブルの物理テーブルサイズを取得する
 		long log_cc_collect_data_raw = TableSizeMonitor.getTableSize("log.cc_collect_data_raw");
@@ -362,6 +368,8 @@ public class Manager implements ManagerMXBean {
 		int notifyJobTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.NOTIFY_JOB_TASK_FACTORY);
 		int createJobSessionTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.CREATE_JOB_SESSION_TASK_FACTORY);
 		int notifyInfraTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.NOTIFY_INFRA_TASK_FACTORY);
+		int agentRestartTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.AGENT_RESTART_TASK_FACTORY);
+		int agentUpdateTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.AGENT_UPDATE_TASK_FACTORY);
 		
 		AsyncTaskQueueCounts asyncTaskQueueCounts = new AsyncTaskQueueCounts(
 				notifyStatusTaskFactory,
@@ -371,7 +379,9 @@ public class Manager implements ManagerMXBean {
 				notifyLogEscalationTaskFactory,
 				notifyJobTaskFactory,
 				createJobSessionTaskFactory,
-				notifyInfraTaskFactory);
+				notifyInfraTaskFactory,
+				agentRestartTaskFactory,
+				agentUpdateTaskFactory);
 		return asyncTaskQueueCounts;
 	}
 

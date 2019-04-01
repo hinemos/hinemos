@@ -174,7 +174,7 @@ public abstract class FacilityFigure extends FileImageFigure {
 		 * イベントビューとステータスビューの表示を変更する。
 		 */
 		RelationViewController.updateScopeTreeView(m_element.getParentId(), m_element.getFacilityId());
-		RelationViewController.updateStatusEventView(getFacilityId(), m_element.getParentId());
+		RelationViewController.updateStatusEventView(m_element.getParentId(), getFacilityId());
 	}
 
 	@Override
@@ -307,23 +307,11 @@ public abstract class FacilityFigure extends FileImageFigure {
 	private void setFocusLabel(boolean focus){
 		// フォーカスされている場合
 		if(focus == false){
-			// FIXME サイズ指定がきかない
-			// 最大サイズを設定
-			// 横のサイズは背景画像の横のサイズに合わせる
-			// ラベルの表示サイズを戻す
-			//			m_label.setMaximumSize(new Dimension(32, 96));
-			//			m_label.setPreferredSize(new Dimension(32, 96));
-			//			m_label.setSize(new Dimension(32, 96));
-
 			m_label.setBackgroundColor(ColorConstantsWrapper.white());
 			m_label.setForegroundColor(ColorConstantsWrapper.black());
 			m_label.setBorder(null);
 			m_label.setOpaque(true);
 		} else {
-			// FIXME サイズ指定がきかない
-			// ラベルの表示サイズを拡大
-			//			m_label.setMaximumSize(new Dimension(1024, 96));
-
 			m_label.setBackgroundColor(ColorConstantsWrapper.darkBlue());
 			m_label.setForegroundColor(ColorConstantsWrapper.white());
 			m_label.setBorder(new FocusBorder());

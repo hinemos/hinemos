@@ -27,6 +27,7 @@ import org.eclipse.ui.menus.UIElement;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.nodemap.composite.ScopeComposite;
 import com.clustercontrol.nodemap.util.RelationViewController;
+import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.ScopeTreeView;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
@@ -81,7 +82,7 @@ public class OpenNodeMapAction extends AbstractHandler implements IElementUpdate
 			if (item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER) {
 				facilityId = ReservedFacilityIdConstant.ROOT_SCOPE;
 			}
-			RelationViewController.createNewView(ScopePropertyUtil.getManager(item).getData().getFacilityId(), facilityId);
+			RelationViewController.createNewView(ScopePropertyUtil.getManager(item).getData().getFacilityId(), facilityId, NodeMapView.class);
 		} catch (Exception e) {
 			m_log.warn("run() createNewView, " + e.getMessage(), e);
 			MessageDialog.openInformation(

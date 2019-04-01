@@ -229,7 +229,6 @@ public class DatasourceJobDetail extends DatasourceBase {
 					ownerRoleId = ReportUtil.getOwnerRoleId();
 				}
 
-				// TODO:CSV作成に失敗するとJRExceptionが発生 現象は解消されている(11/24)
 				int daySec = 1000*24*60*60;
 
 				int maxLength = Integer.parseInt(isDefine("max.jobid.length", "65"));

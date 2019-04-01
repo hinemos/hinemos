@@ -1,0 +1,12 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"ProcessList_funcName"}
+],
+"props":[
+	{
+	"propName":"ProcessInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

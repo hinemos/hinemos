@@ -27,6 +27,9 @@ import org.eclipse.ui.handlers.RegistryToggleState;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.monitor.dialog.EventFilterDialog;
 import com.clustercontrol.monitor.view.EventView;
+import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.ScopePropertyUtil;
+import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 監視[イベントのフィルタ処理]ダイアログによるイベントの取得処理を行うクライアント側アクションクラス<BR>
@@ -93,9 +96,12 @@ public class EventFilterAction extends AbstractHandler {
 		boolean isChecked = !HandlerUtil.toggleCommandState(command);
 
 		if (isChecked) {
+			//スコープツリーで選択されているマネージャを取得する
+			//(ユーザ拡張イベント項目の制御に使用)
+			String managerName = getScopeTreeSelectManagerName(view);
+			
 			// ダイアログを生成
-			EventFilterDialog dialog = new EventFilterDialog(this.viewPart
-					.getSite().getShell());
+			EventFilterDialog dialog = new EventFilterDialog(this.viewPart.getSite().getShell(), managerName, view.getEventDspSetting());
 
 			// ダイアログにて検索が選択された場合、検索結果をビューに表示
 			if (dialog.open() == IDialogConstants.OK_ID) {
@@ -124,5 +130,30 @@ public class EventFilterAction extends AbstractHandler {
 			}
 		}
 		return null;
+	}
+	
+	/**
+	 * 
+	 * スコープツリーで選択されているマネージャ名を取得する
+	 * 
+	 * @param view イベントビュー
+	 * @return 選択されているマネージャ名　マネージャが選択されていない場合はnull
+	 */
+	private String getScopeTreeSelectManagerName(EventView view) {
+		String managerName = null;
+		
+		FacilityTreeItem item = view.getScopeTreeComposite().getSelectItem();
+		if( null == item || item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE ){
+			return null;
+		}
+
+		
+		if ( item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER ) {
+			managerName = item.getData().getFacilityId();
+		} else {
+			FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
+			managerName = manager.getData().getFacilityId();
+		}
+		return managerName; 
 	}
 }

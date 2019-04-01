@@ -129,6 +129,11 @@
 			<classpath refid="id.path.compile" />
 			<arg line="-f -i ${dir.xsd}/platform_object_privilege.xsd -package ${package.platform} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
 		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+			<sysproperty key="file.encoding" value="UTF-8" />
+			<classpath refid="id.path.compile" />
+			<arg line="-f -i ${dir.xsd}/platform_nodeconfig.xsd -package ${package.platform} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
 
 		<!-- メンテナンス機能 -->
 		<echo message="Generating Java Bean for Maintenance XML Schema..." />
@@ -286,6 +291,11 @@
 				<sysproperty key="file.encoding" value="UTF-8" />
 				<classpath refid="id.path.compile" />
 				<arg line="-f -i ${dir.xsd}/job_manual.xsd -package ${package.job} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+				<sysproperty key="file.encoding" value="UTF-8" />
+				<classpath refid="id.path.compile" />
+				<arg line="-f -i ${dir.xsd}/job_queue.xsd -package ${package.job} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
 		</java>
 		<!-- マスタ -->
 		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">

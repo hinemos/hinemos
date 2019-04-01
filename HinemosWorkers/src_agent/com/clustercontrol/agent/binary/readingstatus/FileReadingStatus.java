@@ -154,6 +154,9 @@ public class FileReadingStatus {
 				this.runMonitor = Boolean
 						.valueOf(RootReadingStatus.getPropertyValue(props, RootReadingStatus.runMonitor));
 				this.prefixString = RootReadingStatus.getPropertyValue(props, RootReadingStatus.prefixString);
+				this.toSkipRecord = Boolean
+						.valueOf(RootReadingStatus.getPropertyValue(props, RootReadingStatus.toSkipRecord));
+				this.skipSize = Long.parseLong(RootReadingStatus.getPropertyValue(props, RootReadingStatus.skipSize));
 				// 読込状態は前回監視時点からファイルの更新時刻が変更されてたらopen.
 				if (this.monFileLastModTimeStamp != monFile.lastModified()) {
 					this.readingStatus = RootReadingStatus.RS_OPEN_STRING;
@@ -211,7 +214,7 @@ public class FileReadingStatus {
 			if( log.isDebugEnabled() ){
 				log.debug(methodName + DELIMITER
 						+ String.format(
-								"init rerading position. position=%d, lastUpdateRsTime=%d, monitorInfoUpdated=%d, monitorID=%s ,rs=[%s]",
+								"init reading position. position=%d, lastUpdateRsTime=%d, monitorInfoUpdated=%d, monitorID=%s ,rs=[%s]",
 								this.position, this.parentDirRS.getParentMonRS().getLastUpdateRs(),
 								this.parentDirRS.getParentMonRS().getUpdateDate(),
 								this.parentDirRS.getParentMonRS().getMonitorID(), rstatus.toString()));
@@ -240,7 +243,7 @@ public class FileReadingStatus {
 			this.prefix = new ArrayList<Byte>();
 			log.debug(methodName + DELIMITER + "prefixString is empty");
 		} else {
-			this.prefix = BinaryUtil.stirngToList(prefixString, 1, 1);
+			this.prefix = BinaryUtil.stringToList(prefixString, 1, 1);
 			log.debug(methodName + DELIMITER + "prefix size = " + this.prefix.size());
 		}
 		this.prefixSize = this.prefix.size();
@@ -310,6 +313,8 @@ public class FileReadingStatus {
 					Long.valueOf(this.lastModTimeStampByThread).toString());
 			props.put(RootReadingStatus.prefixString, this.prefixString);
 			props.put(RootReadingStatus.runMonitor, this.runMonitor.toString());
+			props.put(RootReadingStatus.toSkipRecord, Boolean.valueOf(this.toSkipRecord).toString());
+			props.put(RootReadingStatus.skipSize, Long.valueOf(this.skipSize).toString());
 			props.store(fo, this.monFileName);
 
 			// ファイル出力内容をログ出力.
@@ -321,7 +326,10 @@ public class FileReadingStatus {
 						+ Long.valueOf(this.position).toString() + ", " + RootReadingStatus.monFileLastModTimeStamp
 						+ "=" + Long.valueOf(this.monFileLastModTimeStamp).toString() + ", "
 						+ RootReadingStatus.prefixString + "=" + this.prefixString + ", " + RootReadingStatus.runMonitor
-						+ "=" + this.runMonitor.toString());
+						+ "=" + this.runMonitor.toString() +", "
+						+ RootReadingStatus.toSkipRecord + "=" + Boolean.valueOf(this.toSkipRecord).toString() +", "
+						+ RootReadingStatus.skipSize + "=" + Long.valueOf(this.skipSize)
+						);
 
 				// 調査用.
 				String didFirstRunProps = props.getProperty(RootReadingStatus.didFirstRun);
@@ -495,7 +503,7 @@ public class FileReadingStatus {
 	 */
 	public void rotate() {
 		this.prefixString = this.getPrefixString();
-		this.prefix = BinaryUtil.stirngToList(prefixString, 1, 1);
+		this.prefix = BinaryUtil.stringToList(prefixString, 1, 1);
 		this.prefixSize = prefix.size();
 		this.position = 0;
 		this.prevSize = 0;
@@ -533,6 +541,8 @@ public class FileReadingStatus {
 		long monFileLastModTimeStamp = 0;
 		long lastModTimeStampByThread = 0;
 		String prefixString = null;
+		boolean toSkipRecord = false;
+		long skipSize = 0;
 
 		// 読込中フラグ以外をファイルから読込んだ値のままにするため読込む.
 		Properties props = new Properties();
@@ -547,6 +557,8 @@ public class FileReadingStatus {
 			didFirstRun = Boolean.valueOf(RootReadingStatus.getPropertyValue(props, RootReadingStatus.didFirstRun));
 			prefixString = RootReadingStatus.getPropertyValue(props, RootReadingStatus.prefixString);
 			readingStatus = RootReadingStatus.getPropertyValue(props, RootReadingStatus.readingStatus);
+			toSkipRecord = Boolean.parseBoolean(RootReadingStatus.getPropertyValue(props, RootReadingStatus.toSkipRecord));
+			skipSize = Long.parseLong(RootReadingStatus.getPropertyValue(props, RootReadingStatus.skipSize));
 		} catch (FileNotFoundException e) {
 			log.warn(String.format(methodName + DELIMITER + "skip to update fileRS." + " fileRS=[%s] : ",
 					fileRs.getAbsolutePath()) + e.getMessage(), e);
@@ -576,6 +588,8 @@ public class FileReadingStatus {
 			props.put(RootReadingStatus.monFileLastModTimeStamp, Long.valueOf(monFileLastModTimeStamp).toString());
 			props.put(RootReadingStatus.lastModTimeStampByThread, Long.valueOf(lastModTimeStampByThread).toString());
 			props.put(RootReadingStatus.prefixString, prefixString);
+			props.put(RootReadingStatus.toSkipRecord, Boolean.valueOf(toSkipRecord).toString());
+			props.put(RootReadingStatus.skipSize, Long.valueOf(skipSize).toString());
 			// 読込中フラグは固定値.
 			props.put(RootReadingStatus.runMonitor, Boolean.valueOf(false).toString());
 			props.store(fo, monitorFileName);

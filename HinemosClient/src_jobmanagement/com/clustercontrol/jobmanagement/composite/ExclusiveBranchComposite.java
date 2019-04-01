@@ -93,8 +93,8 @@ public class ExclusiveBranchComposite extends Composite{
 
 		this.setLayout(JobDialogUtil.getParentLayout());
 
-		// 排他分岐（ラジオ）
-		this.m_exclusiveBranchCondition = new Button(this, SWT.CHECK);
+		// 排他分岐（チェック）
+		this.m_exclusiveBranchCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_exclusiveBranchCondition", this.m_exclusiveBranchCondition);
 		this.m_exclusiveBranchCondition.setText(Messages.getString("job.exclusive.branch.flg"));
 		this.m_exclusiveBranchCondition.setLayoutData(new RowData(200,

@@ -166,6 +166,14 @@ public class NumberVerifyListener implements VerifyListener {
 		catch(NumberFormatException ex){
 			//数値変換失敗の為、入力は無効
 			e.doit = false;
+			
+			String[] args = { this.low.toString(), this.high.toString() };
+
+			//エラーメッセージ
+			MessageDialog.openWarning(
+					null,
+					Messages.getString("message.hinemos.1"),
+					Messages.getString("message.hinemos.8", args ));
 		}
 	}
 }
