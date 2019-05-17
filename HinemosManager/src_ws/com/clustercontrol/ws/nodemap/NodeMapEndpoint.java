@@ -45,6 +45,7 @@ import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -671,6 +672,12 @@ public class NodeMapEndpoint {
 		return new NodeMapControllerBean().pingToFacilityList(facilityList);
 	}
 
+	public String getVersion() throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		return KeyCheck.getResultEnterprise();
+	}
 
 	/**
 	 * 検索条件に一致するノードを割り当てたスコープを新規に追加します。<BR>

@@ -674,8 +674,8 @@
 			<xs:element name="commandRetryEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
-						繰り返し完了状態
-						{0:危険, 1:不明, 2:警告, 3:情報}の何れかを指定します。
+						繰り返しコマンドの完了状態
+						{0:正常, 1:警告, 2:異常}の何れかを指定します。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
@@ -695,8 +695,8 @@
 			<xs:element name="jobRetryEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
-						繰り返し完了状態
-						{0:危険, 1:不明, 2:警告, 3:情報}の何れかを指定します。
+						繰り返しジョブの完了状態
+						{0:正常, 1:警告, 2:異常}の何れかを指定します。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>

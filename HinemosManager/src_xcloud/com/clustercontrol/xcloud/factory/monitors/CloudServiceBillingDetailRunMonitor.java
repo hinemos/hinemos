@@ -82,6 +82,9 @@ import com.clustercontrol.xcloud.util.RepositoryControllerBeanWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+/**
+ * クラウド課金詳細監視
+ */
 public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueType {
 	/** ログ出力のインスタンス。 */
 	private static Log logger = LogFactory.getLog( CloudServiceBillingDetailRunMonitor.class );
@@ -275,11 +278,13 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							query.setParameter("facilityIds", facilityIds);
 							query.setParameter("beginningTime", beginningTime);
 							
+							String unit = null;
 							double cost = 0;
 							Set<String> set = new LinkedHashSet<>();
 							try {
 								List<BillingDetailRelationEntity> billingDetails = query.getResultList();
 								for(BillingDetailRelationEntity r: billingDetails){
+									unit = r.getBillingDetail().getUnit();
 									cost += r.getBillingDetail().getCost();
 									set.add("\"" + r.getBillingDetail().getCloudScopeId() + "\"-\"" + r.getBillingDetail().getResourceId() + "\"");
 								}
@@ -290,7 +295,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							
 							//通知
 							if (m_monitor.getMonitorFlg()){
-								ret.add(createSumOutputBasicInfo(m_monitor, m_monitor.getFacilityId(), m_judgementInfoList, cost, set));
+								ret.add(createSumOutputBasicInfo(m_monitor, m_monitor.getFacilityId(), m_judgementInfoList, cost, set, getValueOrDefault(unit)));
 							}
 							
 							//収集
@@ -332,6 +337,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 						} else /*if (PER_NODE.equals(facilityType)) */{
 							Map<String, Double> costs = new HashMap<>();
 							Map<String, Set<String>> resouceLists = new HashMap<>();
+							String unit = null;
 							if (!nodeIds.isEmpty()) {
 								TypedQuery<BillingDetailRelationEntity> query = em.createNamedQuery(BillingDetailRelationEntity.selectBillingDetailRelationEntityAfter, BillingDetailRelationEntity.class);
 								query.setParameter("facilityIds", nodeIds);
@@ -340,6 +346,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 								try {
 									List<BillingDetailRelationEntity> billingDetails = query.getResultList();
 									for (BillingDetailRelationEntity r: billingDetails) {
+										unit = r.getBillingDetail().getUnit();
 										if (r.getBillingDetail().getCost() == null) {
 											logger.debug(String.format("invalid cost value: %s", r));
 											continue;
@@ -364,7 +371,8 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							//通知
 							if (m_monitor.getMonitorFlg()){
 								for (Entry<String, Double> entry : costs.entrySet()) {
-									ret.add(createSumOutputBasicInfo(m_monitor, entry.getKey(), m_judgementInfoList, entry.getValue(), resouceLists.get(entry.getKey())));
+									ret.add(createSumOutputBasicInfo(m_monitor, 
+											entry.getKey(), m_judgementInfoList, entry.getValue(), resouceLists.get(entry.getKey()), getValueOrDefault(unit)));
 								}
 							}
 							
@@ -516,11 +524,13 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							for (; i.before(end); i.add(Calendar.DAY_OF_MONTH, 1)) {
 								Set<String> set = new LinkedHashSet<>();
 								double cost = 0;
+								String unit = null;
 								Iterator<BillingDetailEntity> iter = billingDetails.iterator(); 
 								while (iter.hasNext()) {
 									BillingDetailEntity d = iter.next();
 									Calendar t = Calendar.getInstance();
 									t.setTime(new Date(d.getTargetDate()));
+									unit = d.getUnit();
 									if (t.get(Calendar.YEAR) == i.get(Calendar.YEAR) &&
 										t.get(Calendar.MONTH) == i.get(Calendar.MONTH) &&
 										t.get(Calendar.DAY_OF_MONTH) == i.get(Calendar.DAY_OF_MONTH)
@@ -532,7 +542,8 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 								}
 								
 								if (m_monitor.getMonitorFlg())
-									ret.add(createDeltaOutputBasicInfo(m_monitor, m_monitor.getFacilityId(), m_judgementInfoList, i.getTime().getTime(), cost, set));
+									ret.add(createDeltaOutputBasicInfo(m_monitor, m_monitor.getFacilityId(), m_judgementInfoList, 
+											i.getTime().getTime(), cost, set, getValueOrDefault(unit)));
 								
 								if (m_monitor.getCollectorFlg() 
 										|| m_monitor.getPredictionFlg() 
@@ -584,8 +595,10 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 								Iterator<BillingDetailEntity> iter = billingDetails.iterator(); 
 								Map<String, Double> costs = new HashMap<>();
 								Map<String, Set<String>> resouceLists = new HashMap<>();
+								String unit = null;
 								while (iter.hasNext()) {
 									BillingDetailEntity d = iter.next();
+									unit = d.getUnit();
 									Calendar t = Calendar.getInstance();
 									t.setTime(new Date(d.getTargetDate()));
 									if (t.get(Calendar.YEAR) == i.get(Calendar.YEAR) &&
@@ -614,7 +627,8 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 								
 								if (m_monitor.getMonitorFlg()){
 									for (Map.Entry<String, Double> entry: costs.entrySet()) {
-										ret.add(createDeltaOutputBasicInfo(m_monitor, entry.getKey(), m_judgementInfoList, i.getTime().getTime(), entry.getValue(), resouceLists.get(entry.getKey())));
+										ret.add(createDeltaOutputBasicInfo(m_monitor, entry.getKey(), m_judgementInfoList, 
+												i.getTime().getTime(), entry.getValue(), resouceLists.get(entry.getKey()), getValueOrDefault(unit)));
 									}
 								}
 								
@@ -790,7 +804,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 	 * @param cost
 	 * @param resourceIds
 	 */
-	protected OutputBasicInfo createDeltaOutputBasicInfo(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, Long targetDate, double cost, Set<String> resourceIds) {
+	protected OutputBasicInfo createDeltaOutputBasicInfo(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, Long targetDate, double cost, Set<String> resourceIds, String unit) {
 		StringBuffer sb = new StringBuffer();
 		for (String s: resourceIds) {
 			if (sb.length() > 0)
@@ -809,12 +823,17 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 				judgements,
 				cost,
 				d.getTime(),
-				CloudMessageConstant.BILLINGALARM_NOTIFY_DELTA.getMessage(format.format(targetDate), truncatedPrice),
-				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_DELTA.getMessage(format.format(targetDate), truncatedPrice, format.format(d.getTime())) + (resourceIds.isEmpty() ? "nothing": sb.toString())
+				CloudMessageConstant.BILLINGALARM_NOTIFY_DELTA.getMessage(
+						format.format(targetDate), truncatedPrice, unit),
+				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_DELTA.getMessage(
+						format.format(targetDate), truncatedPrice, 
+						unit,
+						format.format(d.getTime())
+						) + (resourceIds.isEmpty() ? "nothing": sb.toString())
 				);
 	}
 	
-	protected OutputBasicInfo createSumOutputBasicInfo(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, double cost, Set<String> resourceIds) {
+	protected OutputBasicInfo createSumOutputBasicInfo(MonitorInfo ba, String facilityId, TreeMap<Integer, MonitorJudgementInfo> judgements, double cost, Set<String> resourceIds, String unit) {
 		StringBuffer sb = new StringBuffer();
 		for (String s: resourceIds) {
 			if (sb.length() > 0)
@@ -832,8 +851,11 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 				judgements,
 				cost,
 				m_now.getTime(),
-				CloudMessageConstant.BILLINGALARM_NOTIFY_SUM.getMessage(truncatedPrice),
-				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_SUM.getMessage(truncatedPrice, format.format(m_now.getTime())) + " resourceIds:" + (resourceIds.isEmpty() ? "nothing": sb.toString())
+				CloudMessageConstant.BILLINGALARM_NOTIFY_SUM.getMessage(truncatedPrice, unit),
+				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_SUM.getMessage(
+						truncatedPrice, unit, format.format(m_now.getTime())) 
+						+ " resourceIds:" 
+						+ (resourceIds.isEmpty() ? "nothing": sb.toString())
 				);
 		return output;
 	}
@@ -854,4 +876,11 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 		output.setNotifyGroupId(m_monitor.getNotifyGroupId());
 		return output;
 	}
+	
+	private String getValueOrDefault(String unit) {
+		if (unit != null) {
+			return unit;
+		}
+		return "USD";
+	} 
 }

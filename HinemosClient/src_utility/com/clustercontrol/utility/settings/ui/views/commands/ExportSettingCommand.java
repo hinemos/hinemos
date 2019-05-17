@@ -52,9 +52,12 @@ import com.clustercontrol.utility.ui.dialog.ErrorDialogWithScroll;
 import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.FileUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
+import com.clustercontrol.utility.util.UtilityEndpointWrapper;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.utility.util.ZipUtil;
-
+import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
+import com.clustercontrol.ws.utility.InvalidRole_Exception;
+import com.clustercontrol.ws.utility.InvalidUserPass_Exception;
 
 /**
  * 設定情報を取得するクライアント側アクションクラス<BR>
@@ -91,7 +94,30 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 	
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		
+		// keyチェック
+		try {
+			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+			String version = wrapper.getVersion();
+			if (version.length() > 7) {
+				boolean result = Boolean.valueOf(version.substring(7, version.length()));
+				if (!result) {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							Messages.getString("message.expiration.term.invalid"));
+				}
+			}
+		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					e.getMessage());
+			return null;
+		} catch (Exception e) {
+			// キーファイルを確認できませんでした。処理を終了します。
+			// Key file not found. This process will be terminated.
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					Messages.getString("message.expiration.term"));
+			return null;
+		}
 		
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed

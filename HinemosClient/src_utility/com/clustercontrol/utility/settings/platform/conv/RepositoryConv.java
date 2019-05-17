@@ -175,7 +175,6 @@ public class RepositoryConv {
 	public static com.clustercontrol.ws.repository.NodeInfo convNodeXml2Dto(
 		NodeInfo xmlNodeInfo, HostnameInfo[] hostnameList, CPUInfo[] cpuList, MemoryInfo[] memoryList,
 		NetworkInterfaceInfo[] networkInterfaceList, DiskInfo[] diskList, FSInfo[] fsList, DeviceInfo[] deviceList,
-		NetstatInfo[] netstatList, LicenseInfo[] licenseList, ProductInfo[] productList, 
 		NodeVariableInfo[] variableList, NoteInfo[] noteList) {
 	
 		com.clustercontrol.ws.repository.NodeInfo dto = new com.clustercontrol.ws.repository.NodeInfo();
@@ -547,19 +546,19 @@ public class RepositoryConv {
 			dto.setCloudResourceName(xmlNodeInfo.getCloudResourceName());
 		}
 		
-		// パッケージ情報とプロセス情報は更新しないフラグを設定する
+		// パッケージ情報とプロセス情報、ネットワーク接続情報とライセンス情報と個別導入製品情報は更新しないフラグを設定する
 		dto.setNodePackageRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
 		dto.setNodeProcessRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+		dto.setNodeProductRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+		dto.setNodeLicenseRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+		dto.setNodeNetstatRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
 		dto.setNodeCpuRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 		dto.setNodeDiskRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 		dto.setNodeFilesystemRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 		dto.setNodeHostnameRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeLicenseRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 		dto.setNodeMemoryRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeNetstatRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 		dto.setNodeNetworkInterfaceRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 		dto.setNodeOsRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeProductRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 		dto.setNodeVariableRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 		
 		// ホスト名情報の格納
@@ -650,6 +649,17 @@ public class RepositoryConv {
 					
 				}
 				
+				if(cpuList[i].getCoreCount() >= 0) {
+					nodeCpuInfo.setCoreCount(cpuList[i].getCoreCount());
+				}
+				
+				if(cpuList[i].getThreadCount() >= 0) {
+					nodeCpuInfo.setThreadCount(cpuList[i].getThreadCount());
+				}
+		
+				if(cpuList[i].getClockCount() >= 0) {
+					nodeCpuInfo.setClockCount(cpuList[i].getClockCount());
+				}
 				nodeCPUList.add(nodeCpuInfo);
 				
 			}
@@ -1028,105 +1038,6 @@ public class RepositoryConv {
 				
 				nodeDeviceList.add(nodeDeviceInfo);
 				
-			}
-		}
-		
-		// ネットワーク接続情報の格納
-		List<NodeNetstatInfo> nodeNetstatList = dto.getNodeNetstatInfo();
-		for (int i = 0; i < netstatList.length; i++) {
-			NodeNetstatInfo nodeNetstatInfo = new NodeNetstatInfo();
-			if (netstatList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
-
-				if(netstatList[i].getProtocol() != null
-						&& !"".equals(netstatList[i].getProtocol())) {
-					nodeNetstatInfo.setProtocol(netstatList[i].getProtocol());
-				} else {
-					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
-							+ "(Protocol) : " + xmlNodeInfo.getFacilityId());
-				}
-				if(netstatList[i].getLocalIpAddress() != null
-						&& !"".equals(netstatList[i].getLocalIpAddress())){
-					nodeNetstatInfo.setLocalIpAddress(netstatList[i].getLocalIpAddress());
-				}else{
-					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
-							+ "(LocalIpAddress) : " + xmlNodeInfo.getFacilityId());
-				}
-				if(netstatList[i].getLocalPort() != null
-						&& !"".equals(netstatList[i].getLocalPort())){
-					nodeNetstatInfo.setLocalPort(netstatList[i].getLocalPort());
-				} else {
-					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
-							+ "(LocalPort) : " + xmlNodeInfo.getFacilityId());
-				}
-				if(netstatList[i].getForeignIpAddress() != null) {
-					nodeNetstatInfo.setForeignIpAddress(netstatList[i].getForeignIpAddress());
-				}
-				if(netstatList[i].getProcessName() != null) {
-					nodeNetstatInfo.setProcessName(netstatList[i].getProcessName());
-				}
-				if(netstatList[i].getPid() > 0) {
-					nodeNetstatInfo.setPid(netstatList[i].getPid());
-				}
-				nodeNetstatList.add(nodeNetstatInfo);
-			}
-		}
-		
-		// 個別導入製品情報の格納
-		List<NodeProductInfo> nodeProductList = dto.getNodeProductInfo();
-		for (int i = 0; i < productList.length; i++) {
-			NodeProductInfo nodeProductInfo = new NodeProductInfo();
-			if (productList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
-
-				if(productList[i].getProductName() != null
-						&& !"".equals(productList[i].getProductName())) {
-					nodeProductInfo.setProductName(productList[i].getProductName());
-				} else {
-					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
-							+ "(ProductName) : " + xmlNodeInfo.getFacilityId());
-				}
-				if(productList[i].getVersion() != null) {
-					nodeProductInfo.setVersion(productList[i].getVersion());
-				}
-				if(productList[i].getPath() != null) {
-					nodeProductInfo.setPath(productList[i].getPath());
-				}
-				nodeProductList.add(nodeProductInfo);
-			}
-		}
-		
-		// ライセンス情報の格納
-		List<NodeLicenseInfo> nodeLicenseList = dto.getNodeLicenseInfo();
-		for (int i = 0; i < licenseList.length; i++) {
-			NodeLicenseInfo nodeLicenseInfo = new NodeLicenseInfo();
-			if (licenseList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
-
-				if(licenseList[i].getProductName() != null
-						&& !"".equals(licenseList[i].getProductName())) {
-					nodeLicenseInfo.setProductName(licenseList[i].getProductName());
-				} else {
-					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
-							+ "(ProductName) : " + xmlNodeInfo.getFacilityId());
-				}
-				if(licenseList[i].getVendor() != null) {
-					nodeLicenseInfo.setVendor(licenseList[i].getVendor());
-				}
-				if(licenseList[i].getVendorContact() != null) {
-					nodeLicenseInfo.setVendorContact(licenseList[i].getVendorContact());
-				}
-				if(licenseList[i].getSerialNumber() != null) {
-					nodeLicenseInfo.setSerialNumber(licenseList[i].getSerialNumber());
-				}
-				nodeLicenseInfo.setCount(licenseList[i].getCount());
-				if(licenseList[i].getExpirationDate() != null) {
-					try {
-						SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-						nodeLicenseInfo.setExpirationDate(dateFormat.parse(licenseList[i].getExpirationDate()).getTime());
-					} catch (NullPointerException | ParseException e) {
-						log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
-								+ "(ExpirationDate) : " + xmlNodeInfo.getFacilityId());
-					}
-				}
-				nodeLicenseList.add(nodeLicenseInfo);
 			}
 		}
 		
@@ -1577,6 +1488,9 @@ public class RepositoryConv {
 				}
 				xmlCPUInfo.setDeviceSizeUnit(nodeCpuInfo.getDeviceSizeUnit());
 				xmlCPUInfo.setDeviceDescription(nodeCpuInfo.getDeviceDescription());
+				xmlCPUInfo.setCoreCount(nodeCpuInfo.getCoreCount());
+				xmlCPUInfo.setThreadCount(nodeCpuInfo.getThreadCount());
+				xmlCPUInfo.setClockCount(nodeCpuInfo.getClockCount());
 				cpuList.add(xmlCPUInfo);
 			}
 
@@ -1834,7 +1748,7 @@ public class RepositoryConv {
 			xmlNetstatInfo.setFacilityId(dto.getFacilityId());
 			xmlNetstatInfo.setProtocol(nodeNetstatInfo.getProtocol());
 			xmlNetstatInfo.setLocalIpAddress(nodeNetstatInfo.getLocalIpAddress());
-			xmlNetstatInfo.setLocalPort(nodeNetstatInfo.getLocalIpAddress());
+			xmlNetstatInfo.setLocalPort(nodeNetstatInfo.getLocalPort());
 			xmlNetstatInfo.setForeignIpAddress(nodeNetstatInfo.getForeignIpAddress());
 			xmlNetstatInfo.setForeignPort(nodeNetstatInfo.getForeignPort());
 			xmlNetstatInfo.setProcessName(nodeNetstatInfo.getProcessName());

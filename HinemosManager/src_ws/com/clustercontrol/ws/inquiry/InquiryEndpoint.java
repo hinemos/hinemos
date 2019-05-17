@@ -32,6 +32,7 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.inquiry.bean.InquiryTarget;
 import com.clustercontrol.inquiry.factory.InquiryControllerBean;
+import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -64,6 +65,12 @@ public class InquiryEndpoint {
 		return str + ", " + str;
 	}
 
+	public String getVersion() throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+
+		return KeyCheck.getResultEnterprise();
+	}
 	
 	public List<InquiryTarget> getInquiryTargetList() throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("getInquiryContentList");

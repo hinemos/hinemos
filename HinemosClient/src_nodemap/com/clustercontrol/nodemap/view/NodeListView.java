@@ -258,6 +258,8 @@ public class NodeListView extends CommonViewPart {
 				errMsg = Messages.getString("message.hinemos.failure.unexpected") + ", " + message;
 			}
 			MessageDialog.openInformation(null, Messages.getString("message"), errMsg);
+			//Exceptionが発生した場合は、検索情報を初期化する
+			m_nodeFilterInfo=null;
 			return false;
 		}
 		m_listComposite.update();

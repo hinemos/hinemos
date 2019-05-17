@@ -25,6 +25,7 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.Session.PostCommitAction;
@@ -376,6 +377,11 @@ public class CloudScopes implements ICloudScopes {
 				CloudScopeEntity scope = em.find(CloudScopeEntity.class, request.getCloudScopeId(), ObjectPrivilegeMode.READ);
 				if (scope == null)
 					throw ErrorCode.CLOUDSCOPE_INVALID_CLOUDSCOPE_NOT_FOUND.cloudManagerFault(request.getCloudScopeId());
+
+				// FIXME 更新ユーザ、更新時刻を反映させるために時刻更新、次版ではログインユーザの更新の流れを見直すべき
+				Long nowTime = HinemosTime.currentTimeMillis();
+				scope.setUpdateDate(nowTime);
+				
 				scope.setName(request.getScopeName() != null ? request.getScopeName(): scope.getName());
 				
 				if (request.getDescription() != null)
@@ -396,6 +402,10 @@ public class CloudScopes implements ICloudScopes {
 				CloudScopeEntity scope = em.find(CloudScopeEntity.class, request.getCloudScopeId(), ObjectPrivilegeMode.READ);
 				if (scope == null)
 					throw ErrorCode.CLOUDSCOPE_INVALID_CLOUDSCOPE_NOT_FOUND.cloudManagerFault(request.getCloudScopeId());
+
+				// FIXME 更新ユーザ、更新時刻を反映させるために時刻更新、次版ではログインユーザの更新の流れを見直すべき
+				Long nowTime = HinemosTime.currentTimeMillis();
+				scope.setUpdateDate(nowTime);
 				
 				scope.setName(request.getScopeName() != null ? request.getScopeName(): scope.getName());
 				

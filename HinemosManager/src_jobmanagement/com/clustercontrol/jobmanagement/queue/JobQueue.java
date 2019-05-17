@@ -443,6 +443,7 @@ public class JobQueue {
 	 * キューの状態が固定化している(以下の条件を満たす)かどうかをチェックし、
 	 * 「最後に固定化していないことを検知した時刻からの経過時間」を返します。
 	 * <ul>
+	 * <li>ACTIVE状態のジョブが1つ以上ある。
 	 * <li>同時実行可能数と同数以上のジョブがACTIVE状態である。
 	 * <li>前回の呼び出しから、ACTIVE状態のジョブが変化していない。
 	 * </ul>
@@ -470,7 +471,7 @@ public class JobQueue {
 				} else {
 					// 前回から変化していない
 					// ACTIVEなジョブで同時実行可能枠が埋まっている状態であるか判定する
-					if (current.size() >= concurrency) {
+					if (current.size() > 0 && current.size() >= concurrency) {
 						// 固定化しているので、差分時刻を算出
 						result = now - lastActiveJobsChangedTime;
 						log.debug("getFreezingTime: Freezing since " + lastActiveJobsChangedTime + ". QID=" + queueId

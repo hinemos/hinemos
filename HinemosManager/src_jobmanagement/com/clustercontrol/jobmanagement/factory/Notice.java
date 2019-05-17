@@ -11,6 +11,7 @@ package com.clustercontrol.jobmanagement.factory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -125,7 +126,9 @@ public class Notice {
 				String facilityId = job.getFacilityId();
 				if(ParameterUtil.isParamFormat(facilityId)){
 					// "#[...]"形式の場合はジョブ変数の置換を試みる。
-					String paramValue = ParameterUtil.getJobSessionParamValue(ParameterUtil.getParamId(facilityId), sessionId, null);
+					Map<String, String> jobSessionParamsMap = ParameterUtil.getJobSessionParamsMap(sessionId);
+					String paramValue = ParameterUtil.getJobSessionParamValue(
+							ParameterUtil.getParamId(facilityId), jobSessionParamsMap, sessionId);
 					if (paramValue != null) {
 						facilityId = paramValue;
 					}

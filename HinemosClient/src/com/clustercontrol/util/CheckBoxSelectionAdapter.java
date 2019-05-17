@@ -40,7 +40,7 @@ public class CheckBoxSelectionAdapter extends SelectionAdapter {
 		TableItem[] ti = table.getSelection();
 		TableItem tableItem = (TableItem)e.item;
 		
-		if (e.stateMask == SWT.SHIFT) {
+		if ((e.stateMask & SWT.SHIFT ) != 0) {
 			for (int i = 0; i < table.getItemCount(); i++) {
 				TableItem item = table.getItem(i);
 				if (isIgnoreRow(item)) {

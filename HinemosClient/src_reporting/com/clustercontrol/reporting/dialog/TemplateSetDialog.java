@@ -10,6 +10,8 @@ package com.clustercontrol.reporting.dialog;
 
 import java.util.ArrayList;
 
+import javax.xml.ws.WebServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
@@ -34,6 +36,7 @@ import com.clustercontrol.reporting.action.GetTemplateSet;
 import com.clustercontrol.reporting.action.GetTemplateSetDetailTableDefine;
 import com.clustercontrol.reporting.action.ModifyTemplateSet;
 import com.clustercontrol.reporting.composite.TemplateSetDetailInfoComposite;
+import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
@@ -485,6 +488,39 @@ public class TemplateSetDialog extends CommonDialog{
 
 		this.update();
 	}
+
+	/**
+	 * 入力値チェックをします。
+	 * 
+	 * @return 検証結果
+	 * 
+	 * @see com.clustercontrol.dialog.CommonDialog#validate()
+	 */
+	@Override
+	protected ValidateResult validate() {
+		ValidateResult result = null;
+
+		// 入力チェック
+		//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
+		//getVersionにて通信状況を確認し、異常の場合は ダイヤログを表示
+		try {
+			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.m_managerComposite.getText());
+			wrapper.getVersion();
+		} catch (Exception e) {
+			String errMsg = HinemosMessage.replace(e.getMessage());
+			m_log.warn("getVersionError, " + errMsg);
+			result = new ValidateResult();
+			result.setValid(false);
+			result.setID(Messages.getString("message.hinemos.1"));
+			if ( e instanceof WebServiceException){
+				result.setMessage(Messages.getString("message.expiration.term")+":"+ this.m_managerComposite.getText());
+			}else{
+				result.setMessage(Messages.getString("message.hinemos.failure.unexpected")+":"+ this.m_managerComposite.getText()+ ", " + errMsg);
+			}
+		}
+		return result;
+	}
+	
 	/**
 	 * 入力値をマネージャに登録します。
 	 *

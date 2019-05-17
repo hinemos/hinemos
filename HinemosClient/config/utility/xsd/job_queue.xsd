@@ -8,7 +8,7 @@
 			<xs:documentation>XMLスキーマ情報</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
-			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="I">
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="J">
 				<xs:annotation>
 					<xs:documentation>データ型のタイプ</xs:documentation>
 				</xs:annotation>

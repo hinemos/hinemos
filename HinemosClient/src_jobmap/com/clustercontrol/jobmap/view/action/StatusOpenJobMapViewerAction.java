@@ -31,13 +31,16 @@ import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.jobmanagement.composite.HistoryComposite;
+import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
 import com.clustercontrol.jobmap.view.JobHistoryViewM;
 import com.clustercontrol.monitor.action.GetStatusListTableDefine;
 import com.clustercontrol.monitor.composite.StatusListComposite;
 import com.clustercontrol.monitor.view.StatusView;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.view.ScopeListBaseView;
-
+import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
+import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
+import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
 
 /**
  * 監視履歴[ステータス]からジョブマップビューパースペクティブを開くクライアント側アクションクラス<BR>
@@ -124,6 +127,26 @@ public class StatusOpenJobMapViewerAction extends AbstractHandler implements IEl
 			return null;
 		}
 
+		try {
+			JobMapEndpointWrapper wrapper = JobMapEndpointWrapper.getWrapper(managerName);
+			// XXX Need to confirm. What is this?!?!?!
+			String version = wrapper.getVersion();
+			if (version.length() > 7) {
+				boolean result = Boolean.valueOf(version.substring(7, version.length()));
+				if (!result) {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							com.clustercontrol.jobmap.messages.Messages.getString("expiration.term.invalid"));
+				}
+			}
+		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			// キーファイルを確認できませんでした。処理を終了します。
+			// Key file not found. This process will be terminated.
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					com.clustercontrol.jobmap.messages.Messages.getString("message.jobmapkeyfile.notfound.error"));
+			return null;
+		}
 		
 		IWorkbenchPage page = window.getActivePage();
 

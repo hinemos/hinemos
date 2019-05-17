@@ -171,6 +171,9 @@ public class HinemosModuleConstant {
 	/** REST-API*/
 	public static final String REST_API = "REST_API";
 	
+	/** クラウド仮想化管理*/
+	public static final String XCLOUD = "CLOUD";
+	
 	/** マネージャ操作ログタイトル */
 	/** リポジトリ */
 	public static final String LOG_PREFIX_REPOSITORY = "[Repository]";
@@ -352,7 +355,8 @@ public class HinemosModuleConstant {
 				typeId.equals(INFRA) ||
 				typeId.equals(INFRA_FILE) ||
 				typeId.equals(REPORTING) ||
-				typeId.equals(REST_API)){
+				typeId.equals(REST_API) ||
+				typeId.equals(XCLOUD)){
 
 			return true;
 		} else if(!extensionTypeList.isEmpty()){
@@ -468,6 +472,8 @@ public class HinemosModuleConstant {
 			return "NODE_CONFIG_SETTING";
 		}  else if (string.equals(REST_API)) {
 			return "REST_API";
+		} else if (string.equals(XCLOUD)){
+			return "XCLOUD";
 		} else if(!extensionTypeList.isEmpty()){
 			for(ExtensionType extensionType: extensionTypeList){
 				if(string.equals(extensionType.getTypeId())){

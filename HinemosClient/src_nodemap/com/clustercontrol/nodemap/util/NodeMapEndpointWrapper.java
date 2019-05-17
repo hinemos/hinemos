@@ -379,7 +379,23 @@ public class NodeMapEndpointWrapper {
 		}
 		throw wse;
 	}
-	
+
+	public String getVersion() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		
+		for (EndpointSetting<NodeMapEndpoint> endpointSetting : getNodeMapEndpoint(endpointUnit)) {
+			try {
+				NodeMapEndpoint endpoint = (NodeMapEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getVersion();
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getVersion(), " + e.getMessage(), e);
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+
 	public void addFilterScope(ScopeInfo property, List<String> facilityIdList)
 			throws InvalidSetting_Exception, HinemosUnknown_Exception, InvalidRole_Exception, 
 			InvalidUserPass_Exception, FacilityDuplicate_Exception {

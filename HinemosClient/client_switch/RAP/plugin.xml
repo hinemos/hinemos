@@ -3470,6 +3470,13 @@
 			icon="icons/show_tree.gif" label="%show.scopetree" style="toggle"
 			tooltip="%show.scopetree">
 			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.StatusOpenJobMapViewerAction"
+				icon="icons/open_jobviewer.gif"
+				label="%view.jobmap.history"
+				style="push"
+				tooltip="%view.jobmap.history">
+			 </command>
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.nodemap.view.StatusViewM" allPopups="false">
 			<command
@@ -3485,129 +3492,187 @@
 			<command commandId="com.clustercontrol.monitor.view.action.StatusDeleteAction"
 			icon="icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
 			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.StatusOpenJobMapViewerAction"
+				icon="icons/open_jobviewer.gif"
+				label="%view.jobmap.history"
+				style="push"
+				tooltip="%view.jobmap.history">
+			</command>
 		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.nodemap.view.EventViewM" allPopups="false">
 			<command
-			commandId="com.clustercontrol.monitor.view.action.EventModifyMonitorSettingAction"
-			icon="icons/write_obj.gif" label="%modifyMonitorSetting" style="push"
-			tooltip="%modifyMonitorSetting">
+				commandId="com.clustercontrol.monitor.view.action.EventModifyMonitorSettingAction"
+				icon="icons/write_obj.gif" label="%modifyMonitorSetting" style="push"
+				tooltip="%modifyMonitorSetting">
 			</command>
 			<command
-			commandId="com.clustercontrol.monitor.view.action.EventOpenJobHistoryAction"
-			icon="icons/local_history_mode.gif" label="%job.history" style="push"
-			tooltip="%job.history">
+				commandId="com.clustercontrol.monitor.view.action.EventOpenJobHistoryAction"
+				icon="icons/local_history_mode.gif" label="%job.history" style="push"
+				tooltip="%job.history">
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.EventConfirmAction"
-			icon="icons/booleantrue.gif" label="%confirmed" style="push"
-			tooltip="%confirmed">
+				icon="icons/booleantrue.gif" label="%confirmed" style="push"
+				tooltip="%confirmed">
 			</command>
 			<command
-			commandId="com.clustercontrol.monitor.view.action.EventUnconfirmAction"
-			icon="icons/booleanfalse.gif" label="%return.unconfirmed" style="push"
-			tooltip="%return.unconfirmed">
+				commandId="com.clustercontrol.monitor.view.action.EventConfirmingAction"
+				icon="icons/booleantrue2.gif" label="%return.confirming" style="push"
+				tooltip="%return.confirming">
 			</command>
 			<command
-			commandId="com.clustercontrol.monitor.view.action.EventBatchConfirmAction"
-			icon="icons/ikkatukakunin.gif" label="%confirm.all" style="push"
-			tooltip="%confirm.all">
+				commandId="com.clustercontrol.monitor.view.action.EventUnconfirmAction"
+				icon="icons/booleanfalse.gif" label="%return.unconfirmed" style="push"
+				tooltip="%return.unconfirmed">
+			</command>
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventBatchConfirmAction"
+				icon="icons/enable/ikkatukakunin.gif" label="%confirm.all" style="push"
+				tooltip="%confirm.all">
 			</command>
 			<separator name="EventViewSeparator1" visible="true"></separator>
 			<command commandId="com.clustercontrol.monitor.view.action.EventReportAction"
-			icon="icons/newfile_wiz.gif" label="%download" style="push" tooltip="%download">
+				icon="icons/newfile_wiz.gif" label="%download" style="push" tooltip="%download">
+			</command>
+			<command commandId="com.clustercontrol.monitor.view.action.EventCustomCommandAction"
+				icon="icons/lrun_obj.gif" label="%customcommand" style="push" tooltip="%customcommand">
 			</command>
 			<separator name="EventViewSeparator2" visible="true"></separator>
 			<command commandId="com.clustercontrol.monitor.view.action.EventDetailAction"
-			icon="icons/event_detail.gif" label="%detail" style="push" tooltip="%detail">
+				icon="icons/event_detail.gif" label="%detail" style="push" tooltip="%detail">
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.RefreshAction"
-			icon="icons/refresh_tab.gif" label="%update" style="push" tooltip="%update">
+				icon="icons/refresh_tab.gif" label="%update" style="push" tooltip="%update">
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.EventFilterAction"
-			icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
+				icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.ScopeShowActionEvent"
-			icon="icons/show_tree.gif" label="%show.scopetree" style="toggle"
-			tooltip="%show.scopetree">
+				icon="icons/show_tree.gif" label="%show.scopetree" style="toggle"
+				tooltip="%show.scopetree">
 			</command>
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventCollectGraphOnAction"
+				icon="icons/tag.gif" label="%collect.graph.flg.on" style="push"
+				tooltip="%collect.graph.flg.on">
+			</command>
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventCollectGraphOffAction"
+				icon="icons/tag_invalid.gif" label="%collect.graph.flg.off" style="push"
+				tooltip="%collect.graph.flg.off">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.EventOpenJobMapViewerAction"
+				icon="icons/open_jobviewer.gif"
+				label="%view.jobmap.history"
+				style="push"
+				tooltip="%view.jobmap.history">
+			 </command>
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.nodemap.view.EventViewM" allPopups="false">
 			<command commandId="com.clustercontrol.monitor.view.action.EventDetailAction"
-			icon="icons/event_detail.gif" label="%detail" style="push" tooltip="%detail">
+				icon="icons/event_detail.gif" label="%detail" style="push" tooltip="%detail">
 			</command>
 			<separator name="EventViewSeparator1" visible="true"></separator>
 			<command
-			commandId="com.clustercontrol.monitor.view.action.EventModifyMonitorSettingAction"
-			icon="icons/write_obj.gif" label="%modifyMonitorSetting" style="push"
-			tooltip="%modifyMonitorSetting">
+				commandId="com.clustercontrol.monitor.view.action.EventModifyMonitorSettingAction"
+				icon="icons/write_obj.gif" label="%modifyMonitorSetting" style="push"
+				tooltip="%modifyMonitorSetting">
 			</command>
 			<command
-			commandId="com.clustercontrol.monitor.view.action.EventOpenJobHistoryAction"
-			icon="icons/local_history_mode.gif" label="%job.history" style="push"
-			tooltip="%job.history">
-			</command>
-			<command commandId="com.clustercontrol.monitor.view.action.EventConfirmAction"
-			icon="icons/booleantrue.gif" label="%confirmed" style="push"
-			tooltip="%confirmed">
+				commandId="com.clustercontrol.monitor.view.action.EventOpenJobHistoryAction"
+				icon="icons/local_history_mode.gif" label="%job.history" style="push"
+				tooltip="%job.history">
 			</command>
 			<command
-			commandId="com.clustercontrol.monitor.view.action.EventUnconfirmAction"
-			icon="icons/booleanfalse.gif" label="%return.unconfirmed" style="push"
-			tooltip="%return.unconfirmed">
+				commandId="com.clustercontrol.monitor.view.action.EventConfirmAction"
+				icon="icons/booleantrue.gif" label="%confirmed" style="push"
+				tooltip="%confirmed">
 			</command>
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventConfirmingAction"
+				icon="icons/booleantrue2.gif" label="%return.confirming" style="push"
+				tooltip="%return.confirming">
+			</command>
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventUnconfirmAction"
+				icon="icons/booleanfalse.gif" label="%return.unconfirmed" style="push"
+				tooltip="%return.unconfirmed">
+			</command>
+			<command commandId="com.clustercontrol.monitor.view.action.EventCustomCommandAction"
+				icon="icons/lrun_obj.gif" label="%customcommand" style="push" tooltip="%customcommand">
+			</command>
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventCollectGraphOnAction"
+				icon="icons/tag.gif" label="%collect.graph.flg.on" style="push"
+				tooltip="%collect.graph.flg.on">
+			</command>
+			<command
+				commandId="com.clustercontrol.monitor.view.action.EventCollectGraphOffAction"
+				icon="icons/tag_invalid.gif" label="%collect.graph.flg.off" style="push"
+				tooltip="%collect.graph.flg.off">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.EventOpenJobMapViewerAction"
+				icon="icons/open_jobviewer.gif"
+				label="%view.jobmap.history"
+				style="push"
+				tooltip="%view.jobmap.history">
+			 </command>
 		</menuContribution>
 		<!-- Reporting -->
 		<menuContribution locationURI="toolbar:com.clustercontrol.reporting.view.ReportingScheduleView" allPopups="false">
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingAddAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingAddAction"
 				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
 				label="%create"
 				style="push"
 				tooltip="%create">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingModifyAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingModifyAction"
 				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
 				label="%modify"
 				style="push"
 				tooltip="%modify">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingDeleteAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingDeleteAction"
 				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
 				label="%delete"
 				style="push"
 				tooltip="%delete">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingCopyAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingCopyAction"
 				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
 				label="%copy"
 				style="push"
 				tooltip="%copy">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingEnableAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingEnableAction"
 				icon="platform:/plugin/com.clustercontrol/icons/booleantrue.gif"
 				label="%enable"
 				style="push"
 				tooltip="%enable">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingDisableAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingDisableAction"
 				icon="platform:/plugin/com.clustercontrol/icons/booleanfalse.gif"
 				label="%disable"
 				style="push"
 				tooltip="%disable">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingRefreshAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingRefreshAction"
 				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
 				label="%update"
 				style="push"
 				tooltip="%update">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingRunAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingRunAction"
 				icon="platform:/plugin/com.clustercontrol/icons/lrun_obj.gif"
 				label="%run"
 				style="push"
@@ -3616,21 +3681,21 @@
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.reporting.view.ReportingScheduleView" allPopups="false">
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingAddAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingAddAction"
 				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
 				label="%create"
 				style="push"
 				tooltip="%create">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingModifyAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingModifyAction"
 				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
 				label="%modify"
 				style="push"
 				tooltip="%modify">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingDeleteAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingDeleteAction"
 				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
 				label="%delete"
 				style="push"
@@ -3638,7 +3703,7 @@
 			</command>
 			<separator name="ReportingScheduleViewSeparator1" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingCopyAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingCopyAction"
 				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
 				label="%copy"
 				style="push"
@@ -3646,14 +3711,14 @@
 			</command>
 			<separator name="ReportingScheduleViewSeparator2" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingEnableAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingEnableAction"
 				icon="platform:/plugin/com.clustercontrol/icons/booleantrue.gif"
 				label="%enable"
 				style="push"
 				tooltip="%enable">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingDisableAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingDisableAction"
 				icon="platform:/plugin/com.clustercontrol/icons/booleanfalse.gif"
 				label="%disable"
 				style="push"
@@ -3661,14 +3726,14 @@
 			</command>
 			<separator name="ReportingScheduleViewSeparator3" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingRefreshAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingRefreshAction"
 				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
 				label="%update"
 				style="push"
 				tooltip="%update">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.ReportingRunAction"
+				commandId="com.clustercontrol.reporting.view.action.ReportingRunAction"
 				icon="platform:/plugin/com.clustercontrol/icons/lrun_obj.gif"
 				label="%run"
 				style="push"
@@ -3677,35 +3742,35 @@
 		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.reporting.view.ReportingTemplateSetView" allPopups="false">
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetAddAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetAddAction"
 				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
 				label="%create"
 				style="push"
 				tooltip="%create">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetModifyAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetModifyAction"
 				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
 				label="%modify"
 				style="push"
 				tooltip="%modify">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetDeleteAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetDeleteAction"
 				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
 				label="%delete"
 				style="push"
 				tooltip="%delete">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetCopyAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetCopyAction"
 				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
 				label="%copy"
 				style="push"
 				tooltip="%copy">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetRefreshAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetRefreshAction"
 				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
 				label="%update"
 				style="push"
@@ -3714,21 +3779,21 @@
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.reporting.view.ReportingTemplateSetView" allPopups="false">
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetAddAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetAddAction"
 				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
 				label="%create"
 				style="push"
 				tooltip="%create">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetModifyAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetModifyAction"
 				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
 				label="%modify"
 				style="push"
 				tooltip="%modify">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetDeleteAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetDeleteAction"
 				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
 				label="%delete"
 				style="push"
@@ -3736,7 +3801,7 @@
 			</command>
 			<separator name="ReportingTemplateSetViewSeparator1" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetCopyAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetCopyAction"
 				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
 				label="%copy"
 				style="push"
@@ -3744,7 +3809,7 @@
 			</command>
 			<separator name="ReportingTemplateSetViewSeparator2" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.enterprise.reporting.view.action.TemplateSetRefreshAction"
+				commandId="com.clustercontrol.reporting.view.action.TemplateSetRefreshAction"
 				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
 				label="%update"
 				style="push"
@@ -3754,35 +3819,35 @@
 		<!-- Utility -->
 		<menuContribution locationURI="toolbar:com.clustercontrol.utility.settings.ui.views.ImportExportExecView" allPopups="false">
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.DiffSettingCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.DiffSettingCommand"
 				icon="icons/compare.gif"
 				label="%diff"
 				style="push"
 				tooltip="%diff">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.ImportSettingCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.ImportSettingCommand"
 				icon="icons/import.gif"
 				label="%import"
 				style="push"
 				tooltip="%import">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.ExportSettingCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.ExportSettingCommand"
 				icon="icons/export.gif"
 				label="%export"
 				style="push"
 				tooltip="%export">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.DeleteSettingCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.DeleteSettingCommand"
 				icon="icons/delete_obj.gif"
 				label="%delete"
 				style="push"
 				tooltip="%delete">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.RefreshXMLCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.RefreshXMLCommand"
 				icon="icons/refresh_tab.gif"
 				label="%update"
 				style="push"
@@ -3791,35 +3856,35 @@
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.utility.settings.ui.views.ImportExportExecView" allPopups="false">
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.DiffSettingCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.DiffSettingCommand"
 				icon="icons/compare.gif"
 				label="%diff"
 				style="push"
 				tooltip="%diff">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.ImportSettingCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.ImportSettingCommand"
 				icon="icons/import.gif"
 				label="%import"
 				style="push"
 				tooltip="%import">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.ExportSettingCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.ExportSettingCommand"
 				icon="icons/export.gif"
 				label="%export"
 				style="push"
 				tooltip="%export">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.DeleteSettingCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.DeleteSettingCommand"
 				icon="icons/delete_obj.gif"
 				label="%delete"
 				style="push"
 				tooltip="%delete">
 			</command>
 			<command
-				commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.RefreshXMLCommand"
+				commandId="com.clustercontrol.utility.settings.ui.views.commands.RefreshXMLCommand"
 				icon="icons/refresh_tab.gif"
 				label="%update"
 				style="push"
@@ -6369,91 +6434,91 @@
 		<command
 				categoryId="com.clustercontrol.categories.reporting.schedule"
 				defaultHandler="com.clustercontrol.reporting.view.action.ReportingAddAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.ReportingAddAction"
+				id="com.clustercontrol.reporting.view.action.ReportingAddAction"
 				name="CreateSchedule">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.schedule"
 				defaultHandler="com.clustercontrol.reporting.view.action.ReportingModifyAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.ReportingModifyAction"
+				id="com.clustercontrol.reporting.view.action.ReportingModifyAction"
 				name="ModifySchedule">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.schedule"
 				defaultHandler="com.clustercontrol.reporting.view.action.ReportingDeleteAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.ReportingDeleteAction"
+				id="com.clustercontrol.reporting.view.action.ReportingDeleteAction"
 				name="DeleteSchedule">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.schedule"
 				defaultHandler="com.clustercontrol.reporting.view.action.ReportingCopyAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.ReportingCopyAction"
+				id="com.clustercontrol.reporting.view.action.ReportingCopyAction"
 				name="CopySchedule">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.schedule"
 				defaultHandler="com.clustercontrol.reporting.view.action.ReportingEnableAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.ReportingEnableAction"
+				id="com.clustercontrol.reporting.view.action.ReportingEnableAction"
 				name="EnableSchedule">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.schedule"
 				defaultHandler="com.clustercontrol.reporting.view.action.ReportingDisableAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.ReportingDisableAction"
+				id="com.clustercontrol.reporting.view.action.ReportingDisableAction"
 				name="DisableSchedule">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.schedule"
 				defaultHandler="com.clustercontrol.reporting.view.action.ReportingRefreshAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.ReportingRefreshAction"
+				id="com.clustercontrol.reporting.view.action.ReportingRefreshAction"
 				name="RefreshSchedule">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.schedule"
 				defaultHandler="com.clustercontrol.reporting.view.action.ReportingRunAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.ReportingRunAction"
+				id="com.clustercontrol.reporting.view.action.ReportingRunAction"
 				name="RunSchedule">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.templateset"
 				defaultHandler="com.clustercontrol.reporting.view.action.TemplateSetAddAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.TemplateSetAddAction"
+				id="com.clustercontrol.reporting.view.action.TemplateSetAddAction"
 				name="CreateTemplateSet">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.templateset"
 				defaultHandler="com.clustercontrol.reporting.view.action.TemplateSetModifyAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.TemplateSetModifyAction"
+				id="com.clustercontrol.reporting.view.action.TemplateSetModifyAction"
 				name="ModifyTemplateSet">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.templateset"
 				defaultHandler="com.clustercontrol.reporting.view.action.TemplateSetDeleteAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.TemplateSetDeleteAction"
+				id="com.clustercontrol.reporting.view.action.TemplateSetDeleteAction"
 				name="DeleteTemplateSet">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.templateset"
 				defaultHandler="com.clustercontrol.reporting.view.action.TemplateSetCopyAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.TemplateSetCopyAction"
+				id="com.clustercontrol.reporting.view.action.TemplateSetCopyAction"
 				name="CopyTemplateSet">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.reporting.templateset"
 				defaultHandler="com.clustercontrol.reporting.view.action.TemplateSetRefreshAction"
-				id="com.clustercontrol.enterprise.reporting.view.action.TemplateSetRefreshAction"
+				id="com.clustercontrol.reporting.view.action.TemplateSetRefreshAction"
 				name="RefreshTemplateSet">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.Reporting"
 				defaultHandler="com.clustercontrol.reporting.etc.action.OpenReportingScheduleViewAction"
-				id="com.clustercontrol.enterprise.reporting.etc.action.OpenReportingScheduleViewAction"
+				id="com.clustercontrol.reporting.etc.action.OpenReportingScheduleViewAction"
 				name="OpenReportingScheduleView">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.Reporting"
 				defaultHandler="com.clustercontrol.reporting.etc.action.OpenReportingTemplateSetViewAction"
-				id="com.clustercontrol.enterprise.reporting.etc.action.OpenReportingTemplateSetViewAction"
+				id="com.clustercontrol.reporting.etc.action.OpenReportingTemplateSetViewAction"
 				name="OpenReportingTemplateSetView">
 		</command>
 		<!-- Utility -->
@@ -6463,31 +6528,31 @@
 		<command
 			categoryId="com.clustercontrol.categories.utility.settings"
 			defaultHandler="com.clustercontrol.utility.settings.ui.views.commands.DiffSettingCommand"
-			id="com.clustercontrol.enterprise.utility.settings.ui.views.commands.DiffSettingCommand"
+			id="com.clustercontrol.utility.settings.ui.views.commands.DiffSettingCommand"
 			name="DiffSetting">
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.utility.settings"
 			defaultHandler="com.clustercontrol.utility.settings.ui.views.commands.ImportSettingCommand"
-			id="com.clustercontrol.enterprise.utility.settings.ui.views.commands.ImportSettingCommand"
+			id="com.clustercontrol.utility.settings.ui.views.commands.ImportSettingCommand"
 			name="ImportSetting">
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.utility.settings"
 			defaultHandler="com.clustercontrol.utility.settings.ui.views.commands.ExportSettingCommand"
-			id="com.clustercontrol.enterprise.utility.settings.ui.views.commands.ExportSettingCommand"
+			id="com.clustercontrol.utility.settings.ui.views.commands.ExportSettingCommand"
 			name="ExportSetting">
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.utility.settings"
 			defaultHandler="com.clustercontrol.utility.settings.ui.views.commands.DeleteSettingCommand"
-			id="com.clustercontrol.enterprise.utility.settings.ui.views.commands.DeleteSettingCommand"
+			id="com.clustercontrol.utility.settings.ui.views.commands.DeleteSettingCommand"
 			name="DeleteSetting">
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.utility.settings"
 			defaultHandler="com.clustercontrol.utility.settings.ui.views.commands.RefreshXMLCommand"
-			id="com.clustercontrol.enterprise.utility.settings.ui.views.commands.RefreshXMLCommand"
+			id="com.clustercontrol.utility.settings.ui.views.commands.RefreshXMLCommand"
 			name="RefreshXML">
 		</command>
 		<command
@@ -8003,31 +8068,31 @@
 		</key>
 		<!-- Utility -->
 		<key
-			commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.ImportSettingCommand"
+			commandId="com.clustercontrol.utility.settings.ui.views.commands.ImportSettingCommand"
 			contextId="com.clustercontrol.utility.settings.ui.views.ImportExportExecView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+ARROW_UP">
 		</key>
 		<key
-			commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.ExportSettingCommand"
+			commandId="com.clustercontrol.utility.settings.ui.views.commands.ExportSettingCommand"
 			contextId="com.clustercontrol.utility.settings.ui.views.ImportExportExecView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+ARROW_DOWN">
 		</key>
 		<key
-			commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.DeleteSettingCommand"
+			commandId="com.clustercontrol.utility.settings.ui.views.commands.DeleteSettingCommand"
 			contextId="com.clustercontrol.utility.settings.ui.views.ImportExportExecView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="DEL">
 		</key>
 		<key
-			commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.RefreshXMLCommand"
+			commandId="com.clustercontrol.utility.settings.ui.views.commands.RefreshXMLCommand"
 			contextId="com.clustercontrol.utility.settings.ui.views.ImportExportExecView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+R">
 		</key>
 		<key
-			commandId="com.clustercontrol.enterprise.utility.settings.ui.views.commands.DiffSettingCommand"
+			commandId="com.clustercontrol.utility.settings.ui.views.commands.DiffSettingCommand"
 			contextId="com.clustercontrol.utility.settings.ui.views.ImportExportExecView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+D">

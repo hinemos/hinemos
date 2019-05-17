@@ -102,6 +102,24 @@ public class QueryUtil {
 		}
 	}
 	
+	/**
+	 * Windows用
+	 * 監視項目IDより収集項目IDのリストを取得する
+	 * @param monitorIdList
+	 * @return
+	 */
+	public static List<Integer> getCollectoridByMonitorIdList(ArrayList<String> monitorIdList) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Integer> list
+			= em.createNamedQuery("CollectKeyInfo.getCollectorIdByMonitorId"
+					,Integer.class, ObjectPrivilegeMode.NONE)
+					.setParameter("monitorIdList", monitorIdList)
+					.getResultList();
+			return list;
+		}
+	}
+	
 	public static int deleteCollectStringDataByDateTimeAndMonitorId(Long dateTime, int timeout, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -169,6 +187,27 @@ public class QueryUtil {
 		}
 	}
 	
+	/**
+	 * Windows用
+	 * 数値系収集テーブルから指定条件のデータを削除.
+	 * @param dateTime
+	 * @param timeout
+	 * @param collectId
+	 * @return 削除件数.
+	 */
+	public static int deleteCollectDataByDateTimeAndCollectorId(Long dateTime, int timeout, int collectId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query query = em.createNamedQuery("CollectData.deleteByDateTimeAndCollectorId")
+					.setParameter("dateTime", dateTime)
+					.setParameter("collectorid", collectId);
+			if (timeout > 0) {
+				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
+			}
+			return query.executeUpdate();
+		}
+	}
+
 	public static int deleteSummaryHourByDateTimeAndMonitorId(Long dateTime, int timeout, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();

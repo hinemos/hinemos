@@ -9,15 +9,14 @@
 package com.clustercontrol.maintenance.factory;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.maintenance.util.QueryUtil;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 
@@ -53,18 +52,17 @@ public class MaintenanceCollectBinaryData extends MaintenanceObject {
 		JpaTransactionManager jtm = null;
 
 		try {
-			// バイナリの監視設定のみを取得する.
-			List<Integer> monitorTypes = new ArrayList<Integer>();
-			monitorTypes.add(MonitorTypeConstant.TYPE_BINARY);
-			// オーナーロールIDによる絞込み制御はクエリ生成時に実施.
-			ArrayList<MonitorInfo> monitorList = new MonitorSettingControllerBean()
-					.getMonitorListByMonitorType(monitorTypes, ownerRoleId);
+			ArrayList<MonitorInfo> monitorList = new MonitorSettingControllerBean().getMonitorList();
 
 			ArrayList<String> monitorIdList = new ArrayList<>();
 
 			// 指定の監視種別だけに絞り込む.
 			for (MonitorInfo monitorInfo : monitorList) {
-				if (this.monitorTypeId.equals(monitorInfo.getMonitorTypeId())) {
+				if (!this.monitorTypeId.equals(monitorInfo.getMonitorTypeId())) {
+					continue;
+				}
+				if (RoleIdConstant.isAdministratorRole(ownerRoleId) 
+						|| monitorInfo.getOwnerRoleId().equals(ownerRoleId)) {
 					monitorIdList.add(monitorInfo.getMonitorId());
 				}
 			}

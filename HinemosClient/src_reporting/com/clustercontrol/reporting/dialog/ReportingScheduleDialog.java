@@ -10,6 +10,8 @@ package com.clustercontrol.reporting.dialog;
 
 import java.util.List;
 
+import javax.xml.ws.WebServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -780,6 +782,27 @@ public class ReportingScheduleDialog extends CommonDialog {
 	@Override
 	protected ValidateResult validate() {
 		ValidateResult result = null;
+
+		//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
+		//getVersionにて通信状況を確認し、異常の場合は ダイヤログを表示
+		try {
+			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.m_managerComposite.getText());
+			wrapper.getVersion();
+		} catch (Exception e) {
+			String errMsg = HinemosMessage.replace(e.getMessage());
+			m_log.warn("getVersionError, " + errMsg);
+			result = new ValidateResult();
+			result.setValid(false);
+			result.setID(Messages.getString("message.hinemos.1"));
+			if ( e instanceof WebServiceException){
+				result.setMessage(Messages.getString("message.expiration.term")+":"+ this.m_managerComposite.getText());
+			}else{
+				result.setMessage(Messages.getString("message.hinemos.failure.unexpected")+":"+ this.m_managerComposite.getText()+ ", " + errMsg);
+			}
+		}
+		if( result != null ){
+			return result; 
+		}
 
 		result = createReportingInfo();
 		if (result != null) {

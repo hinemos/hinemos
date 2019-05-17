@@ -520,8 +520,10 @@ public class EventReportDialog extends CommonDialog {
 	 */
 	private Property getOrInitFilterProperty() {
 		Property property = filterPropertyCache.get(RWT.getUISession());
-		if( null == property ){
+		if ( null == property ){
 			property = initFilterProperty();
+		} else {
+			EventFilterPropertyUtil.updatePropertyDisp(property, Locale.getDefault(), eventDspSetting, managerName);
 		}
 		return property;
 	}

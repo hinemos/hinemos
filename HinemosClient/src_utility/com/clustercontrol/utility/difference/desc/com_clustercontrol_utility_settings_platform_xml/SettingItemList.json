@@ -6,6 +6,7 @@
 	{
 	"propName":"settingItemId",
 	"annotations":[
+		{"type":"Column", "columnName":"ItemInfo"},
 		{"type":"Translate", "values":[
 			{"value":"HOSTNAME", "name":"name_hostname"},
 			{"value":"OS", "name":"name_os"},
@@ -16,10 +17,7 @@
 			{"value":"HW_FILESYSTEM", "name":"name_hw_filesystem"},
 			{"value":"NETSTAT", "name":"name_netstat"},
 			{"value":"PROCESS", "name":"name_process"},
-			{"value":"PACKAGE", "name":"name_package"},
-			{"value":"PRODUCT", "name":"name_product"},
-			{"value":"LICENSE", "name":"name_license"},
-			{"value":"CUSTOM", "name":"name_custom"}
+			{"value":"PACKAGE", "name":"name_package"}
 		]}
 	]}
 ]

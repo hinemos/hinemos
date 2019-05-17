@@ -12,12 +12,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import javax.xml.ws.WebServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.jface.dialogs.MessageDialog;
+
+import com.clustercontrol.util.Messages;
 import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.ws.xcloud.CloudLoginUser;
 import com.clustercontrol.ws.xcloud.HRepository;
 import com.clustercontrol.ws.xcloud.InstanceBackup;
+import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
@@ -43,6 +50,8 @@ public class HinemosManager extends Element implements IHinemosManager {
 	private CloudRepository cloudRepository;
 	private BillingMonitors billingAlarms;
 	
+	private boolean expirationDialog;
+
 	public HinemosManager(String managerName, String url){
 		this.url = url;
 		this.managerName = managerName;
@@ -97,6 +106,24 @@ public class HinemosManager extends Element implements IHinemosManager {
 		try {
 			CloudEndpoint endpoint = getEndpoint(CloudEndpoint.class);
 			
+			// 起動キーチェック処理
+			try {
+				if(!expirationDialog) {
+					expirationDialog = true;
+					endpoint.getVersion();
+				}
+			} catch (WebServiceException e) {
+				// publishされていない場合
+				MessageDialog.openWarning(null, 
+						Messages.getString("warning"), 
+						CloudConstants.bundle_messages.getString("message.expiration.term"));
+			} catch (Throwable e) {
+				// 起動キーが有効期限切れの場合
+				MessageDialog.openWarning(null, 
+						Messages.getString("warning"), 
+						CloudConstants.bundle_messages.getString("message.expiration.term.invalid"));
+			}
+
 			long start2 = System.currentTimeMillis();
 			HRepository repository = endpoint.getRepository();
 			logger.debug(String.format("CloudEndpoint.getRepository : elapsed time=%dms", System.currentTimeMillis() - start2));

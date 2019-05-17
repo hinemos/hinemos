@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
@@ -58,7 +59,7 @@ import com.clustercontrol.ws.repository.NodeConfigSettingDuplicate_Exception;
 import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
 
 /**
- * リポジトリ-構成情報州設定をインポート・エクスポート・削除するアクションクラス<br>
+ * リポジトリ-構成情報取得設定をインポート・エクスポート・削除するアクションクラス<br>
  *
  * @version 6.2.0
  * @since 6.2.0
@@ -315,7 +316,7 @@ public class NodeConfigSettingAction {
 	 * 差分がない場合：出力しない。
 	 * 				   または、すでに存在している同一名のＣＳＶファイルを削除する。
 	 * @param xmlNodeConfig1
-	 * @param xmlHostname1
+	 * @param xmlNodeConfig2
 	 * @return 終了コード
 	 */
 	@DiffMethod
@@ -370,14 +371,16 @@ public class NodeConfigSettingAction {
 			ret += SettingConstants.SUCCESS_DIFF_1;
 		}
 
-		try (FileOutputStream fos = new FileOutputStream(xmlNodeConfig1 + ".csv")) {
+		FileOutputStream fos = null;
+		try {
 			//差分がある場合、ＣＳＶファイル作成
 			if (diff || DiffUtil.isAll()) {
 				CSVUtil.CSVSerializer csvSerializer = CSVUtil.createCSVSerializer();
+				fos = new FileOutputStream(xmlNodeConfig2 + ".csv");
 				csvSerializer.write(fos, resultA.getResultBs().values().iterator().next());
 			} else {
 				//差分がない場合、すでに作成済みのＣＳＶファイルがあれば、削除
-				File f = new File(xmlNodeConfig1 + ".csv");
+				File f = new File(xmlNodeConfig2 + ".csv");
 				if (f.exists()) {
 					if (!f.delete()) {
 						log.warn(String.format("Fail to delete File. %s", f.getAbsolutePath()));
@@ -387,6 +390,14 @@ public class NodeConfigSettingAction {
 		} catch (Exception e) {
 			log.error("unexpected: ", e);
 			ret = SettingConstants.ERROR_INPROCESS;
+		}
+		finally {
+			if (fos != null) {
+				try {
+					fos.close();
+				} catch (IOException e) {
+				}
+			}
 		}
 
 		// 処理の終了

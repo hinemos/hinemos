@@ -65,6 +65,7 @@ import com.clustercontrol.ws.monitor.MonitorInfo;
 import com.clustercontrol.ws.repository.NodeConfigRunCollectInfo;
 import com.clustercontrol.ws.repository.NodeConfigRunCollectInfo.InstructedInfoMap;
 import com.clustercontrol.ws.repository.NodeConfigSetting;
+import com.clustercontrol.ws.repository.NodeInfo;
 
 /**
  * Topicを受信するクラス<BR>
@@ -388,7 +389,7 @@ public class ReceiveTopic extends Thread {
 				reloadNodeConfigRunCollect(updateInfo, false);
 				reloadWinEventMonitor(updateInfo, false);
 				reloadJobFileCheck(updateInfo, false);
-
+				
 				settingLastUpdateInfo = updateInfo;
 
 				m_log.debug("getTopic " + Agent.getAgentStr() + " end");
@@ -513,7 +514,7 @@ public class ReceiveTopic extends Thread {
 			}
 		}
 	}
-
+	
 	/**
 	 * バイナリ監視読込実施判定.
 	 * 
@@ -599,20 +600,19 @@ public class ReceiveTopic extends Thread {
 		}
 
 	}
-	
-
 	private void reloadNodeConfigSetting(SettingUpdateInfo updateInfo, boolean force) {
 		if (!isNodeConfigSettingReload(updateInfo) && !force) {
 			return;
 		}
 		// Local Variables
 		List<NodeConfigSetting> dtoList = null;
-	
+		List<NodeInfo> nodeInfoList = null;
+
 		// MAIN
 		m_log.info("reloading configuration of nodeconfig setting...");
 		try {
 			dtoList = AgentNodeConfigEndPointWrapper.getNodeConfigSetting();
-				
+			nodeInfoList = AgentNodeConfigEndPointWrapper.getNodeInfoList();
 			// unregister unnecessary NodeConfig Collector
 			for (CollectorId collectId : CollectorManager.getAllCollectorIds()) {
 				if (collectId.type != NodeConfigCollector._collectorType) {
@@ -633,7 +633,7 @@ public class ReceiveTopic extends Thread {
 			for (NodeConfigSetting dto : dtoList) {
 				// reset Command Collector
 				m_log.info("reloaded configuration : " + dto.getSettingId());
-				CollectorManager.registerCollectorTask(new NodeConfigCollector(dto, Function.REGULAR_COLLECT));
+				CollectorManager.registerCollectorTask(new NodeConfigCollector(dto, Function.REGULAR_COLLECT,nodeInfoList));
 			}
 		} catch (com.clustercontrol.ws.agentnodeconfig.HinemosUnknown_Exception e) {
 			m_log.warn("un-expected internal failure occurs...", e);
@@ -658,10 +658,11 @@ public class ReceiveTopic extends Thread {
 		}
 		// Local Variables
 		NodeConfigRunCollectInfo runCollectInfo = null;
-
+		List<NodeInfo> nodeInfoList = null;
 		// Managerから即時実行に関する情報を取得.
 		m_log.info("reloading configuration of nodeconfig run-collect info...");
 		try {
+			nodeInfoList = AgentNodeConfigEndPointWrapper.getNodeInfoList();
 			runCollectInfo = AgentNodeConfigEndPointWrapper.getNodeConfigRunCollectInfo();
 		} catch (com.clustercontrol.ws.agentnodeconfig.HinemosUnknown_Exception e) {
 			m_log.warn("un-expected internal failure occurs...", e);
@@ -719,7 +720,7 @@ public class ReceiveTopic extends Thread {
 			}
 			// 構成情報収集の設定情報毎に実行させる.
 			m_log.info("reloaded configuration : " + setting.getSettingId());
-			NodeConfigCollector collector = new NodeConfigCollector(setting, Function.RUN_COLLECT);
+			NodeConfigCollector collector = new NodeConfigCollector(setting, Function.RUN_COLLECT, nodeInfoList);
 			collector.runCollect(instructedDate, loadDistributionTime);
 		}
 

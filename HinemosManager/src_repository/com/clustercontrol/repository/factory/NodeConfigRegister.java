@@ -798,23 +798,26 @@ public class NodeConfigRegister {
 			em.persist(history);
 
 			if (diffMap.size() > 0) {
-				// FacilityInfo更新
-				FacilityInfo facilityInfo = QueryUtil.getFacilityPK(m_nodeInfo.getFacilityId(), ObjectPrivilegeMode.MODIFY);
-				facilityInfo.setModifyDatetime(m_registerDatetime);
-				facilityInfo.setModifyUserId(m_modifyUserId);
-
 				// メッセージ作成
 				String orgMessage = createDiffMessage(diffMap);
-
-				// 終了メッセージ
-				outputBasicInfoList.add(
-						createOutputBasicList(
-							null,
-							PriorityConstant.TYPE_INFO, 
-							MessageConstant.MESSAGE_NODE_CONFIG_SETTING_SUCCESS.getMessage(),
-							orgMessage,
-							this.m_settingInfo,
-							this.m_registerDatetime));
+				//orgMessageが空文字の場合、更新なしとみなす
+				if(orgMessage.equals("")){
+					m_log.info("exec(): No NodeConfigInfo Updated");
+				}else{
+					// FacilityInfo更新
+					FacilityInfo facilityInfo = QueryUtil.getFacilityPK(m_nodeInfo.getFacilityId(), ObjectPrivilegeMode.MODIFY);
+					facilityInfo.setModifyDatetime(m_registerDatetime);
+					facilityInfo.setModifyUserId(m_modifyUserId);
+					// 終了メッセージ
+					outputBasicInfoList.add(
+							createOutputBasicList(
+									null,
+									PriorityConstant.TYPE_INFO, 
+									MessageConstant.MESSAGE_NODE_CONFIG_SETTING_SUCCESS.getMessage(),
+									orgMessage,
+									this.m_settingInfo,
+									this.m_registerDatetime));
+				}
 			}
 
 			// デバイスサーチ有効時のINTERNALエラー対応

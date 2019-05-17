@@ -149,7 +149,7 @@ public class StringBinder {
 	 * @param str escaped string
 	 * @return
 	 */
-	private String escapeStr(String str) {
+	public static String escapeStr(String str) {
 		// local variables
 		String ret = null;
 

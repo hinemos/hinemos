@@ -568,6 +568,11 @@ public class NodeConfigRegisterUtil {
 			List<NodeNetworkInterfaceInfo> entityList = QueryUtil.getNodeNetworkInterfaceInfoByFacilityId(facilityId);
 			for (NodeNetworkInterfaceInfo entity : entityList) {
 				if (!notDelPkList.contains(entity.getId())) {
+					//クラウド自動検出で登録されたNICは削除しない
+					if(isCollect && entity.getDeviceType().equals("vnic")){
+						m_log.debug("registerNodeNetworkInterfaceInfo(): "+entity.getDeviceName()+" is vnic. Do not delete");
+						continue;
+					}
 					// cc_cfg_node_network_interface_info削除処理
 					em.remove(entity);
 					// NodeNetworkInterfaceHistoryDetail更新
@@ -699,6 +704,11 @@ public class NodeConfigRegisterUtil {
 			List<NodeDiskInfo> entityList = QueryUtil.getNodeDiskInfoByFacilityId(facilityId);
 			for (NodeDiskInfo entity : entityList) {
 				if (!notDelPkList.contains(entity.getId())) {
+					//クラウド自動検出で検出されたディスクは削除しない
+					if(isCollect && entity.getDeviceType().equals("vdisk")){
+						m_log.debug("registerNodeDiskInfo(): "+entity.getDeviceName()+" is vdisk. Do not delete");
+						continue;
+					}
 					// cc_cfg_node_disk_info削除処理
 					em.remove(entity);
 					// NodeDiskHistoryDetail更新

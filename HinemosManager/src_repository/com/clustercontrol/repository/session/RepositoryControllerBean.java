@@ -3338,17 +3338,31 @@ public class RepositoryControllerBean {
 	public void addFilterScope(ScopeInfo property, List<String> facilityIdList)
 			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
-
+		List<String> facilityIdAddList=new ArrayList<String>();
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			// スコープの作成
 			addScope(FacilityTreeAttributeConstant.NODE_CONFIGURATION_SCOPE, property, FacilitySortOrderConstant.DEFAULT_SORT_ORDER_SCOPE);
-	
+			//ノードのオブジェクト権限チェック
+			for (String facilityId : facilityIdList){
+				try {
+					QueryUtil.getFacilityPK(facilityId);
+				} catch (FacilityNotFound e) {
+					// ログ出す
+					m_log.warn("addFilterScope(): Facility ID not found for facility id: "+facilityId+" "+e);
+					continue;
+				} catch (InvalidRole e){
+					m_log.warn("addFilterScope(): No Object privileage for facility id: "+facilityId+" "+e);
+					continue;
+				}
+				facilityIdAddList.add(facilityId);
+			}
+
 			// スコープへの割当て
-			if (facilityIdList != null && facilityIdList.size() > 0) {
-				assignNodeScope(property.getFacilityId(), facilityIdList.toArray(new String[facilityIdList.size()]));
+			if (facilityIdAddList != null && facilityIdAddList.size() > 0) {
+				assignNodeScope(property.getFacilityId(), facilityIdAddList.toArray(new String[facilityIdAddList.size()]));
 			}
 
 			jtm.commit();

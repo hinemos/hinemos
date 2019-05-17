@@ -481,17 +481,18 @@ public class InstanceUpdater {
 			} catch (FacilityDuplicate e) {
 				try {
 					// 既に存在するノードに関しては、クラウドサービスに関連付ける。
-					RepositoryControllerBeanWrapper.bean().modifyNode(nodeInfo);
+					NodeInfo nodeInfoFull = RepositoryControllerBeanWrapper.bean().getNodeFull(nodeInfo.getFacilityId());
+					RepositoryControllerBeanWrapper.bean().modifyNode(nodeInfoFull);
 					Session.current().getEntityManager().flush();
 					
-					logger.info(String.format("Link node. FacilityID=%s, InstanceId=%s, autoRegist=%b", nodeInfo.getFacilityId(),
+					logger.info(String.format("Link node. FacilityID=%s, InstanceId=%s, autoRegist=%b", nodeInfoFull.getFacilityId(),
 							instanceEntity.getResourceId(), ActionMode.isAutoDetection()));
 					
 					HinemosEntityManager em = Session.current().getEntityManager();
-					FacilityAdditionEntity fa = em.find(FacilityAdditionEntity.class, nodeInfo.getFacilityId(), ObjectPrivilegeMode.READ);
+					FacilityAdditionEntity fa = em.find(FacilityAdditionEntity.class, nodeInfoFull.getFacilityId(), ObjectPrivilegeMode.READ);
 					if (fa == null) {
 						fa = new FacilityAdditionEntity();
-						fa.setFacilityId(nodeInfo.getFacilityId());
+						fa.setFacilityId(nodeInfoFull.getFacilityId());
 						PersistenceUtil.persist(Session.current().getEntityManager(),fa);
 					}
 					
@@ -504,7 +505,7 @@ public class InstanceUpdater {
 					fa.getExtendedProperties().put(CloudConstants.EPROP_Instance, ep);
 					
 					notifier.setCompleted();
-				} catch (InvalidSetting | InvalidRole | HinemosUnknown e1) {
+				} catch (InvalidSetting | InvalidRole | FacilityNotFound | HinemosUnknown e1) {
 					logger.warn(String.format("addHinemosNode(%s, %s, %s, %s) %s", cloudScope.getCloudScopeId(), instanceEntity.getResourceId(), instanceEntity.getResourceType(), ActionMode.isAutoDetection(), e.getMessage()));
 					throw ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e1);
 				}

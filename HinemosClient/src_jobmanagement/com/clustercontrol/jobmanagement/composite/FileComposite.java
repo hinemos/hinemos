@@ -241,14 +241,20 @@ public class FileComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "m_allNode", m_allNode);
 		m_allNode.setText(Messages.getString("forward.all.nodes"));
 		m_allNode.setLayoutData(
-				new RowData(220, SizeConstant.SIZE_BUTTON_HEIGHT));
-		
+				new RowData(150, SizeConstant.SIZE_BUTTON_HEIGHT));
+
+		// ラジオボタン配置調整用の空Composite
+		JobDialogUtil.getComposite_Space(methodGroup, 70, SizeConstant.SIZE_BUTTON_HEIGHT);
+
 		// 受信：受信ノード：１ノード（ラジオ）
 		m_oneNode = new Button(methodGroup, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "m_oneNode", m_oneNode);
 		m_oneNode.setText(Messages.getString("forward.one.node"));
 		m_oneNode.setLayoutData(
-				new RowData(250, SizeConstant.SIZE_BUTTON_HEIGHT));
+				new RowData(120, SizeConstant.SIZE_BUTTON_HEIGHT));
+
+		// ラジオボタン配置調整用の空Composite
+		JobDialogUtil.getComposite_Space(methodGroup, 130, SizeConstant.SIZE_BUTTON_HEIGHT);
 
 		// 受信：ディレクトリ（ラベル）
 		Label forwardDirTitle = new Label(fileTransferTogroup, SWT.NONE);
@@ -281,8 +287,11 @@ public class FileComposite extends Composite {
 		this.m_compressionCondition = new Button(fileTransfarComposite, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_compressionCondition", this.m_compressionCondition);
 		this.m_compressionCondition.setText(Messages.getString("forward.compression.file"));
-		this.m_compressionCondition.setLayoutData(new RowData(220,
+		this.m_compressionCondition.setLayoutData(new RowData(180,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
+
+		// ラジオボタン配置調整用の空Composite
+		JobDialogUtil.getComposite_Space(fileTransfarComposite, 40, SizeConstant.SIZE_BUTTON_HEIGHT);
 
 		// ファイル転送時：転送ファイルのチェック（チェック）
 		this.m_checkFileCondition = new Button(fileTransfarComposite, SWT.CHECK);

@@ -49,6 +49,24 @@
 	"propName":"deviceDescription",
 	"annotations":[
 		{"type":"Column", "columnName":"CPUInfo_deviceDescription"}
+	]},
+
+	{
+	"propName":"coreCount",
+	"annotations":[
+		{"type":"Column", "columnName":"CPUInfo_coreCount"}
+	]},
+
+	{
+	"propName":"threadCount",
+	"annotations":[
+		{"type":"Column", "columnName":"CPUInfo_threadCount"}
+	]},
+
+	{
+	"propName":"clockCount",
+	"annotations":[
+		{"type":"Column", "columnName":"CPUInfo_clockCount"}
 	]}
 ]
 }

@@ -35,6 +35,7 @@ import com.clustercontrol.reporting.fault.ReportingDuplicate;
 import com.clustercontrol.reporting.fault.ReportingNotFound;
 import com.clustercontrol.platform.util.reporting.ExecReportingProcess;
 import com.clustercontrol.reporting.session.ReportingControllerBean;
+import com.clustercontrol.util.KeyCheck;
 import com.clustercontrol.ws.util.HttpAuthenticator;
 
 /**
@@ -672,5 +673,10 @@ public class ReportingEndpoint {
 		return new ReportingControllerBean().outputStringToType(str);
 	}
 
+	public String getVersion() throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 
+		return KeyCheck.getResultEnterprise();
+	}
 }

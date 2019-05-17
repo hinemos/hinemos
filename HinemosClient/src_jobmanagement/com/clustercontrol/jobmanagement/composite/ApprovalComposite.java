@@ -216,8 +216,7 @@ public class ApprovalComposite extends Composite {
 		this.m_approvalReqMailBodyCondition = new Button(composite, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_approvalReqMailBodyCondition", this.m_approvalReqMailBodyCondition);
 		this.m_approvalReqMailBodyCondition.setText(Messages.getString("approval.request.sentence.use"));
-		this.m_approvalReqMailBodyCondition.setLayoutData(new GridData(260, SizeConstant.SIZE_BUTTON_HEIGHT));
-		((GridData)m_approvalReqMailBodyCondition.getLayoutData()).horizontalSpan = 1;
+		this.m_approvalReqMailBodyCondition.setLayoutData(new GridData(SWT.BEGINNING, SWT.CENTER, true, false));
 		this.m_approvalReqMailBodyCondition.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {

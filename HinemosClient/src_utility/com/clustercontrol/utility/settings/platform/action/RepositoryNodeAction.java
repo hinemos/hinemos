@@ -489,8 +489,8 @@ public class RepositoryNodeAction {
 	@ImportMethod
 	public int importRepositoryNode(String xmlNode, String xmlHostname, String xmlCPU, String xmlMemory,
 									String xmlNetworkInterface, String xmlDisk, String xmlFS,
-									String xmlDevice, String xmlNetstat, String xmlPackage,
-									String xmlProcess, String xmlProduct, String xmlLicense, String xmlVariable,
+									String xmlDevice, String xmlNetstat, String xmlProcess,
+									String xmlPackage, String xmlProduct, String xmlLicense, String xmlVariable,
 									String xmlNote) {
 
 		log.debug("Start Import PlatformRepositoryNode ");
@@ -513,9 +513,6 @@ public class RepositoryNodeAction {
 		DiskList disk = null;
 		FSList fs = null;
 		DeviceList device = null;
-		NetstatList netstat = null;
-		LicenseList license = null;
-		ProductList product = null;
 		NodeVariableList variable = null;
 		NoteList note = null;
 		
@@ -529,9 +526,6 @@ public class RepositoryNodeAction {
 			disk = DiskList.unmarshal(new InputStreamReader(new FileInputStream(xmlDisk), "UTF-8"));
 			fs = FSList.unmarshal(new InputStreamReader(new FileInputStream(xmlFS), "UTF-8"));
 			device = DeviceList.unmarshal(new InputStreamReader(new FileInputStream(xmlDevice), "UTF-8"));
-			netstat = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat), "UTF-8"));
-			license = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense), "UTF-8"));
-			product = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct), "UTF-8"));
 			variable = NodeVariableList.unmarshal(new InputStreamReader(new FileInputStream(xmlVariable), "UTF-8"));
 			note = NoteList.unmarshal(new InputStreamReader(new FileInputStream(xmlNote), "UTF-8"));
 		} catch (MarshalException | ValidationException e) {
@@ -558,7 +552,6 @@ public class RepositoryNodeAction {
 			com.clustercontrol.ws.repository.NodeInfo nodeInfo = RepositoryConv.convNodeXml2Dto(xmlNodeInfo, hostname.getHostnameInfo(), cpu.getCPUInfo(),
 													  memory.getMemoryInfo(), networkInterface.getNetworkInterfaceInfo(),
 													  disk.getDiskInfo(), fs.getFSInfo(), device.getDeviceInfo(),
-													  netstat.getNetstatInfo(), license.getLicenseInfo(), product.getProductInfo(),
 													  variable.getNodeVariableInfo(), note.getNoteInfo());
 
 			if (nodeInfo.getFacilityId() != null && !nodeInfo.getFacilityId().equals("")) {
@@ -689,7 +682,10 @@ public class RepositoryNodeAction {
 			"\"CpuInfo.*.DeviceType\"," +
 			"\"CpuInfo.*.DeviceSize\"," +
 			"\"CpuInfo.*.DeviceSizeUnit\"," +
-			"\"CpuInfo.*.DeviceDescription\"" +
+			"\"CpuInfo.*.DeviceDescription\"," +
+			"\"CpuInfo.*.CoreCount\"," +
+			"\"CpuInfo.*.ThreadCount\"," +
+			"\"CpuInfo.*.ClockCount\"" +
 		"]}"
 	})
 	public static class CPURoot {
@@ -963,10 +959,10 @@ public class RepositoryNodeAction {
 					"\"props\":[" +
 					"\"NetstatInfo\"," +
 					"\"NetstatInfo.*.protocol\"," +
-					"\"NetstatInfo.*.localIpAddress\"," +
-					"\"NetstatInfo.*.localPort\"," +
 					"\"NetstatInfo.*.foreignIpAddress\"," +
 					"\"NetstatInfo.*.foreignPort\"," +
+					"\"NetstatInfo.*.localIpAddress\"," +
+					"\"NetstatInfo.*.localPort\"," +
 					"\"NetstatInfo.*.processName\"," +
 					"\"NetstatInfo.*.pid\"," +
 					"\"NetstatInfo.*.status\"" +
@@ -999,7 +995,8 @@ public class RepositoryNodeAction {
 			return id;
 		}
 
-		@DiffAnnotation(value = {"{\"type\":\"Column\", \"columnName\":\"DeviceInfo_deviceDisplayName\"}", "{\"type\":\"Array\"}"})
+		@DiffAnnotation(value = {"{\"type\":\"Column\", \"columnName\":\"NetstatInfo_Netstat\"}",
+				"{\"type\":\"Array\", \"idType\":\"props\", \"props\":[\"protocol\", \"foreignIpAddress\", \"foreignPort\", \"localIpAddress\", \"localPort\", \"processName\", \"pid\"]}}"})
 		public NetstatInfo[] getNetstatInfo() {
 			return netstatInfo.toArray(new NetstatInfo[0]);
 		}
@@ -1391,20 +1388,40 @@ public class RepositoryNodeAction {
 			device1 = DeviceList.unmarshal(new InputStreamReader(new FileInputStream(xmlDevice1), "UTF-8"));
 			device2 = DeviceList.unmarshal(new InputStreamReader(new FileInputStream(xmlDevice2), "UTF-8"));
 
-			netstat1 = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat1), "UTF-8"));
-			netstat2 = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat2), "UTF-8"));
+			if (new File(xmlNetstat1).exists()) {
+				netstat1 = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat1), "UTF-8"));
+			}
+			if (new File(xmlNetstat2).exists()) {
+				netstat2 = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat2), "UTF-8"));
+			}
 
-			process1 = ProcessList.unmarshal(new InputStreamReader(new FileInputStream(xmlProcess1), "UTF-8"));
-			process2 = ProcessList.unmarshal(new InputStreamReader(new FileInputStream(xmlProcess2), "UTF-8"));
+			if (new File(xmlProcess1).exists()) {
+				process1 = ProcessList.unmarshal(new InputStreamReader(new FileInputStream(xmlProcess1), "UTF-8"));
+			}
+			if (new File(xmlProcess2).exists()) {
+				process2 = ProcessList.unmarshal(new InputStreamReader(new FileInputStream(xmlProcess2), "UTF-8"));
+			}
 
-			package1 = PackageList.unmarshal(new InputStreamReader(new FileInputStream(xmlPackage1), "UTF-8"));
-			package2 = PackageList.unmarshal(new InputStreamReader(new FileInputStream(xmlPackage2), "UTF-8"));
+			if (new File(xmlPackage1).exists()) {
+				package1 = PackageList.unmarshal(new InputStreamReader(new FileInputStream(xmlPackage1), "UTF-8"));
+			}
+			if (new File(xmlPackage2).exists()) {
+				package2 = PackageList.unmarshal(new InputStreamReader(new FileInputStream(xmlPackage2), "UTF-8"));
+			}
 
-			product1 = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct1), "UTF-8"));
-			product2 = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct2), "UTF-8"));
+			if (new File(xmlProduct1).exists()) {
+				product1 = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct1), "UTF-8"));
+			}
+			if (new File(xmlProduct2).exists()) {
+				product2 = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct2), "UTF-8"));
+			}
 
-			license1 = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense1), "UTF-8"));
-			license2 = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense2), "UTF-8"));
+			if (new File(xmlLicense1).exists()) {
+				license1 = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense1), "UTF-8"));
+			}
+			if (new File(xmlLicense2).exists()) {
+				license2 = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense2), "UTF-8"));
+			}
 
 			variable1 = NodeVariableList.unmarshal(new InputStreamReader(new FileInputStream(xmlVariable1), "UTF-8"));
 			variable2 = NodeVariableList.unmarshal(new InputStreamReader(new FileInputStream(xmlVariable2), "UTF-8"));
@@ -1680,6 +1697,187 @@ public class RepositoryNodeAction {
 			ret += SettingConstants.SUCCESS_DIFF_8;
 		}
 
+
+		//ネットワーク情報
+		NetstatRoot netstatRoot1 = new NetstatRoot();
+		if (netstat1 != null) {
+			for (NetstatInfo info: netstat1.getNetstatInfo()) {
+				Netstat scope = netstatRoot1.netstatList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new Netstat();
+					scope.id = info.getFacilityId();
+					netstatRoot1.netstatList.put(info.getFacilityId(), scope);
+				}
+				scope.netstatInfo.add(info);
+			}
+		}
+		NetstatRoot netstatRoot2 = new NetstatRoot();
+		if (netstat2 != null) {
+			for (NetstatInfo info: netstat2.getNetstatInfo()) {
+				Netstat scope = netstatRoot2.netstatList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new Netstat();
+					scope.id = info.getFacilityId();
+					netstatRoot2.netstatList.put(info.getFacilityId(), scope);
+				}
+				scope.netstatInfo.add(info);
+			}
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(netstatRoot1, netstatRoot2, NetstatRoot.class,xmlNetstat2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_9;
+		}
+		
+		//プロセス情報
+		ProcessRoot processRoot1 = new ProcessRoot();
+		if (process1 != null) {
+			for (ProcessInfo info: process1.getProcessInfo()) {
+				Process scope = processRoot1.processList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new Process();
+					scope.id = info.getFacilityId();
+					processRoot1.processList.put(info.getFacilityId(), scope);
+				}
+				scope.processInfo.add(info);
+			}
+		}
+		ProcessRoot processRoot2 = new ProcessRoot();
+		if (process2 != null) {
+			for (ProcessInfo info: process2.getProcessInfo()) {
+				Process scope = processRoot2.processList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new Process();
+					scope.id = info.getFacilityId();
+					processRoot2.processList.put(info.getFacilityId(), scope);
+				}
+				scope.processInfo.add(info);
+			}
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(processRoot1, processRoot2, ProcessRoot.class,xmlProcess2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_10;
+		}
+
+		//パッケージ情報
+		PackageRoot packageRoot1 = new PackageRoot();
+		if (package1 != null) {
+			for (PackageInfo info: package1.getPackageInfo()) {
+				Package scope = packageRoot1.packageList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new Package();
+					scope.id = info.getFacilityId();
+					packageRoot1.packageList.put(info.getFacilityId(), scope);
+				}
+				scope.packageInfo.add(info);
+			}
+		}
+		PackageRoot packageRoot2 = new PackageRoot();
+		if (package2 != null) {
+			for (PackageInfo info: package2.getPackageInfo()) {
+				Package scope = packageRoot2.packageList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new Package();
+					scope.id = info.getFacilityId();
+					packageRoot2.packageList.put(info.getFacilityId(), scope);
+				}
+				scope.packageInfo.add(info);
+			}
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(packageRoot1, packageRoot2, PackageRoot.class,xmlPackage2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_11;
+		}
+
+		//個別導入製品情報
+		ProductRoot productRoot1 = new ProductRoot();
+		if (product1 != null) {
+			for (ProductInfo info: product1.getProductInfo()) {
+				Product scope = productRoot1.productList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new Product();
+					scope.id = info.getFacilityId();
+					productRoot1.productList.put(info.getFacilityId(), scope);
+				}
+				scope.productInfo.add(info);
+			}
+		}
+		ProductRoot productRoot2 = new ProductRoot();
+		if (product2 != null) {
+			for (ProductInfo info: product2.getProductInfo()) {
+				Product scope = productRoot2.productList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new Product();
+					scope.id = info.getFacilityId();
+					productRoot2.productList.put(info.getFacilityId(), scope);
+				}
+				scope.productInfo.add(info);
+			}
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(productRoot1, productRoot2, ProductRoot.class,xmlProduct2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_12;
+		}
+
+		//ライセンス情報
+		LicenseRoot licenseRoot1 = new LicenseRoot();
+		if (license1 !=null) {
+			for (LicenseInfo info: license1.getLicenseInfo()) {
+				License scope = licenseRoot1.licenseList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new License();
+					scope.id = info.getFacilityId();
+					licenseRoot1.licenseList.put(info.getFacilityId(), scope);
+				}
+				scope.licenseInfo.add(info);
+			}
+		}
+		LicenseRoot licenseRoot2 = new LicenseRoot();
+		if (license2 != null) {
+			for (LicenseInfo info: license2.getLicenseInfo()) {
+				License scope = licenseRoot2.licenseList.get(info.getFacilityId());
+				if (scope == null) {
+					scope = new License();
+					scope.id = info.getFacilityId();
+					licenseRoot2.licenseList.put(info.getFacilityId(), scope);
+				}
+				scope.licenseInfo.add(info);
+			}
+		}
+		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
+		//例外が発生したら、trueが返され、エラー種別をリターンする。
+		if(output2(licenseRoot1, licenseRoot2, LicenseRoot.class,xmlLicense2,diffFlg)){
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		if (diffFlg[0]){
+			diffFlg[0] = false;
+			ret += SettingConstants.SUCCESS_DIFF_13;
+		}
+
 		//ノード変数一覧差分比較
 		NodeVariableRoot nodeVariableRoot1 = new NodeVariableRoot();
 		for (NodeVariableInfo info: variable1.getNodeVariableInfo()) {
@@ -1709,7 +1907,7 @@ public class RepositoryNodeAction {
 		}
 		if (diffFlg[0]){
 			diffFlg[0] = false;
-			ret += SettingConstants.SUCCESS_DIFF_9;
+			ret += SettingConstants.SUCCESS_DIFF_14;
 		}
 
 		//備考一覧差分比較
@@ -1736,166 +1934,6 @@ public class RepositoryNodeAction {
 		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
 		//例外が発生したら、trueが返され、エラー種別をリターンする。
 		if(output2(noteRoot1, noteRoot2,NoteRoot.class, xmlNote2,diffFlg)){
-			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
-			return SettingConstants.ERROR_INPROCESS;
-		}
-		if (diffFlg[0]){
-			diffFlg[0] = false;
-			ret += SettingConstants.SUCCESS_DIFF_10;
-		}
-
-		//ネットワーク情報
-		NetstatRoot netstatRoot1 = new NetstatRoot();
-		for (NetstatInfo info: netstat1.getNetstatInfo()) {
-			Netstat scope = netstatRoot1.netstatList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new Netstat();
-				scope.id = info.getFacilityId();
-				netstatRoot1.netstatList.put(info.getFacilityId(), scope);
-			}
-			scope.netstatInfo.add(info);
-		}
-		NetstatRoot netstatRoot2 = new NetstatRoot();
-		for (NetstatInfo info: netstat2.getNetstatInfo()) {
-			Netstat scope = netstatRoot2.netstatList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new Netstat();
-				scope.id = info.getFacilityId();
-				netstatRoot2.netstatList.put(info.getFacilityId(), scope);
-			}
-			scope.netstatInfo.add(info);
-		}
-		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
-		//例外が発生したら、trueが返され、エラー種別をリターンする。
-		if(output2(netstatRoot1, netstatRoot2, NetstatRoot.class,xmlNetstat2,diffFlg)){
-			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
-			return SettingConstants.ERROR_INPROCESS;
-		}
-		if (diffFlg[0]){
-			diffFlg[0] = false;
-			ret += SettingConstants.SUCCESS_DIFF_11;
-		}
-		
-		//プロセス情報
-		ProcessRoot processRoot1 = new ProcessRoot();
-		for (ProcessInfo info: process1.getProcessInfo()) {
-			Process scope = processRoot1.processList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new Process();
-				scope.id = info.getFacilityId();
-				processRoot1.processList.put(info.getFacilityId(), scope);
-			}
-			scope.processInfo.add(info);
-		}
-		ProcessRoot processRoot2 = new ProcessRoot();
-		for (ProcessInfo info: process2.getProcessInfo()) {
-			Process scope = processRoot2.processList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new Process();
-				scope.id = info.getFacilityId();
-				processRoot2.processList.put(info.getFacilityId(), scope);
-			}
-			scope.processInfo.add(info);
-		}
-		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
-		//例外が発生したら、trueが返され、エラー種別をリターンする。
-		if(output2(processRoot1, processRoot2, ProcessRoot.class,xmlProcess2,diffFlg)){
-			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
-			return SettingConstants.ERROR_INPROCESS;
-		}
-		if (diffFlg[0]){
-			diffFlg[0] = false;
-			ret += SettingConstants.SUCCESS_DIFF_12;
-		}
-
-		//パッケージ情報
-		PackageRoot packageRoot1 = new PackageRoot();
-		for (PackageInfo info: package1.getPackageInfo()) {
-			Package scope = packageRoot1.packageList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new Package();
-				scope.id = info.getFacilityId();
-				packageRoot1.packageList.put(info.getFacilityId(), scope);
-			}
-			scope.packageInfo.add(info);
-		}
-		PackageRoot packageRoot2 = new PackageRoot();
-		for (PackageInfo info: package2.getPackageInfo()) {
-			Package scope = packageRoot2.packageList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new Package();
-				scope.id = info.getFacilityId();
-				packageRoot2.packageList.put(info.getFacilityId(), scope);
-			}
-			scope.packageInfo.add(info);
-		}
-		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
-		//例外が発生したら、trueが返され、エラー種別をリターンする。
-		if(output2(packageRoot1, packageRoot2, PackageRoot.class,xmlPackage2,diffFlg)){
-			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
-			return SettingConstants.ERROR_INPROCESS;
-		}
-		if (diffFlg[0]){
-			diffFlg[0] = false;
-			ret += SettingConstants.SUCCESS_DIFF_13;
-		}
-
-		//個別導入製品情報
-		ProductRoot productRoot1 = new ProductRoot();
-		for (ProductInfo info: product1.getProductInfo()) {
-			Product scope = productRoot1.productList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new Product();
-				scope.id = info.getFacilityId();
-				productRoot1.productList.put(info.getFacilityId(), scope);
-			}
-			scope.productInfo.add(info);
-		}
-		ProductRoot productRoot2 = new ProductRoot();
-		for (ProductInfo info: product2.getProductInfo()) {
-			Product scope = productRoot2.productList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new Product();
-				scope.id = info.getFacilityId();
-				productRoot2.productList.put(info.getFacilityId(), scope);
-			}
-			scope.productInfo.add(info);
-		}
-		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
-		//例外が発生したら、trueが返され、エラー種別をリターンする。
-		if(output2(productRoot1, productRoot2, ProductRoot.class,xmlProduct2,diffFlg)){
-			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
-			return SettingConstants.ERROR_INPROCESS;
-		}
-		if (diffFlg[0]){
-			diffFlg[0] = false;
-			ret += SettingConstants.SUCCESS_DIFF_14;
-		}
-
-		//ライセンス情報
-		LicenseRoot licenseRoot1 = new LicenseRoot();
-		for (LicenseInfo info: license1.getLicenseInfo()) {
-			License scope = licenseRoot1.licenseList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new License();
-				scope.id = info.getFacilityId();
-				licenseRoot1.licenseList.put(info.getFacilityId(), scope);
-			}
-			scope.licenseInfo.add(info);
-		}
-		LicenseRoot licenseRoot2 = new LicenseRoot();
-		for (LicenseInfo info: license2.getLicenseInfo()) {
-			License scope = licenseRoot2.licenseList.get(info.getFacilityId());
-			if (scope == null) {
-				scope = new License();
-				scope.id = info.getFacilityId();
-				licenseRoot2.licenseList.put(info.getFacilityId(), scope);
-			}
-			scope.licenseInfo.add(info);
-		}
-		//差分判定、csv出力判定を行う。正常に処理が行われたら、falseが返される。
-		//例外が発生したら、trueが返され、エラー種別をリターンする。
-		if(output2(licenseRoot1, licenseRoot2, LicenseRoot.class,xmlLicense2,diffFlg)){
 			log.error(Messages.getString("SettingTools.EndWithErrorCode") );
 			return SettingConstants.ERROR_INPROCESS;
 		}

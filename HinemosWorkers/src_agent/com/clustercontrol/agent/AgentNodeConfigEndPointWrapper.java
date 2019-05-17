@@ -33,6 +33,7 @@ import com.clustercontrol.ws.agentnodeconfig.NodeNetworkInterfaceInfo;
 import com.clustercontrol.ws.repository.AutoRegisterResult;
 import com.clustercontrol.ws.repository.NodeConfigRunCollectInfo;
 import com.clustercontrol.ws.repository.NodeConfigSetting;
+import com.clustercontrol.ws.repository.NodeInfo;
 
 /**
  * CMDB用マネージャー通信クラス.<br>
@@ -105,6 +106,20 @@ public class AgentNodeConfigEndPointWrapper {
 		throw wse;
 	}
 	
+	public static List<NodeInfo> getNodeInfoList() throws HinemosUnknown_Exception, FacilityNotFound_Exception, InvalidRole_Exception, InvalidUserPass_Exception{
+		WebServiceException wse = null;
+		for (EndpointSetting endpointSetting : EndpointManager.getAgenNodeConfigEndpoint()) {
+			try {
+				AgentNodeConfigEndpoint endpoint = (AgentNodeConfigEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getNodeInfoList(Agent.getAgentInfo());
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.info("WebServiceException : " + e.getMessage());
+				EndpointManager.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
 	
 	/**
 	 * 構成情報送信

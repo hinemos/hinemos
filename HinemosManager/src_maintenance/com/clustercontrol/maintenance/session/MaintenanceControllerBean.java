@@ -34,7 +34,6 @@ import com.clustercontrol.maintenance.factory.MaintenanceSummaryDay;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryHour;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryMonth;
 import com.clustercontrol.maintenance.factory.MaintenanceCollectBinaryData;
-import com.clustercontrol.maintenance.factory.MaintenanceCollectDataRaw;
 import com.clustercontrol.maintenance.factory.MaintenanceCollectStringData;
 import com.clustercontrol.maintenance.factory.ModifyMaintenance;
 import com.clustercontrol.maintenance.factory.ModifySchedule;
@@ -47,6 +46,7 @@ import com.clustercontrol.maintenance.util.MaintenanceValidator;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.notify.util.NotifyRelationCache;
+import com.clustercontrol.platform.maintenance.MaintenanceCollectDataRaw;
 import com.clustercontrol.util.HinemosTime;
 
 /**

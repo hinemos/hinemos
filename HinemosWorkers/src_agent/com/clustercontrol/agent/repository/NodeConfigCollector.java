@@ -32,7 +32,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import com.clustercontrol.agent.Agent;
 import com.clustercontrol.agent.AgentNodeConfigEndPointWrapper;
 import com.clustercontrol.agent.SendQueue;
@@ -102,6 +101,8 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	private NodeConfigSetting config;
 
 	private final Function function;
+	
+	private List<NodeInfo> nodeInfoList;
 
 	// Managerメッセージ通知用の送信Queue
 	private static SendQueue sendQueue;
@@ -235,16 +236,18 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 
 	/** 即時実行フラグ. */
 	private boolean runOnce = false;
-
+	
 	// --コンストラクタ.
 	/**
 	 * 収集設定指定コンストラクタ.<br>
 	 * <br>
 	 * CMDB収集設定が存在する場合はこちらを使うこと<br>
 	 */
-	public NodeConfigCollector(NodeConfigSetting config, Function function) {
+	public NodeConfigCollector(NodeConfigSetting config, Function function, List<NodeInfo> nodeInfoList) {
 		this.config = config;
 		this.function = function;
+		this.nodeInfoList = nodeInfoList;
+		
 	}
 
 	/**
@@ -459,8 +462,8 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		this.initializeColletFlgMap();
 		this.collectFlgMap.put(NodeConfigSettingItem.HW_NIC.name(), Boolean.TRUE);
 
-		// ■構成情報取得
-		NodeInfo nInfo = getRecord(new NodeInfo());
+		// ■構成情報取);
+		NodeInfo nInfo = getRecord(new NodeInfo(), true);
 		List<NodeNetworkInterfaceInfo> nicInfoList = nInfo.getNodeNetworkInterfaceInfo();
 
 		if (log.isDebugEnabled()) {
@@ -582,17 +585,22 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			return;
 		}
 
-		setConfig(((NodeConfigCollector) task).getConfig());
+		setConfig(((NodeConfigCollector) task).getConfig(),((NodeConfigCollector) task).getNodeInfoList());
 	}
 
 	public synchronized NodeConfigSetting getConfig() {
 		return config;
 	}
+	
+	public synchronized List<NodeInfo> getNodeInfoList(){
+		return nodeInfoList;
+	}
 
-	public synchronized void setConfig(NodeConfigSetting newConfig) {
+	public synchronized void setConfig(NodeConfigSetting newConfig, List<NodeInfo> nodeInfoList) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		NodeConfigSetting currentConfig = config;
 		this.config = newConfig;
+		this.nodeInfoList = nodeInfoList;
 		setTargetConfigFlg(config);
 		if (log.isDebugEnabled()) {
 			log.debug("config : " + config);
@@ -699,7 +707,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		nInfo.setNodeConfigSettingId(config.getSettingId());
 		nInfo = initNodeInfo(nInfo);
 		// ■構成情報取得
-		nInfo = getRecord(nInfo);
+		nInfo = getRecord(nInfo, false);
 
 		if (log.isDebugEnabled()) {
 			log.debug("call() nInfo.getNodeProcessInfo().size()          : " + nInfo.getNodeProcessInfo().size());
@@ -747,9 +755,10 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * 引数から対象を判別し、recordを取得する。
 	 * 
 	 * @param target_int
+	 * @param isAutoRegist ノード自動登録フラグ
 	 * @return
 	 */
-	private NodeInfo getRecord(NodeInfo nInfo) {
+	private NodeInfo getRecord(NodeInfo nInfo, boolean isAutoRegist) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		long start = HinemosTime.currentTimeMillis();
 		log.info("run getRecord() : " + config.getSettingId());
@@ -809,6 +818,19 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			} else {
 				scriptFileName = scriptName + NodeConfigConstant.SCRIPT_EXTENSION_LINUX;
 			}
+			//Agentが対応するNodeInfoの中から、今回実行対象となっているNodeInfoを抽出する
+			NodeInfo nodeInfo=null;
+			//ノード自動登録フラグ
+			if (nodeInfoList != null){
+				for(int i=0;i<nodeInfoList.size();i++){
+					if(nodeInfoList.get(i).getFacilityId().equals(config.getFacilityId())){
+						nodeInfo =nodeInfoList.get(i);
+						break;
+					}
+				}
+			}else{
+				log.debug("getRecord(): nodeInfoList is null");
+			}
 
 			// コマンド引数を追加.
 			String tsvFileName = filePrefix + scriptName + NodeConfigConstant.TSV_EXTENSION;
@@ -824,11 +846,18 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 				if (this.collectFlgMap.get(NodeConfigSettingItem.HW_MEMORY.name()).booleanValue()) {
 					args = args + " " + NodeConfigConstant.EXEC_OPTION_MEMORY;
 				}
-			} else {
+			//ノードのSNMP情報を引数として設定する
+			} else if(NodeConfigConstant.SCRIPT_NAME_HW_CPU.equals(scriptName)||NodeConfigConstant.SCRIPT_NAME_HW_DISK.equals(scriptName)||
+					NodeConfigConstant.SCRIPT_NAME_HW_FSYSTEM.equals(scriptName)||NodeConfigConstant.SCRIPT_NAME_HW_NIC.equals(scriptName)){
+				log.debug("getRecord():SNMP args has generated for specific scripts");
+				args=args + getSnmpArgs(nodeInfo, isAutoRegist);
+			}else
+			{
 				log.debug(methodName + DELIMITER
 						+ String.format("no particular arguments. scriptFileName=[%s]", scriptFileName));
 			}
-
+			
+			log.debug("getRecord(): Script argument is:  "+args);
 			// コマンド実行.
 			boolean toRetry = this.executeCommand(args, nInfo, scriptFileName, tsvFileName, true);
 			// 特定のエラーコードに対して条件変更してコマンドリトライさせる.
@@ -842,13 +871,130 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			List<NodeCustomInfo> customResultList = this.executeCustomCommand();
 			if(customResultList != null){
 				nInfo.getNodeCustomInfo().addAll(customResultList);
+			}else{
+				log.debug("getRecord(): No Custom Result returned. Skip forwarding custom result");
 			}
-			log.debug("There was no custom results. Skipped");
 		}
 
 		long end = HinemosTime.currentTimeMillis();
 		log.info("getRecord () : done. " + (end - start) + "ms.");
 		return nInfo;
+	}
+	/**
+	 * NodeInfoからSNMP情報を抽出し、スクリプト引数の文字列を返す
+	 * 
+	 * @param NodeInfo nodeInfo
+	 * @param int version
+	 * @return スクリプト引数
+	 */
+	private String getSnmpArgs(NodeInfo nodeInfo, boolean isAutoRegist){
+		String args="";
+		//nullチェック
+		//ノード自動登録の場合もnullになる
+		if (nodeInfo == null){
+			//Autoregist
+			if(isAutoRegist){
+				log.info("getSnmpArgs(): Called by Auto Regist");
+				return " -z auto";
+			}else{
+				log.warn("getSnmpArgs(): NodeInfo is empty");
+				return args;
+			}
+		}
+		
+		int version = nodeInfo.getSnmpVersion();
+		
+		if(this.winFlg){
+			log.debug("getSnmpArgs(): Node platform: WINDOWS");
+		}else{
+			log.debug("getSnmpArgs(): Node platform: LINUX");
+		}
+		
+		//winFlgを使用し、作成する引数をプラットフォームごとに変更
+		if(this.winFlg){
+			//windowsの場合は、コミュニティ名のみ指定する
+			if(!nodeInfo.getSnmpCommunity().equals("")){
+				args=args+" "+NodeConfigConstant.SNMP_COMMUNITY+" "+nodeInfo.getSnmpCommunity();
+			}else{
+				args=args+" "+NodeConfigConstant.SNMP_COMMUNITY+" "+"public";
+				log.warn("getSnmpArgs(): No SNMP community defind. Use default value");
+			}
+		}else{
+			if(version==3){
+				//ver 3
+				args=args+" "+NodeConfigConstant.SNMP_VERSION+" "+nodeInfo.getSnmpVersion();
+				//port
+				if(nodeInfo.getSnmpPort()!=null){
+					args=args+" "+NodeConfigConstant.SNMP_PORT+" "+nodeInfo.getSnmpPort();
+				}else{
+					args=args+" "+NodeConfigConstant.SNMP_PORT+" "+"161";
+					log.warn("getSnmpArgs(): No SNMP port defind. Use default value");
+				}
+				//user
+				if(nodeInfo.getSnmpUser() != null&&!nodeInfo.getSnmpUser().equals("")){
+					args=args+" "+NodeConfigConstant.SNMP_USER+" "+nodeInfo.getSnmpUser();
+				}else{
+					args=args+" "+NodeConfigConstant.SNMP_USER+" "+"root";
+					log.warn("getSnmpArgs(): No SNMP user defind. Use default value");
+				}
+				//security level
+				if(nodeInfo.getSnmpSecurityLevel() != null&&!nodeInfo.getSnmpSecurityLevel().equals("")){
+					//snmpwalkのオプションにあわせる
+					if(nodeInfo.getSnmpSecurityLevel().equals("noauth_nopriv")){
+						args=args+" "+NodeConfigConstant.SNMP_LEVEL+" "+"noAuthNoPriv";
+					}else if(nodeInfo.getSnmpSecurityLevel().equals("auth_nopriv")){
+						args=args+" "+NodeConfigConstant.SNMP_LEVEL+" "+"authNoPriv";
+					}else{
+						args=args+" "+NodeConfigConstant.SNMP_LEVEL+" "+"authPriv";
+					}
+				}
+				//auth password
+				if(nodeInfo.getSnmpAuthPassword() != null&&!nodeInfo.getSnmpAuthPassword().equals("")){
+					args=args+" "+NodeConfigConstant.SNMP_AUTH_PASSPHRASE+" "+nodeInfo.getSnmpAuthPassword();
+				}
+				//auth protocol
+				if(nodeInfo.getSnmpAuthProtocol() != null&&!nodeInfo.getSnmpAuthProtocol().equals("")){
+					args=args+" "+NodeConfigConstant.SNMP_AUTH_PROTOCOL+" "+nodeInfo.getSnmpAuthProtocol();
+				}
+				//priv protocol
+				if(nodeInfo.getSnmpPrivProtocol() != null&&!nodeInfo.getSnmpPrivProtocol().equals("")){
+					args=args+" "+NodeConfigConstant.SNMP_PRIV_PROTOCOL+" "+nodeInfo.getSnmpPrivProtocol();
+				}
+				//priv password
+				if(nodeInfo.getSnmpPrivPassword() != null&&!nodeInfo.getSnmpPrivPassword().equals("")){
+					args=args+" "+NodeConfigConstant.SNMP_PRIV_PASSPHRASE+" "+nodeInfo.getSnmpPrivPassword();
+				}
+			}else{
+				//version 3以外は、2cに統一する
+				args=args+" "+NodeConfigConstant.SNMP_VERSION+" "+"2c";
+				//port
+				if(nodeInfo.getSnmpPort()!=null){
+					args=args+" "+NodeConfigConstant.SNMP_PORT+" "+nodeInfo.getSnmpPort();
+				}else{
+					args=args+" "+NodeConfigConstant.SNMP_PORT+" "+"161";
+					log.warn("getSnmpArgs(): No SNMP port defind. Use default value");
+				}
+				//community
+				if(nodeInfo.getSnmpUser() != null&&!nodeInfo.getSnmpCommunity().equals("")){
+					args=args+" "+NodeConfigConstant.SNMP_COMMUNITY+" "+nodeInfo.getSnmpCommunity();
+				}else{
+					args=args+" "+NodeConfigConstant.SNMP_COMMUNITY+" "+"public";
+					log.warn("getSnmpArgs(): No SNMP community defind. Use default value");
+				}
+			}
+		}
+		//version,platform共通
+		if(nodeInfo.getSnmpTimeout()!=null){
+			//snmpwalkのタイムアウト指定は秒のため、変換
+			long t_sec = TimeUnit.MILLISECONDS.toSeconds(nodeInfo.getSnmpTimeout());
+			args=args+" "+NodeConfigConstant.SNMP_TIMEOUT+" "+t_sec;
+		}
+		if(nodeInfo.getSnmpRetryCount()!=null){
+			args=args+" "+NodeConfigConstant.SNMP_RETRY+" "+nodeInfo.getSnmpRetryCount();
+		}
+		
+		log.debug("getSnmpArgs(): SNMP args construction succeeded");
+		return args;
 	}
 
 	/**
@@ -1389,7 +1535,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			while ((line = br.readLine()) != null) {
 				log.trace(methodName + DELIMITER + String.format("to read this line. line=[%s]", line));
 				// 区切り文字"\t(タブ)"で分割する
-				token = line.split("\t");
+				token = line.split("\t",-1);
 				String head = token[0];
 
 				// プロセス情報.

@@ -11,6 +11,8 @@ package com.clustercontrol.reporting.dialog;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.ws.WebServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -425,6 +427,13 @@ public class TemplateSetDetailDialog extends CommonDialog{
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 				Messages.getString("message.accesscontrol.16"));
+		} catch (WebServiceException  e) {
+			//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
+			//この場合、その旨のダイアログを表示
+			MessageDialog.openError(
+					null,
+					Messages.getString("failed"),
+					Messages.getString("message.expiration.term") + ":"+managerName );
 		} catch (Exception e) {
 			// 上記以外の例外
 			String errMessage = HinemosMessage.replace(e.getMessage());

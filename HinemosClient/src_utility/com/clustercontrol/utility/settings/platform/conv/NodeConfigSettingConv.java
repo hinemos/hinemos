@@ -11,6 +11,7 @@ package com.clustercontrol.utility.settings.platform.conv;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.platform.xml.CustomItemInfo;
 import com.clustercontrol.utility.settings.platform.xml.NodeConfigInfo;
@@ -77,6 +78,9 @@ public class NodeConfigSettingConv {
 
 			SettingItemList itemList = new SettingItemList();
 			for (NodeConfigSettingItemInfo item : nodeConfigSettingInfo.getNodeConfigSettingItemList()) {
+				if(item.getSettingItemId().equals(NodeConfigSettingItem.CUSTOM.toString())) {
+					continue;
+				}
 				itemList.addSettingItemId(item.getSettingItemId());
 			}
 			nodeConfigInfo.setSettingItemList(itemList);
@@ -134,6 +138,7 @@ public class NodeConfigSettingConv {
 				}
 			}
 
+			boolean customIsValid = false;
 			for (CustomItemInfo custom : nodeConfigInfo.getCustomItemInfo()) {
 				NodeConfigCustomInfo customInfo = new NodeConfigCustomInfo();
 				customInfo.setSettingCustomId(custom.getSettingCustomId());
@@ -144,8 +149,15 @@ public class NodeConfigSettingConv {
 				customInfo.setEffectiveUser(custom.getEffectiveUser());
 
 				customInfo.setValidFlg(custom.getValidFlg());
-
+				if (custom.getValidFlg()) {
+					customIsValid = true;
+				}
 				nodeConfigSettingInfo.getNodeConfigCustomList().add(customInfo);
+			}
+			if (customIsValid) {
+				NodeConfigSettingItemInfo itemInfo = new NodeConfigSettingItemInfo();
+				itemInfo.setSettingItemId(NodeConfigSettingItem.CUSTOM.toString());
+				nodeConfigSettingInfo.getNodeConfigSettingItemList().add(itemInfo);
 			}
 			
 			for (NotifyId notify : nodeConfigInfo.getNotifyId()) {

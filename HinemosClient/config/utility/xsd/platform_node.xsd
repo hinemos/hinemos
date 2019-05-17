@@ -1157,6 +1157,24 @@
 					<xs:documentation>デバイスの説明です。</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
+			<xs:attribute name="coreCount" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスのコア数です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="threadCount" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスのスレッド数です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="clockCount" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>デバイスのクロック数です。</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 

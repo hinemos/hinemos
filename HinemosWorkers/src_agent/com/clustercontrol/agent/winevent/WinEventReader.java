@@ -264,6 +264,23 @@ public class WinEventReader {
 	 *            チャネル名
 	 */
 	public void updateBookmark(String bookmarkFileName, String logName) throws Win32Exception, IOException {
+		String saveBookmarkString = getBookmarkUpdateString(bookmarkFileName,logName);
+		if( saveBookmarkString != null){
+			saveBookmarkFile(bookmarkFileName, saveBookmarkString);
+		}
+	}
+
+	/**
+	 * 引数のチャネルの最後のEventRecordIDでブックマークファイルの更新用文字列を生成する。
+	 * 
+	 * @param bookmarkFileName
+	 *            ブックマークファイル名
+	 * @param logName
+	 *            チャネル名
+	 * @return ブックマーク作成用文字列（nullなら作成不要）
+	 * 
+	 */
+	private String getBookmarkUpdateString(String bookmarkFileName, String logName) throws Win32Exception, IOException {
 		String query = "<QueryList><Query><Select Path='" + WinEventMonitor.pergeEventLogNameEnclosure(logName) + "'>*</Select></Query></QueryList>";
 		
 		HANDLE hResult = null;
@@ -272,12 +289,12 @@ public class WinEventReader {
 			WString wQuery = new WString(query);
 			hResult = wevtapi.INSTANCE.EvtQuery(null, null, wQuery, wevtapi.EvtQueryChannelPath | wevtapi.EvtQueryTolerateQueryErrors);
 			if (hResult == null) {
-				m_log.warn("updateBookmark() EvtQuery error=" + Win32Error.getMessage(getLastError()));
+				m_log.warn("getBookmarkUpdateString() EvtQuery error=" + Win32Error.getMessage(getLastError()));
 				throw new Win32Exception(getLastError());
 			}
 
 			if (!wevtapi.INSTANCE.EvtSeek(hResult, new LONGLONG(0), null, 0, wevtapi.EvtSeekRelativeToLast)) {
-				m_log.warn("updateBookmark() EvtSeek error=" + Win32Error.getMessage(getLastError()));
+				m_log.warn("getBookmarkUpdateString() EvtSeek error=" + Win32Error.getMessage(getLastError()));
 				throw new Win32Exception(getLastError());
 			}
 
@@ -287,27 +304,27 @@ public class WinEventReader {
 				if (!wevtapi.INSTANCE.EvtNext(hResult, 1, saveHandles, new DWORD(wevtapi.INFINITE), 0, returnedHandleSize)) {
 					if (WinError.ERROR_NO_MORE_ITEMS == getLastError()) {
 						// ERROR_NO_MORE_ITEMS の場合、引数チャネルのイベント数が0件である。
-						// ブックマークファイルが存在しなければ、RecordId を 0 としてブックマークファイルを作成する。
+						// ブックマークファイルが存在しなければ、RecordId を 0 としてブックマークファイル向け文字列を生成する。
 						if(!new File(bookmarkFileName).exists()) {
 							String bookmarkString = "<BookmarkList><Bookmark Channel='" + WinEventMonitor.pergeEventLogNameEnclosure(logName) +
 									"' RecordId='0' IsCurrent='true'/></BookmarkList>";
-							saveBookmarkFile(bookmarkFileName, bookmarkString);
-							m_log.info("updateBookmark() create " + bookmarkFileName + " with RecordId 0");
+							m_log.info("getBookmarkUpdateString() create " + bookmarkFileName + " with RecordId 0");
+							return bookmarkString;
 						}
-						return;
+						return null;
 					}
-					m_log.warn("updateBookmark() EvtNext error=" + Win32Error.getMessage(getLastError()));
+					m_log.warn("getBookmarkUpdateString() EvtNext error=" + Win32Error.getMessage(getLastError()));
 					throw new Win32Exception(getLastError());
 				}
 				
 				hBookmark = wevtapi.INSTANCE.EvtCreateBookmark(null);
 				if (hBookmark == null) {
-					m_log.warn("updateBookmark() EvtCreateBookmark error=" + Win32Error.getMessage(getLastError()));
+					m_log.warn("getBookmarkUpdateString() EvtCreateBookmark error=" + Win32Error.getMessage(getLastError()));
 					throw new Win32Exception(getLastError());
 				}
 				
 				if (!wevtapi.INSTANCE.EvtUpdateBookmark(hBookmark, saveHandles[0])) {
-					m_log.warn("updateBookmark() EvtUpdateBookmark error=" + Win32Error.getMessage(getLastError()));
+					m_log.warn("getBookmarkUpdateString() EvtUpdateBookmark error=" + Win32Error.getMessage(getLastError()));
 					throw new Win32Exception(getLastError());
 				}
 			} finally {
@@ -319,7 +336,7 @@ public class WinEventReader {
 			}
 
 			String saveBookmarkString = renderEvent(hBookmark, wevtapi.EvtRenderBookmark);
-			saveBookmarkFile(bookmarkFileName, saveBookmarkString);
+			return saveBookmarkString;
 
 		} finally {
 			if (hResult != null) {
@@ -407,6 +424,9 @@ public class WinEventReader {
 		
 		HANDLE hResults = null;
 		try {
+			//読込み開始時点での最終レコード位置でのブックマーク用文字列を取得だけしておく（該当無しの場合の 現在地点保存用）
+			String readStartBookmarkString = getBookmarkUpdateString(bookmarkFileName, logName);
+			
 			WString wQuery = new WString(query);
 			hResults = wevtapi.INSTANCE.EvtQuery(null, null, wQuery, wevtapi.EvtQueryChannelPath | wevtapi.EvtQueryTolerateQueryErrors);
 			if (hResults == null) {
@@ -429,8 +449,10 @@ public class WinEventReader {
 			IntByReference returnedHandleSize = new IntByReference(0);
 			if (!wevtapi.INSTANCE.EvtNext(hResults, maxEvents, handles, new DWORD(timeout), 0, returnedHandleSize)) {
 				if (WinError.ERROR_NO_MORE_ITEMS == getLastError()) {
-					// イベントログが取得できない場合はブックマークを更新してnullを返却する
-					updateBookmark(bookmarkFileName, logName);
+					// イベントログが取得できない場合は準備していた内容でブックマークを更新してnullを返却する
+					if( readStartBookmarkString != null ){
+						saveBookmarkFile(bookmarkFileName, readStartBookmarkString);
+					}
 					return null;
 				} else {
 					m_log.warn("readEventLog() EvtNext error=" + Win32Error.getMessage(getLastError()));

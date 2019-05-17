@@ -56,6 +56,14 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="NotifyRelationInfoEntity.findJob">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyRelationInfo a WHERE a.id.notifyGroupId LIKE 'JOB_MST_%'
+				ORDER BY a.id.notifyGroupId, a.id.notifyId
+			]]>
+		</query>
+	</named-query>
 	<named-query name="NotifyRelationInfoEntity.findByNotifyGroupId">
 		<query>
 			<![CDATA[

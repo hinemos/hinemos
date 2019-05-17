@@ -65,7 +65,7 @@
 	<named-native-query name="NotifyRelationInfoEntity.deleteByJobCompletedSessions">
 		<query>
 			<![CDATA[
-				DELETE FROM setting.cc_notify_relation_info WHERE EXISTS (SELECT 1 FROM cc_job_completed_sessions AS s WHERE 'JOB_SES-' + s.session_id + '%'=notify_group_id);
+				DELETE FROM setting.cc_notify_relation_info WHERE EXISTS (SELECT 1 FROM cc_job_completed_sessions AS s WHERE notify_group_id LIKE 'JOB[_]SES-' + s.session_id + '%');
 			]]>
 		</query>
 	</named-native-query>

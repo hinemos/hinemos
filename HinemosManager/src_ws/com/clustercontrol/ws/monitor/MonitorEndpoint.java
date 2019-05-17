@@ -581,6 +581,9 @@ public class MonitorEndpoint {
 		}
 
 		try {
+			m_opelog.info(HinemosModuleConstant.LOG_PREFIX_MONITOR + " Confirm All Started, Method=modifyBatchConfirm, User="
+					+ HttpAuthenticator.getUserAccountString(wsctx)
+					+ msg.toString());
 			new MonitorControllerBean().modifyBatchConfirm(confirmType, facilityId, info);
 		} catch (Exception e) {
 			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_MONITOR + " Confirm All Failed, Method=modifyBatchConfirm, User="
@@ -588,7 +591,7 @@ public class MonitorEndpoint {
 					+ msg.toString());
 			throw e;
 		}
-		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_MONITOR + " Confirm All, Method=modifyBatchConfirm, User="
+		m_opelog.info(HinemosModuleConstant.LOG_PREFIX_MONITOR + " Confirm All Completed, Method=modifyBatchConfirm, User="
 				+ HttpAuthenticator.getUserAccountString(wsctx)
 				+ msg.toString());
 	}

@@ -102,12 +102,18 @@ public abstract class AbstractMonitorAction<T> {
 		}
 
 		// castor の 情報を DTO に変換。
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();;
 		try {
 			monitorInfoList = createMonitorInfoList(object);
 		} catch (Exception e) {
-			getLogger().warn(Messages.getString("SettingTools.ExportFailed"), e);
-			returnValue = SettingConstants.ERROR_INPROCESS;
+			if (e instanceof ConvertorException) {
+				// ConvertorException は現状、数値監視情報の閾値設定件数間違いで出力されるのでスタックトレースはなし
+				getLogger().warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+			} else {
+				getLogger().warn(Messages.getString("SettingTools.ImportFailed"), e);
+			}
+			// DTO変換中に例外が発生した場合、 monitorInfoList は初期化状態のまま(件数0)なので、インポートを中断
+			return SettingConstants.ERROR_INPROCESS;
 		}
 
 		// MonitorInfo をマネージャに登録。

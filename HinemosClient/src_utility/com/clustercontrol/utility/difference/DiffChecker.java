@@ -502,15 +502,15 @@ public class DiffChecker {
 							}
 						}
 					} else {
-						logger.debug("Component is not Element: " + method.getReturnType().getComponentType().getName());
-						throw new IllegalStateException("unexpected");
+						logger.debug("Component is not Element: " + method.getName() +" Retrun component tyep="+ method.getReturnType().getComponentType().getName());
+						throw new IllegalStateException("unexpected : Component is not Element");
 					}
 				} else {
-					logger.debug("Not array");
-					throw new IllegalStateException("unexpected");
+					logger.debug("Not array" + method.getName());
+					throw new IllegalStateException("unexpected : Not array");
 				}
 			}
-			// 配列でない場合
+			// 要素の配列でない場合
 			else {
 				// プロパティの型に Element が付加されているか判断。
 				// 付加されている場合は、取得できたプロパティ値が保有する各プロパティをさらに比較する。
@@ -522,38 +522,54 @@ public class DiffChecker {
 					PropValue prop2 = pa.getProperty(dto2, method);
 
 					boolean diffAsProp = false;
-					if (prop1 == null || prop2 == null) {
-						if (column != null) {
-							if (prop1 == null && (prop2 != null && prop2.toString() == "")) {
-								diff = diffAsColumn = false;
-							}
-							else if (prop2 == null && (prop1 != null && prop1.toString() == "")) {
-								diff = diffAsColumn = false;
-							}
-							else {
-								diff = diffAsColumn = prop1 != prop2;
-							}
-						}
-						else {
-							if (prop1 == null && (prop2 != null && prop2.toString().equals(""))) {
-								diffAsProp = false;
-							}
-							else if (prop2 == null && (prop1 != null && prop1.toString().equals(""))) {
-								diffAsProp = false;
-							}
-							else {
-								diffAsProp = prop1 != prop2;
-							}
-						}
+					// xmlタグの差異の有無用チェックプロパティ
+					boolean notDiffTags = false;
+					// 対象となるプロパティはxmlに存在していたか確認
+					boolean isProp1 = DiffUtil.getHasProp(dto1, method);
+					boolean isProp2 = DiffUtil.getHasProp(dto2, method);
+
+					// 両方あり、両方なしの場合は差分はない
+					if ((isProp1 && isProp2) || (!isProp1 && !isProp2)) {
+						notDiffTags = true;
 					} else {
-						// カラムが付加されているプロパティなので、比較を実行。
-						if (column != null) {
-							diff = diffAsColumn = !prop1.equals(prop2);
-						}
-						else {
-							// 取得したプロパティのプロパティをさらに比較。
-							PropComparator pc = new PropComparator(method.getReturnType(), DiffUtil.getAnnotation(method, Ignore.class), DiffUtil.getAnnotation(method, TranslateOverrides.class), DiffUtil.getAnnotation(method, ColumnOverrides.class));
-							diff = pc.compareProperties(prop1.getRealValue(), prop2.getRealValue());
+						diffAsColumn = true;
+						diff = true;
+					}
+					// xmlタグに差異があるなら以降の比較処理はしない。
+					if (notDiffTags) {
+						if (prop1 == null || prop2 == null) {
+							if (column != null) {
+								if (prop1 == null && (prop2 != null && prop2.toString() == "")) {
+									diff = diffAsColumn = false;
+								}
+								else if (prop2 == null && (prop1 != null && prop1.toString() == "")) {
+									diff = diffAsColumn = false;
+								}
+								else {
+									diff = diffAsColumn = prop1 != prop2;
+								}
+							}
+							else {
+								if (prop1 == null && (prop2 != null && prop2.toString().equals(""))) {
+									diffAsProp = false;
+								}
+								else if (prop2 == null && (prop1 != null && prop1.toString().equals(""))) {
+									diffAsProp = false;
+								}
+								else {
+									diffAsProp = prop1 != prop2;
+								}
+							}
+						} else {
+							// カラムが付加されているプロパティなので、比較を実行。
+							if (column != null) {
+								diff = diffAsColumn = !prop1.equals(prop2);
+							}
+							else {
+								// 取得したプロパティのプロパティをさらに比較。
+								PropComparator pc = new PropComparator(method.getReturnType(), DiffUtil.getAnnotation(method, Ignore.class), DiffUtil.getAnnotation(method, TranslateOverrides.class), DiffUtil.getAnnotation(method, ColumnOverrides.class));
+								diff = pc.compareProperties(prop1.getRealValue(), prop2.getRealValue());
+							}
 						}
 					}
 
@@ -574,8 +590,17 @@ public class DiffChecker {
 							resultD.setResultType(diffAsColumn ? ResultD.ResultType.diff : ResultD.ResultType.equal);
 						}
 						
-						resultD.setValue1(new String[]{prop1 == null ? "": prop1.toString()});
-						resultD.setValue2(new String[]{prop2 == null ? "": prop2.toString()});
+						// エラーメッセージについて、タグが存在していたかどうかで出力内容を変える
+						if (isProp1) {
+							resultD.setValue1(new String[]{prop1 == null ? "": prop1.toString()});
+						} else {
+							resultD.setValue1(new String[]{""});
+						}
+						if (isProp2) {
+							resultD.setValue2(new String[]{prop2 == null ? "": prop2.toString()});
+						} else {
+							resultD.setValue2(new String[]{""});
+						}
 
 						currentResultC.getResultDs().add(resultD);
 						resultCnt++;

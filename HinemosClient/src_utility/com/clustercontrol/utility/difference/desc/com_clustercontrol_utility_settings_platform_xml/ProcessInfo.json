@@ -6,19 +6,20 @@
 	{
 	"propName":"facilityId",
 	"annotations":[
-	
 	]},
 
 	{
 	"propName":"processName",
 	"annotations":[
+		{"type":"Column", "columnName":"ProcessInfo_processName"},
 		{"type":"PrimaryKey"}
 	]},
 
 	{
 	"propName":"pid",
 	"annotations":[
-		{"type":"Column", "columnName":"ProcessInfo_pid"}
+		{"type":"Column", "columnName":"ProcessInfo_pid"},
+		{"type":"PrimaryKey"}
 	]},
 
 	{

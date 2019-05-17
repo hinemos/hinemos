@@ -22,7 +22,9 @@ import com.clustercontrol.collect.model.SummaryMonth;
  */
 public class JdbcBatchUpsertUtil {
 
-	private static final String SQL_BASE = "MERGE INTO %s AS A"
+	// "WITH (UPDLOCK)"を付けないと同時に実行された場合デッドロックになる可能性があるため注意
+	// https://blogs.msdn.microsoft.com/dbrowne/2013/02/25/why-is-tsql-merge-failing-with-a-primary-key-violation-isnt-it-atomic/
+	private static final String SQL_BASE = "MERGE INTO %s WITH (UPDLOCK) AS A"
 			+ " USING (SELECT ? AS collector_id, ? AS time, ? AS avg, ? AS min, ? AS max,"
 			+ " ? AS count, ? AS average_avg, ? AS average_count, ? AS standard_deviation_avg, ? AS standard_deviation_count) AS B"
 			+ " ON (A.collector_id = B.collector_id AND A.time = B.time)"
@@ -31,7 +33,7 @@ public class JdbcBatchUpsertUtil {
 			+ " WHEN NOT MATCHED THEN INSERT (collector_id, time, avg, min, max, count, average_avg, average_count, standard_deviation_avg, standard_deviation_count)"
 			+ " VALUES (B.collector_id, B.time, B.avg, B.min, B.max, B.count, B.average_avg, B.average_count, B.standard_deviation_avg, B.standard_deviation_count);";
 
-	public static final String COLLECT_DATA_SQL_BASE = "MERGE INTO log.cc_collect_data_raw AS A"
+	public static final String COLLECT_DATA_SQL_BASE = "MERGE INTO log.cc_collect_data_raw WITH (UPDLOCK) AS A"
 			+ " USING (SELECT ? AS collector_id, ? AS time, ? AS value, ? AS average, ? AS standard_deviation) AS B"
 			+ " ON (A.collector_id = B.collector_id AND A.time = B.time)"
 			+ " WHEN MATCHED THEN UPDATE SET value = B.value, average = B.average, standard_deviation = B.standard_deviation"

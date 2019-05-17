@@ -167,6 +167,20 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="CollectKeyInfo.getCollectorIdByMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a.collectorid FROM CollectKeyInfo a WHERE a.id.monitorId IN :monitorIdList
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectData.deleteByDateTimeAndCollectorId">
+		<query>
+			<![CDATA[
+				DELETE FROM CollectData a WHERE a.id.time < :dateTime AND a.id.collectorid = :collectorid
+			]]>
+		</query>
+	</named-query>
 	<named-query name="SummaryHour.deleteByDateTimeAndMonitorId">
 		<query>
 			<![CDATA[

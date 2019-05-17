@@ -21,9 +21,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.ws.WebServiceException;
 
@@ -197,6 +199,13 @@ public class JobMasterAction {
 			return ret;
 		}
 
+		// jobMastersXML内のparentJobIdの存在チェック
+		//（可能ならマネージャ側のバリテーションに委ねたいが、DTOのJobTreeItemではデータ構造上、難しいのでここでチェック）
+		if(!checkParentJobId(jobXML.getJobInfo(),jobunitList)){
+			ret = SettingConstants.ERROR_INPROCESS;
+			return ret;
+		}
+
 		try {
 			jti = MasterConv.masterXml2Dto(jobXML.getJobInfo(), jobunitList);
 		} catch (Exception e) {
@@ -272,6 +281,64 @@ public class JobMasterAction {
 		return BaseAction.checkSchemaVersionResult(this.getLogger(), res, sci.getSchemaType(), sci.getSchemaVersion(), sci.getSchemaRevision());
 	}
 	
+	/**
+	 * スキーマ内のJobInfoについて親ジョブID存在チェックを行い、メッセージを出力する。<BR>
+	 * ※メッセージ詳細に出力するためは本クラスのloggerにエラー内容を出力する必要がある
+	 * 
+	 * @param XMLファイルのjobInfo
+	 * @return チェック結果
+	 */
+	private boolean checkParentJobId(com.clustercontrol.utility.settings.job.xml.JobInfo[] jobMastersXML,List<String> jobunitList) {
+
+		boolean ret =true;
+		//各ジョブユニット毎にて 親ジョブになれるジョブID一覧を作成
+		Map<String,Set<String>> unitMap = new HashMap<String,Set<String>>();
+		for (int i = 0; i < jobMastersXML.length; i++) {
+			//インポート対象ジョブユニットに含まれない場合は除外
+			if(jobunitList.contains(jobMastersXML[i].getJobunitId()) == false){
+				continue;
+			}
+			Set<String> jobIdSet = unitMap.get(jobMastersXML[i].getJobunitId());
+			if(jobIdSet == null){
+				jobIdSet = new HashSet<String>();
+				unitMap.put(jobMastersXML[i].getJobunitId(), jobIdSet);
+			}
+			//親ジョブになれるジョブIDのみ、リストに加える。(ジョブユニット、ジョブネット)
+			if(jobMastersXML[i].getType() == JobConstant.TYPE_JOBUNIT
+				|| jobMastersXML[i].getType() == JobConstant.TYPE_JOBNET ){
+				jobIdSet.add(jobMastersXML[i].getId());
+			}
+		}
+
+		//各JobInfoに設定された親ジョブIDが同一ジョブユニット内に存在するかチェック
+		for (int i = 0; i < jobMastersXML.length; i++) {
+			//ジョブユニット自身の場合はノーチェック
+			if (jobMastersXML[i].getType() == JobConstant.TYPE_JOBUNIT) {
+				continue;
+			}
+			//インポート対象ジョブユニットに含まれない場合もノーチェック
+			if(jobunitList.contains(jobMastersXML[i].getJobunitId()) == false && jobunitList.contains(jobMastersXML[i].getParentJobunitId()) == false ){
+				continue;
+			}
+			//親ジョブユニットID＝ジョブ自身のジョブユニットID でないならエラー
+			Set<String> jobIdSet = unitMap.get(jobMastersXML[i].getParentJobunitId());
+			if(jobIdSet == null || jobMastersXML[i].getParentJobunitId().equals(jobMastersXML[i].getJobunitId()) == false){
+				String[] mesArgs = { jobMastersXML[i].getJobunitId(),jobMastersXML[i].getId() , jobMastersXML[i].getParentJobunitId() };
+ 				log.error( Messages.getString("SettingTools.InvalidParentJobunitId",mesArgs) );
+				ret =false;
+				continue;
+			}
+			//同じジョブユニット内に親ジョブIDが存在しないならエラー
+			if(jobIdSet.contains(jobMastersXML[i].getParentJobId()) == false){
+				String[] mesArgs = { jobMastersXML[i].getJobunitId(),jobMastersXML[i].getId() , jobMastersXML[i].getParentJobId() };
+ 				log.error( Messages.getString("SettingTools.InvalidParentJobId",mesArgs) );
+
+				ret =false;
+			}
+		}
+		return ret;
+	}
+
 	/**
 	 * Fetch jobInfo for tree and append to job list recursively
 	 * 

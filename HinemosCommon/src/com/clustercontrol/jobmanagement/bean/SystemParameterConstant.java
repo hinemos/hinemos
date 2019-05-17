@@ -8,6 +8,9 @@
 
 package com.clustercontrol.jobmanagement.bean;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * ジョブのジョブ変数におけるシステム変数に関する情報を定義するクラス<BR>
@@ -160,6 +163,24 @@ public class SystemParameterConstant {
 		PRIORITY
 	};
 
+	// ジョブパラメータ情報(通知情報)
+	public static final String SYSTEM_ID_LIST_NOTIFY_PARAM[] = {
+		APPLICATION,
+		FACILITY_ID,
+		MESSAGE,
+		MONITOR_ID,
+		MONITOR_DETAIL_ID,
+		ORG_MESSAGE,
+		PLUGIN_ID,
+		PRIORITY
+	};
+	
+	// ジョブパラメータ情報(ジョブ実行情報)
+	public static final String SYSTEM_ID_LIST_RUN_JOB_PARAM[] = {
+		FILENAME,
+		DIRECTORY,
+	};
+	
 	// ジョブセッション情報から取得
 	public static final String SYSTEM_ID_LIST_JOB_SESSION[] = {
 		SESSION_ID,
@@ -255,6 +276,12 @@ public class SystemParameterConstant {
 		NOTE
 	};
 
+	private static List<String> notifyParamIdList =
+			Collections.unmodifiableList(Arrays.asList(SystemParameterConstant.SYSTEM_ID_LIST_NOTIFY_PARAM));
+	
+	private static List<String> runJobParamIdList =
+			Collections.unmodifiableList(Arrays.asList(SystemParameterConstant.SYSTEM_ID_LIST_RUN_JOB_PARAM));
+	
 	/**
 	 * strが#[param]の形式であるかを判定する
 	 *
@@ -292,5 +319,67 @@ public class SystemParameterConstant {
 	 */
 	public static String getParamId(String paramText){
 		return paramText.substring(PREFIX.length(), paramText.length()-SUFFIX.length());
+	}
+	
+	public static boolean isNofityParam(String paramId) {
+		
+		if (notifyParamIdList.contains(paramId)) {
+			return true;
+		}
+		return false;
+	}
+	
+	public static boolean isNofityOrgParam(String paramId) {
+		
+		if (notifyParamIdList.contains(getNotOriginalParam(paramId))) {
+			return true;
+		}
+		return false;
+	}
+	
+	public static boolean isRunJobParam(String paramId) {
+		
+		if (runJobParamIdList.contains(paramId)) {
+			return true;
+		}
+		return false;
+	}
+	
+	public static boolean isRunJobOrgParam(String paramId) {
+		
+		if (runJobParamIdList.contains(getNotOriginalParam(paramId))) {
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * strが#[param]の形式であるかを判定する
+	 *
+	 * @param str
+	 * @param param
+	 * @return
+	 */
+	public static boolean isParamFormat(String str) {
+		if (str == null) {
+			return false;
+		}
+		return str.startsWith(SystemParameterConstant.PREFIX)
+				&& str.endsWith(SystemParameterConstant.SUFFIX);
+	}
+	
+	public static String getNotOriginalParam(String paramId) {
+		int escapeLength = SystemParameterConstant.NOT_REPLACE_TO_ESCAPE.length();
+		int paramIdLegnth = paramId.length();
+		
+		if (paramIdLegnth < escapeLength) {
+			return null;
+		}
+		
+		int paramIdOrgIdx = paramIdLegnth - escapeLength;
+		if (!SystemParameterConstant.NOT_REPLACE_TO_ESCAPE.equals(paramId.substring(paramIdOrgIdx))) {
+			return null;
+		}
+		return paramId.substring(0, paramIdOrgIdx);
 	}
 }

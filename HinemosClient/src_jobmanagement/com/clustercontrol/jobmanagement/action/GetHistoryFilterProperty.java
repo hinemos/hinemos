@@ -110,8 +110,9 @@ public class GetHistoryFilterProperty {
 		m_manager.setValue("");
 
 		//値を初期化（実行状態）
-		Object statusV[] = { "", StatusMessage.STRING_RUNNING, StatusMessage.STRING_STOPPING, StatusMessage.STRING_SUSPEND,
-				StatusMessage.STRING_STOP, StatusMessage.STRING_END, StatusMessage.STRING_MODIFIED};
+		Object statusV[] = { "", StatusMessage.STRING_RUNNING, StatusMessage.STRING_RUNNING_QUEUE, 
+				StatusMessage.STRING_STOPPING, StatusMessage.STRING_SUSPEND, StatusMessage.STRING_SUSPEND_QUEUE,
+				StatusMessage.STRING_STOP, StatusMessage.STRING_END, StatusMessage.STRING_END_QUEUE_LIMIT, StatusMessage.STRING_MODIFIED};
 		Object statusValues[][] = {statusV, statusV};
 
 		//値を初期化（終了状態）

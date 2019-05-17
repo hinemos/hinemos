@@ -267,7 +267,10 @@ public class MonitorComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "m_retry", this.m_retry);
 		this.m_retry.setText(Messages.getString("scope.process.retry.nodes"));
 		this.m_retry.setLayoutData(
-				new RowData(350, SizeConstant.SIZE_BUTTON_HEIGHT));
+				new RowData(250, SizeConstant.SIZE_BUTTON_HEIGHT));
+
+		// ラジオボタン配置調整用の空Composite
+		JobDialogUtil.getComposite_Space(cmdScopeProcGroup, 100, SizeConstant.SIZE_BUTTON_HEIGHT);
 
 		// 監視設定（Composite）
 		Composite monitorComposite = new Composite(this, SWT.NONE);

@@ -656,13 +656,15 @@ public class CreateJobSession {
 			}
 			
 			//ファシリティパスを設定(JobSessionJobEntity)
-			Map<String, String> jobSessionParams = null; 
 			if(job.getFacilityId() != null){
 				//ファシリティID取得
 				String facilityId = job.getFacilityId();
-				if((job.getJobType() == JobConstant.TYPE_JOB || job.getJobType() == JobConstant.TYPE_MONITORJOB)
+				if((job.getJobType() == JobConstant.TYPE_JOB || 
+						job.getJobType() == JobConstant.TYPE_MONITORJOB)
 						&& ParameterUtil.isParamFormat(facilityId)){
-					String paramValue = ParameterUtil.getJobSessionParamValue(ParameterUtil.getParamId(facilityId), sessionId, jobSessionParams);
+					Map<String, String> jobSessionParamsMap = ParameterUtil.getJobSessionParamsMap(sessionId);
+					String paramValue = ParameterUtil.getJobSessionParamValue(
+							ParameterUtil.getParamId(facilityId), jobSessionParamsMap, sessionId);
 					if (paramValue != null) {
 						facilityId = paramValue;
 					}
@@ -682,7 +684,9 @@ public class CreateJobSession {
 				//ファシリティID取得
 				String facilityId = job.getFacilityId();
 				if(ParameterUtil.isParamFormat(facilityId)){
-					String paramValue = ParameterUtil.getJobSessionParamValue(ParameterUtil.getParamId(facilityId), sessionId, jobSessionParams);
+					Map<String, String> jobSessionParamsMap = ParameterUtil.getJobSessionParamsMap(sessionId);
+					String paramValue = ParameterUtil.getJobSessionParamValue(
+							ParameterUtil.getParamId(facilityId), jobSessionParamsMap, sessionId);
 					if (paramValue != null) {
 						facilityId = paramValue;
 					}

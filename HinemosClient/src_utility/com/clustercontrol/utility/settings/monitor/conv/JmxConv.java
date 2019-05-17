@@ -164,6 +164,11 @@ public class JmxConv {
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
+				// 変化量監視が無効の場合、関連閾値が未入力なら、画面デフォルト値にて補完
+				if( monitorInfo.isChangeFlg() ==false && jmxMonitor.getNumericChangeAmount().length == 0 ){
+					MonitorConv.setMonitorChangeAmountDefault(monitorInfo);
+				}
+				
 				// 変化量についても閾値判定と同様にTYPE_CRITICALとTYPE_UNKNOWNを定義する
 				monitorNumericValueInfo = new MonitorNumericValueInfo();
 				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());

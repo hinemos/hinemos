@@ -9,6 +9,8 @@
 package com.clustercontrol.utility.difference;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.clustercontrol.utility.difference.anno.Translate;
 import com.clustercontrol.utility.difference.anno.TranslateOverrides;
@@ -55,7 +57,38 @@ public class PropertyAccessorImpl implements PropertyAccessor {
 		}
 
 		String propName = propGet.getName().substring("get".length());
-		return new PropValueImpl(prop, translate(prop, propName, propGet));
+		if (propGet.getReturnType().isArray()) {
+			return new PropListValueImpl((Object[]) prop, translate((Object[]) prop, propName, propGet));
+		} else {
+			return new PropValueImpl(prop, translate(prop, propName, propGet));
+		}
+	}
+
+
+	private String[] translate(Object[] props, String propName, Method propGet) {
+		Translate t = null;
+		
+		if (to != null) {
+			for (TranslateOverrides.Value v: to.values) {
+				if (propName.compareToIgnoreCase(v.p) == 0) {
+					t = v.t;
+					break;
+				}
+			}
+		}
+		
+		if (t == null) {
+			t = DiffUtil.getAnnotation(propGet, Translate.class);
+		}
+
+		List<String> translated = new ArrayList<>();
+		if (t != null) {
+			for (Object prop : props) {
+				translated.add(translate(prop, propGet.getReturnType().getComponentType(), t));
+			}
+		}
+		
+		return translated.toArray(new String[0]);
 	}
 
 	private String translate(Object prop, String propName, Method propGet) {
@@ -97,7 +130,7 @@ public class PropertyAccessorImpl implements PropertyAccessor {
 				value = v.value;
 			}
 			else {
-				throw new IllegalStateException("unexpected");
+				throw new IllegalStateException("unexpected : Class=" + c);
 			}
 
 			if (prop.equals(value)) {

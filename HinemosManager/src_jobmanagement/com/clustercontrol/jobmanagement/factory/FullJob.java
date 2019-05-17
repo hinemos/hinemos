@@ -25,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.bean.EndStatusConstant;
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
@@ -213,7 +212,7 @@ public class FullJob {
 			createNextJobOrderMap(nextJobOrderList, nextJobOrderMap);
 			
 			// 通知グループマップの作成
-			createNotifyRelationMap(notifyRelMap);
+			createNotifyRelationMap(notifyRelMap, em);
 			
 			Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCache();
 			
@@ -387,7 +386,7 @@ public class FullJob {
 				createNextJobOrderMap(nextJobOrderList, nextJobOrderMap);
 				
 				// 通知グループマップの作成
-				createNotifyRelationMap(notifyRelMap);
+				createNotifyRelationMap(notifyRelMap, em.getEntityManager());
 				
 				List<JobMstEntity> jobs = QueryUtil.getJobMstEnityFindByJobunitId(jobunitId);
 				for(JobMstEntity job : jobs) {
@@ -962,26 +961,26 @@ public class FullJob {
 				if(startJob != null){
 					JobObjectInfo objectInfo = new JobObjectInfo();
 					objectInfo.setJobId(startJob.getId().getTargetJobId());
+					// ジョブ名格納用
+					String jobName = "";
 					//対象ジョブを取得
 					Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCacheWithoutDebugLog();
-					if(jobMstCache.get(startJob.getId().getTargetJobunitId()) == null) {
-						// ここは通らないはず
-						JobMasterNotFound je = new JobMasterNotFound("jobMstCache not found");
-						m_log.info("jobMstCache not found : " + startJob.getId().getTargetJobunitId());
-						je.setJobunitId(startJob.getId().getTargetJobunitId());
-						je.setJobId(startJob.getId().getTargetJobId());
-						throw je;
+					if (jobMstCache.get(startJob.getId().getTargetJobunitId()) != null
+							&& jobMstCache.get(startJob.getId().getTargetJobunitId()).get(startJob.getId().getTargetJobId()) != null) {
+						// キャッシュが存在し、ジョブ名が取得できるならキャッシュから取得
+						JobMstEntity targetJob = jobMstCache.get(startJob.getId().getTargetJobunitId()).get(startJob.getId().getTargetJobId());
+						jobName = targetJob.getJobName();
+					} else {
+						// ジョブ名をSQLで取得する
+						try {
+							JobMstEntity targetJob= QueryUtil.getJobMstPK(startJob.getId().getTargetJobunitId(), startJob.getId().getTargetJobId());
+							jobName = targetJob.getJobName();
+						} catch(JobMasterNotFound e) {
+							m_log.error("targetJob Not Found : " + e.getMessage());
+							jobName = "";
+						}
 					}
-					if(jobMstCache.get(startJob.getId().getTargetJobunitId()).get(startJob.getId().getTargetJobId()) == null) {
-						// ここは通らないはず
-						JobMasterNotFound je = new JobMasterNotFound("jobMstCache not found");
-						m_log.info("jobMstCache not found : " + startJob.getId().getTargetJobunitId() + ", " + startJob.getId().getTargetJobId());
-						je.setJobunitId(startJob.getId().getTargetJobunitId());
-						je.setJobId(startJob.getId().getTargetJobId());
-						throw je;
-					}
-					JobMstEntity targetJob = jobMstCache.get(startJob.getId().getTargetJobunitId()).get(startJob.getId().getTargetJobId());
-					objectInfo.setJobName(targetJob.getJobName());
+					objectInfo.setJobName(jobName);
 					objectInfo.setType(startJob.getId().getTargetJobType());
 					objectInfo.setValue(startJob.getId().getTargetJobEndValue());
 					objectInfo.setCrossSessionRange(startJob.getTargetJobCrossSessionRange());
@@ -1324,16 +1323,13 @@ public class FullJob {
 		m_log.debug("nextJobOrderMap size=" + nextJobOrderMap.size());
 	}
 	
-	private static void createNotifyRelationMap(Map<String, List<NotifyRelationInfo>> notifyRelMap) {
-		List<NotifyRelationInfo> notifyRelList = com.clustercontrol.notify.util.QueryUtil.getAllNotifyRelationInfo();
+	private static void createNotifyRelationMap(Map<String, List<NotifyRelationInfo>> notifyRelMap, EntityManager em) {
+		List<NotifyRelationInfo> notifyRelList = com.clustercontrol.notify.util.QueryUtil.getNotifyRelationInfoJob();
 		if (notifyRelList != null) {
 			for(NotifyRelationInfo info : notifyRelList) {
+				// EntityManagerの管理対象から除外する
+				em.detach(info);
 				String notifyGroupId = info.getNotifyGroupId();
-				// ジョブ以外は対象外
-				if(notifyGroupId.startsWith(HinemosModuleConstant.JOB_MST + "-") == false && 
-						notifyGroupId.startsWith(HinemosModuleConstant.JOB_SESSION + "-") == false) {
-					continue;
-				}
 				
 				List<NotifyRelationInfo> list = notifyRelMap.get(notifyGroupId);
 				if(list == null) {

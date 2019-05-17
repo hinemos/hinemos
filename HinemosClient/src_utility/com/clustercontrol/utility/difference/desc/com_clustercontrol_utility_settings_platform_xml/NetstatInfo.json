@@ -12,37 +12,43 @@
 	{
 	"propName":"protocol",
 	"annotations":[
-		{"type":"Column", "columnName":"NetstatInfo_protocol"}
-	]},
-
-	{
-	"propName":"localIpAddress",
-	"annotations":[
-		{"type":"Column", "columnName":"NetstatInfo_localIpAddress"}
-	]},
-
-	{
-	"propName":"localPort",
-	"annotations":[
-		{"type":"Column", "columnName":"NetstatInfo_localPort"}
+		{"type":"Column", "columnName":"NetstatInfo_protocol"},
+		{"type":"PrimaryKey"}
 	]},
 
 	{
 	"propName":"foreignIpAddress",
 	"annotations":[
-		{"type":"Column", "columnName":"NetstatInfo_foreignIpAddress"}
+		{"type":"Column", "columnName":"NetstatInfo_foreignIpAddress"},
+		{"type":"PrimaryKey"}
 	]},
 
 	{
 	"propName":"foreignPort",
 	"annotations":[
-		{"type":"Column", "columnName":"NetstatInfo_foreignPort"}
+		{"type":"Column", "columnName":"NetstatInfo_foreignPort"},
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"localIpAddress",
+	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_localIpAddress"},
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"localPort",
+	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_localPort"},
+		{"type":"PrimaryKey"}
 	]},
 
 	{
 	"propName":"processName",
 	"annotations":[
-		{"type":"Column", "columnName":"NetstatInfo_processName"}
+		{"type":"Column", "columnName":"NetstatInfo_processName"},
+		{"type":"PrimaryKey"}
 	]},
 
 	{

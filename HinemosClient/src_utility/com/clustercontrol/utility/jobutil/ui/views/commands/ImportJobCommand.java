@@ -45,8 +45,13 @@ import com.clustercontrol.utility.jobutil.dialog.JobImportDialog;
 import com.clustercontrol.utility.jobutil.util.JobConvert;
 import com.clustercontrol.utility.jobutil.util.JobStringUtil;
 import com.clustercontrol.utility.settings.SettingConstants;
+import com.clustercontrol.utility.util.UtilityEndpointWrapper;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 import com.clustercontrol.ws.jobmanagement.OtherUserGetLock_Exception;
+import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
+import com.clustercontrol.ws.utility.InvalidRole_Exception;
+import com.clustercontrol.ws.utility.InvalidUserPass_Exception;
 
 /**
  * ジョブをインポートするダイアログを開くためのクライアント側アクションクラス<BR>
@@ -75,7 +80,31 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		
+		// keyチェック
+		try {
+			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+			String version = wrapper.getVersion();
+			if (version.length() > 7) {
+				boolean result = Boolean.valueOf(version.substring(7, version.length()));
+				if (!result) {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							Messages.getString("message.expiration.term.invalid"));
+				}
+			}
+		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					e.getMessage());
+			return null;
+		} catch (Exception e) {
+			// キーファイルを確認できませんでした。処理を終了します。
+			// Key file not found. This process will be terminated.
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					Messages.getString("message.expiration.term"));
+			return null;
+		}
+
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed
 		if( null == this.window || !isEnabled() ){

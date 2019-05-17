@@ -8,6 +8,7 @@
 
 package com.clustercontrol.monitor.dialog;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +32,7 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.action.GetEventFilterProperty;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
+import com.clustercontrol.monitor.util.EventFilterPropertyUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
 import com.clustercontrol.viewer.PropertySheet;
@@ -270,8 +272,10 @@ public class EventFilterDialog extends CommonDialog {
 	 */
 	private Property getOrInitFilterProperty() {
 		Property property = filterPropertyCache.get(RWT.getUISession());
-		if( null == property ){
+		if ( null == property ){
 			property = initFilterProperty();
+		} else {
+			EventFilterPropertyUtil.updatePropertyDisp(property, Locale.getDefault(), eventDspSetting, managerName);
 		}
 		return property;
 	}

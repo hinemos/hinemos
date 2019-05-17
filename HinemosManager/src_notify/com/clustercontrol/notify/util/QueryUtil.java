@@ -337,6 +337,21 @@ public class QueryUtil {
 	}
 
 	/**
+	 * 通知関連情報より、ジョブ設定を対象としたもののみを抽出する
+	 * オブジェクト権限チェックなし
+	 * @return
+	 */
+	public static List<NotifyRelationInfo> getNotifyRelationInfoJob() {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NotifyRelationInfo> list
+			=  em.createNamedQuery("NotifyRelationInfoEntity.findJob", NotifyRelationInfo.class, ObjectPrivilegeMode.NONE)
+			.getResultList();
+			return list;
+		}
+	}
+
+	/**
 	 * オブジェクト権限チェックなし
 	 * @return
 	 */

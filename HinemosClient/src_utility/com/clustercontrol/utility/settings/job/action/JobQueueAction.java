@@ -11,6 +11,7 @@ package com.clustercontrol.utility.settings.job.action;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
@@ -340,14 +341,16 @@ public class JobQueueAction {
 			ret += SettingConstants.SUCCESS_DIFF_1;
 		}
 
-		try (FileOutputStream fos = new FileOutputStream(xmlQueue + ".csv")) {
+		FileOutputStream fos = null;
+		try {
 			//差分がある場合、ＣＳＶファイル作成
 			if (diff || DiffUtil.isAll()) {
 				CSVUtil.CSVSerializer csvSerializer = CSVUtil.createCSVSerializer();
+				fos = new FileOutputStream(xmlQueue2 + ".csv");
 				csvSerializer.write(fos, resultA.getResultBs().values().iterator().next());
 			} else {
 				//差分がない場合、すでに作成済みのＣＳＶファイルがあれば、削除
-				File f = new File(xmlQueue + ".csv");
+				File f = new File(xmlQueue2 + ".csv");
 				if (f.exists()) {
 					if (!f.delete()) {
 						log.warn(String.format("Fail to delete File. %s", f.getAbsolutePath()));
@@ -357,6 +360,13 @@ public class JobQueueAction {
 		} catch (Exception e) {
 			log.error("unexpected: ", e);
 			ret = SettingConstants.ERROR_INPROCESS;
+		} finally {
+			if (fos != null) {
+				try {
+					fos.close();
+				} catch (IOException e) {
+				}
+			}
 		}
 
 		// 処理の終了

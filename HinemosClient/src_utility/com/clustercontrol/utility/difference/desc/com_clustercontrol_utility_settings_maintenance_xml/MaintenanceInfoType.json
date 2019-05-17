@@ -49,7 +49,8 @@
 			{"value":"DELETE_SUMMARY_DATA_MONTH", "name":"name_maintenance_delete_summary_data_month"},
 			{"value":"DELETE_COLLECT_STRING_DATA", "name":"name_maintenance_delete_collect_string_data"},
 			{"value":"DELETE_COLLECT_BINFILE_DATA", "name":"name_maintenance_delete_collect_binfile_data"},
-			{"value":"DELETE_COLLECT_PCAP_DATA", "name":"name_maintenance_delete_collect_pcap_data"}
+			{"value":"DELETE_COLLECT_PCAP_DATA", "name":"name_maintenance_delete_collect_pcap_data"},
+			{"value":"DELETE_NODE_CONFIG_HISTORY", "name":"name_maintenance_delete_node_config_history_all"}
 		]}
 	]},
 	

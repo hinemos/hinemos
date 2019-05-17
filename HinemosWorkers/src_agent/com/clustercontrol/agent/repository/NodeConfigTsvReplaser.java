@@ -169,14 +169,18 @@ public class NodeConfigTsvReplaser {
 			// IPアドレスv4
 			String ipv4Address = getParam(NodeConfigConstant.NIC_IP_ADDRESS, token);
 			IpAddressInfo ipv4Info;
-			try {
-				ipv4Info = NetworkInterfaceUtil.getIpAddressInfo(ipv4Address);
-			} catch (InvalidSetting | HinemosUnknown e) {
-				ipv4Info = null;
-				throw new HinemosUnknown(e.getMessage(), e);
-			}
-			if (ipv4Info != null) {
-				record_nic.setNicIpAddress(ipv4Info.getOnlyIpAddress());
+			if(ipv4Address.equals("")){
+				record_nic.setNicIpAddress("");
+			}else{
+				try {
+					ipv4Info = NetworkInterfaceUtil.getIpAddressInfo(ipv4Address);
+				} catch (InvalidSetting | HinemosUnknown e) {
+					ipv4Info = null;
+					throw new HinemosUnknown(e.getMessage(), e);
+				}
+				if (ipv4Info != null) {
+					record_nic.setNicIpAddress(ipv4Info.getOnlyIpAddress());
+				}
 			}
 			// MACアドレス
 			record_nic.setNicMacAddress(getParam(NodeConfigConstant.NIC_MAC_ADDRESS, token));

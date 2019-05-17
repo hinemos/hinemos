@@ -65,4 +65,20 @@ public class UtilityEndpointWrapper {
 		}
 		throw wse;
 	}
+
+	public String getVersion() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		
+		for (EndpointSetting<UtilityEndpoint> endpointSetting : getUtilityEndpoint(endpointUnit)) {
+			try {
+				UtilityEndpoint endpoint = (UtilityEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getVersion();
+			} catch (WebServiceException e) {
+				wse = e;
+				m_log.warn("getVersion(), " + e.getMessage(), e);
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
 }

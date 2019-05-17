@@ -53,7 +53,11 @@ public class NodeListFindAction extends AbstractHandler implements IElementUpdat
 		// ダイアログにて変更が選択された場合、入力内容をもって登録を行う。
 		if (dialog.open() == IDialogConstants.OK_ID) {
 			view.setNodeFilterInfo(dialog.getInputData());
-			view.reload();
+			//Exceptionが発生した場合は、検索ダイアログを初期化
+			if(!view.reload()){
+				view.dispose();
+			}
+			
 		}
 		return null;
 	}

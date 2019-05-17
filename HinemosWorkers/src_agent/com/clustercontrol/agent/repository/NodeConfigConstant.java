@@ -67,6 +67,20 @@ public class NodeConfigConstant {
 	// スクリプト共通オプション.
 	/** 出力ファイル名指定オプション **/
 	protected static final String OPTION_FILENAME = "-f";
+	
+	//snmpwalk引数
+	protected static final String SNMP_PORT = "-p";
+	protected static final String SNMP_VERSION = "-v";
+	protected static final String SNMP_COMMUNITY = "-c";
+	protected static final String SNMP_RETRY = "-r";
+	protected static final String SNMP_TIMEOUT = "-t";
+	protected static final String SNMP_AUTH_PROTOCOL = "-a";
+	protected static final String SNMP_AUTH_PASSPHRASE = "-A";
+	protected static final String SNMP_LEVEL = "-l";
+	protected static final String SNMP_PRIV_PROTOCOL = "-x";
+	protected static final String SNMP_USER = "-u";
+	protected static final String SNMP_PRIV_PASSPHRASE = "-X";
+	
 
 	// スクリプト共通終了ステータス(1～255で定義すること).
 	/** 処理正常終了 **/

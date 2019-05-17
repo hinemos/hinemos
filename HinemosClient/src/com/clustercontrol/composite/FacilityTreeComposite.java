@@ -461,23 +461,7 @@ public class FacilityTreeComposite extends Composite {
 					m_log.debug("getNodeFacilityTree " + managerName);
 					treeItem = addEmptyParent(RepositoryEndpointWrapper.getWrapper(managerName).getNodeFacilityTree(this.ownerRoleId));
 					if (treeItem != null && treeItem.getChildren() != null && treeItem.getChildren().get(0) != null) {
-						Collections.sort(treeItem.getChildren().get(0).getChildren(), new Comparator<FacilityTreeItem>() {
-							@Override
-							public int compare(FacilityTreeItem o1, FacilityTreeItem o2) {
-								FacilityInfo info1 = ((FacilityTreeItem) o1).getData();
-								FacilityInfo info2 = ((FacilityTreeItem) o2).getData();
-								int order1 =  info1.getDisplaySortOrder();
-								int order2 =  info2.getDisplaySortOrder();
-								if(order1 == order2 ){
-									String object1 = info1.getFacilityId();
-									String object2 = info2.getFacilityId();
-									return object1.compareTo(object2);
-								}
-								else {
-									return (order1 - order2);
-								}
-							}
-						});
+						Collections.sort(treeItem.getChildren().get(0).getChildren(), new FacilityTreeViewerSorter.FacilityTreeItemComparator());
 					}
 				} else {
 					m_log.debug("getFacilityTree " + managerName);
@@ -881,11 +865,7 @@ public class FacilityTreeComposite extends Composite {
 	 */
 	private FacilityTreeItem searchChildren( FacilityTreeItem parent, String keyword, int offset ){
 		List<FacilityTreeItem> children = parent.getChildren();
-		Collections.sort(children, new Comparator<FacilityTreeItem>() {
-			public int compare(FacilityTreeItem item1, FacilityTreeItem item2) {
-				return item1.getData().getDisplaySortOrder() - item2.getData().getDisplaySortOrder();
-			}
-		});
+		Collections.sort(children, new FacilityTreeViewerSorter.FacilityTreeItemComparator());
 		int len = children.size();
 		for( int i = offset; i<len; i++ ){
 			FacilityTreeItem child = children.get(i);

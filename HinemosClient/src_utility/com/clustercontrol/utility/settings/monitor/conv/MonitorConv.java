@@ -253,6 +253,18 @@ class MonitorConv {
 		monitorInfo_ws.setPredictionAnalysysRange(monitor_cas.getPredictionAnalysysRange());
 		monitorInfo_ws.setPredictionTarget(monitor_cas.getPredictionTarget());
 		monitorInfo_ws.setPredictionApplication(monitor_cas.getPredictionApplication());
+		//将来予測の項目設定が存在し（数値監視のみの想定）、かつfalseな場合、関連値が未設定なら画面入力時のデフォルト値を設定(数値監視のみで使用)
+		if( monitor_cas.hasPredictionFlg() && monitor_cas.getPredictionFlg() == false){
+			if( monitorInfo_ws.getPredictionMethod() == null || monitorInfo_ws.getPredictionMethod().equals("") ){
+				monitorInfo_ws.setPredictionMethod(com.clustercontrol.monitor.run.bean.MonitorPredictionMethodConstant.POLYNOMIAL_1);
+			}
+			if( monitor_cas.hasPredictionAnalysysRange() == false ){
+				monitorInfo_ws.setPredictionAnalysysRange(60);
+			}
+			if( monitor_cas.hasPredictionTarget() == false ){
+				monitorInfo_ws.setPredictionTarget(60);
+			}
+		}
 
 		for (PredictionNotifyId notifyId: monitor_cas.getPredictionNotifyId()) {
 			monitorInfo_ws.getPredictionNotifyRelationList().add(createPredictionNotifyRelationInfo(notifyId, null));
@@ -261,6 +273,12 @@ class MonitorConv {
 		monitorInfo_ws.setChangeFlg(monitor_cas.getChangeFlg());
 		monitorInfo_ws.setChangeAnalysysRange(monitor_cas.getChangeAnalysysRange());
 		monitorInfo_ws.setChangeApplication(monitor_cas.getChangeApplication());		
+		//変化量の項目設定が存在し（数値監視のみの想定）、かつfalseが無効な場合、関連値が未設定なら画面入力時ののデフォルト値を設定(数値監視のみで使用)
+		if( monitor_cas.hasChangeFlg() && monitor_cas.getChangeFlg() == false){
+			if( monitor_cas.hasChangeAnalysysRange() == false ){
+				monitorInfo_ws.setChangeAnalysysRange(60);
+			}
+		}
 
 		for (ChangeNotifyId notifyId: monitor_cas.getChangeNotifyId()) {
 			monitorInfo_ws.getChangeNotifyRelationList().add(createChangeNotifyRelationInfo(notifyId, null));
@@ -359,6 +377,24 @@ class MonitorConv {
 		monitorNumericValueInfo.setThresholdUpperLimit(changeValue.getThresholdUpperLimit());
 		
 		return monitorNumericValueInfo;
+	}
+	
+	static void setMonitorChangeAmountDefault(MonitorInfo monitorInfo) {
+		MonitorNumericValueInfo monitorNumericValueInfoDefault = new MonitorNumericValueInfo();
+		monitorNumericValueInfoDefault.setMonitorId(monitorInfo.getMonitorId());
+		monitorNumericValueInfoDefault.setMonitorNumericType("CHANGE");
+		monitorNumericValueInfoDefault.setPriority(PriorityConstant.TYPE_INFO);
+		monitorNumericValueInfoDefault.setThresholdLowerLimit(-1.0);
+		monitorNumericValueInfoDefault.setThresholdUpperLimit(1.0);
+		monitorInfo.getNumericValueInfo().add(monitorNumericValueInfoDefault);
+
+		monitorNumericValueInfoDefault = new MonitorNumericValueInfo();
+		monitorNumericValueInfoDefault.setMonitorId(monitorInfo.getMonitorId());
+		monitorNumericValueInfoDefault.setMonitorNumericType("CHANGE");
+		monitorNumericValueInfoDefault.setPriority(PriorityConstant.TYPE_WARNING);
+		monitorNumericValueInfoDefault.setThresholdLowerLimit(-2.0);
+		monitorNumericValueInfoDefault.setThresholdUpperLimit(2.0);
+		monitorInfo.getNumericValueInfo().add(monitorNumericValueInfoDefault);
 	}
 	
 	static StringValue createStringValue(MonitorStringValueInfo monitorStringValueInfo, int orderNo) {

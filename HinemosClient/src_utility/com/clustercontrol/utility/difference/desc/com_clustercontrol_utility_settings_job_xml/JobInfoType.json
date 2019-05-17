@@ -693,25 +693,23 @@
 	{
 	"propName":"commandRetryEndStatus",
 	"annotations":[
-		{"type":"Column", "columnName":"JobInfoType_jobRetryEndStatus"},
+		{"type":"Column", "columnName":"JobInfoType_commandRetryEndStatus"},
 		{"type":"Translate", "values":[
-			{"value":"0", "name":"name_rick"}, 
-			{"value":"1", "name":"name_unknown"},
-			{"value":"2", "name":"name_warning"},
-			{"value":"3", "name":"name_information"},
-			{"value":"4", "name":"name_Privilege_None"}
+			{"value":"0", "name":"name_normal"}, 
+			{"value":"1", "name":"name_warning"},
+			{"value":"2", "name":"name_abnormal"}
 		]}
 	]},
 	{
 	"propName":"jobRetry",
 	"annotations":[
-		{"type":"Column", "columnName":"JobInfoType_commandRetry"}
+		{"type":"Column", "columnName":"JobInfoType_jobRetry"}
 	]},
 	
 	{
 	"propName":"jobRetryFlg",
 	"annotations":[
-		{"type":"Column", "columnName":"JobInfoType_commandRetryFlg"}
+		{"type":"Column", "columnName":"JobInfoType_jobRetryFlg"}
 	]},
 	
 	{
@@ -719,11 +717,9 @@
 	"annotations":[
 		{"type":"Column", "columnName":"JobInfoType_jobRetryEndStatus"},
 		{"type":"Translate", "values":[
-			{"value":"0", "name":"name_rick"}, 
-			{"value":"1", "name":"name_unknown"},
-			{"value":"2", "name":"name_warning"},
-			{"value":"3", "name":"name_information"},
-			{"value":"4", "name":"name_Privilege_None"}
+			{"value":"0", "name":"name_normal"}, 
+			{"value":"1", "name":"name_warning"},
+			{"value":"2", "name":"name_abnormal"}
 		]}
 	]},
 	

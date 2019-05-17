@@ -131,7 +131,7 @@ public class AgentProfile {
 
 		String[] sampleMd5s = external.getAgentV62BetaMd5s().split(",");
 		for (String sampleMd5 : sampleMd5s) {
-			if (md5.equals(sampleMd5.trim())) {
+			if (md5.equalsIgnoreCase(sampleMd5.trim())) {
 				return true;
 			}
 		}

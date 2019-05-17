@@ -298,6 +298,7 @@
 		<query>
 			<![CDATA[
 				SELECT a FROM FacilityRelationEntity a
+				ORDER BY a.parentFacilityId, a.childFacilityId
 			]]>
 		</query>
 	</named-query>

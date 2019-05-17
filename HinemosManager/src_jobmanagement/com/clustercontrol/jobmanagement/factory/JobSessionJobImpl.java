@@ -592,6 +592,11 @@ public class JobSessionJobImpl {
 
 		//待ち条件ジョブ判定
 		boolean crossSessionExists = false;
+		boolean allJobWaitNotArchive = false;// 全ジョブ待ち条件未達成フラグ
+		if( 0 < startJobs.size() ){
+			//なんらかのジョブ待ちがあれば 一旦true( 未完了か達成済みが見つかれば false)
+			allJobWaitNotArchive = true;
+		}
 		for(JobStartJobInfoEntity startJob: startJobs) {
 			//待ち条件ジョブを取得
 			JobSessionJobEntity targetSessionJob;
@@ -617,6 +622,7 @@ public class JobSessionJobImpl {
 				if (ok.equals(ReturnValue.TRUE)) {
 					//待ち条件を満たしている
 					jobResult.add(true);
+					allJobWaitNotArchive=false;
 					//OR条件の場合、これ以上ループを回す必要はない
 					if(job.getConditionType() == ConditionTypeConstant.TYPE_OR){
 						break;
@@ -627,6 +633,7 @@ public class JobSessionJobImpl {
 			} else {
 				// 終了していないジョブが存在するため、allEndCheckフラグをfalseに変更
 				allEndCheck = false;
+				allJobWaitNotArchive=false;
 				if(job.getConditionType() == ConditionTypeConstant.TYPE_AND) {
 					// 待ち条件が「AND」の場合、待ち条件ジョブの判定を終了
 					statusCheck = false;
@@ -851,6 +858,15 @@ public class JobSessionJobImpl {
 					//ORの場合：待ち条件がジョブのみで、全てのジョブが終了し、実行結果がNGである場合
 					if(job.getStartTime() == null && allEndCheck && job.getStartMinute() == null){
 						possibilityCheck = false;
+					}
+					// allEndCheckでは、セッション横断ジョブ待ちが存在する場合に対応できない(無条件にfalseにしてる)
+					// allJobWaitNotArchiveで全て未達成かどうかも併せて判定する。
+					if( allEndCheck == false && job.getStartTime() == null && job.getStartMinute() == null && allJobWaitNotArchive ){
+						possibilityCheck = false;
+						if( m_log.isTraceEnabled() ){
+							m_log.trace("checkStartCondition() : possibilityCheck is true . Reason : All job wait has not been achieved ." +
+									"sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
+						}
 					}
 				}
 			}

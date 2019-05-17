@@ -289,7 +289,7 @@ public class SecondaryIdMap {
 					entity.getKey(), managerName, facilityId));
 			if (entity.getValue().getManagerName().equals(managerName)
 					&& entity.getValue().getFacilityId().equals(facilityId)
-					&& entity.getValue().getClass().equals(NodeMapView.class)) {
+					&& entity.getValue().getViewClass().equals(NodeMapView.class)) {
 				secondaryId = entity.getKey();
 				break;
 			}

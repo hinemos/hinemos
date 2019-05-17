@@ -6,7 +6,7 @@
  * See the LICENSE file for licensing information.
  */
 
-package com.clustercontrol.maintenance.factory;
+package com.clustercontrol.platform.maintenance;
 
 import java.util.ArrayList;
 
@@ -16,10 +16,12 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.maintenance.factory.MaintenanceObject;
 import com.clustercontrol.maintenance.util.QueryUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.MonitorCollectDataCache;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
+import com.clustercontrol.util.HinemosTime;
 
 /**
  * 性能実績の削除処理
@@ -37,6 +39,10 @@ public class MaintenanceCollectDataRaw extends MaintenanceObject {
 	 */
 	@Override
 	protected int _delete(Long boundary, boolean status, String ownerRoleId){
+		
+		m_log.info("deleteCollectData() : start");
+		
+		long start = HinemosTime.currentTimeMillis();
 		int ret = 0;
 		JpaTransactionManager jtm = null;
 		
@@ -84,6 +90,8 @@ public class MaintenanceCollectDataRaw extends MaintenanceObject {
 			if (jtm != null)
 				jtm.close();
 		}
+		m_log.info("deleteCollectData() result : " + ret +
+				 ", time : " + (HinemosTime.currentTimeMillis() - start));
 		return ret;
 	}
 	

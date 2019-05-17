@@ -9,6 +9,8 @@
 package com.clustercontrol.reporting.util;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,6 +26,7 @@ import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.bean.TemplateSetDetailInfo;
 import com.clustercontrol.reporting.bean.TemplateSetInfo;
 import com.clustercontrol.reporting.factory.SelectReportingInfo;
+import com.clustercontrol.reporting.session.ReportingControllerBean;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 
@@ -149,6 +152,8 @@ public class ReportingValidator {
 			throw e;
 		}
 		
+		//テンプレートIDの一覧を取得
+		Set<String> templateIdSet = new HashSet<String>(new ReportingControllerBean().getTemplateIdList(templateSetInfo.getOwnerRoleId()));
 		// テンプレートID、NULL・空チェック
 		for (TemplateSetDetailInfo detailInfo : templateSetInfo.getTemplateSetDetailInfoList()) {
 
@@ -178,6 +183,14 @@ public class ReportingValidator {
 					Messages.getString("TEMPLATE_ID") + " : " + detailInfo.getTemplateId() + " - " + Messages.getString("TITLE_NAME"), 
 					detailInfo.getTitleName(), 
 					false, 0, 256);
+			
+			// template id
+			if( templateIdSet.contains(detailInfo.getTemplateId()) == false ){
+				String[] argStrings ={ detailInfo.getTemplateId() };
+				InvalidSetting e = new InvalidSetting(
+						Messages.getString("MESSAGE_REPORTING_46", argStrings ));
+				throw e;
+			}
 		}
 	}
 	

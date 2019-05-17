@@ -55,6 +55,20 @@ public class JobDialogUtil {
 	}
 
 	/**
+	 * 指定したサイズの空Compositeを返す
+	 * 
+	 * @param parent 親Composite
+	 * @param width 幅
+	 * @param height 高さ
+	 * @return Composite
+	 */
+	public static Composite getComposite_Space(Composite parent, int width, int height) {
+		Composite composite = new Composite(parent, SWT.NONE);
+		composite.setLayoutData(new RowData(width, height));
+		return composite;
+	}
+
+	/**
 	 * 項目の区切りに使用する空ラベルを返す
 	 * 
 	 * @param parent 親Composite

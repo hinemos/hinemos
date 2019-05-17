@@ -227,14 +227,17 @@ public class StartDelayComposite extends Composite {
 		this.m_andCondition = new Button(startDelayBetweenGroup, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "m_andCondition", this.m_andCondition);
 		this.m_andCondition.setText(Messages.getString("and"));
-		this.m_andCondition.setLayoutData(new RowData(100,
+		this.m_andCondition.setLayoutData(new RowData(60,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
+
+		// ラジオボタン配置調整用の空Composite
+		JobDialogUtil.getComposite_Space(startDelayBetweenGroup, 40, SizeConstant.SIZE_BUTTON_HEIGHT);
 
 		// 開始遅延：判定対象の条件関係：OR（ラジオ）
 		this.m_orCondition = new Button(startDelayBetweenGroup, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "m_orCondition", this.m_orCondition);
 		this.m_orCondition.setText(Messages.getString("or"));
-		this.m_orCondition.setLayoutData(new RowData(100,
+		this.m_orCondition.setLayoutData(new RowData(50,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 
 		// 開始遅延：通知（チェック）

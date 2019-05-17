@@ -36,6 +36,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.util.ObjectPrivilegeUtil;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
@@ -1990,6 +1991,16 @@ public class FacilitySelector {
 			Collections.sort(facilityIdList);
 			for (int i = 0; i < facilityIdList.size(); i++) {
 				String facilityId = facilityIdList.get(i);
+				try {
+					QueryUtil.getFacilityPK(facilityId);
+				} catch (FacilityNotFound e) {
+					// ログ出す
+					m_log.warn("getNodeConfigInfoFile(): Facility ID not found."+e);
+					continue;
+				} catch (InvalidRole e){
+					m_log.warn("getNodeConfigInfoFile(): No Object privileage for facility id: "+facilityId+"."+e);
+					continue;
+				}
 
 				// 対象構成情報はより全件取得する。
 				NodeInfo nodeInfo = null;
@@ -2419,7 +2430,7 @@ public class FacilitySelector {
 	 * @return
 	 */
 	private String l2s(Long l) {
-		if (l == null) {
+		if (l == null || l == 0L) {
 			return "";
 		}
 		// 日付フォーマットおよびタイムゾーンの設定

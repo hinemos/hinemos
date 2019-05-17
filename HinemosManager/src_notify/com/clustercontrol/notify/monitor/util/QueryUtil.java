@@ -39,6 +39,7 @@ import com.clustercontrol.notify.monitor.model.EventLogEntityPK;
 import com.clustercontrol.notify.monitor.model.EventLogOperationHistoryEntity;
 import com.clustercontrol.notify.monitor.model.StatusInfoEntity;
 import com.clustercontrol.notify.monitor.model.StatusInfoEntityPK;
+import com.clustercontrol.util.HinemosTime;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
@@ -209,10 +210,12 @@ public class QueryUtil {
 		
 		int offset = 0;
 		final int max = 1000;
+		long startTime = 0;
 		
 		eventLogList = query.setFirstResult(offset).setMaxResults(max).getResultList();
 		
 		while (eventLogList.size() > 0) {
+			startTime = HinemosTime.currentTimeMillis();
 			for (EventLogEntity event : eventLogList) {
 				ModifyEventInfo.setConfirmFlgChange(jtm, event, confirmType, confirmDate, confirmUser);
 				event.setConfirmFlg(confirmType);
@@ -224,6 +227,10 @@ public class QueryUtil {
 				em.merge(event);
 				updateVal++;
 			}
+			em.flush(); // DBへの書き出し
+			em.clear(); // 取得したEventLogEntityのキャッシュをクリア
+			m_log.debug(String.format("updateEventLogFlgByFilterImpl() : from %d to %d rows completed in %d ms",
+						offset, offset + eventLogList.size(), HinemosTime.currentTimeMillis() - startTime));
 			offset += eventLogList.size();
 			eventLogList = query.setFirstResult(offset).setMaxResults(max).getResultList();
 		}

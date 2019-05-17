@@ -252,9 +252,9 @@ public class ReportingEndpointWrapper {
 				ReportingEndpoint endpoint = (ReportingEndpoint) endpointSetting.getEndpoint();
 				return endpoint.getTemplateIdList(ownerRoleId);
 			} catch (WebServiceException e) {
+				//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
+				//警告ログを出力するかは呼出元に判断をゆだねる。
 				wse = e;
-				String errMessage = HinemosMessage.replace(e.getMessage());
-				m_log.warn("getTemplateIdList(), " + errMessage, e);
 				endpointUnit.changeEndpoint();
 			}
 		}
@@ -323,9 +323,9 @@ public class ReportingEndpointWrapper {
 				ReportingEndpoint endpoint = (ReportingEndpoint) endpointSetting.getEndpoint();
 				return endpoint.getReportOutputTypeStrList();
 			} catch (WebServiceException e) {
+				//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
+				//警告ログを出力するかは呼出元に判断をゆだねる。
 				wse = e;
-				String errMessage = HinemosMessage.replace(e.getMessage());
-				m_log.warn("getReportOutputTypeStrList(), " + errMessage, e);
 				endpointUnit.changeEndpoint();
 			}
 		}
@@ -360,6 +360,22 @@ public class ReportingEndpointWrapper {
 				wse = e;
 				String errMessage = HinemosMessage.replace(e.getMessage());
 				m_log.warn("outputTypeToString(), " + errMessage, e);
+				endpointUnit.changeEndpoint();
+			}
+		}
+		throw wse;
+	}
+	
+	public String getVersion() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+		WebServiceException wse = null;
+		for (EndpointSetting<ReportingEndpoint> endpointSetting : getReportingEndpoint(endpointUnit)) {
+			try {
+				ReportingEndpoint endpoint = (ReportingEndpoint) endpointSetting.getEndpoint();
+				return endpoint.getVersion();
+			} catch (WebServiceException e) {
+				//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
+				//警告ログを出力するかは呼出元に判断をゆだねる。
+				wse = e;
 				endpointUnit.changeEndpoint();
 			}
 		}

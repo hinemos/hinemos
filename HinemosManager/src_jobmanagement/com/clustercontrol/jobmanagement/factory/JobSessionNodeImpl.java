@@ -832,6 +832,13 @@ public class JobSessionNodeImpl {
 		JobSessionNodeEntity sessionNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
 		m_log.debug("endNodeFinish() : status=" + sessionNode.getStatus() +
 				", facilityId=" + sessionNode.getId().getFacilityId());
+
+		// 監視ジョブの場合、処理中のノード以外のノードのEclipseLinkのキャッシュを最新化する。
+		// そうしないとcheckAllNodeEndでの全ノード終了判定が正しく行えずジョブが実行中のままになる場合がある。
+		if (job.getJobType() == JobConstant.TYPE_MONITORJOB) {
+			refreshOtherSessionNodeCache(sessionNode);
+		}
+		
 		//実行状態チェック
 		if(sessionNode.getStatus() == StatusConstant.TYPE_STOP){
 			//実行状態がコマンド停止の場合
@@ -1467,5 +1474,31 @@ public class JobSessionNodeImpl {
 		//メール送信
 		SendApprovalMail sendMail = new SendApprovalMail();
 		sendMail.sendResult(jobInfo, info);
+	}
+
+	/**
+	 * 他のノードの状態をDBから取得しEclipseLinkのキャッシュを最新化します。
+	 * @param currentNode
+	 */
+	private void refreshOtherSessionNodeCache(JobSessionNodeEntity currentNode) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			JobSessionJobEntity sessionJob = currentNode.getJobSessionJobEntity();
+			for (JobSessionNodeEntity sessionNode : sessionJob.getJobSessionNodeEntities()) {
+				String sessionId = sessionNode.getId().getSessionId();
+				String jobunitId = sessionNode.getId().getJobunitId();
+				String jobId = sessionNode.getId().getJobId();
+				String facilityId = sessionNode.getId().getFacilityId();
+				if (sessionId.equals(currentNode.getId().getSessionId()) && jobunitId.equals(currentNode.getId().getJobunitId()) &&
+						jobId.equals(currentNode.getId().getJobId()) && facilityId.equals(currentNode.getId().getFacilityId())) {
+					continue;
+				}
+				m_log.debug("refreshOtherSessionNodeCache() : current facilityId=" + currentNode.getId().getFacilityId() +  
+						", target facilityId=" + sessionNode.getId().getFacilityId() + ", status before=" + sessionNode.getStatus());
+				em.refresh(sessionNode);
+				m_log.debug("refreshOtherSessionNodeCache() : current facilityId=" + currentNode.getId().getFacilityId() +  
+						", target facilityId=" + sessionNode.getId().getFacilityId() + ", status after=" + sessionNode.getStatus());
+			}
+		}
 	}
 }

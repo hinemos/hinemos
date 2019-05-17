@@ -272,7 +272,7 @@ public class CommandComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "m_retry", this.m_retry);
 		this.m_retry.setText(Messages.getString("scope.process.retry.nodes"));
 		this.m_retry.setLayoutData(
-				new RowData(350, SizeConstant.SIZE_BUTTON_HEIGHT));
+				new RowData(250, SizeConstant.SIZE_BUTTON_HEIGHT));
 		
 		// スクリプト配布
 		Composite scriptDistributionComposite = new Composite(this, SWT.NONE);
@@ -341,7 +341,7 @@ public class CommandComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "m_destroyProcess", this.m_destroyProcess);
 		this.m_destroyProcess.setText(Messages.getString("shutdown.process"));
 		this.m_destroyProcess.setLayoutData(
-				new RowData(190, SizeConstant.SIZE_BUTTON_HEIGHT));
+				new RowData(120, SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_destroyProcess.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -359,13 +359,16 @@ public class CommandComposite extends Composite {
 
 			}
 		});
+		
+		// ラジオボタン配置調整用の空Composite
+		JobDialogUtil.getComposite_Space(cmdStopGroup, 70, SizeConstant.SIZE_BUTTON_HEIGHT);
 
 		// 停止：停止コマンド（ラジオ）
 		this.m_executeStopCommand = new Button(cmdStopGroup, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "m_executeStopCommand", this.m_executeStopCommand);
 		this.m_executeStopCommand.setText(Messages.getString("stop.command"));
 		this.m_executeStopCommand.setLayoutData(
-				new RowData(120,SizeConstant.SIZE_BUTTON_HEIGHT));
+				new RowData(130,SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_executeStopCommand.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -432,7 +435,7 @@ public class CommandComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "m_specifyUser", this.m_specifyUser);
 		this.m_specifyUser.setText(Messages.getString("specified.user"));
 		this.m_specifyUser.setLayoutData(
-				new RowData(120, SizeConstant.SIZE_BUTTON_HEIGHT));
+				new RowData(130, SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_specifyUser.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {

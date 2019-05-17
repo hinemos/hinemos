@@ -8,6 +8,8 @@
 
 package com.clustercontrol.viewer;
 
+import java.util.Comparator;
+
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 
@@ -35,9 +37,17 @@ public class FacilityTreeViewerSorter extends ViewerSorter {
 	public int compare(Viewer viewer, Object e1, Object e2) {
 
 		if (e1 instanceof FacilityTreeItem && e2 instanceof FacilityTreeItem) {
+			return new FacilityTreeItemComparator().compare((FacilityTreeItem)e1, (FacilityTreeItem)e2);
+		}
+		return 0;
+	}
 
-			FacilityInfo info1 = ((FacilityTreeItem) e1).getData();
-			FacilityInfo info2 = ((FacilityTreeItem) e2).getData();
+	public static class FacilityTreeItemComparator implements Comparator<FacilityTreeItem> {
+
+		@Override
+		public int compare(FacilityTreeItem o1, FacilityTreeItem o2) {
+			FacilityInfo info1 = ((FacilityTreeItem) o1).getData();
+			FacilityInfo info2 = ((FacilityTreeItem) o2).getData();
 			int order1 =  info1.getDisplaySortOrder();
 			int order2 =  info2.getDisplaySortOrder();
 
@@ -52,6 +62,6 @@ public class FacilityTreeViewerSorter extends ViewerSorter {
 				return (order1 - order2);
 			}
 		}
-		return 0;
+		
 	}
 }

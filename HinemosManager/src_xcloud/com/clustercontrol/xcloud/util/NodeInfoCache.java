@@ -58,7 +58,7 @@ public class NodeInfoCache {
 		if (session == null) {
 			try {
 				RepositoryControllerBean repositoryControllerBean = RepositoryControllerBeanWrapper.bean();
-				return repositoryControllerBean.getNode(facilityId);
+				return repositoryControllerBean.getNodeFull(facilityId);
 			} catch (HinemosUnknown e) {
 				throw ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e);
 			}
@@ -75,7 +75,7 @@ public class NodeInfoCache {
 		try {
 			RepositoryControllerBean repositoryControllerBean = RepositoryControllerBeanWrapper.bean();
 
-			NodeInfo origin = repositoryControllerBean.getNode(facilityId);
+			NodeInfo origin = repositoryControllerBean.getNodeFull(facilityId);
 			node = new Tuple(origin.clone(), origin.clone());
 		} catch (HinemosUnknown e) {
 			throw ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e);
@@ -169,6 +169,9 @@ public class NodeInfoCache {
 				Tuple nodeInfo = session.cache.nodeInfoMap.get(entry.getKey());
 				if (nodeInfo == null)
 					continue;
+				
+				//通知用ファシリティID
+				String facilityID = nodeInfo.get(0,NodeInfo.class).getFacilityId();
 
 				ObjectMapper om = new ObjectMapper();
 				om.addMixIn(NodeDeviceInfo.class, NodeDeviceInfoMixin.class);
@@ -202,7 +205,7 @@ public class NodeInfoCache {
 										+ MessageConstant.THISTIME.getMessage() + ":" + msgInfo.getThisVal();
 							}
 							//インターナルイベントへの通知
-							String msg = CloudMessageConstant.EXECUTED_AUTO_SEARCH.getMessage() + " " + details;
+							String msg = CloudMessageConstant.EXECUTED_AUTO_SEARCH.getMessage()+" "+MessageConstant.FACILITY_ID.getMessage()+": "+facilityID + "\n" + details;
 
 							try {
 								CloudUtil.notifyInternalMessage(
@@ -212,7 +215,7 @@ public class NodeInfoCache {
 										"");
 							} catch (Exception e ) {
 								//internal event(auto detection failed)
-								String errorMsg = CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED.getMessage() + " " + details;
+								String errorMsg = CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED.getMessage()+" "+MessageConstant.FACILITY_ID.getMessage() +": "+facilityID + "\n" + details;
 								Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
 								CloudUtil.notifyInternalMessage(
 										CloudUtil.Priority.WARNING,
@@ -224,7 +227,7 @@ public class NodeInfoCache {
 					}
 				} catch (JsonProcessingException e) {
 					//internal event(auto detection failed)
-					String errorMsg = CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED.getMessage();
+					String errorMsg = CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED.getMessage()+" "+MessageConstant.FACILITY_ID.getMessage()+": "+facilityID;
 					Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
 					CloudUtil.notifyInternalMessage(
 							CloudUtil.Priority.WARNING,
@@ -233,7 +236,7 @@ public class NodeInfoCache {
 							errorMsg);
 				} catch (HinemosUnknown | InvalidSetting | InvalidRole e) {
 					//internal event(auto detection failed)
-					String errorMsg = CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED.getMessage();
+					String errorMsg = CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED.getMessage()+" "+MessageConstant.FACILITY_ID.getMessage()+": "+facilityID;
 					Logger.getLogger(this.getClass()).warn(ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e).getMessage());
 					CloudUtil.notifyInternalMessage(
 							CloudUtil.Priority.WARNING,

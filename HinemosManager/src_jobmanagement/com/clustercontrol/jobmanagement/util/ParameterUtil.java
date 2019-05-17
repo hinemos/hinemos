@@ -32,12 +32,10 @@ import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
-import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.jobmanagement.bean.JobTriggerInfo;
 import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
 import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
 import com.clustercontrol.jobmanagement.model.JobParamInfoEntity;
-import com.clustercontrol.jobmanagement.model.JobParamMstEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -71,13 +69,15 @@ public class ParameterUtil {
 	public static Map<String, String> createParamInfo(OutputBasicInfo info) {
 		// 戻り値
 		Map<String, String> params = new HashMap<String, String>();
-		// 無効なジョブ変数
+		// 無効なシステムジョブ変数
 		String[] disableStrAry = null;
 		
 		// ログ出力情報が存在しない場合、処理終了
 		if(info == null) {
 			return params;
 		}
+		
+		Locale locale = NotifyUtil.getNotifyLocale();
 		
 		// ファシリティID
 		if (!ObjectValidator.isEmptyString(info.getFacilityId()) && !disableParam(SystemParameterConstant.FACILITY_ID, disableStrAry)) {
@@ -111,13 +111,12 @@ public class ParameterUtil {
 
 		// メッセージ
 		if (!ObjectValidator.isEmptyString(info.getMessage()) && !disableParam(SystemParameterConstant.MESSAGE, disableStrAry)) {
-			Locale locale = NotifyUtil.getNotifyLocale();
 			params.put(SystemParameterConstant.MESSAGE, HinemosMessage.replace(info.getMessage(), locale));
 		}
 		
 		// オリジナルメッセージ
 		if (!ObjectValidator.isEmptyString(info.getMessageOrg()) && !disableParam(SystemParameterConstant.ORG_MESSAGE, disableStrAry)) {
-			params.put(SystemParameterConstant.ORG_MESSAGE, info.getMessageOrg());
+			params.put(SystemParameterConstant.ORG_MESSAGE, HinemosMessage.replace(info.getMessageOrg(), locale));
 		}
 
 		return params;
@@ -133,7 +132,7 @@ public class ParameterUtil {
 	public static Map<String, String> createParamInfo(JobTriggerInfo info) {
 		// 戻り値
 		Map<String, String> params = new HashMap<String, String>();
-		// 無効なジョブ変数
+		// 無効なシステムジョブ変数
 		String[] disableStrAry = null;
 
 		// ジョブ契機（ファイルチェック）情報が存在しない場合、処理終了
@@ -155,162 +154,154 @@ public class ParameterUtil {
 	}
 
 	/**
-	 * ジョブパラメータ情報からパラメータ値を取得します。
+	 * セッションIDからジョブ変数の置換文字列用Mapを取得します。
 	 *
-	 * @param paramId パラメータID
 	 * @param sessionId ジョブセッションID
-	 * @param jobSessionParams ジョブパラメータ情報
-	 * @return パラメータ値
+	 * @return 置換文字列用Map
 	 */
-	public static String getJobSessionParamValue(String paramId, String sessionId, Map<String, String> jobSessionParams) 
-			throws JobInfoNotFound {
-
-		m_log.debug("getJobSessionParamValue() start paramId=" + paramId + ",sessionId=" + sessionId);
-		String ret = null;
-
-		m_log.debug("getting parameters of job session... (session_id = " + sessionId + ")" );
+	public static Map<String, String> getJobSessionParamsMap(String sessionId) throws JobInfoNotFound {
+		Map<String, String> jobSessionParams = new HashMap<String, String>();
+		
+		Collection<JobParamInfoEntity> collection = null;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			if (jobSessionParams == null) {
-				jobSessionParams = new HashMap<String, String>();
-				
-				Collection<JobParamInfoEntity> collection 
-					= em.createNamedQuery("JobParamInfoEntity.findBySessionId", JobParamInfoEntity.class)
-						.setParameter("sessionId", sessionId)
-						.getResultList();
-				if (collection == null) {
-					JobInfoNotFound je = new JobInfoNotFound("JobParamInfoEntity.findBySessionId"
-							+ ", sessionId = " + sessionId);
-					m_log.info("getJobSessionParamValue() : " + je.getClass().getSimpleName() + ", " + je.getMessage());
-					throw je;
-				}
-				if(collection.size() > 0){
-					Iterator<JobParamInfoEntity> itr = collection.iterator();
-					while(itr.hasNext()){
-						JobParamInfoEntity param = itr.next();
-						jobSessionParams.put(param.getId().getParamId(), param.getValue());
-					}
-				}
+			collection = em.createNamedQuery("JobParamInfoEntity.findBySessionId", JobParamInfoEntity.class)
+					.setParameter("sessionId", sessionId)
+					.getResultList();
+			if (collection == null) {
+				JobInfoNotFound je = new JobInfoNotFound("JobParamInfoEntity.findBySessionId"
+						+ ", sessionId = " + sessionId);
+				m_log.info("getJobSessionParamValue() : " + je.getClass().getSimpleName() + ", " + je.getMessage());
+				throw je;
 			}
-
-			// 変換する。
-			if (jobSessionParams.containsKey(paramId)) { 
-				ret = jobSessionParams.get(paramId) == null ? "" : jobSessionParams.get(paramId) ;
-			}
-	
-			m_log.debug("getJobSessionParamValue() end paramId=" + paramId + ",sessionId=" + sessionId + ",value=" + ret);
-			return ret;
 		}
+		
+		if (collection.size() > 0){
+			Iterator<JobParamInfoEntity> itr = collection.iterator();
+			while(itr.hasNext()){
+				JobParamInfoEntity param = itr.next();
+				jobSessionParams.put(param.getId().getParamId(), param.getValue());
+			}
+		}
+	
+		m_log.debug("getJobSessionParamValue() end sessionId=" + sessionId);
+		return jobSessionParams;
 	}
 
 	/**
 	 *
-	 * ジョブセッション情報からパラメータ値を取得します。
+	 * セッションIDからジョブセッションの置換文字列用Mapを取得します。
 	 *
-	 * @param paramId パラメータID
-	 * @param sessionId ジョブセッションID
-	 * @param jobSessionEntity ジョブセッション情報
-	 * @return パラメータ値
+	 * @param paramIdList 置換対象パラメータ
+	 * @param sessionId セッションID
+	 * @return
 	 * @throws JobInfoNotFound
 	 */
-	private static String getJobSessionValue(String paramId, String sessionId, JobSessionEntity jobSessionEntity) 
-			throws JobInfoNotFound{
-
-		m_log.debug("getJobSessionValue() start paramId=" + paramId + ",sessionId=" + sessionId);
-		String ret = null;
-
-		if (paramId.equals(SystemParameterConstant.SESSION_ID)){
-			// セッションID
-			ret = sessionId;
-		} else {
-			if (jobSessionEntity == null) {
-				try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-					HinemosEntityManager em = jtm.getEntityManager();
-
-					// ジョブセッションより値を取得する
-					jobSessionEntity = em.find(JobSessionEntity.class, sessionId, ObjectPrivilegeMode.READ);
-					if (jobSessionEntity == null) {
-						JobInfoNotFound je = new JobInfoNotFound("JobSessionEntity.findByPrimaryKey"
-								+ ", sessionId = " + sessionId);
-						m_log.info("getJobParameterValue() : "
-								+ je.getClass().getSimpleName() + ", " + je.getMessage());
-						je.setSessionId(sessionId);
-						throw je;
-					}
+	private static Map<String, String> getJobSessionMap(List<String> paramIdList, String sessionId) throws JobInfoNotFound {
+		JobSessionEntity jobSessionEntity = null;
+		Map<String, String> params = new HashMap<String, String>();
+		Locale locale = NotifyUtil.getNotifyLocale();
+		
+		DateFormat df = DateFormat.getDateTimeInstance();
+		df.setTimeZone(HinemosTime.getTimeZone());
+		
+		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.SESSION_ID)) {
+			params.put(SystemParameterConstant.SESSION_ID, sessionId);
+		}
+		
+		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.START_DATE) ||
+				isContainParamOrParamOrg(paramIdList, SystemParameterConstant.TRIGGER_TYPE) ||
+				isContainParamOrParamOrg(paramIdList, SystemParameterConstant.TRIGGER_INFO)) {
+			//DBへのアクセス回数を極力少なくするため、パラメータがある場合のみ、ジョブセッションを取得する
+			try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+				HinemosEntityManager em = jtm.getEntityManager();
+				jobSessionEntity = em.find(JobSessionEntity.class, sessionId, ObjectPrivilegeMode.READ);
+				if (jobSessionEntity == null) {
+					JobInfoNotFound je = new JobInfoNotFound("JobSessionEntity.findByPrimaryKey"
+							+ ", sessionId = " + sessionId);
+					m_log.info("getJobParameterValue() : "
+							+ je.getClass().getSimpleName() + ", " + je.getMessage());
+					je.setSessionId(sessionId);
+					throw je;
 				}
 			}
-
-			if(paramId.equals(SystemParameterConstant.START_DATE)){
-				// セッション開始日時
-				DateFormat df = DateFormat.getDateTimeInstance();
-				df.setTimeZone(HinemosTime.getTimeZone());
-				ret = df.format(jobSessionEntity.getScheduleDate());
-
-			} else if (paramId.equals(SystemParameterConstant.TRIGGER_TYPE)){
-				// ジョブの実行契機種別
-				Locale locale = NotifyUtil.getNotifyLocale();
-				ret = Messages.getString(JobTriggerTypeConstant.typeToMessageCode(jobSessionEntity.getTriggerType()), locale);
-
-			} else if (paramId.equals(SystemParameterConstant.TRIGGER_INFO)){
-				// ジョブの実行契機情報
-				ret = jobSessionEntity.getTriggerInfo();
-
-			}
 		}
-		m_log.debug("getJobSessionValue() end paramId=" + paramId + ",sessionId=" + sessionId + ",value=" + ret);
-		return ret;
+		
+		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.START_DATE)) {
+			params.put(SystemParameterConstant.START_DATE, df.format(jobSessionEntity.getScheduleDate()));
+		}
+		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.TRIGGER_TYPE)) {
+			params.put(SystemParameterConstant.TRIGGER_TYPE, Messages.getString(JobTriggerTypeConstant.typeToMessageCode(jobSessionEntity.getTriggerType()), locale));
+		}
+		
+		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.TRIGGER_INFO)) {
+			params.put(SystemParameterConstant.TRIGGER_INFO, jobSessionEntity.getTriggerInfo());
+		}
+		return params;
+	}
+
+	private static boolean isContainParamOrParamOrg(List<String> paramIdList, String paramName) {
+		if (paramIdList.contains(paramName)) {
+			return true;
+		}
+		if (paramIdList.contains(paramName + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE) ) {
+			return true;
+		}
+		
+		return false;
 	}
 
 	/**
-	 * ジョブパラメータ情報からパラメータ値を取得します。
-	 *
-	 * @param paramId パラメータID
-	 * @param jobunitId ジョブユニットID
-	 * @param jobSessionParams ジョブパラメータ情報
-	 * @return パラメータ値
-	 * @throws JobMasterNotFound 
+	 * ジョブ変数を置換する
+	 * 
+	 * @param paramId ジョブ変数
+	 * @param paramMap ジョブ変数の編集元Map
+	 * @param isEscape エスケープするか
+	 * @return
 	 */
-	public static String getJobunitParamValue(String paramId, String jobunitId, Map<String, String> jobJobunitParams) throws JobMasterNotFound {
-
-		m_log.debug("getJobJobunitParamValue() start paramId=" + paramId + ",jobunitId=" + jobunitId);
+	public static String getReplacedValue(String paramId, Map<String, String> paramMap, boolean isEscape) {
 		String ret = null;
-
-		m_log.debug("getting parameters of job session... (session_id = " + jobunitId + ")" );
-		if (jobJobunitParams == null) {
-			jobJobunitParams = new HashMap<String, String>();
-
-			try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-				HinemosEntityManager em = jtm.getEntityManager();
-
-				Collection<JobParamMstEntity> collection 
-					= em.createNamedQuery("JobParamMstEntity.findByJobunitId", JobParamMstEntity.class)
-						.setParameter("jobunitId", jobunitId)
-						.getResultList();
-				if (collection == null) {
-					JobMasterNotFound je = new JobMasterNotFound("JobParamMstEntity.findByJobunitId"
-							+ ", jobunitId = " + jobunitId);
-					m_log.info("getJobunitParamValue() : " + je.getClass().getSimpleName() + ", " + je.getMessage());
-					throw je;
-				}
-				if(collection.size() > 0){
-					Iterator<JobParamMstEntity> itr = collection.iterator();
-					while(itr.hasNext()){
-						JobParamMstEntity param = itr.next();
-						jobJobunitParams.put(param.getId().getParamId(), param.getValue());
-					}
-				}
+		
+		if (paramId == null || paramMap == null) {
+			return ret;
+		}
+		
+		if (isEscape) {
+			ret = paramMap.get(paramId);
+			
+			if (ret != null) {
+				return StringBinder.escapeStr(ret);
+			}
+			
+			String notOrignalParamId = SystemParameterConstant.getNotOriginalParam(paramId);
+			
+			if (notOrignalParamId != null) {
+				ret = paramMap.get(notOrignalParamId);
+			}
+		} else {
+			ret = paramMap.get(paramId);
+			
+			if (ret != null) {
+				return ret;
 			}
 		}
-
-		// 変換する。
-		if (jobJobunitParams.containsKey(paramId)) { 
-			ret = jobJobunitParams.get(paramId) == null ? "" : jobJobunitParams.get(paramId) ;
-		}
-
-		m_log.debug("getJobJobunitParamValue() end paramId=" + paramId + ",jobunitId=" + jobunitId + ",value=" + ret);
+		
 		return ret;
 	}
-
+	
+	private static String getFacilityIdParam(String paramId, String nodeFacilityId, boolean isEscape) {
+		if (isEscape) {
+			String notOrignalParamId = SystemParameterConstant.getNotOriginalParam(paramId);
+			
+			if (notOrignalParamId != null) {
+				//末尾が:orignalのparamIdはorignalの前にfalicrtyIdを結合
+				return notOrignalParamId + ":" + nodeFacilityId + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE;
+			} 
+		}
+		
+		return paramId + ":" + nodeFacilityId;
+	}
+	
 	/**
 	 *
 	 * ノード情報からパラメータIDに対応する値を取得します。
@@ -322,17 +313,16 @@ public class ParameterUtil {
 	 * @throws HinemosUnknown
 	 * @throws FacilityNotFound
 	 */
-	private static String getNodeValue(String paramId, String facilityId, Map<String, String> nodeParams, ArrayList<String> keyList)
+	private static String getNodeValue(String paramId, String facilityId, ArrayList<String> keyList)
 			throws HinemosUnknown, FacilityNotFound, InvalidRole {
 
 		if (paramId == null) {
-			m_log.error("getNodeValue() : paramId is null. facilityId=" + facilityId);
+			m_log.info("getNodeValue() : paramId is null. facilityId=" + facilityId);
 			return null;
 		}
 		
 		m_log.debug("getNodeValue() start paramId=" + paramId + ",facilityId=" + facilityId);
 		String ret = null;
-
 
 		if (facilityId != null && !facilityId.isEmpty()) {
 			if (paramId.equals(SystemParameterConstant.FACILITY_ID)){
@@ -340,15 +330,13 @@ public class ParameterUtil {
 				ret = facilityId;
 			} else {
 				if (new RepositoryControllerBean().isNode(facilityId)) {
-					if (nodeParams == null) {
-						// ノードプロパティを取得
-						NodeInfo nodeInfo = new RepositoryControllerBean().getNode(facilityId);
-						nodeParams = RepositoryUtil.createNodeParameter(nodeInfo, keyList);
-					}
 					
-					// 置換後の値にシングルクォート等が含まれている場合にエスケープ必要なので共通部品で変換.
-						StringBinder strbinder = new StringBinder(nodeParams);
-						ret = strbinder.bindParam(SystemParameterConstant.PREFIX + paramId + SystemParameterConstant.SUFFIX);
+					// ノードプロパティを取得
+					NodeInfo nodeInfo = new RepositoryControllerBean().getNode(facilityId);
+					Map<String, String> nodeParams = RepositoryUtil.createNodeParameter(nodeInfo, keyList);
+					
+					ret = getReplacedValue(paramId, nodeParams, HinemosPropertyCommon.job_param_node_escape.getBooleanValue());
+					
 				}
 			}
 		}
@@ -390,6 +378,7 @@ public class ParameterUtil {
 	 * 引数で指定された文字列のパラメータIDを値で置き換えます。
 	 *
 	 * @param sessionId セッションID
+	 * @param facilityId ファシリティID
 	 * @param source 置き換え対象文字列
 	 * @return 置き換え後の文字列
 	 * @throws JobInfoNotFound
@@ -428,54 +417,124 @@ public class ParameterUtil {
 		
 		// 無効なジョブ変数
 		String[] disableStrAry = null;
+		// ジョブセッション変数情報用変数
+		Map<String, String> jobSessionParamsMap = getJobSessionParamsMap(sessionId);
 		// ジョブセッション情報用変数
-		JobSessionEntity jobSessionEntity = null;
-		// ノードセッション情報用変数
-		Map<String, String> nodeParams = null;
-		// ジョブパラメータ情報用変数
-		Map<String, String> jobSessionParams = null;
+		Map<String, String> jobSessionMap = getJobSessionMap(inKeyList, sessionId);
 		
 		// 存在するパラメータ分処理を行う。
 		for (String paramId : list) {
 			String paramValue = null;
 			// ジョブパラメータ情報、ユーザ情報
-			paramValue = getJobSessionParamValue(paramId, sessionId, jobSessionParams);
-			// 存在しない場合はパラメタIDにファシリティIDを結合して再度検索を行う。
-			if (paramValue == null) {
-				paramValue = getJobSessionParamValue(paramId + ":" + facilityId, sessionId, jobSessionParams);
-				if (paramValue == null) {
-					ArrayList<String> facilityIdList = FacilitySelector.getNodeFacilityIdList(true);
-					for (String str : facilityIdList) {
-						// ジョブ実行するノードは実施済みのため除外
-						if (str.equals(facilityId)) continue;
-						paramValue = getJobSessionParamValue(paramId + ":" + str, sessionId, jobSessionParams);
-						if (paramValue != null) break;
-					}
-				}
-			}
-			// ジョブ変数（システム）
-			if (paramValue == null) {
-				if (!disableParam(paramId, disableStrAry)) {
-					if (Arrays.asList(SystemParameterConstant.SYSTEM_ID_LIST_JOB_SESSION).contains(paramId)) {
-						// ジョブセッション情報
-						paramValue = getJobSessionValue(paramId, sessionId, jobSessionEntity);
-					} else {
-						// ノード情報
-						paramValue = getNodeValue(paramId, facilityId, nodeParams, inKeyList);
-					}
-				}
-			}
+			paramValue = getJobSessionParamValue(paramId, jobSessionParamsMap, facilityId);
+			
 			if (paramValue != null) {
 				// パラメータ値がnull以外の場合に置換処理を行う。
 				commandConv = commandConv.replace(SystemParameterConstant.getParamText(paramId), paramValue);
+				continue;
+			}
+			
+			// ジョブ変数（システム）
+			if (disableParam(paramId, disableStrAry)) {
+				//システムジョブ変数として無効なパラメータに指定があった場合、変換しない
+				continue;
+			}
+
+			// ジョブセッション情報
+			paramValue = getReplacedValue(paramId, jobSessionMap, HinemosPropertyCommon.job_param_runjob_escape.getBooleanValue());
+			
+			if (paramValue != null) {
+				// パラメータ値がnull以外の場合に置換処理を行う。
+				commandConv = commandConv.replace(SystemParameterConstant.getParamText(paramId), paramValue);
+				continue;
+			}
+			
+			//ノード情報
+			paramValue = getNodeValue(paramId, facilityId, inKeyList);
+			
+			if (paramValue != null) {
+				// パラメータ値がnull以外の場合に置換処理を行う。
+				commandConv = commandConv.replace(SystemParameterConstant.getParamText(paramId), paramValue);
+				continue;
 			}
 		}
 
 		m_log.debug("successful in generating command string... (session_id = " + sessionId + ", facility_id = " + facilityId + ", command_orig = " + commandOrig + ", command_conv = " + commandConv + ")");
 		return commandConv;
 	}
-
-
+	
+	/**
+	 * ユーザジョブ変数のパラメータを置換する
+	 * 以下の優先度で置換
+	 * 1:指定されたパラメータをそのまま置換
+	 * 2:指定されたパラメータ:指定されたファシリティIDで置換
+	 * 3：指定されたパラメータ:ノード登録されているいずれかのファシリティIDで置換（Order by 未指定のため、マッチ順は保証していない）
+	 * 
+	 * @param paramId 置換対象のパラメータ 
+	 * @param jobSessionParamsMap 置換用のジョブセッション情報
+	 * @param nodeFacilityId ファシリティID
+	 * @return 置換後のパラメータ（置換できなかった場合はnull）
+	 */
+	public static String getJobSessionParamValue(String paramId, Map<String, String> jobSessionParamsMap, String nodeFacilityId) {
+		boolean isEscapeNotify = HinemosPropertyCommon.job_param_notify_escape.getBooleanValue();
+		boolean isEscapeRunjob = HinemosPropertyCommon.job_param_runjob_escape.getBooleanValue();
+		boolean isEscape = false;
+		String paramValue = null;
+		
+		if (SystemParameterConstant.isNofityParam(paramId)) {
+			//通知のパラメータの場合
+			isEscape = isEscapeNotify;
+		} else if (SystemParameterConstant.isNofityOrgParam(paramId)) {
+			if (!isEscapeNotify) {
+				//通知のパラメータで:original形式 かつエスケープなしの場合は置換しない
+				return SystemParameterConstant.getParamText(paramId); 
+			}
+			isEscape = isEscapeNotify;
+		} else if (SystemParameterConstant.isRunJobParam(paramId)) {
+			//ジョブ実行のパラメータの場合
+			isEscape = isEscapeRunjob;
+		} else if (SystemParameterConstant.isRunJobOrgParam(paramId)) {
+				if (!isEscapeRunjob) {
+					//ジョブ実行のパラメータで:original形式 かつエスケープなしの場合は置換しない
+					return SystemParameterConstant.getParamText(paramId); 
+				}
+				isEscape = isEscapeRunjob;
+		} else {
+			isEscape = HinemosPropertyCommon.job_param_user_escape.getBooleanValue();
+		}
+		
+		paramValue = getReplacedValue(paramId, jobSessionParamsMap, isEscape);
+		
+		if (paramValue != null) {
+			return paramValue;
+		}
+		// 存在しない場合はパラメタIDにファシリティIDを結合して再度検索を行う。
+		
+		if (nodeFacilityId != null && !"".equals(nodeFacilityId)) {
+			String facilityParamId = getFacilityIdParam(paramId, nodeFacilityId, isEscape);
+			paramValue = getReplacedValue(facilityParamId, jobSessionParamsMap, isEscape);
+		}
+		
+		if (paramValue != null) {
+			return paramValue;
+		}
+		
+		ArrayList<String> facilityIdList = FacilitySelector.getNodeFacilityIdList(true);
+		for (String facilityId : facilityIdList) {
+			// ジョブ実行するノードは実施済みのため除外
+			if (facilityId.equals(nodeFacilityId)) {
+				continue;
+			}
+			String facilityParamId = getFacilityIdParam(paramId, facilityId, isEscape);
+			paramValue = getReplacedValue(facilityParamId, jobSessionParamsMap, isEscape);
+			if (paramValue != null) {
+				return paramValue;
+			}
+		}
+		
+		return paramValue;
+	}
+	
 	/**
 	 * 変数#[RETURN:jobId:facilityId]を置換する。
 	 * @param sessionId
@@ -528,13 +587,9 @@ public class ParameterUtil {
 	 * @return
 	 */
 	public static boolean isParamFormat(String str) {
-		if (str == null) {
-			return false;
-		}
-		return str.startsWith(SystemParameterConstant.PREFIX)
-				&& str.endsWith(SystemParameterConstant.SUFFIX);
+		return SystemParameterConstant.isParamFormat(str);
 	}
-
+	
 	/**
 	 * ジョブ変数（パラメータ形式）からパラメータIDを返却する
 	 *
@@ -542,7 +597,7 @@ public class ParameterUtil {
 	 * @return
 	 */
 	public static String getParamId(String paramText){
-		return paramText.substring(SystemParameterConstant.PREFIX.length(), paramText.length()-SystemParameterConstant.SUFFIX.length());
+		return SystemParameterConstant.getParamId(paramText);
 	}
 
 	public static void main(String args[]) {

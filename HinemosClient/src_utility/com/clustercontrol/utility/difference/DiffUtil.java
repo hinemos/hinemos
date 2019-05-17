@@ -270,4 +270,130 @@ public class DiffUtil {
 			return false;
 		}
 	}
+
+	/**
+	 * xmlタグ上に該当の要素があったか検証する
+	 * @param obj
+	 * @param method
+	 * @param targetClass
+	 * @return
+	 */
+	public static boolean getHasProp(Object obj, Method method) {
+		try {
+			String testhas = method.getName().replaceFirst("get", "has");
+			boolean result = true;
+			StringBuilder typeName = new StringBuilder();
+			typeName.append(obj.getClass().toString(), 6, obj.getClass().toString().length());
+			typeName.append("Type");
+			Class<?> targetClass = Class.forName(typeName.toString());
+			Object flg = getHasProperty(obj, testhas, targetClass);
+			if (flg != null) {
+				result = ((Boolean) flg).booleanValue();
+			}
+			return result;
+		} catch (ClassNotFoundException e) {
+			// 対象のhasメソッドが見つからない場合は元々定義されていないので、trueを返却する。
+			// 返却先で要素の比較を行わせるため。
+			return true;
+		}
+	}
+
+	/**
+	 * hasプロパティを実際に取得するメソッド
+	 * @param obj
+	 * @param propGet
+	 * @return
+	 */
+	public static Object getHasProperty(Object obj, Method propGet) {
+		Object prop = null;
+		try {
+			prop = propGet.invoke(obj);
+		} catch (Exception e) {
+			throw new IllegalStateException("unexpected", e);
+		}
+		
+		if (prop == null) {
+			return null;
+		}
+
+		return prop;
+	}
+
+	/**
+	 * hasメソッドを取得するクラスとメソッド名
+	 * @param obj
+	 * @param propName
+	 * @param targetClass
+	 * @return
+	 */
+	public static Object getHasProperty(Object obj, String propName, Class<?> targetClass) {
+		Object prop = null;
+		Method method = getHasPropGetMethod(propName, targetClass);
+		if (method != null) {
+			prop = getHasProperty(obj, method);
+		}
+
+		return prop;
+	}
+
+	/**
+	 * クラスより、hasメソッドを抽出する
+	 * @param propName
+	 * @param targetClass
+	 * @return
+	 */
+	public static Method getHasPropGetMethod(String propName, Class<?> targetClass) {
+		if (targetClass.isPrimitive()) {
+			return null;
+		}
+		for (Class<?> clazz = targetClass; clazz != Object.class; clazz = clazz.getSuperclass()) {
+			for (Method method : clazz.getMethods()) {
+				if (isPropHas(method) && method.getName().compareToIgnoreCase(propName) == 0) {
+					return method;
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * メソッドがhasが先頭につき、.*type.javaで定義されているものかを検証する
+	 * @param method
+	 * @return
+	 */
+	public static boolean isPropHas(Method method) {
+		// パブリックでないプロパティは、対象外。
+		if (!Modifier.isPublic(method.getModifiers())) {
+			return false;
+		}
+		
+		// static 定義されているのは、対象外。
+		if (Modifier.isStatic(method.getModifiers())) {
+			return false;
+		}
+		
+		// 共変は、対象外。
+		if (method.isSynthetic()) {
+			return false;
+		}
+		
+		// 引数が 0 個。
+		if (method.getParameterTypes().length != 0) {
+			return false;
+		}
+		
+		// 関数名の先頭は、has がつく。
+		if (!method.getName().startsWith("has")) {
+			return false;
+		}
+		
+		// 戻り値は、void でない。
+		if (Void.class.isAssignableFrom(method.getReturnType())
+				|| void.class.isAssignableFrom(method.getReturnType())) {
+			return false;
+		}
+		
+		return true;
+	}
 }

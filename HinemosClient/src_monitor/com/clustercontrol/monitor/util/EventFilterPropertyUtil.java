@@ -11,7 +11,10 @@ package com.clustercontrol.monitor.util;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.PriorityConstant;
@@ -531,6 +534,16 @@ public class EventFilterPropertyUtil {
 		m_confirmed.addChildren(m_confirmedConfirming);
 		m_confirmed.addChildren(m_confirmedConfirmed);
 		
+		setCustomizeProperty(property, locale, eventDspSetting, managerName, null);
+		
+		return property;
+	}
+	
+	/**
+	 * カスタマイズ可能な項目をプロパティに追加する。
+	 * 
+	 */
+	private static void setCustomizeProperty(Property parent, Locale locale, MultiManagerEventDisplaySettingInfo eventDspSetting, String managerName, Map<String, Property> cacheMap) {
 		//ユーザ項目の設定
 		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 			UserItemDisplayInfo userItemInfo = eventDspSetting.getUserItemDisplayInfo(managerName, i);
@@ -538,16 +551,25 @@ public class EventFilterPropertyUtil {
 				continue;
 			}
 			
+			String id = EventInfoConstant.getUserItemConst(i);
+			
 			Property userItemProperty =  new Property (
-					EventInfoConstant.getUserItemConst(i), 
+					id, 
 					EventHinemosPropertyUtil.getDisplayName(userItemInfo.getDisplayName(), i),
 					PropertyDefineConstant.EDITOR_TEXT,
 					DataRangeConstant.VARCHAR_128);
 			
 			userItemProperty.setModify(PropertyDefineConstant.MODIFY_OK);
-			userItemProperty.setValue("");
 			
-			property.addChildren(userItemProperty);
+			Object value = "";
+			
+			if (cacheMap != null && cacheMap.containsKey(id)) {
+				value = cacheMap.get(id).getValue();
+			}
+			
+			userItemProperty.setValue(value);
+			
+			parent.addChildren(userItemProperty);
 			
 		}
 		
@@ -567,15 +589,62 @@ public class EventFilterPropertyUtil {
 			eventNoTo.setModify(PropertyDefineConstant.MODIFY_OK);
 			
 			eventNo.setValue("");
-			eventNoFrom.setValue("");
-			eventNoTo.setValue("");
 			
-			property.addChildren(eventNo);
+			Object value = "";
+			if (cacheMap != null && cacheMap.containsKey(EventInfoConstant.EVENT_NO_FROM)) {
+				value = cacheMap.get(EventInfoConstant.EVENT_NO_FROM).getValue();
+			}
+			eventNoFrom.setValue(value);
+			
+			value = "";
+			if (cacheMap != null && cacheMap.containsKey(EventInfoConstant.EVENT_NO_TO)) {
+				value = cacheMap.get(EventInfoConstant.EVENT_NO_TO).getValue();
+			}
+			eventNoTo.setValue(value);
+			
+			parent.addChildren(eventNo);
 			eventNo.removeChildren();
 			eventNo.addChildren(eventNoFrom);
 			eventNo.addChildren(eventNoTo);
 		}
+	}
+	
+	/**
+	 * キャッシュされているプロパティを最新の設定内容で更新する
+	 * 
+	 */
+	public static void updatePropertyDisp(Property property, Locale locale, MultiManagerEventDisplaySettingInfo eventDspSetting, String managerName) {
 		
-		return property;
+		//変更可能な項目をマップに退避し、対象のプロパティから削除する
+		Map<String, Property> cacheMap = new HashMap<String, Property>();
+		
+		List<String> targetIdList = new ArrayList<String>();
+		
+		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+			targetIdList.add(EventInfoConstant.getUserItemConst(i));
+		}
+		
+		targetIdList.add(EventInfoConstant.EVENT_NO_FROM);
+		targetIdList.add(EventInfoConstant.EVENT_NO_TO);
+		targetIdList.add(EventInfoConstant.EVENT_NO);
+		
+		for (String targetId : targetIdList) {
+			setAndRemoveProperty(cacheMap, property, targetId);
+		}
+		
+		setCustomizeProperty(property, locale, eventDspSetting, managerName, cacheMap);
+	}
+	
+	private static void setAndRemoveProperty(Map<String, Property> cacheMap, Property parent, String targetId) {
+		for (Object child : parent.getChildren()) {
+			Property prop = (Property) child;
+			if (targetId.equals(prop.getID())) {
+				parent.removeChildren(prop);
+				cacheMap.put(targetId, prop);
+				break;
+			}
+			setAndRemoveProperty(cacheMap, prop, targetId);
+		}
+
 	}
 }

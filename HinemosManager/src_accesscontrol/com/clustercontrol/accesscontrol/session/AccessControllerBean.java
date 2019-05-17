@@ -411,7 +411,7 @@ public class AccessControllerBean {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			LoginUserModifier.modifyUserPassword(loginUser, password);
+			LoginUserModifier.modifyUserPassword(loginUser, password, loginUser);
 
 			jtm.commit();
 		} catch (UserNotFound | HinemosUnknown e) {
@@ -450,7 +450,7 @@ public class AccessControllerBean {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			LoginUserModifier.modifyUserPassword(userId, password);
+			LoginUserModifier.modifyUserPassword(userId, password, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.commit();
 		} catch (UserNotFound | HinemosUnknown e){

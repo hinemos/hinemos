@@ -192,13 +192,15 @@ public class LoginUserModifier {
 	 * 
 	 * @param userId ユーザID
 	 * @param password 新しいパスワード文字列
+	 * @param modifyUserId 作業ユーザID
 	 * @throws UserNotFound
 	 * @throws HinemosUnknown
 	 */
-	public static void modifyUserPassword(String userId, String password) throws UserNotFound, HinemosUnknown {
+	public static void modifyUserPassword(String userId, String password, String modifyUserId) throws UserNotFound, HinemosUnknown {
 
 		if(userId == null || userId.compareTo("") == 0 
-				|| password == null || password.compareTo("") == 0){
+				|| password == null || password.compareTo("") == 0
+				|| modifyUserId == null || modifyUserId.compareTo("") == 0){
 			return;
 		}
 		// 該当するユーザを検索して取得
@@ -207,6 +209,8 @@ public class LoginUserModifier {
 			user = QueryUtil.getUserPK(userId);
 			// パスワードを反映する
 			user.setPassword(password);
+			user.setModifyUserId(modifyUserId);
+			user.setModifyDate(HinemosTime.currentTimeMillis());
 
 		} catch (UserNotFound e) {
 			throw e;

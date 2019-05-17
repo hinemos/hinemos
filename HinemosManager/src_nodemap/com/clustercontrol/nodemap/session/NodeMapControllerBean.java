@@ -330,6 +330,7 @@ public class NodeMapControllerBean {
 			}
 
 			// アイコンを更新
+			RepositoryControllerBean rcb=new RepositoryControllerBean();
 			for (FacilityElement element : map.getContentArray()) {
 				String facilityId = element.getFacilityId();
 				String iconImage = element.getIconImage();
@@ -338,7 +339,7 @@ public class NodeMapControllerBean {
 				}
 				FacilityInfo bean = null;
 				try {
-					bean = new RepositoryControllerBean().getFacilityEntityByPK(facilityId);
+					bean = rcb.getFacilityEntityByPK(facilityId);
 				} catch (FacilityNotFound e) {
 					// スコープの場合はこのルートを通る。
 					continue;
@@ -360,7 +361,16 @@ public class NodeMapControllerBean {
 					throw new HinemosUnknown(e.getMessage(), e);
 				}
 				if (!iconImage.equals(bean.getIconImage())) {
-					bean.setIconImage(iconImage);
+					if(bean.getFacilityType()==FacilityConstant.TYPE_SCOPE){
+						//スコープの場合
+						bean.setIconImage(iconImage);
+					}else{
+						//アイコンに変更がある場合、
+						//ノードの変更になるため、modifyNodeを使用する
+						NodeInfo withChange = rcb.getNodeFull(facilityId);
+						withChange.setIconImage(iconImage);
+						rcb.modifyNode(withChange);
+					}
 				}
 			}
 			jtm.commit();
