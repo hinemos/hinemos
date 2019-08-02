@@ -191,7 +191,7 @@ public class ModifySchedule {
 						|| entity.getPredictionFlg()
 						|| entity.getChangeFlg()) {
 					SchedulerPlugin.scheduleSimpleJob(
-							SchedulerType.RAM,
+							SchedulerType.RAM_MONITOR,
 							monitorId,
 							monitorTypeId,
 							calcSimpleTriggerStartTime(interval, entity.getDelayTime(), isInitManager),
@@ -233,7 +233,7 @@ public class ModifySchedule {
 				@Override
 				public void postCommit() {
 					try {
-						SchedulerPlugin.deleteJob(SchedulerType.RAM, monitorId, monitorTypeId);
+						SchedulerPlugin.deleteJob(SchedulerType.RAM_MONITOR, monitorId, monitorTypeId);
 					} catch (HinemosUnknown e) {
 						m_log.error(e);
 					}

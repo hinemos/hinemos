@@ -260,7 +260,7 @@ public class EventCustomCommandBean {
 		if (!threadPoolManagerMap.containsKey(commandNo)) {
 			//ThreadPoolが作成されていないとき
 			//（Hinemos Manager起動時に対象のコマンドがenable = trueでないとき）
-			m_log.info("command "+ commandNo +" not enable." );
+			m_log.info("command " + commandNo + " not enable." );
 			throw new HinemosUnknown(
 					MessageConstant.MESSAGE_EVENT_CUSTOM_COMMAND_EVENT_NOT_ENABLE.getMessage(String.valueOf(commandNo))
 					);

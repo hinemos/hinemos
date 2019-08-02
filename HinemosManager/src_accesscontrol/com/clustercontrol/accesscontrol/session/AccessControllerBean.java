@@ -17,6 +17,8 @@ import javax.persistence.EntityExistsException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.auth.Authentication;
+import com.clustercontrol.accesscontrol.auth.AuthenticationParams;
 import com.clustercontrol.accesscontrol.bean.ManagerInfo;
 import com.clustercontrol.accesscontrol.bean.ObjectPrivilegeFilterInfo;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
@@ -75,6 +77,7 @@ import com.clustercontrol.repository.util.FacilityTreeCacheRefreshCallback;
 import com.clustercontrol.repository.util.RepositoryChangedNotificationCallback;
 import com.clustercontrol.repository.util.RepositoryValidator;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.Singletons;
 
 /**
  * アカウント機能を実現するSession Bean<BR>
@@ -202,24 +205,19 @@ public class AccessControllerBean {
 	}
 
 	/**
-	 * ユーザ認証する<BR>
+	 * ユーザ認証を行います。
 	 *
-	 *
-	 * @param username ユーザ名
-	 * @param password パスワード
-	 * @param systemPrivilegeList システム権限情報
-	 * @return ユーザ情報
+	 * @param params
 	 * @throws InvalidUserPass
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public void getUserInfoByPassword(String username, String password, ArrayList<SystemPrivilegeInfo> systemPrivilegeList)
-			throws InvalidUserPass, InvalidRole, HinemosUnknown {
+	public void authenticate(AuthenticationParams params) throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-			LoginUserSelector.getUserInfoByPassword(username, password, systemPrivilegeList);
+			Singletons.get(Authentication.class).execute(params);
 			jtm.commit();
 		} catch (InvalidUserPass | InvalidRole | HinemosUnknown e) {
 			if (jtm != null) {
@@ -229,15 +227,14 @@ public class AccessControllerBean {
 		} catch (Exception e) {
 			if (jtm != null)
 				jtm.rollback();
-			m_log.warn("getUserInfoByPassword() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			m_log.warn("authenticate() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
 			if (jtm != null)
 				jtm.close();
 		}
 	}
-
+	
 	/**
 	 * ユーザを追加する。<BR>
 	 *

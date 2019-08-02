@@ -9,6 +9,8 @@
 package com.clustercontrol.jmx.factory;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.SocketTimeoutException;
 import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -16,6 +18,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
@@ -55,6 +63,8 @@ public class RunMonitorJmx extends RunMonitorNumericValueType {
 	private static Log m_log = LogFactory.getLog( RunMonitorJmx.class );
 
 	private static final String NaN = "NaN";
+
+	private static final ThreadFactory daemonThreadFactory = new DaemonThreadFactory();
 
 	/** メッセージ */
 	private String m_message = "";
@@ -139,7 +149,15 @@ public class RunMonitorJmx extends RunMonitorNumericValueType {
 
 			System.setProperty("sun.rmi.transport.tcp.responseTimeout",
 					Integer.toString(HinemosPropertyCommon.system_sun_rmi_transport_tcp_responseTimeout.getIntegerValue()));
-			jmxc = JMXConnectorFactory.connect(url, env);
+			
+			// monitor_jmx_connect_time_milisecondのデバッグ用Hinemosプロパティから接続タイムアウト時間を取得する。
+			Long timeOut = HinemosPropertyCommon.monitor_jmx_connect_time_milisecond.getNumericValue();
+			// プロパティ値が0以下であれば、sun側の接続後のプロパティ値の+3秒を接続タイムアウト時間とする。
+			if (timeOut <= 0) {
+				timeOut = HinemosPropertyCommon.system_sun_rmi_transport_tcp_responseTimeout.getNumericValue() + 3000;
+			}
+			
+			jmxc = connectWithTimeout(url, env, timeOut, TimeUnit.MILLISECONDS);
 			MBeanServerConnection mbsc = jmxc.getMBeanServerConnection();
 
 			JmxMasterInfo jmxMasterInfo = QueryUtil.getJmxMasterInfoPK(jmx.getMasterId());
@@ -244,6 +262,8 @@ public class RunMonitorJmx extends RunMonitorNumericValueType {
 			} catch (IOException e) {
 				m_log.info("fail to close JMXService : " + e.getMessage() + " (" + e.getClass().getName() + ")");
 				exception = e;
+				//値の取得後（resultはtrue）、closeで失敗時、通信が正常完了してない。監視結果が不明となるように配慮
+				result = false;
 			}
 		}
 
@@ -394,5 +414,92 @@ public class RunMonitorJmx extends RunMonitorNumericValueType {
 		return MessageConstant.MESSAGE_JOB_MONITOR_ORGMSG_JMX.getMessage(args)
 				+ "\n" + orgMsg
 				+ "\n" + msg;
+	}
+	
+	/**
+	 * 接続タイムアウトを配慮したJMXのアクセス実装
+	 * @param url
+	 * @param env
+	 * @param timeout
+	 * @param unit
+	 * @return
+	 * @throws IOException
+	 */
+	public static JMXConnector connectWithTimeout(final JMXServiceURL url, final Map<String, Object> env, long timeout, TimeUnit unit) throws IOException {
+		// Queueによる実行の制御を行う
+		final BlockingQueue<Object> jmxmonitor = new ArrayBlockingQueue<Object>(1);
+		ExecutorService executor = Executors.newSingleThreadExecutor(daemonThreadFactory);
+		executor.submit(new Runnable() {
+			public void run() {
+				try {
+					// 監視対象へ接続
+					JMXConnector connector = JMXConnectorFactory.connect(url, env);
+					if (m_log.isTraceEnabled()) {
+						m_log.trace("JMX monitor url : " + url + ", timeout : " + timeout + "(s)");
+					}
+					if (!jmxmonitor.offer(connector)) {
+						connector.close();
+					}
+				} catch (Throwable t) {
+					jmxmonitor.offer(t);
+				}
+			}
+		});
+		Object result;
+		try {
+			result = jmxmonitor.poll(timeout, unit);
+			if (result == null) {
+				if (!jmxmonitor.offer("")) {
+					result = jmxmonitor.take();
+				}
+			}
+		} catch (InterruptedException e) {
+			throw initCause(new InterruptedIOException(e.getMessage()), e);
+		} finally {
+			// 監視を強制終了する
+			executor.shutdown();
+		}
+		// 結果がnullの場合はTimeOut
+		if (result == null) {
+			m_log.warn("Jmx monitor is connect timed out");
+			throw new SocketTimeoutException("Connect timed out: " + url);
+		}
+		// 結果がJMXConnectorだった場合は、値を返却
+		if (result instanceof JMXConnector) {
+			return (JMXConnector) result;
+		}
+		
+		try {
+			// 上記以外はエクセプションなのでふるい分ける
+			throw (Throwable) result;
+		} catch (IOException e) {
+			throw e;
+		} catch (RuntimeException e) {
+			throw e;
+		} catch (Error e) {
+			throw e;
+		} catch (Throwable e) {
+			throw new IOException(e.toString(), e);
+		}
+	}
+	
+	/**
+	 * Throwable causeパラメータを持たない例外の回避用
+	 * @param wrapper
+	 * @param wrapped
+	 * @return
+	 */
+	private static <T extends Throwable> T initCause(T wrapper, Throwable wrapped) {
+		wrapper.initCause(wrapped);
+		return wrapper;
+	}
+	
+	private static class DaemonThreadFactory implements ThreadFactory {
+		public Thread newThread(Runnable r) {
+			Thread t = Executors.defaultThreadFactory().newThread(r);
+			t.setDaemon(true);
+			t.setName("RunMonitorJmx-thread-%d");
+			return t;
+		}
 	}
 }

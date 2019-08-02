@@ -11,6 +11,7 @@ package com.clustercontrol.reporting.session;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -23,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.accesscontrol.util.OptionManager;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
+import com.clustercontrol.commons.session.CheckFacility;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CalendarNotFound;
@@ -31,6 +33,7 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.bean.ReportingInfo;
@@ -48,7 +51,10 @@ import com.clustercontrol.reporting.factory.SelectReportingInfo;
 import com.clustercontrol.reporting.factory.SelectTemplateSetInfo;
 import com.clustercontrol.reporting.fault.ReportingDuplicate;
 import com.clustercontrol.reporting.fault.ReportingNotFound;
+import com.clustercontrol.reporting.model.ReportingInfoEntity;
+import com.clustercontrol.reporting.util.QueryUtil;
 import com.clustercontrol.reporting.util.ReportingValidator;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 
 /**
@@ -56,7 +62,7 @@ import com.clustercontrol.util.Messages;
  * レポーティング機能を管理する Session Bean です。<BR>
  * 
  */
-public class ReportingControllerBean {
+public class ReportingControllerBean implements CheckFacility {
 
 	private static Log m_log = LogFactory.getLog( ReportingControllerBean.class );
 
@@ -854,7 +860,49 @@ public class ReportingControllerBean {
 	public String outputTypeToString(int type) {
 		return ReportingTypeConstant.outputTypeToString(type);
 	}
-	
+
+	/**
+	 * 指定したファシリティIDが利用されているか確認する
+	 *
+	 *
+	 */
+	@Override
+	public void isUseFacilityId(String facilityId) throws UsedFacility {
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			// ファシリティIDが使用されている設定を取得する。
+			Collection<ReportingInfoEntity> ct = QueryUtil.getReportingInfoFindByFacilityId_NONE(facilityId);
+
+			if(ct != null && ct.size() > 0) {
+				// ID名を取得する
+				StringBuilder sb = new StringBuilder();
+				sb.append(MessageConstant.REPORTING_SCHEDULE.getMessage() + " : ");
+				for (ReportingInfoEntity entity : ct) {
+					sb.append(entity.getReportScheduleId());
+					sb.append(", ");
+				}
+				UsedFacility e = new UsedFacility(sb.toString());
+				m_log.info("isUseFacilityId() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			jtm.commit();
+		} catch (UsedFacility e) {
+			jtm.rollback();
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("isUseFacilityId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+	}
+
 	// TODO 6.1ではマネージャのRoleValidator#validateUserBelongRoleを使うようにするため削除する。properties ファイルからkeyも削除すること。
 	private void validateUserBelongRole(String role, String user, boolean isAdmin) throws InvalidSetting{
 

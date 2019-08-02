@@ -183,7 +183,7 @@ public class BinaryPatternInfoComposite extends Composite {
 		this.m_buttonModify.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int order = m_infoList.getTableViewer().getTable().getSelectionIndex();
+				int order = (Integer) ((ArrayList<?>) m_infoList.getTableViewer().getTable().getSelection()[0].getData()).get(0) - 1;
 				if (order >= 0) {
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
@@ -216,7 +216,7 @@ public class BinaryPatternInfoComposite extends Composite {
 		this.m_buttonDelete.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int order = m_infoList.getTableViewer().getTable().getSelectionIndex();
+				int order = (Integer) ((ArrayList<?>) m_infoList.getTableViewer().getTable().getSelection()[0].getData()).get(0) - 1;
 
 				if (order >= 0) {
 					String detail = m_infoList.getFilterItemBinary().getDescription();
@@ -243,7 +243,7 @@ public class BinaryPatternInfoComposite extends Composite {
 		this.m_buttonCopy.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int order = m_infoList.getTableViewer().getTable().getSelectionIndex();
+				int order = (Integer) ((ArrayList<?>) m_infoList.getTableViewer().getTable().getSelection()[0].getData()).get(0) - 1;
 				if (order >= 0) {
 
 					// シェルを取得

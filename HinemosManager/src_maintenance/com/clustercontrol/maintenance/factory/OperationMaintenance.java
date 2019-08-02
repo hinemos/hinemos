@@ -15,7 +15,6 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MaintenanceNotFound;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.maintenance.bean.MaintenanceTypeMstConstant;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.session.MaintenanceControllerBean;
@@ -42,8 +41,7 @@ public class OperationMaintenance {
 
 		OutputBasicInfo rtn = null;
 
-		int result = -1;
-		Integer type = PriorityConstant.TYPE_CRITICAL;
+		int result = 0;
 
 		try {
 			MaintenanceInfo entity = QueryUtil.getMaintenanceInfoPK(maintenanceId);
@@ -76,13 +74,14 @@ public class OperationMaintenance {
 				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, HinemosModuleConstant.MONITOR_BINARYFILE_BIN);
 			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_PCAP_DATA.equals(type_id)) {
 				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, HinemosModuleConstant.MONITOR_PCAP_BIN);
+			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_BINARY_DATA.equals(type_id)) {
+				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId);
 			} else if (MaintenanceTypeMstConstant.DELETE_NODE_CONFIG_HISTORY.equals(type_id)) {
 				result = controller.deleteNodeConfigSettingHistory(dataRetentionPeriod, true, ownerRoleId);
 			} else {
 				m_log.info("runMaintenance() : " + type_id);
 			}
 
-			type = PriorityConstant.TYPE_INFO;
 		} catch (MaintenanceNotFound e) {
 			// 何もしない
 		} catch (InvalidRole e) {
@@ -91,7 +90,7 @@ public class OperationMaintenance {
 			// 何もしない
 		} finally {
 			try {
-				rtn = new Notice().createOutputBasicInfo(maintenanceId, type, result);
+				rtn = new Notice().createOutputBasicInfo(maintenanceId, result);
 			} catch (HinemosUnknown e) {
 				m_log.debug(e.getMessage(), e);
 			}

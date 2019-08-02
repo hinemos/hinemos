@@ -8,8 +8,7 @@
 
 package com.clustercontrol.jmx.dialog;
 
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.ws.WebServiceException;
@@ -664,27 +663,21 @@ public class JmxCreateDialog extends CommonMonitorNumericDialog {
 		}
 		if(this.m_master != null){
 			this.m_comboCollectorItem.removeAll();
-			Collections.sort(this.m_master, new Comparator<JmxMasterInfo>(){
 
-				@Override
-				public int compare(JmxMasterInfo o1, JmxMasterInfo o2) {
-					String name1 = o1.getName();
-					String name2 = o2.getName();
-					
-					if (!HinemosMessage.replace(name1).startsWith("[Hinemos]") && !HinemosMessage.replace(name2).startsWith("[Hinemos]")) {
-						return 0;
-					} else {
-						if (HinemosMessage.replace(name1).compareTo(HinemosMessage.replace(name2)) < 0) {
-							return 1;
-						} else if (HinemosMessage.replace(name1).compareTo(HinemosMessage.replace(name2)) == 0) {
-							return 0;
-						} else {
-							return -1;
-						}
-					}
+			List<JmxMasterInfo> cpMasterList = new ArrayList<>();
+			List<JmxMasterInfo> cpMasterListHnms = new ArrayList<>();
+
+			for(JmxMasterInfo info : this.m_master){
+				if(HinemosMessage.replace(info.getName()).startsWith("[Hinemos]")){
+					cpMasterListHnms.add(info);
+				}else {
+					cpMasterList.add(info);
 				}
-			});
-			for(JmxMasterInfo info: this.m_master){
+			}
+
+			cpMasterList.addAll(cpMasterListHnms);
+			this.m_master = cpMasterList;
+			for(JmxMasterInfo info : this.m_master){
 				this.m_comboCollectorItem.add(HinemosMessage.replace(info.getName()));
 				this.m_comboCollectorItem.setData(HinemosMessage.replace(info.getName()), info);
 			}

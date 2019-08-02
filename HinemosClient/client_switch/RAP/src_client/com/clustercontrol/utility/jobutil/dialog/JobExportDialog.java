@@ -28,6 +28,7 @@ import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.jobutil.util.JobStringUtil;
 import com.clustercontrol.utility.settings.ui.constant.XMLConstant;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
+import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.ws.jobmanagement.JobInfo;
@@ -151,10 +152,23 @@ public class JobExportDialog extends CommonDialog {
 	protected boolean action() {
 		isScope = btnScope.getSelection();
 		isNotify = btnNotify.getSelection();
-		if (txtFileName.getText().isEmpty())
+		if (txtFileName.getText().isEmpty()) {
 			return false;
+		}
+
+		String filePath;
+		String parentPath = MultiManagerPathUtil.getDirectoryPathTemporary(SettingToolsXMLPreferencePage.KEY_XML);
+		ClientPathUtil pathUtil = ClientPathUtil.getInstance();
+		if (pathUtil.lock(parentPath)) {
+			filePath = MultiManagerPathUtil.getDirectoryPath(SettingToolsXMLPreferencePage.KEY_XML);
+		} else {
+			// ロックが取得できない場合、アンロック後にロック
+			pathUtil.unlock(parentPath);
+			pathUtil.lock(parentPath);
+			filePath = MultiManagerPathUtil.getDirectoryPath(SettingToolsXMLPreferencePage.KEY_XML);
+		}
 		
-		file = new File(file.getParent() + File.separator + txtFileName.getText()); 
+		file = new File(filePath + File.separator + txtFileName.getText());
 		return true;
 	}
 	

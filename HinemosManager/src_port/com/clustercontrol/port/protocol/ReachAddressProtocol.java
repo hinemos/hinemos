@@ -8,9 +8,19 @@
 
 package com.clustercontrol.port.protocol;
 
+import java.net.InetAddress;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.port.bean.PortRunCountConstant;
 import com.clustercontrol.port.bean.PortRunIntervalConstant;
 import com.clustercontrol.util.MessageConstant;
@@ -123,4 +133,39 @@ public abstract class ReachAddressProtocol {
 		this.m_timeout = m_timeout;
 	}
 
+	/**
+	 * タイムアウト付きのホスト名取得用メソッド
+	 * @param address
+	 * @return hostName
+	 * @throws InterruptedException
+	 * @throws ExecutionException
+	 * @throws TimeoutException
+	 */
+	protected String getHostNameFromNodeWithTimeout(final InetAddress address) throws InterruptedException, ExecutionException, TimeoutException {
+		String hostname = "";
+		ExecutorService service = Executors.newFixedThreadPool(1);
+		try {
+			Future<String> future = service.submit(new Callable<String>() {
+				@Override
+				public String call() throws Exception {
+					return address.getHostName();
+				}
+			});
+			// Hinemosプロパティよりタイムアウト時間を取得
+			Long timeOut = HinemosPropertyCommon.monitor_port_time_second.getNumericValue();
+			hostname = future.get(timeOut, TimeUnit.SECONDS);
+		} catch (InterruptedException | ExecutionException e) {
+			m_message = MessageConstant.MESSAGE_FAIL_TO_EXECUTE_TO_CONNECT.getMessage() + " ("
+					+ e.getMessage() + ")";
+			throw e;
+		} catch (TimeoutException e) {
+			m_log.warn(" HostName is timeoutException.");
+			m_message = MessageConstant.MESSAGE_FAIL_TO_EXECUTE_TO_CONNECT.getMessage() + " ("
+					+ e.getMessage() + ")";
+			throw e;
+		} finally {
+			service.shutdown();
+		}
+		return hostname;
+	}
 }

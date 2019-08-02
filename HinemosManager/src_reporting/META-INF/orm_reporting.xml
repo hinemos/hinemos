@@ -20,7 +20,15 @@
 			]]>
 		</query>
 	</named-query>
-	
+	<named-query name="ReportingInfoEntity.findByFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM ReportingInfoEntity a
+				WHERE a.facilityId = :facilityId
+			]]>
+		</query>
+	</named-query>
+
 	<!-- TemplateSetInfoEntity -->
 	<named-query name="TemplateSetInfoEntity.findAll">
 		<query>

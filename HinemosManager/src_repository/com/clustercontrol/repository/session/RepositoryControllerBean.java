@@ -59,6 +59,7 @@ import com.clustercontrol.monitor.session.MonitorControllerBean;
 import com.clustercontrol.nodemap.session.NodeMapControllerBean;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
+import com.clustercontrol.reporting.session.ReportingControllerBean;
 import com.clustercontrol.repository.IRepositoryListener;
 import com.clustercontrol.repository.bean.AgentCommandConstant;
 import com.clustercontrol.repository.bean.AgentStatusInfo;
@@ -2183,7 +2184,8 @@ public class RepositoryControllerBean {
 			FacilityModifier.releaseNodeFromScope(
 					parentFacilityId,
 					facilityIds,
-					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					true);
 
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
@@ -2503,7 +2505,12 @@ public class RepositoryControllerBean {
 		try {
 			new InfraControllerBean().isUseFacilityId(facilityId);
 		} catch(UsedFacility e) {
-			message += e.getMessage();
+			message += (e.getMessage() + "\n");
+		}
+		try {
+			new ReportingControllerBean().isUseFacilityId(facilityId);
+		} catch(UsedFacility e) {
+			message += (e.getMessage() + "\n");
 		}
 		try {
 			new NodeConfigSettingControllerBean().isUseFacilityId(facilityId);

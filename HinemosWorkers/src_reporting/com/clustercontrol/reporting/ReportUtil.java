@@ -516,6 +516,9 @@ public class ReportUtil {
 		boolean rtn = false;
 		try {
 			File newDir = new File(m_outPath);
+			if (newDir.exists()) {
+				return m_outPath;
+			}
 			rtn = newDir.mkdirs();
 			if (!rtn) {
 				throw new HinemosUnknown("mkdirs failed. path=" + m_outPath);

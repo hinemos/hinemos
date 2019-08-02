@@ -360,7 +360,7 @@ public class EndpointUnit {
 		return status;
 	}
 
-	public void connect() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, InvalidTimezone{
+	public ManagerInfo connect() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, InvalidTimezone{
 		m_log.debug("connect : " + urlList);
 
 		// Check login result at first
@@ -386,6 +386,8 @@ public class EndpointUnit {
 
 		// Add to active manager list after login success(no exception occurred)
 		status = LoginAccount.STATUS_CONNECTED;
+
+		return managerInfo;
 	}
 
 	/**

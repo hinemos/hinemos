@@ -17,6 +17,8 @@ public abstract class DatasourceBase {
 	
 	protected String m_templateId;
 	protected String m_facilityId;
+	protected String m_jobQueueId;
+	protected String m_nodeConfigId;
 	protected Date m_startDate;
 	protected Date m_endDate;
 	protected HashMap<String, String> m_propertiesMap;
@@ -27,6 +29,14 @@ public abstract class DatasourceBase {
 
 	public void setFacilityId(String facilityId) {
 		m_facilityId = facilityId;
+	}
+
+	public void setJobQueueId(String queueId) {
+		m_jobQueueId = queueId;
+	}
+
+	public void setNodeConfigId(String nodeConfigId) {
+		this.m_nodeConfigId = nodeConfigId;
 	}
 
 	public void setTemplateId(String templateId) {

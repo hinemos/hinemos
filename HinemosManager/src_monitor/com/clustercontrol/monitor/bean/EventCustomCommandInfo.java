@@ -9,6 +9,7 @@ package com.clustercontrol.monitor.bean;
 
 import java.io.Serializable;
 
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
 /**
@@ -31,6 +32,7 @@ public class EventCustomCommandInfo implements Serializable {
 	private Long maxEventSize;
 	private Long thread;
 	private Long queue;
+	private Long runInterval;
 	private String dateFormat;
 	private String user;
 	private Long timeout;
@@ -100,6 +102,16 @@ public class EventCustomCommandInfo implements Serializable {
 	}
 	public void setQueue(Long queue) {
 		this.queue = queue;
+	}
+	
+	//6.2.2より追加したプロパティ、クライアント互換を担保するため、@XmlTransientを付与する
+	//メジャーリリース時に@XmlTransientは削除する
+	@XmlTransient
+	public Long getRunInterval() {
+		return runInterval;
+	}
+	public void setRunInterval(Long runInterval) {
+		this.runInterval = runInterval;
 	}
 	public String getDateFormat() {
 		return dateFormat;

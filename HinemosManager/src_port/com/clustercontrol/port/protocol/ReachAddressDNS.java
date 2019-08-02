@@ -12,6 +12,8 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -68,13 +70,15 @@ public class ReachAddressDNS extends ReachAddressProtocol {
 			String result = "";
 
 			InetAddress address = InetAddress.getByName(addressText);
+			// タイムアウト付のホスト名取得
+			String hostnameWithTimeout = getHostNameFromNodeWithTimeout(address);
 			String addressStr = address.getHostAddress();
 			if(address instanceof Inet6Address){
 				addressStr = "[" + addressStr + "]";
 			}
 
 			bufferOrg.append("Monitoring the DNS Service of "
-					+ address.getHostName() + "[" + address.getHostAddress()
+					+ hostnameWithTimeout + "[" + address.getHostAddress()
 					+ "]:" + m_portNo + ".\n\n");
 
 			Properties props = new Properties();
@@ -168,6 +172,9 @@ public class ReachAddressDNS extends ReachAddressProtocol {
 			m_message = MessageConstant.MESSAGE_FAIL_TO_EXECUTE_TO_CONNECT.getMessage() + " ("
 					+ e.getMessage() + ")";
 
+			return false;
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			// abstractクラスでエラーハンドリングを行っているため、結果のみ返却する。
 			return false;
 		}
 	}

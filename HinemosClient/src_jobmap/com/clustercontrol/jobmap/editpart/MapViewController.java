@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.xml.ws.WebServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.draw2d.ColorConstantsWrapper;
@@ -298,9 +300,10 @@ public class MapViewController {
 							com.clustercontrol.jobmap.messages.Messages.getString("expiration.term.invalid"));
 				}
 			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					com.clustercontrol.jobmap.messages.Messages.getString("message.jobmapkeyfile.notfound.error"));
+		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | WebServiceException e) {
+			String errMsg = com.clustercontrol.jobmap.messages.Messages.getString("message.jobmapkeyfile.notfound.error");
+			m_composite.clearCanvas();
+			m_composite.setErrorMessage(errMsg);
 			return;
 		}
 		// マネージャからジョブのセッション情報を取得

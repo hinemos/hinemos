@@ -205,7 +205,7 @@ public class ExclusiveBranchComposite extends Composite{
 		this.m_exclusiveBranchNextJobOrderTableButtonUp.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int index = m_viewer.getTable().getSelectionIndex();
+				int index = (Integer) ((ArrayList<?>) m_viewer.getTable().getSelection()[0].getData()).get(0) - 1;
 				if (index >= 0) {
 					upOrder(index);
 				}
@@ -224,7 +224,7 @@ public class ExclusiveBranchComposite extends Composite{
 		this.m_exclusiveBranchNextJobOrderTableButtonDown.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int index = m_viewer.getTable().getSelectionIndex();
+				int index = (Integer) ((ArrayList<?>) m_viewer.getTable().getSelection()[0].getData()).get(0) - 1;
 				if (index >= 0) {
 					downOrder(index);
 				}

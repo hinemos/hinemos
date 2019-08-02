@@ -8,6 +8,7 @@
 
 package com.clustercontrol.selfcheck;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -21,9 +22,12 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.HinemosManagerMain;
 import com.clustercontrol.HinemosManagerMain.StartupMode;
+import com.clustercontrol.accesscontrol.util.OptionManager;
+import com.clustercontrol.bean.ActivationKeyConstant;
 import com.clustercontrol.commons.bean.ThreadInfo;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.platform.selfcheck.SelfCheckDivergence;
 import com.clustercontrol.plugin.impl.SchedulerInfo;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
@@ -43,6 +47,7 @@ import com.clustercontrol.selfcheck.monitor.SnmpTrapQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.SyslogQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.TableSizeMonitor;
 import com.clustercontrol.selfcheck.monitor.ThreadActivityMonitor;
+import com.clustercontrol.selfcheck.monitor.ActivationKeyMonitor;
 import com.clustercontrol.selfcheck.monitor.WebServiceQueueMonitor;
 import com.clustercontrol.util.HinemosTime;
 
@@ -82,11 +87,45 @@ public class SelfCheckTaskSubmitter implements Runnable {
 	/**
 	 * セルフチェック機能を活性化させるメソッド
 	 */
+	@SuppressWarnings("unchecked")
 	public void start() {
 		_scheduler.scheduleWithFixedDelay(this
 				, HinemosPropertyCommon.selfcheck_startup_delay.getNumericValue()
 				, HinemosPropertyCommon.selfcheck_interval.getNumericValue(),
 				TimeUnit.SECONDS);
+
+		// evaluation key
+		// 評価版のキーが使われているかのチェック
+		boolean isCheckEvaluationKey = false;
+		for (String option : OptionManager.getOptions()) {
+			if (option.endsWith(ActivationKeyConstant.EVALUATION_SUFFIX) 
+					|| option.endsWith(ActivationKeyConstant.EVALUATION_EXPIRED_SUFFIX)){
+				isCheckEvaluationKey = true;
+				break;
+			}
+		}
+		
+		// 評価版のキーだった場合はRAMスケジューラで定期実行
+		if (isCheckEvaluationKey) {
+			String scheduleName = "EvaluationKey";
+			String scheduleGroup = "EVALUATION_KEY_CHECK";
+			try {
+				SchedulerPlugin.scheduleCronJob(
+						SchedulerType.RAM_MONITOR, 
+						scheduleName, 
+						scheduleGroup, 
+						HinemosTime.currentTimeMillis(), 
+						HinemosPropertyCommon.selfcheck_evaluation_alert_cron.getStringValue(), 
+						true, 
+						ActivationKeyMonitor.class.getName(), 
+						"execute", 
+						new Class[]{}, new Serializable[]{}
+				);
+				log.trace("evaluation key check scheduled in cron \"" + HinemosPropertyCommon.selfcheck_evaluation_alert_cron.getStringValue() + "\"");
+			} catch (HinemosUnknown e) {
+				log.warn("evaluation key check failure.", e);
+			}
+		}
 	}
 
 	/**
@@ -151,9 +190,57 @@ public class SelfCheckTaskSubmitter implements Runnable {
 		// Scheduler
 		if (HinemosManagerMain._startupMode == StartupMode.NORMAL) {
 			try {
+				List<SchedulerInfo> triggerList = SchedulerPlugin.getSchedulerList(com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType.DBMS_JOB);
+				for (SchedulerInfo trigger : triggerList) {
+					if ( !(trigger.isPaused) ) {
+						_executorService.submit(
+								new SelfCheckTask(
+										new SchedulerMonitor(
+												com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType.DBMS_JOB,
+												trigger
+												)
+										)
+								);
+					}
+					if( log.isTraceEnabled() ){
+						log.trace("run(): DBMS_JOB trigger.name="+trigger.name +", trigger.isPaused="+trigger.isPaused);
+					}
+				}
+				if(log.isTraceEnabled() && triggerList != null){
+					log.trace("run(): DBMS_JOB getSchedulerList().size()="+triggerList.size());
+				}
+			} catch (Exception e) {
+				log.warn("quartz scheduler access failure. (" + SchedulerType.DBMS_JOB + ")", e);
+			}
+			
+			try {
+				List<SchedulerInfo> triggerList = SchedulerPlugin.getSchedulerList(com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType.DBMS_DEL);
+				for (SchedulerInfo trigger : triggerList) {
+					if ( !(trigger.isPaused) ) {
+						_executorService.submit(
+								new SelfCheckTask(
+										new SchedulerMonitor(
+												com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType.DBMS_DEL,
+												trigger
+												)
+										)
+								);
+					}
+					if( log.isTraceEnabled() ){
+						log.trace("run(): DBMS_DEL trigger.name="+trigger.name +", trigger.isPaused="+trigger.isPaused );
+					}
+				}
+				if(log.isTraceEnabled() && triggerList != null){
+					log.trace("run(): DBMS_DEL getSchedulerList().size()="+triggerList.size());
+				}
+			} catch (Exception e) {
+				log.warn("quartz scheduler access failure. (" + SchedulerType.DBMS_DEL + ")", e);
+			}
+			
+			try {
 				List<SchedulerInfo> triggerList = SchedulerPlugin.getSchedulerList(com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType.DBMS);
 				for (SchedulerInfo trigger : triggerList) {
-					if (! trigger.isPaused) {
+					if ( !(trigger.isPaused) ) {
 						_executorService.submit(
 								new SelfCheckTask(
 										new SchedulerMonitor(
@@ -163,27 +250,63 @@ public class SelfCheckTaskSubmitter implements Runnable {
 										)
 								);
 					}
+					if( log.isTraceEnabled() ){
+						log.trace("run(): DBMS trigger.name="+trigger.name +", trigger.isPaused="+trigger.isPaused);
+					}
+				}
+				if(log.isTraceEnabled() && triggerList != null){
+					log.trace("run(): DBMS getSchedulerList().size()="+triggerList.size());
 				}
 			} catch (Exception e) {
 				log.warn("quartz scheduler access failure. (" + SchedulerType.DBMS + ")", e);
 			}
 
 			try {
-				List<SchedulerInfo> triggerList = SchedulerPlugin.getSchedulerList(SchedulerType.RAM);
+				List<SchedulerInfo> triggerList = SchedulerPlugin.getSchedulerList(SchedulerType.RAM_MONITOR);
 				for (SchedulerInfo trigger : triggerList) {
-					if (! trigger.isPaused) {
+					if ( !(trigger.isPaused) ) {
 						_executorService.submit(
 								new SelfCheckTask(
 										new SchedulerMonitor(
-												SchedulerType.RAM,
+												SchedulerType.RAM_MONITOR,
 												trigger
 												)
 										)
 								);
 					}
+					if( log.isTraceEnabled() ){
+						log.trace("run(): RAM_MONITOR trigger.name="+trigger.name +", trigger.isPaused="+trigger.isPaused);
+					}
+				}
+				if(log.isTraceEnabled() && triggerList != null){
+					log.trace("run(): RAM_MONITOR getSchedulerList().size()="+triggerList.size());
 				}
 			} catch (Exception e) {
-				log.warn("quartz scheduler access failure. (" + SchedulerType.RAM + ")", e);
+				log.warn("quartz scheduler access failure. (" + SchedulerType.RAM_MONITOR + ")", e);
+			}
+			
+			try {
+				List<SchedulerInfo> triggerList = SchedulerPlugin.getSchedulerList(SchedulerType.RAM_JOB);
+				for (SchedulerInfo trigger : triggerList) {
+					if ( !(trigger.isPaused) ) {
+						_executorService.submit(
+								new SelfCheckTask(
+										new SchedulerMonitor(
+												SchedulerType.RAM_JOB,
+												trigger
+												)
+										)
+								);
+					}
+					if( log.isTraceEnabled() ){
+						log.trace("run(): RAM_JOB trigger.name="+trigger.name +", trigger.isPaused="+trigger.isPaused);
+					}
+				}
+				if(log.isTraceEnabled() && triggerList != null){
+					log.trace("run(): RAM_JOB getSchedulerList().size()="+triggerList.size());
+				}
+			} catch (Exception e) {
+				log.warn("quartz scheduler access failure. (" + SchedulerType.RAM_JOB + ")", e);
 			}
 		}
 

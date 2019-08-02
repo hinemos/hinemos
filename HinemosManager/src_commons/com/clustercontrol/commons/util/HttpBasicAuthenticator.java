@@ -14,6 +14,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.auth.AuthenticationParams;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.commons.util.HinemosSessionContext;
@@ -78,7 +79,12 @@ public class HttpBasicAuthenticator {
 			HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR, isAdministrator);
 
 			// パスワード、システム権限チェック
-			new AccessControllerBean().getUserInfoByPassword(username, password, systemPrivilegeList);
+			AuthenticationParams authParams = new AuthenticationParams();
+			authParams.setUserId(username);
+			authParams.setPassword(password);
+			authParams.setRequiredSystemPrivileges(systemPrivilegeList);
+			authParams.setCacheDisabled(false);
+			new AccessControllerBean().authenticate(authParams);
 
 			// isAdmin=trueの場合、ADMINISTRATORSロールに所属していないとエラーとする。
 			if (isAdmin && !isAdministrator) {

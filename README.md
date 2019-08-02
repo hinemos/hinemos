@@ -12,7 +12,7 @@
 
 Hinemos is an open source integrated system management software providing both monitoring and job management (workload scheduling) features, to implement system operation automation.
 
-[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v6.2.1#packages)
+[README(日本語版)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v6.2.2#packages)
 
 ## Installation
 
@@ -20,11 +20,11 @@ You can install hinemos with the following commands.
 
 - Manager Installation
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.1/hinemos-6.2-manager-6.2.1-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.2/hinemos-6.2-manager-6.2.2-1.el7.x86_64.rpm```
 
 - Web Client Installation
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.1/hinemos-6.2-web-6.2.1-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.2/hinemos-6.2-web-6.2.2-1.el7.x86_64.rpm```
 
 See the install document for details.
 

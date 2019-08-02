@@ -157,8 +157,9 @@ public class MaintenanceCollectDataRaw extends MaintenanceObject {
 			MonitorCollectDataCache.removeUnnecessaryData();
 			
 		} catch(Exception e){
+			String countMessage = "delete count : " + counter.get() + " records" + "\n";
 			counter.setError();
-			m_log.error("deleteCollectData() : "
+			m_log.error("deleteCollectData() : " + countMessage
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jpaTran != null)
 				jpaTran.rollback();
@@ -179,11 +180,10 @@ public class MaintenanceCollectDataRaw extends MaintenanceObject {
 	 */
 	protected int delete(Long boundary, boolean status, int collectId) {
 		m_log.debug("_delete() start : status = " + status + ", collectorId = " + collectId);
-		int ret = -1;
 		
 		//SQL文の実行
 		// for HA (縮退判定時間を延ばすため)、シングルには影響なし(0)：タイムアウト値設定
-		ret  = QueryUtil.deleteCollectDataByDateTimeAndCollectorId(
+		int ret  = QueryUtil.deleteCollectDataByDateTimeAndCollectorId(
 				boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue(), collectId);
 		
 		//終了

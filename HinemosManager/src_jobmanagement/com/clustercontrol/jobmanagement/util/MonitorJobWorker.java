@@ -309,7 +309,7 @@ public class MonitorJobWorker {
 
 		// SimpleTrigger でジョブをスケジューリング登録
 		SchedulerPlugin.scheduleSimpleJob(
-			SchedulerType.RAM,
+			SchedulerType.RAM_JOB,
 			getKey(runInstructionInfo),
 			QuartzConstant.GROUP_NAME_FOR_MONITORJOB,
 			startTime,
@@ -343,7 +343,7 @@ public class MonitorJobWorker {
 				@Override
 				public void postClose() {
 					try {
-						SchedulerPlugin.deleteJob(SchedulerType.RAM, getKey(runInstructionInfo),
+						SchedulerPlugin.deleteJob(SchedulerType.RAM_JOB, getKey(runInstructionInfo),
 								QuartzConstant.GROUP_NAME_FOR_MONITORJOB);
 					} catch (HinemosUnknown e) {
 						m_log.error(e.getMessage(), e);

@@ -16,6 +16,7 @@ import javax.persistence.EntityExistsException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.auth.Authentication;
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.bean.UserTypeConstant;
 import com.clustercontrol.accesscontrol.model.RoleInfo;
@@ -29,6 +30,7 @@ import com.clustercontrol.fault.UsedUser;
 import com.clustercontrol.fault.UserDuplicate;
 import com.clustercontrol.fault.UserNotFound;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.Singletons;
 
 /**
  * ユーザ情報を更新するファクトリクラス<BR>
@@ -114,6 +116,9 @@ public class LoginUserModifier {
 					if (userInfo.getPassword().isEmpty()) {
 						m_log.warn("modifyUserInfo () : hashedPassword is empty");
 					} else {
+						// パスワード変更可能か？
+						Singletons.get(Authentication.class).checkInternalPasswordModification(userInfoEntity);
+
 						userInfoEntity.setPassword(userInfo.getPassword());
 					}
 				}
@@ -131,6 +136,10 @@ public class LoginUserModifier {
 		} catch (EntityExistsException e) {
 			m_log.info("modifyUserInfo() failure to add a user. a user'id is duplicated. (userId = " + userInfo.getUserId() + ")");
 			throw new UserDuplicate(e.getMessage(), e);
+		} catch (HinemosUnknown e) {
+			m_log.warn("modifyUserInfo() failure to modify a user. (userId = " + userInfo.getUserId() + ") "
+					+ e.getMessage());
+			throw e;
 		} catch (Exception e) {
 			m_log.warn("modifyUserInfo() failure to modify a user. (userId = " + userInfo.getUserId() + ")", e);
 			throw new HinemosUnknown("failure to modify a user. (userId = " + userInfo.getUserId() + ")", e);
@@ -203,16 +212,23 @@ public class LoginUserModifier {
 				|| modifyUserId == null || modifyUserId.compareTo("") == 0){
 			return;
 		}
+
 		// 該当するユーザを検索して取得
 		UserInfo user;
 		try {
 			user = QueryUtil.getUserPK(userId);
+
+			// パスワード変更可能か？
+			Singletons.get(Authentication.class).checkInternalPasswordModification(user);
+
 			// パスワードを反映する
 			user.setPassword(password);
 			user.setModifyUserId(modifyUserId);
 			user.setModifyDate(HinemosTime.currentTimeMillis());
 
 		} catch (UserNotFound e) {
+			throw e;
+		} catch (HinemosUnknown e) {
 			throw e;
 		} catch (Exception e) {
 			m_log.warn("modifyUserPassword() failure to modify user's password. (userId = " + userId + ")", e);
@@ -221,5 +237,5 @@ public class LoginUserModifier {
 
 		m_log.info("successful in modifing a user's password. (userId = " + userId + ")");
 	}
-
+	
 }

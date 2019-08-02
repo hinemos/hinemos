@@ -69,8 +69,7 @@ public class EventCustomCommandResultComposite extends Composite {
 		layout.marginHeight = 0;
 		layout.marginWidth = 0;
 
-		Table table = new Table(this, SWT.H_SCROLL | SWT.V_SCROLL
-				| SWT.FULL_SELECTION | SWT.MULTI);
+		Table table = new Table(this, SWT.SINGLE | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION);
 		WidgetTestUtil.setTestId(this, null, table);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
@@ -81,9 +80,6 @@ public class EventCustomCommandResultComposite extends Composite {
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.grabExcessVerticalSpace = true;
 		gridData.horizontalSpan = 5;
-		table.setLayoutData(gridData);
-		gridData.minimumHeight = 120;
-		gridData.minimumWidth = 525;
 		table.setLayoutData(gridData);
 		// 線を表示する
 		table.setLinesVisible(true);

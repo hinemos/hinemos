@@ -31,6 +31,7 @@ import com.clustercontrol.fault.NotifyDuplicate;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.jobmanagement.factory.FullJob;
 import com.clustercontrol.monitor.bean.EventDataInfo;
 import com.clustercontrol.monitor.bean.EventUserExtensionItemInfo;
 import com.clustercontrol.monitor.factory.SelectEventHinemosProperty;
@@ -220,6 +221,8 @@ public class NotifyControllerBean implements CheckFacility {
 			// コミット後にキャッシュクリア
 			NotifyCache.refresh();
 			NotifyRelationCache.refresh();
+			// ジョブ定義のキャッシュも合わせて更新
+			FullJob.updateCacheForNotifyId(notifyIds);
 
 		} catch(NotifyNotFound | HinemosUnknown | InvalidRole e) {
 			if (jtm != null){

@@ -15,6 +15,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosIllegalArgumentException;
 import com.clustercontrol.performance.monitor.entity.CollectorItemCodeMstData;
 import com.clustercontrol.repository.bean.DeviceTypeConstant;
 import com.clustercontrol.repository.factory.NodeProperty;
@@ -56,7 +57,8 @@ public class PollingDataManager {
 	// facilityIdのノード情報
 	private NodeInfo nodeInfo = null;
 
-	public PollingDataManager(String facilityId, String itemCode, boolean breakdownFlg) throws FacilityNotFound{
+	public PollingDataManager(String facilityId, String itemCode, boolean breakdownFlg)
+			throws FacilityNotFound, HinemosIllegalArgumentException {
 		m_log.debug("PollingDataManager() facilityId = " + facilityId + ", itemCode = " + itemCode + ", breakdownFlg = " + breakdownFlg);
 		this.facilityId = facilityId;
 		this.itemCode = itemCode;
@@ -109,6 +111,12 @@ public class PollingDataManager {
 			breakdownItemCodeList.add(itemCode);
 			this.itemCodeList = breakdownItemCodeList;
 			this.pollingTargets = CollectorMasterCache.getPollingTarget(breakdownItemCodeList, collectMethod, platformId, subPlatformId);
+			if (this.pollingTargets.isEmpty()) {
+				String errorMessag = String.format("PollingDataManager() : polling target not found in cc_collector_polling_mst."  
+						+ " collectMethod = %s, platformId = %s, subPlatformId = %s, itemCode = %s", collectMethod, platformId, subPlatformId, itemCode);
+				m_log.error(errorMessag);
+				throw new HinemosIllegalArgumentException(errorMessag);
+			}
 
 		} catch (FacilityNotFound e) {
 			// TODO: Internal Event?

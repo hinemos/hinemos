@@ -61,7 +61,7 @@ public final class PropertiesConstant{
 	public static final String JOB_GRAPH_LINE_MAX_KEY = "job.graph.line.max";
 
 	public static final String JOB_GRAPH_DIVIDER_KEY = "job.graph.divider";
-	public static final String JOB_GRAPH_DIVIDER_DEFAULT = "60";
+	public static final String JOB_GRAPH_DIVIDER_DEFAULT = "60000";
 	public static final String JOB_GRAPH_LABEL_KEY = "job.graph.label";
 	public static final String JOB_GRAPH_LABEL_DEFAULT = "分"; // TODO i18n
 

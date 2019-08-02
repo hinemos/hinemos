@@ -612,8 +612,9 @@ public class FacilityModifier {
 			String platformFamily = nodeEntity.getPlatformFamily();
 			if (!oldPlatformFamily.equals(platformFamily)) {//OSスコープが変わる場合
 				//旧OSスコープから削除
+				// なお、システムによる自動操作なので、操作ユーザーの権限に基づいたオブジェクト権限チェックは不要とする
 				String[] facilityIds = {facilityId};
-				releaseNodeFromScope(oldPlatformFamily, facilityIds, modifyUserId);
+				releaseNodeFromScope(oldPlatformFamily, facilityIds, modifyUserId, false);
 	
 				//新OSスコープに割り当て
 				assignFacilityToScope(platformFamily, facilityId);
@@ -756,11 +757,12 @@ public class FacilityModifier {
 	 * @param parentFacilityId スコープのファシリティID
 	 * @param facilityIds ノードのファシリティID
 	 * @param modifyUserId 作業ユーザID
+	 * @param isAuthCheckTarget 操作ユーザーの親スコープへのオブジェクト権限を確認する場合は true ,確認しない場合はfalse
 	 *
 	 * @throws FacilityNotFound
 	 * @throws InvalidRole
 	 */
-	public static void releaseNodeFromScope(String parentFacilityId, String[] facilityIds, String modifyUserId)
+	public static void releaseNodeFromScope(String parentFacilityId, String[] facilityIds, String modifyUserId, boolean isAuthCheckTarget)
 			throws FacilityNotFound, InvalidRole {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -770,10 +772,16 @@ public class FacilityModifier {
 			String facilityId = null;
 
 			/** メイン処理 */
-			m_log.debug("releasing nodes from a scope...");
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("releasing nodes from a scope... parentFacilityId=" + parentFacilityId + " , isAuthCheckTarget=" + isAuthCheckTarget);
+			}
 
-			// 該当するファシリティインスタンスを取得
-			facility = QueryUtil.getFacilityPK(parentFacilityId);
+			// 該当するファシリティインスタンスを取得（オプジェクト権限チェックの要否を考慮）
+			if (isAuthCheckTarget) {
+				facility = QueryUtil.getFacilityPK(parentFacilityId);
+			} else {
+				facility = QueryUtil.getFacilityPK_NONE(parentFacilityId);
+			}
 
 			if (!FacilityUtil.isScope(facility)) {
 				FacilityNotFound e = new FacilityNotFound("parent's facility is not a scope. (parentFacilityId = " + parentFacilityId + ")");

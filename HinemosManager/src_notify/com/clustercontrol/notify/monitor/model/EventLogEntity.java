@@ -792,7 +792,12 @@ public class EventLogEntity extends ObjectPrivilegeTargetInfo implements Cloneab
 	public EventLogEntity clone() {
 		try {
 			EventLogEntity ret = (EventLogEntity) super.clone();
-			ret.id = this.id;
+			ret.id =new EventLogEntityPK(
+				this.id.getMonitorId(),
+				this.id.getMonitorDetailId(),
+				this.id.getPluginId(),
+				this.id.getOutputDate(),
+				this.id.getFacilityId());
 			ret.application = this.application;
 			ret.comment = this.comment;
 			ret.commentDate = this.commentDate;

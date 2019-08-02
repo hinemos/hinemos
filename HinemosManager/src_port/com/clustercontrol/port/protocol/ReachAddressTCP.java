@@ -17,6 +17,8 @@ import java.net.NoRouteToHostException;
 import java.net.PortUnreachableException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -61,8 +63,10 @@ public class ReachAddressTCP extends ReachAddressProtocol {
 			boolean retry = true;
 
 			InetAddress address = InetAddress.getByName(addressText);
+			// タイムアウト付のホスト名取得
+			String hostname = getHostNameFromNodeWithTimeout(address);
 
-			bufferOrg.append("Monitoring the port of " + address.getHostName()
+			bufferOrg.append("Monitoring the port of " + hostname
 					+ "[" + address.getHostAddress() + "]:" + m_portNo
 					+ ".\n\n");
 
@@ -144,6 +148,9 @@ public class ReachAddressTCP extends ReachAddressProtocol {
 			m_message = MessageConstant.MESSAGE_FAIL_TO_EXECUTE_TO_CONNECT.getMessage() + " ("
 					+ e.getMessage() + ")";
 
+			return false;
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			// abstractクラスでエラーハンドリングを行っているため、結果のみ返却する。
 			return false;
 		}
 	}

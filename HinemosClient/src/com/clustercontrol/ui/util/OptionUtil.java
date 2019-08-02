@@ -21,6 +21,7 @@ import org.eclipse.ui.activities.IActivityManager;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.bean.ActivationKeyConstant;
 import com.clustercontrol.startup.ui.StartUpPerspective;
 
 /**
@@ -68,7 +69,10 @@ public class OptionUtil {
 			if(activity.isDefined()){
 				ids.add(id);
 			}else{
-				m_log.warn("Unknown activity: " + id);
+				if (!id.endsWith(ActivationKeyConstant.EVALUATION_SUFFIX) 
+						&& !id.endsWith(ActivationKeyConstant.EVALUATION_EXPIRED_SUFFIX)) {
+					m_log.warn("Unknown activity: " + id);
+				}
 			}
 		}
 		

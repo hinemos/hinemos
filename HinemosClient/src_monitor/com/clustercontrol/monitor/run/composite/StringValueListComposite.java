@@ -126,10 +126,10 @@ public class StringValueListComposite extends Composite {
 					if (dialog.open() == IDialogConstants.OK_ID) {
 						Table table = getTableViewer().getTable();
 						WidgetTestUtil.setTestId(this, null, table);
-						int selectIndex = table.getSelectionIndex();
+						int selectIndex = (Integer) ((ArrayList<?>) table.getSelection()[0].getData()).get(0) - 1;
 						m_stringValueInfoList.set(selectIndex, dialog.getInputData());
 						update();
-						table.setSelection(selectIndex);
+						table.setSelection(table.getSelectionIndex());
 					}
 				}
 			}

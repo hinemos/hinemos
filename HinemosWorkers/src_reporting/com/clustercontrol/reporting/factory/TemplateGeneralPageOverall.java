@@ -38,6 +38,8 @@ import net.sf.jasperreports.engine.data.JRCsvDataSource;
 public class TemplateGeneralPageOverall extends TemplateBase {
 
 	private static Log m_log = LogFactory.getLog(TemplateGeneralPageOverall.class);
+
+	protected Map<String, Object> m_params = new HashMap<>();
 	
 	private static class SummaryPageInfo {
 		Date start;
@@ -222,8 +224,7 @@ public class TemplateGeneralPageOverall extends TemplateBase {
 		
 		JasperPrint retJp = null;
 		
-		Map<String, Object> params = new HashMap<>();
-		params.putAll(m_propertiesMap);
+		m_params.putAll(m_propertiesMap);
 		
 		m_log.debug("createJPReport:");
 		
@@ -257,31 +258,37 @@ public class TemplateGeneralPageOverall extends TemplateBase {
 				datasourceClass.setPropertiesMap(m_propertiesMap);
 				datasourceClass.setStartDate(startDate);
 				datasourceClass.setEndDate(endDate);
-				
+				if (m_params.get("JOBQUEUE_ID") != null) {
+					datasourceClass.setJobQueueId((String)m_params.get("JOBQUEUE_ID"));
+				}
+				if (m_params.get("NODECONFIG_ID") != null) {
+					datasourceClass.setNodeConfigId((String) m_params.get("NODECONFIG_ID"));
+				}
+
 				HashMap<String, Object> dsMap = datasourceClass.createDataSource(num);
 				if(dsMap != null) {
-					params.putAll(dsMap);
+					m_params.putAll(dsMap);
 				}	
 			}
 			/*
 			* 共通パラメータ
 			*/
-			params.putAll(getCommonProperty());
+			m_params.putAll(getCommonProperty());
 			
 			// 時刻表記
 			String fmtStr = isDefine(ReportingConstant.DATE_FORMAT_KEY_VALUE, Messages.getString("COMMON_DATE_FORMAT"));
 			SimpleDateFormat fmt = new SimpleDateFormat(fmtStr);
-			params.put("START_DATE_STR", fmt.format(startDate.getTime()));
-			params.put("END_DATE_STR", fmt.format(new Date(endDate.getTime() - 1)));
+			m_params.put("START_DATE_STR", fmt.format(startDate.getTime()));
+			m_params.put("END_DATE_STR", fmt.format(new Date(endDate.getTime() - 1)));
 			
-			params.put("PAGE_OFFSET", m_curPage);
-			params.put("LOGO_FILENAME", ReportUtil.getLogoFilePath());
-			params.put("SHOW_PAGE", ReportUtil.isPageValid());
+			m_params.put("PAGE_OFFSET", m_curPage);
+			m_params.put("LOGO_FILENAME", ReportUtil.getLogoFilePath());
+			m_params.put("SHOW_PAGE", ReportUtil.isPageValid());
 			long startMargin = (long)(((endDate.getTime() - startDate.getTime()) / 1000D) * 0.01 * 1000);
 			long endMargin = (long)(((endDate.getTime() - startDate.getTime()) / 1000D) * 0.02 * 1000);
-			params.put("START_DATE", new Timestamp(startDate.getTime() - startMargin));
-			params.put("END_DATE", new Timestamp(endDate.getTime() + endMargin));
-			params.put("DATE", startDate);
+			m_params.put("START_DATE", new Timestamp(startDate.getTime() - startMargin));
+			m_params.put("END_DATE", new Timestamp(endDate.getTime() + endMargin));
+			m_params.put("DATE", startDate);
 
 			JasperReport report = JasperCompileManager.compileReport(m_jrxmlFilePath);
 			
@@ -295,12 +302,12 @@ public class TemplateGeneralPageOverall extends TemplateBase {
 			// DataSourceをparamに格納して渡す場合
 			if(dsPassType == ReportingConstant.DS_PASS_TYPE_PARAM) {
 				m_log.info("Datasource pass type : params");
-				retJp = JasperFillManager.fillReport(report, params, new JREmptyDataSource());
+				retJp = JasperFillManager.fillReport(report, m_params, new JREmptyDataSource());
 			}
 			// Datasourceを直接引数で渡す場合（ただし、1つのDatasourceしか渡せない）
 			else if (dsPassType == ReportingConstant.DS_PASS_TYPE_DIRECT){
 				m_log.info("Datasource pass type : direct");
-				retJp = JasperFillManager.fillReport(report, params, (JRCsvDataSource)params.get(ReportingConstant.STR_DS+"_1"));
+				retJp = JasperFillManager.fillReport(report, m_params, (JRCsvDataSource)m_params.get(ReportingConstant.STR_DS+"_1"));
 			}
 			else {
 				m_log.error("Datasource pass type : " + dsPassType + " not exist.");

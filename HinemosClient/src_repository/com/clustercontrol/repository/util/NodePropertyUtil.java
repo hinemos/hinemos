@@ -3251,7 +3251,6 @@ public class NodePropertyUtil {
 			fileSystemDeviceName.setModify(PropertyDefineConstant.MODIFY_OK);
 			fileSystemDeviceIndex.setModify(PropertyDefineConstant.MODIFY_OK);
 			fileSystemDeviceType.setModify(PropertyDefineConstant.MODIFY_OK);
-			fileSystem.setModify(PropertyDefineConstant.MODIFY_OK);
 			fileSystemDeviceSize.setModify(PropertyDefineConstant.MODIFY_OK);
 			fileSystemDeviceSizeUnit.setModify(PropertyDefineConstant.MODIFY_OK);
 			fileSystemDeviceDescription.setModify(PropertyDefineConstant.MODIFY_OK);

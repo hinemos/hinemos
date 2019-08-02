@@ -8,6 +8,7 @@
 
 package com.clustercontrol.reporting.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import com.clustercontrol.collect.model.SummaryDay;
 import com.clustercontrol.collect.model.SummaryHour;
 import com.clustercontrol.collect.model.SummaryMonth;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CollectKeyNotFound;
 import com.clustercontrol.fault.CollectorNotFound;
@@ -40,16 +42,21 @@ import com.clustercontrol.jobmanagement.model.JobInfoEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.queue.internal.JobQueueEntity;
+import com.clustercontrol.jobmanagement.queue.internal.JobQueueTx;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.performance.monitor.model.CollectorItemCodeMstEntity;
-import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.platform.QueryExecutor;
 import com.clustercontrol.platform.util.reporting.PriorityQueryUtil;
 import com.clustercontrol.reporting.ReportUtil;
 import com.clustercontrol.reporting.session.ReportingCollectControllerBean;
 import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.repository.model.FacilityRelationEntity;
+import com.clustercontrol.repository.model.NodeCustomHistoryDetail;
+import com.clustercontrol.repository.model.NodeDeviceHistoryDetail;
+import com.clustercontrol.repository.model.NodeHistoryDetail;
+import com.clustercontrol.repository.model.NodePackageHistoryDetail;
 
 public class ReportingQueryUtil {
 	/** ログ出力のインスタンス */
@@ -1071,6 +1078,68 @@ public class ReportingQueryUtil {
 		}
 		return list;
 	}
+
+	public static List<JobSessionJobEntity> getReportingJobDetailListByQueueId(
+			String queueId,
+			long fromTime, long toTime,
+			String jobunitId, String jobId, String excJobId,
+			String ownerRoleId) {
+		List<JobSessionJobEntity> list = null;
+		TypedQuery<JobSessionJobEntity> typedQuery = null;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			StringBuilder jquery = new StringBuilder();
+			jquery.append("SELECT a FROM JobSessionJobEntity a JOIN a.jobSessionEntity b");
+			jquery.append(" JOIN a.jobInfoEntity c");
+			jquery.append(" WHERE true = true");
+			jquery.append(" AND c.queueId = :queueId");
+			jquery.append(" AND a.parentJobunitId IS NOT NULL");
+			jquery.append(" AND a.startDate IS NOT NULL");
+			jquery.append(" AND ((a.startDate >= :fromTime AND a.startDate < :toTime) OR (a.endDate >= :fromTime AND a.endDate < :toTime))");
+			jquery.append(" AND a.id.jobunitId like :jobunitId");
+			jquery.append(" AND a.id.jobId like :jobId");
+			jquery.append(" AND a.id.jobId not like :excJobId");
+
+			// ownerRoleId
+			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+				jquery.append(" AND a.ownerRoleId = :ownerRoleId");
+			}
+			jquery.append(" ORDER BY a.startDate");
+			typedQuery = em.createQuery(jquery.toString(), JobSessionJobEntity.class);
+			typedQuery.setParameter("queueId", queueId);
+			typedQuery.setParameter("jobunitId", jobunitId);
+			typedQuery.setParameter("jobId", jobId);
+			typedQuery.setParameter("excJobId", excJobId);
+			typedQuery.setParameter("fromTime", fromTime);
+			typedQuery.setParameter("toTime", toTime);
+			// ownerRoleId
+			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+				typedQuery.setParameter("ownerRoleId", ownerRoleId);
+			}
+			
+			list = typedQuery.getResultList();
+		} catch (Exception e) {
+			m_log.debug("getReportingJobDetailListBy : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+		}
+		return list;
+	}
+
+	public static List<JobQueueEntity> getReportingJobQueueSettingList(String ownerRoleId) {
+		List<JobQueueEntity> list = new ArrayList<>();
+		try (JobQueueTx tx = new JobQueueTx()) {
+			for (JobQueueEntity entity : tx.findJobQueueEntitiesWithRoleForRead(ownerRoleId)) {
+				list.add(entity);
+			}			
+			tx.commit();
+		} catch (Exception e) {
+			m_log.debug("getReportingJobQueueList : "
+					+ "ownerRoleId=" + ownerRoleId + ", "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+		}
+		return list;
+
+	}
 	
 	public static List<JobSessionJobEntity> getRootJobSessionJobByParentJobunitId(String parentJobunitId, Long fromTime, Long toTime){
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
@@ -1228,6 +1297,64 @@ public class ReportingQueryUtil {
 			break;
 		}
 		return hasSummaryDataFlg;
+	}
+
+	public static <T extends NodeHistoryDetail> List<T> getNodeHistoryDetailsByRegDateAndLimit(
+			Class<T> historyDetailClass, String facilityId, long fromTime, long toTime, int maxLimit) {
+		List<T> list = null;
+		StringBuilder sbJpql = new StringBuilder();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			sbJpql.append(String.format("SELECT a FROM %s a", historyDetailClass.getSimpleName()));
+			sbJpql.append(" WHERE (a.id.regDate BETWEEN :fromTime AND :toTime");
+			sbJpql.append(" OR a.regDateTo BETWEEN :fromTime AND :toTime)");
+			sbJpql.append(" AND a.id.facilityId = :facilityId");
+			sbJpql.append(" ORDER BY a.id.regDate DESC");
+
+			list = em.createQuery(sbJpql.toString(), historyDetailClass)
+					.setParameter("facilityId", facilityId)
+					.setParameter("fromTime", fromTime)
+					.setParameter("toTime", toTime)
+					.setMaxResults(maxLimit)
+					.getResultList();
+		} catch (Exception e) {
+			m_log.debug(
+					"getNodeHistoryDetailsByRegDateAndLimit : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+		}
+		return list;
+	}
+
+	public static <T extends NodeHistoryDetail> boolean hasOldNodeConfigHistory(Class<T> historyDetailClass,
+			String facilityId, long fromTime, String deviceName, String packageId, String settingId,
+			String settingCustomId) {
+		List<T> list = new ArrayList<T>();
+		StringBuilder sbJpql = new StringBuilder();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			sbJpql.append(String.format("SELECT a FROM %s a", historyDetailClass.getSimpleName()));
+			sbJpql.append(" WHERE a.id.facilityId = :facilityId");
+			sbJpql.append(" AND a.regDateTo = :fromTime");
+
+			if (NodeDeviceHistoryDetail.class.isAssignableFrom(historyDetailClass)) {
+				sbJpql.append(String.format(" AND a.id.deviceName = '%s'", deviceName));
+			} else if (historyDetailClass == NodePackageHistoryDetail.class) {
+				sbJpql.append(String.format(" AND a.id.packageId = '%s'", packageId));
+			} else if (historyDetailClass == NodeCustomHistoryDetail.class) {
+				sbJpql.append(String.format(" AND a.id.settingId = '%s'", settingId));
+				sbJpql.append(String.format(" AND a.id.settingCustomId = '%s'", settingCustomId));
+			}
+
+			list = em.createQuery(sbJpql.toString(), historyDetailClass)
+					.setParameter("facilityId", facilityId)
+					.setParameter("fromTime", fromTime)
+					.getResultList();
+		} catch (Exception e) {
+			m_log.debug("hasOldNodeConfigHistory : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+		}
+		if (list.isEmpty()) {
+			return false;
+		}
+		return true;
 	}
 
 }

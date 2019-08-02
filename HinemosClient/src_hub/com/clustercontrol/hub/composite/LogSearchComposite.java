@@ -1117,8 +1117,15 @@ public class LogSearchComposite extends Composite {
 		} catch (MonitorNotFound_Exception | HinemosUnknown_Exception e) {
 			errorMsgs.put( managerName, Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage()));
 		} catch (Exception e) {
-			logger.warn("update() getMonitorList, " + HinemosMessage.replace(e.getMessage()), e);
-			errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+			if (e instanceof com.clustercontrol.ws.monitor.InvalidRole_Exception) {
+				// 権限なし
+				logger.warn("update() getMonitorList, " + HinemosMessage.replace(e.getMessage()), e);
+				errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
+			} else {
+				logger.warn("update() getMonitorList, " + HinemosMessage.replace(e.getMessage()), e);
+				errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + ", "
+						+ HinemosMessage.replace(e.getMessage()));
+			}
 		}
 	}
 }

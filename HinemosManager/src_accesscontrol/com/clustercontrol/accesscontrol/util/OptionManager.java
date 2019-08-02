@@ -11,7 +11,7 @@ package com.clustercontrol.accesscontrol.util;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.clustercontrol.util.KeyCheck;
+import com.clustercontrol.bean.ActivationKeyConstant;
 
 /**
  * オプション管理用ユーティリティクラス
@@ -50,7 +50,7 @@ public class OptionManager {
 	 * @return
 	 */
 	public static boolean checkEnterprise() {
-		return has(KeyCheck.TYPE_ENTERPRISE);
+		return has(ActivationKeyConstant.TYPE_ENTERPRISE);
 	}
 	
 	/**
@@ -59,7 +59,7 @@ public class OptionManager {
 	 * @return
 	 */
 	public static boolean checkxCloud() {
-		return has(KeyCheck.TYPE_XCLOUD);
+		return has(ActivationKeyConstant.TYPE_XCLOUD);
 	}
 
 }

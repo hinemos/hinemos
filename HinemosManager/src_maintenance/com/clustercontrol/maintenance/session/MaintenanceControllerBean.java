@@ -16,6 +16,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.util.RoleValidator;
+import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -48,6 +50,8 @@ import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.platform.maintenance.MaintenanceCollectDataRaw;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.apllog.AplLogger;
 
 /**
  * 
@@ -693,9 +697,10 @@ public class MaintenanceControllerBean {
 			//メンテナンス実行
 			notifyInfo = runMaintenance(maintenanceId);
 
-			// 通知設定
-			jtm.addCallback(new NotifyCallback(notifyInfo));
-
+			if (notifyInfo != null) {
+				// 通知設定
+				jtm.addCallback(new NotifyCallback(notifyInfo));
+			}
 			jtm.commit();
 		} catch (CalendarNotFound e) {
 			jtm.rollback();
@@ -716,6 +721,12 @@ public class MaintenanceControllerBean {
 		} finally {
 			if (jtm != null)
 				jtm.close();
+			if (notifyInfo == null) {
+				// AplLoggerによるINTERNALイベント
+				String[] args = {maintenanceId};
+				AplLogger.put(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.SYSYTEM_MAINTENANCE, 
+						MessageConstant.MESSAGE_MAINTENANCE_STOPPED_FAILED, args);
+			}
 		}
 	}
 
@@ -803,7 +814,24 @@ public class MaintenanceControllerBean {
 
 		return ret;
 	}
-	
+
+	/**
+	 * 収集蓄積情報(バイナリ)を削除します。
+	 * 
+	 * @param dataRetentionPeriod 保存期間(日)
+	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
+	 * @param ownerRoleId オーナーロールID
+	 * @return 削除件数
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * 
+	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
+	 * 
+	 */
+	public int deleteCollectBinaryData(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+		return deleteCollectBinaryData(dataRetentionPeriod, status, ownerRoleId, null);
+	}
+
 	/**
 	 * 収集蓄積情報(バイナリ)を削除します。
 	 * 
@@ -819,9 +847,14 @@ public class MaintenanceControllerBean {
 	 * 
 	 */
 	public int deleteCollectBinaryData(int dataRetentionPeriod, boolean status, String ownerRoleId, String monitorTypeId) throws InvalidRole, HinemosUnknown {
-		m_log.debug("deleteCollectBinaryData() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
+		m_log.debug("deleteCollectBinaryData() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId + ", monitorTypeId = " + monitorTypeId);
 		JpaTransactionManager jtm = null;
-		MaintenanceCollectBinaryData binData = new MaintenanceCollectBinaryData(monitorTypeId);
+		MaintenanceCollectBinaryData binData = null;
+		if (monitorTypeId == null) {
+			binData = new MaintenanceCollectBinaryData();
+		} else {
+			binData = new MaintenanceCollectBinaryData(monitorTypeId);
+		}
 		int ret = 0;
 		try{
 			jtm = new JpaTransactionManager();

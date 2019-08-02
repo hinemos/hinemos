@@ -261,14 +261,6 @@ public class CollectorMasterCache {
 				}
 			}
 			
-			if (pollingTargetList.isEmpty()) {
-				String errorMessag = String.format("getPollingTarget() : polling target not found in cc_collector_polling_mst.  collectMethod = %s, platformId = %s, subPlatformId = %s",
-						collectMethod, platformId, subPlatformId
-						);
-				m_log.error(errorMessag);
-				throw new IllegalStateException(errorMessag);
-			}
-			
 			return pollingTargetList;
 		} finally {
 			_lock.readUnlock();

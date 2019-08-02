@@ -46,13 +46,12 @@ public class HinemosPropertyInfoCache {
 		
 		try {
 			_lock.writeLock();
-			
 			HashMap<String, HinemosPropertyInfo> cache = getCache();
 			if (cache == null) {	// not null when clustered
 				refresh();
-				if (log.isTraceEnabled()) {
-					cache = getCache();
-					log.trace("get cache " + AbstractCacheManager.KEY_COMMON_PROPERTY + " : " + cache);
+				cache = getCache();
+				if (cache != null) {
+					log.info("HinemosProperty cache : " + cache.toString());
 				}
 			}
 		} finally {
@@ -123,5 +122,14 @@ public class HinemosPropertyInfoCache {
 			infoMap.put(entity.getKey(), entity);
 		}
 		return infoMap;
+	}
+	
+	public static void logCache() {
+		HashMap<String, HinemosPropertyInfo> cache = getCache();
+		if (cache != null) {
+			for (HinemosPropertyInfo info : cache.values()) {
+				log.info("HinemosPropery Cache:" + info.toString());
+			}
+		}
 	}
 }

@@ -243,6 +243,14 @@ public class OutputStatus implements DependDbNotifier {
 				outputStatus.setOutputDate(outputDateTime);
 				outputStatus.setExpirationFlg(expirationFlg);
 				outputStatus.setExpirationDate(expirationDateTime);
+				// 同一IDによる監視項目の再作成により、既設の通知でもオーナーロールが変更となる場合がありえるので、再設定
+				if (roleId == null) {
+					outputStatus.setOwnerRoleId(NotifyUtil.getOwnerRoleId(
+							outputStatusPk.getPluginId(), outputStatusPk.getMonitorId(),
+							outputStatusPk.getMonitorDetailId(), outputStatusPk.getFacilityId(), false));
+				} else {
+					outputStatus.setOwnerRoleId(roleId);
+				}
 			}
 		}
 	}

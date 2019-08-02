@@ -10,12 +10,15 @@ package com.clustercontrol.jobmanagement.factory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
@@ -1078,6 +1081,30 @@ public class FullJob {
 			setJobTreeFull(childJob);
 		}
 	}
+
+	/**
+	 * キャッシュ中に指定の通知IDが含まれていないか検索して
+	 * 含まれていたなら、そのジョブ定義のキャッシュを更新する。
+	 * 
+	 * @param findNotifyIds 検索したい通知ID(配列)
+	 */
+	public static void updateCacheForNotifyId(String[] findNotifyIds) {
+		final long start = HinemosTime.currentTimeMillis();
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("updateCacheForNotifyId() id=" + String.join(",", findNotifyIds));
+		}
+		//アップデート対象ユニットを取得
+		//  キャッシュを走査して 通知IDをジョブ定義に用いてるジョブユニットを探し出す。
+		//  NotifyRelationInfoから紐づくジョブ定義の取得は、
+		//  データ構造的に考慮外なので（通知グループIDの文字列中にIDが埋込まれているのみ）キャッシュの走査処理で代替。
+		final Set<String> updateJobUnitIdSet = getContainJobUnitFromCache(findNotifyIds);
+		
+		//対象ジョブユニットのキャッシュを更新
+		for (String unitId : updateJobUnitIdSet) {
+			updateCache(unitId);
+		}
+		m_log.info("updateCacheForNotifyId() " + (HinemosTime.currentTimeMillis() - start) + "ms");
+	}
 	
 	// マップがnullでない場合はジョブ変数、待ち条件、ジョブ終了時の変数設定、環境変数、待ち条件(ジョブ変数)を引数のマップから取得する
 	private static JobInfo createJobInfo(JobMstEntity jobMstEntity,
@@ -1341,4 +1368,58 @@ public class FullJob {
 		}
 		m_log.debug("notifyRelMap size=" + notifyRelMap.size());
 	}
+	
+	/**
+	 * JobInfoキャッシュ中に指定の通知IDが含まれていないか検索して
+	 * 該当するジョブ定義を保持するジョブユニットのIDを返却
+	 * 
+	 * @param findNotifyIds 検索したい通知ID(配列)
+	 * @return ジョブユニットのID(セット)
+	 */
+	private static Set<String> getContainJobUnitFromCache(String[] findNotifyIds) {
+		
+		final List<String> notifyIdList = Arrays.asList(findNotifyIds);
+		final Set<String> updateIDSet = new HashSet<String>();
+		
+		try {
+			_lock.readLock();
+			//キャッシュ内のユニット毎にチェック処理
+			Map<String, Map<String, JobInfo>> jobInfoCache = getJobInfoCache();
+			for (String keyUnitId : jobInfoCache.keySet()) {
+				//ユニット毎の全ジョブ定義について、指定の通知IDが含まれていないか検索
+				Map<String, JobInfo> unitInfoMap = jobInfoCache.get(keyUnitId);
+				boolean isNeedUpdate = false;
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("getContainJobUnitFromCache() searchUnitId=" + keyUnitId);
+				}
+				for (JobInfo jobInfo : unitInfoMap.values()) {
+					if (jobInfo == null || jobInfo.getNotifyRelationInfos() == null) {
+						continue;
+					}
+					for (NotifyRelationInfo relationInfo : jobInfo.getNotifyRelationInfos()) {
+						if (relationInfo == null || relationInfo.getNotifyId() == null) {
+							continue;
+						}
+						if (m_log.isTraceEnabled()) {
+							m_log.trace("getContainJobUnitFromCache() jobInfo.getId=" + jobInfo.getId() + ", relationInfo.getNotifyId=" + relationInfo.getNotifyId());
+						}
+						if (notifyIdList.contains(relationInfo.getNotifyId())) {
+							//指定の通知IDが含まれていたら 該当ユニットをリストに追加
+							isNeedUpdate = true;
+							break;
+						}
+					}
+					if (isNeedUpdate) {
+						updateIDSet.add(keyUnitId);
+						break;
+					}
+				}
+			}
+		} finally {
+			_lock.readUnlock();
+		}
+		return updateIDSet;
+		
+	}
+	
 }

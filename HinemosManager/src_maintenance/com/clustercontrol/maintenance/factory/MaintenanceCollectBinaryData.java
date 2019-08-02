@@ -31,7 +31,16 @@ public class MaintenanceCollectBinaryData extends MaintenanceObject {
 
 	private static Log m_log = LogFactory.getLog(MaintenanceCollectBinaryData.class);
 
-	private String monitorTypeId;
+	private static final Object _deleteLock = new Object();
+
+	private String monitorTypeId = null;
+
+	/**
+	 * コンストラクタ.
+	 */
+	public MaintenanceCollectBinaryData() {
+		super();
+	}
 
 	/**
 	 * コンストラクタ.
@@ -52,34 +61,48 @@ public class MaintenanceCollectBinaryData extends MaintenanceObject {
 		JpaTransactionManager jtm = null;
 
 		try {
-			ArrayList<MonitorInfo> monitorList = new MonitorSettingControllerBean().getMonitorList();
-
-			ArrayList<String> monitorIdList = new ArrayList<>();
-
-			// 指定の監視種別だけに絞り込む.
-			for (MonitorInfo monitorInfo : monitorList) {
-				if (!this.monitorTypeId.equals(monitorInfo.getMonitorTypeId())) {
-					continue;
-				}
-				if (RoleIdConstant.isAdministratorRole(ownerRoleId) 
-						|| monitorInfo.getOwnerRoleId().equals(ownerRoleId)) {
-					monitorIdList.add(monitorInfo.getMonitorId());
-				}
-			}
-			if (monitorIdList.isEmpty()) {
-				return -1;
-			}
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			// 削除処理.
-			for (int i = 0; i < monitorIdList.size(); i++) {
-				ret += delete(boundary, status, monitorIdList.get(i));
+			//AdminRoleの場合、かつバイナリ監視すべてを対象とする場合は、全て削除
+			if(RoleIdConstant.isAdministratorRole(ownerRoleId) && this.monitorTypeId == null){
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+				ret = delete(boundary, status);
 				jtm.commit();
+
+			} else {
+				ArrayList<MonitorInfo> monitorList = new MonitorSettingControllerBean().getMonitorList();
+
+				ArrayList<String> monitorIdList = new ArrayList<>();
+
+				for (MonitorInfo monitorInfo : monitorList) {
+					if (this.monitorTypeId != null 
+							&& !this.monitorTypeId.equals(monitorInfo.getMonitorTypeId())) {
+						continue;
+					}
+					if (RoleIdConstant.isAdministratorRole(ownerRoleId) 
+							|| monitorInfo.getOwnerRoleId().equals(ownerRoleId)) {
+						monitorIdList.add(monitorInfo.getMonitorId());
+					}
+				}
+				if (monitorIdList.isEmpty()) {
+					return ret;
+				}
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+
+				// 削除処理.
+				for (int i = 0; i < monitorIdList.size(); i++) {
+					synchronized (_deleteLock) {
+						ret += delete(boundary, status, monitorIdList.get(i));
+						jtm.commit();
+					}
+				}
 			}
 
 		} catch (Exception e) {
-			m_log.warn("deleteCollectData() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			String countMessage = "delete count : " + ret + " records" + "\n";
+			m_log.warn("deleteCollectData() : " + countMessage
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			ret = -1;
 			if (jtm != null)
 				jtm.rollback();
 		} finally {
@@ -94,14 +117,26 @@ public class MaintenanceCollectBinaryData extends MaintenanceObject {
 	 */
 	protected int delete(Long boundary, boolean status, String monitorId) {
 		m_log.debug("_delete() start : status = " + status);
-		int ret = -1;
 
 		// SQL文の実行
 		// for HA (縮退判定時間を延ばすため)、シングルには影響なし(0)：タイムアウト値設定
-		ret = QueryUtil.deleteCollectBinaryDataByDateTimeAndMonitorId(boundary,
+		int ret = QueryUtil.deleteCollectBinaryDataByDateTimeAndMonitorId(boundary,
 				HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue(), monitorId);
 
 		// 終了
+		m_log.debug("_delete() count : " + ret);
+		return ret;
+	}
+
+	protected int delete(Long boundary, boolean status) {
+		m_log.debug("_delete() start : status = " + status);
+
+		//SQL文の実行
+		//for HA (縮退判定時間を延ばすため)、シングルには影響なし(0)：タイムアウト値設定
+		int ret = QueryUtil.deleteCollectBinaryDataByDateTime(boundary,
+				HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue());
+
+		//終了
 		m_log.debug("_delete() count : " + ret);
 		return ret;
 	}

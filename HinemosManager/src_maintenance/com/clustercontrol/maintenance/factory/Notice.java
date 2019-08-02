@@ -38,9 +38,7 @@ public class Notice {
 	 * メンテナンスIDからメンテナンス通知情報を取得し、<BR>
 	 * メンテナンス通知情報と終了状態を基に、ログ出力情報作成し、監視管理に通知します。
 	 * 
-	 * @param sessionId セッションID
 	 * @param maintenanceId メンテナンスID
-	 * @param type 終了状態
 	 * @param result メンテナンス実行結果
 	 * @return 通知情報
 	 * @throws HinemosUnknown 
@@ -49,10 +47,14 @@ public class Notice {
 	 * @see com.clustercontrol.bean.JobConstant
 	 * @see com.clustercontrol.monitor.message.LogOutputNotifyInfo
 	 */
-	protected OutputBasicInfo createOutputBasicInfo(String maintenanceId, Integer type, int result) throws HinemosUnknown {
-		m_log.debug("createOutputBasicInfo() : maintenanceId=" + maintenanceId + ", type=" + type);
+	protected OutputBasicInfo createOutputBasicInfo(String maintenanceId, int result) throws HinemosUnknown {
+		m_log.debug("createOutputBasicInfo() : maintenanceId=" + maintenanceId);
 
 		OutputBasicInfo rtn = null;
+		// result=-1の場合は、以降の処理で異常終了とするためnullを返す。
+		if (result < 0) {
+			return rtn;
+		}
 
 		//MaintenanceInfoを取得する
 		MaintenanceInfo info = null;
@@ -78,24 +80,23 @@ public class Notice {
 				rtn.setFacilityId(FacilityTreeAttributeConstant.INTERNAL_SCOPE);
 				rtn.setScopeText(FacilityTreeAttributeConstant.INTERNAL_SCOPE_TEXT);
 
-				//メッセージID、メッセージ、オリジナルメッセージ
-				if(type.intValue() == PriorityConstant.TYPE_INFO){
-					String[] args1 = {maintenanceId};
-					rtn.setMessage(MessageConstant.MESSAGE_MAINTENACE_STOPPED_SUCCESS.getMessage(args1));
-				}
-				else if(type.intValue() == PriorityConstant.TYPE_CRITICAL){
-					String[] args1 = {maintenanceId};
-					rtn.setMessage(MessageConstant.MESSAGE_MAINTENANCE_STOPPED_FAILED.getMessage(args1));
-				}
+				//重要度、メッセージ、オリジナルメッセージ
+				rtn.setPriority(PriorityConstant.TYPE_INFO);
+				String[] args1 = {maintenanceId};
+				rtn.setMessage(MessageConstant.MESSAGE_MAINTENACE_STOPPED_SUCCESS.getMessage(args1));
 				rtn.setMessageOrg(info.getMaintenanceTypeMstEntity().getType_id() + " : " + result + " records");
 
-				//重要度
-				rtn.setPriority(type.intValue());
 				//発生日時
 				rtn.setGenerationDate(HinemosTime.getDateInstance().getTime());
 			}
 		} catch (MaintenanceNotFound e) {
+			m_log.warn("createOutputBasicInfo() : " 
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			rtn = null;
 		} catch (InvalidRole e) {
+			m_log.warn("createOutputBasicInfo() : " 
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			rtn = null;
 		}
 		return rtn;
 	}

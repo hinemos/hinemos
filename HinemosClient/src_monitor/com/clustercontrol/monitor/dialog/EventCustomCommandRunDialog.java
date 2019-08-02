@@ -89,7 +89,7 @@ public class EventCustomCommandRunDialog extends CommonDialog {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point(540, 320);
+		return new Point(540, 330);
 	}
 
 	/**

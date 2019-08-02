@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -55,9 +57,11 @@ public class ReachAddressPOP3 extends ReachAddressProtocol {
 			String result = "";
 
 			InetAddress address = InetAddress.getByName(addressText);
+			// タイムアウト付のホスト名取得
+			String hostname = getHostNameFromNodeWithTimeout(address);
 
 			bufferOrg.append("Monitoring the POP3 Service of "
-					+ address.getHostName() + "[" + address.getHostAddress()
+					+ hostname + "[" + address.getHostAddress()
 					+ "]:" + m_portNo + ".\n\n");
 
 			POP3Client client = new POP3Client();
@@ -131,6 +135,9 @@ public class ReachAddressPOP3 extends ReachAddressProtocol {
 			m_message = MessageConstant.MESSAGE_FAIL_TO_EXECUTE_TO_CONNECT.getMessage() + " ("
 					+ e.getMessage() + ")";
 
+			return false;
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			// abstractクラスでエラーハンドリングを行っているため、結果のみ返却する。
 			return false;
 		}
 	}

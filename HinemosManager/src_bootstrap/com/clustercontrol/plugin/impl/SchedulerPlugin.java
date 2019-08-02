@@ -69,10 +69,14 @@ public class SchedulerPlugin implements HinemosPlugin {
 	// スケジュール情報の登録方法(CRON : cronと同様の書式を指定, SIMPLE : INTERVALのみを指定, NONE : トリガーを登録しない )
 	public static enum TriggerType { CRON, SIMPLE, NONE };
 
-	// スケジューラ情報の保持種別(RAM : オンメモリで管理、DBMS : DBで永続化管理)
+	// スケジューラ情報の保持種別( RAM_MONITOR,RAM_JOB : オンメモリで管理、DBMS,DBMS_JOB,DBMS_DEL : DBで永続化管理)
 	public static enum SchedulerType {
-		RAM( "ram",  HinemosPropertyCommon.scheduler_ram_threadPool_size, HinemosPropertyCommon.scheduler_ram_misfireThreshold),
-		DBMS("dbms", HinemosPropertyCommon.scheduler_dbms_threadPool_size, HinemosPropertyCommon.scheduler_dbms_misfireThreshold);
+		//DBMS系のmisfireThresholdについてはユーザー向けにマニュアルで提示されているので、従来設定を共通で利用する
+		RAM_MONITOR( "ram-monitor",  HinemosPropertyCommon.scheduler_ram_monitor_threadPool_size, HinemosPropertyCommon.scheduler_ram_monitor_misfireThreshold),
+		RAM_JOB( "ram-job",  HinemosPropertyCommon.scheduler_ram_job_threadPool_size, HinemosPropertyCommon.scheduler_ram_job_misfireThreshold),
+		DBMS_JOB("dbms-job", HinemosPropertyCommon.scheduler_dbms_job_threadPool_size, HinemosPropertyCommon.scheduler_dbms_misfireThreshold),
+		DBMS_DEL("dbms-del", HinemosPropertyCommon.scheduler_dbms_del_threadPool_size, HinemosPropertyCommon.scheduler_dbms_misfireThreshold),
+		DBMS("dbms", HinemosPropertyCommon.scheduler_dbms_trans_threadPool_size, HinemosPropertyCommon.scheduler_dbms_misfireThreshold);
 
 		SchedulerType(String name, HinemosPropertyCommon HinemosPropertySize, HinemosPropertyCommon HinemosPropertyMisfireThreashold) {
 			mainThreadName = "HinemosScheduler-" + name + "-dispatcher";
@@ -121,10 +125,16 @@ public class SchedulerPlugin implements HinemosPlugin {
 				int delaySec = HinemosPropertyCommon.common_scheduler_startup_delay.getIntegerValue();
 				log.info("initializing SchedulerPlugin : properties (delaySec = " + delaySec + ")");
 				
-				HinemosScheduler ram = new HinemosScheduler(SchedulerType.RAM);
-				HinemosScheduler dbms = new HinemosScheduler(SchedulerType.DBMS);
-				_scheduler.put(SchedulerType.RAM, ram);
-				_scheduler.put(SchedulerType.DBMS, dbms);
+				HinemosScheduler ramMon = new HinemosScheduler(SchedulerType.RAM_MONITOR);
+				HinemosScheduler ramJob = new HinemosScheduler(SchedulerType.RAM_JOB);
+				HinemosScheduler dbmsJob = new HinemosScheduler(SchedulerType.DBMS_JOB);
+				HinemosScheduler dbmsDel = new HinemosScheduler(SchedulerType.DBMS_DEL);
+				HinemosScheduler dbmsTrans = new HinemosScheduler(SchedulerType.DBMS);
+				_scheduler.put(SchedulerType.RAM_MONITOR, ramMon);
+				_scheduler.put(SchedulerType.RAM_JOB, ramJob);
+				_scheduler.put(SchedulerType.DBMS_JOB, dbmsJob);
+				_scheduler.put(SchedulerType.DBMS_DEL, dbmsDel);
+				_scheduler.put(SchedulerType.DBMS, dbmsTrans);
 			}
 			
 			if (HinemosManagerMain._startupMode != StartupMode.MAINTENANCE) {
@@ -285,7 +295,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 //				.withSchedule(scheduleBuilder)
 				.build();
 		
-		if(type == SchedulerPlugin.SchedulerType.DBMS){
+		if( SchedulerPlugin.isDBMS(type)){
 			// DBMSスケジューラの場合、存在チェックの上、DBへ登録または更新処理を呼ぶ
 			// 同じレコードへの削除/登録は1トランザクションでは連続で出来ないため
 			try {
@@ -384,7 +394,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 //				.withSchedule(schedulerBuilder)
 				.build();
 		
-		if(type == SchedulerPlugin.SchedulerType.DBMS){
+		if( SchedulerPlugin.isDBMS(type)){
 			// DBMSスケジューラの場合、存在チェックの上、DBへ登録または更新処理を呼ぶ
 			// 同じレコードへの削除/登録は1トランザクション内では出来ないため
 			try {
@@ -444,7 +454,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 	public static void deleteJob(SchedulerType type, String name, String group) throws HinemosUnknown {
 		if (log.isDebugEnabled()) log.debug("deleteJob() name:" + name + ", group:" + group);
 		
-		if(type == SchedulerPlugin.SchedulerType.DBMS){
+		if( SchedulerPlugin.isDBMS(type)){
 			try {
 				log.trace("deleteJob() : deleteDbmsScheduler() call.");
 				ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();
@@ -467,8 +477,8 @@ public class SchedulerPlugin implements HinemosPlugin {
 	private void initTrigger() throws HinemosUnknown {
 		// setup Job for Status Notification Management
 		try {
-			if (! _scheduler.get(SchedulerType.RAM).checkExists(new JobKey("MonitorController", "MON"))) {
-				scheduleCronJob(SchedulerType.RAM, "MonitorController", "MON",
+			if (! _scheduler.get(SchedulerType.RAM_MONITOR).checkExists(new JobKey("MonitorController", "MON"))) {
+				scheduleCronJob(SchedulerType.RAM_MONITOR, "MonitorController", "MON",
 						HinemosTime.currentTimeMillis(), HinemosPropertyCommon.scheduler_monitor_cron.getStringValue(),
 						true, MonitorControllerBean.class.getName(),
 						"manageStatus", new Class[0], new Serializable[0]);
@@ -479,8 +489,8 @@ public class SchedulerPlugin implements HinemosPlugin {
 
 		// setup Job for Job Management
 		try {
-			if (! _scheduler.get(SchedulerType.RAM).checkExists(new JobKey("JobRunManagement", "JOB_MANAGEMENT"))) {
-				scheduleCronJob(SchedulerType.RAM, "JobRunManagement",
+			if (! _scheduler.get(SchedulerType.RAM_JOB).checkExists(new JobKey("JobRunManagement", "JOB_MANAGEMENT"))) {
+				scheduleCronJob(SchedulerType.RAM_JOB, "JobRunManagement",
 						"JOB_MANAGEMENT", HinemosTime.currentTimeMillis(),
 						HinemosPropertyCommon.scheduler_job_cron.getStringValue(), true,
 						JobRunManagementBean.class.getName(), "run",
@@ -492,8 +502,8 @@ public class SchedulerPlugin implements HinemosPlugin {
 
 		// setup Job for Repository Run Management
 		try {
-			if (! _scheduler.get(SchedulerType.RAM).checkExists(new JobKey("RepositoryRunManagement", "REPOSITORY_MANAGEMENT"))) {
-				scheduleCronJob(SchedulerType.RAM, "RepositoryRunManagement",
+			if (! _scheduler.get(SchedulerType.RAM_MONITOR).checkExists(new JobKey("RepositoryRunManagement", "REPOSITORY_MANAGEMENT"))) {
+				scheduleCronJob(SchedulerType.RAM_MONITOR, "RepositoryRunManagement",
 						"REPOSITORY_MANAGEMENT", HinemosTime.currentTimeMillis(),
 						HinemosPropertyCommon.scheduler_repository_cron.getStringValue(), true,
 						RepositoryRunManagementBean.class.getName(), "run",
@@ -505,8 +515,8 @@ public class SchedulerPlugin implements HinemosPlugin {
 
 		// setup Job for Monitor Status Management
 		try {
-			if (! _scheduler.get(SchedulerType.RAM).checkExists(new JobKey("MonitorStatusManagement", "MONITOR_STATUS_MANAGEMENT"))) {
-				scheduleCronJob(SchedulerType.RAM, "MonitorStatusManagement",
+			if (! _scheduler.get(SchedulerType.RAM_MONITOR).checkExists(new JobKey("MonitorStatusManagement", "MONITOR_STATUS_MANAGEMENT"))) {
+				scheduleCronJob(SchedulerType.RAM_MONITOR, "MonitorStatusManagement",
 						"MONITOR_STATUS_MANAGEMENT", HinemosTime.currentTimeMillis(),
 						HinemosPropertyCommon.scheduler_monitor_status_cron.getStringValue(), true,
 						MonitorControllerBean.class.getName(),
@@ -731,7 +741,7 @@ public class SchedulerPlugin implements HinemosPlugin {
 				synchronized (_schedulerLock) {
 					if (log.isDebugEnabled()) log.debug("scheduleJob() name=" + entity.getId().getJobId() + ", group=" + entity.getId().getJobGroup());
 					// DBには登録済みのため、RAMへの展開/登録のみ実施する関数を呼ぶ
-					_scheduler.get(SchedulerPlugin.SchedulerType.DBMS).initDbmsScheduleJob(job, trigger, entity.getTriggerState());
+					_scheduler.get(SchedulerPlugin.toSchedulerTypeForDBMS(job.getGroup())).initDbmsScheduleJob(job, trigger, entity.getTriggerState());
 				}
 			} catch (RuntimeException e) {
 				log.warn("initDbmsScheduler() entity : jobId = " + entity.getId().getJobId()
@@ -800,4 +810,60 @@ public class SchedulerPlugin implements HinemosPlugin {
 			throw new HinemosUnknown("failed getting state of scheduler.", e);
 		}
 	}
+	
+	/**
+	 * <pre>
+	 * ジョブのグループ名を元にスケジュールタイプを決定する。
+	 * DBMSスケジューラ向けである
+	 * DBMSスケジュールタイプの決定はここで一元管理する
+	 * スケジュールタイプには DBMS,DBMS_JOB,DBMS_DEL の３種類が存在する前提
+	 * 
+	 * 補足
+	 * RAMスケジューラはジョブグループからスケジュールタイプが確定しないケースがあるので
+	 * 対象をDBMSのみとしている。
+	 * 
+	 * </pre>
+	 *
+	 * @param group ジョブのグループ名
+	 * @return type スケジューラ定義の保持型
+	 */
+	public static SchedulerType toSchedulerTypeForDBMS( String group) {
+		if (log.isDebugEnabled()){ 
+			log.debug(" toSchedulerTypeForDBMS() group:" + group);
+		}
+		//設定なしなら汎用で
+		if( group == null ){
+			return SchedulerPlugin.SchedulerType.DBMS;
+		}
+		//グループ：ジョブなら専用タイプあり
+		if( com.clustercontrol.jobmanagement.bean.QuartzConstant.GROUP_NAME.equals(group)){
+			return SchedulerPlugin.SchedulerType.DBMS_JOB;
+		}
+		//グループ：メンテナンスなら専用タイプあり
+		if( com.clustercontrol.maintenance.bean.QuartzConstant.GROUP_NAME.equals(group)){
+			return SchedulerPlugin.SchedulerType.DBMS_DEL;
+		}
+		//上記以外は汎用で
+		return SchedulerPlugin.SchedulerType.DBMS;
+	}
+
+	/**
+	 * <pre>
+	 * スケジュールタイプがDBMSスケジューラであるかを判定
+	 * DBMSスケジュールタイプには DBMS,DBMS_JOB,DBMS_DEL の３種類が存在する前提
+	 * </pre>
+	 *
+	 * @param type スケジューラ定義の保持型
+	 * @return DBMSスケジューラならtrue
+	 */
+	public static boolean isDBMS( SchedulerType type) {
+		if(type == SchedulerPlugin.SchedulerType.DBMS_JOB
+			|| type == SchedulerPlugin.SchedulerType.DBMS_DEL
+			|| type == SchedulerPlugin.SchedulerType.DBMS){
+			return true;
+		}
+		return false;
+	}
+		
+
 }

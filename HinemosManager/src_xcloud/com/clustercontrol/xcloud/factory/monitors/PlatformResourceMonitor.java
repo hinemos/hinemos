@@ -427,7 +427,7 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 		try {
 			String cronString = HinemosPropertyCommon.xcloud_autoupdate_interval.getStringValue();
 			if(!"off".equals(cronString)) {
-				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM, jobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, PlatformResourceMonitor.class.getName(), "execute", new Class[]{}, new Serializable[]{});
+				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM_MONITOR, jobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, PlatformResourceMonitor.class.getName(), "execute", new Class[]{}, new Serializable[]{});
 			} else {
 				logger.debug("Skipping PlatformResourceMonitor.");
 			}
@@ -437,7 +437,7 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 			// 起動に失敗した場合、cron 文字列を既定で再試行。
 			try {
 				String cronString = HinemosPropertyCommon.xcloud_autoupdate_interval.getStringValue();
-				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM, jobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, PlatformResourceMonitor.class.getName(), "execute", new Class[]{}, new Serializable[]{});
+				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM_MONITOR, jobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, PlatformResourceMonitor.class.getName(), "execute", new Class[]{}, new Serializable[]{});
 			} catch (HinemosUnknown|NullPointerException e1) {
 				logger.warn(e.getMessage(), e);
 			} catch (Exception e1) {
@@ -448,7 +448,7 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 
 	public static void stop() {
 		try {
-			SchedulerPlugin.deleteJob(SchedulerType.RAM, jobName, jobGroupName);
+			SchedulerPlugin.deleteJob(SchedulerType.RAM_MONITOR, jobName, jobGroupName);
 		} catch (HinemosUnknown e) {
 			Logger.getLogger(PlatformResourceMonitor.class).warn(e.getMessage(), e);
 		}

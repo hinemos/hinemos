@@ -136,7 +136,7 @@ public final class HinemosScheduler {
 			if (trigger.getNextFireTime() < 0) {
 				status = TriggerState.EXECUTED;
 				
-				if(scheduler.getSchedulerType() == SchedulerPlugin.SchedulerType.DBMS){
+				if( SchedulerPlugin.isDBMS(scheduler.getSchedulerType())){
 					try {
 						m_log.trace("notifySuccess() : modifyDbmsSchedulerInternal() call.");
 						ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();
@@ -158,7 +158,7 @@ public final class HinemosScheduler {
 			if (trigger.getNextFireTime() < 0) {
 				status = TriggerState.ERROR;
 				
-				if(scheduler.getSchedulerType() == SchedulerPlugin.SchedulerType.DBMS){
+				if( SchedulerPlugin.isDBMS(scheduler.getSchedulerType())){
 					try {
 						m_log.trace("notifyError() : modifyDbmsSchedulerInternal() call.");
 						ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();
@@ -317,7 +317,7 @@ public final class HinemosScheduler {
 		
 		for (JobWrapper wrapper: jobs.values()) {
 			// DBMS分はinitDbmsScheduleJob()で反映済みのため、RAM分のみTrigger情報を更新する
-			if(schedulerType != SchedulerPlugin.SchedulerType.DBMS){
+			if(SchedulerPlugin.isDBMS(schedulerType) == false){
 				if (wrapper.getStatus() != TriggerState.VIRGIN)
 					throw new IllegalStateException("Task already scheduled or cancelled");
 				wrapper.getTrigger().computeFirstFireTime(HinemosTime.currentTimeMillis());
@@ -336,6 +336,10 @@ public final class HinemosScheduler {
 				Thread.sleep(startDelayMillis);
 			}
 			
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("mainLoop() :  start . scheduler=" + schedulerType.name() + " ,threshold="+threshold + 
+					" ,executor.maximumPoolSize=" + executor.getMaximumPoolSize() + " ,startDelayMillis="+startDelayMillis);
+			}
 			// キューからタスクを取り出し、ThreadPoolに処理委譲させるメインループ
 			// （スケジューラのメインスレッドはこのループ内でジョブをディスパッチし続ける）
 			while (true) {
@@ -414,7 +418,7 @@ public final class HinemosScheduler {
 						// 今のところ何もしない動きにしている(以前のスケジュールは実行せず、現在時刻基点で再スケジュール)
 					}
 					// Trigger情報更新
-					if(schedulerType == SchedulerPlugin.SchedulerType.DBMS){
+					if(SchedulerPlugin.isDBMS(schedulerType)){
 						try {
 							m_log.trace("mainLoop() : modifyDbmsSchedulerInternal() call.");
 							ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();
@@ -472,7 +476,7 @@ public final class HinemosScheduler {
 			wrapper.getTrigger().computeFirstFireTime(HinemosTime.currentTimeMillis());
 			wrapper.setStatus(TriggerState.SCHEDULED);
 			// Trigger情報更新
-			if(schedulerType == SchedulerPlugin.SchedulerType.DBMS){
+			if( SchedulerPlugin.isDBMS(schedulerType)){
 				try {
 					m_log.trace("scheduleJob() : modifyDbmsSchedulerInternal() call.");
 					ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();

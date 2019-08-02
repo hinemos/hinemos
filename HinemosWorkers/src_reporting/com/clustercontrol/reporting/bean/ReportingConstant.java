@@ -105,4 +105,6 @@ public class ReportingConstant {
 	public static final String ITEM_NAME_STATUS = "item.name.status";
 	public static final String ITEM_NAME_TRIGGERINFO = "item.name.triggerinfo";
 	public static final String ITEM_NAME_TRIGGERTYPE = "item.name.triggertype";
+	public static final String ITEM_NAME_CONCURRENCY = "item.name.concurrency";
+	public static final String TITLE_JOBQUEUE_CONCURRENCY = "title.jobqueue.concurrency";
 }

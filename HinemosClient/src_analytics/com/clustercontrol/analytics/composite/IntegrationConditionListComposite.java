@@ -116,10 +116,10 @@ public class IntegrationConditionListComposite extends Composite {
 								m_monitorFacilityId, info);
 					if (dialog.open() == IDialogConstants.OK_ID) {
 						Table table = getTableViewer().getTable();
-						int selectIndex = table.getSelectionIndex();
+						int selectIndex = (Integer) ((ArrayList<?>) table.getSelection()[0].getData()).get(0) - 1;
 						m_conditionList.set(selectIndex, dialog.getInputData());
 						update();
-						table.setSelection(selectIndex);
+						table.setSelection(table.getSelectionIndex());
 					}
 				}
 			}

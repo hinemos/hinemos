@@ -152,7 +152,7 @@ public class PlatformServiceConditionMonitor extends CloudManagerJob {
 		try {
 			String cronString = HinemosPropertyCommon.xcloud_platform_service_monitor_interval.getStringValue();
 			if(! "off".equals(cronString)) {
-				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM, jobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, PlatformServiceConditionMonitor.class.getName(), "execute", new Class[]{}, new Serializable[]{});
+				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM_MONITOR, jobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, PlatformServiceConditionMonitor.class.getName(), "execute", new Class[]{}, new Serializable[]{});
 			} else {
 				Logger.getLogger(PlatformServiceConditionMonitor.class).debug("Skipping PlatformServiceConditionMonitor.");
 			}
@@ -162,7 +162,7 @@ public class PlatformServiceConditionMonitor extends CloudManagerJob {
 			// 起動に失敗した場合、cron 文字列を既定で再試行。
 			try {
 				String cronString = HinemosPropertyCommon.xcloud_platform_service_monitor_interval.getStringValue();
-				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM, jobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, PlatformServiceConditionMonitor.class.getName(), "execute", new Class[]{}, new Serializable[]{});
+				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM_MONITOR, jobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, PlatformServiceConditionMonitor.class.getName(), "execute", new Class[]{}, new Serializable[]{});
 			} catch (HinemosUnknown|NullPointerException e1) {
 				Logger.getLogger(PlatformServiceConditionMonitor.class).warn(e.getMessage(), e);
 			} catch (Exception e1) {
@@ -173,7 +173,7 @@ public class PlatformServiceConditionMonitor extends CloudManagerJob {
 	
 	public static void stop() {
 		try {
-			SchedulerPlugin.deleteJob(SchedulerType.RAM, jobName, jobGroupName);
+			SchedulerPlugin.deleteJob(SchedulerType.RAM_MONITOR, jobName, jobGroupName);
 		} catch (HinemosUnknown e) {
 			Logger.getLogger(PlatformServiceConditionMonitor.class).warn(e.getMessage(), e);
 		}

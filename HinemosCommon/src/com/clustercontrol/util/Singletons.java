@@ -45,6 +45,7 @@ public class Singletons {
 	 * 
 	 * @param clazz クラスオブジェクト。
 	 * @return 指定されたクラスの唯一のオブジェクト。
+	 * @throws RuntimeException デフォルトコンストラクタを使ったインスタンス化に失敗した場合に投げます。
 	 */
 	public static <T> T get(Class<T> clazz) {
 		Object o = instances.get(clazz);
@@ -60,7 +61,6 @@ public class Singletons {
 						instances.put(clazz, o);
 						log.info("get : Instantiated " + clazz.getName());
 					} catch (Exception e) {
-						// プログラムエラーしか考えられない
 						log.error("Failed to instantiate " + clazz.getName(), e);
 						throw new RuntimeException(e);
 					}

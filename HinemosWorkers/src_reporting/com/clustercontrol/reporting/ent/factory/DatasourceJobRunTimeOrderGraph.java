@@ -143,7 +143,7 @@ public class DatasourceJobRunTimeOrderGraph extends DatasourceBase {
 				Calendar timeCal = Calendar.getInstance();
 				Calendar baseCal = Calendar.getInstance();
 				baseCal.setTimeInMillis(0L);
-				Long maxTime = null; // 初回判定のため、初期値には　null を格納する
+				Double maxTime = null; // 初回判定のため、初期値には　null を格納する
 				
 				// 1970-01-01 00:00:00 の作成
 				
@@ -154,7 +154,7 @@ public class DatasourceJobRunTimeOrderGraph extends DatasourceBase {
 						String jobunitId = jobSessionJobEntity.getId().getJobunitId();
 						String jobId = jobSessionJobEntity.getId().getJobId();
 						Timestamp startTime = new Timestamp(jobSessionJobEntity.getStartDate());
-						Long elapsedTime = jobSessionJobEntity.getEndDate() - jobSessionJobEntity.getStartDate();
+						Double elapsedTime = (double) (jobSessionJobEntity.getEndDate() - jobSessionJobEntity.getStartDate());
 						
 						timeCal.setTimeInMillis(startTime.getTime());
 						
@@ -204,7 +204,7 @@ public class DatasourceJobRunTimeOrderGraph extends DatasourceBase {
 							}
 							
 							// ベース時刻の初期化
-							maxTime = -1L;
+							maxTime = -1D;
 						}
 						
 						// 日別で最大実行時間を抽出する

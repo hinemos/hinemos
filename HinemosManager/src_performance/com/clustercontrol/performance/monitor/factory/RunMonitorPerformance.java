@@ -26,6 +26,7 @@ import com.clustercontrol.collect.bean.Sample;
 import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.commons.util.ObjectSharingService;
 import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosIllegalArgumentException;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
@@ -319,6 +320,44 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 			} catch (FacilityNotFound e) {
 				// TODO nagatsumas ログ出力必須、INTERNAL通知も必要か？
 				return ret;
+			} catch (HinemosIllegalArgumentException e) {
+				MonitorRunResultInfo result = new MonitorRunResultInfo();
+				result.setFacilityId(m_facilityId);
+				result.setValue(runMonitorPerf.getValue());
+				result.setCollectorResult(Boolean.FALSE);
+				result.setMonitorFlg(false);
+				result.setCollectorFlg(false);
+				if (m_now != null) {
+					result.setNodeDate(m_now.getTime());
+				}
+				int checkResult = runMonitorPerf.getCheckResult(false);
+				result.setMessage(runMonitorPerf.getMessage(checkResult));
+				result.setMessageOrg(runMonitorPerf.getMessageOrg(checkResult));
+				result.setPriority(checkResult);
+				result.setItemCode(null);
+				result.setItemName(null);
+				result.setDisplayName(null);
+
+				if (m_isMonitorJob) {
+					// 監視ジョブの場合は、最初に取得できた結果を設定して処理終了
+					m_monitorRunResultInfo = new MonitorRunResultInfo();
+					m_monitorRunResultInfo.setNodeDate(m_nodeDate);
+					m_monitorRunResultInfo.setCurData(result.getValue());
+					m_monitorRunResultInfo.setPriority(result.getPriority());
+					// TODO : 例外発生時の監視ジョブのエラーメッセージ出力方法を検討する(stderrへの出力の検討)
+					String[] args = {m_itemName};
+					String messageOrg = MessageConstant.MESSAGE_JOB_MONITOR_ORGMSG_PERFORMANCE.getMessage(args)
+							+ "\n" + result.getMessage()
+							+ "\n" + result.getMessageOrg();
+					m_monitorRunResultInfo.setMessageOrg(messageOrg);
+					return ret;
+				} else {
+					if (runMonitorPerf.getMonitorInfo().getMonitorFlg()) {
+						ret.add(createOutputBasicInfo(true, m_facilityId, result.getCheckResult(), new Date(result.getNodeDate()), result, 
+								runMonitor.getMonitorInfo()));
+					}
+					continue;
+				}
 			}
 			
 			Sample sample = null;
@@ -421,56 +460,60 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 	 * preCollectにて収集済みのデータをもとに、当該監視項目に関するリソース情報を抽出し、後続の通知処理で必要となる情報を返す
 	 * @throws FacilityNotFound 
 	 */
-	public List<MonitorRunResultInfo> collectList() throws FacilityNotFound {
+	public List<MonitorRunResultInfo> collectList() throws FacilityNotFound, HinemosIllegalArgumentException {
 		m_log.debug("collectList() monitorTypeId = " + m_monitorTypeId + ",monitorId = " + m_monitorId  + ", facilityId = " + m_facilityId);
 
 		////
 		// ターゲットのItemCodeList/deviceType/deviceListを取得
 		////
-		boolean breakdownFlg = m_perf.getBreakdownFlg();
-		final PollingDataManager dataManager = new PollingDataManager(m_facilityId,m_perf.getItemCode(),breakdownFlg);
-		final List<String> itemCodeList = dataManager.getItemCodeList();
-		final List<? extends NodeDeviceInfo> deviceList = dataManager.getDeviceList();
 		final List<MonitorRunResultInfo> resultList = new ArrayList<>();
-		final String facilityName = dataManager.getFacilityName();
-		final String platform = dataManager.getPlatformId();
-		final String subPlatform = dataManager.getSubPlatformId();
+		try {
+			boolean breakdownFlg = m_perf.getBreakdownFlg();
+			final PollingDataManager dataManager = new PollingDataManager(m_facilityId,m_perf.getItemCode(),breakdownFlg);
+			final List<String> itemCodeList = dataManager.getItemCodeList();
+			final List<? extends NodeDeviceInfo> deviceList = dataManager.getDeviceList();
+			final String facilityName = dataManager.getFacilityName();
+			final String platform = dataManager.getPlatformId();
+			final String subPlatform = dataManager.getSubPlatformId();
 
-		for(String itemCode : itemCodeList){
-			
-			// ターゲットのdisplayNameがALLの場合、全てのデバイスに対して処理する
-			if(m_perf.getDeviceDisplayName() != null && (PollingDataManager.ALL_DEVICE_NAME).equals(m_perf.getDeviceDisplayName())){
-				for (final NodeDeviceInfo deviceInfo : deviceList) {
-					m_deviceData = deviceInfo;
-					final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode,
-							deviceInfo.getDeviceName(), deviceInfo.getDeviceDisplayName());
+			for(String itemCode : itemCodeList){
+				
+				// ターゲットのdisplayNameがALLの場合、全てのデバイスに対して処理する
+				if(m_perf.getDeviceDisplayName() != null && (PollingDataManager.ALL_DEVICE_NAME).equals(m_perf.getDeviceDisplayName())){
+					for (final NodeDeviceInfo deviceInfo : deviceList) {
+						m_deviceData = deviceInfo;
+						final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, deviceInfo.getDeviceName(), deviceInfo.getDeviceDisplayName());
+						if (result != null) {
+							resultList.add(result);
+						}
+					}
+				}
+				// 特定のdisplayNameが指定されている場合、デバイスを特定して処理する
+				else if(m_perf.getDeviceDisplayName().length() > 0) {
+					for(NodeDeviceInfo deviceInfo : deviceList){
+						if(m_perf.getDeviceDisplayName().equals(deviceInfo.getDeviceDisplayName())){
+							m_deviceData = deviceInfo;
+							final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, deviceInfo.getDeviceName(), deviceInfo.getDeviceDisplayName());
+							if (result != null) {
+								resultList.add(result);
+							}
+							break;
+						}
+					}
+				}
+				// デバイスがない場合
+				else{
+					m_deviceData = null;
+					final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, "", "");
 					if (result != null) {
 						resultList.add(result);
 					}
 				}
 			}
-			// 特定のdisplayNameが指定されている場合、デバイスを特定して処理する
-			else if(m_perf.getDeviceDisplayName().length() > 0) {
-				for(NodeDeviceInfo deviceInfo : deviceList){
-					if(m_perf.getDeviceDisplayName().equals(deviceInfo.getDeviceDisplayName())){
-						m_deviceData = deviceInfo;
-						final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode,
-								deviceInfo.getDeviceName(), deviceInfo.getDeviceDisplayName());
-						if (result != null) {
-							resultList.add(result);
-						}
-						break;
-					}
-				}
-			}
-			// デバイスがない場合
-			else{
-				m_deviceData = null;
-				final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, "", "");
-				if (result != null) {
-					resultList.add(result);
-				}
-			}
+		} catch (HinemosIllegalArgumentException e) {
+			m_errorMessage = e.getMessage();
+			m_value = Double.NaN;
+			throw e;
 		}
 		
 		return resultList;
@@ -579,19 +622,25 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 		
 		for (final MonitorInfo monitor : currentAllMonitor) {
 			final PerfCheckInfo perfCheckInfo = monitor.getPerfCheckInfo();
-			final PollingDataManager dataManager = new PollingDataManager(m_facilityId, perfCheckInfo.getItemCode(), perfCheckInfo.getBreakdownFlg());
-			
-			// 返却オブジェクトに、収集メソッドとターゲット情報を追加する
-			final String collectMethod = dataManager.getCollectMethod();
-			Set<String> target = returnMap.get(collectMethod);
-			if (target == null) {
-				target = new HashSet<String>();
-				returnMap.put(collectMethod, target);
-			}
-			for (String pollingTarget : dataManager.getPollingTargets()) {
-				if (pollingTarget != null && !pollingTarget.equals("")) {
-					target.add(pollingTarget);
+			try {
+				final PollingDataManager dataManager 
+					= new PollingDataManager(m_facilityId, perfCheckInfo.getItemCode(), perfCheckInfo.getBreakdownFlg());
+
+				// 返却オブジェクトに、収集メソッドとターゲット情報を追加する
+				final String collectMethod = dataManager.getCollectMethod();
+				Set<String> target = returnMap.get(collectMethod);
+				if (target == null) {
+					target = new HashSet<String>();
+					returnMap.put(collectMethod, target);
 				}
+				for (String pollingTarget : dataManager.getPollingTargets()) {
+					if (pollingTarget != null && !pollingTarget.equals("")) {
+						target.add(pollingTarget);
+					}
+				}
+			} catch (HinemosIllegalArgumentException e) {
+				// 閾値判定側でINTERNALイベントを発生させ、ここでは除外のみ
+				continue;
 			}
 		}
 		return returnMap;
@@ -644,6 +693,10 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 	 */
 	@Override
 	public String getMessageOrg(int result) {
+		if (m_itemName == null && Double.isNaN(m_value)) {
+			return m_errorMessage;
+		}
+
 		String valueString;
 		if(Double.isNaN(m_value)){
 			valueString = "NaN";

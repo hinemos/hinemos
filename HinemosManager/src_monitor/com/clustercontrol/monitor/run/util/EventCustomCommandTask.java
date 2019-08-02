@@ -149,6 +149,18 @@ public class EventCustomCommandTask implements Runnable {
 					//イベントに対するロックをリリース
 					lockManager.releaseLock(key);
 				}
+				
+				if (commandInfo.getRunInterval() > 0 && i != (eventList.size() - 1)) {
+					//流量制御
+					//実行間隔の指定がある場合 かつ 最後のイベント以外の場合、Sleepする
+					//runintervalを使用する場合はthreadが1に設定してもらう前提
+					
+					try {
+						Thread.sleep(commandInfo.getRunInterval());
+					} catch (InterruptedException e) {
+						//ignore
+					}
+				}
 			}
 			
 			if (timeoutIndex >= 0) {

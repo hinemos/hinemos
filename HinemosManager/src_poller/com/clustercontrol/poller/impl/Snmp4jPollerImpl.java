@@ -10,7 +10,9 @@ package com.clustercontrol.poller.impl;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -52,6 +54,7 @@ import com.clustercontrol.poller.bean.PollerProtocolConstant;
 import com.clustercontrol.poller.util.DataTable;
 import com.clustercontrol.poller.util.TableEntry;
 import com.clustercontrol.poller.util.TableEntry.ErrorType;
+import com.clustercontrol.process.factory.RunMonitorProcess;
 import com.clustercontrol.repository.util.SearchDeviceProperties;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -78,6 +81,8 @@ public class Snmp4jPollerImpl {
 	private int notV3SnmpPoolIndex = 0;
 	
 	private static Snmp4jPollerImpl instance = new Snmp4jPollerImpl();
+	
+	private String _encode="";
 	
 	private Snmp4jPollerImpl() {
 		try {
@@ -168,8 +173,22 @@ public class Snmp4jPollerImpl {
 		}
 		
 		DataTable dataTable = null;
-
+		
+		_encode=HinemosPropertyCommon.repository_device_encoding.getStringValue();
+		log.debug("polling(): SNMP encoding charsets are: "+_encode);
+		
 		Snmp snmp = null;
+
+		// 結果取得途中のタイムアウト時に不完全な結果返却を許すかどうか
+		// true：許容 取得できた情報のみ返却
+		// false：許容しない IOException
+		boolean allowIncomplete = true;
+		
+		// 呼出元がプロセス監視の場合は、プロセス数が不正な値となるため不完全な結果返却を許容しない
+		if (RunMonitorProcess.class.getName().equals(Thread.currentThread().getStackTrace()[2].getClassName())) {
+			allowIncomplete = false;
+		}
+		
 		try {
 			if (version == SnmpConstants.version3) {
 				snmp = createV3Snmp(securityLevel, user, authPassword,
@@ -189,7 +208,7 @@ public class Snmp4jPollerImpl {
 			int maxRetry = HinemosPropertyCommon.monitor_poller_snmp_max_retry.getIntegerValue();
 			boolean errorFlag = true;
 			for (int i = 0; i < maxRetry; i++) {
-				Collection<VariableBinding> vbs = utils.query(target, createColumnOidList(oidSet).toArray(new OID[0])); 
+				Collection<VariableBinding> vbs = utils.query(target, createColumnOidList(oidSet).toArray(new OID[0]), allowIncomplete); 
 				DataTable dataTableNotChecked = createDataTable(vbs);
 				
 				// 最後まで到達
@@ -422,7 +441,39 @@ public class Snmp4jPollerImpl {
 						break;
 					}
 				}
-				value.append(new String(bytes, 0, length));
+				
+				//repository.device.encodeが指定されているかチェック
+				if(_encode.isEmpty()){
+					//空の場合は、環境の文字コードでエンコード
+					value.append(new String(bytes, 0, length));
+				}else{
+					//以下の処理でマッチする文字コードがない場合は、UTF-8でエンコード
+					String targetEncode="UTF-8";
+					String[]tryEncode=_encode.split(",");
+					//ひとつしか指定されなかった場合、その文字コードでエンコード
+					if(tryEncode.length==1){
+						targetEncode=tryEncode[0];
+					}else{
+						//複数指定された場合は、マッチする文字コードを探し出す
+						for(int i=0;i<tryEncode.length;i++){
+							if(checkEncode(bytes,tryEncode[i])){
+								targetEncode=tryEncode[i];
+								break;
+							}
+						}
+					}
+					log.debug("getVariableValue(): Try encode with "+targetEncode);
+					
+					try {
+						value.append(new String(bytes, 0, length,targetEncode));
+					} catch (UnsupportedEncodingException e) {
+						//存在しない文字コードが指定されていた場合、環境の文字コードでエンコード
+						log.warn("getVariableValue(): "+targetEncode+" is not supported encode. Fall back to Default");
+						value.append(new String(bytes, 0, length));
+					}
+					log.debug("getVariableValue(): encoded string is ["+value+"]");
+				}
+
 			}
 
 			log.debug("SnmpPollerImpl deleteLabel=" + deleteLabel);
@@ -445,7 +496,39 @@ public class Snmp4jPollerImpl {
 			return variable.toLong();
 		}
 	}
-
+	
+	/**
+	 * Octet Stringが指定された文字コードかどうかをチェックするメソッド
+	 * @param src ポーリング結果のOctet String
+	 * @param encode チェックしたい文字コード
+	 * @return true 文字コードが一致した場合
+	 *          false 一致しなかった場合
+	 */
+	private boolean checkEncode(byte[]src, String encode){
+		
+		//JISチェック
+		for (byte b : src){
+			if (b == 0x1B){
+				//JISが指定されていた場合
+				if(encode.equals("JIS")||encode.equals("ISO-2022-JP")){
+					return true;
+				}else{
+					//JIS以外が指定されていた場合
+					return false;
+				}
+			}
+		}
+		
+		//JIS以外の場合
+		try {
+			byte[] tmp = new String(src, encode).getBytes(encode);
+			return Arrays.equals(tmp, src);
+		}
+		catch(UnsupportedEncodingException e) {
+			return false;
+		}
+	}
+	
 	private boolean isDataTableValid(Set<String> oids, DataTable dataTable) {
 		//プロセス監視に関して、すべてoidの結果の数が同じであることをチェックする
 		if (isProcessOidList(oids)) {

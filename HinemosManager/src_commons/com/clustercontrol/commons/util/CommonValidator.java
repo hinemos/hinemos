@@ -15,6 +15,7 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.PatternConstant;
 import com.clustercontrol.bean.PriorityConstant;
@@ -231,6 +232,9 @@ public class CommonValidator {
 		}
 		else{
 			try {
+				//通知ID存在チェック
+				com.clustercontrol.notify.util.QueryUtil.getNotifyInfoPK(notifyId, ObjectPrivilegeMode.NONE);
+				//アクセス権限チェック
 				com.clustercontrol.notify.util.QueryUtil.getNotifyInfoPK_OR(notifyId, ownerRoleId);
 			} catch (NotifyNotFound e) {
 				String[] args = {notifyId};

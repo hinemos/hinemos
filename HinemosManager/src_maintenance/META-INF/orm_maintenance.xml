@@ -249,4 +249,11 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="CollectBinaryData.deleteByDateTime">
+		<query>
+			<![CDATA[
+				DELETE FROM CollectBinaryData a WHERE a.time < :dateTime
+			]]>
+		</query>
+	</named-query>
 </entity-mappings>

@@ -113,10 +113,10 @@ public class HinemosManager extends Element implements IHinemosManager {
 					endpoint.getVersion();
 				}
 			} catch (WebServiceException e) {
-				// publishされていない場合
-				MessageDialog.openWarning(null, 
-						Messages.getString("warning"), 
-						CloudConstants.bundle_messages.getString("message.expiration.term"));
+				//マルチマネージャ接続時にクラウド/ＶＭが有効になってないマネージャの混在がありえる。
+				//バージョンが取得できない（endpoint通信で異常が出る）なら クラウド/ＶＭが有効になってないマネージャとみなす。
+				//運用上は想定内の状況なので、警告ログのみ出力して処理は続行する。
+				logger.warn("update(): endpoint.getVersion() : WebServiceException. managerName=" + managerName );
 			} catch (Throwable e) {
 				// 起動キーが有効期限切れの場合
 				MessageDialog.openWarning(null, 

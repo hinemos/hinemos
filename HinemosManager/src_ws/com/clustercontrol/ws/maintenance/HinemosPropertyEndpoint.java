@@ -83,8 +83,8 @@ public class HinemosPropertyEndpoint {
 		// 認証済み操作ログ
 		StringBuffer msg = new StringBuffer();
 		if(info != null){
-			msg.append(", key=");
-			msg.append(info.getKey());
+			msg.append(", ");
+			msg.append(info.toString());
 		}
 
 		try {
@@ -121,8 +121,8 @@ public class HinemosPropertyEndpoint {
 		// 認証済み操作ログ
 		StringBuffer msg = new StringBuffer();
 		if(info != null){
-			msg.append(", key=");
-			msg.append(info.getKey());
+			msg.append(", ");
+			msg.append(info.toString());
 		}
 
 		try {

@@ -78,13 +78,12 @@ public class JobMapEndpointWrapper {
 				return endpoint.getVersion();
 			} catch (WebServiceException e) {
 				wse = e;
-				m_log.warn("getVersion(), " + e.getMessage(), e);
+				m_log.warn("getVersion(), " + e.getMessage());
 				endpointUnit.changeEndpoint();
 			}
 		}
 		throw wse;
 	}
-
 	public void addJobmapIconImage(JobmapIconImage jobmapIconImage)
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, InvalidSetting_Exception, IconFileDuplicate_Exception {
 		WebServiceException wse = null;

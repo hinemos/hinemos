@@ -50,7 +50,7 @@ public class BillingDetailMonitor {
 		try {
 			String cronString = HinemosPropertyCommon.xcloud_billing_detail_collect_time.getStringValue();
 			if(! "off".equals(cronString)) {
-				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM, collectJobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, CollectBillingJob.class.getName(), "execute", new Class[]{}, new Serializable[]{});
+				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM_MONITOR, collectJobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, CollectBillingJob.class.getName(), "execute", new Class[]{}, new Serializable[]{});
 			} else {
 				Logger.getLogger(BillingDetailMonitor.class).debug("Skipping BillingDetailMonitor.");
 			}
@@ -60,7 +60,7 @@ public class BillingDetailMonitor {
 			// 起動に失敗した場合、cron 文字列を既定で再試行。
 			try {
 				String cronString = HinemosPropertyCommon.xcloud_billing_detail_collect_time.getStringValue();
-				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM, collectJobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, CollectBillingJob.class.getName(), "execute", new Class[]{}, new Serializable[]{});
+				SchedulerPlugin.scheduleCronJob(SchedulerType.RAM_MONITOR, collectJobName, jobGroupName, HinemosTime.currentTimeMillis(), cronString, true, CollectBillingJob.class.getName(), "execute", new Class[]{}, new Serializable[]{});
 			} catch (HinemosUnknown|NullPointerException e1) {
 				Logger.getLogger(BillingDetailMonitor.class).warn(e.getMessage(), e);
 			} catch (Exception e1) {
@@ -71,7 +71,7 @@ public class BillingDetailMonitor {
 	
 	public static void stop() {
 		try {
-			SchedulerPlugin.deleteJob(SchedulerType.RAM, collectJobName, jobGroupName);
+			SchedulerPlugin.deleteJob(SchedulerType.RAM_MONITOR, collectJobName, jobGroupName);
 		} catch (HinemosUnknown e) {
 			Logger.getLogger(BillingDetailMonitor.class).warn(e.getMessage(), e);
 		}

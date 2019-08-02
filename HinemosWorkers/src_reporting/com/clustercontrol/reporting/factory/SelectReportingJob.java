@@ -87,6 +87,18 @@ public class SelectReportingJob {
 			String excJobId, String ownerRoleId) {
 		return com.clustercontrol.reporting.util.ReportingQueryUtil.getReportingJobDetailList(sessionId, jobunitId, jobId, excJobId, ownerRoleId);
 	}
+
+	/**
+	 * queueIdを条件に、JobSessionEntityを取得します。<BR>
+	 * @param queueId
+	 * @param fromTime
+	 * @param toTime
+	 * 
+	 * @return
+	 */
+	public List<JobSessionJobEntity> getReportingJobDetailListByQueueId(String queueId, long fromTime, long toTime, String jobunitId, String jobId, String excJobId, String ownerRoleId){
+		return com.clustercontrol.reporting.util.ReportingQueryUtil.getReportingJobDetailListByQueueId(queueId, fromTime, toTime, jobunitId, jobId, excJobId, ownerRoleId);
+	}
 	
 	/**
 	 * parentJobunitIdを条件に、ReportingJobSessionEntityを取得します。<BR>

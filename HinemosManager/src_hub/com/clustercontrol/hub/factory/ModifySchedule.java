@@ -23,7 +23,6 @@ import com.clustercontrol.hub.bean.QuartzConstant;
 import com.clustercontrol.hub.model.TransferInfo;
 import com.clustercontrol.hub.session.HubControllerBean;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
-import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.plugin.util.scheduler.CronExpression;
 import com.clustercontrol.plugin.util.scheduler.SchedulerException;
 import com.clustercontrol.util.HinemosTime;
@@ -75,7 +74,7 @@ public class ModifySchedule {
 			switch(transfer.getTransType()) {
 			case realtime:
 				SchedulerPlugin.scheduleCronJob(
-						SchedulerType.DBMS,
+						SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME),
 						transfer.getTransferId(),
 						QuartzConstant.GROUP_NAME,
 						HinemosTime.currentTimeMillis(),
@@ -93,7 +92,7 @@ public class ModifySchedule {
 					m_log.debug(String.format("addSchedule() : id=%s, nextTime=%d", transfer.getTransferId(), nextTime));
 					
 					SchedulerPlugin.scheduleSimpleJob(
-							SchedulerType.DBMS,
+							SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME),
 							transfer.getTransferId(),
 							QuartzConstant.GROUP_NAME,
 							nextTime,
@@ -114,7 +113,7 @@ public class ModifySchedule {
 				}
 				
 				SchedulerPlugin.scheduleCronJob(
-						SchedulerType.DBMS,
+						SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME),
 						transfer.getTransferId(),
 						QuartzConstant.GROUP_NAME,
 						HinemosTime.currentTimeMillis() + 15 * 1000,
@@ -126,7 +125,7 @@ public class ModifySchedule {
 				break;
 			}
 		} else {
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, transfer.getTransferId(), QuartzConstant.GROUP_NAME);
+			SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), transfer.getTransferId(), QuartzConstant.GROUP_NAME);
 		}
 	}
 
@@ -145,7 +144,7 @@ public class ModifySchedule {
 		m_log.debug("deleteSchedule() : id=" + jobkickId);
 
 		try {
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, jobkickId, QuartzConstant.GROUP_NAME);
+			SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), jobkickId, QuartzConstant.GROUP_NAME);
 		} catch (HinemosUnknown e) {
 			m_log.error(e);
 		}

@@ -40,7 +40,6 @@ import com.clustercontrol.jobmanagement.model.JobRuntimeParamEntity;
 import com.clustercontrol.jobmanagement.model.JobRuntimeParamEntityPK;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
-import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -243,10 +242,10 @@ public class ModifyJobKick {
 			// スケジュール定義を登録
 			try {
 				if (info.isValid().booleanValue()) {
-					SchedulerPlugin.scheduleCronJob(SchedulerType.DBMS, info.getId(), QuartzConstant.GROUP_NAME, HinemosTime.currentTimeMillis() + 15 * 1000, cronString,
+					SchedulerPlugin.scheduleCronJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), info.getId(), QuartzConstant.GROUP_NAME, HinemosTime.currentTimeMillis() + 15 * 1000, cronString,
 							true, JobControllerBean.class.getName(), QuartzConstant.METHOD_NAME, jdArgsType, jdArgs);
 				} else {
-					SchedulerPlugin.deleteJob(SchedulerType.DBMS, info.getId(), QuartzConstant.GROUP_NAME);
+					SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), info.getId(), QuartzConstant.GROUP_NAME);
 				}
 			} catch (HinemosUnknown e) {
 				m_log.error(e);
@@ -472,10 +471,10 @@ public class ModifyJobKick {
 			// スケジュール定義を登録
 			try {
 				if (info.isValid().booleanValue()) {
-					SchedulerPlugin.scheduleCronJob(SchedulerType.DBMS, info.getId(), QuartzConstant.GROUP_NAME, HinemosTime.currentTimeMillis() + 15 * 1000, cronString,
+					SchedulerPlugin.scheduleCronJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), info.getId(), QuartzConstant.GROUP_NAME, HinemosTime.currentTimeMillis() + 15 * 1000, cronString,
 							true, JobControllerBean.class.getName(), QuartzConstant.METHOD_NAME, jdArgsType, jdArgs);
 				} else {
-					SchedulerPlugin.deleteJob(SchedulerType.DBMS, info.getId(), QuartzConstant.GROUP_NAME);
+					SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), info.getId(), QuartzConstant.GROUP_NAME);
 				}
 			} catch (HinemosUnknown e) {
 				m_log.error(e);
@@ -528,7 +527,7 @@ public class ModifyJobKick {
 			// スケジュールの場合、CronTriggerを削除
 			try {
 				m_log.debug("deleteJob() : id=" + jobkickId);
-				SchedulerPlugin.deleteJob(SchedulerType.DBMS, jobkickId, QuartzConstant.GROUP_NAME);
+				SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), jobkickId, QuartzConstant.GROUP_NAME);
 			} catch (HinemosUnknown e) {
 				m_log.error(e);
 			}

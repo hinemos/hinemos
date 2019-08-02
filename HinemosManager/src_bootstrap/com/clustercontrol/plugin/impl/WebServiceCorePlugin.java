@@ -14,8 +14,10 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.auth.Authentication;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.plugin.api.HinemosPlugin;
+import com.clustercontrol.util.Singletons;
 import com.clustercontrol.ws.access.AccessEndpoint;
 import com.clustercontrol.ws.calendar.CalendarEndpoint;
 import com.clustercontrol.ws.cloud.CloudCommonEndpoint;
@@ -55,6 +57,14 @@ public class WebServiceCorePlugin extends WebServicePlugin implements HinemosPlu
 
 	@Override
 	public void activate() {
+		// 認証管理クラスの初期化＆外部認証時の内部パスワードクリア処理を実行
+		// - 処理を行うタイミングはここで問題はないが、Webサービスと認証は本質的には別機能であるため、
+		//   できれば専用のHinemosPluginにして関係性を疎にしたい。
+		//   ただ、認証管理クラスの導入がマイナーバージョンアップであり、
+		//   マイナーバージョンアップでのPublish.jarの変更を避けたかったため、
+		//   ひとまずWebServiceCorePluginへ組み入れてある。
+		Singletons.get(Authentication.class).eraseInternalPasswords();
+		
 		// Check if key exists
 		if(!checkRequiredKeys()){
 			log.warn("KEY NOT FOUND! Unable to activate " + this.getClass().getName());
@@ -63,7 +73,7 @@ public class WebServiceCorePlugin extends WebServicePlugin implements HinemosPlu
 
 		final String addressPrefix = HinemosPropertyCommon.ws_client_address.getStringValue();
 
-		/** Webサービスの起動処理 */
+		// Webサービスの起動処理
 		publish(addressPrefix, "/HinemosWS/CalendarEndpoint", new CalendarEndpoint());
 		publish(addressPrefix, "/HinemosWS/CloudCommonEndpoint", new CloudCommonEndpoint());
 		publish(addressPrefix, "/HinemosWS/CollectEndpoint", new CollectEndpoint());
@@ -87,7 +97,11 @@ public class WebServiceCorePlugin extends WebServicePlugin implements HinemosPlu
 
 	@Override
 	public void deactivate() {
+		// Webサービス停止
 		super.deactivate();
+
+		// 認証管理クラスの終了
+		Singletons.get(Authentication.class).terminate();
 	}
 
 }

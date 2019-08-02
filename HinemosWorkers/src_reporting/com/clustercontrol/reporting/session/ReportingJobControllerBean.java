@@ -92,6 +92,20 @@ public class ReportingJobControllerBean {
 		List<JobSessionJobEntity> list = select.getReportingJobDetailList(sessionId, jobunitId, jobId, excJobId, ownerRoleId);
 		return list;
 	}
+
+	/**
+	 * queueIdを条件に、JobSessionEntityを取得します。<BR>
+	 * @param parentJobunitId
+	 * @param fromTime
+	 * @param toTime
+	 * 
+	 * @return
+	 */
+	public List<JobSessionJobEntity> getReportingJobDetailListByQueueId(String queueId, long fromTime, long toTime, String jobunitId, String jobId, String excJobId, String ownerRoleId){
+		SelectReportingJob select = new SelectReportingJob();
+		List<JobSessionJobEntity> list = select.getReportingJobDetailListByQueueId(queueId, fromTime, toTime, jobunitId, jobId, excJobId, ownerRoleId);
+		return list;
+	}
 	
 	/**
 	 * parentJobunitIdを条件に、JobSessionEntityを取得します。<BR>

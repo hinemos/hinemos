@@ -543,10 +543,21 @@ public class Agent {
 				}
 				// Agent.propertiesファイルの接続先マネージャの書き換え＋動作中のプロパティの書き換え
 				{
-					String managerIp = discoveryInfoMap.get("managerIp");
+					String[] managerIps = discoveryInfoMap.get("managerIp").split("\\|");
 					String key = "managerAddress";
-					String value = url.getProtocol() + "://" + managerIp + ":"
+					String value = url.getProtocol() + "://" + managerIps[0] + ":"
 							+ url.getPort() + "/HinemosWS/";
+					// HAオプションでFIPを利用できない場合の対応
+					// managerIpが「|」区切りで2つ以上連携された場合は接続先マネージャを2件設定
+					// 3つ目以降は切り捨てる
+					if (managerIps.length >= 2) {
+						if (managerIps.length >= 3) {
+							m_log.info("More than two managerIP is specified. Set the first and second value : " + managerIps[0]
+									+ "," + managerIps[1] + " to '" + key + "'.");
+						}
+						value = value + "," + url.getProtocol() + "://" + managerIps[1] + ":"
+								+ url.getPort() + "/HinemosWS/";
+					}
 					m_log.info("Rewrite property. key : " + key + ", value : " + value);
 					PropertiesFileUtil.replacePropertyFile(propFileName, key, managerAddress, value);
 					AgentProperties.setProperty(key, value);
@@ -563,14 +574,21 @@ public class Agent {
 				
 				// log4j.propertiesファイルの書き換え（Windows版エージェントのみ）
 				{
-					String managerIp = discoveryInfoMap.get("managerIp");
+					String[] managerIps = discoveryInfoMap.get("managerIp").split("\\|");
 					String key = "log4j.appender.syslog.SyslogHost";
+					// HAオプションでFIPを利用できない場合の対応
+					// managerIpが「|」区切りで2つ以上連携された場合は1つ目の値を設定
+					// 2つ目以降は切り捨てる
+					if (managerIps.length >= 2) {
+						m_log.info("More than one managerIP is specified. Set the first value : " + managerIps[0] + " to 'log4j.appender.syslog.SyslogHost'.");
+					}
+					m_log.info("Rewrite property. key : " + key + ", value : " + managerIps[0]);
 					PropertiesFileUtil.replacePropertyFile(log4jFileName,
 							"log4j.appender.syslog.SyslogHost",
-							REPLACE_VALUE_MANAGER_IP, managerIp);
+							REPLACE_VALUE_MANAGER_IP, managerIps[0]);
 					if (REPLACE_VALUE_MANAGER_IP.equals(AgentProperties.getProperty(key))) {
-						m_log.info("Rewrite property. key : " + key + ", value : " + managerIp);
-						PropertiesFileUtil.replacePropertyFile(log4jFileName, key, REPLACE_VALUE_MANAGER_IP, managerIp);
+						m_log.info("Rewrite property. key : " + key + ", value : " + managerIps[0]);
+						PropertiesFileUtil.replacePropertyFile(log4jFileName, key, REPLACE_VALUE_MANAGER_IP, managerIps[0]);
 					}
 				}
 			} catch (HinemosUnknown e) {

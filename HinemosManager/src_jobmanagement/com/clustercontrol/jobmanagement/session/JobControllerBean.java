@@ -1016,7 +1016,7 @@ public class JobControllerBean implements CheckFacility {
 					 * 特権ロールかオーナーロールに所属するユーザのみ実行可能とする
 					 */
 					// 操作ユーザの所属ロールにオーナーロールが存在するかを確認
-					JobSessionJobEntity entity = QueryUtil.getJobSessionJobPK(property.getSessionId(), property.getJobunitId(), property.getJobunitId());
+					JobSessionJobEntity entity = QueryUtil.getJobSessionJobPK(property.getSessionId(), property.getJobunitId(), property.getJobId());
 
 					// 特権ロールに所属しているかを確認
 					Boolean isAdministrator = (Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);

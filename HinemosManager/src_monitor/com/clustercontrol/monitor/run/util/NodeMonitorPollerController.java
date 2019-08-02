@@ -82,7 +82,7 @@ public class NodeMonitorPollerController {
 			// Quartzに登録
 			try {
 				SchedulerPlugin.scheduleSimpleJob(
-						SchedulerType.RAM,
+						SchedulerType.RAM_MONITOR,
 						facilityId,
 						monitorTypeId,
 						ModifySchedule.calcSimpleTriggerStartTime(RunInterval.min(), nodeMonitorDelaySec % RunInterval.min(), isInitManager),
@@ -110,7 +110,7 @@ public class NodeMonitorPollerController {
 		// 各監視項目タイプごとにQuartz登録する（今のところ、プロセスと、リソース）
 		for (final String monitorTypeId : targetMonitorTypes) {
 			try {
-				SchedulerPlugin.deleteJob(SchedulerType.RAM, facilityId, monitorTypeId);
+				SchedulerPlugin.deleteJob(SchedulerType.RAM_MONITOR, facilityId, monitorTypeId);
 				if (log.isDebugEnabled())
 					log.debug("unregistNodeMonitorPoller() : unregist node to poller. facilityId = " + facilityId + ", monitorTypeId = " + monitorTypeId);
 			} catch (HinemosUnknown e) {

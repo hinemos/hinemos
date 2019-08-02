@@ -8,9 +8,12 @@
 
 package com.clustercontrol.infra.model;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -101,6 +104,9 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 	 */
 	public static String SEPARATOR = File.separator;
 
+	// ファイル分割単位 (KB)
+	public static int FILE_SPLIT_SIZE = 1024;
+	
 	/**
 	 * 
 	 */
@@ -326,7 +332,12 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 					);
 		} finally {
 			try {
-				Files.delete(Paths.get(srcDir, srcFile));
+				final String strFilePrefix = srcFile;
+				Files.list(Paths.get(srcDir))
+					.filter(f -> Files.isRegularFile(f) && 
+							(f.getFileName().toString().equals(strFilePrefix)
+									|| f.getFileName().toString().matches(strFilePrefix + WinRMUtil.WINRM_FILE_SPLIT + "[0-9]+")))
+					.forEach(f -> f.toFile().delete());
 			} catch (IOException e) {
 			}
 		}
@@ -652,9 +663,25 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 					owner, perm, getBackupIfExistFlg(), access.getSshPrivateKeyFilepath(), access.getSshPrivateKeyPassphrase());
 			break;
 		case SendMethodConstant.TYPE_WINRM:
+			// 分割ファイル数
+			int cnt = 1;
+			// 対象ファイル
+			File inFile = new File(srcDir + SEPARATOR + srcFile);
+			// 分割ファイルサイズ
+			Integer fileSize = HinemosPropertyCommon.infra_transfer_winrm_split_filesize.getIntegerValue();
+
+			if ((inFile.length() / FILE_SPLIT_SIZE) > fileSize) {
+				// ファイルを分割する
+				try {
+					cnt = split(inFile, srcDir, fileSize);
+				} catch (IOException | HinemosUnknown e) {
+					return new ModuleNodeResult(OkNgConstant.TYPE_NG, -1, e.getClass().getName() + ", " + e.getMessage());
+				}
+			}
+			// 分割したファイルを転送
 			ret = WinRMUtil.sendFile(access.getWinRmUser(), access.getWinRmPassword(), host, access.getWinRmPort(), protocol,
 					srcDir, srcFile, dstDir, dstFile,
-					owner, perm, getBackupIfExistFlg());
+					owner, perm, getBackupIfExistFlg(), cnt);
 			break;
 		default:
 			String msg = String.format("AccessMethodType is invalid. value = %d", getSendMethodType());
@@ -797,5 +824,88 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 	@Override
 	public void onPersist(HinemosEntityManager em) {
 		super.onPersist(em);
+	}
+
+
+	/**
+	 * 分割ファイル名取得
+	 * 
+	 * @param fileName ファイル名
+	 * @param idx ファイル
+	 * @return 分割ファイル名
+	 */
+	public static String getSplitFileName(String fileName, int idx) {
+		return String.format("%s" + WinRMUtil.WINRM_FILE_SPLIT + "%s", fileName, String.format("%d", idx));
+	}
+
+	/**
+	 * ファイルを指定サイズ(KB)で分割
+	 * 
+	 * @param inFile 対象ファイル
+	 * @param outDir 出力ディレクトリ
+	 * @param sizeKb サイズ(KB)
+	 * @return 作成されたファイル数
+	 * @throws IOException
+	 */
+	public int split(File inFile, String outDir, int sizeKb) throws IOException, HinemosUnknown {
+
+		// ファイル数
+		int cnt = 0;
+
+		// 出力ディレクトリ
+		File od = new File(outDir);
+
+		if (!od.exists()) {
+			boolean rtn  = od.mkdir();
+			if (!rtn) {
+				// ディレクトリが作成できない場合はエラーとする
+				String message = "Directory can not be created. : directoryPath=" + outDir;
+				Logger.getLogger(this.getClass()).info("split() : " + message);
+				throw new HinemosUnknown(message);
+			}
+		}
+		byte[] buf = new byte[FILE_SPLIT_SIZE];
+
+		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(inFile))) {
+			BufferedOutputStream bos = null;
+	
+			int sizeLimit = sizeKb;
+			int sizeCnt = 0;
+			int ret = -1;
+			boolean isFirstCreateFlg = true;
+	
+			while((ret = bis.read(buf)) > 0) {
+				if ((sizeCnt >= sizeLimit) || isFirstCreateFlg) {
+					if (bos != null) {
+						bos.flush();
+						bos.close();
+					}
+					String fileName = od.getAbsolutePath() + File.separator + getSplitFileName((inFile).getName(), ++cnt);
+					File f = new File(fileName);
+					boolean rtn  = f.createNewFile();
+					if (!rtn) {
+						// 既にファイルが存在する場合はエラーとする
+						String message = "File already exists. : fileName=" + fileName;
+						Logger.getLogger(this.getClass()).info("split() : " + message);
+						throw new HinemosUnknown(message);
+					}
+					bos = new BufferedOutputStream(new FileOutputStream(f));
+	
+					isFirstCreateFlg = false;
+					sizeCnt = 0;
+				}
+				bos.write(buf,0, ret);
+				bos.flush();
+				sizeCnt++;
+			}
+			if (bos != null) {
+				bos.flush();
+				bos.close();
+			}
+		} catch (IOException e) {
+			Logger.getLogger(this.getClass()).info("split() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		return cnt;
 	}
 }

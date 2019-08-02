@@ -33,6 +33,18 @@ public class HinemosSchedulerTest {
 	
 	public ScheduledExecutorService srv0 = null;
 	public ScheduledExecutorService srv1 = null;
+
+	private final SchedulerType[]  ramTypes = {
+			SchedulerType.RAM_JOB
+		,	SchedulerType.RAM_MONITOR
+	};
+
+	private final String[] dbmsGroups  = {
+			com.clustercontrol.jobmanagement.bean.QuartzConstant.GROUP_NAME
+		,	com.clustercontrol.maintenance.bean.QuartzConstant.GROUP_NAME
+		,	com.clustercontrol.hub.bean.QuartzConstant.GROUP_NAME
+		,	com.clustercontrol.reporting.bean.QuartzConstant.GROUP_NAME
+	};
 	
 	public static void main(String[] args) {
 		ScheduledExecutorService exe = Executors.newScheduledThreadPool(10);
@@ -126,11 +138,13 @@ public class HinemosSchedulerTest {
 			SchedulerTest03();
 			SchedulerTest06();
 			SchedulerTest09();
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, "ClassTypeTestOK", "SchedulerTest");
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, "ParamNum", "SchedulerTest");
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, "DbmsSimpleJobErr", "SchedulerTest");
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, "DbmsCronJobSuccess", "SchedulerTest");
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, "DbmsCronJobError", "SchedulerTest");
+			for( String type : dbmsGroups){
+				SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(type), "ClassTypeTestOK", type);
+				SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(type), "ParamNum", type);
+				SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(type), "DbmsSimpleJobErr", type);
+				SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(type), "DbmsCronJobSuccess", type);
+				SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(type), "DbmsCronJobError", type);
+			}
 		} catch (Exception e) {
 			m_log.info("SchedulerTestDel:Exception:" + e);
 		}
@@ -199,9 +213,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTestRamCronAdd:scheduleCronJob():" + ramkey);
-			SchedulerPlugin.scheduleCronJob(SchedulerType.RAM, ramkey, group, HinemosTime.currentTimeMillis() + 2 * 1000,
-					cron, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), methodName, jdArgsType, jdArgs);
-			
+			for( SchedulerType type : ramTypes){
+				SchedulerPlugin.scheduleCronJob(type, ramkey, group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						cron, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), methodName, jdArgsType, jdArgs);
+			}
 		} catch (Exception e) {
 			m_log.error("SchedulerTestRamCronAdd:Exception:" + e);
 		}
@@ -227,7 +242,7 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTestDbmsCronAdd:scheduleCronJob():" + dbmskey);
-			SchedulerPlugin.scheduleCronJob(SchedulerType.DBMS, dbmskey, group, HinemosTime.currentTimeMillis() + 2 * 1000,
+			SchedulerPlugin.scheduleCronJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), dbmskey, group, HinemosTime.currentTimeMillis() + 2 * 1000,
 					cron, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), methodName, jdArgsType, jdArgs);
 			
 		} catch (Exception e) {
@@ -241,7 +256,9 @@ public class HinemosSchedulerTest {
 		m_log.debug("SchedulerTest00 start.");
 		try {
 			m_log.debug("SchedulerTest00:deleteJob():RamCronDel");
-			SchedulerPlugin.deleteJob(SchedulerType.RAM, "RamCron", "SchedulerTest");
+			for( SchedulerType type : ramTypes){
+				SchedulerPlugin.deleteJob(type, "RamCron", "SchedulerTest");
+			}
 		} catch (Exception e) {
 			m_log.debug("SchedulerTest00:Exception:" + e);
 		}
@@ -264,8 +281,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest01:scheduleCronJob():RamCronAdd");
-			SchedulerPlugin.scheduleCronJob(SchedulerType.RAM, "RamCron", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					"0/5 * * * * ? *", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobRamCron", jdArgsType, jdArgs);
+			for( SchedulerType type : ramTypes){
+				SchedulerPlugin.scheduleCronJob(type, "RamCron", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
+						"0/5 * * * * ? *", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobRamCron", jdArgsType, jdArgs);
+			}
 			
 		} catch (Exception e) {
 			m_log.error("SchedulerTest01:Exception:" + e);
@@ -290,8 +309,10 @@ public class HinemosSchedulerTest {
 		try {
 			m_log.debug("SchedulerTest02:scheduleCronJob():RamCronMod");
 			// IDは登録時と同じものを指定
-			SchedulerPlugin.scheduleCronJob(SchedulerType.RAM, "RamCron", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					"0 0/1 * * * ? *", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobRamCron", jdArgsType, jdArgs);
+			for( SchedulerType type : ramTypes){
+				SchedulerPlugin.scheduleCronJob(type, "RamCron", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
+						"0 0/1 * * * ? *", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobRamCron", jdArgsType, jdArgs);
+			}
 			
 		} catch (Exception e) {
 			m_log.error("SchedulerTest02:Exception:" + e);
@@ -305,7 +326,9 @@ public class HinemosSchedulerTest {
 		m_log.info("SchedulerTest03 start.");
 		try {
 			m_log.info("SchedulerTest03:deleteJob():DbmsCronDel");
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, "DbmsCron", "SchedulerTest");
+			for( String group : dbmsGroups){
+				SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "DbmsCron",group);
+			}
 		} catch (Exception e) {
 			m_log.info("SchedulerTest03:Exception:" + e);
 		}
@@ -328,9 +351,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest04:scheduleCronJob():DbmsCronAdd");
-			SchedulerPlugin.scheduleCronJob(SchedulerType.DBMS, "DbmsCron", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					"0/5 * * * * ? *", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsCron", jdArgsType, jdArgs);
-			
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleCronJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "DbmsCron", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						"0/5 * * * * ? *", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsCron", jdArgsType, jdArgs);
+			}
 		} catch (Exception e) {
 			m_log.error("SchedulerTest04:Exception:" + e);
 		}
@@ -354,9 +378,10 @@ public class HinemosSchedulerTest {
 		try {
 			m_log.debug("SchedulerTest05:scheduleCronJob():DbmsCronMod");
 			// IDは登録時と同じものを指定
-			SchedulerPlugin.scheduleCronJob(SchedulerType.DBMS, "DbmsCron", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					"0 0/1 * * * ? *", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsCron", jdArgsType, jdArgs);
-			
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleCronJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "DbmsCron", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						"0 0/1 * * * ? *", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsCron", jdArgsType, jdArgs);
+			}
 		} catch (Exception e) {
 			m_log.error("SchedulerTest05:Exception:" + e);
 		}
@@ -369,7 +394,9 @@ public class HinemosSchedulerTest {
 		m_log.debug("SchedulerTest06 start.");
 		try {
 			m_log.debug("SchedulerTest06:deleteJob():RamSimpleDel");
-			SchedulerPlugin.deleteJob(SchedulerType.RAM, "RamSimple", "SchedulerTest");
+			for( SchedulerType type : ramTypes){
+				SchedulerPlugin.deleteJob(type, "RamSimple", "SchedulerTest");
+			}
 		} catch (Exception e) {
 			m_log.debug("SchedulerTest06:Exception:" + e);
 		}
@@ -392,8 +419,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest07:scheduleCronJob():RamSimpleAdd");
-			SchedulerPlugin.scheduleSimpleJob(SchedulerType.RAM, "RamSimple", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					5, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobRamSimple", jdArgsType, jdArgs);
+			for( SchedulerType type : ramTypes){
+				SchedulerPlugin.scheduleSimpleJob(type, "RamSimple", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
+						5, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobRamSimple", jdArgsType, jdArgs);
+			}
 			
 		} catch (Exception e) {
 			m_log.error("SchedulerTest07:Exception:" + e);
@@ -418,8 +447,10 @@ public class HinemosSchedulerTest {
 		try {
 			m_log.debug("SchedulerTest08:scheduleCronJob():RamSimpleMod");
 			// IDは登録時と同じものを指定
-			SchedulerPlugin.scheduleSimpleJob(SchedulerType.RAM, "RamSimple", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobRamSimple", jdArgsType, jdArgs);
+			for( SchedulerType type : ramTypes){
+				SchedulerPlugin.scheduleSimpleJob(type, "RamSimple", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
+						20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobRamSimple", jdArgsType, jdArgs);
+			}
 			
 		} catch (Exception e) {
 			m_log.error("SchedulerTest08:Exception:" + e);
@@ -433,7 +464,9 @@ public class HinemosSchedulerTest {
 		m_log.info("SchedulerTest09 start.");
 		try {
 			m_log.info("SchedulerTest09:deleteJob():DbmsSimpleDel");
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, "DbmsSimple", "SchedulerTest");
+			for( String group : dbmsGroups){
+				SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "DbmsSimple", group);
+			}
 		} catch (Exception e) {
 			m_log.info("SchedulerTest09:Exception:" + e);
 		}
@@ -456,9 +489,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest10:scheduleCronJob():DbmsSimpleAdd");
-			SchedulerPlugin.scheduleSimpleJob(SchedulerType.DBMS, "DbmsSimple", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					5, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsSimple", jdArgsType, jdArgs);
-			
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleSimpleJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "DbmsSimple", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						5, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsSimple", jdArgsType, jdArgs);
+			}
 		} catch (Exception e) {
 			m_log.error("SchedulerTest10:Exception:" + e);
 		}
@@ -482,9 +516,10 @@ public class HinemosSchedulerTest {
 		try {
 			m_log.debug("SchedulerTest11:scheduleCronJob():DbmsSimpleMod");
 			// IDは登録時と同じものを指定
-			SchedulerPlugin.scheduleSimpleJob(SchedulerType.DBMS, "DbmsSimple", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsSimple", jdArgsType, jdArgs);
-			
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleSimpleJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "DbmsSimple", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsSimple", jdArgsType, jdArgs);
+			}
 		} catch (Exception e) {
 			m_log.error("SchedulerTest11:Exception:" + e);
 		}
@@ -529,8 +564,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest12:scheduleCronJob():ClassTypeTestOK");
-			SchedulerPlugin.scheduleSimpleJob(SchedulerType.DBMS, "ClassTypeTestOK", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobClassTypeTest", jdArgsType, jdArgs);
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleSimpleJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "ClassTypeTestOK", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobClassTypeTest", jdArgsType, jdArgs);
+			}
 			
 		} catch (Exception e) {
 			m_log.error("SchedulerTest12:Exception:" + e);
@@ -576,8 +613,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest13:scheduleCronJob():ClassTypeTestNG");
-			SchedulerPlugin.scheduleSimpleJob(SchedulerType.DBMS, "ClassTypeTestNG", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobClassTypeTest", jdArgsType, jdArgs);
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleSimpleJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "ClassTypeTestNG", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobClassTypeTest", jdArgsType, jdArgs);
+			}
 			
 		} catch (Exception e) {
 			m_log.error("SchedulerTest13:Exception:" + e);
@@ -641,9 +680,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest14:scheduleCronJob():ParamNum");
-			SchedulerPlugin.scheduleSimpleJob(SchedulerType.DBMS, "ParamNum", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobParamNumTest", jdArgsType, jdArgs);
-			
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleSimpleJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "ParamNum",group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobParamNumTest", jdArgsType, jdArgs);
+			}
 		} catch (Exception e) {
 			m_log.error("SchedulerTest14:Exception:" + e);
 		}
@@ -709,9 +749,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest15:scheduleCronJob():ParamNum");
-			SchedulerPlugin.scheduleSimpleJob(SchedulerType.DBMS, "ParamNum", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					30, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobParamNumTest", jdArgsType, jdArgs);
-			
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleSimpleJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "ParamNum", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						30, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobParamNumTest", jdArgsType, jdArgs);
+			}
 		} catch (Exception e) {
 			m_log.error("SchedulerTest15:Exception:" + e);
 		}
@@ -735,8 +776,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest16:scheduleCronJob():DbmsSimpleJobErr");
-			SchedulerPlugin.scheduleSimpleJob(SchedulerType.DBMS, "DbmsSimpleJobErr", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsJobErr", jdArgsType, jdArgs);
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleSimpleJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "DbmsSimpleJobErr", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						20, true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsJobErr", jdArgsType, jdArgs);
+			}
 			
 		} catch (Exception e) {
 			m_log.error("SchedulerTest16:Exception:" + e);
@@ -760,8 +803,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest17:scheduleCronJob():DbmsCronJobSuccess");
-			SchedulerPlugin.scheduleCronJob(SchedulerType.DBMS, "DbmsCronJobSuccess", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					"30 20 14 4 4 ? 2016", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsEndStatus", jdArgsType, jdArgs);
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleCronJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "DbmsCronJobSuccess", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						"30 20 14 4 4 ? 2016", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsEndStatus", jdArgsType, jdArgs);
+			}
 			
 		} catch (Exception e) {
 			m_log.error("SchedulerTest17:Exception:" + e);
@@ -785,9 +830,10 @@ public class HinemosSchedulerTest {
 		
 		try {
 			m_log.debug("SchedulerTest18:scheduleCronJob():DbmsCronJobError");
-			SchedulerPlugin.scheduleCronJob(SchedulerType.DBMS, "DbmsCronJobError", "SchedulerTest", HinemosTime.currentTimeMillis() + 2 * 1000,
-					"30 25 14 4 4 ? 2016", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsEndStatus", jdArgsType, jdArgs);
-			
+			for( String group : dbmsGroups){
+				SchedulerPlugin.scheduleCronJob(SchedulerPlugin.toSchedulerTypeForDBMS(group), "DbmsCronJobError", group, HinemosTime.currentTimeMillis() + 2 * 1000,
+						"30 25 14 4 4 ? 2016", true, HinemosSchedulerTest.SchedulerTestCallback.class.getName(), "scheduleRunJobDbmsEndStatus", jdArgsType, jdArgs);
+			}
 		} catch (Exception e) {
 			m_log.error("SchedulerTest19:Exception:" + e);
 		}

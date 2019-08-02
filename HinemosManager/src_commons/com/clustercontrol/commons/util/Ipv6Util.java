@@ -34,6 +34,14 @@ public class Ipv6Util {
 		if (ipv6 == null) {
 			return ipv6;
 		}
+		// Link LocalアドレスのScope IDを削除する
+		// Scope IDにマネージャサーバ上に存在しないNIC名が入っている場合、
+		// InetAddress.getByName(ipv6)でUnknownHostExceptionが発生する。
+		// ※ https://docs.oracle.com/javase/8/docs/api/java/net/Inet6Address.html#scoped
+		int endIndex = ipv6.indexOf("%");
+		if (endIndex > 0) {
+			ipv6 = ipv6.substring(0, endIndex);
+		}
 		// IPv4だと何もしない。
 		try{
 			InetAddress address = InetAddress.getByName(ipv6);
@@ -45,10 +53,6 @@ public class Ipv6Util {
 			return ipv6;
 		}
 
-		int endIndex = ipv6.indexOf("%");
-		if (endIndex > 0) {
-			ipv6 = ipv6.substring(0, endIndex);
-		}
 		try {
 			ipv6 = InetAddress.getByName(ipv6).getHostAddress();
 		} catch (UnknownHostException e) {

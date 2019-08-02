@@ -23,10 +23,15 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -37,6 +42,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.util.OptionManager;
+import com.clustercontrol.bean.ActivationKeyConstant;
 import com.clustercontrol.fault.HinemosUnknown;
 
 public class KeyCheck {
@@ -48,22 +54,9 @@ public class KeyCheck {
 	public static final String PUBLIC_KEY_STR = 
 			"30819?300=06092:864886?70=010101050003818=00308189028181008?8=8?0037062==696>189>=09>404??810<4<2?>>9<52:5?2<97072438320?=1718>;4>9?140368:4>18425657:>94>7<;1<<>63>;75445<>;?4=>063>18;971747028>8:<<;1?1<579:921?5<??:>9><4>:9?;?8??;61:303?0394<351=79;36338><124;;38:>0220;37<66=6>2>?9>>41<4=2;0;833616?8===:09;0=<1=0203010001";
 	
-	/**
-	 * ライセンスキーのファイル名(YYYY_MM_enterprise)
-	 */
-	public static final String TYPE_ENTERPRISE = "enterprise";
+	private static Map<String, Integer> expireDateMap = new ConcurrentHashMap<>();
+	private static Map<String, String> filenameTypeMap = new ConcurrentHashMap<>();
 	
-	/**
-	 * ライセンスキーのファイル名(YYYY_MM_xcloud)
-	 */
-	public static final String TYPE_XCLOUD = "xcloud";
-
-	/**
-	 * ライセンスキーで有効となるファイル名の最新日付および年月比較結果
-	 * key(String)はオプション名、value(Integer)は先頭6桁の数値(e.g. 201812)
-	 */
-	private static Map<String, Integer> latestDateMap= new HashMap<>();
-
 	/**
 	 * 秘密鍵と公開鍵のチェックを行います。
 	 * 
@@ -136,22 +129,17 @@ public class KeyCheck {
 		}
 
 	}
-
+	
 	/**
-	 * キーチェック
+	 * キーの最終年月を取得します。
 	 * 
 	 * @param type キータイプ
-	 * @return 妥当なキーが存在する場合true; それ以外false
+	 * @return キーの最終年月
 	 */
-	public static synchronized boolean checkKey(String type) {
-		// If an Option already checked
-		if(OptionManager.has(type)){
-			m_log.debug(type + " has been checked");
-			return OptionManager.has(type);
-		}
-
-		boolean keyCheck = false;
-
+	private static synchronized Integer getLastestDate(String type){
+		Integer lastestDate = new Integer(0);
+		String filenameType = null;
+		
 		String etcdir = System.getProperty("hinemos.manager.etc.dir");
 
 		File[] files = null;
@@ -169,20 +157,21 @@ public class KeyCheck {
 			});
 			if (files == null) {
 				m_log.warn(etcdir + " does not exist");
-				return false;
+				return new Integer(0);
 			}
 			m_log.info("Found key files=" + files.length);
 		} catch (Exception e) {
 			m_log.warn(e.getMessage(), e);
-			return false;
+			return new Integer(0);
 		}
-		
+
+		Map<String, Integer> latestDateMap = new HashMap<>();
 		for (File file : files) {
 			FileReader fileReader = null;
 			try {
 				String filename = file.getName();
 				Integer filenamePre = Integer.parseInt(filename.substring(0, 6));
-				
+
 				/*
 				 * チェック0:
 				 * ファイル名のチェックと、
@@ -210,34 +199,26 @@ public class KeyCheck {
 				}
 
 				// typeにより日付を取得
-				Integer latestDate = latestDateMap.get(type);
-
+				lastestDate = latestDateMap.get(type);
+				filenameType = filenameTypeMap.get(type);
+				
 				/*
 				 * ファイル名より日付を抽出する。
 				 * 最終的に最新のファイルの日付のみ残る。
 				 */
-				if (null == latestDate) {
-					latestDate = filenamePre;
-				} else if (latestDate < filenamePre) {
-					latestDate = filenamePre;
+				if (null == lastestDate) {
+					lastestDate = filenamePre;
+					filenameType = fileTypeArr[1];
+				} else if (lastestDate < filenamePre) {
+					lastestDate = filenamePre;
+					filenameType = fileTypeArr[1];
 				}
 
 				// typeにより日付を設定
-				setLatestDate(type, latestDate);
-
-				// Compare key with current timestamp
-				Calendar cal = Calendar.getInstance(TimeZone.getDefault());
-				int nowYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH);
-				m_log.debug("nowYM = " + nowYM);
-				if(!latestDate.equals(0) && ((int)latestDate) >= nowYM){
-					keyCheck = true;
-					// Add to option list
-					OptionManager.add(type);
-					break;
-				}else{
-					keyCheck = false;
-					m_log.warn("The key is either invalid or expired! filename=" + filename);
-				}
+				m_log.info("setLatestDate(" + type + ")=" + lastestDate);
+				latestDateMap.put(type, lastestDate);
+				filenameTypeMap.put(type, filenameType);
+				
 			} catch (Exception e) {
 				if (e instanceof NumberFormatException) {
 					m_log.info(e.getMessage());
@@ -254,8 +235,82 @@ public class KeyCheck {
 				}
 			}
 		}
-
+		return lastestDate;
+	}
+	
+	public static String getActivationKeyFilename(LocalDate expireDate, String type) {
+		if (filenameTypeMap.get(type) != null && expireDate != null) {
+			StringBuilder activationKeyFilename = new StringBuilder();
+			activationKeyFilename.append(expireDate.format(DateTimeFormatter.ofPattern("yyyyMM")))
+				.append("_").append(filenameTypeMap.get(type))
+				.append("_").append(type);
+			return activationKeyFilename.toString();
+		}
+		return null;
+	}
+	
+	/**
+	 * キーチェック
+	 * 
+	 * @param type キータイプ
+	 * @return 妥当なキーが存在する場合true; それ以外false
+	 */
+	public static synchronized boolean checkKey(String type) {
+		// If an Option already checked
+		if(OptionManager.has(type)){
+			m_log.debug(type + " has been checked");
+			return OptionManager.has(type);
+		}
+	
+		boolean keyCheck = false;
+	
+		Integer lastestDate = getLastestDate(type);
+		expireDateMap.put(type, lastestDate);
+		
+		// Compare key with current timestamp
+		Calendar cal = Calendar.getInstance(TimeZone.getDefault());
+		int nowYM = cal.get(Calendar.YEAR) * 100 + cal.get(Calendar.MONTH) + 1;
+		m_log.debug("nowYM = " + nowYM);
+		if(!lastestDate.equals(0) && ((int)lastestDate) >= nowYM){
+			keyCheck = true;
+			// Add to option list
+			OptionManager.add(type);
+			// 評価版かどうか判定
+			if(!lastestDate.equals(ActivationKeyConstant.ACTIVATION_KEY_YYYYMM)){
+				OptionManager.add(type + "_" + lastestDate + ActivationKeyConstant.EVALUATION_SUFFIX);
+			}
+		}else{
+			keyCheck = false;
+			// 評価版かつ期限切れ
+			if(!lastestDate.equals(0) && !lastestDate.equals(ActivationKeyConstant.ACTIVATION_KEY_YYYYMM)){
+				OptionManager.add(type + "_" + lastestDate + ActivationKeyConstant.EVALUATION_EXPIRED_SUFFIX);
+			}
+			m_log.warn("The key is either invalid or expired! lastestDate=" + lastestDate + ", type=" + type);
+		}
+	
 		return keyCheck;
+	}
+	
+	/**
+	 * キーチェックで作成したキーの最終日時のキャッシュを返す。
+	 * 
+	 * @param type キータイプ
+	 * @return キータイプでキャッシュしている最終日付
+	 */
+	public static LocalDate getExpireDate(String type){
+		Integer expireDate = expireDateMap.get(type);
+		if (expireDate != null) {
+			Pattern p = Pattern.compile("(\\d{4})(\\d{2})");
+			Matcher m = p.matcher(expireDate.toString());
+			if (m.find()) {
+				int year = Integer.parseInt(m.group(1));
+				int month = Integer.parseInt(m.group(2));
+				int day = LocalDate.of(year, month, 1).lengthOfMonth();
+				
+				return LocalDate.of(year, month, day);
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -379,11 +434,6 @@ public class KeyCheck {
 		throw new HinemosUnknown("encrypt error");
 	}
 
-	private static void setLatestDate(String type, Integer latestDate) {
-		m_log.info("setLatestDate(" + type + ")=" + latestDate);
-		latestDateMap.put(type, latestDate);
-	}
-
 	/**
 	 * Hinemos時刻と起動時にチェックしたキーファイルの時間の比較結果を返却する
 	 */
@@ -397,7 +447,7 @@ public class KeyCheck {
 	 */
 	@Deprecated
 	public static String getResultEnterprise() {
-		return getResult(TYPE_ENTERPRISE);
+		return getResult(ActivationKeyConstant.TYPE_ENTERPRISE);
 	}
 
 	/**
@@ -405,7 +455,7 @@ public class KeyCheck {
 	 */
 	@Deprecated
 	public static String getResultXcloud() {
-		return getResult(TYPE_XCLOUD);
+		return getResult(ActivationKeyConstant.TYPE_XCLOUD);
 	}
 
 	/**

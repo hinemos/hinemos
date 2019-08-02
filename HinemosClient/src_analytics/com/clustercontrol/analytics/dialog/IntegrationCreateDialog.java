@@ -8,6 +8,8 @@
 
 package com.clustercontrol.analytics.dialog;
 
+import java.util.ArrayList;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -209,7 +211,8 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 		this.m_buttonModify.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int order = m_compConditionList.getTableViewer().getTable().getSelectionIndex();
+				int order = (Integer) ((ArrayList<?>) m_compConditionList.getTableViewer().getTable()
+						.getSelection()[0].getData()).get(0) - 1;
 				if (order >= 0) {
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
@@ -236,7 +239,8 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 		this.m_buttonDelete.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int order = m_compConditionList.getTableViewer().getTable().getSelectionIndex();
+				int order = (Integer) ((ArrayList<?>) m_compConditionList.getTableViewer().getTable()
+						.getSelection()[0].getData()).get(0) - 1;
 				if (order >= 0) {
 					String detail = m_compConditionList.getItem().getDescription();
 					if (detail == null) {
@@ -265,7 +269,8 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 		this.m_buttonCopy.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int order = m_compConditionList.getTableViewer().getTable().getSelectionIndex();
+				int order = (Integer) ((ArrayList<?>) m_compConditionList.getTableViewer().getTable()
+						.getSelection()[0].getData()).get(0) - 1;
 				if (order >= 0) {
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();

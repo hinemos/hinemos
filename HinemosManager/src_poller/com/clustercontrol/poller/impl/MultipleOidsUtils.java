@@ -38,7 +38,16 @@ public class MultipleOidsUtils extends AbstractSnmpUtility {
 		this.factory = factory;
 	}
 
-	public Collection<VariableBinding> query(Target target, OID[] rootOids) throws IOException {
+	/**
+	 * 対象OIDに紐づく情報をSNMPで取得する
+	 * 
+	 * @param target SNMP通信先
+	 * @param rootOids 対象OIDのリスト
+	 * @param allowIncomplete 途中タイムアウト時に不完全な結果返却を許すかどうか
+	 * @return 取得結果
+	 * @throws IOException 
+	 */
+	public Collection<VariableBinding> query(Target target, OID[] rootOids, boolean allowIncomplete) throws IOException {
 		HashMap<OID, VariableBinding> result = new HashMap<OID, VariableBinding>();
 
 		if ((rootOids == null) || (rootOids.length == 0)) {
@@ -64,8 +73,8 @@ public class MultipleOidsUtils extends AbstractSnmpUtility {
 			requestCounter ++;
 			if (response == null) {
 				log.info(target.getAddress() + " response is null : result.size=" + result.values().size());
-				if (result.values().size() == 0) {
-					// 1件も取得できなかった場合は応答なしとする。
+				if (result.values().size() == 0 || !allowIncomplete) {
+					// 1件も取得できなかった場合 もしくは 不完全な結果返却を許容しない場合、応答なしとする。
 					throw new IOException(MessageConstant.MESSAGE_RESPONSE_NOT_FOUND.getMessage());
 				}
 				return result.values();

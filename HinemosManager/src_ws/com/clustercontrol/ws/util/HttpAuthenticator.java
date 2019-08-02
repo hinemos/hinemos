@@ -19,6 +19,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.auth.AuthenticationParams;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.commons.util.HinemosSessionContext;
@@ -33,8 +34,18 @@ import com.sun.net.httpserver.HttpExchange;
 public class HttpAuthenticator{
 	private static Log m_log = LogFactory.getLog( HttpAuthenticator.class );
 
-	public static void authCheck(WebServiceContext wsContext, ArrayList<SystemPrivilegeInfo> systemPrivilegeList, boolean isAdmin)
-			throws InvalidUserPass, InvalidRole, HinemosUnknown {
+	/**
+	 * 
+	 * @param wsContext ウェブサービスコンテキスト。
+	 * @param systemPrivilegeList ユーザが持っていなければならないシステム権限のリスト。
+	 * @param isAdmin trueの場合、ユーザはADMINISTRATORSロールに所属している必要があります。
+	 * @param disablesAuthCache trueの場合、ユーザ認証機構にキャッシュの仕組みがあったとしても、強制的に無効化します。
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public static void authCheck(WebServiceContext wsContext, ArrayList<SystemPrivilegeInfo> systemPrivilegeList,
+			boolean isAdmin, boolean disablesAuthCache) throws InvalidUserPass, InvalidRole, HinemosUnknown {
 
 		String username = null; // "HINEMOS_AGENT";
 		String password = null; // "HINEMOS_AGENT";
@@ -56,7 +67,12 @@ public class HttpAuthenticator{
 			HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR, isAdministrator);
 
 			// パスワード、システム権限チェック
-			new AccessControllerBean().getUserInfoByPassword(username, password, systemPrivilegeList);
+			AuthenticationParams authParams = new AuthenticationParams();
+			authParams.setUserId(username);
+			authParams.setPassword(password);
+			authParams.setRequiredSystemPrivileges(systemPrivilegeList);
+			authParams.setCacheDisabled(disablesAuthCache);
+			new AccessControllerBean().authenticate(authParams);
 
 			// isAdmin=trueの場合、ADMINISTRATORSロールに所属していないとエラーとする。
 			if (isAdmin && !isAdministrator) {
@@ -74,9 +90,14 @@ public class HttpAuthenticator{
 		}
 	}
 
+	public static void authCheck(WebServiceContext wsContext, ArrayList<SystemPrivilegeInfo> systemPrivilegeList,
+			boolean isAdmin) throws InvalidUserPass, InvalidRole, HinemosUnknown {
+		authCheck(wsContext, systemPrivilegeList, isAdmin, false);
+	}
+
 	public static void authCheck(WebServiceContext wsContext, ArrayList<SystemPrivilegeInfo> systemPrivilegeList)
 			throws InvalidUserPass, InvalidRole, HinemosUnknown {
-		authCheck(wsContext, systemPrivilegeList, false);
+		authCheck(wsContext, systemPrivilegeList, false, false);
 	}
 
 	/**

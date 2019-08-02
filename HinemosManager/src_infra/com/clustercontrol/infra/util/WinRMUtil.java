@@ -30,6 +30,7 @@ import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.infra.bean.ModuleNodeResult;
 import com.clustercontrol.infra.bean.OkNgConstant;
+import com.clustercontrol.infra.model.FileTransferModuleInfo;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.XMLUtil;
 
@@ -38,7 +39,9 @@ public class WinRMUtil {
 	
 	private static String winReturnCode = "\n"; // Windowsなので、%nではなく\nとする
 
-	public static ModuleNodeResult execCommand(String user, String password, String host, int port, String protocol, String command, int maxSize) {
+    public final static String WINRM_FILE_SPLIT = "~";
+
+    public static ModuleNodeResult execCommand(String user, String password, String host, int port, String protocol, String command, int maxSize) {
 		log.info("user=" + user + ", host=" + host + ", port=" + port + ", command=" + command);
 		// log.debug("password=" + password);
 		
@@ -112,7 +115,7 @@ public class WinRMUtil {
 	
 	public static ModuleNodeResult sendFile(String user, String password, String host, int port, String protocol,
 			String srcDir, String srcFilename, String dstDir, String dstFilename,
-			String owner, String perm, boolean isBackupIfExistFlg)  {
+			String owner, String perm, boolean isBackupIfExistFlg, int cnt)  {
 		
 		WinRs winRs = new WinRs(host, port, protocol, user, password);
 		String shellId = null;
@@ -123,15 +126,31 @@ public class WinRMUtil {
 			String dstFilePath = dstDir + File.separator + dstFilename;
 			
 			//一時ファイルにアップロード
-			WinRsCommandOutput output = downloadToTempFile(winRs, shellId, tempFilePath, srcFilename);
-			String msg = "out=" + output.getStdout().trim() + "\n" + "err=" + output.getStderr().trim();
-			if (output.getExitCode() != 0) {
-				log.warn("sendFile() code="+output.getExitCode()+",out="+output.getStdout()+",err="+output.getStderr());
-				return new ModuleNodeResult(OkNgConstant.TYPE_NG, 1, XMLUtil.ignoreInvalidString(msg));
+			WinRsCommandOutput output = null;
+			String msg = "";
+			if (cnt > 1) {
+				for (int i = 1; i <= cnt; i++) {
+					// 複数ファイル
+					output = downloadToTempFile(winRs, shellId, FileTransferModuleInfo.getSplitFileName(tempFilePath, i), 
+							FileTransferModuleInfo.getSplitFileName(srcFilename, i));
+					msg = "out=" + output.getStdout().trim() + "\n" + "err=" + output.getStderr().trim();
+					if (output.getExitCode() != 0) {
+						log.warn("sendFile() code="+output.getExitCode()+",out="+output.getStdout()+",err="+output.getStderr());
+						return new ModuleNodeResult(OkNgConstant.TYPE_NG, 1, XMLUtil.ignoreInvalidString(msg));
+					}
+				}
+			} else {
+				// 1ファイル
+				output = downloadToTempFile(winRs, shellId, tempFilePath, srcFilename);
+				msg = "out=" + output.getStdout().trim() + "\n" + "err=" + output.getStderr().trim();
+				if (output.getExitCode() != 0) {
+					log.warn("sendFile() code="+output.getExitCode()+",out="+output.getStdout()+",err="+output.getStderr());
+					return new ModuleNodeResult(OkNgConstant.TYPE_NG, 1, XMLUtil.ignoreInvalidString(msg));
+				}
 			}
-			
+						
 			//一時ファイルをディコードして、送信先ファイルに保存
-			output = decodeTempFile(winRs, shellId, tempFilePath, dstFilePath, isBackupIfExistFlg);
+			output = decodeTempFile(winRs, shellId, tempFilePath, dstFilePath, isBackupIfExistFlg, cnt);
 			msg = "out=" + output.getStdout().trim() + "\n" + "err=" + output.getStderr().trim();
 			// PowershellでOOME発生の場合、ExitCode=0で返ってくるのでエラー出力も確認している
 			if (output.getExitCode() != 0 || output.getStderr().trim().contains("System.OutOfMemoryException")) {
@@ -272,7 +291,7 @@ public class WinRMUtil {
 	}
 
 	private static WinRsCommandOutput decodeTempFile(WinRs winRs, String shellId,
-			String tempFilePath, String dstFilePath, boolean isBackupIfExistFlg)
+			String tempFilePath, String dstFilePath, boolean isBackupIfExistFlg, int cnt)
 			throws UnsupportedEncodingException, WsmanException {
 		
 		String command = "powershell";
@@ -281,11 +300,11 @@ public class WinRMUtil {
 				"none",
 				"-encodedCommand",
 				Base64.encodeBase64String(getDecodeScript(tempFilePath,
-						dstFilePath, isBackupIfExistFlg).getBytes("UTF-16LE")) };
+						dstFilePath, isBackupIfExistFlg, cnt).getBytes("UTF-16LE")) };
 		return runCommand(winRs, command, args, shellId);
 	}
 
-	private static String getDecodeScript(String tempFilePath, String dstFilePath, boolean isBackupIfExistFlg) {
+	private static String getDecodeScript(String tempFilePath, String dstFilePath, boolean isBackupIfExistFlg, int cnt) {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append(String.format("$tmp_file_path = [System.IO.Path]::GetFullPath('%s')" + winReturnCode, tempFilePath));
 		buffer.append(String.format("$dest_file_path = [System.IO.Path]::GetFullPath('%s')" + winReturnCode, dstFilePath));
@@ -302,24 +321,44 @@ public class WinRMUtil {
 		buffer.append("    }" + winReturnCode);
 		buffer.append("    rm $dest_file_path" + winReturnCode);
 		buffer.append("}" + winReturnCode);
-		buffer.append("$f = [System.Xml.XmlReader]::create($tmp_file_path)" + winReturnCode);
 		buffer.append("$writer = [System.IO.File]::OpenWrite($dest_file_path)" + winReturnCode);
 		buffer.append("$bufferSize = 10 * 1024 * 1024 # should be a multiplier of 4" + winReturnCode);
 		buffer.append("$buffer = New-Object char[] $bufferSize" + winReturnCode);
-		buffer.append("while ($f.read()) {" + winReturnCode);
-		buffer.append("    switch ($f.NodeType) {" + winReturnCode);
-		buffer.append("        ([System.Xml.XmlNodeType]::Element) {" + winReturnCode);
-		buffer.append("            if ($f.Name -eq \"return\") {" + winReturnCode);
-		buffer.append("                $null = $f.read()" + winReturnCode);
-		buffer.append("                while (($len = $f.ReadValueChunk($buffer, 0 ,$bufferSize)) -ne 0) {" + winReturnCode);
-		buffer.append("                    $bytes = [Convert]::FromBase64CharArray($buffer, 0, $len)" + winReturnCode);
-		buffer.append("                    $writer.Write($bytes, 0, $bytes.Length)" + winReturnCode);
-		buffer.append("                }" + winReturnCode);
-		buffer.append("            }" + winReturnCode);
-		buffer.append("            break" + winReturnCode);
-		buffer.append("        }" + winReturnCode);
-		buffer.append("    }" + winReturnCode);
-		buffer.append("}" + winReturnCode);
+		if (cnt > 1) {
+			buffer.append(String.format("for($idx=0; $idx -le %d; $idx++) {" + winReturnCode, cnt));
+			buffer.append("    $f = [System.Xml.XmlReader]::create($tmp_file_path + '" + WINRM_FILE_SPLIT + "' + $idx)" + winReturnCode);
+			buffer.append("    while ($f.read()) {" + winReturnCode);
+			buffer.append("        switch ($f.NodeType) {" + winReturnCode);
+			buffer.append("            ([System.Xml.XmlNodeType]::Element) {" + winReturnCode);
+			buffer.append("                if ($f.Name -eq \"return\") {" + winReturnCode);
+			buffer.append("                    $null = $f.read()" + winReturnCode);
+			buffer.append("                    while (($len = $f.ReadValueChunk($buffer, 0 ,$bufferSize)) -ne 0) {" + winReturnCode);
+			buffer.append("                        $bytes = [Convert]::FromBase64CharArray($buffer, 0, $len)" + winReturnCode);
+			buffer.append("                        $writer.Write($bytes, 0, $bytes.Length)" + winReturnCode);
+			buffer.append("                    }" + winReturnCode);
+			buffer.append("                }" + winReturnCode);
+			buffer.append("                break" + winReturnCode);
+			buffer.append("            }" + winReturnCode);
+			buffer.append("        }" + winReturnCode);
+			buffer.append("    }" + winReturnCode);
+			buffer.append("}" + winReturnCode);
+		} else {
+			buffer.append("$f = [System.Xml.XmlReader]::create($tmp_file_path)" + winReturnCode);
+			buffer.append("while ($f.read()) {" + winReturnCode);
+			buffer.append("    switch ($f.NodeType) {" + winReturnCode);
+			buffer.append("        ([System.Xml.XmlNodeType]::Element) {" + winReturnCode);
+			buffer.append("            if ($f.Name -eq \"return\") {" + winReturnCode);
+			buffer.append("                $null = $f.read()" + winReturnCode);
+			buffer.append("                while (($len = $f.ReadValueChunk($buffer, 0 ,$bufferSize)) -ne 0) {" + winReturnCode);
+			buffer.append("                    $bytes = [Convert]::FromBase64CharArray($buffer, 0, $len)" + winReturnCode);
+			buffer.append("                    $writer.Write($bytes, 0, $bytes.Length)" + winReturnCode);
+			buffer.append("                }" + winReturnCode);
+			buffer.append("            }" + winReturnCode);
+			buffer.append("            break" + winReturnCode);
+			buffer.append("        }" + winReturnCode);
+			buffer.append("    }" + winReturnCode);
+			buffer.append("}" + winReturnCode);
+		}
 		buffer.append("$writer.Dispose()" + winReturnCode);
 		String str = buffer.toString();
 		log.debug(str);

@@ -77,7 +77,7 @@ public class GetEventCustomCommandResultTableDefine {
 		
 		// 詳細メッセージ
 		tableDefine.add(MESSAGE,
-				new TableColumnInfo(Messages.getString("event.customcommand.result.processing.message", locale), TableColumnInfo.TEXT_DIALOG, 350, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("event.customcommand.result.processing.message", locale), TableColumnInfo.TEXT_DIALOG, 360, SWT.LEFT));
 
 		//ダミー
 		tableDefine.add(DUMMY,

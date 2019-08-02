@@ -128,7 +128,7 @@ public class SchedulerMonitor extends SelfCheckMonitorBase {
 	/**
 	 * スケジューラ情報の遅延時間を返す。
 	 * 
-	 * @param type スケジューラ情報の保持種別(RAM : オンメモリで管理、DBMS : DBで永続化管理)
+	 * @param type スケジューラ情報の保持種別( RAM_MONITOR,RAM_JOB : オンメモリで管理、DBMS,DBMS_JOB,DBMS_DEL : DBで永続化管理 )
 	 * @return 指定したスケジューラ種別の最も遅延している時間
 	 * @throws HinemosUnknown
 	 */

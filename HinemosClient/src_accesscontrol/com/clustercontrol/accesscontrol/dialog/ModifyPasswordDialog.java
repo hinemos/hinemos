@@ -8,6 +8,9 @@
 
 package com.clustercontrol.accesscontrol.dialog;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -35,6 +38,8 @@ import com.clustercontrol.util.WidgetTestUtil;
  * @since 2.0.0
  */
 public class ModifyPasswordDialog extends CommonDialog {
+	/** パスワード入力範囲 */
+	private static final String PASSWORD_REGEX = "^[\\x21-\\x7e]+$";
 	/** ユーザID用テキスト */
 	private Text uidText = null;
 	/** パスワード用テキスト */
@@ -183,10 +188,8 @@ public class ModifyPasswordDialog extends CommonDialog {
 	protected ValidateResult validate() {
 		ValidateResult result = null;
 
-		//パスワード取得
-		if (passwordText1.getText().length() > 0) {
-			setPassword(passwordText1.getText());
-		} else {
+		// パスワード取得
+		if (passwordText1.getText().length() == 0) {
 			result = new ValidateResult();
 			result.setValid(false);
 			result.setID(Messages.getString("message.hinemos.1"));
@@ -194,10 +197,20 @@ public class ModifyPasswordDialog extends CommonDialog {
 			return result;
 		}
 
-		//パスワード取得
-		if (passwordText2.getText().length() > 0) {
-			setPassword(passwordText2.getText());
-		} else {
+		Pattern pattern = Pattern.compile(PASSWORD_REGEX);
+		Matcher match = pattern.matcher(passwordText1.getText());
+		// パスワード取得(文字属性チェック)
+		// 送信時に暗号化するため、クライアント側にチェックを追加。
+		if (!match.matches()) {
+			result = new ValidateResult();
+			result.setValid(false);
+			result.setID(Messages.getString("message.hinemos.1"));
+			result.setMessage(Messages.getString("message.accesscontrol.71"));
+			return result;
+		}
+
+		// パスワード取得
+		if (passwordText2.getText().length() == 0) {
 			result = new ValidateResult();
 			result.setValid(false);
 			result.setID(Messages.getString("message.hinemos.1"));
@@ -205,7 +218,7 @@ public class ModifyPasswordDialog extends CommonDialog {
 			return result;
 		}
 
-		//パスワード確認
+		// パスワード確認
 		if (passwordText1.getText().compareTo(passwordText2.getText()) != 0) {
 			result = new ValidateResult();
 			result.setValid(false);
@@ -214,8 +227,8 @@ public class ModifyPasswordDialog extends CommonDialog {
 			return result;
 		}
 
-		//パスワード取得
-		this.password = passwordText1.getText();
+		// パスワード取得
+		setPassword(passwordText1.getText());
 
 		return null;
 	}

@@ -156,6 +156,8 @@ public abstract class TemplateBase {
 		retMap.put(ReportingConstant.ITEM_NAME_STATUS, isDefine(ReportingConstant.ITEM_NAME_STATUS, Messages.getString("JOB_ITEM_NAME_STATUS")));
 		retMap.put(ReportingConstant.ITEM_NAME_TRIGGERINFO, isDefine(ReportingConstant.ITEM_NAME_TRIGGERINFO, Messages.getString("JOB_ITEM_NAME_TRIGGERINFO")));
 		retMap.put(ReportingConstant.ITEM_NAME_TRIGGERTYPE, isDefine(ReportingConstant.ITEM_NAME_TRIGGERTYPE, Messages.getString("JOB_ITEM_NAME_TRIGGERTYPE")));
+		retMap.put(ReportingConstant.ITEM_NAME_CONCURRENCY, isDefine(ReportingConstant.ITEM_NAME_CONCURRENCY, Messages.getString("JOB_ITEM_NAME_CONCURRENCY")));
+		retMap.put(ReportingConstant.TITLE_JOBQUEUE_CONCURRENCY, isDefine(ReportingConstant.TITLE_JOBQUEUE_CONCURRENCY, Messages.getString("JOBQUEUE_CONCURRENCY")));
 		
 		return retMap;
 	}

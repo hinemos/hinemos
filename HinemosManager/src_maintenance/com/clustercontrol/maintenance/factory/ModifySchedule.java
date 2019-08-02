@@ -21,7 +21,6 @@ import com.clustercontrol.maintenance.bean.QuartzConstant;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.session.MaintenanceControllerBean;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
-import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.plugin.util.scheduler.SchedulerException;
 
@@ -64,10 +63,10 @@ public class ModifySchedule {
 		
 		try {
 			if (info.getValidFlg().booleanValue()) {
-				SchedulerPlugin.scheduleCronJob(SchedulerType.DBMS, info.getMaintenanceId(), QuartzConstant.GROUP_NAME, HinemosTime.currentTimeMillis() + 15 * 1000,
+				SchedulerPlugin.scheduleCronJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), info.getMaintenanceId(), QuartzConstant.GROUP_NAME, HinemosTime.currentTimeMillis() + 15 * 1000,
 						QuartzUtil.getCronString(info.getSchedule()), true, MaintenanceControllerBean.class.getName(), QuartzConstant.METHOD_NAME, jdArgsType, jdArgs);
 			} else {
-				SchedulerPlugin.deleteJob(SchedulerType.DBMS, info.getMaintenanceId(), QuartzConstant.GROUP_NAME);
+				SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), info.getMaintenanceId(), QuartzConstant.GROUP_NAME);
 			}
 		} catch (HinemosUnknown e) {
 			
@@ -89,7 +88,7 @@ public class ModifySchedule {
 		m_log.debug("deleteSchedule() : id=" + jobkickId);
 
 		try {
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, jobkickId, QuartzConstant.GROUP_NAME);
+			SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), jobkickId, QuartzConstant.GROUP_NAME);
 		} catch (HinemosUnknown e) {
 			m_log.error(e);
 		}

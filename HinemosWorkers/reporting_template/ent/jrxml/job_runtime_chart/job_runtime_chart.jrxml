@@ -16,7 +16,7 @@
 		<field name="jobunit_id" class="java.lang.String"/>
 		<field name="job_id" class="java.lang.String"/>
 		<field name="date_time" class="java.sql.Timestamp"/>
-		<field name="elapsed_time" class="java.lang.Long"/>
+		<field name="elapsed_time" class="java.lang.Double"/>
 	</subDataset>
 	<parameter name="title.main" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="title.cover" class="java.lang.String" isForPrompting="false"/>
@@ -156,7 +156,7 @@
 	<field name="jobunit_id" class="java.lang.String"/>
 	<field name="job_id" class="java.lang.String"/>
 	<field name="date_time" class="java.sql.Timestamp"/>
-	<field name="elapsed_time" class="java.lang.Long"/>
+	<field name="elapsed_time" class="java.lang.Double"/>
 	<group name="Group1">
 		<groupHeader>
 			<band height="640">

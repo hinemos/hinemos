@@ -8,11 +8,13 @@
 
 package com.clustercontrol.monitor.run.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.clustercontrol.commons.util.JpaTransactionCallback;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorNumericValueInfo;
+import com.clustercontrol.monitor.run.model.MonitorNumericValueInfoPK;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
 import com.clustercontrol.monitor.run.model.MonitorTruthValueInfo;
 
@@ -36,9 +38,50 @@ public class MonitorJudgementInfoCacheRefreshCallback implements JpaTransactionC
 			List<MonitorNumericValueInfo> monitorNumericValueList) {
 		this.monitorId = monitorId;
 		this.monitorType = monitorType;
-		this.monitorStringValueList = monitorStringValueList;
-		this.monitorTruthValueList = monitorTruthValueList;
-		this.monitorNumericValueList = monitorNumericValueList;
+		if (monitorStringValueList != null) {
+			this.monitorStringValueList = new ArrayList<>();
+			for (MonitorStringValueInfo info : monitorStringValueList) {
+				MonitorStringValueInfo valueInfo 
+					= new MonitorStringValueInfo(monitorId, info.getOrderNo());
+				valueInfo.setMessage(info.getMessage());
+				valueInfo.setCaseSensitivityFlg(info.getCaseSensitivityFlg());
+				valueInfo.setDescription(info.getDescription());
+				valueInfo.setPattern(info.getPattern());
+				valueInfo.setPriority(info.getPriority());
+				valueInfo.setProcessType(info.getProcessType());
+				valueInfo.setValidFlg(info.getValidFlg());
+				this.monitorStringValueList.add(valueInfo);
+			}
+		} else {
+			this.monitorStringValueList = null;
+		}
+		if (monitorTruthValueList != null) {
+			this.monitorTruthValueList = new ArrayList<>();
+			for (MonitorTruthValueInfo info : monitorTruthValueList) {
+				MonitorTruthValueInfo valueInfo 
+					= new MonitorTruthValueInfo(
+							monitorId, info.getPriority(), info.getTruthValue());
+				valueInfo.setMessage(info.getMessage());
+				this.monitorTruthValueList.add(valueInfo);
+			}
+		} else {
+			this.monitorTruthValueList = null;
+		}
+		if (monitorNumericValueList != null) {
+			this.monitorNumericValueList = new ArrayList<>();
+			for (MonitorNumericValueInfo info : monitorNumericValueList) {
+				MonitorNumericValueInfo valueInfo 
+					= new MonitorNumericValueInfo(
+							new MonitorNumericValueInfoPK(
+									monitorId, info.getMonitorNumericType(), info.getPriority()));
+				valueInfo.setMessage(info.getMessage());
+				valueInfo.setThresholdLowerLimit(info.getThresholdLowerLimit());
+				valueInfo.setThresholdUpperLimit(info.getThresholdUpperLimit());
+				this.monitorNumericValueList.add(valueInfo);
+			}
+		} else {
+			this.monitorNumericValueList = null;
+		}
 	}
 
 	@Override

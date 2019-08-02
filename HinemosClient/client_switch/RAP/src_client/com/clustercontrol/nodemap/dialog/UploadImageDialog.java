@@ -31,6 +31,7 @@ import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
 import com.clustercontrol.nodemap.util.ImageFileUploadReceiver;
 import com.clustercontrol.nodemap.util.ImageManager;
 import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
@@ -267,6 +268,19 @@ public class UploadImageDialog extends CommonDialog {
 		 * filenameは  "file1.gif" "file2.gif" "file3.gif" という内容。
 		 * " " でsplitして配列に戻す。
 		 */
+		//ノードマップ向けエンドポイント有効チェック
+		try {
+			NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(m_managerName);
+			wrapper.getVersion();
+		} catch (Exception e) {
+			//NGならエラーダイアログを表示して終了する。
+			MessageDialog.openInformation(
+				null,
+				Messages.getString("message"),
+				com.clustercontrol.nodemap.messages.Messages.getString("expiration.term"));
+			super.okPressed();
+			return;
+		}
 		for (String filename : fileName.getText().split("\" *\"")) {
 			// 先頭のファイルは頭に「"」がつくので消す。
 			filename = filename.replaceAll("\"", "");

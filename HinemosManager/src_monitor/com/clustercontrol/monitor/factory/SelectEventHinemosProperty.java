@@ -30,7 +30,7 @@ public class SelectEventHinemosProperty {
 	private static final String USER_ITEM_ZEROPAD_NUM = "%02d";
 
 	/** ユーザ拡張イベント項目のHinmeosプロパティでのフォーマット */
-	private static final String COMMAND_ZEROPAD_NUM = "%01d";
+	private static final String COMMAND_NUM = "%d";
 	
 	public static Map<Integer, EventUserExtensionItemInfo> getEventUserExtensionItemInfo() {
 		Map<Integer, EventUserExtensionItemInfo> ret = new HashMap<>();
@@ -58,7 +58,7 @@ public class SelectEventHinemosProperty {
 	public static Map<Integer, EventCustomCommandInfo> getEventCustomCommandInfo() {
 		Map<Integer, EventCustomCommandInfo> ret = new HashMap<>();
 		for (int i = 1; i <= EventHinemosPropertyConstant.COMMAND_SIZE; i++) {
-			String indexStr = String.format(SelectEventHinemosProperty.COMMAND_ZEROPAD_NUM, i);
+			String indexStr = String.format(SelectEventHinemosProperty.COMMAND_NUM, i);
 			EventCustomCommandInfo info = new EventCustomCommandInfo();
 			info.setEncode(HinemosPropertyDefault.monitor_event_customcmd_common_stdout_encode.getStringValue());
 			info.setEnable(HinemosPropertyCommon.monitor_event_customcmd_cmd$_enable.getBooleanValue(indexStr));
@@ -70,6 +70,7 @@ public class SelectEventHinemosProperty {
 			info.setMaxEventSize(HinemosPropertyCommon.monitor_event_customcmd_cmd$_max_eventsize.getNumericValue(indexStr));
 			info.setThread(HinemosPropertyCommon.monitor_event_customcmd_cmd$_thread.getNumericValue(indexStr));
 			info.setQueue(HinemosPropertyCommon.monitor_event_customcmd_cmd$_queue.getNumericValue(indexStr));
+			info.setRunInterval(HinemosPropertyCommon.monitor_event_customcmd_cmd$_run_interval.getNumericValue(indexStr));
 			info.setDateFormat(HinemosPropertyCommon.monitor_event_customcmd_cmd$_date_format.getStringValue(indexStr));
 			info.setUser(HinemosPropertyCommon.monitor_event_customcmd_cmd$_user.getStringValue(indexStr));
 			info.setTimeout(HinemosPropertyCommon.monitor_event_customcmd_cmd$_timeout.getNumericValue(indexStr));

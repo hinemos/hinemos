@@ -30,7 +30,9 @@ import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 public class MaintenanceSummaryDay extends MaintenanceObject {
 
 	private static Log m_log = LogFactory.getLog( MaintenanceSummaryDay.class );
-	
+
+	private static final Object _deleteLock = new Object();
+
 	/**
 	 * 削除処理
 	 */
@@ -44,8 +46,10 @@ public class MaintenanceSummaryDay extends MaintenanceObject {
 			if(RoleIdConstant.isAdministratorRole(ownerRoleId)){
 				jtm = new JpaTransactionManager();
 				jtm.begin();
-				ret = delete(boundary, status);
-				jtm.commit();
+				synchronized (_deleteLock) {
+					ret = delete(boundary, status);
+					jtm.commit();
+				}
 				
 			}else{
 				ArrayList<MonitorInfo> monitorList = new MonitorSettingControllerBean().getMonitorList();
@@ -59,19 +63,23 @@ public class MaintenanceSummaryDay extends MaintenanceObject {
 					}
 				}
 				if (monitorIdList.isEmpty()) {
-					return -1;
+					return ret;
 				}
 				jtm = new JpaTransactionManager();
 				jtm.begin();
 				
 				for(int i = 0; i < monitorIdList.size(); i++){
-					ret += delete(boundary, status, monitorIdList.get(i));
-					jtm.commit();
+					synchronized (_deleteLock) {
+						ret += delete(boundary, status, monitorIdList.get(i));
+						jtm.commit();
+					}
 				}
 			}
 		} catch(Exception e){
-			m_log.warn("deleteCollectData() : "
+			String countMessage = "delete count : " + ret + " records" + "\n";
+			m_log.warn("deleteCollectData() : " + countMessage
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			ret = -1;
 			if (jtm != null)
 				jtm.rollback();
 		} finally {
@@ -83,11 +91,10 @@ public class MaintenanceSummaryDay extends MaintenanceObject {
 	
 	protected int delete(Long boundary, boolean status, String monitorId) {
 		m_log.debug("_delete() start : status = " + status);
-		int ret = -1;
 		
 		//SQL文の実行
 		//for HA (縮退判定時間を延ばすため)、シングルには影響なし(0)：タイムアウト値設定
-		ret  = QueryUtil.deleteSummaryDayByDateTimeAndMonitorId(
+		int ret  = QueryUtil.deleteSummaryDayByDateTimeAndMonitorId(
 				boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue(), monitorId);
 		
 		//終了
@@ -97,11 +104,10 @@ public class MaintenanceSummaryDay extends MaintenanceObject {
 	
 	protected int delete(Long boundary, boolean status) {
 		m_log.debug("_delete() start : status = " + status);
-		int ret = -1;
 		
 		//SQL文の実行
 		//for HA (縮退判定時間を延ばすため)、シングルには影響なし(0)：タイムアウト値設定
-		ret  = QueryUtil.deleteSummaryDayByDateTime(
+		int ret  = QueryUtil.deleteSummaryDayByDateTime(
 				boundary, HinemosPropertyCommon.maintenance_query_timeout.getIntegerValue());
 		
 		//終了

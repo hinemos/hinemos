@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.ws.WebServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.AbstractHandler;
@@ -138,7 +140,7 @@ public class EventOpenJobMapViewerAction extends AbstractHandler implements IEle
 							com.clustercontrol.jobmap.messages.Messages.getString("expiration.term.invalid"));
 				}
 			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | WebServiceException e) {
 			// キーファイルを確認できませんでした。処理を終了します。
 			// Key file not found. This process will be terminated.
 			MessageDialog.openInformation(null, Messages.getString("message"),

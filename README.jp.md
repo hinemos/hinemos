@@ -12,7 +12,7 @@
 
 Hinemosは大規模、複雑化するITシステムの「監視」や「ジョブ」といった「運用業務の自動化」を実現し、オープンソースソフトウェアが持つコストメリットを最大限に活用できる統合運用管理ソフトウェアです。
 
-[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v6.2.1#packages)
+[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v6.2.2#packages)
 
 ## インストール
 
@@ -20,13 +20,13 @@ Hinemosはコマンドひとつでインストールできます。
 
 - マネージャのインストール
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.1/hinemos-6.2-manager-6.2.1-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.2/hinemos-6.2-manager-6.2.2-1.el7.x86_64.rpm```
 
 - Webクライアントのインストール
 
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.1/hinemos-6.2-web-6.2.1-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.2/hinemos-6.2-web-6.2.2-1.el7.x86_64.rpm```
 
-詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/releases/download/v6.2.1/ja_Install_Linux_6.2_rev2.pdf)をご覧下さい。
+詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_Install_Linux_6.2_rev3.pdf)をご覧下さい。
 
 ## ver.6.2新機能
 
@@ -60,9 +60,9 @@ Hinemosはコマンドひとつでインストールできます。
 
 ## ドキュメント
 
-- インストールマニュアル ([ja_Install_Linux_6.2_rev2.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.1/ja_Install_Linux_6.2_rev2.pdf) )
-- ユーザマニュアル ( [ja_User_6.2_rev2.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.1/ja_User_6.2_rev2.pdf) )
-- 管理者ガイド ( [ja_Admin_Linux_6.2_rev2.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.1/ja_Admin_Linux_6.2_rev2.pdf) )
+- インストールマニュアル ([ja_Install_Linux_6.2_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_Install_Linux_6.2_rev3.pdf) )
+- ユーザマニュアル ( [ja_User_6.2_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_User_6.2_rev3.pdf) )
+- 管理者ガイド ( [ja_Admin_Linux_6.2_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_Admin_Linux_6.2_rev3.pdf) )
 
 ## ライセンス
 

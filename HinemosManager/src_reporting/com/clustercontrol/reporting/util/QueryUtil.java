@@ -76,8 +76,21 @@ public class QueryUtil {
 			return list;
 		}
 	}
+
+	public static List<ReportingInfoEntity> getReportingInfoFindByFacilityId_NONE (String facilityId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<ReportingInfoEntity> list = null;
 	
-	
+			// ファシリティIDが使用されている設定を取得する。
+			list = em.createNamedQuery("ReportingInfoEntity.findByFacilityId", ReportingInfoEntity.class, ObjectPrivilegeMode.NONE)
+				.setParameter("facilityId", facilityId)
+				.getResultList();
+			
+			return list;
+		}
+	}
+
 	/*
 	 * TemplateSetInfoEntity
 	 */

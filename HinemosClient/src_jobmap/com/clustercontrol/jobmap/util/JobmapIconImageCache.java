@@ -8,6 +8,7 @@
 
 package com.clustercontrol.jobmap.util;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.bind.DatatypeConverter;
+import javax.xml.ws.WebServiceException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -224,12 +226,25 @@ public class JobmapIconImageCache {
 	public static List<JobmapIconImage> getJobmapIconImageList(String managerName)
 			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, 
 			InvalidSetting_Exception, IconFileNotFound_Exception {
-
-		JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-
-		// ジョブマップ用アイコンファイル一覧情報取得
-		List<JobmapIconImage> list = wrapper.getJobmapIconImageList();
-
+		
+		List<JobmapIconImage> list =  new ArrayList<JobmapIconImage>();
+		String versionInfo = null; 
+		try{
+			//ジョブマップ向けエンドポイント有効チェック
+			JobMapEndpointWrapper mapWrapper = JobMapEndpointWrapper.getWrapper(managerName);
+			versionInfo = mapWrapper.getVersion();
+		} catch (Exception e) {
+			// マルチマネージャ接続時にジョブマップが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
+			// この場合は、該当マネージャのイメージ一覧は空とする
+			if( m_log.isDebugEnabled() ){
+				m_log.debug("Exception . getJobmapIconImageList(String managerName = " +managerName + " )");
+			}
+		}
+		if( versionInfo != null ){
+			// ジョブマップ向けエンドポイントが有効ならジョブマップ用アイコンファイル一覧情報取得
+			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
+			list = wrapper.getJobmapIconImageList();
+		}
 		//取得した情報をキャッシュにセット
 		JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
 		iconCache.putCacheJobmapIconImageList(managerName, list);
@@ -441,6 +456,12 @@ public class JobmapIconImageCache {
 			defaultMonitorIconId = wrapper.getJobmapIconIdMonitorDefault();
 			// ジョブマップ用アイコンID（ファイル転送ジョブ）取得
 			defaultFileIconId = wrapper.getJobmapIconIdFileDefault();
+		} catch (WebServiceException e) {
+			// マルチマネージャ接続時にジョブマップが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
+			// この場合は、エラーダイアログなどは表示しない。
+			if( m_log.isDebugEnabled() ){
+				m_log.debug("WebServiceException . refresh(String managerName = " +managerName + " )");
+			}
 		} catch (InvalidRole_Exception e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(

@@ -43,6 +43,7 @@ import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
+import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -497,6 +498,18 @@ public class JobMapImageDialog extends CommonDialog {
 		JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
 		try {
 			String managerName = this.m_managerComposite.getText();
+			//ジョブマップ向けエンドポイント有効チェック
+			try {
+				JobMapEndpointWrapper wrapper = JobMapEndpointWrapper.getWrapper(managerName);
+				wrapper.getVersion();
+			} catch (Exception e) {
+				//NGならエラーダイアログを表示して終了する。
+				MessageDialog.openInformation(
+					null,
+					Messages.getString("message"),
+					com.clustercontrol.jobmap.messages.Messages.getString("expiration.term"));
+				return result;
+			}
 			if (this.m_mode == PropertyDefineConstant.MODE_MODIFY) {
 				iconCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, false);
 				Object[] arg = {managerName};

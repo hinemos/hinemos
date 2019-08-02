@@ -45,9 +45,19 @@ public class DatasourceJobDetail extends DatasourceBase {
 
 	private static Log m_log = LogFactory.getLog(DatasourceJobDetail.class);
 
-	private static final String JOB_UNIT_REGEX = "job.unit.id";
-	private static final String JOB_ID_REGEX = "job.id";
-	private static final String JOB_ID_REGEX_EXC = "job.id.exc";
+	protected static final String JOB_UNIT_REGEX = "job.unit.id";
+	protected static final String JOB_ID_REGEX = "job.id";
+	protected static final String JOB_ID_REGEX_EXC = "job.id.exc";
+
+	protected int m_daySec = 1000*24*60*60;
+	protected String m_ownerRoleId;
+
+	public DatasourceJobDetail() {
+		if (!"ADMINISTRATORS".equals(ReportUtil.getOwnerRoleId())) {
+			m_ownerRoleId = ReportUtil.getOwnerRoleId();
+		}
+
+	}
 
 	// Class for creating job tree
 	private static class JobSession {
@@ -223,14 +233,6 @@ public class DatasourceJobDetail extends DatasourceBase {
 				bw = new BufferedWriter(new FileWriter(csv, false));
 				bw.write(columnsStr);
 				bw.newLine();
-
-				String ownerRoleId = null;
-				if (!"ADMINISTRATORS".equals(ReportUtil.getOwnerRoleId())) {
-					ownerRoleId = ReportUtil.getOwnerRoleId();
-				}
-
-				int daySec = 1000*24*60*60;
-
 				int maxLength = Integer.parseInt(isDefine("max.jobid.length", "65"));
 
 				// write to csv file
@@ -238,11 +240,11 @@ public class DatasourceJobDetail extends DatasourceBase {
 				ReportingJobControllerBean controller = new ReportingJobControllerBean();
 
 				String rootparentUnitJobId = "_ROOT_";
-				List<JobSessionJobEntity> rootJobSessionJobList = controller.getRootJobSessionJobByParentJobunitId(rootparentUnitJobId, m_startDate.getTime(), m_startDate.getTime() + daySec);
+				List<JobSessionJobEntity> rootJobSessionJobList = controller.getRootJobSessionJobByParentJobunitId(rootparentUnitJobId, m_startDate.getTime(), m_startDate.getTime() + m_daySec);
 				for (JobSessionJobEntity rootJobSessionJobEntity : rootJobSessionJobList) {
 					if (rootJobSessionJobEntity != null) {
 						for (JobSessionJobEntity rootJobSessionJob : rootJobSessionJobList) {
-							List<JobSessionJobEntity> jobSessionList = controller.getReportingJobDetailList(rootJobSessionJob.getId().getSessionId(), jobUnitRegex, jobIdRegex, jobIdRegexExc, ownerRoleId);
+							List<JobSessionJobEntity> jobSessionList = controller.getReportingJobDetailList(rootJobSessionJob.getId().getSessionId(), jobUnitRegex, jobIdRegex, jobIdRegexExc, m_ownerRoleId);
 							for (JobSessionJobEntity entity : jobSessionList) {
 								String sessionId = entity.getId().getSessionId();
 								String jobId = entity.getId().getJobId();
@@ -333,7 +335,7 @@ public class DatasourceJobDetail extends DatasourceBase {
 		return retMap;
 	}
 
-	private String millsecToTime(Long millsec, String job_id) {
+	protected String millsecToTime(Long millsec, String job_id) {
 
 		if (millsec == null || millsec <= 0L) {
 			return Messages.getString("");

@@ -161,7 +161,26 @@ public class QueryUtil {
 			return query.executeUpdate();
 		}
 	}
-	
+
+	/**
+	 * バイナリ収集テーブルから指定条件のデータを削除.
+	 * 
+	 * @param dateTime
+	 * @param timeout
+	 * @return 削除件数.
+	 */
+	public static int deleteCollectBinaryDataByDateTime(Long dateTime, int timeout) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query query = em.createNamedQuery("CollectBinaryData.deleteByDateTime")
+					.setParameter("dateTime", dateTime);
+			if (timeout > 0) {
+				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
+			}
+			return query.executeUpdate();
+		}
+	}
+
 	public static int deleteCollectDataByDateTimeAndMonitorId(Long dateTime, int timeout, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();

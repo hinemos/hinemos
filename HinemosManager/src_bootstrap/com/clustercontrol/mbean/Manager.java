@@ -397,14 +397,21 @@ public class Manager implements ManagerMXBean {
 
 	@Override
 	public SchedulerDelayTimes getSchedulerDelayTime() throws HinemosUnknown {
+		long delayMillisecDbmsJob = 0L;
+		long delayMillisecDbmsDel = 0L;
 		long delayMillisecDbms = 0L;
-		long delayMillisecRam = 0L;
+		long delayMillisecRamMon = 0L;
+		long delayMillisecRamJob = 0L;
 		
 		// 指定したスケジューラの中で、最も遅延しているものを取得
+		delayMillisecDbmsJob = SchedulerMonitor.getSchedulerDelayTime(SchedulerPlugin.SchedulerType.DBMS_JOB);
+		delayMillisecDbmsDel = SchedulerMonitor.getSchedulerDelayTime(SchedulerPlugin.SchedulerType.DBMS_DEL);
 		delayMillisecDbms = SchedulerMonitor.getSchedulerDelayTime(SchedulerPlugin.SchedulerType.DBMS);
-		delayMillisecRam = SchedulerMonitor.getSchedulerDelayTime(SchedulerPlugin.SchedulerType.RAM);
+		delayMillisecRamMon = SchedulerMonitor.getSchedulerDelayTime(SchedulerPlugin.SchedulerType.RAM_MONITOR);
+		delayMillisecRamJob = SchedulerMonitor.getSchedulerDelayTime(SchedulerPlugin.SchedulerType.RAM_JOB);
 		
-		SchedulerDelayTimes schedulerDelayTimes = new SchedulerDelayTimes(delayMillisecDbms, delayMillisecRam);
+		SchedulerDelayTimes schedulerDelayTimes = new SchedulerDelayTimes(delayMillisecDbmsJob, delayMillisecDbmsDel, 
+				delayMillisecDbms, delayMillisecRamMon, delayMillisecRamJob);
 		return schedulerDelayTimes;
 	}
 

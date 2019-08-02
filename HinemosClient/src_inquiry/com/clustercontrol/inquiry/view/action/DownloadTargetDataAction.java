@@ -10,6 +10,7 @@ package com.clustercontrol.inquiry.view.action;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -150,13 +151,9 @@ public class DownloadTargetDataAction extends AbstractHandler implements IElemen
 				extension = "";
 			}
 		}
-		
-		String fileName;
-		if( ClusterControlPlugin.isRAP() ){
-			fileName = name + "_" + extension;
-		}else{
-			fileName = targetFileName;
-		}
+
+		String timestamp = new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new java.util.Date());
+		String fileName = name + "_" + timestamp + extension;
 		
 		// ファイル名に空白があると+に置き換わってしまうため、空白を削除
 		fileName = fileName.replaceAll(" ", "_");
@@ -177,12 +174,12 @@ public class DownloadTargetDataAction extends AbstractHandler implements IElemen
 				}
 				
 				if( ClusterControlPlugin.isRAP() ){
-					FileDownloader.openBrowser(window.getShell(), selectedFilePath, dialog.getFileName());
+					FileDownloader.openBrowser(window.getShell(), selectedFilePath, fileName);
 				}else{
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
-							Messages.getString("message.inquiry.target.data.download.success") + dialog.getFileName());
+							Messages.getString("message.inquiry.target.data.download.success") + fileName);
 
 				}
 			} catch (Exception e) {

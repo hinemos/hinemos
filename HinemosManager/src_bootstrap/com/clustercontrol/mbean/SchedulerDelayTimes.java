@@ -11,30 +11,60 @@ package com.clustercontrol.mbean;
 import java.beans.ConstructorProperties;
 
 public class SchedulerDelayTimes {
-	private long dbms;
-	private long ram;
+	private long dbmsJob;
+	private long dbmsDel;
+	private long dbmsTrans;
+	private long ramMon;
+	private long ramJob;
 
-	@ConstructorProperties({"dbms", "ram"})
+	@ConstructorProperties({"dbmsJob", "dbmsDel", "dbmsTran", "ramMon", "ramJob"})
 	public SchedulerDelayTimes(
-			long dbms,
-			long ram
+			long dbmsJob,
+			long dbmsDel,
+			long dbmsTrans,
+			long ramMon,
+			long ramJob
 			) {
-		this.dbms = dbms;
-		this.ram = ram;
+		this.dbmsJob = dbmsJob;
+		this.dbmsDel = dbmsDel;
+		this.dbmsTrans = dbmsTrans;
+		this.ramMon = ramMon;
+		this.ramJob = ramJob;
 	}
 
 	/**
-	 * @return the dbms
+	 * @return the dbmsJob
 	 */
-	public long getDbms() {
-		return dbms;
+	public long getDbmsJob() {
+		return dbmsJob;
+	}
+	
+	/**
+	 * @return the dbmsDel
+	 */
+	public long getDbmsDel() {
+		return dbmsDel;
+	}
+	
+	/**
+	 * @return the dbmsTrans
+	 */
+	public long getDbmsTrans() {
+		return dbmsTrans;
 	}
 
 	/**
-	 * @return the ram
+	 * @return the ramMon
 	 */
-	public long getRam() {
-		return ram;
+	public long getRamMon() {
+		return ramMon;
+	}
+	
+	/**
+	 * @return the ramJob
+	 */
+	public long getRamJob() {
+		return ramJob;
 	}
 
 }

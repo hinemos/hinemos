@@ -272,15 +272,15 @@ public class NodeProperty {
 			}
 		}
 		NodeInfo nodeInfo = QueryUtil.getNodePK(facilityId);
-		nodeInfo.getNodeDeviceInfo().addAll(QueryUtil.getNodeGeneralDeviceInfoByFacilityId(facilityId));
-		nodeInfo.getNodeCpuInfo().addAll(QueryUtil.getNodeCpuInfoByFacilityId(facilityId));
-		nodeInfo.getNodeMemoryInfo().addAll(QueryUtil.getNodeMemoryInfoByFacilityId(facilityId));
-		nodeInfo.getNodeNetworkInterfaceInfo().addAll(QueryUtil.getNodeNetworkInterfaceInfoByFacilityId(facilityId));
-		nodeInfo.getNodeDiskInfo().addAll(QueryUtil.getNodeDiskInfoByFacilityId(facilityId));
-		nodeInfo.getNodeFilesystemInfo().addAll(QueryUtil.getNodeFilesystemInfoByFacilityId(facilityId));
-		nodeInfo.getNodeHostnameInfo().addAll(QueryUtil.getNodeHostnameInfoByFacilityId(facilityId));
-		nodeInfo.getNodeNoteInfo().addAll(QueryUtil.getNodeNoteInfoByFacilityId(facilityId));
-		nodeInfo.getNodeVariableInfo().addAll(QueryUtil.getNodeVariableInfoByFacilityId(facilityId));
+		nodeInfo.setNodeDeviceInfo(QueryUtil.getNodeGeneralDeviceInfoByFacilityId(facilityId));
+		nodeInfo.setNodeCpuInfo(QueryUtil.getNodeCpuInfoByFacilityId(facilityId));
+		nodeInfo.setNodeMemoryInfo(QueryUtil.getNodeMemoryInfoByFacilityId(facilityId));
+		nodeInfo.setNodeNetworkInterfaceInfo(QueryUtil.getNodeNetworkInterfaceInfoByFacilityId(facilityId));
+		nodeInfo.setNodeDiskInfo(QueryUtil.getNodeDiskInfoByFacilityId(facilityId));
+		nodeInfo.setNodeFilesystemInfo(QueryUtil.getNodeFilesystemInfoByFacilityId(facilityId));
+		nodeInfo.setNodeHostnameInfo(QueryUtil.getNodeHostnameInfoByFacilityId(facilityId));
+		nodeInfo.setNodeNoteInfo(QueryUtil.getNodeNoteInfoByFacilityId(facilityId));
+		nodeInfo.setNodeVariableInfo(QueryUtil.getNodeVariableInfoByFacilityId(facilityId));
 		m_log.debug("getProperty() : QueryUtil success. facilityId=" + facilityId);
 
 		// ログ出力
@@ -420,6 +420,8 @@ public class NodeProperty {
 		NodeInfo nodeInfo = tmpNodeInfo.clone();
 		/** OS情報 */
 		List<NodeOsHistoryDetail> osHistoryList = QueryUtil.getNodeHistoryDetailByFacilityIdRegDate(NodeOsHistoryDetail.class, facilityId, targetDatetime);
+		// getProperty()で取得した情報を削除
+		nodeInfo.setNodeOsInfo(null);
 		if (osHistoryList.size() > 0) {
 			NodeOsInfo info = new NodeOsInfo(facilityId);
 			info.setOsName(osHistoryList.get(0).getOsName());

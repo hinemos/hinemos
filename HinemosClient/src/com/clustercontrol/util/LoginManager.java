@@ -10,11 +10,16 @@ package com.clustercontrol.util;
 
 import java.rmi.AccessException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.Collections;
 
 import javax.naming.CommunicationException;
 import javax.naming.NamingException;
@@ -38,11 +43,13 @@ import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.dialog.LoginAccount;
 import com.clustercontrol.accesscontrol.dialog.LoginDialog;
 import com.clustercontrol.accesscontrol.util.ClientSession;
+import com.clustercontrol.bean.ActivationKeyConstant;
+import com.clustercontrol.fault.InvalidTimezone;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.ui.util.OptionUtil;
 import com.clustercontrol.ws.access.InvalidUserPass_Exception;
-import com.clustercontrol.fault.InvalidTimezone;
+import com.clustercontrol.ws.access.ManagerInfo;
 
 /**
  * ログインマネージャクラス<BR>
@@ -116,11 +123,11 @@ public class LoginManager {
 		return SingletonUtil.getSessionInstance( LoginManager.class );
 	}
 	
-	private static void connect(String managerName) throws Exception {
+	private static ManagerInfo connect(String managerName) throws Exception {
 		synchronized (getInstance()) {
 			EndpointUnit endpointUnit = EndpointManager.get(managerName);
 			try {
-				endpointUnit.connect();
+				ManagerInfo managerInfo = endpointUnit.connect();
 				String url = endpointUnit.getUrlListStr();
 				IPreferenceStore store = ClusterControlPlugin.getDefault().getPreferenceStore();
 				// 接続先リストをプレファレンスに書き戻す
@@ -141,6 +148,8 @@ public class LoginManager {
 					numOfUrlHistory++;
 					store.setValue(LoginManager.KEY_URL_NUM, numOfUrlHistory);
 				}
+
+				return managerInfo;
 			} catch (Exception e) {
 				throw e;
 			}
@@ -215,9 +224,11 @@ public class LoginManager {
 
 	private static boolean addConnect( List<LoginAccount> loginList ) {
 		LinkedHashMap<String, String> msgs = new LinkedHashMap<>();
+		LinkedHashMap<String, String> evaluationMsgs = new LinkedHashMap<>();
 		ArrayList<Status> statusList = new ArrayList<>();
 		boolean connectFlag = false;
 		boolean isError = false;
+		Pattern p = Pattern.compile("(\\d{4})(\\d{2})[" + ActivationKeyConstant.EVALUATION_SUFFIX + "|" + ActivationKeyConstant.EVALUATION_EXPIRED_SUFFIX + "]");
 
 		m_log.debug("addConnections loginList.size=" + loginList.size());
 
@@ -227,9 +238,48 @@ public class LoginManager {
 			try {
 				EndpointManager.add( account.getUserId(), account.getPassword(), managerName, account.getUrl() );
 				if (!EndpointManager.get(managerName).isActive()) {
-					connect(managerName);
+					ManagerInfo managerInfo = connect(managerName);
+					
+					//オプションのチェック
+					evaluationMsgs.put(managerName, "");
+					List<String> options = managerInfo.getOptions();
+					Collections.sort(options);
+					for (String option : options) {
+						// 評価版かのチェック
+						if (option.endsWith(ActivationKeyConstant.EVALUATION_SUFFIX) 
+								|| option.endsWith(ActivationKeyConstant.EVALUATION_EXPIRED_SUFFIX)) {
+							Matcher m = p.matcher(option);
+							if (m.find()) {
+								int year = Integer.parseInt(m.group(1));
+								int month = Integer.parseInt(m.group(2));
+								int day = LocalDate.of(year, month, 1).lengthOfMonth();
+								
+								String expireDate = LocalDate.of(year, month, day)
+										.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+								
+								// 評価版の場合
+								if (option.startsWith(ActivationKeyConstant.TYPE_ENTERPRISE)) {
+									String evaluationMsg = evaluationMsgs.get(managerName);
+									if (evaluationMsg.isEmpty()) {
+										evaluationMsg = "\n" + Messages.getString("message.accesscontrol.69", new String[]{});
+									}
+									evaluationMsg += "\n" + Messages.getString("message.accesscontrol.67", new String[]{expireDate});
+									evaluationMsgs.put(managerName, evaluationMsg);
+								} else if (option.startsWith(ActivationKeyConstant.TYPE_XCLOUD)) {
+									String evaluationMsg = evaluationMsgs.get(managerName);
+									if (evaluationMsg.isEmpty()) {
+										evaluationMsg = "\n" + Messages.getString("message.accesscontrol.69", new String[]{});
+									}
+									evaluationMsg += "\n" + Messages.getString("message.accesscontrol.68", new String[]{expireDate});
+									evaluationMsgs.put(managerName, evaluationMsg);
+								}
+							}
+						}
+					}
+					String msg = Messages.getString("message.accesscontrol.5") + evaluationMsgs.get(managerName);
 					// ログイン成功ダイアログを生成
-					msgs.put( managerName, Messages.getString("message.accesscontrol.5"));
+					msgs.put( managerName, msg);
+
 					m_log.info("Login Success : userId = " + account.getUserId() + ", url = " + account.getUrl());
 				} else {
 					m_log.info("Login already : userId = " + account.getUserId() + ", url = " + account.getUrl());
@@ -262,20 +312,27 @@ public class LoginManager {
 				isError = true;
 				m_log.info("Login Fail : userId = " + account.getUserId() + ", url = " + account.getUrl());
 			} catch (Exception e) {
-				// 予期せぬエラーダイアログを生成
-				Status status = new Status(
-						IStatus.ERROR,
-						ClusterControlPlugin.getPluginId(),
-						IStatus.OK,
-						managerName + " : " + Messages.getString("message.accesscontrol.23"),
-						e);
-				statusList.add(status);
-				msgs.put( managerName, Messages.getString("message.accesscontrol.6") );
+				if (e.getMessage().contains(
+						MessageConstant.MESSAGE_FAILED_TO_COMMUNICATE_EXTERNAL_AUTH_SERVER.toString())) {
+					// 外部認証に失敗した場合はその旨をメッセージ出力
+					msgs.put(managerName, HinemosMessage.replace(e.getMessage()));
+				} else {
+					// 予期せぬエラーダイアログを生成
+					Status status = new Status(
+							IStatus.ERROR,
+							ClusterControlPlugin.getPluginId(),
+							IStatus.OK,
+							managerName + " : " + Messages.getString("message.accesscontrol.23"),
+							e);
+					statusList.add(status);
+					msgs.put( managerName, Messages.getString("message.accesscontrol.6") );
+				}
 				isError = true;
 				m_log.info("Login Fail : userId = " + account.getUserId() + ", url = " + account.getUrl());
 			}
 		}
-		if( 0 < msgs.size() ){
+
+		if (0 < msgs.size()) {
 			MultiStatus multiStatus = null;
 			if( 0 < statusList.size() ){
 				multiStatus = new MultiStatus(ClusterControlPlugin.getPluginId(), IStatus.ERROR, statusList.toArray( new Status[statusList.size()] ), Messages.getString( "message.accesscontrol.56" ), null);

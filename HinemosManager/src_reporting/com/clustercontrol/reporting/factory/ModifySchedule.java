@@ -18,7 +18,6 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.commons.scheduler.QuartzUtil;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
-import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.plugin.util.scheduler.SchedulerException;
 import com.clustercontrol.reporting.bean.QuartzConstant;
 import com.clustercontrol.reporting.bean.ReportingInfo;
@@ -61,10 +60,10 @@ public class ModifySchedule {
 		jdArgs[1] = info.getCalendarId();
 		jdArgsType[1] = String.class;
 
-		SchedulerPlugin.scheduleCronJob(SchedulerType.DBMS, info.getReportScheduleId(), QuartzConstant.GROUP_NAME, HinemosTime.currentTimeMillis() + 15 * 1000,
+		SchedulerPlugin.scheduleCronJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), info.getReportScheduleId(), QuartzConstant.GROUP_NAME, HinemosTime.currentTimeMillis() + 15 * 1000,
 				QuartzUtil.getCronString(info.getSchedule()), true, ReportingControllerBean.class.getName(), QuartzConstant.METHOD_NAME, jdArgsType, jdArgs);
 		if (!info.getValidFlg().booleanValue()) {
-			SchedulerPlugin.deleteJob(SchedulerType.DBMS, info.getReportScheduleId(), QuartzConstant.GROUP_NAME);
+			SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), info.getReportScheduleId(), QuartzConstant.GROUP_NAME);
 //			SchedulerPlugin.pauseJob(SchedulerType.DBMS, info.getReportScheduleId(), QuartzConstant.GROUP_NAME);
 		}
 	}
@@ -82,6 +81,6 @@ public class ModifySchedule {
 	public void deleteSchedule(String scheduleId) throws HinemosUnknown {
 		m_log.debug("deleteSchedule() : id=" + scheduleId);
 
-		SchedulerPlugin.deleteJob(SchedulerType.DBMS, scheduleId, QuartzConstant.GROUP_NAME);
+		SchedulerPlugin.deleteJob(SchedulerPlugin.toSchedulerTypeForDBMS(QuartzConstant.GROUP_NAME), scheduleId, QuartzConstant.GROUP_NAME);
 	}
 }

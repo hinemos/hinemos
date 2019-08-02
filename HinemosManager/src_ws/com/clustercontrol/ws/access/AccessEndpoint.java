@@ -97,7 +97,7 @@ public class AccessEndpoint {
 
 		try {
 			ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
-			HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
+			HttpAuthenticator.authCheck(wsctx, systemPrivilegeList, false, true);  // 認証キャッシュ無効
 		} catch (InvalidUserPass e) {
 			m_opelog.warn(HinemosModuleConstant.LOG_PREFIX_ACCESS + " Login Failed, Method=checkLogin, User="
 					+ HttpAuthenticator.getUserAccountString(wsctx));

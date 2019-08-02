@@ -757,7 +757,7 @@ public class MonitorEndpoint {
 	 * 
 	 * 引数で指定されたイベントNoのコマンドを指定されたイベント情報に対して実行します。<BR><BR>
 	 * 
-	 * MonitorResultWrite権限が必要
+	 * MonitorResultExec権限が必要
 	 * 
 	 * @param commandNo 実行するコマンド番号
 	 * @param eventList コマンド実行対象のイベント
@@ -769,7 +769,7 @@ public class MonitorEndpoint {
 	public String execEventCustomCommand(int commandNo, List<EventDataInfo> eventList) throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("execEventCustomCommand");
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
-		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.MONITOR_RESULT, SystemPrivilegeMode.MODIFY));
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.MONITOR_RESULT, SystemPrivilegeMode.EXEC));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 		
 		// 認証済み操作ログ
@@ -810,7 +810,7 @@ public class MonitorEndpoint {
 	 * 
 	 * イベントカスタムコマンドの実行結果を取得します。<BR><BR>
 	 * 
-	 * MonitorResultWrite権限が必要
+	 * MonitorResultExec権限が必要
 	 * 
 	 * @param commandResultID イベントカスタムコマンド実行時に出力されたコマンド結果ID
 	 * @return
@@ -821,7 +821,7 @@ public class MonitorEndpoint {
 	public EventCustomCommandResultRoot getEventCustomCommandResult(String commandResultID) throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("getEventCustomCommandResult");
 		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
-		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.MONITOR_RESULT, SystemPrivilegeMode.MODIFY));
+		systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.MONITOR_RESULT, SystemPrivilegeMode.EXEC));
 		HttpAuthenticator.authCheck(wsctx, systemPrivilegeList);
 		
 		// 認証済み操作ログ

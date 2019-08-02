@@ -38,6 +38,7 @@ import javax.xml.ws.Endpoint;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.ActivationKeyConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.platform.HinemosPropertyDefault;
@@ -233,7 +234,7 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 
 		// EnterprisePluginが既に活性化された場合、TYPE_ENTERPRISEキーが必要となる
 		if(HinemosPluginService.isActive(EnterprisePlugin.class)){
-			requiredKeys.add(KeyCheck.TYPE_ENTERPRISE);
+			requiredKeys.add(ActivationKeyConstant.TYPE_ENTERPRISE);
 		}
 		return requiredKeys;
 	}
