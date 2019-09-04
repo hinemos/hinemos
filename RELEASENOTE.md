@@ -108,4 +108,8 @@ https://github.com/hinemos/hinemos/releases/tag/v6.2.2
 
 # ■English Doc <a name="eng"/>
 
-English manuals will be available soon.
+English manuals are also available here (uploaded on 2019/9/4):
+
+- Installation Manual ( [en_Install_Linux_6.2_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/en_Install_Linux_6.2_rev1.pdf) )
+- Administrator's Guide ( [en_Admin_Linux_6.2_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/en_Admin_Linux_6.2_rev1.pdf) )
+- User Manual ( [en_User_6.2_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/en_User_6.2_rev1.pdf) )
