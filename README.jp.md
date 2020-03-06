@@ -43,7 +43,7 @@ Hinemosはコマンドひとつでインストールできます。
 
 ## ドキュメント
 
-- インストールマニュアル ([doc_install_linux_6.0_ja_rev6.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.3/doc_install_linux_6.0_ja_rev6.pdf) )
+- インストールマニュアル ([doc_install_linux_6.0_ja_rev7.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.3/doc_install_linux_6.0_ja_rev7.pdf) )
 - ユーザマニュアル ( [doc_user_6.0_ja_rev6.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.3/doc_user_6.0_ja_rev6.pdf) )
 - 管理者ガイド ( [doc_admin_linux_6.0_ja_rev6.pdf](https://github.com/hinemos/hinemos/releases/download/v6.0.3/doc_admin_linux_6.0_ja_rev6.pdf) )
 
