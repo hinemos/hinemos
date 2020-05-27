@@ -60,8 +60,8 @@ Hinemosはコマンドひとつでインストールできます。
 
 ## ドキュメント
 
-- インストールマニュアル ([ja_Install_Linux_6.2_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_Install_Linux_6.2_rev3.pdf) )
-- ユーザマニュアル ( [ja_User_6.2_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_User_6.2_rev3.pdf) )
+- インストールマニュアル ([ja_Install_Linux_6.2_rev5.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_Install_Linux_6.2_rev5.pdf) )
+- ユーザマニュアル ( [ja_User_6.2_rev4.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_User_6.2_rev4.pdf) )
 - 管理者ガイド ( [ja_Admin_Linux_6.2_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_Admin_Linux_6.2_rev3.pdf) )
 
 ## ライセンス
