@@ -26,7 +26,7 @@ Hinemosはコマンドひとつでインストールできます。
 
 ```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v6.2.2/hinemos-6.2-web-6.2.2-1.el7.x86_64.rpm```
 
-詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_Install_Linux_6.2_rev3.pdf)をご覧下さい。
+詳細は[インストールマニュアル](https://github.com/hinemos/hinemos/releases/download/v6.2.2/ja_Install_Linux_6.2_rev5.pdf)をご覧下さい。
 
 ## ver.6.2新機能
 
